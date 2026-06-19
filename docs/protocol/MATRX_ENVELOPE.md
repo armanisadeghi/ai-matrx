@@ -118,14 +118,13 @@ result, mutates nothing.
               "ref":{ "list_id":"a729…", "item_id":"0c36…" },
               "display":{ "label":"Illustrated Recipe" } } ] }
 
-// secret — hidden picklist value (resolved for the model, redacted on store/display)
-{ "matrx_version":1, "kind":"secret", "type":"picklist_value",
-  "items":[ { "purpose":"substitute", "token":"opt_7f3a",
-              "source":{ "picklist_id":"…", "option_id":"…" } } ] }
+// secret — vault-key pointer (resolved for the model on the wire only, never stored)
+{ "matrx_version":1, "kind":"secret", "type":"user_secret",
+  "items":[ { "purpose":"substitute", "key":"OPENAI_API_KEY" } ] }
 
-// validation — run a validator (server workflow gate OR client form)
-{ "matrx_version":1, "kind":"validation", "type":"is_valid_email",
-  "items":[ { "args":{ "value":"a@b.com" } } ] }
+// validation — a self-contained check (rule + value live in the item); pure pass/fail
+{ "matrx_version":1, "kind":"validation", "type":"regex",
+  "items":[ { "value":"a@b.com", "pattern":"^[^@]+@[^@]+\\.[^@]+$" } ] }
 ```
 
 ## Client vs server responsibilities

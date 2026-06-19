@@ -11,8 +11,18 @@ route internal parts through a registry, render them, fall back gracefully.
   `isDirectiveApplyEvent`, and `buildEnvelopeOutputSchema` (mirrors aidream's schema-gen).
 - `registry.tsx` — the **renderer registry** (mirrors the backend shape registry):
   `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
-  (type-specific → kind-default → null). Built-in: `reference` → chips. Add a renderer =
-  one register call.
+  (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
+  (`ReferenceChip`, one per item). Add a renderer = one register call.
+- `referenceResolvers.ts` — the **reference resolver registry** (the data-driven mirror for
+  the `reference` kind): one entry per reference `type` → `{ resolveValue(supabase, ref),
+  openItemType, openId(ref) }`. `resolveValue` fetches the LIVE value from Supabase
+  (never throws; returns `undefined` on miss → chip falls back to `display.label`);
+  `openItemType` is the `item-presentation` `KnownItemType` reused for click-to-open, and
+  `openId` is the underlying entity (the picklist / dataset, NOT the cell). Registered types:
+  `picklist_item` (value = `udt_picklist_items.description ?? .label` by `ref.item_id`; opens
+  picklist `ref.list_id` via `"picklist"`) and `dataset_cell` (value = `udt_dataset_rows.data[ref.field_name]`
+  by `ref.row_id`; opens dataset `ref.dataset_id` via `"table"`). Adding a reference type =
+  one entry here; no new opener if item-presentation already has the entity's window.
 - `MatrxEnvelopeBlock.tsx` — the ```matrx fence renderer: (1) parse + recognize the
   outer envelope (bad JSON → raw `<pre>`, never throws); (2) `getEnvelopeRenderer` →
   render the registered component; (3) none registered → a neutral muted card (kind/type
@@ -41,13 +51,21 @@ route internal parts through a registry, render them, fall back gracefully.
 
 ## Status
 
-- Done: envelope module, renderer registry (`reference` chips) + outer-first recognition +
-  graceful fallback, fence wiring, directive receipts, schema-proposal apply flow.
-- Next: richer/interactive reference chips (click-to-open via the item-presentation opener);
-  renderers for `secret` / `output_directive`-receipt-in-content if needed; the
+- Done: envelope module, renderer registry + reference resolver registry — `reference` chips
+  now **come to life** (live Supabase fetch of the underlying value + click-to-open the entity
+  in a window panel, graceful fallback to `display.label`) — outer-first recognition + graceful
+  fallback, fence wiring, directive receipts, schema-proposal apply flow.
+- Next: renderers for `secret` / `output_directive`-receipt-in-content if needed; the
   reference-insert authoring picker.
 
 ## Change Log
 
+- 2026-06-19 — `reference` blocks come to life: each chip now fetches its LIVE value from
+  Supabase (`picklist_item` → picklist item description/label; `dataset_cell` → dataset-row
+  cell) and is clickable to open the underlying picklist/table in a window panel (reusing the
+  item-presentation opener), with graceful fallback to `display.label`. New
+  `referenceResolvers.ts` resolver registry. Hardened after adversarial review: chips keyed by
+  content (not index), non-string `ref` values coerced loudly (`coerceRefToStrings`), the
+  "never throws" contract defended at the call site, label-less fallback humanized.
 - 2026-06-19 — Created. Outer-first recognition + renderer registry + graceful fallback;
   fence rendering, directive receipts, schema-proposal apply.

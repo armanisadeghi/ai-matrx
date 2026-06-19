@@ -629,6 +629,398 @@
         "type": "object"
       },
       "type": "picklist_item"
+    },
+    {
+      "category": "sensitive",
+      "doc": "Pointer to a public.user_secrets vault key; substitutes its decrypted value into the model-bound text on the wire only (never persisted).",
+      "item_model": "UserSecretRef",
+      "kind": "secret",
+      "purposes": [
+        "substitute",
+        "inline"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+                  "title": "Key",
+                  "type": "string"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "enum": [
+                    "substitute",
+                    "inline"
+                  ],
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "title": "UserSecretRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "secret",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "user_secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "user_secret"
+    },
+    {
+      "category": "pure",
+      "doc": "Check a string is one of an allowed set of values.",
+      "item_model": "EnumValidatorItem",
+      "kind": "validation",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Allowed",
+                  "type": "array"
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Message"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "allowed"
+              ],
+              "title": "EnumValidatorItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "validation",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "enum",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "enum"
+    },
+    {
+      "category": "pure",
+      "doc": "Check a string's length falls within [min_length, max_length] (either optional).",
+      "item_model": "LengthValidatorItem",
+      "kind": "validation",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "max_length": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Max Length"
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Message"
+                },
+                "min_length": {
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Min Length"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "title": "LengthValidatorItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "validation",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "length",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "length"
+    },
+    {
+      "category": "pure",
+      "doc": "Check a number falls within [min, max] (either bound optional).",
+      "item_model": "RangeValidatorItem",
+      "kind": "validation",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "max": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Max"
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Message"
+                },
+                "min": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Min"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "title": "RangeValidatorItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "validation",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "range",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "range"
+    },
+    {
+      "category": "pure",
+      "doc": "Check a string matches a regular expression (optional `re` flag letters).",
+      "item_model": "RegexValidatorItem",
+      "kind": "validation",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "flags": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Flags"
+                },
+                "message": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Message"
+                },
+                "pattern": {
+                  "title": "Pattern",
+                  "type": "string"
+                },
+                "value": {
+                  "title": "Value",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "pattern"
+              ],
+              "title": "RegexValidatorItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "validation",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "regex",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "regex"
     }
   ]
 }
