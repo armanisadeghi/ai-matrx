@@ -42,6 +42,19 @@ ONE detector + decoder, **mirrored in TS and Python**. A new orchestrator = a ne
 `kind` + its registry — never a new top-level shape. A consumer handles only the
 kinds it owns and skips the rest by `kind`; it need not know every `type`.
 
+## Position decides capability (security boundary)
+
+The same envelope shape means different things by **where it sits**:
+
+- **Root of an agent's structured output** → an `output_directive` / `validation` may
+  **execute** (side effect).
+- **Embedded inside content** (a ` ```matrx ` fence in prose — see
+  [MATRX_REFERENCES.md](MATRX_REFERENCES.md)) → only `reference` / `secret` **resolve**.
+  An `output_directive` found inside content is **logged + skipped, never executed.**
+
+In-content references use ONE encoding — the ` ```matrx ` fence — never inline bare
+JSON or delimiter tokens. Full contract: [MATRX_REFERENCES.md](MATRX_REFERENCES.md).
+
 ## The `kind` registry (launch set)
 
 | kind | category | what it is | body |
@@ -130,24 +143,68 @@ mutates nothing.
 - `reference` stores ids + optional last-known `display`, never live data.
 - `secret` must pass the redactor before any persist/display.
 - `output_directive` idempotency is server-derived; a failed apply warns, never fatal.
+- **Position decides capability:** actions execute only at output root; in content, only
+  `reference`/`secret` resolve (an action in content is skipped).
+- **Every kind/type is registered** (below) — an unregistered or undocumented shape, or a
+  parallel encoding, is a build failure.
 - Bump `matrx_version` **only** on a breaking change; add kinds/types freely without a bump.
+
+## Registration & enforcement
+
+Every `kind` and every `type` is declared **once, in code**, with metadata + body schema
++ handler + a one-line doc. The registry is the source of truth; the client mirror and the
+doc tables are **generated** from it; `release.sh` fails loudly on any divergence. This is
+what stops many coding agents from sprouting parallel sub-systems.
+
+- **Register (one site per type).** `kind` → category (`pure`/`side_effect`/`sensitive`).
+  `type` → a Pydantic body model (fields + required), a handler (resolver/executor),
+  allowed `purpose` values (references), a one-line doc. Collected at import, like the
+  directive registry and declared tools.
+- **Generate.** `scripts/generate_envelope_registry.py` emits the canonical
+  `docs/protocol/matrx_envelope_registry.generated.json` (kinds, categories, types, field
+  schemas, purposes), committed **byte-identical to both repos** and regenerated like
+  db-types / stream-events. **The doc reference tables are generated from it — registering
+  and documenting are one act.**
+- **Mirror.** TS consumes the generated manifest → typed `kind`/`type` unions + per-type
+  field types + a schema-aware `isMatrxEnvelope` / `decode`. The `matrx` fence language is
+  registered in `SPECIAL_CODE_LANGUAGES` + the TS mirror.
+- **Enforce — `scripts/validate_envelope_registry.py`** (loud + non-blocking in
+  `release.sh`; `:strict` exits non-zero for CI). It screams on:
+  - a `kind`/`type` literal used in code that isn't registered;
+  - a registered `type` missing a body model, handler, doc, or its `kind`'s category;
+  - the committed manifest being stale (regenerate + diff);
+  - a **parallel encoding** — grep guard for the eradicated shapes (`__matrx_apply`,
+    `picklist_ref`, `<<<MATRX_START>>>`, the private-use `…` tokens, bare inline
+    reference JSON) outside the back-compat decoder;
+  - the `matrx` fence missing from `SPECIAL_CODE_LANGUAGES` or the TS mirror;
+  - the two repos' manifests diverging.
+
+**The one rule for every contributor (human or agent):** add a kind/type via the registry,
+never inline. There is no second place to put one.
 
 ## Migration
 
 During the transition, handlers accept **both** the legacy shapes (bare
-`type:"user_table_cell"`, `item_presentation`, the old `__matrx_apply` envelope) and
-the `matrx_version` envelope. New code emits **only** the envelope. Legacy detection
-is deleted once each family is migrated. Track open families in the consuming
-`FEATURE.md`s.
+`type:"user_table_cell"`, `item_presentation`, the old `__matrx_apply` envelope, the
+delimiter/broker tokens) and the `matrx_version` envelope. New code emits **only** the
+envelope. The back-compat decoder is the one sanctioned home for legacy detection (the
+grep guard whitelists it); it is deleted per-family once migrated. Track open families in
+the consuming `FEATURE.md`s.
 
 ## Consumers
 
 - `aidream/services/output_directives/` — first `output_directive` consumer.
-- (to come) reference resolver, secret redactor, validation runner; matrx-frontend
-  renderers + workflow wiring.
+- `reference` kind + the ` ```matrx ` fence: [MATRX_REFERENCES.md](MATRX_REFERENCES.md)
+  (v1: picklist + dataset-cell substitution).
+- (to come) secret redactor, validation runner; matrx-frontend renderers + workflow wiring.
 
 ## Change Log
 
+- 2026-06-17 — Added the position invariant (actions execute at output root only;
+  in-content = resolve only), the ` ```matrx ` in-content fence + `reference` kind
+  ([MATRX_REFERENCES.md](MATRX_REFERENCES.md)), and the Registration & enforcement system
+  (code registry → generated manifest + doc tables → `release.sh` drift/parallel-encoding
+  guards).
 - 2026-06-17 — Created. The Matrx Envelope GOLD STANDARD: flat
   `matrx_version`/`kind`/`type` + kind-defined body; launch kinds
   `output_directive` / `reference` / `secret` / `validation`; shared detector +
