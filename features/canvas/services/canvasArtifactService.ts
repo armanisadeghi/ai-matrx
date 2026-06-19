@@ -35,6 +35,8 @@ const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> = 
     iframe: "html_page",
     // markdown-payload types — use "other" (valid enum value)
     mermaid: "diagram",
+    svg: "diagram",
+    chart: "data_table",
     research: "report",
     resources: "other",
     progress: "other",

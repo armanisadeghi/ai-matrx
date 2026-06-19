@@ -61,6 +61,10 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "recipe", aliases: ["recipe", "cooking_recipe"], standaloneAliases: ["cooking_recipe"], materializable: true },
   { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true },
   { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true },
+  // Self-contained visuals — durable, referenceable (like a diagram). A bare
+  // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.
+  { canvasType: "svg", aliases: ["svg"], standaloneAliases: ["svg"], materializable: true },
+  { canvasType: "chart", aliases: ["chart"], standaloneAliases: ["chart"], materializable: true },
   // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
   // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user
   // action, linked via `ctx_task_associations` (entity_type='artifact'). No

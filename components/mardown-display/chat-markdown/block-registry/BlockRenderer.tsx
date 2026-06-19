@@ -896,25 +896,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     // (all handled by the early-branch above via resolveArtifactDef +
     // hasArtifactRenderer; cases removed in Wave F)
 
-    case "svg":
-      // Client-only fence type (no server parser yet): always content.
-      return (
-        <BlockComponents.SvgBlock
-          key={index}
-          content={block.content}
-          isStreamActive={Boolean(block.isStreamingBlock)}
-        />
-      );
-
-    case "chart":
-      // Client-only fence type (JSON spec → recharts via next/dynamic ssr:false).
-      return (
-        <BlockComponents.ChartBlock
-          key={index}
-          content={block.content}
-          isStreamActive={Boolean(block.isStreamingBlock)}
-        />
-      );
+    // `svg` + `chart` are materializable artifact types — handled by the unified
+    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
+    // SvgArtifact / ChartArtifact). Their legacy cases were removed when enrolled.
 
     case "item_presentation":
       // Owns all its phases internally: instant skeleton from a partial JSON
