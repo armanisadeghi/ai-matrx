@@ -57,7 +57,7 @@ The catalog and configuration surface for every LLM available to the product —
 **Key types** (`features/ai-models/types.ts`)
 - `AiModel` — `AiModelRow` with JSONB columns narrowed to `ControlsSchema | null`, `ModelConstraint[] | null`, `PricingTier[] | null`, `string[] | null` (endpoints), capabilities record.
 - `AiProvider` — provider row with `provider_models_cache: ProviderModelsCache | null`.
-- `PricingTier` — `{ max_tokens, input_price, output_price, cached_input_price }`.
+- `PricingTier` — `{ max_tokens, input_price, output_price, cached_input_price, usage_basis?, note? }`. `usage_basis` is the **billing unit** the prices map to (`null`/absent = standard $/1M-token billing; other values: per-image, per-second, per-character, …). The full taxonomy + per-basis price labels + validation live in `features/ai-models/usageBasis.ts`, a **mirror of the matrx-ai server SSOT** (`matrx_ai/config/usage_config.py::USAGE_BASIS_SPECS`).
 - `ControlsSchema = Record<string, ControlParam>` — per-field param definitions (type, min/max, default, allowed, enum, required).
 - `ModelConstraint` — discriminated union:
   - `UnconditionalConstraint`: `{ id, rule: 'required'|'fixed'|'min'|'max'|'one_of'|'forbidden', field, value?, severity, message }`
@@ -115,6 +115,7 @@ The catalog and configuration surface for every LLM available to the product —
 - **Deprecating a model is destructive at the reference layer.** Flip `is_deprecated=true` in `ai_model`, then run the deprecated-audit migration helpers — do not rely on downstream features to catch stale references. `fetchUsage` is the canonical list of everything to migrate.
 - **`replaceModelIn*` helpers patch both column and `settings->model_id`.** Some legacy rows store the model in either place. Always let the helper fetch-then-patch; never write raw SQL that ignores the JSONB path.
 - **Provider-cache and registry are separate.** `ai_provider.provider_models_cache` is live provider data — not the canonical list. Adding a model to the registry is always an explicit create against `ai_model`.
+- **A media/audio model's `pricing.usage_basis` MUST match how its provider reports usage — wrong/absent basis silently mis-bills.** This is the bug class behind a gpt-image model billing $30/image (missing basis → synthetic per-image charge against a $/1M-token price), TTS billing $0 (units never populated), and ElevenLabs billing 1,000,000× too little ($/character entered as $/1M-character). The pricing editor (`ModelPricingEditor`) now requires a basis per tier, labels each price field with its real unit, and surfaces inline errors via `validatePricingTiers` (`usageBasis.ts`) — the same checks the server runs in `scripts/validate_model_pricing.py` (loud drift guard) and `matrx_ai.config.usage_config.validate_model_pricing`. Token-billed image models (gpt-image-*, Gemini image-native) legitimately use no basis. **When adding a media model, pick the basis; never leave it on "Token" for a non-token-billed media model.**
 
 ---
 
@@ -154,6 +155,7 @@ Configuration surface is stable. The consumer side is mid-migration: prompt/buil
 
 ## Change log
 
+- `2026-06-19` — Basis-aware pricing editor. Added `usage_basis` (+ `note`) to `PricingTier`; new `features/ai-models/usageBasis.ts` (taxonomy + `validatePricingTiers`, mirrors the matrx-ai server SSOT). `ModelPricingEditor` now has a per-tier billing-basis dropdown, dynamic per-unit price labels, and inline validation. Closes the root cause of the media-billing bugs (freeform pricing JSONB with no guardrail). Server side: `usage_config.USAGE_BASIS_SPECS`, computed megapixel/second billing, and `scripts/validate_model_pricing.py` drift guard.
 - `2026-05-17` — Added Tier Fallbacks section + form Selects in `AiModelDetailPanel` for `mid_fallback_id` and `guest_fallback_id` (aidream migration 0045). Powers the guest-mode model swap for the matrx-extend Chrome extension.
 - `2026-04-25` — Removed `features/ai-models/index.ts`; admin routes and provider-sync use direct imports to `components/*` and `service.ts` (same exports as before).
 - `2026-04-22` — claude: initial doc.
