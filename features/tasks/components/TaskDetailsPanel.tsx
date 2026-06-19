@@ -56,6 +56,7 @@ import TaskAttachments from "./TaskAttachments";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
 import { TaskContextPicker } from "./TaskContextSection";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface TaskDetailsPanelProps {
   task: any;
@@ -100,6 +101,8 @@ export default function TaskDetailsPanel({
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const { id: currentUserId } = useAppSelector(selectUser);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -231,7 +234,7 @@ export default function TaskDetailsPanel({
     try {
       await createSubtask(task.id, newSubtask);
       setNewSubtask("");
-      // Refresh to get updated subtasks
+      scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
@@ -633,14 +636,19 @@ export default function TaskDetailsPanel({
             ))}
             <div className="flex items-center gap-2 mt-2">
               <Input
+                ref={subtaskInputRef}
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Add a subtask..."
                 disabled={isAddingSubtask}
                 className="text-sm flex-1"
-                onKeyPress={(e) =>
-                  e.key === "Enter" && !e.shiftKey && handleAddSubtask()
-                }
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleAddSubtask();
+                  }
+                }}
               />
               <Button
                 size="icon"

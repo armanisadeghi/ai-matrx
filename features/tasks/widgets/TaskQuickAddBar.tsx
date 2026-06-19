@@ -9,6 +9,7 @@ import {
   useAssociateTask,
   type TaskSource,
 } from "@/features/tasks/hooks/useAssociateTask";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface TaskQuickAddBarProps {
   /** Optional source — if present, every task created here gets associated */
@@ -37,6 +38,7 @@ export default function TaskQuickAddBar({
   compact = false,
 }: TaskQuickAddBarProps) {
   const { createAndAssociate, isBusy } = useAssociateTask();
+  const { inputRef, scheduleRefocus } = useRefocusInputAfterAsync(isBusy);
   const [value, setValue] = useState("");
 
   const submit = async () => {
@@ -50,6 +52,7 @@ export default function TaskQuickAddBar({
     if (taskId) {
       onCreated?.(taskId);
       setValue("");
+      scheduleRefocus();
     }
   };
 
@@ -59,6 +62,7 @@ export default function TaskQuickAddBar({
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <Input
+        ref={inputRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {

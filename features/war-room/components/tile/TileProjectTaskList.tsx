@@ -24,7 +24,7 @@
  * `selectEffectiveTileProjectId` (the tile's own project_id ?? the room's).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CornerDownRight,
   Eye,
@@ -60,6 +60,7 @@ import {
 } from "@/features/tasks/redux/taskUiSlice";
 import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 export function TileProjectTaskList({
   tileId,
@@ -256,19 +257,20 @@ function ProjectTaskCreate({
   const dispatch = useAppDispatch();
   const [draft, setDraft] = useState("");
   const [inFlight, setInFlight] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { inputRef, scheduleRefocus } = useRefocusInputAfterAsync(inFlight > 0);
 
   const add = () => {
     const title = draft.trim();
     if (!title || inFlight > 0) return;
     setDraft("");
-    inputRef.current?.focus();
     setInFlight((n) => n + 1);
     void dispatch(createTaskThunk({ title, projectId }))
       .unwrap()
       .then((newId) => {
         if (!newId) {
           setDraft((cur) => (cur.length === 0 ? title : cur));
+        } else {
+          scheduleRefocus();
         }
       })
       .catch(() => {
@@ -276,7 +278,6 @@ function ProjectTaskCreate({
       })
       .finally(() => {
         setInFlight((n) => n - 1);
-        inputRef.current?.focus();
       });
   };
 

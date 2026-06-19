@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
+import { ScopesRouteHeader } from "@/features/scope-system/components/ScopesRouteHeader";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -41,5 +42,10 @@ export default function OrganizationLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <ScopesRouteHeader />
+      {children}
+    </>
+  );
 }

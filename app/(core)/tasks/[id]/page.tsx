@@ -12,6 +12,7 @@ import {
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -54,6 +55,16 @@ export default function TaskPage() {
           <h1 className="ml-2 text-sm font-medium text-foreground truncate">
             {task?.title ?? "Task"}
           </h1>
+          {task ? (
+            <div className="ml-auto shrink-0">
+              <TaskCopyForAiButton
+                taskId={taskId}
+                taskTitle={task.title}
+                location="Tasks — task page"
+                size="sm"
+              />
+            </div>
+          ) : null}
         </div>
       </PageHeader>
 

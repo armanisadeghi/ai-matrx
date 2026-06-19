@@ -115,6 +115,29 @@ export async function updateTopic(
   return data as ResearchTopic;
 }
 
+/**
+ * Atomically append an asset into `rs_topic.outputs[kind].assets` (newest
+ * first, de-duped by asset id) via a row-locked server-side RPC. Use this
+ * instead of read-modify-writing the whole `outputs` column — a long-running
+ * generator (podcast: 8–12 min) that persists with a stale client snapshot
+ * would otherwise clobber assets generated during its wait. Returns the new
+ * full `outputs` object.
+ */
+export async function appendTopicOutput(
+  topicId: string,
+  kind: string,
+  asset: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.rpc("rs_topic_append_output", {
+    p_topic_id: topicId,
+    p_kind: kind,
+    p_asset:
+      asset as Database["public"]["Tables"]["rs_topic"]["Row"]["outputs"],
+  });
+  if (error) throw error;
+  return (data ?? {}) as Record<string, unknown>;
+}
+
 // ============================================================================
 // Keywords
 // ============================================================================
@@ -720,7 +743,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
     if (
       !cur ||
       cur === "none" ||
-      ANALYSIS_RANK[state] > ANALYSIS_RANK[cur as Exclude<CurationAnalysisState, "none">]
+      ANALYSIS_RANK[state] >
+        ANALYSIS_RANK[cur as Exclude<CurationAnalysisState, "none">]
     ) {
       analysisBySource.set(a.source_id, state);
     }

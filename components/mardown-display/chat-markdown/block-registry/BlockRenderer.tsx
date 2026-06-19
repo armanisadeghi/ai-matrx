@@ -630,7 +630,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           />
         );
       }
-      if (lang === "xml" || lang === "html" || lang === "svg") {
+      // if (lang === "xml" || lang === "html" || lang === "svg") {
+      if (lang === "xml" || lang === "svg") {
         return (
           <BlockComponents.XmlBlock
             key={index}

@@ -31334,6 +31334,10 @@ export type Database = {
         }
         Returns: Json
       }
+      rs_topic_append_output: {
+        Args: { p_asset: Json; p_kind: string; p_topic_id: string }
+        Returns: Json
+      }
       sch_enqueue_manual_run: { Args: { p_task_id: string }; Returns: string }
       sch_recompute_task_next_due_at: {
         Args: { p_task_id: string }

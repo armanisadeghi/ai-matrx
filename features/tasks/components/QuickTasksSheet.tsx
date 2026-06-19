@@ -40,6 +40,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -125,6 +126,10 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   const filter = useAppSelector(selectTaskFilter);
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
+  const {
+    inputRef: newTaskInputRef,
+    scheduleRefocus: scheduleQuickAddRefocus,
+  } = useRefocusInputAfterAsync(isCreatingTask);
   const loading = useAppSelector(selectTasksLoading);
   const sortBy = useAppSelector(selectSortBy);
   const searchQuery = useAppSelector(selectSearchQuery);
@@ -185,7 +190,6 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   // user opened "Quick Task" to type, not to hunt for the field. Fires once,
   // when a target project first exists (the input is disabled until then), and
   // only on the list view (not while a task's details are open).
-  const newTaskInputRef = useRef<HTMLInputElement>(null);
   const hasAutoFocusedRef = useRef(false);
   useEffect(() => {
     if (hasAutoFocusedRef.current) return;
@@ -246,6 +250,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
 
     if (newTaskId) {
       setSelectedTaskId(newTaskId);
+      scheduleQuickAddRefocus();
     }
 
     setQuickAddDescription("");

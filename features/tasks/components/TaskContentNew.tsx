@@ -48,6 +48,7 @@ import CompactTaskItem from "./CompactTaskItem";
 import TaskDetailsPanel from "./TaskDetailsPanel";
 import AllTasksView from "./AllTasksView";
 import TaskSortControl from "./TaskSortControl";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,10 @@ export default function TaskContentNew() {
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const newProjectName = useAppSelector(selectNewProjectName);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
+  const {
+    inputRef: quickAddInputRef,
+    scheduleRefocus: scheduleQuickAddRefocus,
+  } = useRefocusInputAfterAsync(isCreatingTask);
   const isCreatingProject = useAppSelector(selectIsCreatingProject);
   const loading = useAppSelector(selectTasksLoading);
   const searchQuery = useAppSelector(selectSearchQuery);
@@ -153,6 +158,7 @@ export default function TaskContentNew() {
 
     if (newTaskId) {
       setSelectedTaskId(newTaskId);
+      scheduleQuickAddRefocus();
     }
 
     setQuickAddDescription("");
@@ -323,6 +329,7 @@ export default function TaskContentNew() {
                   <div className="bg-card rounded-lg border border-border shadow-sm">
                     <form onSubmit={handleAddTask} className="p-3 space-y-2">
                       <Input
+                        ref={quickAddInputRef}
                         type="text"
                         value={newTaskTitle}
                         onChange={(e) => handleTitleChange(e.target.value)}

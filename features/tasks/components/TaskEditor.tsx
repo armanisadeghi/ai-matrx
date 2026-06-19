@@ -65,6 +65,8 @@ import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorW
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
 type Priority = TaskPriority;
 
@@ -190,7 +192,8 @@ function TaskEditorInner({
   const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
   const [newSubtask, setNewSubtask] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
-  const subtaskInputRef = useRef<HTMLInputElement>(null);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
 
   useEffect(() => {
     let cancelled = false;
@@ -337,6 +340,7 @@ function TaskEditorInner({
       ).unwrap();
       if (newId) {
         setNewSubtask("");
+        scheduleSubtaskRefocus();
         return true;
       }
       return false;
@@ -434,6 +438,13 @@ function TaskEditorInner({
               <Trash2 className="size-3.5" />
             )}
           </EmbeddedToolbarButton>
+
+          <TaskCopyForAiButton
+            taskId={taskId}
+            taskTitle={effective.title}
+            location={embedded ? "War Room — task tile" : "Tasks — task editor"}
+            size="icon"
+          />
         </div>
       ) : (
         <div className="shrink-0 border-b border-border/50 bg-card/40 px-3 h-9 flex items-center gap-1.5">
@@ -462,6 +473,12 @@ function TaskEditorInner({
           />
 
           <div className="flex items-center gap-0.5 shrink-0">
+            <TaskCopyForAiButton
+              taskId={taskId}
+              taskTitle={effective.title}
+              location="Tasks — task editor"
+              size="sm"
+            />
             {isDirty && (
               <>
                 <Button
@@ -753,12 +770,14 @@ function TaskEditorInner({
                   type="text"
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
-                  onKeyDown={async (e) => {
+                  onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const added = await handleAddSubtask();
-                      if (added) subtaskInputRef.current?.focus();
+                      void handleAddSubtask();
                     }
+                  }}
+                  onBlur={() => {
+                    if (newSubtask.trim()) void handleAddSubtask();
                   }}
                   placeholder="Add subtask, press Enter…"
                   className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"

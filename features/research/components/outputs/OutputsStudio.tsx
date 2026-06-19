@@ -23,22 +23,20 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTopicContext } from "../../context/ResearchContext";
-import { updateTopic, getDocument, getSynthesis } from "../../service";
+import { appendTopicOutput, getDocument, getSynthesis } from "../../service";
 import type { ResearchSynthesis } from "../../types";
 import { usePodcastRun } from "@/features/podcasts/generator/usePodcastRun";
-import type {
-  PodcastType,
-  PodcastRunState,
-} from "@/features/podcasts/generator/types";
+import type { PodcastType } from "@/features/podcasts/generator/types";
+import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
+import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
+import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
 import {
   parseOutputs,
-  appendAsset,
   assetsFor,
-  serializeOutputs,
   type OutputAsset,
   type OutputKind,
 } from "./outputs";
@@ -152,11 +150,13 @@ export default function OutputsStudio() {
   const hasReport = reportMarkdown.trim().length > 0;
   const outputs = useMemo(() => parseOutputs(topic?.outputs), [topic?.outputs]);
 
-  // Append a freshly generated asset to the topic's outputs index. `outputs` is
-  // a JSONB column (Record<string, unknown>); ResearchOutputs is its typed view.
+  // Append a freshly generated asset to the topic's outputs index. Goes
+  // through the row-locked `rs_topic_append_output` RPC — a client-side
+  // read-modify-write of the whole `outputs` JSONB would let a long-running
+  // generator (podcast: 8–12 min) overwrite assets created during its wait
+  // with a stale snapshot. The RPC merges server-side under a row lock.
   const persistOutput = async (kind: OutputKind, asset: OutputAsset) => {
-    const next = appendAsset(parseOutputs(topic?.outputs), kind, asset);
-    await updateTopic(topicId, { outputs: serializeOutputs(next) });
+    await appendTopicOutput(topicId, kind, asset as Record<string, unknown>);
     refresh();
   };
 
@@ -265,8 +265,11 @@ function PodcastOutputCard({
   const [quickTest, setQuickTest] = useState(false);
   const savedRef = useRef<Set<string>>(new Set());
 
-  const { state, start, cancel, reset } = run;
+  const { state, startedAt, start, cancel, reset } = run;
   const isRunning = state.status === "running";
+
+  const liveCover =
+    state.images.find((s) => s.status === "done" && s.url)?.url ?? null;
 
   // Persist the episode into the topic's outputs index once it lands.
   useEffect(() => {
@@ -432,7 +435,41 @@ function PodcastOutputCard({
           </div>
         )}
 
-        {isRunning && <LiveRun state={state} onCancel={cancel} />}
+        {isRunning && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                This takes about 8–12 minutes. Watch the cover art, clips, and
+                script come together below — you can leave and come back.
+              </p>
+              <button
+                onClick={cancel}
+                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground shrink-0"
+                title="Cancel generation"
+              >
+                <X className="h-3.5 w-3.5" />
+                Cancel
+              </button>
+            </div>
+
+            <LiveProgressRail state={state} startedAt={startedAt} />
+
+            {state.title && (
+              <ProductionTeaser state={state} startedAt={startedAt} />
+            )}
+
+            {state.audioUrl && (
+              <audio controls src={state.audioUrl} className="w-full h-9" />
+            )}
+
+            <MediaOptionsGrid
+              state={state}
+              interactive={false}
+              selectedCoverUrl={liveCover}
+              onSelectCover={() => {}}
+            />
+          </div>
+        )}
 
         {state.status === "done" && (
           <div className="rounded-lg border border-green-500/30 bg-green-500/[0.06] px-3 py-2.5 space-y-2">
@@ -499,48 +536,6 @@ function PodcastOutputCard({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function LiveRun({
-  state,
-  onCancel,
-}: {
-  state: PodcastRunState;
-  onCancel: () => void;
-}) {
-  const featured =
-    state.stages.find((s) => s.status === "running")?.label ||
-    state.currentLabel ||
-    "Starting…";
-  return (
-    <div className="rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5 space-y-2">
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-        <span className="text-xs font-medium text-primary flex-1 truncate">
-          {featured}
-        </span>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {Math.round(state.progress)}%
-        </span>
-        <button
-          onClick={onCancel}
-          className="text-muted-foreground hover:text-foreground"
-          title="Cancel"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full bg-primary transition-all duration-500"
-          style={{ width: `${Math.max(4, Math.round(state.progress))}%` }}
-        />
-      </div>
-      {state.audioUrl && (
-        <audio controls src={state.audioUrl} className="w-full h-9" />
-      )}
     </div>
   );
 }
@@ -867,7 +862,7 @@ function SlidesOutputCard({
               Close
             </button>
           </div>
-          <div className="h-[440px] relative bg-background">
+          <div className="relative bg-background p-2">
             <Slideshow slides={deck.slides ?? []} theme={deck.theme ?? {}} />
           </div>
         </div>

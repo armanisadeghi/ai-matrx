@@ -127,7 +127,7 @@ export function ScopeContextItemsHub({
   const total = rows?.length ?? 0;
 
   return (
-    <div className="space-y-6 pr-14">
+    <div className="space-y-6">
       {/* Header */}
       <Card className="p-6">
         <div className="flex items-start gap-3">

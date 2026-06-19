@@ -170,7 +170,7 @@ export function ScopeEditView({
   }
 
   return (
-    <div className="space-y-6 pr-14">
+    <div className="space-y-6">
       {/* Header */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">

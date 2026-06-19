@@ -46,7 +46,6 @@ import {
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ReorderDialog } from "./ReorderDialog";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -57,7 +56,6 @@ import {
   contextItemHref,
   contextItemsHref,
   orgScopesHref,
-  scopeTypeHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
@@ -262,21 +260,7 @@ function ContextItemsTypeView({
   const color = resolveColor(scopeType);
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={orgScopesHref(orgSlugOrId)}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          { label: "Context items" },
-        ]}
-      />
-
+    <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
@@ -395,15 +379,7 @@ function ContextItemsOrgView({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={orgScopesHref(orgSlugOrId)}
-        trail={[{ label: "Context items" }]}
-      />
-
+    <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">

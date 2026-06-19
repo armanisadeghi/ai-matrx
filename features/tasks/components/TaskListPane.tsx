@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 type ListViewMode = "list" | "table";
 const LIST_VIEW_STORAGE_KEY = "tasks-list-view";
@@ -52,6 +53,10 @@ export default function TaskListPane() {
   const groups = useAppSelector(selectGroupedFilteredTasks);
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
+  const {
+    inputRef: quickAddInputRef,
+    scheduleRefocus: scheduleQuickAddRefocus,
+  } = useRefocusInputAfterAsync(isCreatingTask);
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const activeProject = useAppSelector(selectActiveProject);
   const projects = useAppSelector(selectProjects);
@@ -127,7 +132,10 @@ export default function TaskListPane() {
         scopeIds: defaultScopeIds,
       }),
     ).unwrap();
-    if (newId) dispatch(setSelectedTaskId(newId));
+    if (newId) {
+      dispatch(setSelectedTaskId(newId));
+      scheduleQuickAddRefocus();
+    }
   };
 
   const toggleGroup = (key: string) => {
@@ -177,6 +185,7 @@ export default function TaskListPane() {
         </div>
         <form onSubmit={handleAddTask} className="flex gap-1 flex-1 min-w-0">
           <Input
+            ref={quickAddInputRef}
             type="text"
             value={newTaskTitle}
             onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}

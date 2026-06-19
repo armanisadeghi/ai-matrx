@@ -161,7 +161,7 @@ export function ScopeItemDetail({
       : null;
 
   return (
-    <div className="space-y-6 pr-14">
+    <div className="space-y-6">
       {/* Item identity + value for this scope */}
       <Card className="p-6 space-y-5">
         <div className="flex items-start justify-between gap-4">

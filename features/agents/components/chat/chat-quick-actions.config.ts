@@ -34,10 +34,10 @@ export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   },
   {
     id: "3d1da24e-8907-442a-a4d9-0db9428c1ece",
-    label: "Tell me today's news",
+    label: "I want fair news",
   },
   {
-    id: "3ca61863-43cf-49cd-8da5-7e0a4b192867",
+    id: "96b75336-5447-4277-b5ec-0336241cffe2",
     label: "Help me write something",
   },
   {

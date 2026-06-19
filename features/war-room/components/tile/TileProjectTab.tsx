@@ -18,6 +18,7 @@ import {
 } from "@/features/projects/components/ProjectInlineEditors";
 import { useTileProject } from "@/features/war-room/hooks/useTileProject";
 import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
+import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TileProjectTaskList } from "./TileProjectTaskList";
 import { TileEmbeddedTaskView } from "./TileEmbeddedTaskView";
 import { cn } from "@/lib/utils";
@@ -168,6 +169,13 @@ function TileProjectOverview({
           compact ? "pl-0" : "pl-9",
         )}
       >
+        <ProjectCopyForAiButton
+          projectId={projectId}
+          projectName={project.name}
+          location="War Room — project tile"
+          size="sm"
+          className="h-7 border border-border/60 px-2 hover:bg-accent"
+        />
         <Button
           asChild
           size="sm"

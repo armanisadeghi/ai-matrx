@@ -70,14 +70,12 @@ import {
   resolveColor,
   SCOPE_ICON_SURFACE,
 } from "@/features/scope-system/constants/scope-colors";
-import { ScopeBreadcrumb } from "@/features/scope-system/components/ScopeBreadcrumb";
 import {
   orgScopesHref,
   scopeHref,
   scopeSeg,
   contextItemsHref,
   contextItemHref,
-  scopeTypeEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
@@ -219,15 +217,7 @@ export function ScopesList({
   const typeSuggestions = sorted.flatMap((s) => suggestions.forScope(s.id));
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={orgScopesHref(orgSlugOrId)}
-        trail={[{ label: scopeType.label_plural }]}
-      />
-
+    <div className="space-y-6">
       {/* ── Identity header: "<ORG> / <Type plural>" ─────────────── */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
@@ -268,12 +258,6 @@ export function ScopesList({
                 title="Quick edit"
               >
                 <Settings2 className="h-3.5 w-3.5" />
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href={scopeTypeEditHref(orgSlugOrId, scopeType)}>
-                  <Settings2 className="h-3.5 w-3.5 mr-1.5" />
-                  Edit {scopeType.label_singular} Settings
-                </Link>
               </Button>
             </div>
           )}

@@ -3,15 +3,14 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
-  Building2,
+  Building,
   Check,
   ChevronDown,
   ChevronRight,
-  Home,
-  LayoutDashboard,
+  MoreHorizontal,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +19,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/styles/themes/utils";
 import {
   orgScopesHref,
@@ -38,11 +46,7 @@ export interface ScopeBreadcrumbTrailNode {
   label: string;
   /** Where clicking the crumb's TEXT navigates (the level itself). */
   href?: string;
-  /**
-   * Sibling links for the crumb's dropdown. When present, a chevron button is
-   * rendered next to the text; clicking it opens the sibling switcher. The text
-   * itself still navigates via `href`.
-   */
+  /** Sibling links for the crumb's dropdown / drawer section. */
   options?: ScopeCrumbOption[];
   /** Optional header label shown above the options list (e.g. "Patients"). */
   optionsLabel?: string;
@@ -56,30 +60,36 @@ export interface ScopeBreadcrumbProps {
   orgName: string;
   orgIsPersonal: boolean;
   trail?: ScopeBreadcrumbTrailNode[];
-  /** When set, Back navigates here instead of `router.back()` — use on hub pages to avoid history traps. */
+  /** When set, Back navigates here instead of `router.back()`. */
   backHref?: string;
   /** Where the org segment links. Defaults to the org scopes hub. */
   orgLinkHref?: string;
   className?: string;
   actions?: React.ReactNode;
-  /**
-   * Sibling-org options. When provided, the org crumb gets a switcher dropdown.
-   * Source these via `useBreadcrumbOrgOptions`.
-   */
+  /** Sibling-org options. Source via `useBreadcrumbOrgOptions`. */
   orgOptions?: ScopeCrumbOption[];
   /** Where the org crumb's TEXT links. Defaults to the org home page. */
   orgHomeHref?: string;
-  /**
-   * Renders an explicit "Scopes" hub crumb between the org and the trail so the
-   * path is complete (Org › Scopes › Type › Scope › Item).
-   */
+  /** Renders an explicit "Scopes" hub crumb between the org and the trail. */
   showScopesCrumb?: boolean;
   scopesHubHref?: string;
   /** Single-line layout (no wrapping) — use when injected into the header bar. */
   singleLine?: boolean;
 }
 
-/** Shared text-link styling: cursor pointer + underline on hover. */
+/** Normalized crumb used by both the desktop row and the mobile drawer. */
+interface Level {
+  key: string;
+  label: string;
+  href?: string;
+  icon?: React.ReactNode;
+  options?: ScopeCrumbOption[];
+  optionsLabel?: string;
+  optionsAllHref?: string;
+  optionsAllLabel?: string;
+  isCurrent?: boolean;
+}
+
 const CRUMB_LINK =
   "truncate max-w-[12rem] cursor-pointer text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors";
 
@@ -150,64 +160,115 @@ function OptionsMenu({
   );
 }
 
-function Crumb({
-  label,
-  href,
-  icon,
-  isCurrent,
-  options,
-  optionsLabel,
-  optionsAllHref,
-  optionsAllLabel,
-}: {
-  label: string;
-  href?: string;
-  icon?: React.ReactNode;
-  isCurrent?: boolean;
-  options?: ScopeCrumbOption[];
-  optionsLabel?: string;
-  optionsAllHref?: string;
-  optionsAllLabel?: string;
-}) {
-  const text = href ? (
+function DesktopCrumb({ level }: { level: Level }) {
+  const text = level.href ? (
     <Link
-      href={href}
+      href={level.href}
       className={cn(
         "inline-flex items-center gap-1.5",
         CRUMB_LINK,
-        isCurrent && "text-foreground font-medium",
+        level.isCurrent && "text-foreground font-medium",
       )}
     >
-      {icon}
-      <span className="truncate">{label}</span>
+      {level.icon}
+      <span className="truncate">{level.label}</span>
     </Link>
   ) : (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 truncate max-w-[12rem]",
-        isCurrent ? "text-foreground font-medium" : "text-muted-foreground",
+        level.isCurrent
+          ? "text-foreground font-medium"
+          : "text-muted-foreground",
       )}
     >
-      {icon}
-      <span className="truncate">{label}</span>
+      {level.icon}
+      <span className="truncate">{level.label}</span>
     </span>
   );
 
-  if (options && options.length > 0) {
+  if (level.options && level.options.length > 0) {
     return (
       <span className="inline-flex items-center gap-0.5 min-w-0">
         {text}
         <OptionsMenu
-          triggerAriaLabel={`Switch ${optionsLabel ?? label}`}
-          headerLabel={optionsLabel}
-          options={options}
-          allHref={optionsAllHref}
-          allLabel={optionsAllLabel}
+          triggerAriaLabel={`Switch ${level.optionsLabel ?? level.label}`}
+          headerLabel={level.optionsLabel}
+          options={level.options}
+          allHref={level.optionsAllHref}
+          allLabel={level.optionsAllLabel}
         />
       </span>
     );
   }
   return text;
+}
+
+/** iPhone-style bottom-sheet navigator: every level + its siblings, all tappable. */
+function MobileBreadcrumbDrawer({ levels }: { levels: Level[] }) {
+  const current = levels[levels.length - 1];
+  return (
+    <Drawer>
+      <DrawerTrigger asChild>
+        <button
+          type="button"
+          aria-label="Navigate"
+          className="inline-flex min-w-0 items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-foreground hover:bg-accent/60 active:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          {current?.icon}
+          <span className="truncate max-w-[55vw]">{current?.label ?? ""}</span>
+          <MoreHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </button>
+      </DrawerTrigger>
+      <DrawerContent className="max-h-[85dvh]">
+        <DrawerHeader className="pb-2">
+          <DrawerTitle className="text-base">Navigate</DrawerTitle>
+        </DrawerHeader>
+        <div className="overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {levels.map((level) => {
+            const rows: { href: string; label: string; active?: boolean }[] =
+              level.options && level.options.length > 0
+                ? level.options.map((o) => ({
+                    href: o.href,
+                    label: o.label,
+                    active: o.active,
+                  }))
+                : level.href
+                  ? [{ href: level.href, label: level.label, active: true }]
+                  : [];
+            if (rows.length === 0) return null;
+            return (
+              <div key={level.key} className="border-t border-border/60 py-1">
+                <p className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {level.optionsLabel ?? level.label}
+                </p>
+                {rows.map((row) => (
+                  <DrawerClose asChild key={row.href}>
+                    <Link
+                      href={row.href}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 text-base",
+                        "hover:bg-accent active:bg-accent",
+                        row.active && "bg-accent/50",
+                      )}
+                    >
+                      <Check
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          row.active ? "opacity-100 text-primary" : "opacity-0",
+                        )}
+                      />
+                      <span className="truncate">{row.label}</span>
+                    </Link>
+                  </DrawerClose>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
 }
 
 export function ScopeBreadcrumb({
@@ -226,57 +287,56 @@ export function ScopeBreadcrumb({
   singleLine = false,
 }: ScopeBreadcrumbProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
+
+  const orgLabel = orgIsPersonal ? "Personal workspace" : orgName;
+
+  // Normalize org + optional Scopes hub + trail into a single level list.
+  const levels: Level[] = [
+    {
+      key: "org",
+      label: orgLabel,
+      href: orgOptions ? orgHomeHref : orgLinkHref,
+      options: orgOptions,
+      optionsLabel: orgOptions ? "Switch organization" : undefined,
+    },
+    ...(showScopesCrumb
+      ? [{ key: "scopes", label: "Scopes", href: scopesHubHref } as Level]
+      : []),
+    ...trail.map((node, i) => ({
+      key: `t${i}`,
+      label: node.label,
+      href: node.href,
+      options: node.options,
+      optionsLabel: node.optionsLabel,
+      optionsAllHref: node.optionsAllHref,
+      optionsAllLabel: node.optionsAllLabel,
+      isCurrent: i === trail.length - 1,
+    })),
+  ];
 
   const backControl = (
-    <div className="flex items-center gap-0.5 -ml-1 shrink-0">
-      {backHref ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="h-7 w-7"
-          aria-label="Back"
-          title="Back"
-        >
-          <Link href={backHref}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-      ) : (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-          className="h-7 w-7"
-          aria-label="Back"
-          title="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        size="icon"
-        asChild
-        className="h-7 w-7"
-        aria-label="Dashboard"
-        title="Dashboard"
-      >
-        <Link href="/dashboard">
-          <LayoutDashboard className="h-4 w-4" />
-        </Link>
-      </Button>
+    <div className="flex items-center -ml-1.5 shrink-0">
+      <ChevronLeftTapButton
+        variant="transparent"
+        ariaLabel="Back"
+        href={backHref}
+        onClick={backHref ? undefined : () => router.back()}
+      />
+      <TapTargetButtonTransparent
+        ariaLabel="Organizations"
+        href="/organizations"
+        icon={<Building className="h-4 w-4" />}
+      />
     </div>
   );
 
-  const orgIcon = orgIsPersonal ? (
-    <Home className="h-3.5 w-3.5 shrink-0" />
+  const content = isMobile ? (
+    <div className="flex items-center gap-1 min-w-0">
+      {backControl}
+      <MobileBreadcrumbDrawer levels={levels} />
+    </div>
   ) : (
-    <Building2 className="h-3.5 w-3.5 shrink-0" />
-  );
-  const orgLabel = orgIsPersonal ? "Personal workspace" : orgName;
-
-  const crumbs = (
     <div
       className={cn(
         "flex items-center gap-1.5 text-sm min-w-0",
@@ -285,38 +345,17 @@ export function ScopeBreadcrumb({
     >
       {backControl}
       <span className="text-muted-foreground/50 shrink-0">·</span>
-      <Crumb
-        label={orgLabel}
-        href={orgOptions ? orgHomeHref : orgLinkHref}
-        icon={orgIcon}
-        options={orgOptions}
-        optionsLabel="Switch organization"
-      />
-      {showScopesCrumb && (
-        <span className="inline-flex items-center gap-1.5 min-w-0">
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-          <Link href={scopesHubHref} className={CRUMB_LINK}>
-            Scopes
-          </Link>
-        </span>
-      )}
-      {trail.map((node, i) => {
-        const isLast = i === trail.length - 1;
-        return (
-          <span key={i} className="inline-flex items-center gap-1.5 min-w-0">
+      {levels.map((level, i) => (
+        <span
+          key={level.key}
+          className="inline-flex items-center gap-1.5 min-w-0"
+        >
+          {i > 0 && (
             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-            <Crumb
-              label={node.label}
-              href={node.href}
-              isCurrent={isLast}
-              options={node.options}
-              optionsLabel={node.optionsLabel}
-              optionsAllHref={node.optionsAllHref}
-              optionsAllLabel={node.optionsAllLabel}
-            />
-          </span>
-        );
-      })}
+          )}
+          <DesktopCrumb level={level} />
+        </span>
+      ))}
     </div>
   );
 
@@ -329,11 +368,11 @@ export function ScopeBreadcrumb({
           className,
         )}
       >
-        {crumbs}
+        {content}
         <div className="flex items-center gap-2 shrink-0">{actions}</div>
       </div>
     );
   }
 
-  return <div className={className}>{crumbs}</div>;
+  return <div className={className}>{content}</div>;
 }

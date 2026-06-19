@@ -6,10 +6,11 @@ import {
   XCircle,
   Smartphone,
   Monitor,
-  ExternalLink,
   AlertTriangle,
   Search,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { BasicInput } from "@/components/ui/input";
 import { BasicTextarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { usePublicScraperContent } from "@/features/public-chat/hooks/usePublicScraperContent";
+import {
+  extractSeoFromScrapeResponse,
+  normalizeScrapeUrl,
+} from "./extract-seo-from-scrape";
 
 function parseDisplayUrl(url: string): string {
   if (!url) return "example.com";
@@ -30,10 +36,14 @@ function parseDisplayUrl(url: string): string {
 function parseBreadcrumb(url: string): string {
   if (!url) return " › category › page";
   try {
-    const segs = new URL(url.startsWith("http") ? url : `https://${url}`)
-      .pathname.split("/")
+    const segs = new URL(
+      url.startsWith("http") ? url : `https://${url}`,
+    ).pathname
+      .split("/")
       .filter(Boolean);
-    return segs.length ? " › " + segs.slice(-3).join(" › ") : " › category › page";
+    return segs.length
+      ? " › " + segs.slice(-3).join(" › ")
+      : " › category › page";
   } catch {
     return " › category › page";
   }
@@ -106,6 +116,7 @@ export function MetaInputWidget() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const { scrapeUrl, isLoading: isFetching } = usePublicScraperContent();
   const [metrics, setMetrics] = useState({
     titlePx: 0,
     descPx: 0,
@@ -159,6 +170,34 @@ export function MetaInputWidget() {
   const inputClass =
     "text-base md:text-sm h-9 border-border bg-background text-foreground";
 
+  const handleFetchMetadata = useCallback(async () => {
+    if (!normalizeScrapeUrl(url)) {
+      toast.error("Enter a valid website URL");
+      return;
+    }
+
+    try {
+      const result = await scrapeUrl(url.trim());
+      const extracted = extractSeoFromScrapeResponse(result.rawResponse);
+
+      if (extracted.url) setUrl(extracted.url);
+      if (extracted.title) setTitle(extracted.title);
+      if (extracted.description) setDescription(extracted.description);
+
+      if (!extracted.title && !extracted.description) {
+        toast.warning(
+          "Page scraped, but no meta title or description was found",
+        );
+      } else {
+        toast.success("Metadata loaded from page");
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch metadata";
+      toast.error(message);
+    }
+  }, [url, scrapeUrl]);
+
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
       <aside className="space-y-4 xl:col-span-4">
@@ -176,18 +215,30 @@ export function MetaInputWidget() {
                   id="meta-url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com/category/page"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && url.trim() && !isFetching) {
+                      e.preventDefault();
+                      void handleFetchMetadata();
+                    }
+                  }}
+                  placeholder="allgreenrecycling.com"
                   className={cn(inputClass, "min-w-0 flex-1")}
                 />
                 <Button
                   type="button"
                   size="icon"
                   variant="default"
-                  disabled={!url}
+                  disabled={!url.trim() || isFetching}
                   className="h-9 w-9 shrink-0"
-                  aria-label="Open URL"
+                  aria-label="Fetch metadata from URL"
+                  title="Fetch metadata from URL"
+                  onClick={() => void handleFetchMetadata()}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  {isFetching ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Search className="h-3.5 w-3.5" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -241,7 +292,7 @@ export function MetaInputWidget() {
                 rows={4}
                 className={cn(
                   inputClass,
-                  "min-h-[5.5rem] resize-none py-2 leading-normal",
+                  "min-h-[6rem] resize-none py-2 leading-normal",
                 )}
               />
             </div>
@@ -275,7 +326,11 @@ export function MetaInputWidget() {
                     detail={`${metrics.titleChars}/60`}
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <DeviceCheck icon={Monitor} label="Desktop" ok={titleDesktopOk} />
+                    <DeviceCheck
+                      icon={Monitor}
+                      label="Desktop"
+                      ok={titleDesktopOk}
+                    />
                     <DeviceCheck
                       icon={Smartphone}
                       label="Mobile"
@@ -308,7 +363,11 @@ export function MetaInputWidget() {
                     detail={`${metrics.descChars}/160`}
                   />
                   <div className="grid grid-cols-2 gap-2">
-                    <DeviceCheck icon={Monitor} label="Desktop" ok={descDesktopOk} />
+                    <DeviceCheck
+                      icon={Monitor}
+                      label="Desktop"
+                      ok={descDesktopOk}
+                    />
                     <DeviceCheck
                       icon={Smartphone}
                       label="Mobile"
@@ -424,8 +483,9 @@ export function MetaInputWidget() {
               <div className="max-w-[600px] text-sm leading-[1.58] text-muted-foreground">
                 {description || (
                   <span>
-                    Your meta description will appear here. This is usually taken
-                    from the Meta Description tag if relevant to the query.
+                    Your meta description will appear here. This is usually
+                    taken from the Meta Description tag if relevant to the
+                    query.
                   </span>
                 )}
               </div>
@@ -484,7 +544,9 @@ export function MetaInputWidget() {
         {hasData ? (
           <Card className="overflow-hidden rounded-2xl shadow-sm">
             <CardHeader className="space-y-0 border-b border-border px-5 py-4">
-              <CardTitle className={sectionTitleClass}>Recommendations</CardTitle>
+              <CardTitle className={sectionTitleClass}>
+                Recommendations
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2.5 px-5 py-4">
               {title ? (
@@ -512,8 +574,9 @@ export function MetaInputWidget() {
                     <div className="flex items-start gap-2.5 text-xs text-warning">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
-                        Title has <strong>{metrics.titleChars} characters</strong>{" "}
-                        — SEO best practice is ≤60 chars.
+                        Title has{" "}
+                        <strong>{metrics.titleChars} characters</strong> — SEO
+                        best practice is ≤60 chars.
                       </span>
                     </div>
                   ) : null}
@@ -534,8 +597,8 @@ export function MetaInputWidget() {
                     <div className="flex items-start gap-2.5 text-xs text-destructive">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
-                        Description exceeds <strong>920px</strong> desktop limit —
-                        may be truncated.
+                        Description exceeds <strong>920px</strong> desktop limit
+                        — may be truncated.
                       </span>
                     </div>
                   ) : null}
@@ -543,8 +606,8 @@ export function MetaInputWidget() {
                     <div className="flex items-start gap-2.5 text-xs text-destructive">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
-                        Description exceeds <strong>680px</strong> mobile limit —
-                        may be truncated on mobile.
+                        Description exceeds <strong>680px</strong> mobile limit
+                        — may be truncated on mobile.
                       </span>
                     </div>
                   ) : null}
@@ -553,8 +616,8 @@ export function MetaInputWidget() {
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
                         Description has{" "}
-                        <strong>{metrics.descChars} characters</strong> — SEO best
-                        practice is ≤160 chars.
+                        <strong>{metrics.descChars} characters</strong> — SEO
+                        best practice is ≤160 chars.
                       </span>
                     </div>
                   ) : null}

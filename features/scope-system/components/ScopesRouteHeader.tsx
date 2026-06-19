@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectOrgBySlugOrId } from "@/features/agent-context/redux/organizationsSlice";
@@ -12,6 +15,7 @@ import {
   selectScopeTypesByOrg,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
+  deleteScope,
   fetchScopes,
   selectScopeBySlugOrId,
   selectScopesByType,
@@ -25,32 +29,65 @@ import {
   ScopeBreadcrumb,
   type ScopeBreadcrumbTrailNode,
 } from "@/features/scope-system/components/ScopeBreadcrumb";
+import {
+  HeaderActionGroup,
+  type HeaderAction,
+} from "@/features/scope-system/components/HeaderActionGroup";
 import { useBreadcrumbOrgOptions } from "@/features/scope-system/hooks/useBreadcrumbOrgOptions";
 import {
+  canManageSettings,
+  type OrgRole,
+} from "@/features/organizations/types";
+import {
+  orgHref,
+  orgScopesHref,
   scopeHref,
   scopeItemHref,
   scopeTypeHref,
+  scopeEditHref,
+  scopeTypeEditHref,
+  contextItemsHref,
+  contextItemHref,
+  contextItemEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 /**
- * Layout-level header for the scope-detail route family
- * (`/organizations/[orgId]/scopes/[typeId]/[scopeId]/**`). Reads the route
- * params + pathname, resolves the org / scope type / scope / item from Redux,
- * and injects a full-path breadcrumb (with per-level sibling switchers) into the
- * shell header center slot — so it never consumes page body space.
+ * The single layout-level header for the org Scope & Context system. Mounted once
+ * at `app/(core)/organizations/[orgId]/layout.tsx`, it self-gates by pathname so it
+ * only renders on the scope/context subtree:
  *
- * Self-sources its data: it triggers the same fetches the pages do, keeping the
- * header warm across in-route navigation regardless of which page is mounted.
+ *   /organizations/[orgId]/scopes                                  (hub)
+ *   /organizations/[orgId]/scopes/[typeId]                         (type)
+ *   /organizations/[orgId]/scopes/[typeId]/edit                    (type edit)
+ *   /organizations/[orgId]/scopes/[typeId]/context-items[/...]     (type context items)
+ *   /organizations/[orgId]/scopes/[typeId]/[scopeId][/...]         (scope family)
+ *   /organizations/[orgId]/context-items                           (org context items)
+ *
+ * Everything else under [orgId] (projects, tasks, notes, files, …) renders nothing.
+ * Reads the route params + pathname, resolves org / type / scope / item from Redux,
+ * and injects a full-path breadcrumb (with per-level sibling switchers) into the
+ * shell header center slot plus the unified Hub/Edit/Add/Delete action group into
+ * the right slot — so neither consumes page body space.
  */
 export function ScopesRouteHeader() {
   const params = useParams();
   const pathname = usePathname() ?? "";
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
 
   const orgSlugOrId = params.orgId as string;
   const typeParam = params.typeId as string | undefined;
   const scopeParam = params.scopeId as string | undefined;
   const itemParam = params.itemId as string | undefined;
+
+  // Path shape after `/organizations/<org>`: ["scopes", type, …] etc.
+  const base = `/organizations/${orgSlugOrId}`;
+  const segs = (pathname.startsWith(base) ? pathname.slice(base.length) : "")
+    .split("/")
+    .filter(Boolean);
+  const top = segs[0];
+  const active = top === "scopes" || top === "context-items";
 
   const selectOrg = useMemo(
     () => (state: RootState) => selectOrgBySlugOrId(state, orgSlugOrId),
@@ -71,10 +108,7 @@ export function ScopesRouteHeader() {
   const resolvedTypeId = scopeType?.id;
 
   const selectAllTypes = useMemo(
-    () => (state: RootState) =>
-      orgId
-        ? selectScopeTypesByOrg(state, orgId)
-        : selectScopeTypesByOrg(state, ""),
+    () => (state: RootState) => selectScopeTypesByOrg(state, orgId ?? ""),
     [orgId],
   );
   const allTypes = useAppSelector(selectAllTypes);
@@ -89,10 +123,7 @@ export function ScopesRouteHeader() {
   const scope = useAppSelector(selectScope);
 
   const selectSiblingScopes = useMemo(
-    () => (state: RootState) =>
-      resolvedTypeId
-        ? selectScopesByType(state, resolvedTypeId)
-        : selectScopesByType(state, ""),
+    () => (state: RootState) => selectScopesByType(state, resolvedTypeId ?? ""),
     [resolvedTypeId],
   );
   const siblingScopes = useAppSelector(selectSiblingScopes);
@@ -107,45 +138,79 @@ export function ScopesRouteHeader() {
   const item = useAppSelector(selectItem);
 
   const selectItems = useMemo(
-    () => (state: RootState) =>
-      resolvedTypeId
-        ? selectItemsByType(state, resolvedTypeId)
-        : selectItemsByType(state, ""),
+    () => (state: RootState) => selectItemsByType(state, resolvedTypeId ?? ""),
     [resolvedTypeId],
   );
   const items = useAppSelector(selectItems);
 
   useEffect(() => {
-    if (orgId) dispatch(fetchScopeTypes(orgId));
-  }, [dispatch, orgId]);
+    if (active && orgId) dispatch(fetchScopeTypes(orgId));
+  }, [active, dispatch, orgId]);
 
   useEffect(() => {
-    if (orgId && resolvedTypeId) {
+    if (active && orgId && resolvedTypeId) {
       dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
       dispatch(listScopeTypeItems(resolvedTypeId));
     }
-  }, [dispatch, orgId, resolvedTypeId]);
+  }, [active, dispatch, orgId, resolvedTypeId]);
 
-  if (!org) return null;
+  if (!active || !org) return null;
 
   const isEdit = pathname.endsWith("/edit");
-  const isContextItems = pathname.endsWith("/context-items");
+  const hasScope = Boolean(scopeParam);
+  const isOrgContextItems = top === "context-items";
+  const isTypeContextItems =
+    top === "scopes" && segs[2] === "context-items" && !hasScope;
+
+  const canManage = org.role ? canManageSettings(org.role as OrgRole) : false;
 
   const trail: ScopeBreadcrumbTrailNode[] = [];
+  const actions: (HeaderAction | false)[] = [];
+  let backHref: string | undefined;
 
-  if (scopeType) {
-    trail.push({
-      label: scopeType.label_plural,
-      href: scopeTypeHref(orgSlugOrId, scopeType),
-      options: allTypes.map((t) => ({
-        label: t.label_plural,
-        href: scopeTypeHref(orgSlugOrId, t),
-        active: t.id === scopeType.id,
-      })),
-      optionsLabel: "Scope types",
+  const typeNode: ScopeBreadcrumbTrailNode | null = scopeType
+    ? {
+        label: scopeType.label_plural,
+        href: scopeTypeHref(orgSlugOrId, scopeType),
+        options: allTypes.map((t) => ({
+          label: t.label_plural,
+          href: scopeTypeHref(orgSlugOrId, t),
+          active: t.id === scopeType.id,
+        })),
+        optionsLabel: "Scope types",
+      }
+    : null;
+
+  async function handleDeleteScope() {
+    if (!scope || !scopeType) return;
+    const ok = await confirm({
+      title: `Delete ${scope.name}?`,
+      description: `This permanently deletes “${scope.name}” and all its values. This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
     });
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await dispatch(deleteScope(scope.id)).unwrap();
+      toast.success(`Deleted “${scope.name}”`);
+      router.push(scopeTypeHref(orgSlugOrId, scopeType));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
+    }
+  }
 
-    if (scope) {
+  if (isOrgContextItems) {
+    // /organizations/[orgId]/context-items — every type's items, grouped.
+    trail.push({ label: "Context items" });
+    backHref = orgHref(orgSlugOrId);
+  } else if (top === "scopes" && scopeType && typeNode) {
+    const tNode = typeNode;
+
+    if (hasScope && scope) {
+      // ── Scope family: type › scope › (edit | context-items | item) ──────
+      trail.push(tNode);
       trail.push({
         label: scope.name,
         href: scopeHref(orgSlugOrId, scopeType, scope),
@@ -159,6 +224,7 @@ export function ScopesRouteHeader() {
         optionsAllLabel: `All ${scopeType.label_plural.toLowerCase()}`,
       });
 
+      const scopeIsContextItems = pathname.endsWith("/context-items");
       if (itemParam && item) {
         trail.push({
           label: item.display_name,
@@ -174,34 +240,158 @@ export function ScopesRouteHeader() {
         });
       } else if (isEdit) {
         trail.push({ label: "Edit" });
-      } else if (isContextItems) {
+      } else if (scopeIsContextItems) {
         trail.push({ label: "Context items" });
       }
-    }
-  }
 
-  // Back goes to the immediate parent level for deterministic behavior.
-  let backHref: string | undefined;
-  if (scopeType && scope) {
-    const hasLeafAfterScope = Boolean(itemParam) || isEdit || isContextItems;
-    backHref = hasLeafAfterScope
-      ? scopeHref(orgSlugOrId, scopeType, scope)
-      : scopeTypeHref(orgSlugOrId, scopeType);
+      const isDetail = !itemParam && !isEdit && !scopeIsContextItems;
+      if (isDetail) {
+        actions.push({
+          key: "edit",
+          icon: "edit",
+          label: "Edit settings",
+          href: scopeEditHref(orgSlugOrId, scopeType, scope),
+        });
+        actions.push(
+          canManage && {
+            key: "delete",
+            icon: "delete",
+            label: "Delete",
+            danger: true,
+            busy: deleting,
+            onClick: handleDeleteScope,
+          },
+        );
+        backHref = scopeTypeHref(orgSlugOrId, scopeType);
+      } else {
+        actions.push({
+          key: "hub",
+          icon: "hub",
+          label: `${scope.name} hub`,
+          href: scopeHref(orgSlugOrId, scopeType, scope),
+        });
+        if (scopeIsContextItems) {
+          actions.push({
+            key: "edit",
+            icon: "edit",
+            label: "Edit settings",
+            href: scopeEditHref(orgSlugOrId, scopeType, scope),
+          });
+        }
+        if (isEdit) {
+          actions.push(
+            canManage && {
+              key: "delete",
+              icon: "delete",
+              label: "Delete",
+              danger: true,
+              busy: deleting,
+              onClick: handleDeleteScope,
+            },
+          );
+        }
+        backHref = scopeHref(orgSlugOrId, scopeType, scope);
+      }
+    } else if (isTypeContextItems) {
+      // ── Type context items: type › context-items › (item › edit) ────────
+      trail.push(tNode);
+      const ciHref = contextItemsHref(orgSlugOrId, scopeType);
+      if (itemParam && item) {
+        trail.push({ label: "Context items", href: ciHref });
+        trail.push({
+          label: item.display_name,
+          href: contextItemHref(orgSlugOrId, scopeType, item),
+          options: items.map((it) => ({
+            label: it.display_name,
+            href: contextItemHref(orgSlugOrId, scopeType, it),
+            active: it.id === item.id,
+          })),
+          optionsLabel: "Context items",
+          optionsAllHref: ciHref,
+          optionsAllLabel: "All context items",
+        });
+        if (isEdit) trail.push({ label: "Edit" });
+
+        if (isEdit) {
+          actions.push({
+            key: "hub",
+            icon: "hub",
+            label: "Item hub",
+            href: contextItemHref(orgSlugOrId, scopeType, item),
+          });
+          backHref = contextItemHref(orgSlugOrId, scopeType, item);
+        } else {
+          actions.push({
+            key: "hub",
+            icon: "hub",
+            label: "Context items",
+            href: ciHref,
+          });
+          actions.push({
+            key: "edit",
+            icon: "edit",
+            label: "Edit item",
+            href: contextItemEditHref(orgSlugOrId, scopeType, item),
+          });
+          backHref = ciHref;
+        }
+      } else {
+        trail.push({ label: "Context items" });
+        actions.push({
+          key: "hub",
+          icon: "hub",
+          label: `${scopeType.label_singular} hub`,
+          href: scopeTypeHref(orgSlugOrId, scopeType),
+        });
+        backHref = scopeTypeHref(orgSlugOrId, scopeType);
+      }
+    } else if (isEdit) {
+      // ── Type edit ───────────────────────────────────────────────────────
+      trail.push(tNode);
+      trail.push({ label: "Edit" });
+      actions.push({
+        key: "hub",
+        icon: "hub",
+        label: `${scopeType.label_singular} hub`,
+        href: scopeTypeHref(orgSlugOrId, scopeType),
+      });
+      backHref = scopeTypeHref(orgSlugOrId, scopeType);
+    } else {
+      // ── Type page (list of scopes) ──────────────────────────────────────
+      trail.push(tNode);
+      actions.push({
+        key: "edit",
+        icon: "edit",
+        label: `Edit ${scopeType.label_singular} settings`,
+        href: scopeTypeEditHref(orgSlugOrId, scopeType),
+      });
+      backHref = orgScopesHref(orgSlugOrId);
+    }
+  } else if (top === "scopes") {
+    // Scopes hub (no type) — or type still resolving.
+    backHref = orgHref(orgSlugOrId);
   }
 
   return (
-    <PageHeader>
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={org.name}
-        orgIsPersonal={org.is_personal}
-        backHref={backHref}
-        orgOptions={orgOptions}
-        showScopesCrumb
-        trail={trail}
-        singleLine
-        className="w-full"
-      />
-    </PageHeader>
+    <>
+      <PageHeader>
+        <ScopeBreadcrumb
+          orgSlugOrId={orgSlugOrId}
+          orgName={org.name}
+          orgIsPersonal={org.is_personal}
+          backHref={backHref}
+          orgOptions={orgOptions}
+          showScopesCrumb={top === "scopes"}
+          trail={trail}
+          singleLine
+          className="w-full"
+        />
+      </PageHeader>
+      {actions.filter(Boolean).length > 0 && (
+        <PageHeaderRightPortal>
+          <HeaderActionGroup actions={actions} />
+        </PageHeaderRightPortal>
+      )}
+    </>
   );
 }

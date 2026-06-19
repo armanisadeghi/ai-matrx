@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, Loader2, Pencil, Trash2, X as XIcon } from "lucide-react";
+import { Check, Loader2, Pencil, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
   selectScopeBySlugOrId,
   selectScopesLoadedForType,
   updateScope,
-  deleteScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   selectScopeTypeBySlugOrId,
@@ -30,7 +27,6 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
-import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -45,14 +41,11 @@ import {
   scopeTypeHref,
   scopeItemHref,
   scopeContextItemsHref,
-  scopeEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
   orgId: string;
   orgSlugOrId: string;
-  orgName: string;
-  orgIsPersonal: boolean;
   /** Route segment for the scope type — UUID or kebab slug. */
   typeParam: string;
   /** Route segment for the scope — UUID or kebab slug. */
@@ -68,7 +61,6 @@ export function ScopeDetailEditor({
   scopeParam,
   canManage,
 }: ScopeDetailEditorProps) {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   // Both route segments resolve by UUID or kebab slug.
   const scopeType = useAppSelector((s) =>
@@ -100,8 +92,6 @@ export function ScopeDetailEditor({
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
-
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -191,58 +181,11 @@ export function ScopeDetailEditor({
     }
   }
 
-  async function handleDelete() {
-    if (!scope) return;
-    const ok = await confirm({
-      title: `Delete ${scope.name}?`,
-      description: `This permanently deletes “${scope.name}” and all its values. This cannot be undone.`,
-      confirmLabel: "Delete",
-      variant: "destructive",
-    });
-    if (!ok) return;
-    setDeleting(true);
-    try {
-      await dispatch(deleteScope(scope.id)).unwrap();
-      toast.success(`Deleted “${scope.name}”`);
-      router.push(scopeTypeHref(orgSlugOrId, scopeType));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete");
-      setDeleting(false);
-    }
-  }
-
   const filled = rows?.filter((r) => r.has_value).length ?? 0;
   const total = rows?.length ?? 0;
 
   return (
-    <div className="space-y-6 pr-14">
-      <PageHeaderRightPortal>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
-              <Pencil className="h-3.5 w-3.5 mr-1.5" />
-              Edit settings
-            </Link>
-          </Button>
-          {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-            >
-              {deleting ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Delete
-            </Button>
-          )}
-        </div>
-      </PageHeaderRightPortal>
-
+    <div className="space-y-6">
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div

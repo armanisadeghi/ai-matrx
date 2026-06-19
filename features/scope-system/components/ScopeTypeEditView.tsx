@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, Layers, ListChecks, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -14,7 +13,6 @@ import {
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeTypeSettingsForm } from "./forms/ScopeTypeSettingsForm";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -82,46 +80,27 @@ export function ScopeTypeEditView({
   const hubHref = scopeTypeHref(orgSlugOrId, scopeType);
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={hubHref}
-        trail={[
-          { label: scopeType.label_plural, href: hubHref },
-          { label: "Edit" },
-        ]}
-      />
-
+    <div className="space-y-6">
       {/* Header */}
       <Card className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div
-              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
-            >
-              <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {orgIsPersonal ? "Personal workspace" : orgName} · scope type
-              </p>
-              <h1 className="text-2xl font-bold text-foreground leading-tight">
-                Edit {scopeType.label_singular} settings
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                The dimension itself — applies to all{" "}
-                {scopeType.label_plural.toLowerCase()}.
-              </p>
-            </div>
+        <div className="flex items-start gap-3 min-w-0">
+          <div
+            className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+          >
+            <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link href={hubHref}>
-              Open {scopeType.label_singular} hub
-              <ArrowUpRight className="h-3.5 w-3.5 ml-1.5" />
-            </Link>
-          </Button>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {orgIsPersonal ? "Personal workspace" : orgName} · scope type
+            </p>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">
+              Edit {scopeType.label_singular} settings
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              The dimension itself — applies to all{" "}
+              {scopeType.label_plural.toLowerCase()}.
+            </p>
+          </div>
         </div>
       </Card>
 

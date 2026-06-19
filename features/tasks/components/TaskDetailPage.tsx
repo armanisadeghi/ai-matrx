@@ -68,6 +68,7 @@ import {
 } from "@/features/agent-context/components/hierarchy-selection/types";
 import { ScopePicker } from "@/features/agent-context/components/ScopePicker";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface TaskDetailPageProps {
   task: TaskWithProject;
@@ -130,6 +131,8 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -240,6 +243,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
     try {
       await createSubtask(task.id, newSubtask);
       setNewSubtask("");
+      scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
@@ -568,14 +572,19 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
 
             <div className="flex items-center gap-2">
               <Input
+                ref={subtaskInputRef}
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Add a subtask…"
                 disabled={isAddingSubtask}
                 className="text-sm flex-1"
-                onKeyDown={(e) =>
-                  e.key === "Enter" && !e.shiftKey && handleAddSubtask()
-                }
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleAddSubtask();
+                  }
+                }}
               />
               <Button
                 size="icon"

@@ -35,7 +35,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { getProject } from "@/features/projects/service";
-import { useProjectMembers, useProjectUserRole } from "@/features/projects/hooks";
+import {
+  useProjectMembers,
+  useProjectUserRole,
+} from "@/features/projects/hooks";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import type { Project } from "@/features/projects/types";
@@ -55,8 +58,10 @@ import { useContainerInventory } from "@/features/organizations/hooks/useContain
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContainerResourceSheet } from "@/features/organizations/components/ContainerResourceSheet";
 import { ProjectTaskList } from "./ProjectTaskList";
+import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Tasks + projects have their own surfaces; don't double-count them as "resources".
 const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
@@ -73,11 +78,16 @@ export function ProjectWorkspace() {
     slug: string;
     isPersonal: boolean;
   } | null>(null);
-  const [taskCounts, setTaskCounts] = React.useState<{ open: number; done: number }>({
+  const [taskCounts, setTaskCounts] = React.useState<{
+    open: number;
+    done: number;
+  }>({
     open: 0,
     done: 0,
   });
-  const [sheetEntry, setSheetEntry] = React.useState<OrgResourceEntry | null>(null);
+  const [sheetEntry, setSheetEntry] = React.useState<OrgResourceEntry | null>(
+    null,
+  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -130,7 +140,9 @@ export function ProjectWorkspace() {
     () =>
       Object.entries(counts).reduce<number>(
         (sum, [key, c]) =>
-          EXCLUDE_FROM_RESOURCES.has(key) ? sum : sum + (typeof c === "number" ? c : 0),
+          EXCLUDE_FROM_RESOURCES.has(key)
+            ? sum
+            : sum + (typeof c === "number" ? c : 0),
         0,
       ),
     [counts],
@@ -155,7 +167,11 @@ export function ProjectWorkspace() {
           <p className="text-sm text-muted-foreground mb-6">
             This project doesn&apos;t exist or you don&apos;t have access.
           </p>
-          <Button variant="outline" size="sm" onClick={() => router.push("/projects")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/projects")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             All projects
           </Button>
@@ -164,7 +180,9 @@ export function ProjectWorkspace() {
     );
   }
 
-  const kgHref = org ? `/knowledge/graph?org=${encodeURIComponent(org.slug)}` : "/knowledge/graph";
+  const kgHref = org
+    ? `/knowledge/graph?org=${encodeURIComponent(org.slug)}`
+    : "/knowledge/graph";
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
@@ -188,7 +206,11 @@ export function ProjectWorkspace() {
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <InlineProjectName project={project} canEdit={canManageSettings} onPatch={applyPatch} />
+                <InlineProjectName
+                  project={project}
+                  canEdit={canManageSettings}
+                  onPatch={applyPatch}
+                />
                 {role && (
                   <Badge variant="outline" className="text-xs capitalize">
                     You: {role}
@@ -198,26 +220,54 @@ export function ProjectWorkspace() {
 
               {/* Editable meta: status / priority / dates / organization */}
               <div className="mt-3">
-                <ProjectMetaRow project={project} canEdit={canManageSettings} onPatch={applyPatch} />
+                <ProjectMetaRow
+                  project={project}
+                  canEdit={canManageSettings}
+                  onPatch={applyPatch}
+                />
               </div>
 
               {/* Description (always available to edit in place) */}
               <div className="mt-3">
-                <InlineProjectDescription project={project} canEdit={canManageSettings} onPatch={applyPatch} />
+                <InlineProjectDescription
+                  project={project}
+                  canEdit={canManageSettings}
+                  onPatch={applyPatch}
+                />
               </div>
 
               {/* Stats */}
               <div className="flex items-center gap-5 flex-wrap mt-4">
-                <Stat icon={<ListTodo className="h-4 w-4" />} value={taskCounts.open} label="open" />
-                <Stat icon={<ListTodo className="h-4 w-4" />} value={taskCounts.done} label="done" />
-                <Stat icon={<Boxes className="h-4 w-4" />} value={countsLoading ? "…" : totalResources} label="resources" />
-                <Stat icon={<Users className="h-4 w-4" />} value={members.length} label={members.length === 1 ? "member" : "members"} />
+                <Stat
+                  icon={<ListTodo className="h-4 w-4" />}
+                  value={taskCounts.open}
+                  label="open"
+                />
+                <Stat
+                  icon={<ListTodo className="h-4 w-4" />}
+                  value={taskCounts.done}
+                  label="done"
+                />
+                <Stat
+                  icon={<Boxes className="h-4 w-4" />}
+                  value={countsLoading ? "…" : totalResources}
+                  label="resources"
+                />
+                <Stat
+                  icon={<Users className="h-4 w-4" />}
+                  value={members.length}
+                  label={members.length === 1 ? "member" : "members"}
+                />
               </div>
-
             </div>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex items-center gap-2">
+                <ProjectCopyForAiButton
+                  projectId={project.id}
+                  projectName={project.name}
+                  location="Projects — project workspace"
+                />
                 <Button asChild variant="outline" size="sm">
                   <Link href={kgHref}>
                     <Network className="h-4 w-4 mr-1.5" />
@@ -255,10 +305,14 @@ export function ProjectWorkspace() {
           <div className="flex items-center gap-2">
             <Boxes className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-semibold">Associated resources</h2>
-            <span className="text-xs text-muted-foreground">Everything linked to this project</span>
+            <span className="text-xs text-muted-foreground">
+              Everything linked to this project
+            </span>
           </div>
           {CONTENT_ROLES.map((r) => {
-            const entries = entriesByRole(r.id).filter((e) => !EXCLUDE_FROM_RESOURCES.has(e.key));
+            const entries = entriesByRole(r.id).filter(
+              (e) => !EXCLUDE_FROM_RESOURCES.has(e.key),
+            );
             return (
               <OrgResourceRoleSection
                 key={r.id}
@@ -278,14 +332,24 @@ export function ProjectWorkspace() {
             <h2 className="text-base font-semibold">Scopes</h2>
             <div className="flex items-center gap-1">
               {role && (
-                <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                >
                   <Link href={`/projects/${project.id}/settings#scopes`}>
                     <Pencil className="h-3.5 w-3.5 mr-1.5" />
                     Edit scopes
                   </Link>
                 </Button>
               )}
-              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
                 <Link href={kgHref}>
                   Knowledge graph
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -325,11 +389,21 @@ export function ProjectWorkspace() {
   );
 }
 
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: React.ReactNode; label: string }) {
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: React.ReactNode;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-sm font-semibold text-foreground tabular-nums">{value}</span>
+      <span className="text-sm font-semibold text-foreground tabular-nums">
+        {value}
+      </span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );

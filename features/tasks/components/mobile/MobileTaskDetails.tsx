@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TaskContextPicker } from "../TaskContextSection";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface MobileTaskDetailsProps {
   task: any;
@@ -74,6 +75,8 @@ export default function MobileTaskDetails({
   const [isDirty, setIsDirty] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Update local state when task changes
@@ -144,6 +147,7 @@ export default function MobileTaskDetails({
     try {
       await createSubtask(task.id, newSubtask);
       setNewSubtask("");
+      scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
@@ -428,6 +432,7 @@ export default function MobileTaskDetails({
               ))}
               <div className="flex items-center gap-2 mt-2">
                 <Input
+                  ref={subtaskInputRef}
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
                   placeholder="Add a subtask..."
@@ -442,9 +447,12 @@ export default function MobileTaskDetails({
                       });
                     }, 300);
                   }}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && !e.shiftKey && handleAddSubtask()
-                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleAddSubtask();
+                    }
+                  }}
                 />
                 <Button
                   size="icon"

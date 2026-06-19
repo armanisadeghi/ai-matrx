@@ -18,7 +18,7 @@
  * (`createSubtaskThunk` / `toggleTaskCompleteThunk` / `deleteTaskThunk`).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckSquare,
   Eye,
@@ -48,6 +48,7 @@ import {
   setShowCompleted,
 } from "@/features/tasks/redux/taskUiSlice";
 import { cn } from "@/lib/utils";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 export function SubtaskRail({
   taskId,
@@ -68,7 +69,7 @@ export function SubtaskRail({
   const showCompleted = useAppSelector(selectShowCompleted);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { inputRef, scheduleRefocus } = useRefocusInputAfterAsync(adding);
 
   // Auto-focus the entry line when first revealed so the user types at once.
   useEffect(() => {
@@ -90,6 +91,7 @@ export function SubtaskRail({
       ).unwrap();
       if (newId) {
         setDraft("");
+        scheduleRefocus();
         return true;
       }
       return false;
@@ -145,18 +147,14 @@ export function SubtaskRail({
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={async (e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              const ok = await addSubtask();
-              if (ok) inputRef.current?.focus();
+              void addSubtask();
             }
           }}
           onBlur={() => {
-            if (draft.trim())
-              void addSubtask().then((ok) => {
-                if (ok) inputRef.current?.focus();
-              });
+            if (draft.trim()) void addSubtask();
           }}
           placeholder="Add subtask, press Enter…"
           className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"

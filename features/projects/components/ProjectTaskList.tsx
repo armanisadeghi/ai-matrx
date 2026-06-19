@@ -53,6 +53,7 @@ import {
 import { TaskDueDatePicker } from "@/features/tasks/components/TaskDueDatePicker";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { isDateOnlyOverdue } from "@/utils/dateOnly";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 const isDone = (t: DatabaseTask) => t.status === "completed";
 const isOverdue = (t: DatabaseTask) =>
@@ -75,7 +76,9 @@ export function ProjectTaskList({
   const [showDone, setShowDone] = React.useState(false);
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
-  const subInputRef = React.useRef<HTMLInputElement>(null);
+  const [isAddingSub, setIsAddingSub] = React.useState(false);
+  const { inputRef: subInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSub);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -153,22 +156,27 @@ export function ProjectTaskList({
 
   async function addSubtask(parentId: string) {
     const t = subTitle.trim();
-    if (!t) return;
+    if (!t || isAddingSub) return;
+    setIsAddingSub(true);
     setSubTitle("");
-    const res = await createTask({
-      title: t,
-      parent_task_id: parentId,
-      project_id: projectId,
-      organization_id: organizationId,
-      status: "incomplete",
-    });
-    if (res) {
-      setTasks((cur) => [...cur, res]);
-      setAddingSubFor(parentId);
-      requestAnimationFrame(() => subInputRef.current?.focus());
-    } else {
-      setSubTitle(t);
-      toast.error("Couldn't add the subtask.");
+    try {
+      const res = await createTask({
+        title: t,
+        parent_task_id: parentId,
+        project_id: projectId,
+        organization_id: organizationId,
+        status: "incomplete",
+      });
+      if (res) {
+        setTasks((cur) => [...cur, res]);
+        setAddingSubFor(parentId);
+        scheduleSubtaskRefocus();
+      } else {
+        setSubTitle(t);
+        toast.error("Couldn't add the subtask.");
+      }
+    } finally {
+      setIsAddingSub(false);
     }
   }
 
@@ -225,6 +233,7 @@ export function ProjectTaskList({
                   autoFocus
                   value={subTitle}
                   onChange={(e) => setSubTitle(e.target.value)}
+                  disabled={isAddingSub}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
