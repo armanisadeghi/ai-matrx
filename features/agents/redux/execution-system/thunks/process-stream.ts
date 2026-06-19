@@ -116,6 +116,8 @@ import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import type { ContentType } from "@/features/ai-models/capabilities/types";
+import { toast } from "sonner";
+import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
 
 /**
  * Maps a render-block `type` onto the canonical content type, when it
@@ -581,7 +583,26 @@ export async function processStream({
 
         dispatch(appendDataPayload({ requestId, data: d }));
 
-        if (d.type === "conversation_id") {
+        // Output-directive receipts — a lightweight toast when the server
+        // applies (or fails to apply) an `output_directive` envelope after the
+        // response is delivered. v1 is a toast (no new slice); the full data is
+        // already on the timeline via appendDataPayload above. Discriminated by
+        // `kind` (`directive_apply.*`), distinct from the `d.type` chain below.
+        if (isDirectiveApplyEvent(d)) {
+          if (d.kind === "directive_apply.completed") {
+            const failedSuffix = d.failed > 0 ? `, ${d.failed} failed` : "";
+            const message = `Applied ${d.type}: ${d.applied} created${failedSuffix}`;
+            // A partial failure is still a delivered directive (warn-not-fatal
+            // per the envelope contract) — success toast with the failed count.
+            if (d.failed > 0) {
+              toast.error(message);
+            } else {
+              toast.success(message);
+            }
+          } else if (d.kind === "directive_apply.failed") {
+            toast.error(`Failed to apply ${d.type}: ${d.error}`);
+          }
+        } else if (d.type === "conversation_id") {
           const convData = d as ConversationIdData;
           // Manual mode mints a fresh wire conv_id per call; the assertion
           // does not apply (the IDs are intentionally different).

@@ -78,6 +78,11 @@ export const SPECIAL_CODE_LANGUAGES = [
   "mermaid",
   "svg",
   "chart",
+  // A ```matrx fence carries one Matrx Envelope (reference / secret / directive
+  // / validation). Promoted to a first-class block so MatrxEnvelopeBlock renders
+  // it (chips for references, a muted card otherwise) instead of raw JSON. The
+  // in-content position only resolves reference/secret — see MATRX_REFERENCES.md.
+  "matrx",
 ];
 
 /**
@@ -162,6 +167,21 @@ const JSON_BLOCK_PATTERNS = {
       parsed?.item_presentation &&
       typeof parsed.item_presentation === "object" &&
       typeof parsed.item_presentation.type === "string",
+  },
+  // An output-schema proposal — what the "JSON Schema Generator" agent emits:
+  // `{ name: string, schema: object, strict?: boolean }`. Recognized so the FE
+  // can offer "Apply to an agent" (writes agx_agent.output_schema). The validate
+  // is deliberately strict (string `name` AND object `schema`) so ordinary JSON
+  // that merely begins with a "name" key never misfires into this block.
+  schema_proposal: {
+    rootKey: "name",
+    validate: (parsed: any) =>
+      parsed &&
+      typeof parsed === "object" &&
+      typeof parsed.name === "string" &&
+      parsed.schema !== null &&
+      typeof parsed.schema === "object" &&
+      !Array.isArray(parsed.schema),
   },
 } as const;
 

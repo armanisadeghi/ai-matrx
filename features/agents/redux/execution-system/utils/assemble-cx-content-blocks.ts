@@ -112,6 +112,17 @@ export function reconstructBlockMarkdown(block: {
     // reconstruct as a ```json fence so the reload splitter re-detects it.
     case "item_presentation":
       return `\`\`\`json\n${content}\n\`\`\``;
+    // A schema proposal ({ name, schema, strict? }) is a JSON-fence block —
+    // reconstruct as a ```json fence so the reload splitter re-detects it.
+    case "schema_proposal":
+      return `\`\`\`json\n${content}\n\`\`\``;
+    // A Matrx Envelope is carried in a first-class ```matrx fence — reconstruct
+    // that exact fence so the reload splitter re-detects it (and so the
+    // persisted fence stays verbatim per MATRX_REFERENCES.md). The
+    // SPECIAL_CODE_LANGUAGES default branch below would also handle this, but
+    // an explicit case documents the contract.
+    case "matrx":
+      return `\`\`\`matrx\n${content}\n\`\`\``;
     case "reasoning":
     case "thinking":
       return `<thinking>\n${content}\n</thinking>`;
