@@ -42,12 +42,23 @@ interface ComparisonTableData {
   criteria: ComparisonCriterion[];
 }
 
+type SortDirection = "asc" | "desc" | null;
+
+export interface ComparisonTableState {
+  sortBy?: string | null;
+  sortDirection?: SortDirection;
+  hiddenColumns?: string[];
+  showScores?: boolean;
+}
+
 interface ComparisonTableBlockProps {
   comparison: ComparisonTableData;
   taskId?: string; // Task ID for canvas deduplication
+  /** Seed interaction state (sort, hidden columns, scores) from persisted state (optional). */
+  initialState?: ComparisonTableState;
+  /** Called whenever the user changes persisted interaction state (optional). */
+  onStateChange?: (state: ComparisonTableState) => void;
 }
-
-type SortDirection = "asc" | "desc" | null;
 
 const STAT_ITEMS = [
   { key: "items", label: "Items", icon: Table },
@@ -61,6 +72,8 @@ const navBtnClass =
 const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
   comparison,
   taskId,
+  initialState,
+  onStateChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -81,13 +94,75 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
       setIsPrinting(false);
     }
   }, [comparison.title, isPrinting]);
-  const [sortBy, setSortBy] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
-  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<string | null>(
+    initialState?.sortBy ?? null,
+  );
+  const [sortDirection, setSortDirection] = useState<SortDirection>(
+    initialState?.sortDirection ?? null,
+  );
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(
+    () => new Set(initialState?.hiddenColumns ?? []),
+  );
   const [searchQuery, setSearchQuery] = useState("");
+  // Hover highlight is transient (driven by mouse enter/leave) — NOT persisted.
   const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
-  const [showScores, setShowScores] = useState(false);
+  const [showScores, setShowScores] = useState(initialState?.showScores ?? false);
   const { open: openCanvas } = useCanvas();
+
+  // Keep a stable ref to onStateChange so closures don't go stale / loop renders.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  /**
+   * Emit the FULL ComparisonTableState. Reads each field from the next value
+   * when the caller supplies it (a setter just ran), otherwise the current
+   * value. searchQuery is intentionally NOT persisted (transient typing).
+   */
+  const emitState = useCallback(
+    (overrides?: Partial<ComparisonTableState>) => {
+      onStateChangeRef.current?.({
+        sortBy: overrides?.sortBy !== undefined ? overrides.sortBy : sortBy,
+        sortDirection:
+          overrides?.sortDirection !== undefined
+            ? overrides.sortDirection
+            : sortDirection,
+        hiddenColumns:
+          overrides?.hiddenColumns !== undefined
+            ? overrides.hiddenColumns
+            : Array.from(hiddenColumns),
+        showScores:
+          overrides?.showScores !== undefined
+            ? overrides.showScores
+            : showScores,
+      });
+    },
+    [sortBy, sortDirection, hiddenColumns, showScores],
+  );
+
+  const applySort = useCallback(
+    (nextSortBy: string | null, nextSortDirection: SortDirection) => {
+      setSortBy(nextSortBy);
+      setSortDirection(nextSortDirection);
+      emitState({ sortBy: nextSortBy, sortDirection: nextSortDirection });
+    },
+    [emitState],
+  );
+
+  const applyHiddenColumns = useCallback(
+    (next: Set<string>) => {
+      setHiddenColumns(next);
+      emitState({ hiddenColumns: Array.from(next) });
+    },
+    [emitState],
+  );
+
+  const applyShowScores = useCallback(
+    (next: boolean) => {
+      setShowScores(next);
+      emitState({ showScores: next });
+    },
+    [emitState],
+  );
 
   // Calculate scores for each item based on criteria
   const itemScores = useMemo(() => {
@@ -231,16 +306,14 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
   const handleSort = (columnName: string) => {
     if (sortBy === columnName) {
       if (sortDirection === "asc") {
-        setSortDirection("desc");
+        applySort(columnName, "desc");
       } else if (sortDirection === "desc") {
-        setSortBy(null);
-        setSortDirection(null);
+        applySort(null, null);
       } else {
-        setSortDirection("asc");
+        applySort(columnName, "asc");
       }
     } else {
-      setSortBy(columnName);
-      setSortDirection("asc");
+      applySort(columnName, "asc");
     }
   };
 
@@ -251,7 +324,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
     } else {
       newHidden.add(criterionName);
     }
-    setHiddenColumns(newHidden);
+    applyHiddenColumns(newHidden);
   };
 
   const renderCellValue = (
@@ -547,7 +620,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowScores(!showScores)}
+                    onClick={() => applyShowScores(!showScores)}
                     title={showScores ? "Hide scores" : "Show scores"}
                     className={`${navBtnClass} flex-shrink-0 ${
                       showScores

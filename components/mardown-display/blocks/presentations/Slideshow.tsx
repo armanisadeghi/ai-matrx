@@ -20,38 +20,67 @@ export interface PresentationData {
   theme: any;
 }
 
+/** Per-viewer interaction state persisted for a presentation artifact. */
+export interface SlideshowState {
+  currentSlide: number;
+}
+
 const Slideshow = (
-  presentationData: PresentationData & { taskId?: string },
+  presentationData: PresentationData & {
+    taskId?: string;
+    /** Seed the current slide from persisted state (optional). */
+    initialState?: SlideshowState;
+    /** Called whenever the user changes interaction state (optional). */
+    onStateChange?: (state: SlideshowState) => void;
+  },
 ) => {
-  const { slides, theme } = presentationData;
+  const { slides, theme, initialState, onStateChange } = presentationData;
   // Visual tier: "generic" (clean) | "fancy" (default — gradients, layouts) |
   // "deluxe" (fancy + imagery). Read from the theme; default to "fancy" so
   // existing decks instantly look better.
   const variant: SlideVariant = ((theme?.variant as SlideVariant) ||
     "fancy") as SlideVariant;
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Seed the current slide from persisted state when available, clamped to the
+  // valid range so a stale index from a shorter deck can't point off the end.
+  const [currentSlide, setCurrentSlide] = useState(() => {
+    if (initialState) {
+      const last = Math.max(0, slides.length - 1);
+      return Math.min(Math.max(initialState.currentSlide, 0), last);
+    }
+    return 0;
+  });
   const [direction, setDirection] = useState("next");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
   const { open: openCanvas } = useCanvas();
 
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  /** Move to a slide and emit the new state to the persistence layer. */
+  const applyCurrentSlide = (next: number) => {
+    setCurrentSlide(next);
+    onStateChangeRef.current?.({ currentSlide: next });
+  };
+
   const goToNext = () => {
     if (currentSlide < slides.length - 1) {
       setDirection("next");
-      setCurrentSlide(currentSlide + 1);
+      applyCurrentSlide(currentSlide + 1);
     }
   };
 
   const goToPrevious = () => {
     if (currentSlide > 0) {
       setDirection("prev");
-      setCurrentSlide(currentSlide - 1);
+      applyCurrentSlide(currentSlide - 1);
     }
   };
 
   const goToSlide = (index) => {
     setDirection(index > currentSlide ? "next" : "prev");
-    setCurrentSlide(index);
+    applyCurrentSlide(index);
   };
 
   useEffect(() => {

@@ -42,9 +42,19 @@ interface RecipeData {
   notes?: string;
 }
 
+export interface RecipeState {
+  checkedIngredients: number[];
+  completedSteps: number[];
+  servingMultiplier?: number;
+}
+
 interface RecipeViewerProps {
   recipe: RecipeData;
   taskId?: string;
+  /** Seed interaction state (checked ingredients, completed steps, servings) from persisted state (optional). */
+  initialState?: RecipeState;
+  /** Called whenever the user changes interaction state (optional). */
+  onStateChange?: (state: RecipeState) => void;
 }
 
 const STAT_ITEMS = [
@@ -54,14 +64,71 @@ const STAT_ITEMS = [
   { key: "progress", label: "Done", icon: CheckCircle2, suffix: "%" },
 ] as const;
 
-const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, taskId }) => {
+const RecipeViewer: React.FC<RecipeViewerProps> = ({
+  recipe,
+  taskId,
+  initialState,
+  onStateChange,
+}) => {
+  // Seed interactive state from persisted state when available, otherwise defaults.
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(
-    new Set(),
+    () => new Set(initialState?.checkedIngredients ?? []),
   );
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(
+    () => new Set(initialState?.completedSteps ?? []),
+  );
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [servingMultiplier, setServingMultiplier] = useState(1);
+  const [servingMultiplier, setServingMultiplier] = useState(
+    () => initialState?.servingMultiplier ?? 1,
+  );
   const { open: openCanvas } = useCanvas();
+
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  // Emit the FULL RecipeState; computed from the next interactive values so
+  // every wrapped setter reports a consistent snapshot.
+  const emitState = useCallback(
+    (next: {
+      checkedIngredients?: Set<number>;
+      completedSteps?: Set<number>;
+      servingMultiplier?: number;
+    }) => {
+      onStateChangeRef.current?.({
+        checkedIngredients: Array.from(
+          next.checkedIngredients ?? checkedIngredients,
+        ),
+        completedSteps: Array.from(next.completedSteps ?? completedSteps),
+        servingMultiplier: next.servingMultiplier ?? servingMultiplier,
+      });
+    },
+    [checkedIngredients, completedSteps, servingMultiplier],
+  );
+
+  const applyCheckedIngredients = useCallback(
+    (nextChecked: Set<number>) => {
+      setCheckedIngredients(nextChecked);
+      emitState({ checkedIngredients: nextChecked });
+    },
+    [emitState],
+  );
+
+  const applyCompletedSteps = useCallback(
+    (nextCompleted: Set<number>) => {
+      setCompletedSteps(nextCompleted);
+      emitState({ completedSteps: nextCompleted });
+    },
+    [emitState],
+  );
+
+  const applyServingMultiplier = useCallback(
+    (nextMultiplier: number) => {
+      setServingMultiplier(nextMultiplier);
+      emitState({ servingMultiplier: nextMultiplier });
+    },
+    [emitState],
+  );
   const blockContentRef = useRef<HTMLDivElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const handlePrint = useCallback(async () => {
@@ -116,7 +183,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, taskId }) => {
     } else {
       newChecked.add(index);
     }
-    setCheckedIngredients(newChecked);
+    applyCheckedIngredients(newChecked);
   };
 
   const toggleStep = (index: number) => {
@@ -126,20 +193,25 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, taskId }) => {
     } else {
       newCompleted.add(index);
     }
-    setCompletedSteps(newCompleted);
+    applyCompletedSteps(newCompleted);
   };
 
   const adjustServings = (increment: boolean) => {
-    if (increment) {
-      setServingMultiplier((prev) => Math.min(prev + 0.5, 5));
-    } else {
-      setServingMultiplier((prev) => Math.max(prev - 0.5, 0.5));
-    }
+    const next = increment
+      ? Math.min(servingMultiplier + 0.5, 5)
+      : Math.max(servingMultiplier - 0.5, 0.5);
+    applyServingMultiplier(next);
   };
 
   const resetProgress = () => {
-    setCheckedIngredients(new Set());
-    setCompletedSteps(new Set());
+    const emptyChecked = new Set<number>();
+    const emptyCompleted = new Set<number>();
+    setCheckedIngredients(emptyChecked);
+    setCompletedSteps(emptyCompleted);
+    emitState({
+      checkedIngredients: emptyChecked,
+      completedSteps: emptyCompleted,
+    });
   };
 
   // Scale ingredient amounts

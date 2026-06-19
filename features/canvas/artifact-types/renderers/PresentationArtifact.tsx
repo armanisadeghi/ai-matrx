@@ -7,6 +7,8 @@ import {
   resolveJsonPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { useArtifactState } from "../persistence/useArtifactState";
+import type { SlideshowState } from "@/components/mardown-display/blocks/presentations/Slideshow";
 
 const Slideshow = lazy(
   () => import("@/components/mardown-display/blocks/presentations/Slideshow"),
@@ -30,6 +32,10 @@ export default function PresentationArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
+  const { state, loaded, save } = useArtifactState<
+    SlideshowState & Record<string, unknown>
+  >(artifactId, "generic");
+
   const payload = useMemo(
     () =>
       resolveJsonPayload<any>({
@@ -49,12 +55,19 @@ export default function PresentationArtifact({
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
+  // Wait for persisted state to load before rendering so initialState seeds correctly.
+  if (artifactId && !loaded) {
+    return <MatrxMiniLoader />;
+  }
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <Slideshow
         slides={slides}
         theme={theme}
         taskId={artifactDedupKey(taskId, artifactId)}
+        initialState={state ?? undefined}
+        onStateChange={save as (s: SlideshowState) => void}
       />
     </Suspense>
   );

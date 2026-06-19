@@ -8,6 +8,8 @@ import {
   resolveJsonPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { useArtifactState } from "../persistence/useArtifactState";
+import type { ComparisonTableState } from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 
 const ComparisonTableBlock = lazy(
   () => import("@/components/mardown-display/blocks/comparison/ComparisonTableBlock"),
@@ -27,6 +29,10 @@ export default function ComparisonArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
+  const { state, loaded, save } = useArtifactState<
+    ComparisonTableState & Record<string, unknown>
+  >(artifactId, "generic");
+
   const comparison = useMemo(
     () =>
       resolveJsonPayload({
@@ -43,11 +49,18 @@ export default function ComparisonArtifact({
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
+  // Wait for persisted state to load before rendering so initialState seeds correctly.
+  if (artifactId && !loaded) {
+    return <MatrxMiniLoader />;
+  }
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <ComparisonTableBlock
         comparison={comparison}
         taskId={artifactDedupKey(taskId, artifactId)}
+        initialState={state ?? undefined}
+        onStateChange={save as (state: ComparisonTableState) => void}
       />
     </Suspense>
   );

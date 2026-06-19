@@ -8,6 +8,8 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { useArtifactState } from "../persistence/useArtifactState";
+import type { RecipeState } from "@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay";
 
 const RecipeViewer = lazy(
   () => import("@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay"),
@@ -27,6 +29,10 @@ export default function RecipeArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
+  const { state, loaded, save } = useArtifactState<
+    RecipeState & Record<string, unknown>
+  >(artifactId, "generic");
+
   const recipe = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,11 +49,18 @@ export default function RecipeArtifact({
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
+  // Wait for persisted state to load before rendering so initialState seeds correctly.
+  if (artifactId && !loaded) {
+    return <MatrxMiniLoader />;
+  }
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <RecipeViewer
         recipe={recipe}
         taskId={artifactDedupKey(taskId, artifactId)}
+        initialState={state ?? undefined}
+        onStateChange={save as (state: RecipeState) => void}
       />
     </Suspense>
   );
