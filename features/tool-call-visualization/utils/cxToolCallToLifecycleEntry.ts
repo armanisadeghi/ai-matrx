@@ -35,6 +35,15 @@ function deriveStatus(record: CxToolCallRecord): ToolLifecycleEntry["status"] {
   return "started";
 }
 
+function isPopulatedObject(v: unknown): v is Record<string, unknown> {
+  return (
+    !!v &&
+    typeof v === "object" &&
+    !Array.isArray(v) &&
+    Object.keys(v as Record<string, unknown>).length > 0
+  );
+}
+
 export function cxToolCallToLifecycleEntry(
   record: CxToolCallRecord,
 ): ToolLifecycleEntry {
@@ -67,4 +76,64 @@ export function cxToolCallToLifecycleEntry(
   };
 
   return entry;
+}
+
+/**
+ * Build the canonical `ToolLifecycleEntry` for a PERSISTED (reloaded) tool
+ * call. This is the single place that reconciles the two possible sources,
+ * EITHER of which may be authoritative:
+ *
+ *   - the `cx_tool_call` row — full `output` + the `execution_events` log +
+ *     real `started/completed` timestamps + `tool_name_as_called`, and
+ *   - the `cx_message` tool_call stub — sometimes carries args the row lacks
+ *     (and is the only source when no row exists yet).
+ *
+ * Because both the live and reloaded paths now produce an identical entry
+ * (same `events`, same timestamps, same display name), a tool renders the
+ * same on reload as it did live — killing the old `events: []` divergence.
+ */
+export function persistedToolEntry(input: {
+  callId: string;
+  record: CxToolCallRecord | null;
+  stubName?: string | null;
+  stubArguments?: Record<string, unknown> | null;
+}): ToolLifecycleEntry {
+  const { callId, record, stubName, stubArguments } = input;
+
+  if (record) {
+    const base = cxToolCallToLifecycleEntry(record);
+    return {
+      ...base,
+      callId,
+      // An empty `{}` seed (e.g. a pre-`tool_started` reservation) must not
+      // shadow real args from the message stub — prefer whichever is populated.
+      arguments: isPopulatedObject(base.arguments)
+        ? base.arguments
+        : isPopulatedObject(stubArguments)
+          ? stubArguments
+          : base.arguments,
+      // Full `output` (set by the converter) wins; `output_preview` is the
+      // slim-row fallback when the full output wasn't persisted.
+      result: base.result ?? record.outputPreview ?? null,
+    };
+  }
+
+  // No `cx_tool_call` row — render from the message stub alone.
+  return {
+    callId,
+    toolName: stubName ?? "unknown_tool",
+    displayName: stubName ?? "unknown_tool",
+    status: "completed",
+    arguments: stubArguments ?? {},
+    startedAt: "",
+    completedAt: null,
+    latestMessage: null,
+    latestData: null,
+    result: null,
+    resultPreview: null,
+    errorType: null,
+    errorMessage: null,
+    isDelegated: false,
+    events: [],
+  };
 }

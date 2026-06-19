@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS public.cx_working_documents (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id uuid NOT NULL,
   user_id         uuid NOT NULL DEFAULT auth.uid(),
-  title           text NOT NULL DEFAULT 'Working document',
+  -- Unnamed by default — the user is encouraged to name the document. We never
+  -- seed a placeholder ("Working document") into the row; the UI falls back for
+  -- display only. Pre-existing rows keep whatever title they already have.
+  title           text NOT NULL DEFAULT '',
   content         text NOT NULL DEFAULT '',
   version         integer NOT NULL DEFAULT 0,
   created_at      timestamptz NOT NULL DEFAULT now(),

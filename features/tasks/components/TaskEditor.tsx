@@ -52,6 +52,7 @@ import TaskAssigneePicker from "./TaskAssigneePicker";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import { TaskAssociatedResources } from "./TaskAssociatedResources";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -759,35 +760,30 @@ function TaskEditorInner({
               )}
               <div
                 className={cn(
-                  "flex h-7 items-center gap-1.5 bg-muted/20",
+                  "border-t border-border/40 bg-muted/20 px-1.5 py-1",
                   compact ? "pl-1.5 pr-2" : "px-3",
-                  subtasks.length > 0 && "border-t border-border/40",
+                  subtasks.length === 0 && "border-t-0",
                 )}
               >
-                <Plus className="size-3 shrink-0 text-muted-foreground" />
-                <input
+                <ProInput
                   ref={subtaskInputRef}
-                  type="text"
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void handleAddSubtask();
-                    }
-                  }}
+                  onSubmit={() => void handleAddSubtask()}
+                  submitOnEnter
+                  submitLabel="Add subtask"
+                  submitDisabled={!newSubtask.trim() || isAddingSubtask}
+                  isSubmitting={isAddingSubtask}
+                  showCopyButton={false}
                   onBlur={() => {
                     if (newSubtask.trim()) void handleAddSubtask();
                   }}
                   placeholder="Add subtask, press Enter…"
-                  className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-                  style={{ fontSize: "16px" }}
                   disabled={isAddingSubtask}
                   aria-label="Add subtask"
+                  className="h-8 border-0 bg-transparent text-xs shadow-none"
+                  wrapperClassName="w-full"
                 />
-                {isAddingSubtask ? (
-                  <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
-                ) : null}
               </div>
             </div>
           </section>

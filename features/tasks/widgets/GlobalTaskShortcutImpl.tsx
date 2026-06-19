@@ -18,8 +18,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useAssociateTask } from "@/features/tasks/hooks/useAssociateTask";
@@ -76,26 +76,30 @@ export default function GlobalTaskShortcutImpl({ onClose }: Props) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <Input
+          <ProInput
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                submit();
-              }
-            }}
+            onSubmit={() => void submit()}
+            submitOnCmdEnter
+            submitLabel="Create task"
+            submitDisabled={!title.trim() || isBusy}
+            isSubmitting={isBusy}
+            showCopyButton={false}
             placeholder="Task title..."
             className="h-9"
-            style={{ fontSize: "16px" }}
+            wrapperClassName="w-full"
           />
-          <Textarea
+          <ProTextarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description (optional)"
+            autoGrow
+            minHeight={80}
+            maxHeight={200}
+            showCopyButton={false}
             className="text-sm min-h-[80px] resize-y"
-            rows={3}
+            wrapperClassName="w-full"
           />
           <div className="flex items-center gap-2">
             <select

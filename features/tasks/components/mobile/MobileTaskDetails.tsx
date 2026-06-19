@@ -6,7 +6,6 @@ import {
   Calendar,
   Flag,
   Trash2,
-  Plus,
   X,
   Loader2,
   MoreVertical,
@@ -20,7 +19,8 @@ import {
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -304,23 +304,19 @@ export default function MobileTaskDetails({
             <label className="text-sm font-medium text-muted-foreground mb-2 block">
               Description
             </label>
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
                 setIsDirty(true);
               }}
-              onFocus={(e) => {
-                setTimeout(() => {
-                  e.target.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center",
-                  });
-                }, 300);
-              }}
               placeholder="Add details..."
+              autoGrow
+              minHeight={100}
+              maxHeight={240}
+              showCopyButton={false}
               className="text-base resize-y min-h-[100px]"
-              style={{ fontSize: "16px" }}
+              wrapperClassName="w-full"
             />
           </div>
 
@@ -430,44 +426,21 @@ export default function MobileTaskDetails({
                   </Button>
                 </div>
               ))}
-              <div className="flex items-center gap-2 mt-2">
-                <Input
-                  ref={subtaskInputRef}
-                  value={newSubtask}
-                  onChange={(e) => setNewSubtask(e.target.value)}
-                  placeholder="Add a subtask..."
-                  disabled={isAddingSubtask}
-                  className="text-base flex-1"
-                  style={{ fontSize: "16px" }}
-                  onFocus={(e) => {
-                    setTimeout(() => {
-                      e.target.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                    }, 300);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void handleAddSubtask();
-                    }
-                  }}
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={handleAddSubtask}
-                  disabled={isAddingSubtask || !newSubtask.trim()}
-                  className="h-8 w-8 flex-shrink-0 rounded-full"
-                >
-                  {isAddingSubtask ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Plus size={16} />
-                  )}
-                </Button>
-              </div>
+              <ProInput
+                ref={subtaskInputRef}
+                value={newSubtask}
+                onChange={(e) => setNewSubtask(e.target.value)}
+                onSubmit={() => void handleAddSubtask()}
+                submitOnEnter
+                submitLabel="Add subtask"
+                submitDisabled={!newSubtask.trim() || isAddingSubtask}
+                isSubmitting={isAddingSubtask}
+                showCopyButton={false}
+                placeholder="Add a subtask..."
+                disabled={isAddingSubtask}
+                className="text-base flex-1"
+                wrapperClassName="flex-1 min-w-0"
+              />
             </div>
           </div>
         </div>

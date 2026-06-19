@@ -74,14 +74,16 @@ export async function getCxWorkingDocument(
  */
 export async function getOrCreateCxWorkingDocument(
   conversationId: string,
-  title = "Working document",
 ): Promise<CxWorkingDocument> {
   const existing = await getCxWorkingDocument(conversationId);
   if (existing) return existing;
 
+  // Insert with an EMPTY title — the document is unnamed until the user names
+  // it. We never seed a placeholder ("Working document") into the row; display
+  // surfaces fall back for an empty title.
   const { data, error } = await supabase
     .from("cx_working_documents")
-    .insert({ conversation_id: conversationId, title })
+    .insert({ conversation_id: conversationId, title: "" })
     .select("*")
     .single();
   if (error) {
@@ -90,6 +92,27 @@ export async function getOrCreateCxWorkingDocument(
     if (retry) return retry;
     throw new Error(
       `[cx-working-document] getOrCreate insert failed: ${error.message}`,
+    );
+  }
+  return rowToCxWorkingDocument(data as CxWorkingDocumentRow);
+}
+
+/**
+ * Persist the user-chosen title for the conversation's working document row.
+ */
+export async function updateCxWorkingDocumentTitle(
+  id: string,
+  title: string,
+): Promise<CxWorkingDocument> {
+  const { data, error } = await supabase
+    .from("cx_working_documents")
+    .update({ title })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error || !data) {
+    throw new Error(
+      `[cx-working-document] title update failed: ${error?.message ?? "no row"}`,
     );
   }
   return rowToCxWorkingDocument(data as CxWorkingDocumentRow);

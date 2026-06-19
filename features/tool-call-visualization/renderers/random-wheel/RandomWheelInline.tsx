@@ -16,7 +16,13 @@
  * Persisted / reduced-motion: snap straight to the winner, no fresh long spin.
  */
 
-import React, { useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   Dices,
@@ -33,6 +39,9 @@ import {
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { cn } from "@/lib/utils";
+import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { filterStepEvents, isTerminal, resultAsObject } from "../_shared";
 import type {
@@ -74,7 +83,10 @@ const SEGMENT_TEXT_FILLS = [
 // Resolution helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MODE_META: Record<RandomWheelMode, { label: string; Icon: typeof Globe }> = {
+const MODE_META: Record<
+  RandomWheelMode,
+  { label: string; Icon: typeof Globe }
+> = {
   list: { label: "Random pick", Icon: Dices },
   web: { label: "Web lookup", Icon: Globe },
   image: { label: "Stock image", Icon: ImageIcon },
@@ -103,9 +115,10 @@ function parseResult(entry: ToolLifecycleEntry): RandomWheelResult | null {
 
   const candidates = asStringArray(raw.candidates);
   const mode = asMode(raw.mode);
-  const chosenRaw = (raw.chosen ?? null) as
-    | { label?: unknown; value?: unknown }
-    | null;
+  const chosenRaw = (raw.chosen ?? null) as {
+    label?: unknown;
+    value?: unknown;
+  } | null;
 
   const sourcesRaw = raw.sources;
   const sources: RandomWheelSource[] | null = Array.isArray(sourcesRaw)
@@ -148,16 +161,13 @@ function parseResult(entry: ToolLifecycleEntry): RandomWheelResult | null {
     mode,
     title: typeof raw.title === "string" ? raw.title : "",
     chosen: {
-      label:
-        typeof chosenRaw?.label === "string" ? chosenRaw.label : "",
+      label: typeof chosenRaw?.label === "string" ? chosenRaw.label : "",
       value: chosenRaw?.value ?? null,
     },
     candidates,
     winner_index: clampIndex(Number(raw.winner_index), candidates.length),
     pool_size:
-      typeof raw.pool_size === "number"
-        ? raw.pool_size
-        : candidates.length,
+      typeof raw.pool_size === "number" ? raw.pool_size : candidates.length,
     display_count:
       typeof raw.display_count === "number"
         ? raw.display_count
@@ -186,7 +196,8 @@ function parseSpinStep(
       typeof meta.spin_duration_ms === "number" ? meta.spin_duration_ms : 0,
     title: typeof meta.title === "string" ? meta.title : "",
     mode: asMode(meta.mode),
-    poolSize: typeof meta.pool_size === "number" ? meta.pool_size : candidates.length,
+    poolSize:
+      typeof meta.pool_size === "number" ? meta.pool_size : candidates.length,
   };
 }
 
@@ -267,6 +278,71 @@ function finalRotationDeg(
   return fullTurns * 360 - winnerCenter;
 }
 
+/** Which segment sits under the fixed top pointer at this wheel rotation. */
+function indexAtPointer(rotationDeg: number, count: number): number {
+  if (count <= 1) return 0;
+  const seg = 360 / count;
+  const r = ((rotationDeg % 360) + 360) % 360;
+  const i = Math.round(-r / seg - 0.5);
+  return ((i % count) + count) % count;
+}
+
+/** Snap rotation so segment `index` is centered under the pointer. */
+function rotationForIndex(
+  index: number,
+  count: number,
+  baseRotation: number,
+): number {
+  if (count <= 1) return baseRotation;
+  const seg = 360 / count;
+  const targetMod = ((-((index + 0.5) * seg) % 360) + 360) % 360;
+  const currentMod = ((baseRotation % 360) + 360) % 360;
+  let delta = targetMod - currentMod;
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
+  return baseRotation + delta;
+}
+
+function pointerAngleDeg(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+): number {
+  const x = clientX - (rect.left + rect.width / 2);
+  const y = clientY - (rect.top + rect.height / 2);
+  return (Math.atan2(y, x) * 180) / Math.PI + 90;
+}
+
+function slugifyContextKey(text: string): string {
+  const slug = text
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+  return slug ? `wheel_${slug}` : "wheel_pick";
+}
+
+function resolveWheelContextKey(
+  entry: ToolLifecycleEntry,
+  title: string,
+): string {
+  const args = (entry.arguments ?? {}) as Record<string, unknown>;
+  if (typeof args.context_key === "string" && args.context_key.trim()) {
+    return args.context_key.trim();
+  }
+  return slugifyContextKey(title || "pick");
+}
+
+function resolveWheelContextValue(
+  result: RandomWheelResult | null,
+  label: string,
+): unknown {
+  if (result?.chosen.label === label && result.chosen.value != null) {
+    return result.chosen.value;
+  }
+  return label;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Wheel SVG
 // ─────────────────────────────────────────────────────────────────────────────
@@ -281,6 +357,12 @@ interface WheelProps {
   settled: boolean;
   /** Called when the spin animation finishes (only while animating). */
   onSettled?: () => void;
+  /** Allow the user to drag/spin after the initial animation lands. */
+  interactive?: boolean;
+  /** Segment to highlight (defaults to server winner when settled). */
+  highlightIndex?: number;
+  /** Fired when the user finishes a manual spin. */
+  onUserPick?: (index: number, label: string) => void;
 }
 
 const Wheel: React.FC<WheelProps> = ({
@@ -290,6 +372,9 @@ const Wheel: React.FC<WheelProps> = ({
   durationMs,
   settled,
   onSettled,
+  interactive = false,
+  highlightIndex,
+  onUserPick,
 }) => {
   const { candidates, winnerIndex } = wheel;
   const count = candidates.length;
@@ -303,12 +388,94 @@ const Wheel: React.FC<WheelProps> = ({
   const outerR = r - 8;
   const fontSize = count <= 10 ? 13 : count <= 18 ? 11 : 9;
   // How many chars fit along the radial spoke at this font size.
-  const charBudget = Math.max(8, Math.floor((outerR - innerR) / (fontSize * 0.6)));
+  const charBudget = Math.max(
+    8,
+    Math.floor((outerR - innerR) / (fontSize * 0.6)),
+  );
+
+  const canInteract = interactive && settled && count > 1;
+  const [liveRotation, setLiveRotation] = useState(rotation);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSnapping, setIsSnapping] = useState(false);
+  const lastPointerAngle = useRef<number | null>(null);
+  const wheelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isDragging && !isSnapping) {
+      setLiveRotation(rotation);
+    }
+  }, [rotation, isDragging, isSnapping]);
+
+  const activeIndex =
+    highlightIndex ??
+    (settled ? winnerIndex : indexAtPointer(liveRotation, count));
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!canInteract) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+    const rect = event.currentTarget.getBoundingClientRect();
+    lastPointerAngle.current = pointerAngleDeg(
+      event.clientX,
+      event.clientY,
+      rect,
+    );
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || lastPointerAngle.current == null) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const angle = pointerAngleDeg(event.clientX, event.clientY, rect);
+    let delta = angle - lastPointerAngle.current;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    lastPointerAngle.current = angle;
+    setLiveRotation((prev) => prev + delta);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setIsDragging(false);
+    lastPointerAngle.current = null;
+    setLiveRotation((current) => {
+      const index = indexAtPointer(current, count);
+      const snapped = rotationForIndex(index, count, current);
+      setIsSnapping(true);
+      window.setTimeout(() => {
+        setIsSnapping(false);
+        onUserPick?.(index, candidates[index] ?? "");
+      }, 280);
+      return snapped;
+    });
+  };
+
+  const displayRotation = canInteract ? liveRotation : rotation;
+  const useMotionTransition =
+    animate || isSnapping || (canInteract && !isDragging);
 
   return (
     <div
-      className="relative flex-shrink-0"
+      ref={wheelRef}
+      className={cn(
+        "relative flex-shrink-0 touch-none",
+        canInteract && "cursor-grab active:cursor-grabbing",
+      )}
       style={{ width: size, height: size }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      role={canInteract ? "slider" : undefined}
+      aria-valuemin={canInteract ? 0 : undefined}
+      aria-valuemax={canInteract ? count - 1 : undefined}
+      aria-valuenow={canInteract ? activeIndex : undefined}
+      aria-label={
+        canInteract
+          ? `Spin the wheel — currently on ${candidates[activeIndex]}`
+          : undefined
+      }
     >
       {/* Fixed pointer at the top */}
       <div
@@ -321,7 +488,8 @@ const Wheel: React.FC<WheelProps> = ({
           style={{
             borderLeft: "9px solid transparent",
             borderRight: "9px solid transparent",
-            borderTop: "16px solid var(--color-foreground, hsl(var(--foreground)))",
+            borderTop:
+              "16px solid var(--color-foreground, hsl(var(--foreground)))",
             filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.25))",
           }}
         />
@@ -332,14 +500,22 @@ const Wheel: React.FC<WheelProps> = ({
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         role="img"
-        aria-label={`Wheel of ${count} options${
-          settled ? `, landed on ${candidates[winnerIndex]}` : ""
-        }`}
+        aria-hidden={canInteract}
+        aria-label={
+          canInteract
+            ? undefined
+            : `Wheel of ${count} options${
+                settled ? `, landed on ${candidates[winnerIndex]}` : ""
+              }`
+        }
         initial={animate ? { rotate: 0 } : false}
-        animate={{ rotate: rotation }}
+        animate={{ rotate: displayRotation }}
         transition={
-          animate
-            ? { duration: durationMs / 1000, ease: [0.16, 1, 0.3, 1] }
+          useMotionTransition
+            ? {
+                duration: animate ? durationMs / 1000 : isSnapping ? 0.28 : 0,
+                ease: [0.16, 1, 0.3, 1],
+              }
             : { duration: 0 }
         }
         onAnimationComplete={animate ? onSettled : undefined}
@@ -359,7 +535,7 @@ const Wheel: React.FC<WheelProps> = ({
           const start = i * seg;
           const end = (i + 1) * seg;
           const mid = (start + end) / 2;
-          const isWinner = settled && i === winnerIndex;
+          const isWinner = settled && i === activeIndex;
           const fill = isWinner
             ? "var(--color-primary, hsl(var(--primary)))"
             : SEGMENT_FILLS[i % SEGMENT_FILLS.length];
@@ -367,16 +543,23 @@ const Wheel: React.FC<WheelProps> = ({
             ? "var(--color-primary-foreground, hsl(var(--primary-foreground)))"
             : SEGMENT_TEXT_FILLS[i % SEGMENT_TEXT_FILLS.length];
           const dimOpacity = settled && !isWinner ? 0.55 : 1;
-          // RADIAL labels — each runs along its spoke (center → edge) for max length.
-          // Right half reads outward from the hub; left half reads inward from the rim;
-          // both stay upright (no mirror/upside-down). A single candidate is a full
-          // disc, so its label sits above the hub, unrotated.
-          const onLeft = mid > 180;
-          const labelRot = single ? 0 : onLeft ? mid - 270 : mid - 90;
+          // Radial labels — every spoke starts at the outer rim and reads inward
+          // toward the hub. Bottom-half segments flip 180° so text stays upright.
+          const toCenterRot = mid + 90;
+          const onBottom = mid > 90 && mid < 270;
+          const labelRot = single
+            ? 0
+            : onBottom
+              ? toCenterRot + 180
+              : toCenterRot;
           const labelPos = single
             ? { x: cx, y: cy - r * 0.4 }
-            : polar(cx, cy, onLeft ? outerR : innerR, mid);
-          const labelAnchor: "start" | "middle" = single ? "middle" : "start";
+            : polar(cx, cy, outerR, mid);
+          const labelAnchor: "start" | "middle" | "end" = single
+            ? "middle"
+            : onBottom
+              ? "end"
+              : "start";
           return (
             <g key={i}>
               <title>{label}</title>
@@ -409,7 +592,11 @@ const Wheel: React.FC<WheelProps> = ({
                 fontWeight={isWinner ? 700 : 500}
                 textAnchor={labelAnchor}
                 dominantBaseline="middle"
-                transform={single ? undefined : `rotate(${labelRot} ${labelPos.x} ${labelPos.y})`}
+                transform={
+                  single
+                    ? undefined
+                    : `rotate(${labelRot} ${labelPos.x} ${labelPos.y})`
+                }
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
                 {truncateLabel(label, charBudget)}
@@ -543,7 +730,9 @@ const ImageResult: React.FC<{ result: RandomWheelResult }> = ({ result }) => {
       ) : (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
           <ImageIcon className="w-4 h-4" />
-          <span>{imgFailed ? "Image failed to load." : "No image returned."}</span>
+          <span>
+            {imgFailed ? "Image failed to load." : "No image returned."}
+          </span>
         </div>
       )}
 
@@ -603,7 +792,9 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
   entry,
   events,
   isPersisted,
+  conversationId,
 }) => {
+  const dispatch = useAppDispatch();
   const prefersReducedMotion = useReducedMotion();
 
   const result = useMemo(() => parseResult(entry), [entry]);
@@ -636,6 +827,7 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
   // the gap. When not animating, the winner is only revealed once the call completes,
   // so a persisted-but-pending snapshot doesn't look decided.
   const [animationDone, setAnimationDone] = useState(false);
+  const [userPickIndex, setUserPickIndex] = useState<number | null>(null);
   // Reveal when the spin animation lands, OR when the server completes (a safety
   // net so the result never hangs if onAnimationComplete is ever missed). A
   // persisted-but-pending snapshot (not animating, not completed) stays unrevealed.
@@ -652,6 +844,37 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
   }, [wheel, animateSpin]);
 
   const spinDurationMs = Math.max(MIN_VISIBLE_SPIN_MS, wheelSpinMs);
+
+  const title = wheel?.title || result?.title || "Spin the wheel";
+  const contextKey = useMemo(
+    () => resolveWheelContextKey(entry, title),
+    [entry, title],
+  );
+
+  const handleUserPick = useCallback(
+    (index: number, label: string) => {
+      setUserPickIndex(index);
+      if (!conversationId || !label) return;
+      dispatch(
+        setContextEntry({
+          conversationId,
+          key: contextKey,
+          value: resolveWheelContextValue(result, label),
+          type: "text",
+          label: title || "Wheel pick",
+        }),
+      );
+    },
+    [contextKey, conversationId, dispatch, result, title],
+  );
+
+  const highlightIndex =
+    userPickIndex ?? (settled ? wheel?.winnerIndex : undefined);
+
+  const userPickLabel =
+    userPickIndex != null && wheel
+      ? (wheel.candidates[userPickIndex] ?? "")
+      : "";
 
   // ── Error state ──────────────────────────────────────────────────────────
   if (isError) {
@@ -689,15 +912,11 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
 
   const mode: RandomWheelMode = wheel.mode;
   const { Icon: ModeIcon, label: modeLabel } = MODE_META[mode];
-  const title = wheel.title || result?.title || "Spin the wheel";
 
   // Whether we still need the downstream content fetch (web/image second phase).
   const awaitingFetch =
-    (mode === "web" || mode === "image") &&
-    settled &&
-    !terminal; // landed but result not in yet
-  const seedLabel =
-    wheel.candidates[wheel.winnerIndex] ?? result?.seed ?? "";
+    (mode === "web" || mode === "image") && settled && !terminal; // landed but result not in yet
+  const seedLabel = wheel.candidates[wheel.winnerIndex] ?? result?.seed ?? "";
 
   return (
     <div className="space-y-4">
@@ -719,7 +938,26 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
           durationMs={spinDurationMs}
           settled={settled}
           onSettled={() => setAnimationDone(true)}
+          interactive={!isPersisted}
+          highlightIndex={highlightIndex}
+          onUserPick={handleUserPick}
         />
+
+        {settled && wheel.candidates.length > 1 && !isPersisted && (
+          <p className="text-xs text-muted-foreground text-center">
+            Drag the wheel to explore other options — your pick is sent to
+            context.
+          </p>
+        )}
+
+        {userPickLabel && (
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
+            <Trophy className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-foreground break-words">
+              Your pick: <span className="font-semibold">{userPickLabel}</span>
+            </span>
+          </div>
+        )}
 
         {/* Pool size / candidate count */}
         <div className="text-xs text-muted-foreground">
@@ -744,12 +982,8 @@ export const RandomWheelInline: React.FC<ToolRendererProps> = ({
         <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin text-primary flex-shrink-0" />
           <span className="break-words">
-            Fetching fresh{" "}
-            {mode === "image" ? "image" : "content"} for{" "}
-            <span className="font-medium text-foreground">
-              “{seedLabel}”
-            </span>
-            …
+            Fetching fresh {mode === "image" ? "image" : "content"} for{" "}
+            <span className="font-medium text-foreground">“{seedLabel}”</span>…
           </span>
         </div>
       )}

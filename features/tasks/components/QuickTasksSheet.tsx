@@ -519,8 +519,12 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                         value={quickAddDescription}
                         onChange={(e) => setQuickAddDescription(e.target.value)}
                         placeholder="Description (optional)..."
-                        className="text-xs min-h-[50px] resize-none"
+                        autoGrow
+                        minHeight={50}
+                        maxHeight={160}
                         showCopyButton={false}
+                        className="text-xs min-h-[50px] resize-none"
+                        wrapperClassName="w-full"
                       />
                       <div className="flex gap-2">
                         {/* Due date */}

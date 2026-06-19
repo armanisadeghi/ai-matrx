@@ -14,10 +14,14 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { refreshNoteContent } from "@/features/notes/redux/thunks";
+import {
+  refreshNoteContent,
+  saveNoteField,
+} from "@/features/notes/redux/thunks";
 import {
   applyAgentWorkingDocContent,
   markWorkingDocError,
+  NO_BINDING,
   setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
@@ -33,6 +37,15 @@ import {
   updateCxWorkingDocumentContent,
 } from "./cx-working-document.service";
 
+/**
+ * How to reconcile the current working-document content when binding to a note
+ * that the user picked while content already exists.
+ *   - "replace" — discard current content, adopt the note's content.
+ *   - "append"  — keep both: the note's content on top, the current document
+ *                 appended below (persisted back to the note so nothing is lost).
+ */
+export type BindNoteMode = "replace" | "append";
+
 interface ThunkConfig {
   state: RootState;
   dispatch: AppDispatch;
@@ -44,11 +57,14 @@ interface ThunkConfig {
  */
 export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
   void,
-  { conversationId: string; noteId: string },
+  { conversationId: string; noteId: string; mode?: BindNoteMode },
   ThunkConfig
 >(
   "instanceWorkingDocument/bindToNote",
-  async ({ conversationId, noteId }, { dispatch }) => {
+  async (
+    { conversationId, noteId, mode = "replace" },
+    { dispatch, getState },
+  ) => {
     try {
       const note = await NotesAPI.getById(noteId);
       if (!note) {
@@ -60,6 +76,21 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
         );
         return;
       }
+
+      const noteContent = note.content ?? "";
+      // "append" keeps the user's current document — the note's content on top,
+      // the current document below — and persists the merge back to the note so
+      // the bound source is the single source of truth going forward.
+      let nextContent = noteContent;
+      if (mode === "append") {
+        const current = selectWorkingDocContent(conversationId)(getState());
+        if (current.trim()) {
+          nextContent = noteContent.trim()
+            ? `${noteContent}\n\n${current}`
+            : current;
+        }
+      }
+
       dispatch(
         setWorkingDocBinding({
           conversationId,
@@ -69,15 +100,72 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
       if (note.label) {
         dispatch(setWorkingDocTitle({ conversationId, title: note.label }));
       }
-      dispatch(
-        setWorkingDocContent({ conversationId, content: note.content ?? "" }),
-      );
+      dispatch(setWorkingDocContent({ conversationId, content: nextContent }));
       dispatch(setWorkingDocEnabled({ conversationId, enabled: true }));
+
+      // Persist the merged content to the note when we changed it, so the bound
+      // source actually holds what the user sees.
+      if (mode === "append" && nextContent !== noteContent) {
+        void dispatch(
+          saveNoteField({ noteId, field: "content", value: nextContent }),
+        );
+      }
     } catch {
       dispatch(
         markWorkingDocError({
           conversationId,
           error: "Could not load the selected note.",
+        }),
+      );
+    }
+  },
+);
+
+/**
+ * Unbind the working document from a note and revert to the conversation's own
+ * durable `cx_working_documents` document. This RESTORES the document's own
+ * identity — its content and title — instead of leaving the note's content and
+ * title stranded in the editor (the state bug where unbinding kept the note's
+ * name + content). The cx row is the document's home; binding a note is only a
+ * temporary overlay on top of it.
+ */
+export const unbindWorkingDocumentThunk = createAsyncThunk<
+  void,
+  { conversationId: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/unbind",
+  async ({ conversationId }, { dispatch }) => {
+    // Drop the binding first so no in-flight save targets the note.
+    dispatch(
+      setWorkingDocBinding({ conversationId, binding: { ...NO_BINDING } }),
+    );
+    try {
+      const doc = await getOrCreateCxWorkingDocument(conversationId);
+      dispatch(
+        setWorkingDocBinding({
+          conversationId,
+          binding: {
+            kind: "cx_working_document",
+            id: doc.id,
+            label: doc.title,
+          },
+        }),
+      );
+      // Revert the editor to the document's own content + title.
+      dispatch(
+        setWorkingDocContent({ conversationId, content: doc.content ?? "" }),
+      );
+      dispatch(setWorkingDocTitle({ conversationId, title: doc.title ?? "" }));
+    } catch (err) {
+      console.error(
+        "[working-document] failed to revert to cx_working_documents row on unbind",
+        { conversationId, err },
+      );
+      dispatch(
+        markWorkingDocError({
+          conversationId,
+          error: "Could not revert the working document.",
         }),
       );
     }
@@ -120,6 +208,11 @@ export const ensureWorkingDocumentRowThunk = createAsyncThunk<
           },
         }),
       );
+
+      // Reflect the document's saved name when reopening a conversation.
+      if (doc.title) {
+        dispatch(setWorkingDocTitle({ conversationId, title: doc.title }));
+      }
 
       const localContent = selectWorkingDocContent(conversationId)(getState());
       if (doc.content) {

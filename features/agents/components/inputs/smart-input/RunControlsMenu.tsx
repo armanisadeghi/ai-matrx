@@ -64,6 +64,7 @@ import { WorkingDocumentControls } from "@/features/agents/components/working-do
 import { useWorkingDocumentContextSync } from "@/features/agents/hooks/useWorkingDocument";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
+import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 
 import {
@@ -342,11 +343,17 @@ export function RunControlsMenu({
             </div>
           )}
           {activeTab === "context" && (
-            <div className="h-full overflow-hidden">
+            <div className="h-full overflow-y-auto">
               <ActiveContextPanel
                 checkboxVariant="standard"
-                sectionHeight={280}
+                sectionHeight={220}
               />
+              <div className="border-t border-border px-3 py-2">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Selected context
+                </div>
+                <ActiveContextLayersPanel />
+              </div>
             </div>
           )}
           {activeTab === "document" && (

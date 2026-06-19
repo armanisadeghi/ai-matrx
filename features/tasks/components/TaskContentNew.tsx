@@ -2,14 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  PlusCircle,
-  Loader2,
-  Folder,
-  FolderPlus,
-  Search,
-  X,
-} from "lucide-react";
+import { Loader2, Folder, FolderPlus, Search, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectProjectId,
@@ -50,7 +43,8 @@ import AllTasksView from "./AllTasksView";
 import TaskSortControl from "./TaskSortControl";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -135,9 +129,7 @@ export default function TaskContentNew() {
     dispatch(toggleTaskCompleteThunk({ taskId }));
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleAddTask = async () => {
     const trimmedTitle = newTaskTitle.trim();
     if (!trimmedTitle) return;
     if (trimmedTitle.length > 200) return;
@@ -326,77 +318,63 @@ export default function TaskContentNew() {
                   </div>
 
                   {/* Quick Add Input */}
-                  <div className="bg-card rounded-lg border border-border shadow-sm">
-                    <form onSubmit={handleAddTask} className="p-3 space-y-2">
-                      <Input
-                        ref={quickAddInputRef}
-                        type="text"
-                        value={newTaskTitle}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        placeholder="Quick Add: e.g. 'Review Q4 budget proposal tomorrow at 2pm'..."
-                        disabled={isCreatingTask}
-                        className="border-none shadow-none focus-visible:ring-0 pl-2 text-sm"
+                  <div className="bg-card rounded-lg border border-border shadow-sm p-3 space-y-2">
+                    <ProInput
+                      ref={quickAddInputRef}
+                      value={newTaskTitle}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      onSubmit={() => void handleAddTask()}
+                      submitOnEnter
+                      submitLabel="Add task"
+                      submitDisabled={
+                        !newTaskTitle.trim() ||
+                        isCreatingTask ||
+                        !selectedProjectForTask
+                      }
+                      isSubmitting={isCreatingTask}
+                      showCopyButton={false}
+                      placeholder="Quick Add: e.g. 'Review Q4 budget proposal tomorrow at 2pm'..."
+                      disabled={isCreatingTask}
+                      className="border-none shadow-none focus-visible:ring-0 pl-2 text-sm"
+                      wrapperClassName="w-full"
+                    />
+
+                    {showQuickAddDescription && (
+                      <ProTextarea
+                        value={quickAddDescription}
+                        onChange={(e) => setQuickAddDescription(e.target.value)}
+                        placeholder="Add a description (optional)..."
+                        autoGrow
+                        minHeight={60}
+                        maxHeight={180}
+                        showCopyButton={false}
+                        className="text-sm resize-y min-h-[60px]"
+                        wrapperClassName="w-full"
                       />
+                    )}
 
-                      {/* Description textarea - shows when user starts typing */}
-                      {showQuickAddDescription && (
-                        <Textarea
-                          value={quickAddDescription}
-                          onChange={(e) =>
-                            setQuickAddDescription(e.target.value)
-                          }
-                          placeholder="Add a description (optional)..."
-                          className="text-sm resize-y min-h-[60px]"
-                          rows={2}
+                    <div className="flex items-center gap-2">
+                      {shouldShowProjectSelector && projects.length > 0 ? (
+                        <HierarchyCascade
+                          levels={["organization", "scope", "project"]}
+                          value={{
+                            ...EMPTY_SELECTION,
+                            projectId: selectedProjectForTask,
+                          }}
+                          onChange={(sel) => {
+                            if (sel.projectId)
+                              setSelectedProjectForTask(sel.projectId);
+                          }}
                         />
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        {shouldShowProjectSelector && projects.length > 0 ? (
-                          <HierarchyCascade
-                            levels={["organization", "scope", "project"]}
-                            value={{
-                              ...EMPTY_SELECTION,
-                              projectId: selectedProjectForTask,
-                            }}
-                            onChange={(sel) => {
-                              if (sel.projectId)
-                                setSelectedProjectForTask(sel.projectId);
-                            }}
-                          />
-                        ) : activeProject ? (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Folder size={12} />
-                            <span>
-                              {
-                                projects.find((p) => p.id === activeProject)
-                                  ?.name
-                              }
-                            </span>
-                          </div>
-                        ) : null}
-
-                        <Button
-                          type="submit"
-                          disabled={
-                            !newTaskTitle.trim() ||
-                            isCreatingTask ||
-                            !selectedProjectForTask
-                          }
-                          size="sm"
-                          className="h-8 px-3 ml-auto"
-                        >
-                          {isCreatingTask ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <>
-                              <PlusCircle size={14} className="mr-1" />
-                              Add Task
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </form>
+                      ) : activeProject ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Folder size={12} />
+                          <span>
+                            {projects.find((p) => p.id === activeProject)?.name}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
 
                   {/* Task List */}

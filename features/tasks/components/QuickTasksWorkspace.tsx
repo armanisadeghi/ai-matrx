@@ -5,6 +5,7 @@ import { idMatchesQuery } from "@/utils/search-scoring";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
 import { Search, Inbox, Plus, Folder, FolderKanban } from "lucide-react";
 import CompactTaskItem from "@/features/tasks/components/CompactTaskItem";
@@ -178,8 +179,7 @@ export function QuickTasksMain() {
     return filtered.find((t) => t.id === selectedTaskId) || null;
   }, [selectedTaskId, filtered]);
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim() || !selectedProjectId) return;
     const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
@@ -208,26 +208,23 @@ export function QuickTasksMain() {
           Select a task from the sidebar, or create a new one.
         </p>
 
-        <form onSubmit={handleAddTask} className="flex gap-2 w-full max-w-sm">
-          <Input
-            ref={quickAddInputRef}
-            value={newTaskTitle}
-            onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
-            placeholder="Enter new task title..."
-            className="h-8 text-[13px] flex-1"
-            disabled={isCreatingTask || !selectedProjectId}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            className="h-8 text-xs font-semibold"
-            disabled={
-              isCreatingTask || !newTaskTitle.trim() || !selectedProjectId
-            }
-          >
-            <Plus className="h-3.5 w-3.5 mr-1" /> Add Task
-          </Button>
-        </form>
+        <ProInput
+          ref={quickAddInputRef}
+          value={newTaskTitle}
+          onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
+          onSubmit={() => void handleAddTask()}
+          submitOnEnter
+          submitLabel="Add task"
+          submitDisabled={
+            isCreatingTask || !newTaskTitle.trim() || !selectedProjectId
+          }
+          isSubmitting={isCreatingTask}
+          showCopyButton={false}
+          placeholder="Enter new task title..."
+          disabled={isCreatingTask || !selectedProjectId}
+          className="h-8 text-[13px] flex-1"
+          wrapperClassName="w-full max-w-sm"
+        />
 
         {!selectedProjectId && (
           <p className="text-[10px] text-destructive mt-2">

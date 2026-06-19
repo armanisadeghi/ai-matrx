@@ -160,6 +160,17 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   /** Submit on plain Enter (Shift+Enter still inserts newline). Default: false. */
   submitOnEnter?: boolean;
   /**
+   * Field-navigation mode (opt-in). When provided, plain Enter does NOT insert
+   * a newline — instead it calls `onEnterKey` (the caller typically advances
+   * focus to the next field / submits). A newline is still reachable: Shift+Enter
+   * inserts one naturally and Cmd/Ctrl+Enter inserts one explicitly.
+   *
+   * This takes precedence over `onSubmit` / `submitOnEnter` for the Enter key,
+   * so the two are not meant to be combined. Use this for sequential
+   * form-style flows (e.g. tab through variables, then land in the composer).
+   */
+  onEnterKey?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  /**
    * Floating label text (dense-form variant). When set, the label animates
    * into the border on focus or value, and the `placeholder` prop is
    * suppressed (they would visually conflict). Use only in a `bg-card`
@@ -199,6 +210,7 @@ export const ProTextarea = React.forwardRef<
       submitLabel = "Send",
       submitOnCmdEnter,
       submitOnEnter = false,
+      onEnterKey,
       floatingLabel,
       id: idProp,
       placeholder,
@@ -440,6 +452,25 @@ export const ProTextarea = React.forwardRef<
       if (canSubmit && onSubmit) onSubmit();
     }, [canSubmit, onSubmit]);
 
+    // Insert a newline at the caret without leaving the field. Used by the
+    // field-navigation mode (`onEnterKey`) so Cmd/Ctrl+Enter can still produce
+    // a line break even though plain Enter is repurposed for "next field".
+    const insertNewlineAtCursor = useCallback(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      const next = el.value.slice(0, start) + "\n" + el.value.slice(end);
+      pushToTextarea(next);
+      const caret = start + 1;
+      requestAnimationFrame(() => {
+        const node = textareaRef.current;
+        if (!node) return;
+        node.selectionStart = caret;
+        node.selectionEnd = caret;
+      });
+    }, [pushToTextarea]);
+
     // ── Menu + cleanup actions ─────────────────────────────────────────────
     const handleMenuOpenChange = useCallback(
       (open: boolean) => {
@@ -497,15 +528,34 @@ export const ProTextarea = React.forwardRef<
         if (isHovered) setIsHovered(false);
 
         onKeyDown?.(e);
-        if (e.defaultPrevented || !onSubmit || e.key !== "Enter") return;
+        if (e.defaultPrevented || e.key !== "Enter") return;
 
-        if (cmdEnterEnabled && (e.metaKey || e.ctrlKey)) {
+        const withCmd = e.metaKey || e.ctrlKey;
+
+        // Field-navigation mode (opt-in via onEnterKey) takes precedence over
+        // submit-on-enter: plain Enter advances; Shift+Enter is a natural
+        // newline; Cmd/Ctrl+Enter inserts one explicitly.
+        if (onEnterKey) {
+          if (e.shiftKey) return;
+          if (withCmd) {
+            e.preventDefault();
+            insertNewlineAtCursor();
+            return;
+          }
+          e.preventDefault();
+          onEnterKey(e);
+          return;
+        }
+
+        if (!onSubmit) return;
+
+        if (cmdEnterEnabled && withCmd) {
           e.preventDefault();
           triggerSubmit();
           return;
         }
 
-        if (submitOnEnter && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+        if (submitOnEnter && !e.shiftKey && !withCmd) {
           e.preventDefault();
           triggerSubmit();
         }
@@ -513,6 +563,8 @@ export const ProTextarea = React.forwardRef<
       [
         isHovered,
         onKeyDown,
+        onEnterKey,
+        insertNewlineAtCursor,
         onSubmit,
         cmdEnterEnabled,
         submitOnEnter,

@@ -42,6 +42,12 @@ interface VariableInputComponentProps {
   compact?: boolean;
   hideLabel?: boolean;
   wizardMode?: boolean;
+  /**
+   * Field-navigation: for text/textarea inputs, plain Enter advances to the
+   * next field instead of inserting a newline. Only wired to the textarea
+   * input — other input types (selects, toggles, media) ignore it.
+   */
+  onEnterAdvance?: () => void;
 }
 
 /** Coerce any incoming value to a string for the existing text-style inputs. */
@@ -64,6 +70,7 @@ export function VariableInputComponent({
   compact = false,
   hideLabel = false,
   wizardMode = false,
+  onEnterAdvance,
 }: VariableInputComponentProps) {
   const formattedName = formatText(variableName);
   const [containerRef, containerWidth] = useContainerWidth();
@@ -85,6 +92,7 @@ export function VariableInputComponent({
       onChange={stringOnChange}
       variableName={formattedName}
       onRequestClose={onRequestClose}
+      onEnterAdvance={onEnterAdvance}
       {...sharedProps}
     />
   );

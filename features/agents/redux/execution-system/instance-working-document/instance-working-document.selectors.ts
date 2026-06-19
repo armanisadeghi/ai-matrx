@@ -22,7 +22,11 @@ export const selectWorkingDocEnabled =
   (conversationId: string) =>
   (state: RootState): boolean =>
     state.instanceWorkingDocument.byConversationId[conversationId]?.enabled ??
-    false;
+    // Default ON: the working document is a default collaboration surface the
+    // user can turn off — not a manual opt-in. An explicit `false` (user
+    // toggled off) is always respected; only the absence of an entry defaults
+    // to enabled.
+    true;
 
 export const selectWorkingDocContent =
   (conversationId: string) =>
@@ -33,8 +37,10 @@ export const selectWorkingDocContent =
 export const selectWorkingDocTitle =
   (conversationId: string) =>
   (state: RootState): string =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.title ??
-    "Working document";
+    // Empty by default — the document is "unnamed" until the user names it.
+    // Display surfaces fall back to "Working document" for an empty title; we
+    // never persist that fallback as a real title.
+    state.instanceWorkingDocument.byConversationId[conversationId]?.title ?? "";
 
 export const selectWorkingDocBinding =
   (conversationId: string) =>

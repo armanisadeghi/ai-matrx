@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
+import { ProInput } from "@/components/official/ProInput";
 import {
   useAssociateTask,
   type TaskSource,
@@ -24,8 +22,8 @@ interface TaskQuickAddBarProps {
 }
 
 /**
- * Drop-in inline "add task" bar. Mirrors `VoiceTextarea` in spirit: a single
- * input that transparently creates a real task on Enter via `useAssociateTask`.
+ * Drop-in inline "add task" bar. Uses the canonical ProInput (voice + Enter submit)
+ * and creates a real task on submit via `useAssociateTask`.
  *
  *   <TaskQuickAddBar source={{ entity_type: "note", entity_id: note.id }} />
  */
@@ -56,40 +54,23 @@ export default function TaskQuickAddBar({
     }
   };
 
-  const inputH = compact ? "h-7" : "h-8";
-  const btnH = compact ? "h-7 w-7" : "h-8 w-8";
-
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
-      <Input
+      <ProInput
         ref={inputRef}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submit();
-          }
-        }}
+        onSubmit={() => void submit()}
+        submitOnEnter
+        submitLabel="Add task"
+        submitDisabled={!value.trim() || isBusy}
+        isSubmitting={isBusy}
+        showCopyButton={false}
         placeholder={placeholder}
         disabled={isBusy}
-        className={cn("text-xs bg-card", inputH)}
-        style={{ fontSize: "16px" }}
+        className={cn("text-xs bg-card", compact ? "h-7" : "h-8")}
+        wrapperClassName="flex-1 min-w-0"
       />
-      <Button
-        type="button"
-        size="sm"
-        onClick={submit}
-        disabled={!value.trim() || isBusy}
-        className={cn("p-0 shrink-0", btnH)}
-        title="Create task (Enter)"
-      >
-        {isBusy ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Plus className="w-3.5 h-3.5" />
-        )}
-      </Button>
     </div>
   );
 }

@@ -3,7 +3,6 @@
 
 import React, { JSX, useState, useEffect } from "react";
 import {
-  PlusCircle,
   FolderPlus,
   Calendar,
   FileText,
@@ -40,7 +39,8 @@ import TaskHeader from "./TaskHeader";
 import TaskList from "./TaskList";
 import AllTasksView from "./AllTasksView";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
@@ -124,19 +124,10 @@ export default function TaskContent(): JSX.Element {
     );
   }
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation
+  const handleAddTask = async () => {
     const trimmedTitle = newTaskTitle.trim();
-    if (!trimmedTitle) {
-      return; // Don't create empty tasks
-    }
-
-    if (trimmedTitle.length > 200) {
-      // Could add a toast here
-      return;
-    }
+    if (!trimmedTitle) return;
+    if (trimmedTitle.length > 200) return;
 
     const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
@@ -156,7 +147,6 @@ export default function TaskContent(): JSX.Element {
       scheduleQuickAddRefocus();
     }
 
-    // Reset all fields
     setTaskDescription("");
     setTaskDueDate("");
     setShowAdvanced(false);
@@ -188,21 +178,26 @@ export default function TaskContent(): JSX.Element {
         {canShowTasks && (
           <div className="mb-3 mx-auto max-w-4xl">
             <div className="bg-white dark:bg-gray-800 rounded-lg border-border p-3 shadow-sm">
-              <form onSubmit={handleAddTask} className="space-y-2">
-                {/* Input row */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    ref={quickAddInputRef}
-                    type="text"
-                    value={newTaskTitle}
-                    onChange={handleTitleChange}
-                    placeholder={`Add a new task${!shouldShowProjectSelector && activeProject ? ` to ${projects.find((p) => p.id === activeProject)?.name}` : ""}...`}
-                    disabled={isCreatingTask}
-                    className="flex-1"
-                  />
-                </div>
+              <div className="space-y-2">
+                <ProInput
+                  ref={quickAddInputRef}
+                  value={newTaskTitle}
+                  onChange={handleTitleChange}
+                  onSubmit={() => void handleAddTask()}
+                  submitOnEnter
+                  submitLabel="Add task"
+                  submitDisabled={
+                    !newTaskTitle.trim() ||
+                    isCreatingTask ||
+                    !selectedProjectForTask
+                  }
+                  isSubmitting={isCreatingTask}
+                  showCopyButton={false}
+                  placeholder={`Add a new task${!shouldShowProjectSelector && activeProject ? ` to ${projects.find((p) => p.id === activeProject)?.name}` : ""}...`}
+                  disabled={isCreatingTask}
+                  wrapperClassName="w-full"
+                />
 
-                {/* Project selector and add button row */}
                 <div className="flex items-center gap-2">
                   {shouldShowProjectSelector && projects.length > 0 ? (
                     <div className="flex-1">
@@ -226,26 +221,8 @@ export default function TaskContent(): JSX.Element {
                       </span>
                     </div>
                   )}
-
-                  <Button
-                    type="submit"
-                    disabled={
-                      !newTaskTitle.trim() ||
-                      isCreatingTask ||
-                      !selectedProjectForTask
-                    }
-                    size="sm"
-                    className="h-9 px-3"
-                  >
-                    {isCreatingTask ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <PlusCircle size={16} />
-                    )}
-                  </Button>
                 </div>
 
-                {/* Advanced options - Show when user starts typing */}
                 {showAdvanced && (
                   <div className="space-y-2 pt-2 border-t border-border">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -262,17 +239,21 @@ export default function TaskContent(): JSX.Element {
                         />
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-1 md:col-span-2">
                         <label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1">
                           <FileText size={12} />
                           Description
                         </label>
-                        <Textarea
+                        <ProTextarea
                           value={taskDescription}
                           onChange={(e) => setTaskDescription(e.target.value)}
                           placeholder="Add details..."
+                          autoGrow
+                          minHeight={48}
+                          maxHeight={160}
+                          showCopyButton={false}
                           className="text-sm resize-y"
-                          rows={1}
+                          wrapperClassName="w-full"
                         />
                       </div>
                     </div>
@@ -287,7 +268,7 @@ export default function TaskContent(): JSX.Element {
                     </button>
                   </div>
                 )}
-              </form>
+              </div>
             </div>
           </div>
         )}

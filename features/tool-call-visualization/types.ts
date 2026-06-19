@@ -64,6 +64,12 @@ export interface ToolRendererProps {
    * read-only UI in this mode.
    */
   isPersisted?: boolean;
+
+  /**
+   * Owning conversation id — threaded from the chat shell so interactive
+   * renderers can publish user overrides into instance context.
+   */
+  conversationId?: string;
 }
 
 /**

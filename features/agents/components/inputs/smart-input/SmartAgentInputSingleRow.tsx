@@ -65,7 +65,7 @@ export function SmartAgentInputSingleRow({
   };
 
   return (
-    <div className="flex flex-col gap-1 w-full">
+    <div className="flex flex-col gap-1 w-full" data-agent-input-shell>
       {/* Variable inputs (stacked above the row when present) */}
       <SmartAgentVariables
         conversationId={conversationId}

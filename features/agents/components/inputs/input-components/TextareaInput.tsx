@@ -10,6 +10,11 @@ interface TextareaInputProps {
   compact?: boolean;
   wizardMode?: boolean;
   containerWidth?: number;
+  /**
+   * Field-navigation: when set, plain Enter advances to the next field instead
+   * of inserting a newline (Shift / Cmd / Ctrl + Enter still insert one).
+   */
+  onEnterAdvance?: () => void;
 }
 
 /**
@@ -23,6 +28,7 @@ export function TextareaInput({
   onRequestClose,
   compact = false,
   wizardMode = false,
+  onEnterAdvance,
 }: TextareaInputProps) {
   const hasSelectedRef = useRef(false);
 
@@ -46,6 +52,7 @@ export function TextareaInput({
       rows={isCompact ? 2 : undefined}
       autoFocus
       appendTranscript={true}
+      onEnterKey={onEnterAdvance ? () => onEnterAdvance() : undefined}
       onRequestClose={onRequestClose}
       protectTranscription={true}
       onTranscriptionComplete={(text) => {

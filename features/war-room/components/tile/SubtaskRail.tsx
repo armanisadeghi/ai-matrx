@@ -26,7 +26,6 @@ import {
   Loader2,
   MoreHorizontal,
   PanelRightOpen,
-  Plus,
   Trash2,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,6 +48,7 @@ import {
 } from "@/features/tasks/redux/taskUiSlice";
 import { cn } from "@/lib/utils";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { ProInput } from "@/components/official/ProInput";
 
 export function SubtaskRail({
   taskId,
@@ -140,31 +140,26 @@ export function SubtaskRail({
       </div>
 
       {/* Rapid entry — always visible, stays focused for chained adds. */}
-      <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/40 bg-muted/20 pl-1.5 pr-2">
-        <Plus className="size-3 shrink-0 text-muted-foreground" />
-        <input
+      <div className="shrink-0 border-b border-border/40 bg-muted/20 px-1.5 py-1">
+        <ProInput
           ref={inputRef}
-          type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              void addSubtask();
-            }
-          }}
+          onSubmit={() => void addSubtask()}
+          submitOnEnter
+          submitLabel="Add subtask"
+          submitDisabled={!draft.trim() || adding}
+          isSubmitting={adding}
+          showCopyButton={false}
           onBlur={() => {
             if (draft.trim()) void addSubtask();
           }}
           placeholder="Add subtask, press Enter…"
-          className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-          style={{ fontSize: "16px" }}
           disabled={adding}
           aria-label="Add subtask"
+          className="h-8 border-0 bg-transparent text-xs shadow-none"
+          wrapperClassName="w-full"
         />
-        {adding && (
-          <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
-        )}
       </div>
 
       {/* List */}

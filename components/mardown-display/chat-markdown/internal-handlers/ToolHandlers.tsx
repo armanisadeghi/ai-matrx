@@ -22,8 +22,8 @@ import {
   selectToolLifecycle,
   type ContentSegmentDbTool,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 
 // ============================================================================
 // INLINE TOOL CARD — subscribes to a single tool's lifecycle by callId.
@@ -80,47 +80,13 @@ export const DbToolCard: React.FC<DbToolCardProps> = ({
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
 
-  const entry = useMemo<ToolLifecycleEntry>(() => {
-    // DB stores result as a JSON string — parse it so renderers see the
-    // same shape as the live-stream path.
-    let parsedResult: unknown = segment.result;
-    if (typeof parsedResult === "string" && !segment.isError) {
-      try {
-        parsedResult = JSON.parse(parsedResult);
-      } catch {
-        // leave as raw string if not valid JSON
-      }
-    }
-
-    const now = new Date().toISOString();
-    return {
-      callId: segment.callId,
-      toolName: segment.toolName,
-      displayName: segment.toolName,
-      status: segment.isError ? "error" : "completed",
-      arguments: segment.arguments ?? {},
-      startedAt: now,
-      completedAt: now,
-      latestMessage: null,
-      latestData: null,
-      result: segment.isError ? null : parsedResult,
-      resultPreview: null,
-      errorType: null,
-      errorMessage: segment.isError
-        ? typeof segment.result === "string"
-          ? segment.result
-          : JSON.stringify(segment.result)
-        : null,
-      isDelegated: false,
-      events: [],
-    };
-  }, [
-    segment.callId,
-    segment.toolName,
-    segment.arguments,
-    segment.result,
-    segment.isError,
-  ]);
+  // Canonical persisted→lifecycle conversion lives in `persistedToolEntry`:
+  // it reads the full `execution_events` log + real timestamps off the joined
+  // `cx_tool_call` row, so a reloaded tool renders identically to the live one.
+  const entry = useMemo(
+    () => persistedToolEntry(segment),
+    [segment.callId, segment.record, segment.stubName, segment.stubArguments],
+  );
 
   if (hidden) return null;
 

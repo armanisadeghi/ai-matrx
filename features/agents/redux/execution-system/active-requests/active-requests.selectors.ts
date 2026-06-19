@@ -58,6 +58,7 @@ import type {
   OperationEntry,
   CompletedOperationEntry,
 } from "@/features/agents/types/request.types";
+import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];
@@ -477,11 +478,18 @@ export type ContentSegmentStatus = {
 };
 export type ContentSegmentDbTool = {
   type: "db_tool";
+  /** Message-part call id — React key + entry identity. */
   callId: string;
-  toolName: string;
-  arguments: Record<string, unknown>;
-  result: unknown | null;
-  isError: boolean;
+  /**
+   * The joined `cx_tool_call` row. Carries the full `execution_events` log,
+   * real timestamps, and `tool_name_as_called` — everything the persisted
+   * renderer needs to match the live view. Null when no row exists yet.
+   */
+  record: CxToolCallRecord | null;
+  /** Tool name from the `cx_message` stub (fallback when `record` is null). */
+  stubName: string | null;
+  /** Args from the `cx_message` stub — authoritative when the row lacks them. */
+  stubArguments: Record<string, unknown> | null;
 };
 export type ContentSegmentThinking = {
   type: "thinking";

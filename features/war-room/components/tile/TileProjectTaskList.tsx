@@ -32,7 +32,6 @@ import {
   ListTodo,
   Loader2,
   MoreHorizontal,
-  Plus,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -61,6 +60,7 @@ import {
 import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { ProInput } from "@/components/official/ProInput";
 
 export function TileProjectTaskList({
   tileId,
@@ -284,35 +284,28 @@ function ProjectTaskCreate({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/20 py-1.5",
+        "shrink-0 border-b border-border/40 bg-muted/20 py-1.5",
         compact ? "px-0" : "px-2.5",
       )}
     >
-      <Plus className="size-3.5 shrink-0 text-muted-foreground" />
-      <input
+      <ProInput
         ref={inputRef}
-        type="text"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            add();
-          } else if (e.key === "Escape") {
-            setDraft("");
-          }
-        }}
+        onSubmit={add}
+        submitOnEnter
+        submitLabel="Add task"
+        submitDisabled={!draft.trim() || inFlight > 0}
+        isSubmitting={inFlight > 0}
+        showCopyButton={false}
         onBlur={() => {
           if (draft.trim()) add();
         }}
         placeholder="Add task, press Enter…"
-        className="h-6 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-        style={{ fontSize: "16px" }}
         aria-label="Add task to project"
+        className="h-8 border-0 bg-transparent text-xs shadow-none"
+        wrapperClassName="w-full"
       />
-      {inFlight > 0 && (
-        <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
-      )}
     </div>
   );
 }

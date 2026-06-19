@@ -94,9 +94,13 @@ function ensureEntry(
   if (!entry) {
     entry = {
       conversationId,
-      enabled: false,
+      // Default ON — the working document is a default surface, opt-out not
+      // opt-in. Mirrors the `selectWorkingDocEnabled` no-entry fallback.
+      enabled: true,
       content: "",
-      title: "Working document",
+      // Unnamed by default; the user is encouraged to name it. Never persist a
+      // placeholder as the real title.
+      title: "",
       binding: { ...NO_BINDING },
       saving: false,
       lastError: null,

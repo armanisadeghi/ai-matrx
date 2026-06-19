@@ -102,7 +102,7 @@ export function ContextSlotDetailSheet({
       expandButtonLabel="Context slot"
       position="right"
       defaultSize={34}
-      contentClassName="flex min-h-0 flex-1 flex-col overflow-y-auto p-0"
+      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
       {contextKey === WORKING_DOCUMENT_CONTEXT_KEY ? (
         // The working document is collaborative and re-sent every turn — render

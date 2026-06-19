@@ -136,7 +136,10 @@ export function SmartAgentInputStacked({
   }
 
   return (
-    <div className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}>
+    <div
+      className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}
+      data-agent-input-shell
+    >
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
       <SmartAgentVariables
         conversationId={conversationId}

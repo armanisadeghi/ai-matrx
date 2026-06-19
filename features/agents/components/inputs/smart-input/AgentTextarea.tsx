@@ -256,6 +256,7 @@ export function AgentTextarea({
           className="w-full bg-transparent border-none outline-none text-xs text-foreground placeholder:text-muted-foreground/60 resize-none overflow-hidden leading-5"
           style={{ minHeight: 20, maxHeight: 20 }}
           rows={1}
+          data-agent-main-input
         />
       </div>
     );
@@ -273,6 +274,7 @@ export function AgentTextarea({
           className="w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 transition-[height] duration-150 ease-out motion-reduce:transition-none"
           style={{ minHeight: compact ? 28 : 40 }}
           rows={1}
+          data-agent-main-input
         />
         {showExpand && (
           <button

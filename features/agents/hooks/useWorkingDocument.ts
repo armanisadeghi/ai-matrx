@@ -40,11 +40,9 @@ import {
   applyAgentWorkingDocContent,
   markWorkingDocError,
   markWorkingDocSaving,
-  setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
   setWorkingDocTitle,
-  NO_BINDING,
   type WorkingDocumentBinding,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
@@ -58,10 +56,13 @@ import {
 import {
   bindWorkingDocumentToNoteThunk,
   ensureWorkingDocumentRowThunk,
+  unbindWorkingDocumentThunk,
+  type BindNoteMode,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import {
   rowToCxWorkingDocument,
   updateCxWorkingDocumentContent,
+  updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
@@ -177,7 +178,7 @@ export interface UseWorkingDocumentResult {
   onChange: (value: string) => void;
   flush: () => void;
   setEnabled: (enabled: boolean) => void;
-  bindToNote: (noteId: string) => void;
+  bindToNote: (noteId: string, mode?: BindNoteMode) => void;
   unbind: () => void;
   setTitle: (title: string) => void;
   openAsWindow: () => void;
@@ -305,23 +306,35 @@ export function useWorkingDocument(
   );
 
   const bindToNote = useCallback(
-    (noteId: string) => {
-      void dispatch(bindWorkingDocumentToNoteThunk({ conversationId, noteId }));
+    (noteId: string, mode?: BindNoteMode) => {
+      void dispatch(
+        bindWorkingDocumentToNoteThunk({ conversationId, noteId, mode }),
+      );
     },
     [dispatch, conversationId],
   );
 
   const unbind = useCallback(() => {
-    dispatch(
-      setWorkingDocBinding({ conversationId, binding: { ...NO_BINDING } }),
-    );
+    void dispatch(unbindWorkingDocumentThunk({ conversationId }));
   }, [dispatch, conversationId]);
 
   const setTitle = useCallback(
     (value: string) => {
       dispatch(setWorkingDocTitle({ conversationId, title: value }));
+      // Persist the chosen name to the durable row so it survives reloads and
+      // shows everywhere this document appears.
+      if (binding.kind === "cx_working_document" && binding.id) {
+        void updateCxWorkingDocumentTitle(binding.id, value).catch(() =>
+          dispatch(
+            markWorkingDocError({
+              conversationId,
+              error: "Could not save the document name.",
+            }),
+          ),
+        );
+      }
     },
-    [dispatch, conversationId],
+    [dispatch, conversationId, binding.kind, binding.id],
   );
 
   const openAsWindow = useCallback(() => {

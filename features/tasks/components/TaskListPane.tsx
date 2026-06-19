@@ -4,8 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
-  Plus,
-  Loader2,
   Calendar,
   CircleDashed,
   CheckCircle2,
@@ -40,6 +38,7 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
@@ -114,8 +113,7 @@ export default function TaskListPane() {
     dispatch(setSelectedTaskId(taskId));
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
     const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
@@ -183,10 +181,9 @@ export default function TaskListPane() {
             <LayoutGrid className="h-3.5 w-3.5" />
           </button>
         </div>
-        <form onSubmit={handleAddTask} className="flex gap-1 flex-1 min-w-0">
-          <Input
+        <div className="flex gap-1 flex-1 min-w-0">
+          <ProInput
             ref={quickAddInputRef}
-            type="text"
             value={newTaskTitle}
             onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
             placeholder={
@@ -194,22 +191,17 @@ export default function TaskListPane() {
                 ? `Quick add to ${projects.find((p) => p.id === activeProject)?.name ?? "project"}...`
                 : "Quick add task..."
             }
-            className="h-7 text-xs bg-card"
-            style={{ fontSize: "16px" }}
+            onSubmit={() => void handleAddTask()}
+            submitOnEnter
+            submitLabel="Add task"
+            submitDisabled={!newTaskTitle.trim() || isCreatingTask}
+            isSubmitting={isCreatingTask}
+            showCopyButton={false}
+            className="h-8 text-xs bg-card"
+            wrapperClassName="flex-1 min-w-0"
             disabled={isCreatingTask}
           />
-          <button
-            type="submit"
-            disabled={!newTaskTitle.trim() || isCreatingTask}
-            className="h-7 px-2 inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
-          >
-            {isCreatingTask ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <Plus size={12} />
-            )}
-          </button>
-        </form>
+        </div>
       </div>
 
       {groupByBanner && listView === "list" && (

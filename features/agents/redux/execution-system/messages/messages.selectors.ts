@@ -523,45 +523,21 @@ export const selectMessageInterleavedContent = (
             const toolCallRecord =
               callId !== "unknown" ? toolCallByCallId.get(callId) : undefined;
 
-            // Pick the first source that has *actual* data. `??` alone
-            // is wrong here because an empty `{}` (e.g. a stream-time
-            // record_reserved seed before tool_started lands) is truthy
-            // and would shadow real args coming from the stub. Both the
-            // cx_tool_call row AND the cx_message stub are authoritative —
-            // either may carry the full arguments.
-            const isPopulatedObject = (
-              v: unknown,
-            ): v is Record<string, unknown> =>
-              !!v &&
-              typeof v === "object" &&
-              !Array.isArray(v) &&
-              Object.keys(v as Record<string, unknown>).length > 0;
-
-            const obsArgs = toolCallRecord?.arguments;
-            const stubArgs = tc.arguments;
-            const resolvedArguments: Record<string, unknown> =
-              isPopulatedObject(obsArgs)
-                ? obsArgs
-                : isPopulatedObject(stubArgs)
-                  ? stubArgs
-                  : {};
-
-            // Prefer the FULL output — `output_preview` is a truncated string
-            // for the slim row only. The overlay must show everything the
-            // agent saw, so full `output` wins; preview is the fallback.
-            const resolvedResult =
-              toolCallRecord?.output ?? toolCallRecord?.outputPreview ?? null;
-            const resolvedIsError =
-              toolCallRecord?.isError ??
-              (toolCallRecord ? !toolCallRecord.success : false);
-
+            // Join the row + stub and hand BOTH to the renderer. The canonical
+            // reconciliation (args/result/events/timestamps) lives in
+            // `persistedToolEntry` so the persisted entry is byte-identical to
+            // the live one — the selector's only job here is the join.
             segments.push({
               type: "db_tool",
               callId,
-              toolName: toolCallRecord?.toolName ?? tc.name ?? "unknown_tool",
-              arguments: resolvedArguments,
-              result: resolvedResult,
-              isError: resolvedIsError,
+              record: toolCallRecord ?? null,
+              stubName: tc.name ?? null,
+              stubArguments:
+                tc.arguments &&
+                typeof tc.arguments === "object" &&
+                !Array.isArray(tc.arguments)
+                  ? tc.arguments
+                  : null,
             } satisfies ContentSegmentDbTool);
             break;
           }

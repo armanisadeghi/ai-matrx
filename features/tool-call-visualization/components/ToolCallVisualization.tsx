@@ -73,7 +73,13 @@ const ToolCallVisualizationInner: React.FC<{
   hasContent?: boolean;
   isPersisted?: boolean;
   className?: string;
-}> = ({ entries, requestId, isPersisted = false, className }) => {
+}> = ({
+  entries,
+  requestId,
+  conversationId,
+  isPersisted = false,
+  className,
+}) => {
   // A tool call is a single line by default. Only the rich, opted-in custom
   // renderers (web_search, deep research, …) start expanded so their data
   // streams in; everything else stays one line until clicked.
@@ -312,6 +318,7 @@ const ToolCallVisualizationInner: React.FC<{
                   onOpenWindowPanel={handleOpenWindowPanel}
                   toolGroupId={entry.callId}
                   isPersisted={isPersisted}
+                  conversationId={conversationId}
                 />
               </div>
             );

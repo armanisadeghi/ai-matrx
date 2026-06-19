@@ -11,8 +11,6 @@ import {
   MessageSquare,
   CheckSquare,
   Loader2,
-  Plus,
-  Send,
   Save,
   X as XIcon,
   ChevronLeft,
@@ -33,7 +31,8 @@ import {
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import * as taskService from "@/features/tasks/services/taskService";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -594,11 +593,16 @@ export default function TaskDetailsPanel({
               )}
             </div>
           ) : (
-            <Textarea
+            <ProTextarea
               value={description}
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder="Add a description… Markdown is supported"
+              autoGrow
+              minHeight={100}
+              maxHeight={280}
+              showCopyButton
               className="text-sm resize-y min-h-[100px]"
+              wrapperClassName="w-full"
             />
           )}
         </div>
@@ -634,36 +638,21 @@ export default function TaskDetailsPanel({
                 </Button>
               </div>
             ))}
-            <div className="flex items-center gap-2 mt-2">
-              <Input
-                ref={subtaskInputRef}
-                value={newSubtask}
-                onChange={(e) => setNewSubtask(e.target.value)}
-                placeholder="Add a subtask..."
-                disabled={isAddingSubtask}
-                className="text-sm flex-1"
-                style={{ fontSize: "16px" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleAddSubtask();
-                  }
-                }}
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleAddSubtask}
-                disabled={isAddingSubtask}
-                className="h-7 w-7 rounded-full"
-              >
-                {isAddingSubtask ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Plus size={16} />
-                )}
-              </Button>
-            </div>
+            <ProInput
+              ref={subtaskInputRef}
+              value={newSubtask}
+              onChange={(e) => setNewSubtask(e.target.value)}
+              onSubmit={() => void handleAddSubtask()}
+              submitOnEnter
+              submitLabel="Add subtask"
+              submitDisabled={!newSubtask.trim() || isAddingSubtask}
+              isSubmitting={isAddingSubtask}
+              showCopyButton={false}
+              placeholder="Add a subtask..."
+              disabled={isAddingSubtask}
+              className="text-sm flex-1"
+              wrapperClassName="flex-1 min-w-0"
+            />
           </div>
         </div>
 
@@ -715,30 +704,23 @@ export default function TaskDetailsPanel({
             </div>
           )}
 
-          <div className="mt-3 flex gap-2">
-            <Input
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment..."
-              disabled={isAddingComment}
-              className="text-sm flex-1"
-              onKeyPress={(e) =>
-                e.key === "Enter" && !e.shiftKey && handleAddComment()
-              }
-            />
-            <Button
-              size="icon"
-              onClick={handleAddComment}
-              disabled={!newComment.trim() || isAddingComment}
-              className="h-7 w-7 rounded-full"
-            >
-              {isAddingComment ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Send size={16} />
-              )}
-            </Button>
-          </div>
+          <ProTextarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onSubmit={() => void handleAddComment()}
+            submitOnEnter
+            submitLabel="Post comment"
+            submitDisabled={!newComment.trim() || isAddingComment}
+            isSubmitting={isAddingComment}
+            showCopyButton={false}
+            placeholder="Write a comment..."
+            disabled={isAddingComment}
+            autoGrow
+            minHeight={56}
+            maxHeight={160}
+            className="text-sm"
+            wrapperClassName="w-full"
+          />
         </div>
       </div>
 

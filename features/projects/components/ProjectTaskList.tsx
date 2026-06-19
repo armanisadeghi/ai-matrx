@@ -27,8 +27,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   Table,
   TableHeader,
@@ -228,32 +228,31 @@ export function ProjectTaskList({
             <TableCell className="py-1.5" colSpan={4}>
               <div className="flex items-center gap-2 pl-7">
                 <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                <Input
+                <ProInput
                   ref={subInputRef}
                   autoFocus
                   value={subTitle}
                   onChange={(e) => setSubTitle(e.target.value)}
-                  disabled={isAddingSub}
+                  onSubmit={() => void addSubtask(t.id)}
+                  submitOnEnter
+                  submitLabel="Add subtask"
+                  submitDisabled={!subTitle.trim() || isAddingSub}
+                  isSubmitting={isAddingSub}
+                  showCopyButton={false}
+                  onBlur={() => {
+                    if (subTitle.trim()) void addSubtask(t.id);
+                    else setAddingSubFor(null);
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void addSubtask(t.id);
-                    }
                     if (e.key === "Escape") {
                       setAddingSubFor(null);
                       setSubTitle("");
                     }
                   }}
-                  onBlur={() => {
-                    if (subTitle.trim()) {
-                      void addSubtask(t.id);
-                    } else {
-                      setAddingSubFor(null);
-                    }
-                  }}
                   placeholder="Subtask title, Enter for next…"
+                  disabled={isAddingSub}
                   className="h-7 text-[13px] max-w-md"
-                  style={{ fontSize: "16px" }}
+                  wrapperClassName="max-w-md flex-1"
                 />
               </div>
             </TableCell>
@@ -584,11 +583,12 @@ function QuickAddRow({
         <TableCell className="py-1.5">
           <div className="flex items-center gap-2">
             <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-            <Input
+            <ProInput
               ref={titleRef}
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              showCopyButton={false}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
@@ -603,7 +603,7 @@ function QuickAddRow({
               }}
               placeholder="Task title, Enter for next field…"
               className="h-8 max-w-md"
-              style={{ fontSize: "16px" }}
+              wrapperClassName="max-w-md"
             />
           </div>
         </TableCell>
@@ -684,25 +684,22 @@ function QuickAddRow({
               <span className="font-normal">description</span>
             </button>
             {advanced && (
-              <Textarea
+              <ProTextarea
                 ref={descriptionRef}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    void submitAndContinue();
-                    return;
-                  }
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void submitAndContinue();
-                  }
-                  if (e.key === "Escape") resetAll();
-                }}
+                onSubmit={() => void submitAndContinue()}
+                submitOnEnter
+                submitOnCmdEnter
+                submitLabel="Add task"
+                submitDisabled={!title.trim()}
+                showCopyButton={false}
+                autoGrow
+                minHeight={72}
+                maxHeight={200}
                 placeholder="Description, Enter to add task…"
                 className="text-sm min-h-[72px] resize-y max-w-2xl"
-                style={{ fontSize: "16px" }}
+                wrapperClassName="max-w-2xl w-full"
               />
             )}
             <div className="flex items-center gap-2">
