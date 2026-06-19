@@ -248,10 +248,10 @@ function VersionRow({
                   className={cn(
                     "inline-block px-1.5 py-0.5 rounded text-[0.5625rem] font-medium",
                     n.changeType === "added"
-                      ? "bg-green-950/40 text-green-400"
+                      ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400"
                       : n.changeType === "removed"
-                        ? "bg-red-950/40 text-red-400"
-                        : "bg-amber-950/40 text-amber-400",
+                        ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
                   )}
                 >
                   {n.key}

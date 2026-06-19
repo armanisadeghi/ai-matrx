@@ -8,7 +8,8 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Minus, Plus, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
+import { InlineTextDiff } from '@/components/diff/adapters/InlineTextDiff';
 import type { VersionDiff } from '../types';
 
 interface VersionDiffViewProps {
@@ -60,27 +61,12 @@ function FieldDiff({
             {expanded && (
                 <div className="p-3">
                     {viewMode === 'side-by-side' ? (
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Version A */}
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-xs text-red-500/80">
-                                    <Minus className="w-3 h-3" />
-                                    <span>Before</span>
-                                </div>
-                                <pre className="text-xs font-mono bg-red-500/5 border border-red-500/10 rounded-md p-2 overflow-auto max-h-48 whitespace-pre-wrap break-words">
-                                    {strA ?? 'null'}
-                                </pre>
-                            </div>
-                            {/* Version B */}
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-1 text-xs text-green-500/80">
-                                    <Plus className="w-3 h-3" />
-                                    <span>After</span>
-                                </div>
-                                <pre className="text-xs font-mono bg-green-500/5 border border-green-500/10 rounded-md p-2 overflow-auto max-h-48 whitespace-pre-wrap break-words">
-                                    {strB ?? 'null'}
-                                </pre>
-                            </div>
+                        <div className="overflow-auto max-h-48 rounded-md border border-border">
+                            <InlineTextDiff
+                                original={strA ?? 'null'}
+                                modified={strB ?? 'null'}
+                                view="split"
+                            />
                         </div>
                     ) : (
                         /* Inline mode */
@@ -96,13 +82,12 @@ function FieldDiff({
                                     </span>
                                 </div>
                             ) : (
-                                <div className="space-y-1">
-                                    <pre className="text-xs font-mono bg-red-500/5 border-l-2 border-red-500/30 pl-3 py-1 overflow-auto max-h-32 whitespace-pre-wrap break-words">
-                                        {strA ?? 'null'}
-                                    </pre>
-                                    <pre className="text-xs font-mono bg-green-500/5 border-l-2 border-green-500/30 pl-3 py-1 overflow-auto max-h-32 whitespace-pre-wrap break-words">
-                                        {strB ?? 'null'}
-                                    </pre>
+                                <div className="overflow-auto max-h-48 rounded-md border border-border">
+                                    <InlineTextDiff
+                                        original={strA ?? 'null'}
+                                        modified={strB ?? 'null'}
+                                        view="inline"
+                                    />
                                 </div>
                             )}
                         </div>

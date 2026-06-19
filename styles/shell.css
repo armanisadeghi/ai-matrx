@@ -816,6 +816,16 @@ button.shell-nav-item {
     color var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
+/* Action entries render as <button> but must look identical to the <a> items. */
+button.shell-nav-flyout-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .shell-nav-flyout-item:hover {
   background: hsl(var(--accent));
   color: hsl(var(--accent-foreground));

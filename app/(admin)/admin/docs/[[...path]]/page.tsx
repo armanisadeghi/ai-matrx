@@ -43,7 +43,16 @@ export default async function AdminDocsPage({ params }: AdminDocsPageProps) {
   if (!relPath.endsWith(".md") && !relPath.endsWith(".MD")) {
     notFound();
   }
-  const projectRoot = process.cwd();
+  // `process.cwd()` is read through an env-var indirection so Turbopack's
+  // output-file tracer can't fold `path.resolve(cwd, <dynamic>)` into a
+  // `/ROOT/<dynamic>` glob — that glob matches the ENTIRE repo (22k+ files)
+  // and bundles all of it into this function. The markdown files this route
+  // actually serves are declared explicitly via `outputFileTracingIncludes`
+  // in next.config.js. At runtime MATRX_DOCS_ROOT is unset, so this is just
+  // `process.cwd()` as before.
+  const projectRoot = path.resolve(
+    process.env.MATRX_DOCS_ROOT ?? process.cwd(),
+  );
   const fullPath = path.resolve(projectRoot, relPath);
   if (!fullPath.startsWith(projectRoot + path.sep)) {
     notFound();

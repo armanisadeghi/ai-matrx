@@ -4,9 +4,17 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileText, EyeOff, Eye, ChevronDown } from "lucide-react";
-import type { FieldAdapter, FieldDiffProps } from "@/components/diff/adapters/types";
+import type {
+  FieldAdapter,
+  FieldDiffProps,
+} from "@/components/diff/adapters/types";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
-import type { DiffSegment } from "@/features/notes/utils/diffAnalysis";
+import { computeTextDiff } from "@/components/diff/text/engine/computeTextDiff";
+import type {
+  DiffCell,
+  DiffRow as EngineDiffRow,
+  LineChangeType,
+} from "@/components/diff/text/engine/types";
 
 const COLLAPSE_THRESHOLD = 6; // Collapse unchanged sections longer than this
 
@@ -14,25 +22,44 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
   const oldContent = typeof node.oldValue === "string" ? node.oldValue : "";
   const newContent = typeof node.newValue === "string" ? node.newValue : "";
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(
+    new Set(),
+  );
 
-  const analysis = useMemo(() => analyzeDiff(oldContent, newContent), [oldContent, newContent]);
+  // Word/line-level engine: aligns removed+added into MODIFIED pairs and emits
+  // intra-line word segments so a one-word edit highlights only that word.
+  // The gate, the body, AND the stats line all read from this single result,
+  // so the header count can never disagree with the rendered rows.
+  const result = useMemo(
+    () =>
+      computeTextDiff(oldContent, newContent, {
+        ignoreTrailingWhitespace: ignoreWhitespace,
+        wordLevel: true,
+        granularity: "word",
+      }),
+    [oldContent, newContent, ignoreWhitespace],
+  );
 
-  const showDiff = ignoreWhitespace ? analysis.hasChangesExcludingWhitespace : analysis.hasChanges;
+  const linesChanged =
+    result.stats.additions +
+    result.stats.deletions +
+    result.stats.modifications;
 
-  if (!showDiff) {
+  if (!result.hasChanges) {
     return (
       <div className="grid grid-cols-[200px_1fr] text-xs">
         <div className="border-r border-border" />
         <div className="px-3 py-3 text-muted-foreground">
-          {ignoreWhitespace ? "No changes (whitespace differences only)" : "Content is identical"}
+          {ignoreWhitespace
+            ? "No changes (whitespace differences only)"
+            : "Content is identical"}
         </div>
       </div>
     );
   }
 
-  // Build line-by-line rows from segments
-  const rows = buildRows(analysis.segments, ignoreWhitespace);
+  // Build line-by-line rows from the engine output (word segments included)
+  const rows = buildRows(result.rows);
 
   // Group consecutive unchanged rows for collapsing
   const groups = groupRows(rows);
@@ -53,8 +80,7 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
         <div className="border-r border-border" />
         <div className="px-3 py-1.5 flex items-center gap-3 text-muted-foreground">
           <span>
-            {analysis.linesChanged} line{analysis.linesChanged !== 1 ? "s" : ""} changed
-            {analysis.charsChanged > 0 && ` · ${analysis.charsChanged} chars`}
+            {linesChanged} line{linesChanged !== 1 ? "s" : ""} changed
           </span>
           <div className="flex-1" />
           <Button
@@ -63,7 +89,11 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
             className="h-5 px-1.5 text-[0.625rem] gap-1"
             onClick={() => setIgnoreWhitespace((v) => !v)}
           >
-            {ignoreWhitespace ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            {ignoreWhitespace ? (
+              <Eye className="w-3 h-3" />
+            ) : (
+              <EyeOff className="w-3 h-3" />
+            )}
             {ignoreWhitespace ? "Show whitespace" : "Ignore whitespace"}
           </Button>
         </div>
@@ -71,7 +101,10 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
 
       {/* Line-by-line diff */}
       {groups.map((group, groupIdx) => {
-        if (group.type === "unchanged" && group.rows.length > COLLAPSE_THRESHOLD) {
+        if (
+          group.type === "unchanged" &&
+          group.rows.length > COLLAPSE_THRESHOLD
+        ) {
           const isExpanded = expandedSections.has(groupIdx);
           if (!isExpanded) {
             // Show first 2 and last 2 lines, collapse middle
@@ -86,7 +119,7 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
                 ))}
                 <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
                   <div className="border-r border-border" />
-                  <td colSpan={2}>
+                  <div className="col-span-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -96,7 +129,7 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
                       <ChevronDown className="w-3 h-3" />
                       {hiddenCount} unchanged line{hiddenCount !== 1 ? "s" : ""}
                     </Button>
-                  </td>
+                  </div>
                 </div>
                 {last.map((row, i) => (
                   <DiffRow key={`${groupIdx}-last-${i}`} row={row} />
@@ -119,13 +152,39 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
 }
 
 interface DiffRowData {
-  type: "unchanged" | "removed" | "added";
-  lineNum: number;
-  oldLine: string | null;
-  newLine: string | null;
+  type: LineChangeType;
+  lineNum: number | string;
+  left: DiffCell;
+  right: DiffCell;
+}
+
+/** Render a cell with word-level segments; identical words stay plain. */
+function renderCell(cell: DiffCell, side: "left" | "right"): React.ReactNode {
+  if (cell.content === null) return "";
+  if (!cell.segments || cell.segments.length === 0) return cell.content;
+  const keep = side === "left" ? "removed" : "added";
+  return cell.segments.map((seg, i) => {
+    if (seg.type === "unchanged") return <span key={i}>{seg.value}</span>;
+    if (seg.type !== keep) return null;
+    return (
+      <span
+        key={i}
+        className={cn(
+          "rounded-[2px]",
+          side === "left"
+            ? "bg-red-300/60 dark:bg-red-500/40"
+            : "bg-green-300/60 dark:bg-green-500/40",
+        )}
+      >
+        {seg.value}
+      </span>
+    );
+  });
 }
 
 function DiffRow({ row }: { row: DiffRowData }) {
+  const isRemoved = row.type === "removed" || row.type === "modified";
+  const isAdded = row.type === "added" || row.type === "modified";
   return (
     <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
       <div className="px-3 py-0.5 border-r border-border text-muted-foreground/50 text-right font-mono tabular-nums">
@@ -134,53 +193,43 @@ function DiffRow({ row }: { row: DiffRowData }) {
       <div
         className={cn(
           "px-3 py-0.5 border-r border-border whitespace-pre-wrap break-words font-mono",
-          row.type === "removed" ? "bg-red-950/20 text-red-300" : "",
+          isRemoved
+            ? "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-300"
+            : "",
           row.type === "unchanged" ? "text-foreground/70" : "",
           row.type === "added" ? "text-muted-foreground/30" : "",
         )}
       >
-        {row.oldLine ?? ""}
+        {renderCell(row.left, "left")}
       </div>
       <div
         className={cn(
           "px-3 py-0.5 whitespace-pre-wrap break-words font-mono",
-          row.type === "added" ? "bg-green-950/20 text-green-300" : "",
+          isAdded
+            ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-300"
+            : "",
           row.type === "unchanged" ? "text-foreground/70" : "",
           row.type === "removed" ? "text-muted-foreground/30" : "",
         )}
       >
-        {row.newLine ?? ""}
+        {renderCell(row.right, "right")}
       </div>
     </div>
   );
 }
 
-function buildRows(segments: DiffSegment[], ignoreWhitespace: boolean): DiffRowData[] {
-  const rows: DiffRowData[] = [];
-  let lineNum = 1;
-
-  for (const segment of segments) {
-    const lines = segment.content.split("\n");
-    for (const line of lines) {
-      if (ignoreWhitespace && segment.type !== "unchanged") {
-        // Skip whitespace-only changes
-        if (line.trim() === "") continue;
-      }
-
-      if (segment.type === "unchanged") {
-        rows.push({ type: "unchanged", lineNum: lineNum++, oldLine: line, newLine: line });
-      } else if (segment.type === "removed") {
-        rows.push({ type: "removed", lineNum: lineNum++, oldLine: line, newLine: null });
-      } else if (segment.type === "added") {
-        rows.push({ type: "added", lineNum: lineNum++, oldLine: null, newLine: line });
-      }
-    }
-  }
-
-  return rows;
+function buildRows(engineRows: EngineDiffRow[]): DiffRowData[] {
+  return engineRows.map((r) => ({
+    type: r.type,
+    lineNum: r.right.lineNumber ?? r.left.lineNumber ?? "",
+    left: r.left,
+    right: r.right,
+  }));
 }
 
-function groupRows(rows: DiffRowData[]): { type: DiffRowData["type"]; rows: DiffRowData[] }[] {
+function groupRows(
+  rows: DiffRowData[],
+): { type: DiffRowData["type"]; rows: DiffRowData[] }[] {
   const groups: { type: DiffRowData["type"]; rows: DiffRowData[] }[] = [];
   for (const row of rows) {
     const last = groups[groups.length - 1];

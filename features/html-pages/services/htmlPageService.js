@@ -41,14 +41,31 @@ export class HTMLPageService {
     }
 
     /**
-     * Create a new HTML page
+     * Create a new HTML page.
+     *
+     * Pass `sourceTracking.sourceMessageId` to make publishing idempotent: the
+     * API updates the existing page for that message in place instead of
+     * inserting a duplicate (used by the inline auto-preview so re-renders /
+     * reloads never accumulate orphan pages). `sourceConversationId` and
+     * `contextMetadata` are stored alongside for provenance.
      */
-    static async createPage(htmlContent, metaTitle, metaDescription = '', userId, metaFields = {}) {
+    static async createPage(
+        htmlContent,
+        metaTitle,
+        metaDescription = '',
+        userId,
+        metaFields = {},
+        sourceTracking = {},
+    ) {
+        const { sourceMessageId, sourceConversationId, contextMetadata } = sourceTracking;
         return HTMLPageService.#call('create', {
             htmlContent,
             metaTitle,
             metaDescription,
             metaFields,
+            ...(sourceMessageId ? { sourceMessageId } : {}),
+            ...(sourceConversationId ? { sourceConversationId } : {}),
+            ...(contextMetadata ? { contextMetadata } : {}),
         });
     }
 

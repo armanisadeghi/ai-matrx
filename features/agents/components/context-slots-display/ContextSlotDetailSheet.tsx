@@ -29,6 +29,8 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
+import { WorkingDocumentPanel } from "@/features/agents/components/working-document/WorkingDocumentPanel";
+import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import { cn } from "@/lib/utils";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
@@ -102,54 +104,66 @@ export function ContextSlotDetailSheet({
       defaultSize={34}
       contentClassName="flex min-h-0 flex-1 flex-col overflow-y-auto p-0"
     >
-      <div className="flex-1 overflow-y-auto">
-        {slot?.description && (
-          <DetailSection title="Description">
-            <p className="text-xs text-foreground/85 whitespace-pre-wrap">
-              {slot.description}
-            </p>
+      {contextKey === WORKING_DOCUMENT_CONTEXT_KEY ? (
+        // The working document is collaborative and re-sent every turn — render
+        // the live editable panel instead of a read-only value dump.
+        <div className="min-h-0 flex-1">
+          <WorkingDocumentPanel
+            conversationId={conversationId}
+            showHeader={false}
+            showEnableToggle={false}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          {slot?.description && (
+            <DetailSection title="Description">
+              <p className="text-xs text-foreground/85 whitespace-pre-wrap">
+                {slot.description}
+              </p>
+            </DetailSection>
+          )}
+
+          <DetailSection title="Value">
+            <ValueRenderer type={type} entry={entry} />
           </DetailSection>
-        )}
 
-        <DetailSection title="Value">
-          <ValueRenderer type={type} entry={entry} />
-        </DetailSection>
-
-        <DetailSection title="Inline policy">
-          <p className="text-xs text-muted-foreground">{inlinePolicyText}</p>
-        </DetailSection>
-
-        {slot?.summary_agent_id && (
-          <DetailSection title="Summary sub-agent">
-            <p className="text-[11px] font-mono text-muted-foreground break-all">
-              {slot.summary_agent_id}
-            </p>
+          <DetailSection title="Inline policy">
+            <p className="text-xs text-muted-foreground">{inlinePolicyText}</p>
           </DetailSection>
-        )}
 
-        {slot?.mutable && (
-          <DetailSection title="Mutation">
-            <p className="text-xs text-muted-foreground">
-              Mutable · persist={" "}
-              <span className="font-mono">{slot.persist ?? "never"}</span>
-            </p>
-            {slot.persist === "auto" && slot.source && (
-              <pre className="mt-1.5 text-[11px] font-mono bg-muted/40 border border-border rounded p-2 overflow-x-auto">
-                {JSON.stringify(slot.source, null, 2)}
-              </pre>
-            )}
-          </DetailSection>
-        )}
+          {slot?.summary_agent_id && (
+            <DetailSection title="Summary sub-agent">
+              <p className="text-[11px] font-mono text-muted-foreground break-all">
+                {slot.summary_agent_id}
+              </p>
+            </DetailSection>
+          )}
 
-        {!slot && (
-          <DetailSection title="Ad-hoc key">
-            <p className="text-[11px] text-muted-foreground">
-              This key isn't declared on the agent. Type is inferred at runtime
-              and ctx_get falls back to system defaults.
-            </p>
-          </DetailSection>
-        )}
-      </div>
+          {slot?.mutable && (
+            <DetailSection title="Mutation">
+              <p className="text-xs text-muted-foreground">
+                Mutable · persist={" "}
+                <span className="font-mono">{slot.persist ?? "never"}</span>
+              </p>
+              {slot.persist === "auto" && slot.source && (
+                <pre className="mt-1.5 text-[11px] font-mono bg-muted/40 border border-border rounded p-2 overflow-x-auto">
+                  {JSON.stringify(slot.source, null, 2)}
+                </pre>
+              )}
+            </DetailSection>
+          )}
+
+          {!slot && (
+            <DetailSection title="Ad-hoc key">
+              <p className="text-[11px] text-muted-foreground">
+                This key isn't declared on the agent. Type is inferred at
+                runtime and ctx_get falls back to system defaults.
+              </p>
+            </DetailSection>
+          )}
+        </div>
+      )}
     </MatrxDynamicPanelHost>
   );
 }

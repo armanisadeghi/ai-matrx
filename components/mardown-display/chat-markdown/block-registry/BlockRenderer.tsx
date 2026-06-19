@@ -18,6 +18,7 @@ import {
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
+import { parseYouTubeUrl } from "@/lib/media/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 
@@ -382,23 +383,39 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
     case "media_block": {
       // Document and YouTube kinds land here via the `media_block`
-      // stream-event branch in process-stream.ts. We don't have a
-      // unified renderer for those kinds yet (image gets the dedicated
-      // UnifiedImageBlockRenderer; audio/video reuse the legacy
-      // BlockComponents above). For now we no-op to avoid flashing a
-      // broken card — the data is preserved on the render block and a
-      // dedicated renderer can pick it up when it ships.
-      //
-      // Phase 1c provides:
-      //   - DocumentBlock.page1Url — full-res page 1 JPEG (~1200×1700)
-      //     for PDF previews. A future <DocumentBlockInline> can bind
-      //     this directly via <img> for a real reading preview.
-      //   - VideoBlock.posterUrl — wired through the video_output case
-      //     above for AI-generated videos.
-      //
-      // TODO: route to a UnifiedMediaBlockRenderer that dispatches on
-      // `block.serverData.kind` (document → DocumentPreview using
-      // `page1Url`, youtube → YouTubeEmbed using `videoId`).
+      // stream-event branch in process-stream.ts.
+      const sd = (block.serverData ?? {}) as Record<string, unknown>;
+
+      // YouTube: render the playable embed through the same component the
+      // markdown `youtube` block uses (one component, one look). The Python
+      // YouTubeBlock carries `video_id` (snake) and `external_url`; read both
+      // casings defensively. Recover the start offset from the watch URL.
+      if (sd.kind === "youtube") {
+        const videoId = (sd.video_id ?? sd.videoId) as string | undefined;
+        if (!videoId) return null;
+        const externalUrl = (sd.external_url ?? sd.externalUrl) as
+          | string
+          | undefined;
+        const start = externalUrl
+          ? parseYouTubeUrl(externalUrl)?.start
+          : undefined;
+        const sourceLabel = (sd.source_label ?? sd.sourceLabel) as
+          | string
+          | undefined;
+        return (
+          <BlockComponents.YouTubeEmbedBlock
+            key={index}
+            videoId={videoId}
+            start={start}
+            title={sourceLabel}
+          />
+        );
+      }
+
+      // Document kind has no dedicated inline renderer yet — no-op to avoid
+      // flashing a broken card. The data is preserved on the render block.
+      // Phase 1c provides DocumentBlock.page1Url (full-res page 1 JPEG) for a
+      // future <DocumentBlockInline> reading preview.
       return null;
     }
 
@@ -589,6 +606,24 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "youtube": {
+      // A YouTube link the splitter promoted from markdown (linked thumbnail,
+      // plain link, or bare URL). videoId/start/title/poster live on metadata;
+      // renders the same click-to-play embed as the server `media_block` case.
+      const md = (block.metadata ?? {}) as Record<string, unknown>;
+      const videoId = md.videoId as string | undefined;
+      if (!videoId) return null;
+      return (
+        <BlockComponents.YouTubeEmbedBlock
+          key={index}
+          videoId={videoId}
+          start={md.start as number | undefined}
+          title={md.title as string | undefined}
+          poster={md.poster as string | undefined}
+        />
+      );
+    }
+
     case "audio": {
       // Audio that streamed in as a markdown/text link (the splitter's
       // `detectAudioMarkdown`). The URL is on `block.src`, mirroring the
@@ -640,6 +675,50 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             content={block.content}
             language={lang}
             className="my-3"
+          />
+        );
+      }
+      // HTML used to be lumped in with XmlBlock above, which broke the
+      // standard code block (and with it the "convert to actual webpage"
+      // feature). It now routes through HtmlInlinePreview: while streaming or
+      // for fragments it renders a plain code block; once a COMPLETE HTML
+      // document has finished streaming it auto-converts into a live, inline
+      // webpage preview (loader → success/iframe, or silent code-on-error).
+      if (lang === "html") {
+        return (
+          <BlockComponents.HtmlInlinePreview
+            key={index}
+            code={block.content}
+            language={block.language}
+            isComplete={!isStreamActive && !isBlockLoading(block)}
+            messageId={messageId}
+            conversationId={conversationId}
+            onCodeChange={
+              isStreamActive
+                ? undefined
+                : (newCode: string) =>
+                    replaceBlockContent(block.content, newCode)
+            }
+          />
+        );
+      }
+      // React/JSX/TSX → compile to a live component once finalized (auto-preview
+      // like html). Streaming/incomplete shows the code; compile/runtime errors
+      // fall back to the code block silently. Execution is allowlist-scoped and
+      // in-app — see features/dynamic-react/compileReactComponent.
+      if (lang === "jsx" || lang === "tsx" || lang === "react") {
+        return (
+          <BlockComponents.ReactCodeBlock
+            key={index}
+            code={block.content}
+            language={block.language}
+            isComplete={!isStreamActive && !isBlockLoading(block)}
+            onCodeChange={
+              isStreamActive
+                ? undefined
+                : (newCode: string) =>
+                    replaceBlockContent(block.content, newCode)
+            }
           />
         );
       }
@@ -783,53 +862,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
-    case "questionnaire":
-      // If server already parsed the data, render directly (no dynamic import)
-      if (block.serverData) {
-        return (
-          <BlockComponents.QuestionnaireRenderer
-            key={index}
-            data={block.serverData as any}
-            questionnaireId={`questionnaire-${messageId}-${index}`}
-            conversationId={conversationId}
-            messageId={messageId}
-            blockIndex={index}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="questionnaire"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      // Fallback: Dynamic import the parser (legacy / client-side parsing)
-      const QuestionnaireWithParser = React.lazy(async () => {
-        const { separatedMarkdownParser } =
-          await import("../../markdown-classification/processors/custom/parser-separated");
-        const parsedContent = separatedMarkdownParser(block.content);
-
-        return {
-          default: () => (
-            <BlockComponents.QuestionnaireRenderer
-              data={parsedContent}
-              questionnaireId={`questionnaire-${messageId}-${index}`}
-              conversationId={conversationId}
-              messageId={messageId}
-              blockIndex={index}
-            />
-          ),
-        };
-      });
-
-      return (
-        <React.Suspense key={index} fallback={null}>
-          <QuestionnaireWithParser />
-        </React.Suspense>
-      );
+    // `questionnaire` is a materializable artifact type — handled by the unified
+    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
+    // QuestionnaireArtifact, which persists answers to canvas_item_state). Its
+    // legacy case was removed when enrolled.
 
     // flashcards, quiz, presentation, cooking_recipe, timeline, research,
     // resources, progress_tracker, comparison_table, troubleshooting,
@@ -837,25 +873,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     // (all handled by the early-branch above via resolveArtifactDef +
     // hasArtifactRenderer; cases removed in Wave F)
 
-    case "svg":
-      // Client-only fence type (no server parser yet): always content.
-      return (
-        <BlockComponents.SvgBlock
-          key={index}
-          content={block.content}
-          isStreamActive={Boolean(block.isStreamingBlock)}
-        />
-      );
-
-    case "chart":
-      // Client-only fence type (JSON spec → recharts via next/dynamic ssr:false).
-      return (
-        <BlockComponents.ChartBlock
-          key={index}
-          content={block.content}
-          isStreamActive={Boolean(block.isStreamingBlock)}
-        />
-      );
+    // `svg` + `chart` are materializable artifact types — handled by the unified
+    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
+    // SvgArtifact / ChartArtifact). Their legacy cases were removed when enrolled.
 
     case "item_presentation":
       // Owns all its phases internally: instant skeleton from a partial JSON

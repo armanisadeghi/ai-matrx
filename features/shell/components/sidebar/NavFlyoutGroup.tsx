@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
 import { groupNavChildren, type ShellNavItem } from "../../constants/nav-data";
+import { useNavActions } from "../../navigation/navActions";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -35,6 +36,7 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
   const children = item.children ?? [];
   const expanded = useSidebarExpanded();
   const pathname = usePathname() ?? "";
+  const navActions = useNavActions();
 
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -212,24 +214,61 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
                     {section.label}
                   </div>
                 ) : null}
-                {section.items.map((child) => (
-                  <Link
-                    key={child.href}
-                    href={child.href}
-                    role="menuitem"
-                    className="shell-nav-flyout-item"
-                    data-active={child.href === activeHref ? "true" : undefined}
-                  >
-                    <span className="shell-nav-icon">
-                      <ShellIcon
-                        name={child.iconName}
-                        size={16}
-                        strokeWidth={1.75}
-                      />
-                    </span>
-                    <span>{child.label}</span>
-                  </Link>
-                ))}
+                {section.items.map((child) => {
+                  const actionHandler = child.action
+                    ? navActions[child.action]
+                    : undefined;
+
+                  // Action entries trigger an overlay/window in place instead
+                  // of navigating — render a button, run the handler, and
+                  // close the flyout. (Falls back to the Link below for plain
+                  // navigation entries.)
+                  if (actionHandler) {
+                    return (
+                      <button
+                        key={child.action}
+                        type="button"
+                        role="menuitem"
+                        className="shell-nav-flyout-item"
+                        onClick={() => {
+                          actionHandler();
+                          setPinned(false);
+                          setOpen(false);
+                        }}
+                      >
+                        <span className="shell-nav-icon">
+                          <ShellIcon
+                            name={child.iconName}
+                            size={16}
+                            strokeWidth={1.75}
+                          />
+                        </span>
+                        <span>{child.label}</span>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      role="menuitem"
+                      className="shell-nav-flyout-item"
+                      data-active={
+                        child.href === activeHref ? "true" : undefined
+                      }
+                    >
+                      <span className="shell-nav-icon">
+                        <ShellIcon
+                          name={child.iconName}
+                          size={16}
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      <span>{child.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             ))}
           </div>,

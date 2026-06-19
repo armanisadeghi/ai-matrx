@@ -2,7 +2,7 @@
 
 /**
  * useProTextareaCleanup — the generic "clean up this text with an agent" hook
- * for the experimental ProTextareaWithCleanup.
+ * powering the AI "Clean up" action built into the canonical ProTextarea.
  *
  * This is a thin consumer of the two canonical primitives that already power
  * the `/transcripts/cleanup` page:
@@ -15,8 +15,8 @@
  *      platform → org → user via `useSurfaceAgentRoles`.
  *
  * Nothing here is transcript-specific: it takes a string, runs the cleanup
- * agent, and streams the result back. The caller (ProTextareaWithCleanup) shows
- * that result in a popover and decides whether to apply it — the source text is
+ * agent, and streams the result back. The caller (ProTextarea) shows that
+ * result in a popover and decides whether to apply it — the source text is
  * never mutated by this hook.
  */
 

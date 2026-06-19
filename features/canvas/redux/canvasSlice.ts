@@ -23,6 +23,10 @@ export type CanvasContentType =
   | "progress"
   | "math_problem"
   | "mermaid"
+  | "svg"
+  | "chart"
+  | "questionnaire"
+  | "react"
   | "tasks";
 
 /**

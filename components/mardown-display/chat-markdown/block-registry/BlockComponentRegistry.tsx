@@ -10,6 +10,16 @@ const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
 );
 
+// Inline auto-preview for complete HTML documents (converts to a live webpage).
+const HtmlInlinePreview = lazy(
+  () => import("@/features/html-pages/components/HtmlInlinePreview"),
+);
+
+// Inline auto-preview for jsx/tsx/react code blocks (compiles to a live component).
+const ReactCodeBlock = lazy(
+  () => import("@/features/dynamic-react/ReactCodeBlock"),
+);
+
 // Static imports for frequently used, lightweight components
 import { QuestionnaireProvider } from "../../blocks/questionnaire/QuestionnaireContext";
 
@@ -76,7 +86,8 @@ const MatrxEnvelopeBlock = lazy(
   () => import("@/features/matrx-envelope/MatrxEnvelopeBlock"),
 );
 const SchemaProposalBlock = lazy(
-  () => import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
+  () =>
+    import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
 );
 const MathProblemBlock = lazy(
   () => import("../../blocks/math/MathProblemBlock"),
@@ -139,6 +150,11 @@ const UnifiedImageBlockRenderer = lazy(() =>
 );
 const VideoOutputBlock = lazy(
   () => import("../../blocks/videos/VideoOutputBlock"),
+);
+const YouTubeEmbedBlock = lazy(() =>
+  import("@/features/files/blocks/youtube/YouTubeEmbed").then((m) => ({
+    default: m.YouTubeEmbed,
+  })),
 );
 const SearchResultsBlock = lazy(
   () => import("../../blocks/data-events/SearchResultsBlock"),
@@ -252,6 +268,18 @@ export const BlockComponents = {
     </LazyBlockWrapper>
   ),
 
+  HtmlInlinePreview: (props: any) => (
+    <LazyBlockWrapper>
+      <HtmlInlinePreview {...props} />
+    </LazyBlockWrapper>
+  ),
+
+  ReactCodeBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <ReactCodeBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+
   // Wrapped lazy components
   ThinkingVisualization: (props: any) => (
     <LazyBlockWrapper>
@@ -276,6 +304,11 @@ export const BlockComponents = {
   VideoBlock: (props: any) => (
     <LazyBlockWrapper>
       <VideoBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  YouTubeEmbedBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <YouTubeEmbedBlock {...props} />
     </LazyBlockWrapper>
   ),
   TranscriptBlock: (props: any) => (

@@ -6,10 +6,10 @@ import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
 
 const changeColors: Record<DiffNode["changeType"], string> = {
-  added: "text-green-400",
-  removed: "text-red-400",
-  modified: "text-amber-400",
-  reordered: "text-blue-400",
+  added: "text-green-600 dark:text-green-400",
+  removed: "text-red-600 dark:text-red-400",
+  modified: "text-amber-600 dark:text-amber-400",
+  reordered: "text-blue-600 dark:text-blue-400",
   unchanged: "text-muted-foreground",
 };
 
@@ -35,8 +35,14 @@ interface SummaryViewProps {
   enrichment?: EnrichmentContext;
 }
 
-export function SummaryView({ diffResult, adapters, enrichment }: SummaryViewProps) {
-  const changedNodes = diffResult.root.filter((n) => n.changeType !== "unchanged");
+export function SummaryView({
+  diffResult,
+  adapters,
+  enrichment,
+}: SummaryViewProps) {
+  const changedNodes = diffResult.root.filter(
+    (n) => n.changeType !== "unchanged",
+  );
 
   if (changedNodes.length === 0) {
     return (
@@ -49,7 +55,8 @@ export function SummaryView({ diffResult, adapters, enrichment }: SummaryViewPro
   return (
     <div>
       <div className="px-4 py-2 border-b border-border text-xs text-muted-foreground">
-        {changedNodes.length} field{changedNodes.length !== 1 ? "s" : ""} changed
+        {changedNodes.length} field{changedNodes.length !== 1 ? "s" : ""}{" "}
+        changed
       </div>
       <table className="w-full text-xs">
         <thead>
@@ -68,17 +75,34 @@ export function SummaryView({ diffResult, adapters, enrichment }: SummaryViewPro
               : changeLabels[node.changeType];
 
             return (
-              <tr key={node.key} className={cn("hover:bg-muted/20 transition-colors", changeBg[node.changeType])}>
+              <tr
+                key={node.key}
+                className={cn(
+                  "hover:bg-muted/20 transition-colors",
+                  changeBg[node.changeType],
+                )}
+              >
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-1.5">
-                    {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />}
-                    <span className="font-medium">{adapter.label || node.key}</span>
+                    {Icon && (
+                      <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="font-medium">
+                      {adapter.label || node.key}
+                    </span>
                   </div>
                 </td>
-                <td className={cn("px-4 py-2 font-medium", changeColors[node.changeType])}>
+                <td
+                  className={cn(
+                    "px-4 py-2 font-medium",
+                    changeColors[node.changeType],
+                  )}
+                >
                   {changeLabels[node.changeType]}
                 </td>
-                <td className="px-4 py-2 text-muted-foreground">{summaryText}</td>
+                <td className="px-4 py-2 text-muted-foreground">
+                  {summaryText}
+                </td>
               </tr>
             );
           })}

@@ -61,14 +61,25 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "recipe", aliases: ["recipe", "cooking_recipe"], standaloneAliases: ["cooking_recipe"], materializable: true },
   { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true },
   { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true },
+  // Self-contained visuals — durable, referenceable (like a diagram). A bare
+  // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.
+  { canvasType: "svg", aliases: ["svg"], standaloneAliases: ["svg"], materializable: true },
+  { canvasType: "chart", aliases: ["chart"], standaloneAliases: ["chart"], materializable: true },
+  // Interactive form — answers persist per-viewer to canvas_item_state (generic
+  // adapter), so it materializes safely (no message-bound _matrxState).
+  { canvasType: "questionnaire", aliases: ["questionnaire"], standaloneAliases: ["questionnaire"], materializable: true, persistenceStrategy: "generic" },
   // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
   // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user
   // action, linked via `ctx_task_associations` (entity_type='artifact'). No
   // artifact `adapter` → materialize never creates domain rows for tasks.
   { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom" },
-  // Artifact-wrapper-only (a bare code fence / image must NOT auto-materialize):
+  // Deliverables — a webpage / a live component IS the artifact, so a bare
+  // ```html / ```react (or ```jsx/```tsx → react) fence materializes.
+  { canvasType: "html", aliases: ["html"], standaloneAliases: ["html"], materializable: true },
+  { canvasType: "react", aliases: ["react", "jsx", "tsx"], standaloneAliases: ["react"], materializable: true },
+  // Artifact-wrapper-only (a bare ```code fence / image must NOT auto-materialize
+  // — they'd flood the library with throwaway snippets):
   { canvasType: "iframe", aliases: ["iframe"], standaloneAliases: [], materializable: true },
-  { canvasType: "html", aliases: ["html"], standaloneAliases: [], materializable: true },
   { canvasType: "code", aliases: ["code"], standaloneAliases: [], materializable: true },
   { canvasType: "image", aliases: ["image"], standaloneAliases: [], materializable: true },
 ];

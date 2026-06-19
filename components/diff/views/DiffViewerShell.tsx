@@ -23,12 +23,13 @@ interface DiffViewerShellProps {
   className?: string;
 }
 
-const viewModeConfig: { value: ViewMode; label: string; icon: typeof List }[] = [
-  { value: "all", label: "All", icon: Columns2 },
-  { value: "changes-only", label: "Changes", icon: FileText },
-  { value: "summary", label: "Summary", icon: List },
-  { value: "raw-json", label: "JSON", icon: Braces },
-];
+const viewModeConfig: { value: ViewMode; label: string; icon: typeof List }[] =
+  [
+    { value: "all", label: "All", icon: Columns2 },
+    { value: "changes-only", label: "Changes", icon: FileText },
+    { value: "summary", label: "Summary", icon: List },
+    { value: "raw-json", label: "JSON", icon: Braces },
+  ];
 
 export function DiffViewerShell({
   diffResult,
@@ -69,16 +70,24 @@ export function DiffViewerShell({
           {hasChanges ? (
             <div className="flex items-center gap-2 text-[0.625rem]">
               {stats.added > 0 && (
-                <span className="text-green-400">+{stats.added} added</span>
+                <span className="text-green-600 dark:text-green-400">
+                  +{stats.added} added
+                </span>
               )}
               {stats.removed > 0 && (
-                <span className="text-red-400">-{stats.removed} removed</span>
+                <span className="text-red-600 dark:text-red-400">
+                  -{stats.removed} removed
+                </span>
               )}
               {stats.modified > 0 && (
-                <span className="text-amber-400">~{stats.modified} modified</span>
+                <span className="text-amber-600 dark:text-amber-400">
+                  ~{stats.modified} modified
+                </span>
               )}
               {stats.unchanged > 0 && (
-                <span className="text-muted-foreground">{stats.unchanged} unchanged</span>
+                <span className="text-muted-foreground">
+                  {stats.unchanged} unchanged
+                </span>
               )}
             </div>
           ) : (
@@ -95,7 +104,10 @@ export function DiffViewerShell({
             newLabel={newLabel}
           />
         </TabsContent>
-        <TabsContent value="changes-only" className="flex-1 overflow-y-auto mt-0">
+        <TabsContent
+          value="changes-only"
+          className="flex-1 overflow-y-auto mt-0"
+        >
           <ChangesOnlyView
             diffResult={diffResult}
             adapters={adapters}
@@ -105,10 +117,19 @@ export function DiffViewerShell({
           />
         </TabsContent>
         <TabsContent value="summary" className="flex-1 overflow-y-auto mt-0">
-          <SummaryView diffResult={diffResult} adapters={adapters} enrichment={enrichment} />
+          <SummaryView
+            diffResult={diffResult}
+            adapters={adapters}
+            enrichment={enrichment}
+          />
         </TabsContent>
         <TabsContent value="raw-json" className="flex-1 overflow-hidden mt-0">
-          <RawJsonView oldValue={oldValue} newValue={newValue} oldLabel={oldLabel} newLabel={newLabel} />
+          <RawJsonView
+            oldValue={oldValue}
+            newValue={newValue}
+            oldLabel={oldLabel}
+            newLabel={newLabel}
+          />
         </TabsContent>
       </Tabs>
     </div>

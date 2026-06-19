@@ -1327,6 +1327,7 @@ export default function AiModelDetailPanel({
             >
               <ModelPricingEditor
                 tiers={formData.pricing}
+                apiClass={formData.api_class}
                 onChange={(tiers: PricingTier[]) =>
                   setFormData({ ...formData, pricing: tiers })
                 }

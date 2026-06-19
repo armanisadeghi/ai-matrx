@@ -29,6 +29,12 @@ export type PricingTier = {
   input_price: number;
   output_price: number;
   cached_input_price: number;
+  // Billing unit the prices map to. null/absent = standard $/1M-token billing.
+  // Values + meaning: features/ai-models/usageBasis.ts (mirrors the matrx-ai
+  // server SSOT). Drives correct media/audio cost — never leave a media model
+  // without a basis. Optional `note` is free-text documentation on the tier.
+  usage_basis?: string | null;
+  note?: string | null;
 };
 
 // -- Unconditional constraints: single-field checks that always apply --------

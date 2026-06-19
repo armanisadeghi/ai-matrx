@@ -26,7 +26,6 @@ import {
   List,
   Database,
   Youtube,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -42,10 +41,13 @@ import { UserActionBar } from "./UserActionBar";
 import { FirstTurnVariables } from "./FirstTurnVariables";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { FileResourceChip } from "@/features/files";
-import { InlineMediaRef } from "@/features/files";
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
+import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
+import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
+import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { RootState } from "@/lib/redux/store";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -284,163 +286,6 @@ function chip(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Per-type modal placeholders
-// Each is a named component so they can be replaced with real UI later.
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface BlockModalProps {
-  block: NormalisedBlock;
-  onClose: () => void;
-}
-
-function BlockModalShell({
-  block,
-  onClose,
-  children,
-}: BlockModalProps & { children?: React.ReactNode }) {
-  const Icon = block.icon;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-background border border-border rounded-xl shadow-xl w-full max-w-lg max-h-[80dvh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <Icon className={cn("w-4 h-4", block.iconColor)} />
-          <span className="text-sm font-semibold flex-1 truncate">
-            {block.title}
-          </span>
-          <span className="text-xs text-muted-foreground">{block.label}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 ml-2"
-            onClick={onClose}
-          >
-            <X className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          {children ?? (
-            <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-all font-mono">
-              {JSON.stringify(block.raw, null, 2)}
-            </pre>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ImageBlockModal({ block, onClose }: BlockModalProps) {
-  const d = block.raw.data as Record<string, unknown> | null | undefined;
-  const url = d?.["url"] as string | undefined;
-  return (
-    <BlockModalShell block={block} onClose={onClose}>
-      {url ? (
-        <div className="space-y-3">
-          <InlineMediaRef
-            ref={url}
-            alt={block.title}
-            size="fill"
-            fit="contain"
-            rounded="lg"
-            className="w-full max-h-64"
-          />
-          <pre className="text-xs text-foreground/60 whitespace-pre-wrap break-all font-mono">
-            {JSON.stringify(block.raw, null, 2)}
-          </pre>
-        </div>
-      ) : (
-        <pre className="text-xs text-foreground/80 whitespace-pre-wrap break-all font-mono">
-          {JSON.stringify(block.raw, null, 2)}
-        </pre>
-      )}
-    </BlockModalShell>
-  );
-}
-
-function AudioBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function VideoBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function DocumentBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function YoutubeBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function WebpageBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function NoteBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function TaskBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function TableBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function ListBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function DataBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function UnknownBlockModal({ block, onClose }: BlockModalProps) {
-  return <BlockModalShell block={block} onClose={onClose} />;
-}
-
-function BlockModal({ block, onClose }: BlockModalProps) {
-  switch (block.blockType) {
-    case "image":
-    case "image_output":
-      return <ImageBlockModal block={block} onClose={onClose} />;
-    case "audio":
-    case "audio_output":
-      return <AudioBlockModal block={block} onClose={onClose} />;
-    case "video":
-    case "video_output":
-      return <VideoBlockModal block={block} onClose={onClose} />;
-    case "document":
-    case "file_output":
-      return <DocumentBlockModal block={block} onClose={onClose} />;
-    case "youtube_video":
-      return <YoutubeBlockModal block={block} onClose={onClose} />;
-    case "input_webpage":
-      return <WebpageBlockModal block={block} onClose={onClose} />;
-    case "input_notes":
-      return <NoteBlockModal block={block} onClose={onClose} />;
-    case "input_task":
-      return <TaskBlockModal block={block} onClose={onClose} />;
-    case "input_table":
-      return <TableBlockModal block={block} onClose={onClose} />;
-    case "input_list":
-      return <ListBlockModal block={block} onClose={onClose} />;
-    case "input_data":
-      return <DataBlockModal block={block} onClose={onClose} />;
-    default:
-      return <UnknownBlockModal block={block} onClose={onClose} />;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Chip — tiny pill reference inside the bubble
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -469,32 +314,39 @@ function extractBlockFileId(raw: ContentBlock): string | null {
   return typeof r.file_id === "string" ? r.file_id : null;
 }
 
-function AttachmentChip({ block }: { block: NormalisedBlock }) {
-  const [open, setOpen] = useState(false);
-
+function AttachmentChip({
+  block,
+  onOpen,
+}: {
+  block: NormalisedBlock;
+  onOpen: (blockKey: string) => void;
+}) {
   const fileId = extractBlockFileId(block.raw);
-  if (fileId) {
-    return <FileResourceChip fileId={fileId} size="xs" />;
-  }
 
-  const tile = (
+  // file_id media keeps its rich FileResourceChip, but clicking still opens the
+  // shared drawer (the chip itself only renders a thumbnail/label).
+  const tile = fileId ? (
+    <button
+      type="button"
+      onClick={() => onOpen(block.key)}
+      className="inline-flex"
+    >
+      <FileResourceChip fileId={fileId} size="xs" />
+    </button>
+  ) : (
     <ResourceAttachmentTile
       typeLabel={block.label}
       title={block.title}
       icon={block.icon}
       themeKey={block.blockType}
-      onClick={() => setOpen(true)}
+      onClick={() => onOpen(block.key)}
     />
   );
 
   return (
-    <>
-      <BlockHoverPreview block={block.raw} side="top" align="start">
-        {tile}
-      </BlockHoverPreview>
-
-      {open && <BlockModal block={block} onClose={() => setOpen(false)} />}
-    </>
+    <BlockHoverPreview block={block.raw} side="top" align="start">
+      {tile}
+    </BlockHoverPreview>
   );
 }
 
@@ -540,6 +392,18 @@ export function AgentUserMessage({
   const normalisedBlocks: NormalisedBlock[] = renderBlocks
     .map((b, i) => normaliseBlock(b, i))
     .filter((b): b is NormalisedBlock => b !== null);
+
+  // Flattened drawer items across every attachment on this message — prev/next
+  // walks each individual record. Each chip opens the drawer at its first item.
+  const drawer = useContextItemDrawer();
+  const drawerItems: ContextDrawerItem[] = renderBlocks.flatMap((b, i) =>
+    normalizeBlock(b, i, conversationId),
+  );
+
+  const openDrawerForBlock = (blockKey: string) => {
+    const idx = drawerItems.findIndex((it) => it.id.startsWith(`${blockKey}:`));
+    drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
+  };
 
   const trimmedText = content.trim();
   const { isCollapsed, setIsCollapsed, shouldBeCollapsible, measureRef } =
@@ -605,7 +469,11 @@ export function AgentUserMessage({
           {normalisedBlocks.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {normalisedBlocks.map((block) => (
-                <AttachmentChip key={block.key} block={block} />
+                <AttachmentChip
+                  key={block.key}
+                  block={block}
+                  onOpen={openDrawerForBlock}
+                />
               ))}
             </div>
           )}
@@ -673,6 +541,8 @@ export function AgentUserMessage({
           surfaceKey={surfaceKey}
         />
       </div>
+
+      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

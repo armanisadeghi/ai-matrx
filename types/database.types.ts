@@ -28182,6 +28182,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_project_from_json: {
+        Args: { p_organization_id?: string; p_payload: Json }
+        Returns: Json
+      }
       create_registered_function: {
         Args: {
           p_class_name: string

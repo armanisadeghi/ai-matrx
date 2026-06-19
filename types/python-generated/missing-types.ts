@@ -100,6 +100,23 @@ export interface ItemPresentationRenderBlock {
 }
 
 /**
+ * A playable YouTube embed parsed from a YouTube link in streamed/persisted
+ * text — a linked thumbnail `[![alt](thumb)](yt-url)`, a plain `[text](yt-url)`
+ * link, or a bare YouTube URL on its own line. The splitter extracts the video
+ * id + start offset onto `metadata` (videoId/start/title/poster) and keeps the
+ * original line on `content` so it survives the DB round-trip. The server twin
+ * is the `media_block(kind: "youtube")` render block — both render through the
+ * single `features/files/blocks/youtube/YouTubeEmbed` component. See
+ * content-splitter-v2.ts `detectYoutubeMarkdown`.
+ */
+export interface YoutubeRenderBlock {
+  type: "youtube";
+  content: string;
+  src?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * A Matrx Envelope embedded in content via a ```matrx fence. The `content`
  * is the raw envelope JSON `{ matrx_version, kind, type, items: [...] }`.
  * In-content position only resolves `reference` / `secret` kinds (an action in
@@ -134,6 +151,7 @@ export type ClientOnlyRenderBlock =
   | SvgRenderBlock
   | ChartRenderBlock
   | ItemPresentationRenderBlock
+  | YoutubeRenderBlock
   | MatrxEnvelopeRenderBlock
   | SchemaProposalRenderBlock;
 

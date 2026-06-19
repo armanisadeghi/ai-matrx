@@ -2,9 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { Layers } from "lucide-react";
-import type { FieldAdapter, FieldDiffProps } from "@/components/diff/adapters/types";
+import type {
+  FieldAdapter,
+  FieldDiffProps,
+} from "@/components/diff/adapters/types";
 import type { DiffNode } from "@/components/diff/engine/types";
-import { formatValue } from "@/components/diff/engine/diff-utils";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface ContextSlotLike {
   key: string;
@@ -24,13 +27,23 @@ function formatSlot(slot: ContextSlotLike | undefined): string {
 
 function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
   if (!node.children || node.children.length === 0) {
-    const oldJson = node.oldValue != null ? JSON.stringify(node.oldValue, null, 2) : "—";
-    const newJson = node.newValue != null ? JSON.stringify(node.newValue, null, 2) : "—";
+    const oldJson =
+      node.oldValue != null ? JSON.stringify(node.oldValue, null, 2) : "—";
+    const newJson =
+      node.newValue != null ? JSON.stringify(node.newValue, null, 2) : "—";
     return (
       <div className="grid grid-cols-[200px_1fr_1fr] text-xs">
         <div className="border-r border-border" />
-        <div className="px-3 py-2 border-r border-border"><pre className="font-mono text-[0.625rem] text-foreground/70">{oldJson}</pre></div>
-        <div className="px-3 py-2"><pre className="font-mono text-[0.625rem] text-foreground/70">{newJson}</pre></div>
+        <div className="px-3 py-2 border-r border-border">
+          <pre className="font-mono text-[0.625rem] text-foreground/70">
+            {oldJson}
+          </pre>
+        </div>
+        <div className="px-3 py-2">
+          <pre className="font-mono text-[0.625rem] text-foreground/70">
+            {newJson}
+          </pre>
+        </div>
       </div>
     );
   }
@@ -42,15 +55,42 @@ function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
         const newSlot = child.newValue as ContextSlotLike | undefined;
         const slotKey = newSlot?.key ?? oldSlot?.key ?? child.key;
 
+        // Edited slot → word/line-level diff so only the changed text is tinted.
+        if (child.changeType === "modified" && oldSlot && newSlot) {
+          const oldText = formatSlot(oldSlot);
+          const newText = formatSlot(newSlot);
+          if (oldText !== "" && newText !== "") {
+            return (
+              <div
+                key={child.key ?? i}
+                className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+              >
+                <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
+                  {slotKey}
+                </div>
+                <div className="min-w-0 overflow-x-auto">
+                  <InlineTextDiff original={oldText} modified={newText} />
+                </div>
+              </div>
+            );
+          }
+        }
+
         return (
-          <div key={child.key ?? i} className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30">
+          <div
+            key={child.key ?? i}
+            className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
+          >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
               {slotKey}
             </div>
             <div
               className={cn(
                 "px-3 py-1.5 border-r border-border whitespace-pre-wrap",
-                child.changeType === "removed" || child.changeType === "modified" ? "bg-red-950/15 text-red-300" : "text-foreground/80",
+                child.changeType === "removed" ||
+                  child.changeType === "modified"
+                  ? "bg-red-50 text-red-700 dark:bg-red-950/15 dark:text-red-300"
+                  : "text-foreground/80",
                 child.changeType === "added" ? "text-muted-foreground/50" : "",
               )}
             >
@@ -59,8 +99,12 @@ function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
             <div
               className={cn(
                 "px-3 py-1.5 whitespace-pre-wrap",
-                child.changeType === "added" || child.changeType === "modified" ? "bg-green-950/15 text-green-300" : "text-foreground/80",
-                child.changeType === "removed" ? "text-muted-foreground/50" : "",
+                child.changeType === "added" || child.changeType === "modified"
+                  ? "bg-green-50 text-green-700 dark:bg-green-950/15 dark:text-green-300"
+                  : "text-foreground/80",
+                child.changeType === "removed"
+                  ? "text-muted-foreground/50"
+                  : "",
               )}
             >
               {formatSlot(newSlot)}
@@ -78,7 +122,9 @@ export const ContextSlotsAdapter: FieldAdapter = {
   renderDiff: ContextSlotsDiffRenderer,
   toSummaryText: (node) => {
     if (!node.children) return "Context slots changed";
-    const changed = node.children.filter((c) => c.changeType !== "unchanged").length;
+    const changed = node.children.filter(
+      (c) => c.changeType !== "unchanged",
+    ).length;
     return `${changed} slot${changed !== 1 ? "s" : ""} changed`;
   },
 };

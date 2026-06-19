@@ -10,6 +10,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import StickyButtons from "./StickyButtons";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
+import { isCompleteHtmlDocument } from "@/features/html-pages/utils/html-preview-utils";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { Globe, Loader2 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
@@ -130,21 +131,11 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   // Use edited code if available (when user is editing), otherwise use deferred prop value
   const code = editedCode ?? initialCode;
 
-  // Function to detect if code is a complete HTML document
-  const isCompleteHTMLDocument = (htmlCode: string): boolean => {
-    if (!htmlCode || prismLanguage !== "html") return false;
-
-    const trimmedCode = htmlCode.trim();
-    const hasDoctype = /^\s*<!DOCTYPE\s+html/i.test(trimmedCode);
-    const hasHtmlTag =
-      /<html[^>]*>/i.test(trimmedCode) && /<\/html>/i.test(trimmedCode);
-    const hasHead =
-      /<head[^>]*>/i.test(trimmedCode) && /<\/head>/i.test(trimmedCode);
-    const hasBody =
-      /<body[^>]*>/i.test(trimmedCode) && /<\/body>/i.test(trimmedCode);
-
-    return hasDoctype && hasHtmlTag && hasHead && hasBody;
-  };
+  // Detect a complete HTML document (gated on the html language). Detection
+  // logic is shared with the inline auto-preview renderer — see
+  // isCompleteHtmlDocument in features/html-pages/utils/html-preview-utils.
+  const isCompleteHTMLDocument = (htmlCode: string): boolean =>
+    prismLanguage === "html" && isCompleteHtmlDocument(htmlCode);
 
   // Function to handle HTML document viewing in canvas
   const handleViewHTML = async () => {

@@ -8,8 +8,8 @@ import React, {
 } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { Button } from "@/components/ui/button";
-import { addUtmSource } from "@/utils/url-utm";
 import {
   Download,
   Copy,
@@ -291,59 +291,6 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       }
     }
   }, [data]);
-
-  // Enhanced Markdown renderer for bold, italic, and links
-  const renderMarkdown = (text: string) => {
-    // First handle links to preserve them as JSX elements
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = linkRegex.exec(text)) !== null) {
-      // Add text before the link
-      if (match.index > lastIndex) {
-        const beforeText = text.substring(lastIndex, match.index);
-        const processedBefore = beforeText
-          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>") // Bold with **
-          .replace(/\*([^*]+)\*/g, "<em>$1</em>") // Italic with *
-          .replace(
-            /(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g,
-            "<em>$1</em>",
-          ); // Italic with _ (not intra-word)
-        parts.push(processedBefore);
-      }
-
-      // Add the link as a clickable element with UTM source
-      const linkText = match[1];
-      const linkUrl = addUtmSource(match[2]);
-      parts.push(
-        `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">${linkText}</a>`,
-      );
-
-      lastIndex = linkRegex.lastIndex;
-    }
-
-    // Add remaining text after the last link
-    if (lastIndex < text.length) {
-      const remainingText = text.substring(lastIndex);
-      const processedRemaining = remainingText
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>") // Bold with **
-        .replace(/\*([^*]+)\*/g, "<em>$1</em>") // Italic with *
-        .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>"); // Italic with _ (not intra-word)
-      parts.push(processedRemaining);
-    }
-
-    // If no links were found, just process formatting
-    if (parts.length === 0) {
-      return text
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>") // Bold with **
-        .replace(/\*([^*]+)\*/g, "<em>$1</em>") // Italic with *
-        .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>"); // Italic with _ (not intra-word)
-    }
-
-    return parts.join("");
-  };
 
   const generateMarkdownTable = () => {
     const maxLengths = Array(internalTableData.headers.length).fill(0);
@@ -792,11 +739,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                             onClick={(e) => e.stopPropagation()}
                           />
                         ) : (
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: renderMarkdown(header),
-                            }}
-                          />
+                          <InlineMarkdownWithLinks text={header} />
                         )}
                       </div>
                       {isEditingEnabled && (
@@ -867,11 +810,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
                           onFocus={(e) => e.target.select()}
                         />
                       ) : (
-                        <span
-                          dangerouslySetInnerHTML={{
-                            __html: renderMarkdown(cell),
-                          }}
-                        />
+                        <InlineMarkdownWithLinks text={cell} />
                       )}
                     </td>
                   ))}

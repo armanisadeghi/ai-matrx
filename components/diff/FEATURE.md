@@ -168,6 +168,33 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 - 2026-06-11 — Replaced the consolidation backlog with the verified repo-wide
   inventory: Category A (27 existing diff sites) + Category B (30 new-adoption
   surfaces).
+- 2026-06-19 — Structured text diffs now highlight only what changed. The
+  structured entity adapters (`adapters/defaults.tsx` `TextFieldAdapter`,
+  `features/agents/.../MessagesAdapter`) tinted the ENTIRE old value red and
+  ENTIRE new value green whenever a field differed at all — so unchanged text
+  looked "updated" (and whitespace-only diffs lit the whole block). Added
+  `adapters/InlineTextDiff.tsx`: a compact, self-sizing, chrome-less renderer on
+  the canonical `computeTextDiff` engine (word/line-level, `ignoreTrailingWhitespace`).
+  Modified string fields/messages now render through it; identical text stays plain.
+- 2026-06-19 — Extended the word/line-level `InlineTextDiff` migration to the
+  remaining whole-block-tint renderers. Migrated the MODIFIED (both-sides-present)
+  free-text case in `features/agents/.../VariablesAdapter` (var default + helpText),
+  `ContextSlotsAdapter` (slot label + description), and `CustomToolsAdapter`
+  (tool description + input schema), plus `features/versioning/.../VersionDiffView`
+  (side-by-side + long-inline panes). Add/remove/unchanged and scalar/short-token
+  rendering left intact. Deliberately left as-is: `ToolsAdapter`/`McpServersAdapter`
+  (add/remove of ID tokens), `SettingsAdapter`/`ModelAdapter` (scalars/single tokens),
+  `data-tables/VersionHistoryViewer` (inline `prev → next`, not whole-block tint),
+  and `notes/.../NoteContentAdapter` (already line-level with collapse + whitespace +
+  stats UX; not the whole-block-tint bug).
+- 2026-06-19 — Light-mode color fix across all diff viewers. The structured
+  entity diff (`adapters/defaults.tsx`, `views/SummaryView`, `views/DiffViewerShell`,
+  all `features/agents/components/diff/**` adapters + `VersionHistoryTimeline`) and
+  `features/notes/components/diff/**` were authored dark-only (`bg-*-950`, `text-*-300/400`
+  with no `dark:` sibling) — unreadable in light mode. Made every diff color token
+  theme-aware (light `*-50/*-100` bg + `*-600/*-700` text, original dark value behind
+  `dark:`). `RawJsonView` (Monaco) and research `VersionDiff` (`react-diff-viewer-continued`)
+  now follow `state.theme.mode` instead of hardcoding dark.
 - 2026-06-15 — Added the light-engine `highlight` view (single-pane: new doc
   with changes tinted inline) to `TextDiff` + `DiffViewer`; Monaco falls back to
   inline. First consumer: working-doc `WorkingDocDiff` (Scribe + War Room).

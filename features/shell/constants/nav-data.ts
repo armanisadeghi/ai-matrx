@@ -9,6 +9,19 @@
  */
 export type AdminNavSurface = "sidebar" | "headerMenu";
 
+/**
+ * Declarative client-side actions a nav entry can trigger INSTEAD of navigating
+ * (e.g. open an overlay/window). Pure data lives here; the actual handlers are
+ * wired in `features/shell/navigation/navActions.ts` (`useNavActions`).
+ *
+ * Progressive enhancement is the contract: a surface that understands actions
+ * renders a button that runs the handler; a surface that does NOT yet
+ * understand them simply falls back to the entry's `href` (navigation). Adding
+ * an action therefore never breaks a surface — it only upgrades the ones that
+ * opt in. Add the next action's id to this union and register its handler.
+ */
+export type ShellNavActionId = "create-project";
+
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "sidebar",
   "headerMenu",
@@ -60,6 +73,12 @@ export interface ShellNavChild {
    * with an external-link icon instead of an in-app `<Link>` transition.
    */
   external?: boolean;
+  /**
+   * When set, action-aware surfaces render this entry as a button that runs the
+   * registered handler (see `useNavActions`) instead of navigating. The `href`
+   * stays as the fallback for surfaces that don't yet understand actions.
+   */
+  action?: ShellNavActionId;
 }
 
 export interface ShellNavItem {
@@ -471,6 +490,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "violet",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        // Opens the Create Project window overlay in place (no routing).
+        // `href` is the graceful fallback for non-action-aware surfaces.
+        label: "Add Project",
+        href: "/projects/new",
+        iconName: "Plus",
+        action: "create-project",
       },
       {
         label: "Tasks",

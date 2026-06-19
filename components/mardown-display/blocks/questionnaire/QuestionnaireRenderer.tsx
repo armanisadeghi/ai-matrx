@@ -23,7 +23,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
-import { useMessageBlockPersistence } from "@/features/agents/hooks/message-crud/useMessageBlockPersistence";
 // Helper function to check if an option is an "Other" option
 const isOtherOption = (option) => {
   if (!option || typeof option !== "object") return false;
@@ -780,6 +779,11 @@ const QuestionnaireRenderer = ({
   conversationId = undefined,
   messageId = undefined,
   blockIndex = undefined,
+  // Artifact-state channel (canvas_item_state, keyed by the materialized
+  // artifact id) — supplied by QuestionnaireArtifact via useArtifactState.
+  // Absent when rendered standalone (demos/playground) → no persistence.
+  initialState = undefined,
+  onStateChange = undefined,
 }) => {
   // Generate a unique ID for this questionnaire if not provided
   const uniqueId =
@@ -794,47 +798,42 @@ const QuestionnaireRenderer = ({
 
   const formState = getFormState(uniqueId);
 
-  // Persist the user's answers into the owning cx_message so the agent SEES
-  // them on the next turn — the same channel quiz/flashcards use
-  // (useMessageBlockPersistence → _matrxState). No-ops gracefully outside chat
-  // (conversationId/messageId undefined), so demos/standalone still render.
-  const { blockState, patchBlock } = useMessageBlockPersistence({
-    conversationId,
-    messageId,
-    blockType: "questionnaire",
-    indexHint: blockIndex,
-  });
+  // Persist the user's answers via the artifact-state channel (canvas_item_state,
+  // keyed by the materialized artifact id) so they survive reload AND the agent
+  // SEES them as context on the next turn. Driven by QuestionnaireArtifact
+  // (useArtifactState). Stable ref so the debounced flush never goes stale and
+  // never re-registers the effect.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
 
   const lastPersistedRef = useRef<string>("");
 
-  // Rehydrate saved answers ONCE, when the persisted block first loads, so a
-  // reopened/forked conversation shows what the user already filled in.
+  // Rehydrate saved answers ONCE from persisted artifact state, so a reopened
+  // conversation shows what the user already filled in.
   const rehydratedRef = useRef(false);
   useEffect(() => {
     if (rehydratedRef.current) return;
     const saved = (
-      blockState?._matrxState as
-        | { formState?: Record<string, unknown> }
-        | undefined
+      initialState as { formState?: Record<string, unknown> } | undefined
     )?.formState;
     if (saved && Object.keys(saved).length > 0) {
       rehydratedRef.current = true;
       lastPersistedRef.current = JSON.stringify(saved); // don't echo it straight back
       setFormState(uniqueId, { ...saved });
     }
-  }, [blockState, setFormState, uniqueId]);
+  }, [initialState, setFormState, uniqueId]);
 
-  // Persist answers (debounced) into the message content on every change.
+  // Emit answers (debounced) to the artifact-state channel on every change.
   useEffect(() => {
     if (!formState || Object.keys(formState).length === 0) return;
     const stateString = JSON.stringify(formState);
     if (stateString === lastPersistedRef.current) return;
     const timeoutId = setTimeout(() => {
       lastPersistedRef.current = stateString;
-      void patchBlock({ _matrxState: { formState } });
+      onStateChangeRef.current?.({ formState });
     }, 600);
     return () => clearTimeout(timeoutId);
-  }, [formState, patchBlock]);
+  }, [formState]);
 
   useEffect(() => {
     if (data?.sections) {

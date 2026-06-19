@@ -156,7 +156,11 @@ export default function OutputsStudio() {
   // generator (podcast: 8–12 min) overwrite assets created during its wait
   // with a stale snapshot. The RPC merges server-side under a row lock.
   const persistOutput = async (kind: OutputKind, asset: OutputAsset) => {
-    await appendTopicOutput(topicId, kind, asset as Record<string, unknown>);
+    await appendTopicOutput(
+      topicId,
+      kind,
+      asset as unknown as Record<string, unknown>,
+    );
     refresh();
   };
 

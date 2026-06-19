@@ -11,7 +11,16 @@
  * - **Voice input** — mic toggle with live streaming transcription, audio-level
  *   glow, and a recording-protection modal that warns before unmount while a
  *   recording or transcription is in flight.
- * - **Copy-to-clipboard** — top-right copy button with success-state animation.
+ * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and the
+ *   AI "Clean up" action (and the natural home for future actions). It floats
+ *   over the text (no reserved right gutter) and only appears while the mouse
+ *   is over the field; it never shows from focus alone, so it stays out of the
+ *   way while typing.
+ * - **AI "Clean up"** — ON by default. Sends the full current text to the
+ *   shared cleanup agent (the `clean` role on `matrx-user/transcripts-cleanup`,
+ *   overridable via `cleanupAgentId`) and streams the result into a popover.
+ *   The textarea is never mutated until the user clicks Apply. Pass
+ *   `enableCleanup={false}` to exclude it (Copy stays).
  * - **Submit button** — opt-in via `onSubmit`. Renders a primary-colored Send
  *   button at bottom-right. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit (Shift+Enter still inserts newline).
@@ -59,7 +68,17 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
-import { Copy, Check, Mic, Loader2, Send } from "lucide-react";
+import {
+  Copy,
+  Check,
+  Mic,
+  Loader2,
+  Send,
+  MoreHorizontal,
+  Sparkles,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { cn } from "@/lib/utils";
@@ -68,6 +87,14 @@ import {
   TapTargetButton,
   TapTargetButtonSolid,
 } from "@/components/icons/TapTargetButton";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { supabase } from "@/utils/supabase/client";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
@@ -81,6 +108,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useProTextareaCleanup } from "./useProTextareaCleanup";
 
 /** Real HTMLTextAreaElement with optional expando methods set by ProTextarea. */
 export interface ProTextareaElement extends HTMLTextAreaElement {
@@ -101,8 +129,24 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   onRequestClose?: () => void;
   /** If true, prevents unmounting during recording/transcription with a warning modal. Default: true. */
   protectTranscription?: boolean;
-  /** Show the copy-to-clipboard button at the top-right. Default: true. */
+  /** Show the Copy action inside the "…" menu. Default: true. */
   showCopyButton?: boolean;
+  /**
+   * AI "Clean up" action in the "…" menu. ON by default — any textarea that
+   * shows the menu gets cleanup automatically. Pass `false` to exclude it.
+   */
+  enableCleanup?: boolean;
+  /**
+   * Override the cleanup agent. When omitted, the agent is resolved from the
+   * shared cleanup surface "clean" role (same default as the cleanup page).
+   */
+  cleanupAgentId?: string | null;
+  /**
+   * Context blocks the host page wants the cleanup agent to receive. Each item
+   * whose `key` matches an agent-declared context slot fills that slot; the
+   * rest ride as ad-hoc context entries (same handling as the cleanup page).
+   */
+  cleanupContextItems?: SessionContextItem[];
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -146,6 +190,9 @@ export const ProTextarea = React.forwardRef<
       onRequestClose,
       protectTranscription = true,
       showCopyButton = true,
+      enableCleanup = true,
+      cleanupAgentId,
+      cleanupContextItems,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -177,6 +224,51 @@ export const ProTextarea = React.forwardRef<
       (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
     const closeRequestedRef = useRef(false);
     const preRecordingValueRef = useRef("");
+
+    // ── "…" menu popover ───────────────────────────────────────────────────
+    // ONE Popover anchored at the "…" button. Its content swaps between the
+    // action menu and the cleanup view. A single dismissable layer avoids the
+    // dropdown-vs-popover focus war that made the cleanup view flash + vanish.
+    const cleanup = useProTextareaCleanup({ agentId: cleanupAgentId });
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuMode, setMenuMode] = useState<"menu" | "cleanup">("menu");
+    // Latest context items, mirrored so the async run never reads a stale prop.
+    const cleanupContextRef = useRef<SessionContextItem[]>(
+      cleanupContextItems ?? [],
+    );
+    cleanupContextRef.current = cleanupContextItems ?? [];
+    // The agent the user has chosen for cleanup (seeded from the surface
+    // default). Nothing runs until they click "Clean up".
+    const [cleanupAgent, setCleanupAgent] = useState<string | null>(null);
+    const [cleanupAgentName, setCleanupAgentName] = useState<string | null>(
+      null,
+    );
+
+    // Seed the selection from the surface "clean" role default once resolved.
+    useEffect(() => {
+      if (cleanup.defaultAgentId && !cleanupAgent) {
+        setCleanupAgent(cleanup.defaultAgentId);
+      }
+    }, [cleanup.defaultAgentId, cleanupAgent]);
+
+    // Resolve the chosen agent's display name for the picker label — only once
+    // the cleanup view is actually open, so we never fire a per-textarea query
+    // just because the component mounted.
+    useEffect(() => {
+      if (!cleanupAgent || menuMode !== "cleanup") return;
+      let cancelled = false;
+      void (async () => {
+        const { data } = await supabase
+          .from("agx_agent")
+          .select("name")
+          .eq("id", cleanupAgent)
+          .maybeSingle();
+        if (!cancelled) setCleanupAgentName(data?.name ?? null);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [cleanupAgent, menuMode]);
 
     // Check if audio is available
     useEffect(() => {
@@ -348,6 +440,54 @@ export const ProTextarea = React.forwardRef<
       if (canSubmit && onSubmit) onSubmit();
     }, [canSubmit, onSubmit]);
 
+    // ── Menu + cleanup actions ─────────────────────────────────────────────
+    const handleMenuOpenChange = useCallback(
+      (open: boolean) => {
+        setMenuOpen(open);
+        if (!open) {
+          // Closing the popover always returns it to the action menu and drops
+          // any in-flight cleanup state.
+          setMenuMode("menu");
+          cleanup.reset();
+        }
+      },
+      [cleanup],
+    );
+
+    // Open the cleanup view (agent picker + Run). Never auto-runs.
+    const openCleanupView = useCallback(() => {
+      const text = textareaRef.current?.value ?? valueAsString;
+      if (!text.trim()) {
+        toast.info("Add some text before cleaning it up");
+        return;
+      }
+      cleanup.reset();
+      setMenuMode("cleanup");
+    }, [cleanup, valueAsString]);
+
+    const runCleanup = useCallback(() => {
+      const text = textareaRef.current?.value ?? valueAsString;
+      if (!text.trim()) {
+        toast.info("Add some text before cleaning it up");
+        return;
+      }
+      if (!cleanupAgent) {
+        toast.info("Choose a cleanup agent first");
+        return;
+      }
+      void cleanup.run(text, cleanupAgent, cleanupContextRef.current);
+    }, [cleanup, cleanupAgent, valueAsString]);
+
+    const applyCleanup = useCallback(() => {
+      const result = cleanup.result.trim();
+      if (!result) return;
+      pushToTextarea(cleanup.result);
+      setMenuOpen(false);
+      setMenuMode("menu");
+      cleanup.reset();
+      toast.success("Cleaned text applied");
+    }, [cleanup, pushToTextarea]);
+
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Mirror the browser's "hide cursor while typing" behavior: any
@@ -384,14 +524,16 @@ export const ProTextarea = React.forwardRef<
     // transcribing, so the user can see/stop an in-flight session). Focus
     // does NOT reveal the controls. `isHovered` is cleared on keydown and
     // re-armed on mousemove — matching how the OS cursor auto-hides while
-    // typing and reappears on motion. Wrapper has static padding (driven by
-    // `showTopRightControls`/`onSubmit` props that don't change on hover),
-    // so no layout shift can occur here.
+    // typing and reappears on motion. The controls float OVER the text (no
+    // reserved right gutter), so they only overlap content while hovering —
+    // never while the user is typing.
     const showControls =
       (isHovered || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
-    const showTopRightControls = isAudioAvailable || showCopyButton;
+
+    // The "…" menu has at least one item when copy or cleanup is enabled.
+    const showMenu = !disabled && (showCopyButton || enableCleanup);
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -422,9 +564,10 @@ export const ProTextarea = React.forwardRef<
             // the user can never reach. While growing (height === scrollHeight)
             // no scrollbar shows; it only appears once capped at maxHeight.
             autoGrow && "resize-none overflow-y-auto",
-            // Static right-padding to clear two TapTargetButtons (44px each
-            // = 88px total) at the top-right.
-            showTopRightControls ? "pr-24" : "pr-3",
+            // The top-right controls float OVER the text — no reserved right
+            // gutter. They're hidden while typing (hover-only) so they never
+            // sit on top of text the user is actively editing.
+            "pr-3",
             // Bottom padding for the submit button — TapTargetButtonSolid is
             // 44px tall (h-11), so reserve enough vertical clearance.
             onSubmit && "pb-14",
@@ -461,13 +604,16 @@ export const ProTextarea = React.forwardRef<
           </Label>
         )}
 
-        {/* Top-right control cluster (mic + copy) — fades in on focus/hover.
-            Two individual TapTargetButtons (44×44 outer, 32×32 visible pill).
-            No gap or padding on the wrapper: the buttons own their own spacing. */}
+        {/* Top-right control cluster (mic + "…" menu) — floats OVER the text
+            and fades in only on mouse hover (never focus), so it stays out of
+            the way while typing. It also stays visible while the menu popover
+            is open so it can't vanish mid-interaction. */}
         <div
           className={cn(
             "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10",
-            showControls ? "opacity-100" : "opacity-0 pointer-events-none",
+            showControls || menuOpen
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none",
           )}
         >
           {isAudioAvailable && (
@@ -514,26 +660,84 @@ export const ProTextarea = React.forwardRef<
             </div>
           )}
 
-          {showCopyButton && (
-            <TapTargetButton
-              onClick={handleCopy}
-              ariaLabel="Copy to clipboard"
-              tooltip={hasCopied ? "Copied" : "Copy"}
-              className={hasCopied ? "text-green-500" : "text-muted-foreground"}
-              icon={
-                hasCopied ? (
-                  <motion.span
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    className="inline-flex"
-                  >
-                    <Check className="h-4 w-4" />
-                  </motion.span>
+          {showMenu && (
+            <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
+              <PopoverTrigger asChild>
+                <TapTargetButton
+                  ariaLabel="More options"
+                  tooltip="More"
+                  className={
+                    hasCopied ? "text-green-500" : "text-muted-foreground"
+                  }
+                  icon={
+                    hasCopied ? (
+                      <motion.span
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        className="inline-flex"
+                      >
+                        <Check className="h-4 w-4" />
+                      </motion.span>
+                    ) : (
+                      <MoreHorizontal className="h-4 w-4" />
+                    )
+                  }
+                />
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                side="bottom"
+                sideOffset={6}
+                className={cn("p-0", menuMode === "cleanup" ? "w-80" : "w-48")}
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                {menuMode === "menu" ? (
+                  <div className="flex flex-col p-1">
+                    {showCopyButton && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleCopy();
+                          setMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy
+                      </button>
+                    )}
+                    {enableCleanup && (
+                      <button
+                        type="button"
+                        onClick={openCleanupView}
+                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        Clean up
+                      </button>
+                    )}
+                  </div>
                 ) : (
-                  <Copy className="h-4 w-4" />
-                )
-              }
-            />
+                  <CleanupPopoverBody
+                    phase={cleanup.phase}
+                    isBusy={cleanup.isBusy}
+                    isThinking={cleanup.isThinking}
+                    result={cleanup.result}
+                    error={cleanup.error}
+                    agentName={cleanupAgentName}
+                    onSelectAgent={setCleanupAgent}
+                    onRun={runCleanup}
+                    canRun={Boolean(cleanupAgent) && !cleanup.isBusy}
+                    onApply={applyCleanup}
+                    onBack={() => {
+                      setMenuMode("menu");
+                      cleanup.reset();
+                    }}
+                    onCancel={() => setMenuOpen(false)}
+                  />
+                )}
+              </PopoverContent>
+            </Popover>
           )}
         </div>
 
@@ -678,3 +882,150 @@ export const ProTextarea = React.forwardRef<
 );
 
 ProTextarea.displayName = "ProTextarea";
+
+/**
+ * The cleanup view: an agent picker (same list as the cleanup page) + an
+ * explicit Run button (never auto-runs), then the streamed result with
+ * Apply / Re-run / Cancel.
+ */
+function CleanupPopoverBody({
+  phase,
+  isBusy,
+  isThinking,
+  result,
+  error,
+  agentName,
+  onSelectAgent,
+  onRun,
+  canRun,
+  onApply,
+  onBack,
+  onCancel,
+}: {
+  phase: ReturnType<typeof useProTextareaCleanup>["phase"];
+  isBusy: boolean;
+  isThinking: boolean;
+  result: string;
+  error: string | null;
+  agentName: string | null;
+  onSelectAgent: (agentId: string) => void;
+  onRun: () => void;
+  canRun: boolean;
+  onApply: () => void;
+  onBack: () => void;
+  onCancel: () => void;
+}) {
+  const isError = phase === "error" || phase === "timeout";
+  const isComplete = phase === "complete";
+  const hasResult = result.trim().length > 0;
+  const hasRun = phase !== "idle";
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          Clean up
+          {isBusy && (
+            <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {isThinking ? "Thinking…" : "Working…"}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label="Close"
+          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Agent picker + Run — same agent list the cleanup page uses. */}
+      <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <AgentListDropdown
+            onSelect={onSelectAgent}
+            label={agentName ?? "Choose an agent…"}
+            className="w-full"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={!canRun}
+          className={cn(
+            "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors",
+            !canRun
+              ? "cursor-not-allowed bg-muted text-muted-foreground"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+        >
+          {isBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : hasRun ? (
+            <RotateCcw className="h-3.5 w-3.5" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5" />
+          )}
+          {hasRun ? "Re-run" : "Run"}
+        </button>
+      </div>
+
+      {/* Result area — empty until the user runs. */}
+      {hasRun && (
+        <div className="max-h-56 overflow-y-auto px-3 py-2.5">
+          {isError ? (
+            <p className="text-xs text-destructive">
+              {error ?? "Something went wrong. Please try again."}
+            </p>
+          ) : hasResult ? (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              {result}
+            </p>
+          ) : (
+            <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Analyzing your text…
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          Back
+        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={!isComplete || !hasResult}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-colors",
+              !isComplete || !hasResult
+                ? "cursor-not-allowed bg-muted text-muted-foreground"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+          >
+            <Check className="h-3.5 w-3.5" />
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

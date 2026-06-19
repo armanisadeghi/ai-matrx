@@ -20,12 +20,27 @@
  */
 
 import React, { useState } from "react";
-import { PencilLine, Sparkles } from "lucide-react";
+import { PencilLine, Sparkles, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { AgentRunWrapper } from "./AgentRunWrapper";
 
-export type CreateWithAiMode = "manual" | "ai";
+export type CreateWithAiMode = string;
+
+/**
+ * An additional entry method beyond Manual / Use AI (e.g. "Paste JSON"). Each
+ * extra tab is lazy-mounted on first visit then retained, exactly like the AI
+ * tab, so switching never remounts or shifts layout. `id` must be unique and
+ * not collide with "manual" / "ai".
+ */
+export interface CreateWithAiExtraTab {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  content: React.ReactNode;
+  /** Whether this tab owns a scroll area. Default true. */
+  scrolls?: boolean;
+}
 
 export interface CreateWithAiTabsProps {
   /** The hand-authored form rendered in the "Manual" tab. */
@@ -51,6 +66,8 @@ export interface CreateWithAiTabsProps {
   manualScrolls?: boolean;
   manualLabel?: string;
   aiLabel?: string;
+  /** Extra entry-method tabs rendered after Manual / Use AI. */
+  extraTabs?: CreateWithAiExtraTab[];
 }
 
 function ModeButton({
@@ -96,27 +113,29 @@ export function CreateWithAiTabs({
   manualScrolls,
   manualLabel = "Manual",
   aiLabel = "Use AI",
+  extraTabs = [],
 }: CreateWithAiTabsProps) {
-  console.log(
-    "[Track New Project] 16, CreateWithAiTabs.tsx — component render",
-    {
-      enableAi,
-      defaultMode,
-    },
-  );
   const [mode, setMode] = useState<CreateWithAiMode>(defaultMode);
-  // Lazy-mount the AI tab on first visit, then keep it mounted so switching
-  // back and forth never relaunches the agent or shifts layout.
-  const [aiMounted, setAiMounted] = useState(defaultMode === "ai");
+  // Lazy-mount each non-manual tab on first visit, then keep it mounted so
+  // switching back and forth never relaunches the agent or shifts layout.
+  const [mountedTabs, setMountedTabs] = useState<Set<string>>(
+    () => new Set([defaultMode]),
+  );
 
   const scrollManual = manualScrolls ?? !isMobile;
 
-  if (!enableAi) {
+  // With AI off and no extra tabs, there's only one entry method — skip chrome.
+  if (!enableAi && extraTabs.length === 0) {
     return <>{manual}</>;
   }
 
   const selectMode = (next: CreateWithAiMode) => {
-    if (next === "ai") setAiMounted(true);
+    setMountedTabs((prev) => {
+      if (prev.has(next)) return prev;
+      const nextSet = new Set(prev);
+      nextSet.add(next);
+      return nextSet;
+    });
     setMode(next);
   };
 
@@ -131,13 +150,25 @@ export function CreateWithAiTabs({
             label={manualLabel}
             isMobile={isMobile}
           />
-          <ModeButton
-            active={mode === "ai"}
-            onClick={() => selectMode("ai")}
-            icon={Sparkles}
-            label={aiLabel}
-            isMobile={isMobile}
-          />
+          {enableAi && (
+            <ModeButton
+              active={mode === "ai"}
+              onClick={() => selectMode("ai")}
+              icon={Sparkles}
+              label={aiLabel}
+              isMobile={isMobile}
+            />
+          )}
+          {extraTabs.map((tab) => (
+            <ModeButton
+              key={tab.id}
+              active={mode === tab.id}
+              onClick={() => selectMode(tab.id)}
+              icon={tab.icon}
+              label={tab.label}
+              isMobile={isMobile}
+            />
+          ))}
         </div>
       </div>
 
@@ -153,7 +184,7 @@ export function CreateWithAiTabs({
           {manual}
         </div>
 
-        {aiMounted && (
+        {enableAi && mountedTabs.has("ai") && (
           <div className={cn("h-full min-h-0", mode !== "ai" && "hidden")}>
             <AgentRunWrapper
               agentId={agentId}
@@ -161,6 +192,22 @@ export function CreateWithAiTabs({
               onRunComplete={onAiRunComplete}
             />
           </div>
+        )}
+
+        {extraTabs.map(
+          (tab) =>
+            mountedTabs.has(tab.id) && (
+              <div
+                key={tab.id}
+                className={cn(
+                  "h-full min-h-0",
+                  (tab.scrolls ?? true) && "overflow-y-auto",
+                  mode !== tab.id && "hidden",
+                )}
+              >
+                {tab.content}
+              </div>
+            ),
         )}
       </div>
     </div>

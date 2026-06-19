@@ -25,7 +25,6 @@ import {
   ExternalLink,
   Users,
   Calendar,
-  Settings,
   FolderTree,
   Plus,
   LayoutTemplate,
@@ -184,7 +183,7 @@ export function OrgWorkspace() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
+      <div className="h-dvh flex items-center justify-center bg-textured">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Loading workspace…</p>
@@ -195,7 +194,7 @@ export function OrgWorkspace() {
 
   if (error || !organization) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+      <div className="h-dvh flex items-center justify-center bg-textured p-4">
         <Card className="max-w-lg w-full p-8 text-center">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="h-8 w-8 text-muted-foreground" />
@@ -221,18 +220,8 @@ export function OrgWorkspace() {
   const totalScopes = orgScopes.length;
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="text-muted-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
+    <div className="h-dvh overflow-y-auto bg-textured">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-12 pb-12 space-y-5">
         {/* ─── Hero ─────────────────────────────────────────────────── */}
         <Card className="p-5 md:p-6 relative overflow-hidden">
           <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
@@ -277,18 +266,6 @@ export function OrgWorkspace() {
                     <Share2 className="h-4 w-4 mr-1.5" />
                     Contribute
                   </Button>
-                  {userRole && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/organizations/${slug}/settings`)
-                      }
-                    >
-                      <Settings className="h-4 w-4 mr-1.5" />
-                      Manage
-                    </Button>
-                  )}
                 </div>
               </div>
 
