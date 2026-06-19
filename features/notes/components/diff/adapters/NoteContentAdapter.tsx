@@ -41,7 +41,9 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
   );
 
   const linesChanged =
-    result.stats.additions + result.stats.deletions + result.stats.modifications;
+    result.stats.additions +
+    result.stats.deletions +
+    result.stats.modifications;
 
   if (!result.hasChanges) {
     return (
