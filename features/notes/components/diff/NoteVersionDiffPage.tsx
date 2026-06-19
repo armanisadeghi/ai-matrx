@@ -331,9 +331,9 @@ function NoteHistoryTimeline({
                     className={cn(
                       "inline-block px-1.5 py-0.5 rounded text-[0.5625rem]",
                       version.change_source === "ai"
-                        ? "bg-purple-950/40 text-purple-400"
+                        ? "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400"
                         : version.change_source === "system"
-                          ? "bg-blue-950/40 text-blue-400"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
                           : "bg-muted text-muted-foreground",
                     )}
                   >

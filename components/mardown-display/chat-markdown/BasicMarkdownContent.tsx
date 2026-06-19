@@ -31,87 +31,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
-import {
-  splitContentIntoBlocksV2,
-  detectJsonBlockType,
-  normalizeCodeLanguage,
-  SPECIAL_CODE_LANGUAGES,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-
-// Lazily imported to break the static import cycle (BlockRenderer →
-// BlockComponentRegistry → BasicMarkdownContent). React.lazy defers the import
-// to render time, so the cycle never evaluates synchronously.
-const LazyBlockRenderer = React.lazy(() =>
-  import("@/components/mardown-display/chat-markdown/block-registry/BlockRenderer").then(
-    (m) => ({ default: m.BlockRenderer }),
-  ),
-);
-
-const NOOP_BLOCK_HANDLER = () => {};
-
-/**
- * True when a fenced code block should promote to a first-class block instead
- * of rendering as raw code: any SPECIAL_CODE_LANGUAGES fence (```tasks,
- * ```mermaid, ```flashcards, …) or a ```json fence whose root key maps to a
- * typed block (quiz, presentation, …).
- */
-function isPromotableFence(
-  language: string | undefined,
-  code: string,
-): boolean {
-  const normalized = normalizeCodeLanguage(language);
-  if (!normalized) return false;
-  if (SPECIAL_CODE_LANGUAGES.includes(normalized)) return true;
-  if (normalized === "json") return detectJsonBlockType(code) !== null;
-  return false;
-}
-
-/**
- * Renders a promotable fenced block through the SAME canonical block pipeline
- * the chat splitter uses (splitContentIntoBlocksV2 → BlockRenderer), so every
- * markdown surface — not just the chat block pipeline — renders a tasks list as
- * a real tasks list, a quiz as a quiz, etc. Without this, surfaces that feed
- * full content straight to BasicMarkdownContent (docs, podcasts, previews, …)
- * dumped these as raw ``` code, while the chat pipeline rendered them richly —
- * the exact inconsistency this closes. Reconstructs the fence and re-splits so
- * detection + metadata are identical to the pipeline (zero logic duplication).
- *
- * In the chat pipeline this never triggers: special fences are already split
- * into their own blocks upstream, so the text blocks routed here contain none.
- */
-const PromotedFenceBlock: React.FC<{ language: string; code: string }> = ({
-  language,
-  code,
-}) => {
-  const blocks = useMemo(() => {
-    try {
-      return splitContentIntoBlocksV2("```" + language + "\n" + code + "\n```");
-    } catch {
-      return [];
-    }
-  }, [language, code]);
-
-  if (blocks.length === 0) return null;
-
-  return (
-    <React.Suspense
-      fallback={
-        <div className="my-2 h-12 rounded-md bg-muted/40 animate-pulse" />
-      }
-    >
-      {blocks.map((b, i) => (
-        <LazyBlockRenderer
-          key={i}
-          block={b as never}
-          index={i}
-          isStreamActive={false}
-          replaceBlockContent={NOOP_BLOCK_HANDLER}
-          handleOpenEditor={NOOP_BLOCK_HANDLER}
-        />
-      ))}
-    </React.Suspense>
-  );
-};
 
 const INLINE_VARIABLE_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_.]*)\}\}/g;
 
@@ -795,19 +714,6 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           const codeText = String(codeProps.children ?? "").replace(/\n$/, "");
 
           if (codeText) {
-            // Promote special-language / typed-JSON fences (```tasks, ```mermaid,
-            // ```json quiz, …) to their real block via the canonical pipeline so
-            // this universal renderer stays consistent with the chat splitter.
-            if (isPromotableFence(language, codeText)) {
-              return (
-                <PromotedFenceBlock
-                  language={
-                    normalizeCodeLanguage(language) ?? (language as string)
-                  }
-                  code={codeText}
-                />
-              );
-            }
             return (
               <InlineCodeSnippet
                 code={codeText}

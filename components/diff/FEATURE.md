@@ -168,6 +168,14 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 - 2026-06-11 — Replaced the consolidation backlog with the verified repo-wide
   inventory: Category A (27 existing diff sites) + Category B (30 new-adoption
   surfaces).
+- 2026-06-19 — Light-mode color fix across all diff viewers. The structured
+  entity diff (`adapters/defaults.tsx`, `views/SummaryView`, `views/DiffViewerShell`,
+  all `features/agents/components/diff/**` adapters + `VersionHistoryTimeline`) and
+  `features/notes/components/diff/**` were authored dark-only (`bg-*-950`, `text-*-300/400`
+  with no `dark:` sibling) — unreadable in light mode. Made every diff color token
+  theme-aware (light `*-50/*-100` bg + `*-600/*-700` text, original dark value behind
+  `dark:`). `RawJsonView` (Monaco) and research `VersionDiff` (`react-diff-viewer-continued`)
+  now follow `state.theme.mode` instead of hardcoding dark.
 - 2026-06-15 — Added the light-engine `highlight` view (single-pane: new doc
   with changes tinted inline) to `TextDiff` + `DiffViewer`; Monaco falls back to
   inline. First consumer: working-doc `WorkingDocDiff` (Scribe + War Room).

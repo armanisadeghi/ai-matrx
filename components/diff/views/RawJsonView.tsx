@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 const MonacoDiffEditor = lazy(() =>
   import("@monaco-editor/react").then((mod) => ({ default: mod.DiffEditor })),
@@ -14,7 +15,13 @@ interface RawJsonViewProps {
   newLabel: string;
 }
 
-export function RawJsonView({ oldValue, newValue, oldLabel, newLabel }: RawJsonViewProps) {
+export function RawJsonView({
+  oldValue,
+  newValue,
+  oldLabel,
+  newLabel,
+}: RawJsonViewProps) {
+  const mode = useAppSelector((s) => s.theme.mode);
   const oldJson = useMemo(() => JSON.stringify(oldValue, null, 2), [oldValue]);
   const newJson = useMemo(() => JSON.stringify(newValue, null, 2), [newValue]);
 
@@ -31,7 +38,7 @@ export function RawJsonView({ oldValue, newValue, oldLabel, newLabel }: RawJsonV
             original={oldJson}
             modified={newJson}
             language="json"
-            theme="vs-dark"
+            theme={mode === "dark" ? "vs-dark" : "vs"}
             options={{
               readOnly: true,
               renderSideBySide: true,

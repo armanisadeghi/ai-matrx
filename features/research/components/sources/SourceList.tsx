@@ -52,6 +52,7 @@ import { SourceFilters } from "./SourceFilters";
 import { BulkActionBar } from "./BulkActionBar";
 import { SourceTagsInline } from "./SourceTagsInline";
 import { AuthorityRankButton } from "./AuthorityRankButton";
+import { AuthorityExportButton } from "./AuthorityExportButton";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import type { ResearchTag } from "../../types";
@@ -409,7 +410,7 @@ function SourceRow({
 }
 
 export default function SourceList() {
-  const { topicId, refresh } = useTopicContext();
+  const { topicId, topic, refresh } = useTopicContext();
   const api = useResearchApi();
   const isMobile = useIsMobile();
   const debug = useStreamDebug();
@@ -625,7 +626,13 @@ export default function SourceList() {
         search={search}
         onSearchChange={setSearch}
         trailing={
-          <AuthorityRankButton topicId={topicId} onRanked={refetchSources} />
+          <div className="flex items-center gap-2">
+            <AuthorityRankButton topicId={topicId} onRanked={refetchSources} />
+            <AuthorityExportButton
+              topicId={topicId}
+              topicName={topic?.name ?? null}
+            />
+          </div>
         }
       />
 

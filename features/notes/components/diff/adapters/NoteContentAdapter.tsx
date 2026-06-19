@@ -134,7 +134,7 @@ function DiffRow({ row }: { row: DiffRowData }) {
       <div
         className={cn(
           "px-3 py-0.5 border-r border-border whitespace-pre-wrap break-words font-mono",
-          row.type === "removed" ? "bg-red-950/20 text-red-300" : "",
+          row.type === "removed" ? "bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-300" : "",
           row.type === "unchanged" ? "text-foreground/70" : "",
           row.type === "added" ? "text-muted-foreground/30" : "",
         )}
@@ -144,7 +144,7 @@ function DiffRow({ row }: { row: DiffRowData }) {
       <div
         className={cn(
           "px-3 py-0.5 whitespace-pre-wrap break-words font-mono",
-          row.type === "added" ? "bg-green-950/20 text-green-300" : "",
+          row.type === "added" ? "bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-300" : "",
           row.type === "unchanged" ? "text-foreground/70" : "",
           row.type === "removed" ? "text-muted-foreground/30" : "",
         )}

@@ -184,7 +184,7 @@ export function validateProjectJson(raw: string): ProjectJsonValidation {
     warnings.push("No `tasks` provided — the project will be created empty.");
   }
 
-  const payload = parsed as ProjectJsonPayload;
+  const payload = parsed as unknown as ProjectJsonPayload;
 
   return {
     valid: errors.length === 0,
