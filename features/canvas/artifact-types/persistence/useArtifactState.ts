@@ -85,13 +85,20 @@ export function useArtifactState<
     [flush, debounceMs],
   );
 
-  // Flush any pending save on unmount.
+  // Keep a ref to the latest flush so the once-on-unmount cleanup always uses
+  // the current artifactId/adapter (not a stale closure captured when
+  // artifactId was still undefined — which would drop the final save).
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+
+  // Flush any pending save on TRUE unmount only (empty deps → no re-register
+  // churn when artifactId changes mid-life).
   useEffect(() => {
     return () => {
       if (timer.current) clearTimeout(timer.current);
-      flush();
+      flushRef.current();
     };
-  }, [flush]);
+  }, []);
 
   return { state, loaded, save };
 }

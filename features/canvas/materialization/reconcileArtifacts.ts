@@ -15,32 +15,44 @@
  */
 
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import { ARTIFACT_TYPE_DEFS } from "../artifact-types/artifact-type-registry";
 import { materializeMessageArtifacts } from "./materializeMessageArtifacts";
 
 /**
  * Cheap markers that indicate a message MIGHT contain a materializable block.
  * Intentionally inclusive — the authoritative decision is planMaterialization;
  * this only avoids splitting clearly-plain messages.
+ *
+ * DERIVED FROM THE REGISTRY so a new materializable type is covered automatically
+ * (the old hand-maintained list silently missed fence-style types like ```tasks,
+ * so they never reconciled). For every type alias we match both the fence form
+ * (```alias) and the XML-tag form (<alias). JSON-object types (quiz, diagram,
+ * comparison, math_problem, decision_tree, presentation) are matched by their
+ * JSON root key too, since those carry no fence/tag.
  */
-const MATERIALIZABLE_MARKERS = [
-  "<flashcards",
-  "<artifact",
-  "quiz_title",
-  "<timeline",
-  "progress_tracker",
-  "<troubleshooting",
-  "<resources",
-  "<research",
-  "decision_tree",
-  '"diagram"',
-  '"comparison"',
-  "comparison_table",
-  "math_problem",
-  "<presentation",
-  "<cooking_recipe",
-  "```mermaid",
-  "```mmd",
-];
+const MATERIALIZABLE_MARKERS: string[] = (() => {
+  const markers = new Set<string>(["<artifact", "```mmd"]);
+  for (const def of ARTIFACT_TYPE_DEFS) {
+    for (const alias of [...def.standaloneAliases, ...def.aliases]) {
+      markers.add("```" + alias);
+      markers.add("<" + alias);
+    }
+  }
+  // JSON-root-key markers (no fence/tag) for object-payload types.
+  for (const k of [
+    "quiz_title",
+    '"decision_tree"',
+    '"diagram"',
+    '"comparison"',
+    "comparison_table",
+    "math_problem",
+    '"presentation"',
+    "progress_tracker",
+  ]) {
+    markers.add(k);
+  }
+  return [...markers];
+})();
 
 /**
  * Build the search string from RAW block text — NOT JSON.stringify, which

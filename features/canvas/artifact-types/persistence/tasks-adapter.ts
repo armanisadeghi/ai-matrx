@@ -189,7 +189,7 @@ export const TASKS_ADAPTER: ArtifactPersistenceAdapter<TasksArtifactState> = {
 
         // Patch settings to embed the source_artifact_id group key.
         // CreateTaskInput doesn't pass settings directly, so we update after insert.
-        await supabase
+        const { error: settingsErr } = await supabase
           .from("ctx_tasks")
           .update({
             settings: {
@@ -199,6 +199,18 @@ export const TASKS_ADAPTER: ArtifactPersistenceAdapter<TasksArtifactState> = {
             },
           })
           .eq("id", task.id);
+
+        if (settingsErr) {
+          // The idempotency key (source_artifact_id) didn't land — this task
+          // would be invisible to the dedup check and DUPLICATED on the next
+          // reconcile. Roll it back so every persisted task carries its key.
+          console.error(
+            `[TASKS_ADAPTER.onMaterialize] settings patch failed for ${task.id}; rolling back to avoid a duplicate on reconcile`,
+            settingsErr,
+          );
+          await supabase.from("ctx_tasks").delete().eq("id", task.id);
+          continue;
+        }
 
         anyCreated = true;
       }
