@@ -77,6 +77,14 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // ```html / ```react (or ```jsx/```tsx → react) fence materializes.
   { canvasType: "html", aliases: ["html"], standaloneAliases: ["html"], materializable: true },
   { canvasType: "react", aliases: ["react", "jsx", "tsx"], standaloneAliases: ["react"], materializable: true },
+  // Structured data / durable content — persist as artifacts (nothing dies as
+  // text). table is tabular data (your UDT-tables insight); transcript syncs to
+  // the transcription system; tree is a hierarchy; structured_info = transcript
+  // + tasks. Two-way domain sync is the adapter layer on top — see FEATURE.md.
+  { canvasType: "table", aliases: ["table"], standaloneAliases: ["table"], materializable: true },
+  { canvasType: "transcript", aliases: ["transcript"], standaloneAliases: ["transcript"], materializable: true },
+  { canvasType: "structured_info", aliases: ["structured_info"], standaloneAliases: ["structured_info"], materializable: true },
+  { canvasType: "tree", aliases: ["tree"], standaloneAliases: ["tree"], materializable: true },
   // Artifact-wrapper-only (a bare ```code fence / image must NOT auto-materialize
   // — they'd flood the library with throwaway snippets):
   { canvasType: "iframe", aliases: ["iframe"], standaloneAliases: [], materializable: true },

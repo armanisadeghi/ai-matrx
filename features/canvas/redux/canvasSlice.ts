@@ -27,6 +27,10 @@ export type CanvasContentType =
   | "chart"
   | "questionnaire"
   | "react"
+  | "table"
+  | "transcript"
+  | "structured_info"
+  | "tree"
   | "tasks";
 
 /**
