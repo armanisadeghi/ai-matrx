@@ -7,15 +7,16 @@
  * A unified renderer calls this with the artifact's id (present once
  * materialized) and the type's adapter key. It returns the loaded state, a
  * `loaded` flag (so the renderer can wait before seeding initial UI), and a
- * debounced merge-`save`. With no artifactId (e.g. mid-stream, pre-materialize)
- * it is inert — interaction simply isn't persisted until the artifact exists.
+ * debounced merge-`save`. Until the id is a real canvas UUID (e.g. mid-stream,
+ * pre-materialize, or the splitter's `artifact-N` fallback) it is inert —
+ * interaction simply isn't persisted until the artifact exists. (A non-UUID id
+ * has no `canvas_items` row to attach state to; writing against it would fail
+ * the FK silently, so we stay inert instead — see `isMaterializedArtifactId`.)
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  getAdapter,
-  type ArtifactLink,
-} from "./artifact-adapters";
+import { getAdapter, type ArtifactLink } from "./artifact-adapters";
+import { isMaterializedArtifactId } from "../artifactId";
 
 interface UseArtifactStateResult<TState extends Record<string, unknown>> {
   state: TState | null;
@@ -39,16 +40,23 @@ export function useArtifactState<
   const linkRef = useRef(link);
   linkRef.current = link;
 
+  // Only a MATERIALIZED artifact (a real canvas UUID) has a row to attach state
+  // to. Normalize a non-UUID id to undefined so the hook is genuinely inert
+  // pre-materialize rather than firing FK-failing writes against `artifact-N`.
+  const liveId = isMaterializedArtifactId(artifactId)
+    ? artifactId!.trim()
+    : undefined;
+
   useEffect(() => {
     let cancelled = false;
-    if (!artifactId) {
+    if (!liveId) {
       setState(null);
       setLoaded(true);
       return;
     }
     setLoaded(false);
     getAdapter(adapterKey)
-      .loadState(artifactId, linkRef.current)
+      .loadState(liveId, linkRef.current)
       .then((s) => {
         if (cancelled) return;
         setState((s as TState) ?? null);
@@ -62,17 +70,17 @@ export function useArtifactState<
     return () => {
       cancelled = true;
     };
-  }, [artifactId, adapterKey]);
+  }, [liveId, adapterKey]);
 
   const flush = useCallback(() => {
-    if (!artifactId) return;
+    if (!liveId) return;
     const patch = pending.current;
     pending.current = {};
     if (Object.keys(patch).length === 0) return;
     getAdapter(adapterKey)
-      .saveState(artifactId, patch, linkRef.current)
+      .saveState(liveId, patch, linkRef.current)
       .catch((err) => console.error("[useArtifactState] save failed:", err));
-  }, [artifactId, adapterKey]);
+  }, [liveId, adapterKey]);
 
   const save = useCallback(
     (patch: Partial<TState>) => {
@@ -86,13 +94,13 @@ export function useArtifactState<
   );
 
   // Keep a ref to the latest flush so the once-on-unmount cleanup always uses
-  // the current artifactId/adapter (not a stale closure captured when
-  // artifactId was still undefined — which would drop the final save).
+  // the current id/adapter (not a stale closure captured when the id was still
+  // undefined — which would drop the final save).
   const flushRef = useRef(flush);
   flushRef.current = flush;
 
   // Flush any pending save on TRUE unmount only (empty deps → no re-register
-  // churn when artifactId changes mid-life).
+  // churn when the id changes mid-life).
   useEffect(() => {
     return () => {
       if (timer.current) clearTimeout(timer.current);

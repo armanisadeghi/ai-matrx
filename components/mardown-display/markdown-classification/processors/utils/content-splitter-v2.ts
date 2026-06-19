@@ -569,6 +569,11 @@ function extractAttributeXmlBlock(
     const artifactIndex = artifactId.includes("_")
       ? parseInt(artifactId.split("_").pop() || "0", 10)
       : startIndex;
+    // R1: carry the version from the wire form so the passthrough (reconcile)
+    // and render paths read the real chain version instead of defaulting to 1.
+    const parsedVersion = detection.attributes.version
+      ? parseInt(detection.attributes.version, 10)
+      : undefined;
 
     return {
       content: innerContent,
@@ -579,6 +584,9 @@ function extractAttributeXmlBlock(
         artifactIndex,
         artifactType: detection.attributes.type || "text",
         artifactTitle: detection.attributes.title || "",
+        ...(typeof parsedVersion === "number" && Number.isFinite(parsedVersion)
+          ? { version: parsedVersion }
+          : {}),
         rawXml: fullXml,
       },
     };
