@@ -142,35 +142,10 @@ export interface CxWebSearchContent {
   metadata?: { action?: Record<string, unknown> };
 }
 
-/**
- * Reference to a materialized artifact (a `canvas_items` row).
- *
- * The artifact materialization pipeline replaces a raw render-block (the inline
- * `<flashcards>` / `<artifact …>` / quiz JSON inside a `CxTextContent`) with one
- * of these AFTER persisting the block to `canvas_items`. This is the typed
- * "rewrite" target:
- *   - the client renders it by loading `canvas_items` by `artifact_id` (it never
- *     re-parses raw content → no regeneration leak, stable across reloads);
- *   - the model receives a compact, referenceable handle on the next turn so it
- *     can edit/extend the artifact by id (server reconstructs this block into a
- *     short textual reference).
- *
- * `artifact_index` is the stable 1-based order of the artifact within its source
- * message and equals `canvas_items.artifact_index` (the natural key with
- * `source_message_id`). It makes materialization idempotent and reconcilable.
- */
-export interface CxArtifactRefContent {
-  type: "artifact_ref";
-  /** canvas_items.id (UUID) of the persisted artifact. */
-  artifact_id: string;
-  /** canvas_items.type — drives the renderer (flashcards, quiz, html, …). */
-  artifact_type: string;
-  /** canvas_items.version this reference points at. */
-  version: number;
-  /** Stable 1-based order within the source message (= canvas_items.artifact_index). */
-  artifact_index: number;
-  title?: string;
-}
+// NB: materialized artifacts are NOT a distinct content-block type. They are
+// stored as plain text — `<artifact type id version>body</artifact>` (vision
+// R1) — inside a `CxTextContent`, so the model reads them natively and the UI
+// renders them by id. There is intentionally no `CxArtifactRefContent`.
 
 /** Union of all content block types stored in cx_message.content */
 export type CxContentBlock =
@@ -181,8 +156,7 @@ export type CxContentBlock =
   | CxToolResultContent
   | CxCodeExecContent
   | CxCodeResultContent
-  | CxWebSearchContent
-  | CxArtifactRefContent;
+  | CxWebSearchContent;
 
 /**
  * @deprecated Use CxContentBlock instead. Kept for backward compatibility.

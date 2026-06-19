@@ -5,8 +5,8 @@
  *   1. plans the materialization (pure),
  *   2. upserts each artifact into `canvas_items` (cx_canvas_upsert — idempotent
  *      on the `(source_message_id, artifact_index)` natural key),
- *   3. fills the `artifact_id`/`version` into the rewritten content's
- *      `artifact_ref` blocks, and
+ *   3. serializes each new artifact into its canonical id-bearing text form
+ *      `<artifact type id version>body</artifact>` (vision R1), and
  *   4. persists the rewritten content back to `cx_message` (owner-checked RPC),
  *      archiving the original raw content into `content_history`.
  *
@@ -30,12 +30,17 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type {
   CxContentBlock,
-  CxArtifactRefContent,
+  CxTextContent,
 } from "@/features/public-chat/types/cx-tables";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
-import { planMaterialization } from "./planMaterialization";
+import {
+  planMaterialization,
+  isArtifactPending,
+  type PlannedArtifact,
+} from "./planMaterialization";
+import { wrapArtifactText } from "./artifactWire";
 
 export interface MaterializeParams {
   /** REAL cx_message.id (never a client-temp id). */
@@ -158,16 +163,52 @@ export async function materializeMessageArtifacts(
     };
   }
 
-  const rewritten: CxContentBlock[] = plan.rewrittenBlocks.map((b) => {
-    if ((b as { type?: string }).type === "artifact_ref") {
-      const ref = b as CxArtifactRefContent;
-      const got = idByIndex.get(ref.artifact_index);
-      if (got) {
-        return { ...ref, artifact_id: got.id, version: got.version };
-      }
+  // Assemble the canonical R1 content: each pending marker becomes its
+  // id-bearing `<artifact>` tag, merged INLINE with surrounding prose into text
+  // blocks (so the model reads one natural text run); non-text blocks flush the
+  // run and pass through. This is the single stored form — UI renders by id,
+  // model reads the text, archive is durable.
+  const artifactsByIndex = new Map<number, PlannedArtifact>();
+  for (const a of plan.artifacts) artifactsByIndex.set(a.artifactIndex, a);
+
+  const rewritten: CxContentBlock[] = [];
+  let run = "";
+  const appendRun = (s: string) => {
+    if (!s) return;
+    run = run.length > 0 ? `${run}\n\n${s}` : s;
+  };
+  const flushRun = () => {
+    if (run.length > 0) {
+      rewritten.push({ type: "text", text: run } as CxTextContent);
+      run = "";
     }
-    return b;
-  });
+  };
+
+  for (const b of plan.rewrittenBlocks) {
+    if (isArtifactPending(b)) {
+      const got = idByIndex.get(b.artifactIndex);
+      const a = artifactsByIndex.get(b.artifactIndex);
+      if (got && a) {
+        appendRun(
+          wrapArtifactText({
+            canvasType: a.canvasType,
+            id: got.id,
+            version: got.version,
+            title: a.title,
+            body: a.content,
+          }),
+        );
+      }
+      continue;
+    }
+    if ((b as { type?: string }).type === "text") {
+      appendRun((b as CxTextContent).text ?? "");
+      continue;
+    }
+    flushRun();
+    rewritten.push(b as CxContentBlock);
+  }
+  flushRun();
 
   // Status-preserving rewrite (NOT cx_message_edit, which marks the message
   // 'edited' — materialization is a system rewrite, not a user edit). Archives

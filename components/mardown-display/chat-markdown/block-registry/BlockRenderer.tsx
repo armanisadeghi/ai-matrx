@@ -2,6 +2,7 @@
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import {
   ArtifactRender,
   hasArtifactRenderer,
@@ -257,10 +258,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // ── Unified artifact renderer (Wave B) ───────────────────────────────────
   // Standalone materializable blocks whose type has a unified renderer are
   // rendered through the single shared path (chat/canvas/artifact identical).
-  // `artifact`/`artifact_ref` keep going through ArtifactBlock/ArtifactRefBlock
-  // (which use the unified renderer internally + add chrome). Types not yet
-  // migrated fall through to their legacy case below.
-  if (block.type !== "artifact" && block.type !== "artifact_ref") {
+  // `artifact` blocks go through the dedicated `case "artifact"` below (UUID id
+  // → render-by-id; else inline ArtifactBlock chrome). Standalone materializable
+  // types (```tasks, ```mermaid, JSON blocks, …) route through the unified
+  // renderer here.
+  if (block.type !== "artifact") {
     const _def = resolveArtifactDef(block.type);
     if (_def && hasArtifactRenderer(_def.canvasType)) {
       // Gate on the BLOCK's own completion, not the global message stream.
@@ -919,7 +921,36 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
     }
 
-    case "artifact":
+    case "artifact": {
+      // R3 recognition: a `<artifact>` whose id is a real canvas UUID is
+      // MATERIALIZED → render the live row BY ID (ignore the inline body, which
+      // is the model-facing archive). A non-UUID / absent id (the model's
+      // `artifact_1`, or mid-stream) renders inline and stays a materialization
+      // candidate. This is the single load-bearing branch that lets the canonical
+      // `<artifact id>body</artifact>` text be both model-readable and rendered live.
+      const artifactMeta = block.metadata as
+        | {
+            artifactId?: string;
+            artifactType?: string;
+            artifactTitle?: string;
+            version?: number;
+          }
+        | undefined;
+      if (isMaterializedArtifactId(artifactMeta?.artifactId)) {
+        return (
+          <BlockComponents.ArtifactRefBlock
+            key={index}
+            serverData={{
+              artifact_id: artifactMeta?.artifactId,
+              artifact_type: artifactMeta?.artifactType,
+              version: artifactMeta?.version,
+              title: artifactMeta?.artifactTitle,
+            }}
+            messageId={messageId}
+            taskId={taskId}
+          />
+        );
+      }
       return (
         <BlockComponents.ArtifactBlock
           key={index}
@@ -931,16 +962,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           taskId={taskId}
         />
       );
-
-    case "artifact_ref":
-      return (
-        <BlockComponents.ArtifactRefBlock
-          key={index}
-          serverData={block.serverData}
-          messageId={messageId}
-          taskId={taskId}
-        />
-      );
+    }
 
     case "editor_error":
       return (

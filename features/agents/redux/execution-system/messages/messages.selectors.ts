@@ -450,35 +450,10 @@ export const selectMessageInterleavedContent = (
 
       const segments: ContentSegment[] = [];
       for (const part of parts) {
-        // `artifact_ref` is a client-side materialization content block that is
-        // not part of the python-generated MessagePart union, so it's handled
-        // before the typed switch. Emitting a render_block segment routes it
-        // through BlockRenderer → ArtifactRefBlock, which loads the persisted
-        // canvas_items row by id (no raw re-parse → no regeneration on reload).
-        if ((part as { type?: string }).type === "artifact_ref") {
-          const ref = part as unknown as {
-            artifact_id?: string;
-            artifact_type?: string;
-            version?: number;
-            artifact_index?: number;
-            title?: string;
-          };
-          if (ref.artifact_id) {
-            segments.push({
-              type: "render_block",
-              blockType: "artifact_ref",
-              content: null,
-              data: {
-                artifact_id: ref.artifact_id,
-                artifact_type: ref.artifact_type ?? "html",
-                version: ref.version ?? 1,
-                artifact_index: ref.artifact_index ?? 0,
-                title: ref.title ?? "",
-              },
-            } satisfies ContentSegmentRenderBlock);
-          }
-          continue;
-        }
+        // Materialized artifacts are stored as plain text — `<artifact id=uuid>
+        // body</artifact>` (vision R1) — so they flow through the normal `text`
+        // path below; the splitter detects the tag and BlockRenderer renders it
+        // by id. No special content-block part type exists anymore.
         switch (part.type) {
           case "text": {
             const text = (part as { text?: string }).text;

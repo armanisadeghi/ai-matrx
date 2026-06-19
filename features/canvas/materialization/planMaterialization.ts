@@ -1,25 +1,27 @@
 /**
  * planMaterialization — pure transform from a committed `cx_message.content`
- * array into (a) the artifacts to persist and (b) the rewritten content array
- * with each materializable render-block replaced by a `CxArtifactRefContent`
- * placeholder.
+ * array into (a) the artifacts to persist and (b) the rewritten content with
+ * each NEW materializable render-block replaced by its canonical id-bearing form
+ * (vision R1): `<artifact type="X" id="<uuid>" version="N">body</artifact>` —
+ * plain text the model reads natively and the UI renders by id.
  *
- * This is the deterministic heart of the rewrite step. It is PURE (no I/O) so
- * it can be unit-reasoned and run identically at stream-end commit and during
- * the reconciliation pass on conversation load.
+ * Because the id is only known after the canvas upsert, NEW artifacts are emitted
+ * here as `ArtifactPendingMarker` placeholders carrying their `artifactIndex`;
+ * the orchestrator fills the real UUID and serializes them to text.
  *
- * Idempotency: once a message has been materialized, its text blocks no longer
- * contain raw artifact markup (it was replaced by `artifact_ref` blocks, which
- * pass through untouched). Re-running therefore finds nothing new and returns
- * `hasChanges: false`. Indices are assigned by stable left-to-right order over
- * materializable blocks, so the same logical artifact always gets the same
- * `artifact_index` (the natural key with `source_message_id`).
+ * PURE (no I/O) so it runs identically at stream-end and during reconcile.
+ *
+ * Idempotency (R3): a `<artifact>` whose id is already a real canvas UUID is
+ * recognized as MATERIALIZED and passed through untouched — it is not counted as
+ * a new artifact, so a fully-materialized message yields `hasChanges: false` and
+ * the orchestrator skips the rewrite entirely. Indices are assigned by stable
+ * left-to-right position over ALL materializable artifacts (materialized + new),
+ * matching the `(source_message_id, artifact_index)` natural key.
  */
 
 import type {
   CxContentBlock,
   CxTextContent,
-  CxArtifactRefContent,
 } from "@/features/public-chat/types/cx-tables";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
@@ -29,6 +31,8 @@ import {
   extractMermaidTitle,
 } from "@/components/mermaid/diagram-type";
 import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { wrapArtifactText } from "./artifactWire";
 
 export interface PlannedArtifact {
   /** Stable 1-based order within the message (= canvas_items.artifact_index). */
@@ -42,17 +46,32 @@ export interface PlannedArtifact {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Internal placeholder for a NEW artifact in the rewritten content. Replaced by
+ * the orchestrator with a `{type:"text"}` block carrying the canonical R1 tag
+ * once the canvas upsert returns the real id/version. Never persisted.
+ */
+export interface ArtifactPendingMarker {
+  __artifactPending: true;
+  artifactIndex: number;
+}
+
+export function isArtifactPending(
+  b: CxContentBlock | ArtifactPendingMarker,
+): b is ArtifactPendingMarker {
+  return (b as ArtifactPendingMarker).__artifactPending === true;
+}
+
 export interface MaterializationPlan {
   /** Artifacts to upsert, in message order. Empty when nothing materializes. */
   artifacts: PlannedArtifact[];
   /**
-   * Rewritten content. Each materializable block is a `CxArtifactRefContent`
-   * with `artifact_id: ""` to be filled in after the upsert returns its UUID;
-   * the `artifact_index` is already final. Non-materializable content is
-   * preserved as merged text runs (and passthrough non-text blocks).
+   * Rewritten content. NEW artifacts are `ArtifactPendingMarker`s (id filled by
+   * the orchestrator); everything else is preserved as text runs + passthrough
+   * non-text blocks. Only consumed when `hasChanges` is true.
    */
-  rewrittenBlocks: CxContentBlock[];
-  /** True when at least one artifact was found to materialize. */
+  rewrittenBlocks: (CxContentBlock | ArtifactPendingMarker)[];
+  /** True when at least one NEW artifact was found to materialize. */
   hasChanges: boolean;
 }
 
@@ -76,24 +95,21 @@ function titleFor(
 export function planMaterialization(
   content: CxContentBlock[],
 ): MaterializationPlan {
-  const rewritten: CxContentBlock[] = [];
+  const rewritten: (CxContentBlock | ArtifactPendingMarker)[] = [];
   const artifacts: PlannedArtifact[] = [];
-  // Running materializable counter → artifact_index (1-based). Start ABOVE any
-  // artifact_index already present so a message that somehow mixes existing
-  // artifact_ref blocks with new raw artifacts never reissues a colliding index
-  // — the (source_message_id, artifact_index) upsert would otherwise overwrite
-  // the earlier artifact's row.
-  let index = content.reduce<number>((max, b) => {
-    if ((b as { type?: string }).type === "artifact_ref") {
-      const ai = (b as { artifact_index?: number }).artifact_index ?? 0;
-      return Math.max(max, ai);
-    }
-    return max;
-  }, 0);
 
-  // Accumulates faithful markdown for consecutive non-materializable splitter
-  // blocks so they collapse back into a single text block between refs.
+  // Left-to-right position over EVERY materializable artifact (already-
+  // materialized + new). New artifacts take their position as artifact_index.
+  let position = 0;
+
+  // Accumulates faithful markdown for consecutive non-pending content so it
+  // collapses back into a single text block between pending markers.
   let textRun = "";
+  const appendText = (s: string) => {
+    if (!s) return;
+    if (textRun.length > 0) textRun += "\n\n";
+    textRun += s;
+  };
   const flushTextRun = () => {
     if (textRun.length > 0) {
       rewritten.push({ type: "text", text: textRun } as CxTextContent);
@@ -102,8 +118,8 @@ export function planMaterialization(
   };
 
   for (const block of content) {
-    // Non-text blocks (thinking, tool_call, media, existing artifact_ref, …)
-    // pass through verbatim — they are never raw artifact markup.
+    // Non-text blocks (thinking, tool_call, media, …) pass through verbatim —
+    // they are never raw artifact markup.
     if (!isTextBlock(block)) {
       flushTextRun();
       rewritten.push(block);
@@ -123,19 +139,53 @@ export function planMaterialization(
 
       if (!canvasType) {
         // Not an artifact — re-serialize to markdown and keep inline.
-        if (textRun.length > 0) textRun += "\n\n";
-        textRun += reconstructBlockMarkdown({
-          type: sb.type,
-          content: sb.content ?? "",
-          data: sb.language ? { language: sb.language } : null,
-        });
+        appendText(
+          reconstructBlockMarkdown({
+            type: sb.type,
+            content: sb.content ?? "",
+            data: sb.language ? { language: sb.language } : null,
+          }),
+        );
         continue;
       }
 
-      // Materializable: flush preceding text, emit a ref placeholder + plan.
+      // Already materialized (R3): a `<artifact>` carrying a real canvas UUID.
+      // Pass it through verbatim and DON'T re-materialize. Still counts toward
+      // position so later new artifacts get a non-colliding index.
+      const existingId =
+        typeof sb.metadata?.artifactId === "string"
+          ? (sb.metadata.artifactId as string)
+          : undefined;
+      if (sb.type === "artifact" && isMaterializedArtifactId(existingId)) {
+        position += 1;
+        const rawXml =
+          typeof sb.metadata?.rawXml === "string"
+            ? (sb.metadata.rawXml as string)
+            : undefined;
+        appendText(
+          rawXml ??
+            wrapArtifactText({
+              canvasType,
+              id: existingId as string,
+              version:
+                typeof sb.metadata?.version === "number"
+                  ? (sb.metadata.version as number)
+                  : 1,
+              title:
+                typeof sb.metadata?.artifactTitle === "string"
+                  ? (sb.metadata.artifactTitle as string)
+                  : undefined,
+              body: sb.content ?? "",
+            }),
+        );
+        continue;
+      }
+
+      // NEW materializable artifact → flush preceding text, emit a pending
+      // marker + plan. The orchestrator fills the UUID and serializes to R1 text.
       flushTextRun();
-      index += 1;
-      let title = titleFor(sb.type, sb.metadata, index);
+      position += 1;
+      let title = titleFor(sb.type, sb.metadata, position);
       let artifactMetadata: Record<string, unknown> | undefined;
       if (canvasType === "mermaid") {
         // Mermaid identity travels in metadata: the user-facing label is the
@@ -146,20 +196,16 @@ export function planMaterialization(
         artifactMetadata = { diagramType, title };
       }
       artifacts.push({
-        artifactIndex: index,
+        artifactIndex: position,
         canvasType,
         title,
         content: sb.content ?? "",
         metadata: artifactMetadata,
       });
       rewritten.push({
-        type: "artifact_ref",
-        artifact_id: "",
-        artifact_type: canvasType,
-        version: 1,
-        artifact_index: index,
-        title,
-      } as CxArtifactRefContent);
+        __artifactPending: true,
+        artifactIndex: position,
+      } as ArtifactPendingMarker);
     }
   }
 

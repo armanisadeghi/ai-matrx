@@ -4,10 +4,11 @@
  * The stream-end commit materializes artifacts live, but a stream can die, a
  * tab can close, and historical messages predate the pipeline entirely. On
  * conversation load we scan the hydrated assistant messages and materialize any
- * that still carry RAW artifact markup (no artifact_ref yet). Because
- * materialization is idempotent on the `(source_message_id, artifact_index)`
- * key and `cx_message_edit` archives the original into `content_history`, this
- * is safe to re-run and fully recoverable.
+ * that still carry RAW artifact markup (a `<artifact>` without a real canvas
+ * UUID, or a standalone fence). Already-materialized `<artifact id=uuid>` text
+ * is recognized and skipped by planMaterialization (vision R3), so re-running is
+ * idempotent — and the original is archived in `content_history`, so it's
+ * fully recoverable.
  *
  * A cheap string pre-filter avoids running the block splitter over every
  * message on every load; only messages that look like they contain a

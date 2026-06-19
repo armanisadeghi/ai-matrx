@@ -237,7 +237,7 @@ export const canvasArtifactService = {
     /**
      * Get a single canvas item by id. RLS scopes this to the owner, public
      * items, or items the caller has explicit permission on — so it safely
-     * resolves an artifact_ref both for the author and for shared views.
+     * resolves a materialized `<artifact id>` both for the author and shared views.
      * Returns null when not found / not accessible.
      */
     async getById(canvasId: string): Promise<CanvasArtifactRow | null> {
