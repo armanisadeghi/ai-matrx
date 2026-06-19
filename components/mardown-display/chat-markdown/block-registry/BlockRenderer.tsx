@@ -584,6 +584,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           key={index}
           dataType={(sd._dataType as string) ?? "unknown"}
           data={sd}
+          conversationId={conversationId}
+          messageId={messageId}
         />
       );
     }
