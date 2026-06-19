@@ -53,18 +53,16 @@ A generalized artifact: `{ id, kind, version, owner, conversation_id, source_mes
 
 ## Current implementation vs target (the gap, honestly)
 
-**Built + working (frontend, client-side, automatic — NOT the server):**
-- Recognize render block at stream-end + reconcile-on-load → create `canvas_items` row → rewrite message to a typed `artifact_ref` block → original archived in `content_history`. Verified live.
-- Per-type unified renderer (one renderer per type across chat/canvas/library).
-- Discovery index (`cx_artifact`) so artifacts appear in `/artifacts`.
+**Shipped + live-verified — Waves 0–4 (2026-06-19).** The six divergences below are closed (frontend committed on `main`; aidream committed, deploy-pending):
 
-**Diverges from the vision (needs change):**
-1. **Rewrite shape:** uses a *foreign* `artifact_ref` block, not "the agent's own format + id." → Converge on the canonical id-bearing form (Decision 2/3). [OPEN: exact format.]
-2. **Tasks auto-create real `ctx_tasks`** (TASKS_ADAPTER.onMaterialize). **WRONG per Decision 5** — must become tracked-artifact + manual Convert. ← highest-priority correction.
-3. **Per-item interactivity doesn't round-trip:** renderers draw from the raw markdown, not the live domain rows, so check/answer/study doesn't reach the DB. (Flashcards *canvas* mode is the exception — it reads live.)
-4. **Model can't see/use the artifact next turn:** aidream doesn't reconstruct `artifact_ref` → the rewrite can make the model *blind* to the content. The rewrite + the aidream reconstruction must land together.
-5. **No artifact-as-context + no agent edit tool** (aidream side).
-6. **HTML publishing is non-idempotent + disconnected:** the preview/publish bridge inserts a new `html_pages` row per click; not driven by the artifact. Should be artifact-driven (one row, updated, linked).
+1. ✅ **Rewrite shape** — converged to the **R1 text form** `<artifact type id version title>body</artifact>` (`artifactWire.ts`). The foreign `artifact_ref` block is deleted; 19 live messages migrated. [Wave 1]
+2. ✅ **Tasks no longer auto-create** — tracked proposal + explicit **Convert** via `ctx_task_associations` (`TasksArtifact.tsx`). [Wave 0]
+3. ✅ **Per-item interactivity round-trips** — `canvas_item_state` via `useArtifactState` (recipe/presentation/comparison + progress/decision-tree/troubleshooting); flashcards/quiz via custom adapters. [Wave 2]
+4. ✅ **Model is no longer blind** — the R1 text passes through to the model natively (no aidream reconstruction needed). [Wave 1]
+5. ✅ **Artifact-as-context** — `conversation_artifacts` injected read-only each turn with latest copy + status + the user's interaction state (`aidream/api/utils/artifact_context.py`). [Wave 3] (The agent **edit tool** is Phase 2 / Wave 5 — below.)
+6. ◑ **HTML publishing** — server-side idempotency shipped (`/api/html-pages` create updates-in-place by source message). [Wave 4] Remaining: the `canvas_items.external_system` link for html artifacts + mymatrx live-verify.
+
+**Still standing (per the phasing):** Phase 2 — model-facing body summarization + `edit_artifact(id,…)` tool — **staged behind the garbage-teaching test** (R4/R5, Wave 5). Per-type renderer + discovery index (`cx_artifact` → `/artifacts`) predate this build.
 
 ---
 
@@ -123,5 +121,6 @@ This single rule means it does NOT matter whether the model learns to emit the s
 ---
 
 ## Change log
+- `2026-06-19` (3) — claude: **SHIPPED Waves 0–4** (frontend on `main`: `7a552f8d0` tasks-Convert, `066ae2a5a` R1 rewrite+R3+migrated 19, `e8f3278ca` interaction round-trip, `30ef1bd83` idempotent HTML; aidream `d316f10bc` R8 artifacts-as-context, deploy-pending). All six divergences closed (see status section). Live-verified frontend; aidream helper live-DB-verified. Phase 2 (summarization + `edit_artifact` tool) staged behind the garbage-teaching test.
 - `2026-06-19` (2) — claude: **ratified R1–R8.** Canonical `<artifact type id>body</artifact>` for all types; recognition rule (known id→edit, else→new) makes model-emitted shapes safe; Option 1/2 resolved by phasing (Phase 1 pass-through body, Phase 2 summarize+context, gated on the garbage test); live state via canvas_items.content + canvas_item_state + domain tables (no new table); tasks = tracked+Convert→live-mirror.
 - `2026-06-19` — claude: created from the design conversation with Arman. Captures the history-rewrite vision (recognize→add-id→rewrite), the two-class rule (tasks must NOT auto-create — corrects current build), artifacts-as-context, source-of-truth-is-DB, and the open questions (canonical format, shim policy, artifact table).
