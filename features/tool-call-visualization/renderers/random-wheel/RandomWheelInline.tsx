@@ -51,8 +51,8 @@ import type {
 const SPIN_FULL_TURNS = 6;
 /** Minimum on-screen animation so even a tiny spin_duration_ms still reads. */
 const MIN_VISIBLE_SPIN_MS = 600;
-/** Wheel diameter in px (the SVG is square). */
-const WHEEL_SIZE = 220;
+/** Wheel diameter in px (the SVG is square). Big enough to read 15–20 radial labels. */
+const WHEEL_SIZE = 320;
 
 /** Theme-token segment fills — alternate so neighbours are distinguishable.
  *  These reference CSS variables so they work in light AND dark mode. */
@@ -218,7 +218,10 @@ function resolveWheel(
 
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
   const a = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  // Round to 3 decimals: cleaner SVG and avoids any float-precision drift between
+  // environments (e.g. a stray SSR hydration mismatch on trig output).
+  const round = (n: number) => Math.round(n * 1000) / 1000;
+  return { x: round(cx + r * Math.cos(a)), y: round(cy + r * Math.sin(a)) };
 }
 
 /** SVG path for one pie segment spanning [startDeg, endDeg]. */
@@ -295,8 +298,12 @@ const Wheel: React.FC<WheelProps> = ({
   const cy = size / 2;
   const r = size / 2 - 4;
   const seg = 360 / count;
-  const labelMax = count <= 6 ? 14 : count <= 12 ? 10 : 7;
-  const fontSize = count <= 8 ? 11 : count <= 16 ? 9 : 7;
+  const hubR = Math.max(14, size * 0.055);
+  const innerR = hubR + 8;
+  const outerR = r - 8;
+  const fontSize = count <= 10 ? 13 : count <= 18 ? 11 : 9;
+  // How many chars fit along the radial spoke at this font size.
+  const charBudget = Math.max(8, Math.floor((outerR - innerR) / (fontSize * 0.6)));
 
   return (
     <div
@@ -359,14 +366,17 @@ const Wheel: React.FC<WheelProps> = ({
           const textFill = isWinner
             ? "var(--color-primary-foreground, hsl(var(--primary-foreground)))"
             : SEGMENT_TEXT_FILLS[i % SEGMENT_TEXT_FILLS.length];
-          // A single candidate is a full disc (a 360° pie path is degenerate);
-          // its label sits above the hub, unrotated.
-          const labelPos = single
-            ? { x: cx, y: cy - r * 0.45 }
-            : polar(cx, cy, r * 0.62, mid);
           const dimOpacity = settled && !isWinner ? 0.55 : 1;
-          // Keep labels upright on the bottom/left half rather than upside-down.
-          const textRotation = mid > 90 && mid < 270 ? mid + 180 : mid;
+          // RADIAL labels — each runs along its spoke (center → edge) for max length.
+          // Right half reads outward from the hub; left half reads inward from the rim;
+          // both stay upright (no mirror/upside-down). A single candidate is a full
+          // disc, so its label sits above the hub, unrotated.
+          const onLeft = mid > 180;
+          const labelRot = single ? 0 : onLeft ? mid - 270 : mid - 90;
+          const labelPos = single
+            ? { x: cx, y: cy - r * 0.4 }
+            : polar(cx, cy, onLeft ? outerR : innerR, mid);
+          const labelAnchor: "start" | "middle" = single ? "middle" : "start";
           return (
             <g key={i}>
               <title>{label}</title>
@@ -397,12 +407,12 @@ const Wheel: React.FC<WheelProps> = ({
                 fill={textFill}
                 fontSize={fontSize}
                 fontWeight={isWinner ? 700 : 500}
-                textAnchor="middle"
+                textAnchor={labelAnchor}
                 dominantBaseline="middle"
-                transform={single ? undefined : `rotate(${textRotation} ${labelPos.x} ${labelPos.y})`}
+                transform={single ? undefined : `rotate(${labelRot} ${labelPos.x} ${labelPos.y})`}
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
-                {truncateLabel(label, labelMax)}
+                {truncateLabel(label, charBudget)}
               </text>
             </g>
           );
@@ -411,7 +421,7 @@ const Wheel: React.FC<WheelProps> = ({
         <circle
           cx={cx}
           cy={cy}
-          r={Math.max(12, size * 0.07)}
+          r={hubR}
           fill="var(--color-card, hsl(var(--card)))"
           stroke="var(--color-border, hsl(var(--border)))"
           strokeWidth={2}
