@@ -1,15 +1,21 @@
 "use client";
 
 /**
- * Media drawer body — image / audio / video / document / youtube. Renders
- * through the universal file handler (`InlineMediaRef`) so URLs self-heal and
- * never ship raw signed/expiring links. Documents fall back to a file chip +
- * open link.
+ * Media drawer body — image / audio / video / document / youtube, filling the
+ * full height. Renders through the universal file handler so URLs self-heal.
+ * Documents (PDFs, etc.) embed full-height via the resolved src. The
+ * open-original action lives in `MediaFooter`.
  */
 
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ExternalLink } from "lucide-react";
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import type { FileSource } from "@/features/files/handler/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
 
 function youtubeId(url: string): string | null {
@@ -19,25 +25,31 @@ function youtubeId(url: string): string | null {
   return m?.[1] ?? null;
 }
 
+function toFileSource(
+  fileId: string | null | undefined,
+  fileUrl: string | null | undefined,
+): FileSource | null {
+  if (fileId) return { kind: "file_id", fileId };
+  if (fileUrl) return { kind: "external_url", url: fileUrl };
+  return null;
+}
+
 export function MediaBody({ item }: ContextItemBodyProps) {
   const { fileId, fileUrl } = item.refs;
   const ref = fileId ?? fileUrl ?? null;
+  const resolvedSrc = useFileSrc(toFileSource(fileId, fileUrl));
 
   if (item.blockType === "youtube_video" && fileUrl) {
     const id = youtubeId(fileUrl);
     if (id) {
       return (
-        <div className="p-4">
-          <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-            <iframe
-              src={`https://www.youtube.com/embed/${id}`}
-              title={item.title}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        </div>
+        <iframe
+          src={`https://www.youtube.com/embed/${id}`}
+          title={item.title}
+          className="h-full w-full bg-black"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
       );
     }
   }
@@ -46,25 +58,16 @@ export function MediaBody({ item }: ContextItemBodyProps) {
     item.blockType === "document" || item.blockType === "file_output";
 
   if (isDocument) {
-    return (
-      <div className="flex flex-col items-start gap-3 p-4">
-        {fileId ? (
-          <FileResourceChip fileId={fileId} size="md" />
-        ) : (
-          <div className="text-sm text-foreground">{item.title}</div>
-        )}
-        {fileUrl && (
-          <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Open original
-          </a>
-        )}
-      </div>
+    return resolvedSrc ? (
+      <iframe
+        src={resolvedSrc}
+        title={item.title}
+        className="h-full w-full bg-white"
+      />
+    ) : (
+      <p className="p-4 text-xs text-muted-foreground italic">
+        Preview unavailable for this file.
+      </p>
     );
   }
 
@@ -77,7 +80,7 @@ export function MediaBody({ item }: ContextItemBodyProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 items-center justify-center p-4">
+    <div className="flex h-full min-h-0 items-center justify-center p-3">
       <InlineMediaRef
         ref={ref}
         alt={item.title}
@@ -87,5 +90,27 @@ export function MediaBody({ item }: ContextItemBodyProps) {
         className="max-h-full max-w-full"
       />
     </div>
+  );
+}
+
+export function MediaFooter({ item }: ContextItemBodyProps) {
+  const { fileId, fileUrl } = item.refs;
+  const src = useFileSrc(toFileSource(fileId, fileUrl));
+  const href = fileUrl ?? src;
+  if (!href) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </TooltipTrigger>
+      <TooltipContent>Open original</TooltipContent>
+    </Tooltip>
   );
 }

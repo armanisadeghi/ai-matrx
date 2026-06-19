@@ -5,11 +5,17 @@
  * (db_record / db_query / db_field). Reuses `DataRefPreviewContent`.
  */
 
+import { useEffect } from "react";
 import { DataRefPreviewContent } from "@/features/agents/components/previews/DataRefHoverPreview";
 import type { ContextItemBodyProps } from "../types";
 
-export function DataBody({ item }: ContextItemBodyProps) {
+export function DataBody({ item, setTitle }: ContextItemBodyProps) {
   const ref = item.refs.dataRefs?.[0] ?? null;
+
+  useEffect(() => {
+    const t = ref?.label?.trim() || ref?.table;
+    if (t) setTitle?.(t);
+  }, [ref?.label, ref?.table, setTitle]);
 
   if (!ref) {
     return (

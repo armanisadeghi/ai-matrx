@@ -61,18 +61,25 @@ export interface ContextDrawerItem {
   resourceId?: string;
 }
 
-/** Props every drawer body receives. */
+/** Props every drawer body (and footer) receives. */
 export interface ContextItemBodyProps {
   item: ContextDrawerItem;
   /**
-   * Called by a body after the user edits an already-sent record, so the
-   * drawer can offer to re-attach it to the next turn (the model won't see the
-   * edit otherwise). No-op for pre-submit items.
+   * Report the resolved record title up to the drawer's title bar. Lets a body
+   * show the real label (e.g. the note's title) without rendering its own
+   * duplicate header. Call once the record loads.
    */
-  onEdited?: () => void;
+  setTitle?: (title: string) => void;
 }
 
-/** A registered context-item type. */
+/**
+ * A registered context-item type.
+ *
+ * Layout contract: `Body` owns the FULL content area and must fill its height
+ * (`h-full`/flex). Any links, lists, or metadata belong in the compact `Footer`
+ * (a single thin row of icon actions / inline meta) — never a tall header that
+ * steals vertical space. The drawer's title bar already shows the icon + title.
+ */
 export interface ContextItemTypeDef {
   /** Every blockType spelling that resolves to this def. */
   blockTypes: string[];
@@ -81,6 +88,8 @@ export interface ContextItemTypeDef {
   themeKey: string;
   /** Can instances of this type be edited in place? */
   editable: boolean;
-  /** The drawer body component for this type. */
+  /** The drawer body — fills the full content area. */
   Body: ComponentType<ContextItemBodyProps>;
+  /** Optional compact footer row (links / meta / icon actions). */
+  Footer?: ComponentType<ContextItemBodyProps>;
 }

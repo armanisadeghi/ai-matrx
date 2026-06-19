@@ -30,6 +30,7 @@ import {
   Captions,
   AudioLines,
   Notebook,
+  FileText as FileTextIcon,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
@@ -39,6 +40,10 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import {
+  selectWorkingDocEnabled,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -339,11 +344,35 @@ export function SmartAgentResourceChips({
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
+  const workingDocEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId),
+  );
+  const workingDocTitle = useAppSelector(selectWorkingDocTitle(conversationId));
   const drawer = useContextItemDrawer();
 
-  const drawerItems: ContextDrawerItem[] = resources.flatMap((r) =>
-    normalizeResource(r, conversationId),
-  );
+  // The live working document is CONTEXT (re-sent every turn), not an
+  // attachment — when enabled it leads the strip as a differentiated chip and
+  // joins the drawer's nav list.
+  const workingDocItem: ContextDrawerItem | null = workingDocEnabled
+    ? {
+        id: "working_document",
+        blockType: "working_document",
+        typeLabel: "Context",
+        title: workingDocTitle?.trim() || "Working document",
+        icon: FileTextIcon,
+        themeKey: "input_document",
+        origin: "block",
+        conversationId,
+        editable: true,
+        refs: {},
+        raw: null,
+      }
+    : null;
+
+  const drawerItems: ContextDrawerItem[] = [
+    ...(workingDocItem ? [workingDocItem] : []),
+    ...resources.flatMap((r) => normalizeResource(r, conversationId)),
+  ];
 
   const openDrawerForResource = useCallback(
     (resourceId: string) => {
@@ -352,6 +381,10 @@ export function SmartAgentResourceChips({
     },
     [drawerItems, drawer],
   );
+
+  const openWorkingDoc = useCallback(() => {
+    drawer.openAt(drawerItems, 0);
+  }, [drawerItems, drawer]);
 
   const handleRemove = useCallback(
     (resourceId: string) => {
@@ -374,10 +407,20 @@ export function SmartAgentResourceChips({
   );
 
   if (!showAttachments) return null;
-  if (resources.length === 0) return null;
+  if (resources.length === 0 && !workingDocItem) return null;
 
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
+      {workingDocItem && (
+        <ResourceAttachmentTile
+          typeLabel="Context"
+          title={workingDocItem.title}
+          icon={FileTextIcon}
+          themeKey="input_document"
+          onClick={openWorkingDoc}
+          className="ring-1 ring-inset ring-primary/40 bg-primary/5"
+        />
+      )}
       <AnimatePresence mode="popLayout">
         {resources.map((resource) => (
           <ResourceChip

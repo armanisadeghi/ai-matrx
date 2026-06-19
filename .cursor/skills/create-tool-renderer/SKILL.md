@@ -7,7 +7,9 @@ description: Create custom MCP tool result displays for the chat interface. Buil
 
 Build a custom, hand-authored visualization for an MCP tool in the AI Matrx chat interface. Given a tool name and example data, produce production-ready inline + optional overlay components and register them.
 
-This skill covers **hardcoded** (in-repo) renderers only. DB-stored dynamic renderers live in `features/tool-call-visualization/dynamic/` and are authored through the admin UI at `/administration/mcp-tools/[toolId]/ui` using the generator prompt at `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts` — not through this skill.
+This skill covers **hardcoded** (in-repo) renderers only. DB-stored dynamic renderers live in `features/tool-call-visualization/dynamic/` (table: `public.tool_ui`) and are authored through the admin UI at `/administration/mcp-tools/[toolId]/ui` using the generator prompt at `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts` — not through this skill.
+
+**Architecture snapshot:** `features/tool-call-visualization/EXPANSION.md` — data paths, default vs custom resolution, DB shapes.
 
 ## Cardinal Rule: HIDE ABSOLUTELY NOTHING
 
@@ -32,6 +34,7 @@ interface ToolRendererProps {
   entry: ToolLifecycleEntry;
   events?: ToolEventPayload[];
   onOpenOverlay?: (initialTab?: string) => void;
+  onOpenWindowPanel?: (initialTab?: string) => void;
   toolGroupId?: string;
   isPersisted?: boolean;
 }
@@ -44,7 +47,8 @@ From `@/features/agents/types/request.types`:
 | Field | Meaning |
 |---|---|
 | `callId` | Unique tool invocation id. |
-| `toolName` | Backend tool name. |
+| `toolName` | Canonical backend tool name — **registry lookup key**. |
+| `displayName` | Human label (may differ from `toolName` after reload). Never use for registry lookup. |
 | `status` | `"started" \| "progress" \| "step" \| "result_preview" \| "completed" \| "error"`. |
 | `arguments` | `Record<string, unknown>` — input args sent to the tool. |
 | `startedAt` / `completedAt` | ISO timestamps. |
@@ -62,11 +66,16 @@ Terminal state: `status === "completed" || status === "error"`.
 
 Same content as `entry.events`, but passed through as a prop so renderers that rely on per-step data (Brave search step tiles, deep-research read blocks) can consume it without re-extracting. Use this only when the inline summary needs information that isn't flattened into `entry.*`.
 
-### `onOpenOverlay`, `toolGroupId`, `isPersisted`
+### Shell vs renderer responsibilities
 
-- `onOpenOverlay(tabId?)` — open the fullscreen overlay, optionally selecting a tab. Tab ids follow `tool-group-${callId}`.
-- `toolGroupId` — mirrors `entry.callId`; use it when calling `onOpenOverlay`.
-- `isPersisted` — true when rendering a DB-loaded snapshot rather than a live stream. Prefer a compact read-only layout in this mode.
+`ToolCallVisualization` owns the **collapsed row** (verb-phrase label via registry `phaseLabels`, chevron, overlay/window buttons). Your inline component renders **only inside the expanded body**. Do not render a duplicate title row or status icons on the slim line — the shell handles state via tense + shimmer.
+
+### `onOpenOverlay`, `onOpenWindowPanel`, `toolGroupId`, `isPersisted`
+
+- `onOpenOverlay(tabId?)` — fullscreen overlay. Tab ids follow `tool-group-${callId}`.
+- `onOpenWindowPanel(tabId?)` — same data in a draggable window panel (live requests group by `requestId`).
+- `toolGroupId` — mirrors `entry.callId`; pass to both open callbacks.
+- `isPersisted` — true for DB-loaded turns (`DbToolCard`). Terminal state only; `events` is usually empty today — parse `entry.result` as fallback for step-driven tools.
 
 ## Shared helpers
 
@@ -113,14 +122,14 @@ Analyze the example output. Type every field, including nested objects, optional
 
 ### 2. Write the inline renderer
 
-`<Tool>Inline.tsx` — renders inside the chat stream, typically in a collapsible accordion.
+`<Tool>Inline.tsx` — renders inside the **expanded** region of `ToolCallVisualization` (below the single-line transcript row).
 
 Rules:
 - `"use client";` directive.
 - Implement `ToolRendererProps` from `@/features/tool-call-visualization/types`.
-- Read `entry.status` for state — do not infer state from array shape. A running tool with no result is valid (`status === "started" | "progress" | "step" | "result_preview"`); show a spinner.
-- For event-driven tools, pass `events` through shared helpers rather than walking them manually.
-- Click handlers inside the accordion must call `e.stopPropagation()` (the accordion header also takes clicks).
+- Read `entry.status` for state — do not infer state from array shape. A running tool with no result is valid (`status === "started" | "progress" | "step" | "result_preview"`); show purposeful loading UI (not a bare spinner — see Loading states below).
+- For event-driven tools, pass `events` through shared helpers rather than walking them manually. On persisted turns, `events` may be empty — also parse `entry.result`.
+- Click handlers must call `e.stopPropagation()` (the shell header toggles expand/collapse).
 - Handle missing images with `onError` fallbacks.
 - Responsive grids: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`.
 
@@ -140,14 +149,15 @@ Standard "View all" button:
 )}
 ```
 
-What the inline MUST show:
-- A status indicator (loading / complete / error).
+What the inline MUST show (inside the expanded body):
 - The most important summary/preview of results.
 - Key metrics or counts.
 - A preview of primary content (analysis excerpt, top results).
 - A preview of secondary content (first few source cards).
 - Count of remaining items not shown inline.
-- "View complete results" button when terminal.
+- "View complete results" button when terminal (if an overlay adds value).
+
+Do **not** duplicate the shell's verb-phrase row or add green-check / red-X status icons on the slim line.
 
 ### 3. Write the overlay renderer (when needed)
 
@@ -157,7 +167,7 @@ Rules:
 - `"use client";`.
 - Implement `ToolRendererProps`.
 - Do **not** render a header/title strip — use registry `getHeaderSubtitle` / `getHeaderExtras`.
-- Compute the parsed view with `useMemo` keyed on `[entry, events]`.
+- Derive parsed views from `[entry, events]` (React Compiler handles memoization — no manual `useMemo` required).
 - Wrap content in `<div className="p-6 space-y-6 bg-background">`.
 - Use semantic color variables (`bg-card`, `text-foreground`, `border-border`, `text-primary`, `text-destructive`, …) — they already handle dark mode.
 - Empty states: icon + message.
@@ -190,10 +200,16 @@ import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";
 "<exact_tool_name>": {
   toolName: "<exact_tool_name>",
   displayName: "Human Readable Name",
+  phaseLabels: {                    // required for good slim-row UX
+    running: "Doing the thing",
+    complete: "Did the thing",
+    errorPrefix: "Failed to do the thing",
+  },
   resultsLabel: "Short Results Label",
   InlineComponent: ToolInline,
   OverlayComponent: ToolOverlay,    // optional — falls back to InlineComponent
-  keepExpandedOnStream: true,       // optional — keep accordion open during streaming
+  OverlayTabs: deepResearchOverlayTabs, // optional — replaces default Results tab
+  keepExpandedOnStream: true,       // optional — start expanded so data streams in
   getHeaderSubtitle: (entry) => {
     const query = getArg<string>(entry, "query");
     return typeof query === "string" && query ? query : null;
@@ -276,6 +292,8 @@ className="animate-in fade-in slide-in-from-bottom"
 | News headlines (clean `entry.result` only) | `features/tool-call-visualization/renderers/news-api/` |
 | Brave search (pure step-event driven) | `features/tool-call-visualization/renderers/brave-search/` |
 | SEO meta tags (header extras) | `features/tool-call-visualization/renderers/seo-meta-tags/` |
+| RAG search (result-only, same inline+overlay) | `features/tool-call-visualization/renderers/rag-search/` |
+| Deep research (custom OverlayTabs) | `features/tool-call-visualization/renderers/deep-research/` |
 
 Read the registry entry for whichever example matches your tool shape most closely before writing code.
 

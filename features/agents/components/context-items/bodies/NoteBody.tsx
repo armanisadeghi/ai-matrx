@@ -1,25 +1,35 @@
 "use client";
 
 /**
- * Note drawer body — fully editable. Mounts the canonical Redux-wired
- * `NoteContentEditor` (self-persists to the notes slice + DB), so the user can
- * work on the note directly inside the drawer. A header strip shows the note's
- * metadata. For an already-sent attachment, edits won't reach the agent unless
- * re-attached — the drawer footer surfaces that action.
+ * Note drawer body — fully editable, full height. Mounts the canonical
+ * Redux-wired `NoteContentEditor` (self-persists). No header — the drawer title
+ * bar shows the note label (reported via `setTitle`); the folder + open link
+ * live in `NoteFooter`.
  */
 
+import { useEffect } from "react";
+import Link from "next/link";
+import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
 import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteById } from "@/features/notes/redux/selectors";
-import { Folder, StickyNote } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
 
-export function NoteBody({ item }: ContextItemBodyProps) {
+export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   const noteId = item.refs.noteIds?.[0] ?? null;
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
+
+  useEffect(() => {
+    if (note?.label?.trim()) setTitle?.(note.label.trim());
+  }, [note?.label, setTitle]);
 
   if (!noteId) {
     return (
@@ -30,26 +40,42 @@ export function NoteBody({ item }: ContextItemBodyProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-start gap-2 border-b border-border px-4 py-2.5">
-        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">
-            {note?.label?.trim() || "Untitled note"}
-          </div>
-          {note?.folder_name && (
-            <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Folder className="h-3 w-3" />
-              <span className="truncate">{note.folder_name}</span>
-            </div>
-          )}
-        </div>
+    <NotesInstanceProvider value={`ctx-drawer:${noteId}`}>
+      <div className="h-full min-h-0">
+        <NoteContentEditor noteId={noteId} />
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <NotesInstanceProvider value={`ctx-drawer:${noteId}`}>
-          <NoteContentEditor noteId={noteId} />
-        </NotesInstanceProvider>
-      </div>
-    </div>
+    </NotesInstanceProvider>
+  );
+}
+
+export function NoteFooter({ item }: ContextItemBodyProps) {
+  const noteId = item.refs.noteIds?.[0] ?? null;
+  const note = useAppSelector((s) =>
+    noteId ? selectNoteById(noteId)(s) : undefined,
+  );
+  if (!noteId) return null;
+
+  return (
+    <>
+      {note?.folder_name && (
+        <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+          <Folder className="h-3 w-3 shrink-0" />
+          <span className="truncate">{note.folder_name}</span>
+        </span>
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            href={`/notes/${noteId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent>Open note in new tab</TooltipContent>
+      </Tooltip>
+    </>
   );
 }

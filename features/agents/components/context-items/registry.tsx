@@ -39,13 +39,16 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ContextItemBodyProps, ContextItemTypeDef } from "./types";
-import { NoteBody } from "./bodies/NoteBody";
+import { NoteBody, NoteFooter } from "./bodies/NoteBody";
 import { TaskBody } from "./bodies/TaskBody";
-import { WebpageBody } from "./bodies/WebpageBody";
+import { WebpageBody, WebpageFooter } from "./bodies/WebpageBody";
 import { DataBody } from "./bodies/DataBody";
-import { MediaBody } from "./bodies/MediaBody";
-import { WorkingDocumentBody } from "./bodies/WorkingDocumentBody";
-import { GenericBody } from "./bodies/GenericBody";
+import { MediaBody, MediaFooter } from "./bodies/MediaBody";
+import {
+  WorkingDocumentBody,
+  WorkingDocumentFooter,
+} from "./bodies/WorkingDocumentBody";
+import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 
 // ── Defs ─────────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "document",
     editable: false,
     Body: MediaBody,
+    Footer: MediaFooter,
   },
   {
     blockTypes: ["youtube_video"],
@@ -100,6 +104,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_notes",
     editable: true,
     Body: NoteBody,
+    Footer: NoteFooter,
   },
   {
     blockTypes: ["input_task"],
@@ -119,6 +124,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_document",
     editable: true,
     Body: WorkingDocumentBody,
+    Footer: WorkingDocumentFooter,
   },
   {
     // A reference to a specific rich document by id — distinct from the live
@@ -139,6 +145,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_webpage",
     editable: false,
     Body: WebpageBody,
+    Footer: WebpageFooter,
   },
   {
     blockTypes: ["input_data"],
@@ -266,4 +273,18 @@ export function resolveContextItemBody(
   blockType: string,
 ): ComponentType<ContextItemBodyProps> {
   return resolveContextItemDef(blockType).Body;
+}
+
+/**
+ * The footer component for a block type, or undefined when the type has none.
+ * GenericBody-backed types fall back to GenericFooter (the "n projects · …" /
+ * "no preview yet" line) without each needing to declare it.
+ */
+export function resolveContextItemFooter(
+  blockType: string,
+): ComponentType<ContextItemBodyProps> | undefined {
+  const def = resolveContextItemDef(blockType);
+  if (def.Footer) return def.Footer;
+  if (def.Body === GenericBody) return GenericFooter;
+  return undefined;
 }

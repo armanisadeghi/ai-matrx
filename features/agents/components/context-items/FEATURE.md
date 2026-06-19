@@ -39,6 +39,21 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 - `input_document` (a reference to a specific rich doc) ≠ `working_document` (the live collaborative doc). Don't merge them.
 - Each chip-host owns ONE local drawer controller (`useContextItemDrawer`); no global state/Redux added.
 
+## Layout contract (non-negotiable)
+
+The panel must be hyper-focused — ~all space usable. Enforced by structure:
+
+- **Title bar** (`MatrxDynamicPanelHost`): icon + record title (bodies report it via `setTitle`) + prev/next icon controls + close. **No description line.**
+- **Body**: fills 100% of remaining height (`h-full`/flex). **No in-body header, no repeated title/type, no large buttons.**
+- **Footer** (registry `Footer`, optional): ONE thin row (`h-9`) for links / lists / inline meta + icon-only actions with tooltips. All "open / copy / re-attach / view-diff" affordances live here.
+
+If you find yourself adding a header or a tall block inside a body, stop — it goes in the footer or the title bar.
+
+## Working document
+
+Shown as a differentiated **"Context"** chip in the input strip whenever it's enabled (ring + primary tint — context, not a one-off attachment), and joins the drawer nav list. Its body is the native editor (`ProTextarea`, full height) with a footer **GitCompare** toggle (lights up + dot when the agent made an unseen edit) that swaps to the canonical `DiffViewer` (light engine / highlight view) fed by `useWorkingDocChanges` — reusing Scribe's diff stack. Only the Body mounts `useWorkingDocument`; the Footer reads a tiny shared store so the realtime channel / context-sync effects aren't double-mounted.
+
 ## Change log
 
+- `2026-06-19` (2) — claude: **layout overhaul + working-document chip/diffs.** Full-height bodies; single compact icon-only footer (`Footer` added to the type def + `resolveContextItemFooter`); dynamic title via `setTitle`; dropped the bottom thumbnail rail and all descriptions. Documents/webpages/youtube now fill height (iframe via resolved `useFileSrc`). Working document surfaces as a pre-submit "Context" chip and gets an in-drawer edit↔diff toggle.
 - `2026-06-19` — claude: built the registry + shared drawer; wired both chip systems; killed the placeholder JSON modal; made notes/tasks/working-document editable in place; added re-attach-to-next-turn for edited attachments.
