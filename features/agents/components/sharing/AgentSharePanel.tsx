@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Users, Building2, Globe, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSharing, useSharingStatus } from "@/utils/permissions";
+import { useSharing } from "@/utils/permissions";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
@@ -27,6 +27,7 @@ export function AgentSharePanel({
 
   const {
     permissions,
+    isPublic: resourceIsPublic,
     loading,
     error,
     shareWithUser,
@@ -36,8 +37,6 @@ export function AgentSharePanel({
     updateLevel,
     refresh,
   } = useSharing("agent", agentId, true);
-
-  const { isPublic: resourceIsPublic } = useSharingStatus("agent", agentId);
 
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
   const orgPermissions = permissions.filter((p) => p.grantedToOrganizationId);

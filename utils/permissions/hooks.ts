@@ -1,11 +1,11 @@
 /**
  * Permission Hooks
- * 
+ *
  * React hooks for working with permissions in components.
  * These hooks provide reactive state management for permissions.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Permission,
   PermissionWithDetails,
@@ -13,7 +13,7 @@ import {
   PermissionLevel,
   CheckPermissionOptions,
   PermissionCheckResult,
-} from './types';
+} from "./types";
 import {
   listPermissions,
   getResourcePermissions,
@@ -28,7 +28,7 @@ import {
   getSharedWithMe,
   getResourceVisibility,
   type ResourceVisibility,
-} from './service';
+} from "./service";
 
 // ============================================================================
 // Permission Listing Hooks
@@ -40,7 +40,11 @@ import {
  * @param resourceId Resource ID
  * @returns Permissions, loading state, and refresh function
  */
-export function usePermissions(resourceType: ResourceType, resourceId: string, enabled: boolean = true) {
+export function usePermissions(
+  resourceType: ResourceType,
+  resourceId: string,
+  enabled: boolean = true,
+) {
   const [permissions, setPermissions] = useState<PermissionWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +59,8 @@ export function usePermissions(resourceType: ResourceType, resourceId: string, e
       const data = await listPermissions(resourceType, resourceId);
       setPermissions(data);
     } catch (err: any) {
-      console.error('Error fetching permissions:', err);
-      setError(err.message || 'Failed to fetch permissions');
+      console.error("Error fetching permissions:", err);
+      setError(err.message || "Failed to fetch permissions");
     } finally {
       setLoading(false);
     }
@@ -84,7 +88,7 @@ export function usePermissions(resourceType: ResourceType, resourceId: string, e
  */
 export function useResourcePermissions(
   resourceType: ResourceType,
-  resourceId: string
+  resourceId: string,
 ) {
   const [permissions, setPermissions] = useState<PermissionWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,8 +104,8 @@ export function useResourcePermissions(
       const data = await getResourcePermissions(resourceType, resourceId);
       setPermissions(data);
     } catch (err: any) {
-      console.error('Error fetching resource permissions:', err);
-      setError(err.message || 'Failed to fetch resource permissions');
+      console.error("Error fetching resource permissions:", err);
+      setError(err.message || "Failed to fetch resource permissions");
     } finally {
       setLoading(false);
     }
@@ -164,7 +168,7 @@ export function useCanEdit(resourceType: ResourceType, resourceId: string) {
   const { hasAccess, loading } = usePermissionCheck({
     resourceType,
     resourceId,
-    requiredLevel: 'editor',
+    requiredLevel: "editor",
   });
 
   return {
@@ -183,7 +187,7 @@ export function useCanAdmin(resourceType: ResourceType, resourceId: string) {
   const { hasAccess, loading } = usePermissionCheck({
     resourceType,
     resourceId,
-    requiredLevel: 'admin',
+    requiredLevel: "admin",
   });
 
   return {
@@ -232,10 +236,37 @@ export function useIsOwner(resourceType: ResourceType, resourceId: string) {
  * @param resourceId Resource ID
  * @returns Sharing functions and state
  */
-export function useSharing(resourceType: ResourceType, resourceId: string, enabled: boolean = true) {
+export function useSharing(
+  resourceType: ResourceType,
+  resourceId: string,
+  enabled: boolean = true,
+) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { permissions, refresh } = usePermissions(resourceType, resourceId, enabled);
+  const [visibility, setVisibility] = useState<ResourceVisibility>({
+    isPublic: false,
+  });
+  const { permissions, refresh: refreshPermissions } = usePermissions(
+    resourceType,
+    resourceId,
+    enabled,
+  );
+
+  const refreshVisibility = useCallback(async () => {
+    if (!resourceType || !resourceId || !enabled) return;
+    const v = await getResourceVisibility(resourceType, resourceId);
+    setVisibility(v);
+  }, [resourceType, resourceId, enabled]);
+
+  const refresh = useCallback(async () => {
+    await Promise.all([refreshPermissions(), refreshVisibility()]);
+  }, [refreshPermissions, refreshVisibility]);
+
+  useEffect(() => {
+    if (enabled) {
+      void refreshVisibility();
+    }
+  }, [enabled, refreshVisibility]);
 
   const handleShareWithUser = useCallback(
     async (userId: string, permissionLevel: PermissionLevel) => {
@@ -251,21 +282,21 @@ export function useSharing(resourceType: ResourceType, resourceId: string, enabl
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to share');
+          setError(result.error || "Failed to share");
           return result;
         }
 
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to share with user';
+        const errorMessage = err.message || "Failed to share with user";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   const handleShareWithOrg = useCallback(
@@ -282,25 +313,25 @@ export function useSharing(resourceType: ResourceType, resourceId: string, enabl
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to share');
+          setError(result.error || "Failed to share");
           return result;
         }
 
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to share with organization';
+        const errorMessage = err.message || "Failed to share with organization";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   const handleMakePublic = useCallback(
-    async (permissionLevel: PermissionLevel = 'viewer') => {
+    async (permissionLevel: PermissionLevel = "viewer") => {
       setLoading(true);
       setError(null);
 
@@ -312,41 +343,52 @@ export function useSharing(resourceType: ResourceType, resourceId: string, enabl
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to make public');
+          setError(result.error || "Failed to make public");
           return result;
         }
 
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to make public';
+        const errorMessage = err.message || "Failed to make public";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   const handleRevokeAccess = useCallback(
-    async (options: { userId?: string; organizationId?: string; isPublic?: boolean }) => {
+    async (options: {
+      userId?: string;
+      organizationId?: string;
+      isPublic?: boolean;
+    }) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await revokeAccess({ resourceType, resourceId, ...options });
-        if (!result.success) { setError(result.error || 'Failed to revoke access'); return result; }
+        const result = await revokeAccess({
+          resourceType,
+          resourceId,
+          ...options,
+        });
+        if (!result.success) {
+          setError(result.error || "Failed to revoke access");
+          return result;
+        }
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to revoke access';
+        const errorMessage = err.message || "Failed to revoke access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   const handleRevokeOrgAccess = useCallback(
@@ -354,46 +396,62 @@ export function useSharing(resourceType: ResourceType, resourceId: string, enabl
       setLoading(true);
       setError(null);
       try {
-        const result = await revokeOrgAccess(resourceType, resourceId, organizationId);
-        if (!result.success) { setError(result.error || 'Failed to revoke org access'); return result; }
+        const result = await revokeOrgAccess(
+          resourceType,
+          resourceId,
+          organizationId,
+        );
+        if (!result.success) {
+          setError(result.error || "Failed to revoke org access");
+          return result;
+        }
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to revoke org access';
+        const errorMessage = err.message || "Failed to revoke org access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   const handleUpdateLevel = useCallback(
     async (
       options: { userId?: string; organizationId?: string },
-      newLevel: PermissionLevel
+      newLevel: PermissionLevel,
     ) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await updatePermissionLevel({ resourceType, resourceId, ...options, newLevel });
-        if (!result.success) { setError(result.error || 'Failed to update permission'); return result; }
+        const result = await updatePermissionLevel({
+          resourceType,
+          resourceId,
+          ...options,
+          newLevel,
+        });
+        if (!result.success) {
+          setError(result.error || "Failed to update permission");
+          return result;
+        }
         await refresh();
         return result;
       } catch (err: any) {
-        const errorMessage = err.message || 'Failed to update permission';
+        const errorMessage = err.message || "Failed to update permission";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh]
+    [resourceType, resourceId, refresh],
   );
 
   return {
     permissions,
+    isPublic: visibility.isPublic,
     loading,
     error,
     shareWithUser: handleShareWithUser,
@@ -403,6 +461,7 @@ export function useSharing(resourceType: ResourceType, resourceId: string, enabl
     revokeOrgAccess: handleRevokeOrgAccess,
     updateLevel: handleUpdateLevel,
     refresh,
+    refreshVisibility,
   };
 }
 
@@ -428,8 +487,8 @@ export function useSharedWithMe(resourceType?: ResourceType) {
       const data = await getSharedWithMe(resourceType);
       setPermissions(data);
     } catch (err: any) {
-      console.error('Error fetching shared resources:', err);
-      setError(err.message || 'Failed to fetch shared resources');
+      console.error("Error fetching shared resources:", err);
+      setError(err.message || "Failed to fetch shared resources");
     } finally {
       setLoading(false);
     }
@@ -460,21 +519,34 @@ export function useSharedWithMe(resourceType?: ResourceType) {
  * Does NOT call get_resource_permissions (the expensive SECURITY DEFINER RPC).
  * Full permission details are loaded inside useSharing() when the modal opens.
  */
-export function useSharingStatus(resourceType: ResourceType, resourceId: string) {
-  const [visibility, setVisibility] = useState<ResourceVisibility>({ isPublic: false });
+export function useSharingStatus(
+  resourceType: ResourceType,
+  resourceId: string,
+  enabled: boolean = true,
+) {
+  const [visibility, setVisibility] = useState<ResourceVisibility>({
+    isPublic: false,
+  });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!resourceType || !resourceId) return;
+  const refresh = useCallback(async () => {
+    if (!resourceType || !resourceId || !enabled) return;
     setLoading(true);
-    getResourceVisibility(resourceType, resourceId)
-      .then(setVisibility)
-      .finally(() => setLoading(false));
-  }, [resourceType, resourceId]);
+    try {
+      const v = await getResourceVisibility(resourceType, resourceId);
+      setVisibility(v);
+    } finally {
+      setLoading(false);
+    }
+  }, [resourceType, resourceId, enabled]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   return {
     isPublic: visibility.isPublic,
     loading,
+    refresh,
   };
 }
-

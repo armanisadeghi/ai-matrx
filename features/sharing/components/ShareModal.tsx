@@ -18,7 +18,7 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { useSharing, useIsOwner, useSharingStatus } from "@/utils/permissions";
+import { useSharing, useIsOwner } from "@/utils/permissions";
 import type { ResourceType } from "@/utils/permissions";
 import { PermissionsList } from "./PermissionsList";
 import { ShareWithUserTab } from "./tabs/ShareWithUserTab";
@@ -118,6 +118,7 @@ export function ShareModal({
 
   const {
     permissions,
+    isPublic: resourceIsPublic,
     loading,
     error,
     shareWithUser,
@@ -127,11 +128,6 @@ export function ShareModal({
     updateLevel,
     refresh,
   } = useSharing(resourceType, resourceId, isOpen);
-
-  const { isPublic: resourceIsPublic } = useSharingStatus(
-    resourceType,
-    resourceId,
-  );
 
   // Filter permissions by type for each tab
   const userPermissions = permissions.filter((p) => p.grantedToUserId);

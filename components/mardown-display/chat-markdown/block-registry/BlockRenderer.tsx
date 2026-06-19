@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback } from "react";
-import { BlockComponents } from "./BlockComponentRegistry";
+import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
 import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
   ArtifactRender,
@@ -168,6 +168,30 @@ function isBlockLoading(block: {
 }
 
 /**
+ * canvasType → its dedicated streaming skeleton. Reuses the existing per-type
+ * loading visualizations (QuizLoadingVisualization, etc.) instead of the
+ * generic "Initializing Matrx" MatrxMiniLoader, which is meant for app boot and
+ * reads as nonsense mid-response. Types without a bespoke skeleton fall back to
+ * a neutral pulse (handled at the call site).
+ */
+const ARTIFACT_LOADING_COMPONENTS: Partial<
+  Record<string, () => React.ReactElement>
+> = {
+  quiz: LoadingComponents.QuizLoading,
+  presentation: LoadingComponents.PresentationLoading,
+  recipe: LoadingComponents.RecipeLoading,
+  timeline: LoadingComponents.TimelineLoading,
+  research: LoadingComponents.ResearchLoading,
+  resources: LoadingComponents.ResourcesLoading,
+  progress: LoadingComponents.ProgressLoading,
+  comparison: LoadingComponents.ComparisonLoading,
+  troubleshooting: LoadingComponents.TroubleshootingLoading,
+  "decision-tree": LoadingComponents.DecisionTreeLoading,
+  diagram: LoadingComponents.DiagramLoading,
+  math_problem: LoadingComponents.MathProblemLoading,
+};
+
+/**
  * Renders individual content blocks with lazy-loaded components
  * Extracted from MarkdownStream for better code splitting
  */
@@ -239,6 +263,27 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   if (block.type !== "artifact" && block.type !== "artifact_ref") {
     const _def = resolveArtifactDef(block.type);
     if (_def && hasArtifactRenderer(_def.canvasType)) {
+      // Gate on the BLOCK's own completion, not the global message stream.
+      // Previously every block received the message-wide `isStreamActive`, so a
+      // quiz/slide-deck that had fully streamed in still showed its loader until
+      // the ENTIRE message finished — the "loading forever" bug. A block is
+      // "loading" only while its own content is incomplete (isStreamingBlock /
+      // metadata.isComplete === false). While loading, show the type-aware
+      // skeleton instead of the generic "Initializing Matrx" loader; once
+      // complete, render immediately with isStreamActive=false even if later
+      // blocks in the same message are still streaming.
+      if (isBlockLoading(block)) {
+        const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
+        return Loader ? (
+          <Loader key={index} />
+        ) : (
+          <div
+            key={index}
+            className="my-2 h-16 rounded-md bg-muted/40 animate-pulse"
+            aria-label={`Loading ${_def.canvasType}`}
+          />
+        );
+      }
       return (
         <ArtifactRender
           key={index}
@@ -251,7 +296,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           conversationId={conversationId}
           messageId={messageId}
           blockIndex={index}
-          isStreamActive={isStreamActive}
+          isStreamActive={false}
         />
       );
     }

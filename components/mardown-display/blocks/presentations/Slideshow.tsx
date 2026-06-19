@@ -8,6 +8,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import IconButton from "@/components/official/IconButton";
 
 import { SlideView, type SlideVariant } from "./SlideView";
 
@@ -26,7 +27,8 @@ const Slideshow = (
   // Visual tier: "generic" (clean) | "fancy" (default — gradients, layouts) |
   // "deluxe" (fancy + imagery). Read from the theme; default to "fancy" so
   // existing decks instantly look better.
-  const variant: SlideVariant = ((theme?.variant as SlideVariant) || "fancy") as SlideVariant;
+  const variant: SlideVariant = ((theme?.variant as SlideVariant) ||
+    "fancy") as SlideVariant;
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState("next");
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -74,14 +76,14 @@ const Slideshow = (
       )}
 
       <div
-        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "rounded-2xl overflow-hidden shadow-xl border-border"}`}
+        className={`w-full border border-border ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "rounded-2xl overflow-hidden shadow-xl border-border"}`}
       >
         <div
           className={`bg-textured ${isFullScreen ? "h-full w-full max-w-7xl max-h-[95dvh] rounded-2xl overflow-hidden" : "w-full"} flex flex-col`}
         >
           {/* Header with Controls */}
-          <div className="flex-shrink-0 px-4 py-3 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
-            <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 px-3 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="flex items-center gap-1.5">
                 {slides.map((_, index) => (
                   <button
@@ -100,14 +102,13 @@ const Slideshow = (
                   />
                 ))}
               </div>
-              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 ml-2">
+              <div className="text-xs font-medium text-muted-foreground tabular-nums">
                 {currentSlide + 1} / {slides.length}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Export Menu - Lazy loaded to avoid GoogleAPIProvider on initial render */}
-              <Suspense fallback={<div className="w-8 h-8" />}>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Suspense fallback={<div className="h-7 w-7" />}>
                 <PresentationExportMenu
                   presentationData={presentationData}
                   presentationTitle={slides[0]?.title || "presentation"}
@@ -116,9 +117,10 @@ const Slideshow = (
                 />
               </Suspense>
 
-              {/* Canvas Button - Only show when not in fullscreen */}
               {!isFullScreen && (
-                <button
+                <IconButton
+                  icon={ExternalLink}
+                  tooltip="Open Canvas"
                   onClick={() =>
                     openCanvas({
                       type: "presentation",
@@ -129,56 +131,55 @@ const Slideshow = (
                       },
                     })
                   }
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white text-xs font-medium transition-all shadow-sm"
-                  title="Open in side panel"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span>Canvas</span>
-                </button>
+                  size="sm"
+                  className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
+                />
               )}
 
-              {/* Fullscreen Toggle */}
-              <button
+              <IconButton
+                icon={isFullScreen ? Minimize2 : Maximize2}
+                tooltip={
+                  isFullScreen ? "Exit full screen" : "Expand to full screen"
+                }
                 onClick={() => setIsFullScreen(!isFullScreen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium transition-all shadow-sm"
-              >
-                {isFullScreen ? (
-                  <>
-                    <Minimize2 className="h-3.5 w-3.5" />
-                    <span>Exit</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    <span>Fullscreen</span>
-                  </>
-                )}
-              </button>
+                size="sm"
+                className={
+                  isFullScreen
+                    ? undefined
+                    : "bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+                }
+                variant={isFullScreen ? "outline" : "default"}
+              />
             </div>
           </div>
 
           {/* Main Slide Area */}
           <div
             ref={slideContainerRef}
-            className={`flex-1 flex items-center justify-center relative overflow-hidden bg-textured ${isFullScreen ? "p-8 min-h-[600px]" : "p-6 min-h-[550px]"}`}
+            className={`flex-1 flex items-center justify-center relative overflow-hidden bg-textured ${isFullScreen ? "py-5 px-2 min-h-[600px]" : "py-3 px-2 min-h-[350px]"}`}
           >
             <div
               key={currentSlide}
-              className={`w-full animate-fadeIn ${isFullScreen ? "max-w-6xl" : "max-w-4xl"}`}
+              className={`w-full animate-fadeIn ${isFullScreen ? "max-w-6xl mx-auto" : "max-w-4xl mx-auto"}`}
             >
               <div className="aspect-[16/9] w-full">
-                <SlideView slide={slide} theme={theme} variant={variant} fullScreen={isFullScreen} />
+                <SlideView
+                  slide={slide}
+                  theme={theme}
+                  variant={variant}
+                  fullScreen={isFullScreen}
+                />
               </div>
             </div>
           </div>
 
           {/* Bottom Navigation Bar with Arrow Buttons */}
           <div className="flex-shrink-0 px-4 py-3 border-t border-border bg-gray-50 dark:bg-gray-800">
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <button
                 onClick={goToPrevious}
                 disabled={currentSlide === 0}
-                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 ${
                   currentSlide === 0
                     ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-600"
                     : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
@@ -191,7 +192,7 @@ const Slideshow = (
               <button
                 onClick={goToNext}
                 disabled={currentSlide === slides.length - 1}
-                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 ${
                   currentSlide === slides.length - 1
                     ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-600"
                     : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md"

@@ -1715,6 +1715,33 @@ export const splitContentIntoBlocksV2 = (
           i = j;
           continue;
         }
+      } else if (openCount > closeCount) {
+        // Incomplete bare JSON — more `{` than `}`, so the object is still
+        // streaming in (no closing brace collected before content ran out).
+        // If the partial content already reveals a known typed-block root key,
+        // commit it as that typed block in a loading state instead of letting
+        // it fall through to raw text. This mirrors the StreamBlockAccumulator's
+        // early type resolution and the fenced-JSON path, so an unfenced quiz /
+        // slide deck shows its skeleton mid-stream rather than ugly raw JSON.
+        // Gated on detectJsonBlockType (known root keys only) — prose with a
+        // stray "{" never matches, so it stays text. On a *finalized* message
+        // the braces are balanced and this branch never fires.
+        const partialJson = jsonLines.join("\n").trim();
+        const jsonType = detectJsonBlockType(partialJson);
+        if (jsonType) {
+          if (currentText.trim()) {
+            blocks.push({ type: "text", content: currentText.trimEnd() });
+            currentText = "";
+          }
+          blocks.push({
+            type: jsonType as SplitterBlockType,
+            content: partialJson,
+            language: "json",
+            metadata: { isComplete: false },
+          });
+          i = j;
+          continue;
+        }
       }
     }
 

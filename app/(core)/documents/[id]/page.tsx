@@ -136,7 +136,7 @@ export default function DocumentPage({
             (e.target as HTMLInputElement).blur();
           }
         }}
-        className="h-7 min-w-0 max-w-xs text-sm font-semibold border-0 bg-transparent shadow-none focus-visible:ring-1 px-1"
+        className="h-7 min-w-0 max-w-sm text-sm font-semibold border-0 bg-transparent shadow-none focus-visible:ring-1 px-0"
         disabled={!doc || !canEdit}
         placeholder="Document name"
       />
@@ -157,8 +157,8 @@ export default function DocumentPage({
   ) : null;
 
   return (
-    <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
-      <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
+    <div className="flex h-full w-full flex-col p-0">
+      <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border border border-blue-500">
         {permsResolved && doc ? (
           <DocumentEditor
             documentId={id}

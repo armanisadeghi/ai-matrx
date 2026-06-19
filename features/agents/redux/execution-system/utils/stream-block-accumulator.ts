@@ -28,6 +28,8 @@ import {
   extractAudioLink,
   detectImageMarkdown,
   detectVideoMarkdown,
+  normalizeCodeLanguage,
+  SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 // ============================================================================
@@ -68,6 +70,13 @@ type BlockSubState =
       openBraces: number;
       /** Running count of `}` characters seen so far. */
       closeBraces: number;
+      /**
+       * Set true once we've matched a known JSON root key and upgraded the
+       * block type mid-stream — mirrors the code_fence early-resolution path so
+       * an unfenced quiz/slide-deck shows its loading skeleton instead of raw
+       * JSON text while it streams in.
+       */
+      earlyTypeResolved: boolean;
     };
 
 // ============================================================================
@@ -417,21 +426,22 @@ export class StreamBlockAccumulator {
       const fence = extractFenceInfo(trimmed);
       if (fence) {
         this.closeCurrentBlock(dispatch);
-        // Mermaid fences promote to a first-class block type at open time so
-        // the diagram renders progressively during the stream. The fence line
-        // arrives as a complete line (pendingLineFragment holds partials), so
-        // the language token is never truncated here. Mirrors the splitter's
-        // SPECIAL_CODE_LANGUAGES promotion; other special languages keep
-        // their established close-time/server-side promotion paths.
-        const lang = fence.language.toLowerCase();
+        // Special-language fences promote to a first-class block type at OPEN
+        // time so the block renders as its real component (tasks, flashcards,
+        // mermaid, etc.) progressively during the stream — exactly mirroring
+        // splitContentIntoBlocksV2's SPECIAL_CODE_LANGUAGES promotion. The fence
+        // line arrives as a complete line (pendingLineFragment holds partials),
+        // so the language token is never truncated here. Previously only
+        // mermaid/svg/chart promoted and the rest were stuck as `code` in the
+        // Redux/streaming path — diverging from the (working) splitter path and
+        // never rendering as their real block. `json` is intentionally NOT in
+        // SPECIAL_CODE_LANGUAGES: it opens as `code` and resolves its JSON
+        // sub-type via the early/close detection below.
+        const normalizedLang = normalizeCodeLanguage(fence.language);
         const blockType =
-          lang === "mermaid" || lang === "mmd"
-            ? "mermaid"
-            : lang === "svg"
-              ? "svg"
-              : lang === "chart"
-                ? "chart"
-                : "code";
+          normalizedLang && SPECIAL_CODE_LANGUAGES.includes(normalizedLang)
+            ? normalizedLang
+            : "code";
         this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "code_fence",
@@ -595,6 +605,7 @@ export class StreamBlockAccumulator {
         kind: "bare_json",
         openBraces: openCount,
         closeBraces: closeCount,
+        earlyTypeResolved: false,
       };
       this.appendToCurrentBlock(rawLine);
       // Single-line JSON — close immediately after type detection
@@ -604,6 +615,15 @@ export class StreamBlockAccumulator {
         this.closeCurrentBlock(dispatch);
         this.subState = { kind: "none" };
         this.openBlock("text", dispatch);
+      } else {
+        // Multi-line open: the opening line alone may already reveal the root
+        // key (e.g. `{"quiz_title": "..."`). Resolve the type now so the very
+        // next upsert renders the typed loading skeleton, not a code block.
+        const jsonType = detectJsonBlockType(this.currentBlockContent);
+        if (jsonType) {
+          this.subState.earlyTypeResolved = true;
+          this.currentBlockType = jsonType;
+        }
       }
       return;
     }
@@ -692,9 +712,32 @@ export class StreamBlockAccumulator {
       }
 
       case "bare_json": {
+        const lineOpens = (trimmed.match(/\{/g) || []).length;
+        const lineCloses = (trimmed.match(/\}/g) || []).length;
+        const willBalance =
+          this.subState.openBraces + lineOpens ===
+            this.subState.closeBraces + lineCloses &&
+          this.subState.openBraces + lineOpens > 0;
+
+        // Early type resolution while still streaming — mirrors the code_fence
+        // path. Detect BEFORE appending so the same upsert that carries the
+        // key-bearing line also carries the upgraded type (one-frame-tighter
+        // than detecting after append). Only a known root key upgrades; unknown
+        // bare JSON keeps streaming as a `code` block.
+        if (!willBalance && !this.subState.earlyTypeResolved) {
+          const soFar = this.currentBlockContent
+            ? this.currentBlockContent + "\n" + rawLine
+            : rawLine;
+          const jsonType = detectJsonBlockType(soFar);
+          if (jsonType) {
+            this.subState.earlyTypeResolved = true;
+            this.currentBlockType = jsonType;
+          }
+        }
+
         this.appendToCurrentBlock(rawLine);
-        this.subState.openBraces += (trimmed.match(/\{/g) || []).length;
-        this.subState.closeBraces += (trimmed.match(/\}/g) || []).length;
+        this.subState.openBraces += lineOpens;
+        this.subState.closeBraces += lineCloses;
 
         if (
           this.subState.openBraces === this.subState.closeBraces &&

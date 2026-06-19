@@ -12,27 +12,20 @@ import {
   Maximize2,
   Minimize2,
   Search,
-  Filter,
   Trophy,
   Medal,
   Award,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Plus,
-  Eye,
-  EyeOff,
-  Atom,
-  Crown,
   Zap,
   Target,
-  ThumbsUp,
-  ThumbsDown,
-  AlertCircle,
+  Eye,
+  EyeOff,
+  Crown,
   ExternalLink,
   Printer,
+  BarChart3,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import IconButton from "@/components/official/IconButton";
 
 interface ComparisonCriterion {
   name: string;
@@ -55,6 +48,15 @@ interface ComparisonTableBlockProps {
 }
 
 type SortDirection = "asc" | "desc" | null;
+
+const STAT_ITEMS = [
+  { key: "items", label: "Items", icon: Table },
+  { key: "criteria", label: "Criteria", icon: Target },
+  { key: "avgScore", label: "Avg", icon: BarChart3, suffix: "%" },
+] as const;
+
+const navBtnClass =
+  "inline-flex items-center justify-center gap-1 p-1.5 md:px-2 md:py-1.5 rounded-md text-xs font-medium border transition-colors";
 
 const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
   comparison,
@@ -267,14 +269,14 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-4 w-4 ${
+                  className={`h-3 w-3 ${
                     star <= value
                       ? "text-yellow-500 fill-yellow-500"
-                      : "text-gray-300 dark:text-gray-600"
+                      : "text-muted-foreground/40"
                   }`}
                 />
               ))}
-              <span className="ml-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="ml-0.5 text-xs font-medium text-muted-foreground tabular-nums">
                 {value}
               </span>
             </div>
@@ -333,16 +335,21 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
 
   const getSortIcon = (columnName: string) => {
     if (sortBy !== columnName) {
-      return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+      return <ArrowUpDown className="h-3 w-3 text-muted-foreground" />;
     }
 
     if (sortDirection === "asc") {
-      return <ArrowUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
-    } else if (sortDirection === "desc") {
-      return <ArrowDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+      return (
+        <ArrowUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+      );
+    }
+    if (sortDirection === "desc") {
+      return (
+        <ArrowDown className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+      );
     }
 
-    return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
+    return <ArrowUpDown className="h-3 w-3 text-muted-foreground" />;
   };
 
   const getWinnerIndices = () => {
@@ -363,9 +370,46 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
 
   const winners = getWinnerIndices();
 
+  const stats = useMemo(
+    () => ({
+      items: comparison.items.length,
+      criteria: comparison.criteria.length,
+      avgScore:
+        comparison.items.length > 0
+          ? Math.round(
+              Object.values(itemScores).reduce((a, b) => a + b, 0) /
+                comparison.items.length,
+            )
+          : 0,
+    }),
+    [comparison.items.length, comparison.criteria.length, itemScores],
+  );
+
+  const getStickyItemCellClass = (
+    highlighted: boolean,
+    isWinner: boolean,
+    isRunnerUp: boolean,
+    isThird: boolean,
+  ) => {
+    const base =
+      "sticky left-0 z-[1] border-r border-border shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]";
+    if (highlighted) {
+      return `${base} bg-emerald-50 dark:bg-emerald-950`;
+    }
+    if (isWinner) {
+      return `${base} bg-yellow-50 dark:bg-yellow-950`;
+    }
+    if (isThird) {
+      return `${base} bg-orange-50 dark:bg-orange-950`;
+    }
+    if (isRunnerUp) {
+      return `${base} bg-muted dark:bg-muted`;
+    }
+    return `${base} bg-card group-hover:bg-muted`;
+  };
+
   return (
     <>
-      {/* Fullscreen Backdrop */}
       {isFullScreen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -374,213 +418,215 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
       )}
 
       <div
-        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-6"}`}
+        className={`w-full border border-border rounded-xl ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`}
       >
         <div
-          className={`max-w-7xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
+          className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden border border-border" : ""}`}
         >
-          {/* Fullscreen Header */}
           {isFullScreen && (
-            <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
-              <div className="flex items-center gap-3">
-                <Table className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
-                  Comparison Table
+            <div className="flex-shrink-0 px-3 py-2 border-b border-border flex items-center justify-between bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
+              <div className="flex items-center gap-2 min-w-0">
+                <Table className="h-4 w-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-sm font-semibold text-foreground truncate">
+                  {comparison.title}
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
-                <button
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <IconButton
+                  icon={Printer}
+                  tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-medium transition-all shadow-sm hover:bg-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
-                >
-                  <Printer className="h-4 w-4" />
-                  <span>{isPrinting ? "Saving…" : "Print"}</span>
-                </button>
-                <button
+                  size="sm"
+                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                />
+                <IconButton
+                  icon={Minimize2}
+                  tooltip="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
-                >
-                  <Minimize2 className="h-4 w-4" />
-                  <span>Exit</span>
-                </button>
+                  size="sm"
+                  variant="outline"
+                />
               </div>
             </div>
           )}
 
-          {/* Scrollable Content */}
           <div className={isFullScreen ? "flex-1 overflow-y-auto" : ""}>
-            <div className="p-6 space-y-6">
-              {/* Header Section */}
-              <div className="bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 rounded-2xl p-6 shadow-lg border-2 border-emerald-200 dark:border-emerald-800/50">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-emerald-500 dark:bg-emerald-600 rounded-xl shadow-md">
-                      <Table className="h-8 w-8 text-white" />
+            <div ref={blockContentRef} className="p-2 space-y-3">
+              {/* Header */}
+              <div className="bg-gradient-to-br from-emerald-100 via-teal-50 to-cyan-100 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-cyan-950/40 rounded-xl p-2 border border-emerald-200 dark:border-emerald-800/50">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className="p-2 bg-emerald-500 dark:bg-emerald-600 rounded-lg flex-shrink-0">
+                      <Table className="h-4 w-4 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-sm font-bold text-foreground leading-tight line-clamp-2">
                         {comparison.title}
                       </h1>
                       {comparison.description && (
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                           {comparison.description}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    {!isFullScreen && (
-                      <>
-                        <button
-                          onClick={() =>
-                            openCanvas({
-                              type: "comparison",
-                              data: comparison,
-                              metadata: {
-                                title: comparison.title,
-                                sourceTaskId: taskId,
-                              },
-                            })
-                          }
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          <span>Canvas</span>
-                        </button>
-                        <button
-                          onClick={handlePrint}
-                          disabled={isPrinting}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50"
-                        >
-                          <Printer className="h-4 w-4" />
-                          <span>{isPrinting ? "Saving…" : "Print"}</span>
-                        </button>
-                        <button
-                          onClick={() => setIsFullScreen(true)}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-500 dark:bg-emerald-600 text-white text-sm font-semibold shadow-md hover:bg-emerald-600 dark:hover:bg-emerald-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        >
-                          <Maximize2 className="h-4 w-4" />
-                          <span>Expand</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search items or criteria..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-4 py-2 rounded-lg border-border bg-textured text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                  {!isFullScreen && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <IconButton
+                        icon={Printer}
+                        tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
+                        onClick={handlePrint}
+                        disabled={isPrinting}
+                        size="sm"
+                        className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                      />
+                      <IconButton
+                        icon={ExternalLink}
+                        tooltip="Open Canvas"
+                        onClick={() =>
+                          openCanvas({
+                            type: "comparison",
+                            data: comparison,
+                            metadata: {
+                              title: comparison.title,
+                              sourceTaskId: taskId,
+                            },
+                          })
+                        }
+                        size="sm"
+                        className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
+                      />
+                      <IconButton
+                        icon={Maximize2}
+                        tooltip="Expand to full screen"
+                        onClick={() => setIsFullScreen(true)}
+                        size="sm"
+                        className="bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
                       />
                     </div>
+                  )}
+                </div>
 
-                    <button
-                      onClick={() => setShowScores(!showScores)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        showScores
-                          ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-border"
-                      }`}
-                    >
-                      {showScores ? "Hide Scores" : "Show Scores"}
-                    </button>
+                <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  {STAT_ITEMS.map((item) => {
+                    const { key, label, icon: StatIcon } = item;
+                    const suffix = "suffix" in item ? item.suffix : "";
+                    return (
+                      <div
+                        key={key}
+                        className="rounded-md border border-border bg-background/50 px-1.5 py-1.5 text-center"
+                      >
+                        <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                          <StatIcon className="h-3 w-3 flex-shrink-0" />
+                          <span className="text-[10px] font-medium truncate hidden md:inline">
+                            {label}
+                          </span>
+                        </div>
+                        <div className="text-sm font-semibold text-foreground tabular-nums">
+                          {stats[key]}
+                          {suffix}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-1.5">
+                  <div className="flex-1 relative min-w-0">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-2 py-1.5 text-base sm:text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-emerald-500 focus:border-transparent"
+                      style={{ fontSize: "16px" }}
+                    />
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      Comparing {comparison.items.length} items
+                  <button
+                    type="button"
+                    onClick={() => setShowScores(!showScores)}
+                    title={showScores ? "Hide scores" : "Show scores"}
+                    className={`${navBtnClass} flex-shrink-0 ${
+                      showScores
+                        ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700"
+                        : "bg-background/60 text-foreground border-border"
+                    }`}
+                  >
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    <span className="hidden md:inline">
+                      {showScores ? "Hide" : "Scores"}
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
 
-              {/* Winners Podium */}
               {showScores && (
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 rounded-xl p-6 border border-yellow-200 dark:border-yellow-800/50">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    Top Performers
+                <div className="rounded-lg p-2 border border-yellow-200 dark:border-yellow-800/50 bg-gradient-to-r from-yellow-50/80 to-orange-50/80 dark:from-yellow-950/30 dark:to-orange-950/30">
+                  <h3 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                    <Trophy className="h-3.5 w-3.5 text-yellow-500" />
+                    Top performers
                   </h3>
-                  <div className="flex items-end justify-center gap-4">
-                    {/* Runner-up (2nd place) */}
-                    {winners.runnerUp !== undefined && (
-                      <div className="text-center">
-                        <div className="bg-gray-300 dark:bg-gray-600 rounded-lg p-4 mb-2 min-h-[80px] flex items-end">
-                          <Medal className="h-8 w-8 text-gray-600 dark:text-gray-300 mx-auto" />
-                        </div>
-                        <div className="font-semibold text-gray-700 dark:text-gray-300">
-                          {comparison.items[winners.runnerUp]}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {itemScores[comparison.items[winners.runnerUp]]}%
-                        </div>
-                        <div className="text-xs text-gray-400">2nd</div>
-                      </div>
-                    )}
-
-                    {/* Winner (1st place) */}
+                  <div className="flex flex-wrap gap-1.5">
                     {winners.winner !== undefined && (
-                      <div className="text-center">
-                        <div className="bg-yellow-400 dark:bg-yellow-500 rounded-lg p-4 mb-2 min-h-[100px] flex items-end">
-                          <Crown className="h-10 w-10 text-yellow-800 dark:text-yellow-900 mx-auto" />
-                        </div>
-                        <div className="font-bold text-yellow-800 dark:text-yellow-200">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-yellow-300 dark:border-yellow-700 bg-yellow-50/90 dark:bg-yellow-950/40 min-w-0 max-w-full">
+                        <Crown className="h-3.5 w-3.5 text-yellow-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold truncate">
                           {comparison.items[winners.winner]}
-                        </div>
-                        <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                        </span>
+                        <span className="text-xs tabular-nums text-muted-foreground flex-shrink-0">
                           {itemScores[comparison.items[winners.winner]]}%
-                        </div>
-                        <div className="text-xs text-yellow-600 dark:text-yellow-400">
-                          1st
-                        </div>
+                        </span>
                       </div>
                     )}
-
-                    {/* Third place */}
+                    {winners.runnerUp !== undefined && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-border bg-background/80 min-w-0 max-w-full">
+                        <Medal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs font-medium truncate">
+                          {comparison.items[winners.runnerUp]}
+                        </span>
+                        <span className="text-xs tabular-nums text-muted-foreground flex-shrink-0">
+                          {itemScores[comparison.items[winners.runnerUp]]}%
+                        </span>
+                      </div>
+                    )}
                     {winners.third !== undefined && (
-                      <div className="text-center">
-                        <div className="bg-orange-300 dark:bg-orange-600 rounded-lg p-4 mb-2 min-h-[60px] flex items-end">
-                          <Award className="h-6 w-6 text-orange-700 dark:text-orange-200 mx-auto" />
-                        </div>
-                        <div className="font-semibold text-orange-700 dark:text-orange-300">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-orange-300 dark:border-orange-700 bg-orange-50/80 dark:bg-orange-950/40 min-w-0 max-w-full">
+                        <Award className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+                        <span className="text-xs font-medium truncate">
                           {comparison.items[winners.third]}
-                        </div>
-                        <div className="text-sm text-orange-600 dark:text-orange-400">
+                        </span>
+                        <span className="text-xs tabular-nums text-muted-foreground flex-shrink-0">
                           {itemScores[comparison.items[winners.third]]}%
-                        </div>
-                        <div className="text-xs text-orange-500">3rd</div>
+                        </span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Column Visibility Controls */}
-              <div className="bg-textured rounded-lg p-4 border-border">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Show/Hide Columns:
-                    </span>
-                  </div>
+              {/* Column toggles */}
+              <div className="rounded-lg p-2 border border-border bg-background/50">
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-[10px] font-medium text-muted-foreground hidden sm:inline mr-1">
+                    Columns
+                  </span>
                   {comparison.criteria.map((criterion) => (
                     <button
                       key={criterion.name}
+                      type="button"
                       onClick={() => toggleColumnVisibility(criterion.name)}
-                      className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      title={
                         hiddenColumns.has(criterion.name)
-                          ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                          : "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300"
+                          ? `Show ${criterion.name}`
+                          : `Hide ${criterion.name}`
+                      }
+                      className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
+                        hiddenColumns.has(criterion.name)
+                          ? "bg-muted text-muted-foreground border-border"
+                          : "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700"
                       }`}
                     >
                       {hiddenColumns.has(criterion.name) ? (
@@ -588,35 +634,36 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                       ) : (
                         <Eye className="h-3 w-3" />
                       )}
-                      {criterion.name}
+                      <span className="hidden md:inline truncate max-w-[8rem]">
+                        {criterion.name}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Comparison Table */}
-              <div
-                ref={blockContentRef}
-                className="bg-textured rounded-xl shadow-lg border-border overflow-hidden"
-              >
+              {/* Table */}
+              <div className="rounded-lg border border-border bg-background/50 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted">
                       <tr>
-                        <th className="px-6 py-4 text-left">
+                        <th className="px-2 py-2 text-left sticky left-0 z-10 bg-muted border-r border-border shadow-[2px_0_6px_-2px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)]">
                           <button
+                            type="button"
                             onClick={() => handleSort("name")}
-                            className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                            className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
                           >
                             Item
                             {getSortIcon("name")}
                           </button>
                         </th>
                         {showScores && (
-                          <th className="px-6 py-4 text-center">
+                          <th className="px-2 py-2 text-center">
                             <button
+                              type="button"
                               onClick={() => handleSort("score")}
-                              className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                              className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
                             >
                               Score
                               {getSortIcon("score")}
@@ -628,13 +675,14 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                             !hiddenColumns.has(criterion.name) && (
                               <th
                                 key={criterion.name}
-                                className="px-6 py-4 text-center"
+                                className="px-2 py-2 text-center"
                               >
                                 <button
+                                  type="button"
                                   onClick={() => handleSort(criterion.name)}
-                                  className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                  className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
                                 >
-                                  {criterion.name}
+                                  <span>{criterion.name}</span>
                                   {getSortIcon(criterion.name)}
                                 </button>
                               </th>
@@ -642,8 +690,8 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                         )}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredIndices.map((itemIndex, rowIndex) => {
+                    <tbody className="divide-y divide-border">
+                      {filteredIndices.map((itemIndex) => {
                         const item = comparison.items[itemIndex];
                         const isWinner = itemIndex === winners.winner;
                         const isRunnerUp = itemIndex === winners.runnerUp;
@@ -652,35 +700,42 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                         return (
                           <tr
                             key={itemIndex}
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                            className={`group hover:bg-muted/30 transition-colors ${
                               highlightedItem === item
                                 ? "bg-emerald-50 dark:bg-emerald-950/20"
                                 : ""
                             } ${
                               isWinner
-                                ? "bg-yellow-50 dark:bg-yellow-950/20"
+                                ? "bg-yellow-50/80 dark:bg-yellow-950/20"
                                 : isRunnerUp
-                                  ? "bg-gray-50 dark:bg-gray-950/20"
+                                  ? "bg-muted/20"
                                   : isThird
-                                    ? "bg-orange-50 dark:bg-orange-950/20"
+                                    ? "bg-orange-50/80 dark:bg-orange-950/20"
                                     : ""
                             }`}
                             onMouseEnter={() => setHighlightedItem(item)}
                             onMouseLeave={() => setHighlightedItem(null)}
                           >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
+                            <td
+                              className={`px-2 py-2 ${getStickyItemCellClass(
+                                highlightedItem === item,
+                                isWinner,
+                                isRunnerUp,
+                                isThird,
+                              )}`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-[6rem] max-w-[10rem]">
                                 {isWinner && (
-                                  <Crown className="h-4 w-4 text-yellow-500" />
+                                  <Crown className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
                                 )}
                                 {isRunnerUp && (
-                                  <Medal className="h-4 w-4 text-gray-500" />
+                                  <Medal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                                 )}
                                 {isThird && (
-                                  <Award className="h-4 w-4 text-orange-500" />
+                                  <Award className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
                                 )}
                                 <span
-                                  className={`font-medium text-gray-900 dark:text-gray-100 ${
+                                  className={`font-medium text-foreground line-clamp-2 ${
                                     isWinner
                                       ? "text-yellow-800 dark:text-yellow-200"
                                       : ""
@@ -691,23 +746,21 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                               </div>
                             </td>
                             {showScores && (
-                              <td className="px-6 py-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  <div
-                                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                      itemScores[item] >= 80
-                                        ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
-                                        : itemScores[item] >= 60
-                                          ? "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300"
-                                          : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-                                    }`}
-                                  >
-                                    {itemScores[item]}%
-                                  </div>
+                              <td className="px-2 py-2 text-center">
+                                <span
+                                  className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums ${
+                                    itemScores[item] >= 80
+                                      ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
+                                      : itemScores[item] >= 60
+                                        ? "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300"
+                                        : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+                                  }`}
+                                >
+                                  {itemScores[item]}%
                                   {itemScores[item] >= 80 && (
-                                    <Zap className="h-4 w-4 text-green-500" />
+                                    <Zap className="h-3 w-3 text-green-500" />
                                   )}
-                                </div>
+                                </span>
                               </td>
                             )}
                             {comparison.criteria.map(
@@ -715,7 +768,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                                 !hiddenColumns.has(criterion.name) && (
                                   <td
                                     key={criterion.name}
-                                    className="px-6 py-4 text-center"
+                                    className="px-2 py-2 text-center"
                                   >
                                     {renderCellValue(
                                       criterion,
@@ -730,49 +783,6 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                       })}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              {/* Summary Stats */}
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="bg-textured rounded-lg p-4 border-border">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      Items Compared
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {comparison.items.length}
-                  </div>
-                </div>
-
-                <div className="bg-textured rounded-lg p-4 border-border">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Table className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      Criteria
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {comparison.criteria.length}
-                  </div>
-                </div>
-
-                <div className="bg-textured rounded-lg p-4 border-border">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Atom className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      Avg Score
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {Math.round(
-                      Object.values(itemScores).reduce((a, b) => a + b, 0) /
-                        Object.values(itemScores).length,
-                    )}
-                    %
-                  </div>
                 </div>
               </div>
             </div>

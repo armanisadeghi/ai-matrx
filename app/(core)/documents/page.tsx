@@ -8,23 +8,18 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FileText,
-  LayoutGrid,
-  List,
-  Loader2,
-  Plus,
-  Search,
-  X,
-} from "lucide-react";
+import { FileText, Loader2, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
+import {
+  LoadingTapButton,
+  PlusTapButton,
+} from "@/components/icons/tap-buttons";
 import { DocumentListCard } from "@/features/data-tables/components/DocumentListCard";
 import { DocumentsHubTable } from "@/features/data-tables/components/DocumentsHubTable";
-import { DocumentsSortMenu } from "@/features/data-tables/components/DocumentsSortMenu";
+import { DocumentsHubToolbar } from "@/features/data-tables/components/DocumentsHubToolbar";
 import {
   createDocument,
   deleteDocument,
@@ -39,7 +34,6 @@ import {
   sortDocuments,
   type DocumentSortKey,
 } from "@/features/data-tables/utils/documentsHubDisplay";
-import { HubToolbarToggle } from "@/features/transcripts/components/HubToolbarToggle";
 
 type HubViewMode = "cards" | "table";
 const HUB_VIEW_STORAGE_KEY = "documents-hub-view";
@@ -144,69 +138,38 @@ export default function DocumentsLandingPage() {
 
   const isSearching = query.trim().length > 0;
   const totalVisible = filteredDocuments.length;
+  const showToolbar = !loading && !error && documents.length > 0;
+  const showHeaderCreate = !loading && !error && documents.length === 0;
 
   return (
-    <div className="w-full h-page p-1.5 space-y-4 overflow-y-auto scrollbar-none">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-10">
+    <div className="w-full h-page space-y-4 overflow-y-auto p-1.5 scrollbar-none">
+      <div className="flex items-center pl-10 sm:pl-0 sm:pr-10">
         <h1 className="text-2xl font-bold">Matrx Document Hub</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleCreate}
-            disabled={creating}
-            title="New document"
-          >
-            {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        {showHeaderCreate ? (
+          creating ? (
+            <LoadingTapButton ariaLabel="Creating document" disabled />
+          ) : (
+            <PlusTapButton
+              ariaLabel="New document"
+              tooltip="New document"
+              onClick={handleCreate}
+            />
+          )
+        ) : null}
       </div>
 
-      {!loading && !error && documents.length > 0 ? (
+      {showToolbar ? (
         <>
-          <div className="flex h-9 items-center gap-2 rounded-full px-0.5 matrx-glass-thin-border transition-shadow hover:shadow-xl">
-            <Search className="ml-2.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search documents…"
-              className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
-              aria-label="Search documents"
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="flex-shrink-0 rounded-md p-1 transition-colors hover:bg-muted/50"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            ) : null}
-            <div className="mr-1 flex shrink-0 items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 p-0.5">
-              <HubToolbarToggle
-                active={view === "cards"}
-                title="Card view"
-                onClick={() => setViewPersist("cards")}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </HubToolbarToggle>
-              <HubToolbarToggle
-                active={view === "table"}
-                title="Table view"
-                onClick={() => setViewPersist("table")}
-              >
-                <List className="h-3.5 w-3.5" />
-              </HubToolbarToggle>
-            </div>
-            {view === "cards" ? (
-              <DocumentsSortMenu sortKey={sortKey} onSortChange={setSortKey} />
-            ) : null}
-          </div>
+          <DocumentsHubToolbar
+            query={query}
+            onQueryChange={setQuery}
+            view={view}
+            onViewChange={setViewPersist}
+            sortKey={sortKey}
+            onSortChange={setSortKey}
+            creating={creating}
+            onCreate={handleCreate}
+          />
 
           {isSearching ? (
             <p className="px-1 text-[11px] tabular-nums text-muted-foreground">
@@ -220,7 +183,7 @@ export default function DocumentsLandingPage() {
 
       {loading && (
         <div className="flex h-40 items-center justify-center text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Loading…
         </div>
       )}
@@ -239,7 +202,7 @@ export default function DocumentsLandingPage() {
             <FileText className="size-8" />
             <div className="text-sm">No documents yet.</div>
             <div className="text-xs">
-              Click <span className="font-medium">New document</span> to create
+              Tap <span className="font-medium">New document</span> to create
               one.
             </div>
           </CardContent>

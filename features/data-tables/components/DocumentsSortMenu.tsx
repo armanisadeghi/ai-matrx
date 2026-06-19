@@ -1,7 +1,10 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { ArrowDownUpTapButton } from "@/components/icons/tap-buttons";
+import {
+  ArrowDownUpTapButton,
+  type TapButtonProps,
+} from "@/components/icons/tap-buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +19,13 @@ import {
 interface DocumentsSortMenuProps {
   sortKey: DocumentSortKey;
   onSortChange: (key: DocumentSortKey) => void;
+  variant?: TapButtonProps["variant"];
 }
 
 export function DocumentsSortMenu({
   sortKey,
   onSortChange,
+  variant = "group",
 }: DocumentsSortMenuProps) {
   const activeLabel =
     DOCUMENT_SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? "Sort";
@@ -29,7 +34,7 @@ export function DocumentsSortMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <ArrowDownUpTapButton
-          variant="transparent"
+          variant={variant}
           ariaLabel={`Sort: ${activeLabel}`}
           tooltip={`Sort: ${activeLabel}`}
         />

@@ -419,10 +419,10 @@ export default function DocumentEditor({
     // (useUniverDarkModeSync), so we do NOT pin a colorScheme here — that fought
     // Univer's portals and broke dark mode. The wrapper bg uses a semantic
     // token so it adapts with the app theme during boot.
-    <div className="matrx-univer-shell flex h-full w-full flex-col bg-card">
+    <div className="matrx-univer-shell flex h-full w-full flex-col">
       <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-xs min-w-0">
         {toolbarLeftSlot && (
-          <div className="flex items-center gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-1 min-w-0 flex-1 pl-8 sm:pl-0">
             {toolbarLeftSlot}
           </div>
         )}
@@ -444,7 +444,7 @@ export default function DocumentEditor({
             )}
           </div>
         )}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 pr-8">
           {collab && bootState === "ready" && (
             <RemoteCursorsLayer
               states={remoteAwareness}
@@ -453,7 +453,7 @@ export default function DocumentEditor({
           )}
           {bootState === "ready" && saveStatus !== "idle" && (
             <div
-              className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}
+              className={`hidden sm:flex items-center gap-1 border border-green-500 ${statusPill.className}`}
             >
               {statusPill.icon}
               <span>{statusPill.text}</span>
@@ -470,7 +470,6 @@ export default function DocumentEditor({
               title="Save a labeled snapshot now (bypass autosave debounce)"
             >
               <Save className="size-3" />
-              <span className="hidden sm:inline">Save now</span>
             </Button>
           )}
           <Button
@@ -481,12 +480,14 @@ export default function DocumentEditor({
             title="View snapshot history"
           >
             <History className="size-3" />
-            <span className="hidden sm:inline">History</span>
           </Button>
         </div>
       </div>
-      <div className="relative min-h-0 flex-1">
-        <div ref={containerRef} className="absolute inset-0" />
+      <div className="relative min-h-0 flex-1 p-4 border border-red-500">
+        <div
+          ref={containerRef}
+          className="absolute inset-0 p-4 border border-blue-500"
+        />
       </div>
 
       <MatrxDynamicPanelHost

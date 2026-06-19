@@ -19,8 +19,9 @@ const MultipleChoiceQuiz = lazy(
 /**
  * Unified renderer for `quiz` (canvasType "quiz") artifacts.
  *
- * Payload shape: `{ quizTitle, category, multipleChoice: [...] }` (camelCase,
- * as produced by the server parser or the normalisation in BlockRenderer).
+ * Payload shape: `{ quizTitle, category, multipleChoice: [...] }` (camelCase from
+ * Python) or `{ quiz_title, multiple_choice: [...] }` (legacy LLM fences).
+ * `parseQuizJSON` normalises both before render.
  *
  * Passes conversationId / messageId / blockIndex through so the component's
  * `useMessageBlockPersistence` can round-trip quiz state back into the DB — the

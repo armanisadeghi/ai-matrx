@@ -42,23 +42,7 @@ const TasksBlock: React.FC<TasksBlockProps> = ({
     <ChatCollapsibleWrapper
       icon={<CheckSquare className="h-4 w-4 text-primary" />}
       title="Tasks"
-      controls={
-        parsedItems.length > 0 ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setPreviewOpen(true);
-            }}
-            className="h-6 text-[11px] gap-1"
-            title="Save as real tasks in your tasks system"
-          >
-            <ListPlus className="w-3 h-3" />
-            Save to Tasks
-          </Button>
-        ) : null
-      }
+      controls={null}
     >
       <TaskChecklist
         content={content}
