@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import React from 'react';
-import type { CanvasContent } from '@/features/canvas/redux/canvasSlice';
+import React from "react";
+import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import {
-    ArtifactRender,
-    hasArtifactRenderer,
-} from '@/features/canvas/artifact-types/artifact-renderers';
-import SandboxedHtml from '@/components/mardown-display/blocks/common/SandboxedHtml';
+  ArtifactRender,
+  hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
+import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 
 /** Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs. */
 function safeEmbedUrl(value: unknown): string | null {
-    if (typeof value !== 'string') return null;
-    try {
-        const u = new URL(value, 'https://invalid.local');
-        return u.protocol === 'http:' || u.protocol === 'https:' ? value : null;
-    } catch {
-        return null;
-    }
+  if (typeof value !== "string") return null;
+  try {
+    const u = new URL(value, "https://invalid.local");
+    return u.protocol === "http:" || u.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 interface PublicCanvasRendererProps {
-    content: CanvasContent | any;
+  content: CanvasContent | any;
 }
 
 /**
@@ -39,81 +39,88 @@ interface PublicCanvasRendererProps {
  * adapters that read preferences via useAppSelector work correctly.
  */
 export function PublicCanvasRenderer({ content }: PublicCanvasRendererProps) {
-    if (!content) {
-        return (
-            <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
-                <p className="text-sm">No content to display</p>
-            </div>
-        );
-    }
-
+  if (!content) {
     return (
-        <div className="h-full w-full overflow-auto">
-            {renderContent(content)}
-        </div>
+      <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
+        <p className="text-sm">No content to display</p>
+      </div>
     );
+  }
+
+  return (
+    <div className="h-full w-full overflow-auto">{renderContent(content)}</div>
+  );
 }
 
 function renderContent(content: CanvasContent | any): React.ReactNode {
-    const { type, data } = content;
+  const { type, data } = content;
 
-    // Delegate to the unified artifact renderer for every registered type.
-    // This covers: comparison, flashcards, timeline, research, resources,
-    // progress, troubleshooting, recipe, diagram, decision-tree, presentation,
-    // math_problem, quiz, mermaid, html, iframe, code, image.
-    if (hasArtifactRenderer(type)) {
-        return (
-            <div className="h-full">
-                <ArtifactRender
-                    canvasType={type}
-                    mode="canvas"
-                    data={data}
-                    metadata={content.metadata as Record<string, unknown> | undefined}
-                />
-            </div>
-        );
-    }
-
-    // Fallback for types with no unified renderer (unknown/future types).
-    // Try to sniff a safe http(s) URL → sandboxed iframe.
-    const maybeUrl = safeEmbedUrl(data);
-    if (maybeUrl) {
-        return (
-            <iframe
-                src={maybeUrl}
-                className="w-full h-full border-0"
-                title={content.metadata?.title || 'Canvas Content'}
-                sandbox="allow-scripts allow-popups allow-forms"
-            />
-        );
-    }
-
-    // Sniff HTML string → SandboxedHtml (no XSS).
-    if (typeof data === 'string' && (data.includes('<') || data.includes('>'))) {
-        return (
-            <SandboxedHtml
-                html={data}
-                title={content.metadata?.title || 'Canvas Content'}
-                height="100%"
-                className="w-full h-full"
-            />
-        );
-    }
-
+  // Delegate to the unified artifact renderer for every registered type.
+  // This covers: comparison, flashcards, timeline, research, resources,
+  // progress, troubleshooting, recipe, diagram, decision-tree, presentation,
+  // math_problem, quiz, mermaid, html, iframe, code, image.
+  if (hasArtifactRenderer(type)) {
     return (
-        <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600 p-4">
-            <div className="text-center max-w-lg">
-                <p className="text-lg mb-2">
-                    Unsupported content type: <code className="text-red-500">{type}</code>
-                </p>
-                <p className="text-sm mb-4">This content type is not yet supported in public view</p>
-                <details className="text-left bg-gray-100 dark:bg-gray-800 p-4 rounded">
-                    <summary className="cursor-pointer font-semibold mb-2">Debug Info</summary>
-                    <pre className="text-xs overflow-auto">
-                        {JSON.stringify({ type, dataType: typeof data, data }, null, 2)}
-                    </pre>
-                </details>
-            </div>
-        </div>
+      <div className="h-full">
+        <ArtifactRender
+          canvasType={type}
+          mode="canvas"
+          data={data}
+          metadata={content.metadata as Record<string, unknown> | undefined}
+        />
+      </div>
     );
+  }
+
+  // Fallback for types with no unified renderer (unknown/future types).
+  // Try to sniff a safe http(s) URL → sandboxed iframe.
+  const maybeUrl = safeEmbedUrl(data);
+  if (maybeUrl) {
+    return (
+      <iframe
+        src={maybeUrl}
+        className="w-full h-full border-0"
+        title={content.metadata?.title || "Canvas Content"}
+        // allow-same-origin is safe for a cross-origin embed URL (it only
+        // grants the framed page its OWN origin) and is required for media
+        // players (YouTube/Vimeo) — without it they render a black frame.
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+        allowFullScreen
+      />
+    );
+  }
+
+  // Sniff HTML string → SandboxedHtml (no XSS).
+  if (typeof data === "string" && (data.includes("<") || data.includes(">"))) {
+    return (
+      <SandboxedHtml
+        html={data}
+        title={content.metadata?.title || "Canvas Content"}
+        height="100%"
+        className="w-full h-full"
+      />
+    );
+  }
+
+  return (
+    <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600 p-4">
+      <div className="text-center max-w-lg">
+        <p className="text-lg mb-2">
+          Unsupported content type: <code className="text-red-500">{type}</code>
+        </p>
+        <p className="text-sm mb-4">
+          This content type is not yet supported in public view
+        </p>
+        <details className="text-left bg-gray-100 dark:bg-gray-800 p-4 rounded">
+          <summary className="cursor-pointer font-semibold mb-2">
+            Debug Info
+          </summary>
+          <pre className="text-xs overflow-auto">
+            {JSON.stringify({ type, dataType: typeof data, data }, null, 2)}
+          </pre>
+        </details>
+      </div>
+    </div>
+  );
 }

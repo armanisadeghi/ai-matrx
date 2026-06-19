@@ -8,13 +8,13 @@ import type { ArtifactRendererProps } from "../artifact-renderers";
  * Mirrors the helper in PublicCanvasRenderer.tsx.
  */
 function safeEmbedUrl(value: unknown): string | null {
-    if (typeof value !== "string") return null;
-    try {
-        const u = new URL(value, "https://invalid.local");
-        return u.protocol === "http:" || u.protocol === "https:" ? value : null;
-    } catch {
-        return null;
-    }
+  if (typeof value !== "string") return null;
+  try {
+    const u = new URL(value, "https://invalid.local");
+    return u.protocol === "http:" || u.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -34,41 +34,43 @@ function safeEmbedUrl(value: unknown): string | null {
  * - Only http/https URLs are permitted for `src`; javascript:/data: URIs are blocked.
  */
 export default function IframeArtifact({
-    mode,
-    raw,
-    data,
-    metadata,
+  mode,
+  raw,
+  data,
+  metadata,
 }: ArtifactRendererProps) {
-    const payload =
-        typeof data === "string"
-            ? data
-            : ((data as { url?: string })?.url ?? raw ?? "");
+  const payload =
+    typeof data === "string"
+      ? data
+      : ((data as { url?: string })?.url ?? raw ?? "");
 
-    const title = (metadata?.title as string) || "Web View";
-    const height = mode === "canvas" ? "100%" : "400px";
+  const title = (metadata?.title as string) || "Web View";
+  const height = mode === "canvas" ? "100%" : "400px";
 
-    const safeUrl = safeEmbedUrl(payload);
+  const safeUrl = safeEmbedUrl(payload);
 
-    if (safeUrl) {
-        return (
-            <iframe
-                src={safeUrl}
-                sandbox="allow-scripts allow-popups allow-forms"
-                className="w-full border-0"
-                style={{ height, minHeight: "300px" }}
-                title={title}
-            />
-        );
-    }
-
-    // Inline HTML payload (srcDoc) — no allow-same-origin.
+  if (safeUrl) {
     return (
-        <iframe
-            srcDoc={payload}
-            sandbox="allow-scripts allow-forms"
-            className="w-full border-0"
-            style={{ height, minHeight: "300px" }}
-            title={title}
-        />
+      <iframe
+        src={safeUrl}
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+        allowFullScreen
+        className="w-full border-0"
+        style={{ height, minHeight: "300px" }}
+        title={title}
+      />
     );
+  }
+
+  // Inline HTML payload (srcDoc) — no allow-same-origin.
+  return (
+    <iframe
+      srcDoc={payload}
+      sandbox="allow-scripts allow-forms"
+      className="w-full border-0"
+      style={{ height, minHeight: "300px" }}
+      title={title}
+    />
+  );
 }
