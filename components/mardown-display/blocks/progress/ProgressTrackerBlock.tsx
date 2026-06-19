@@ -68,14 +68,24 @@ interface ProgressTrackerData {
   completedItems?: number;
 }
 
+export interface ProgressTrackerState {
+  completed: string[];
+}
+
 interface ProgressTrackerBlockProps {
   tracker: ProgressTrackerData;
   taskId?: string; // Task ID for canvas deduplication
+  /** Seed the completed-items set from persisted state (optional). */
+  initialState?: ProgressTrackerState;
+  /** Called whenever the user changes interaction state (optional). */
+  onStateChange?: (state: ProgressTrackerState) => void;
 }
 
 const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   tracker,
   taskId,
+  initialState,
+  onStateChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -100,8 +110,11 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { open: openCanvas } = useCanvas();
 
-  // Initialize completedItems with items that are already marked as completed in the tracker data
+  // Initialize completedItems from persisted state when available, otherwise from tracker data.
   const [completedItems, setCompletedItems] = useState<Set<string>>(() => {
+    if (initialState) {
+      return new Set(initialState.completed);
+    }
     const initialCompleted = new Set<string>();
     tracker.categories.forEach((category) => {
       category.items.forEach((item) => {
@@ -138,8 +151,20 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     return state;
   }, [convertedTasks]);
 
-  // Update completedItems when tracker data changes (in case the component receives new data)
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  /** Update completedItems and emit the new state to the persistence layer. */
+  const applyCompletedItems = useCallback((next: Set<string>) => {
+    setCompletedItems(next);
+    onStateChangeRef.current?.({ completed: Array.from(next) });
+  }, []);
+
+  // Update completedItems when tracker data changes (in case the component receives new data).
+  // Only reset from tracker when there is no persisted state driving the component.
   React.useEffect(() => {
+    if (initialState) return; // persisted state owns the source of truth
     const newCompleted = new Set<string>();
     tracker.categories.forEach((category) => {
       category.items.forEach((item) => {
@@ -149,7 +174,8 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
       });
     });
     setCompletedItems(newCompleted);
-  }, [tracker]);
+    // intentionally NOT emitting onStateChange here — tracker reload is not a user interaction
+  }, [tracker, initialState]);
 
   // Calculate dynamic progress
   const progressStats = useMemo(() => {
@@ -194,7 +220,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     } else {
       newCompleted.add(itemId);
     }
-    setCompletedItems(newCompleted);
+    applyCompletedItems(newCompleted);
   };
 
   const toggleCategory = (categoryId: string) => {
@@ -224,11 +250,11 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
       category.items.forEach((item) => newCompleted.add(item.id));
     }
 
-    setCompletedItems(newCompleted);
+    applyCompletedItems(newCompleted);
   };
 
   const resetProgress = () => {
-    setCompletedItems(new Set());
+    applyCompletedItems(new Set());
   };
 
   const getCategoryColor = (color: string | undefined, index: number) => {

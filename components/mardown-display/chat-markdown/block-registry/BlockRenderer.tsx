@@ -757,16 +757,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         <BlockComponents.TranscriptBlock key={index} content={block.content} />
       );
 
-    case "tasks":
-      return (
-        <BlockComponents.TasksBlock
-          key={index}
-          content={block.content}
-          messageId={messageId}
-          conversationId={conversationId}
-          blockIndex={index}
-        />
-      );
+    // "tasks" → handled by the early unified-renderer branch above
+    // (resolveArtifactDef("tasks") → tasks def → TasksArtifact).
 
     case "structured_info":
       return (

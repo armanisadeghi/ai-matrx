@@ -69,14 +69,26 @@ interface TroubleshootingData {
   issues: TroubleshootingIssue[];
 }
 
+export interface TroubleshootingState {
+  completedSteps: string[];
+  expandedIssues: string[];
+  expandedSolutions: string[];
+}
+
 interface TroubleshootingBlockProps {
   troubleshooting: TroubleshootingData;
   taskId?: string; // Task ID for canvas deduplication
+  /** Seed interaction state from persisted storage (optional). */
+  initialState?: TroubleshootingState;
+  /** Called whenever the user changes interaction state (optional). */
+  onStateChange?: (state: TroubleshootingState) => void;
 }
 
 const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   troubleshooting,
   taskId,
+  initialState,
+  onStateChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -101,17 +113,23 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   }, [troubleshooting.title, isPrinting]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [expandedIssues, setExpandedIssues] = useState<Set<string>>(
-    new Set(["issue-0"]),
-  ); // First issue expanded by default
+    () => initialState ? new Set(initialState.expandedIssues) : new Set(["issue-0"]),
+  );
   const [expandedSolutions, setExpandedSolutions] = useState<Set<string>>(
-    new Set(),
+    () => initialState ? new Set(initialState.expandedSolutions) : new Set(),
   );
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
   const [copiedCommands, setCopiedCommands] = useState<Set<string>>(new Set());
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(
+    () => initialState ? new Set(initialState.completedSteps) : new Set(),
+  );
   const { open: openCanvas } = useCanvas();
+
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
 
   // Convert troubleshooting to tasks format
   const convertedTasks = useMemo(() => {
@@ -160,6 +178,22 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
     });
   }, [troubleshooting.issues, searchQuery, selectedSeverity]);
 
+  /** Emit the current interaction state to the persistence layer. */
+  const emitState = useCallback(
+    (
+      steps: Set<string>,
+      issues: Set<string>,
+      solutions: Set<string>,
+    ) => {
+      onStateChangeRef.current?.({
+        completedSteps: Array.from(steps),
+        expandedIssues: Array.from(issues),
+        expandedSolutions: Array.from(solutions),
+      });
+    },
+    [],
+  );
+
   const toggleIssue = (issueId: string) => {
     const newExpanded = new Set(expandedIssues);
     if (newExpanded.has(issueId)) {
@@ -168,6 +202,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
       newExpanded.add(issueId);
     }
     setExpandedIssues(newExpanded);
+    emitState(completedSteps, newExpanded, expandedSolutions);
   };
 
   const toggleSolution = (solutionId: string) => {
@@ -178,6 +213,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
       newExpanded.add(solutionId);
     }
     setExpandedSolutions(newExpanded);
+    emitState(completedSteps, expandedIssues, newExpanded);
   };
 
   const toggleStep = (stepId: string) => {
@@ -198,6 +234,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
       newCompleted.add(stepId);
     }
     setCompletedSteps(newCompleted);
+    emitState(newCompleted, expandedIssues, expandedSolutions);
   };
 
   const copyCommand = async (command: string, commandId: string) => {

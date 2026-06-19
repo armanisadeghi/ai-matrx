@@ -41,9 +41,19 @@ interface DecisionTreeData {
   root: DecisionNode;
 }
 
+export interface DecisionTreeState {
+  currentNodeId: string;
+  history: NavigationStep[];
+  completedPaths: string[];
+}
+
 interface DecisionTreeBlockProps {
   decisionTree: DecisionTreeData;
   taskId?: string; // Task ID for canvas deduplication
+  /** Seed navigation/completion state from persisted storage (optional). */
+  initialState?: DecisionTreeState;
+  /** Called whenever the user changes interaction state (optional). */
+  onStateChange?: (state: DecisionTreeState) => void;
 }
 
 interface NavigationStep {
@@ -51,6 +61,20 @@ interface NavigationStep {
   choice?: "yes" | "no";
   question?: string;
   timestamp: number;
+}
+
+/** Walk the tree and return the node with the given id, or null. */
+function findNodeById(root: DecisionNode, id: string): DecisionNode | null {
+  if (root.id === id) return root;
+  if (root.yes) {
+    const found = findNodeById(root.yes, id);
+    if (found) return found;
+  }
+  if (root.no) {
+    const found = findNodeById(root.no, id);
+    if (found) return found;
+  }
+  return null;
 }
 
 const STAT_ITEMS = [
@@ -66,6 +90,8 @@ const navBtnClass =
 const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
   decisionTree,
   taskId,
+  initialState,
+  onStateChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -87,18 +113,44 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
       setIsPrinting(false);
     }
   }, [decisionTree.title, isPrinting]);
-  const [currentNode, setCurrentNode] = useState<DecisionNode>(
-    decisionTree.root,
-  );
+  const [currentNode, setCurrentNode] = useState<DecisionNode>(() => {
+    if (initialState?.currentNodeId) {
+      const restored = findNodeById(decisionTree.root, initialState.currentNodeId);
+      if (restored) return restored;
+    }
+    return decisionTree.root;
+  });
   const [navigationHistory, setNavigationHistory] = useState<NavigationStep[]>(
-    [],
+    () => initialState?.history ?? [],
   );
-  const [completedPaths, setCompletedPaths] = useState<Set<string>>(new Set());
+  const [completedPaths, setCompletedPaths] = useState<Set<string>>(
+    () => new Set(initialState?.completedPaths ?? []),
+  );
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
     new Set(["root"]),
   );
   const [showFullTree, setShowFullTree] = useState(false);
   const { open: openCanvas } = useCanvas();
+
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  /** Emit the current navigation + completion state to the persistence layer. */
+  const emitState = useCallback(
+    (
+      node: DecisionNode,
+      history: NavigationStep[],
+      paths: Set<string>,
+    ) => {
+      onStateChangeRef.current?.({
+        currentNodeId: node.id,
+        history,
+        completedPaths: Array.from(paths),
+      });
+    },
+    [],
+  );
 
   // Calculate tree statistics
   const treeStats = useMemo(() => {
@@ -139,13 +191,15 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         timestamp: Date.now(),
       };
 
-      setNavigationHistory((prev) => [...prev, step]);
-      setCurrentNode(nextNode);
+      const newHistory = [...navigationHistory, step];
+      const newPaths = nextNode.action
+        ? new Set([...completedPaths, nextNode.id])
+        : completedPaths;
 
-      // Mark path as completed if we reach an action node
-      if (nextNode.action) {
-        setCompletedPaths((prev) => new Set([...prev, nextNode.id]));
-      }
+      setNavigationHistory(newHistory);
+      setCurrentNode(nextNode);
+      if (nextNode.action) setCompletedPaths(newPaths);
+      emitState(nextNode, newHistory, newPaths);
     }
   };
 
@@ -161,6 +215,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         node = step.choice === "yes" ? node.yes || node : node.no || node;
       }
       setCurrentNode(node);
+      emitState(node, newHistory, completedPaths);
     }
   };
 
@@ -168,11 +223,13 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     setCurrentNode(decisionTree.root);
     setNavigationHistory([]);
     setCompletedPaths(new Set());
+    emitState(decisionTree.root, [], new Set());
   };
 
   const goToRoot = () => {
     setCurrentNode(decisionTree.root);
     setNavigationHistory([]);
+    emitState(decisionTree.root, [], completedPaths);
   };
 
   const toggleNodeExpansion = (nodeId: string) => {
@@ -711,11 +768,11 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           type="button"
-                          onClick={() =>
-                            setCompletedPaths(
-                              (prev) => new Set([...prev, currentNode.id]),
-                            )
-                          }
+                          onClick={() => {
+                            const newPaths = new Set([...completedPaths, currentNode.id]);
+                            setCompletedPaths(newPaths);
+                            emitState(currentNode, navigationHistory, newPaths);
+                          }}
                           title="Mark as Completed"
                           className="inline-flex items-center gap-1 px-2 py-1.5 bg-green-600 dark:bg-green-700 text-white rounded-md text-xs font-medium hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
                         >

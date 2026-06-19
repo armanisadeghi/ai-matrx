@@ -8,6 +8,8 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { useArtifactState } from "../persistence/useArtifactState";
+import type { ProgressTrackerState } from "@/components/mardown-display/blocks/progress/ProgressTrackerBlock";
 
 const ProgressTrackerBlock = lazy(
   () => import("@/components/mardown-display/blocks/progress/ProgressTrackerBlock"),
@@ -27,6 +29,11 @@ export default function ProgressArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
+  const { state, loaded, save } = useArtifactState<ProgressTrackerState & Record<string, unknown>>(
+    artifactId,
+    "generic",
+  );
+
   const tracker = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,11 +50,18 @@ export default function ProgressArtifact({
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
+  // Wait for persisted state to load before rendering so initialState seeds correctly.
+  if (artifactId && !loaded) {
+    return <MatrxMiniLoader />;
+  }
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <ProgressTrackerBlock
         tracker={tracker}
         taskId={artifactDedupKey(taskId, artifactId)}
+        initialState={state ?? undefined}
+        onStateChange={save as (state: ProgressTrackerState) => void}
       />
     </Suspense>
   );

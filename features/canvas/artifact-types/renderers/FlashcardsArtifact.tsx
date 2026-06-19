@@ -12,11 +12,22 @@ const FlashcardsBlock = lazy(
   () => import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
 );
 
+// Canvas mode = the full STUDY experience, which persists per-card reviews via
+// useFlashcardStudy → user_flashcard_reviews (the set is created on materialize
+// by the flashcards adapter). The inline/artifact mode is the lightweight viewer.
+const CanvasFlashcardsView = lazy(() =>
+  import("@/features/flashcards/components/CanvasFlashcardsView").then((m) => ({
+    default: m.CanvasFlashcardsView,
+  })),
+);
+
 /**
- * Unified renderer for `flashcards`. FlashcardsBlock parses its own raw content
- * (markdown), so this adapter doesn't pre-parse — it forwards `serverData` when
- * present, otherwise the raw string. (Study-progress persistence is wired in
- * Wave D via the flashcards adapter; this Wave B step unifies rendering only.)
+ * Unified renderer for `flashcards`. FlashcardsBlock / CanvasFlashcardsView parse
+ * their own raw markdown content, so this adapter forwards `serverData` when
+ * present, otherwise the raw string.
+ *
+ * - mode === "canvas" → CanvasFlashcardsView (study mode, persists progress)
+ * - else             → FlashcardsBlock (inline viewer)
  */
 export default function FlashcardsArtifact({
   raw,
@@ -24,6 +35,9 @@ export default function FlashcardsArtifact({
   serverData,
   taskId,
   artifactId,
+  mode,
+  conversationId,
+  messageId,
 }: ArtifactRendererProps) {
   const content = typeof data === "string" ? data : raw;
   const sd =
@@ -33,6 +47,19 @@ export default function FlashcardsArtifact({
       : undefined);
 
   if (!content && !sd) return null;
+
+  if (mode === "canvas") {
+    return (
+      <Suspense fallback={<MatrxMiniLoader />}>
+        <CanvasFlashcardsView
+          content={content}
+          serverData={sd}
+          conversationId={conversationId}
+          messageId={messageId}
+        />
+      </Suspense>
+    );
+  }
 
   return (
     <Suspense fallback={<MatrxMiniLoader />}>

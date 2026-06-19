@@ -8,6 +8,8 @@ import {
   resolveMarkdownPayload,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { useArtifactState } from "../persistence/useArtifactState";
+import type { TroubleshootingState } from "@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock";
 
 const TroubleshootingBlock = lazy(
   () => import("@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock"),
@@ -27,6 +29,11 @@ export default function TroubleshootingArtifact({
   artifactId,
   isStreamActive,
 }: ArtifactRendererProps) {
+  const { state, loaded, save } = useArtifactState<TroubleshootingState & Record<string, unknown>>(
+    artifactId,
+    "generic",
+  );
+
   const troubleshooting = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,11 +50,18 @@ export default function TroubleshootingArtifact({
     return isStreamActive ? <MatrxMiniLoader /> : null;
   }
 
+  // Wait for persisted state to load before rendering so initialState seeds correctly.
+  if (artifactId && !loaded) {
+    return <MatrxMiniLoader />;
+  }
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <TroubleshootingBlock
         troubleshooting={troubleshooting}
         taskId={artifactDedupKey(taskId, artifactId)}
+        initialState={state ?? undefined}
+        onStateChange={save as (state: TroubleshootingState) => void}
       />
     </Suspense>
   );

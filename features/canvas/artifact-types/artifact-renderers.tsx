@@ -61,6 +61,7 @@ const RENDERERS: Record<
   math_problem: lazy(() => import("./renderers/MathProblemArtifact")),
   quiz: lazy(() => import("./renderers/QuizArtifact")),
   mermaid: lazy(() => import("./renderers/MermaidArtifact")),
+  tasks: lazy(() => import("./renderers/TasksArtifact")),
   html: lazy(() => import("./renderers/HtmlArtifact")),
   iframe: lazy(() => import("./renderers/IframeArtifact")),
   code: lazy(() => import("./renderers/CodeArtifact")),
