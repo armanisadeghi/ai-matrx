@@ -116,6 +116,33 @@ export interface YoutubeRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * A Matrx Envelope embedded in content via a ```matrx fence. The `content`
+ * is the raw envelope JSON `{ matrx_version, kind, type, items: [...] }`.
+ * In-content position only resolves `reference` / `secret` kinds (an action in
+ * prose is shown, never executed). Rendered by features/matrx-envelope/
+ * MatrxEnvelopeBlock — chips for references, a muted card otherwise.
+ * See docs/protocol/MATRX_ENVELOPE.md + MATRX_REFERENCES.md.
+ */
+export interface MatrxEnvelopeRenderBlock {
+  type: "matrx";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * An output-schema proposal emitted by the "JSON Schema Generator" agent as a
+ * ```json fence: `{ name: string, schema: object, strict?: boolean }`. The FE
+ * recognizes it (see content-splitter-v2 JSON_BLOCK_PATTERNS) and offers
+ * "Apply to an agent" (writes agx_agent.output_schema). Client-only.
+ * See features/agents/components/schema-proposal/.
+ */
+export interface SchemaProposalRenderBlock {
+  type: "schema_proposal";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
@@ -124,7 +151,9 @@ export type ClientOnlyRenderBlock =
   | SvgRenderBlock
   | ChartRenderBlock
   | ItemPresentationRenderBlock
-  | YoutubeRenderBlock;
+  | YoutubeRenderBlock
+  | MatrxEnvelopeRenderBlock
+  | SchemaProposalRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

@@ -928,6 +928,27 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "matrx":
+      // A ```matrx fence — one Matrx Envelope. In-content position resolves only
+      // reference/secret (chips); other kinds show a neutral card. Fail-safe:
+      // invalid JSON renders raw, never throws. See features/matrx-envelope/.
+      return (
+        <BlockComponents.MatrxEnvelopeBlock
+          key={index}
+          content={block.content}
+        />
+      );
+
+    case "schema_proposal":
+      // A ```json output-schema proposal ({ name, schema, strict? }). Offers
+      // "Apply to an agent" → writes agx_agent.output_schema. Fail-safe parse.
+      return (
+        <BlockComponents.SchemaProposalBlock
+          key={index}
+          content={block.content}
+        />
+      );
+
     case "search_replace":
       return (
         <BlockComponents.SearchReplaceBlock

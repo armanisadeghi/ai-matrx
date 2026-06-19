@@ -77,6 +77,12 @@ const ChartBlock = lazy(() => import("../../blocks/chart/ChartBlock"));
 const ItemPresentationBlock = lazy(
   () => import("@/features/item-presentation/ItemPresentationBlock"),
 );
+const MatrxEnvelopeBlock = lazy(
+  () => import("@/features/matrx-envelope/MatrxEnvelopeBlock"),
+);
+const SchemaProposalBlock = lazy(
+  () => import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
+);
 const MathProblemBlock = lazy(
   () => import("../../blocks/math/MathProblemBlock"),
 );
@@ -393,6 +399,16 @@ export const BlockComponents = {
   ItemPresentationBlock: (props: any) => (
     <LazyBlockWrapper>
       <ItemPresentationBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MatrxEnvelopeBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <MatrxEnvelopeBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SchemaProposalBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <SchemaProposalBlock {...props} />
     </LazyBlockWrapper>
   ),
   MathProblemBlock: (props: any) => (
