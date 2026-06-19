@@ -15,6 +15,11 @@ const HtmlInlinePreview = lazy(
   () => import("@/features/html-pages/components/HtmlInlinePreview"),
 );
 
+// Inline auto-preview for jsx/tsx/react code blocks (compiles to a live component).
+const ReactCodeBlock = lazy(
+  () => import("@/features/dynamic-react/ReactCodeBlock"),
+);
+
 // Static imports for frequently used, lightweight components
 import { QuestionnaireProvider } from "../../blocks/questionnaire/QuestionnaireContext";
 
@@ -81,7 +86,8 @@ const MatrxEnvelopeBlock = lazy(
   () => import("@/features/matrx-envelope/MatrxEnvelopeBlock"),
 );
 const SchemaProposalBlock = lazy(
-  () => import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
+  () =>
+    import("@/features/agents/components/schema-proposal/SchemaProposalBlock"),
 );
 const MathProblemBlock = lazy(
   () => import("../../blocks/math/MathProblemBlock"),
@@ -265,6 +271,12 @@ export const BlockComponents = {
   HtmlInlinePreview: (props: any) => (
     <LazyBlockWrapper>
       <HtmlInlinePreview {...props} />
+    </LazyBlockWrapper>
+  ),
+
+  ReactCodeBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <ReactCodeBlock {...props} />
     </LazyBlockWrapper>
   ),
 

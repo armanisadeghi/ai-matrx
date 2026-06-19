@@ -94,6 +94,33 @@ const nextConfig = {
             '**/*.map',
         ],
     },
+
+    // The admin docs viewer (app/(admin)/admin/docs/[[...path]]/page.tsx) reads
+    // arbitrary repo-relative `.md` files at request time. Its `process.cwd()`
+    // read is deliberately opaque to the file-tracer (see that file) so Turbopack
+    // stops auto-bundling the WHOLE repo (22k+ files) into the function. We
+    // re-declare exactly what it needs here: source markdown only — never
+    // node_modules. Add a directory here if a new docs location must be viewable.
+    outputFileTracingIncludes: {
+        '/admin/docs/[[...path]]': [
+            './*.md',
+            './app/**/*.md',
+            './features/**/*.md',
+            './components/**/*.md',
+            './lib/**/*.md',
+            './hooks/**/*.md',
+            './utils/**/*.md',
+            './providers/**/*.md',
+            './types/**/*.md',
+            './constants/**/*.md',
+            './scripts/**/*.md',
+            './migrations/**/*.md',
+            './docs/**/*.md',
+            './styles/**/*.md',
+            './.cursor/**/*.md',
+            './.claude/**/*.md',
+        ],
+    },
     
     // TEMP: disabled to measure build-time impact. React Compiler adds a per-component
     // analysis pass that scales super-linearly with the codebase. Re-enable once we've

@@ -8,6 +8,8 @@ import {
   Maximize2,
   AlertTriangle,
   Globe,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -93,6 +95,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCode, setShowCode] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Tracks the exact code we last converted so re-renders don't re-publish, but
   // genuinely edited / re-streamed content does.
@@ -272,6 +275,12 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   }
 
   // 3b. Success — full document → card preview (header + bounded iframe).
+  //
+  // The page is a cross-origin published URL, so we can't measure its real
+  // content height to fit it exactly. Instead of an arbitrary hard cut, we cap
+  // the inline height (a generous ~full-page default, taller when expanded) and
+  // fade the bottom edge so the truncation reads as intentional. The fade hosts
+  // the two escape hatches — Expand (more inline height) and Canvas (full view).
   return (
     <div
       className={cn(
@@ -301,17 +310,40 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       {showCode ? (
         <div className="p-2">{renderCodeBlock()}</div>
       ) : (
-        <iframe
-          src={url ?? undefined}
-          title={title}
-          // Resizable so a long page can be expanded without forcing a giant
-          // default; the canvas gives the full-height view.
-          className="block h-[480px] min-h-[160px] w-full resize-y bg-white"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-          allowFullScreen
-          loading="lazy"
-        />
+        <div className="relative">
+          <iframe
+            src={url ?? undefined}
+            title={title}
+            className="block w-full bg-white"
+            // Generous default (~a full page), grows to fill available space
+            // when expanded. The canvas gives the true full-height view.
+            style={{
+              height: expanded ? "min(85vh, 1400px)" : "min(70vh, 720px)",
+            }}
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            allowFullScreen
+            loading="lazy"
+          />
+          {/* Intentional bottom fade + escape-hatch actions. pointer-events
+              are disabled on the gradient so the iframe stays interactive,
+              and re-enabled on the button row. */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-card via-card/80 to-transparent">
+            <div className="pointer-events-auto mb-3 flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-1.5 py-1 shadow-sm backdrop-blur-sm">
+              <ToolbarButton
+                icon={expanded ? ChevronUp : ChevronDown}
+                label={expanded ? "Collapse" : "Expand"}
+                onClick={() => setExpanded((v) => !v)}
+              />
+              <span className="h-4 w-px bg-border" />
+              <ToolbarButton
+                icon={Maximize2}
+                label="Open in canvas"
+                onClick={handleOpenCanvas}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

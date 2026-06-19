@@ -11,6 +11,7 @@ import {
   filterChanges,
   formatValue,
 } from "@/components/diff/engine/diff-utils";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface VariableLike {
   name: string;
@@ -98,6 +99,25 @@ function VariableRow({ child }: { child: DiffNode }) {
   const oldVar = child.oldValue as VariableLike | undefined;
   const newVar = child.newValue as VariableLike | undefined;
   const varName = newVar?.name ?? oldVar?.name ?? child.key;
+
+  // Edited variable → word/line-level diff so only the changed text is tinted
+  // (the old renderer lit up the entire old/new value for any change).
+  if (child.changeType === "modified" && oldVar && newVar) {
+    const oldText = formatVar(oldVar);
+    const newText = formatVar(newVar);
+    if (oldText !== "" && newText !== "") {
+      return (
+        <div className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30">
+          <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
+            {"{{" + varName + "}}"}
+          </div>
+          <div className="min-w-0 overflow-x-auto">
+            <InlineTextDiff original={oldText} modified={newText} />
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30">

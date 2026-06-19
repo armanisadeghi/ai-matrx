@@ -7,7 +7,7 @@ import type {
   FieldDiffProps,
 } from "@/components/diff/adapters/types";
 import type { DiffNode } from "@/components/diff/engine/types";
-import { formatValue } from "@/components/diff/engine/diff-utils";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface ContextSlotLike {
   key: string;
@@ -54,6 +54,27 @@ function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
         const oldSlot = child.oldValue as ContextSlotLike | undefined;
         const newSlot = child.newValue as ContextSlotLike | undefined;
         const slotKey = newSlot?.key ?? oldSlot?.key ?? child.key;
+
+        // Edited slot → word/line-level diff so only the changed text is tinted.
+        if (child.changeType === "modified" && oldSlot && newSlot) {
+          const oldText = formatSlot(oldSlot);
+          const newText = formatSlot(newSlot);
+          if (oldText !== "" && newText !== "") {
+            return (
+              <div
+                key={child.key ?? i}
+                className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+              >
+                <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
+                  {slotKey}
+                </div>
+                <div className="min-w-0 overflow-x-auto">
+                  <InlineTextDiff original={oldText} modified={newText} />
+                </div>
+              </div>
+            );
+          }
+        }
 
         return (
           <div

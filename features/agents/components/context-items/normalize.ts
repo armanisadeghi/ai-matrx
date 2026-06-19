@@ -1,0 +1,162 @@
+/**
+ * Normalization — turn the two attachment representations (pre-submit
+ * `ManagedResource` and post-submit `RenderBlockPayload`) into a flat list of
+ * `ContextDrawerItem`s, ONE per underlying record. Flattening here means the
+ * drawer's prev/next walks every individual note / task / url / ref, not just
+ * every chip.
+ */
+
+import type { ManagedResource } from "@/features/agents/types/instance.types";
+import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
+import type { DataRef } from "@/features/agents/types/message-types";
+import { resolveContextItemDef } from "./registry";
+import type { ContextDrawerItem, ContextItemRefs } from "./types";
+
+type Data = Record<string, unknown> | null | undefined;
+
+function asStringArray(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v.filter((x): x is string => typeof x === "string");
+  return out.length ? out : undefined;
+}
+
+function basename(path: string): string {
+  const i = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return i === -1 ? path : path.slice(i + 1);
+}
+
+function bestTitle(data: Data, fallback: string): string {
+  const d = data ?? {};
+  const candidate =
+    (d.title as string) ??
+    (d.label as string) ??
+    (d.name as string) ??
+    (d.filename as string) ??
+    (typeof d.url === "string" ? basename(d.url as string) : undefined);
+  return candidate?.toString().slice(0, 80) || fallback;
+}
+
+/**
+ * Build the per-record items for a single attachment given its block type, the
+ * data bag (block.data or resource.source), and shared meta. Splits multi-id
+ * bags into one item each.
+ */
+/** The shared, per-attachment fields (everything but the per-record id/title/refs). */
+type ItemBase = Omit<ContextDrawerItem, "id" | "title" | "refs"> & {
+  /** The attachment-level base id; per-record ids are derived from it. */
+  baseId: string;
+};
+
+function expand(
+  blockType: string,
+  data: Data,
+  base: ItemBase,
+): ContextDrawerItem[] {
+  const d = data ?? {};
+
+  const make = (
+    idSuffix: string,
+    title: string,
+    refs: ContextItemRefs,
+  ): ContextDrawerItem => {
+    const { baseId, ...rest } = base;
+    return {
+      ...rest,
+      id: `${baseId}:${idSuffix}`,
+      title,
+      refs,
+    };
+  };
+
+  // Notes
+  const noteIds = asStringArray(d.note_ids);
+  if (noteIds) return noteIds.map((id) => make(id, "Note", { noteIds: [id] }));
+
+  // Tasks
+  const taskIds = asStringArray(d.task_ids);
+  if (taskIds) return taskIds.map((id) => make(id, "Task", { taskIds: [id] }));
+
+  // Webpages
+  const urls =
+    asStringArray(d.urls) ??
+    (typeof d.url === "string" ? [d.url as string] : undefined);
+  if (urls) return urls.map((u) => make(u, u, { urls: [u] }));
+
+  // Data refs
+  const refs = Array.isArray(d.refs) ? (d.refs as DataRef[]) : undefined;
+  if (refs && refs.length) {
+    return refs.map((r, i) =>
+      make(String(i), r.label?.trim() || r.table, { dataRefs: [r] }),
+    );
+  }
+
+  // Media — file_id / url
+  const fileId =
+    typeof (base.raw as { file_id?: unknown })?.file_id === "string"
+      ? ((base.raw as { file_id?: string }).file_id ?? null)
+      : null;
+  const fileUrl = typeof d.url === "string" ? (d.url as string) : null;
+  if (fileId || fileUrl) {
+    return [make("media", bestTitle(d, base.typeLabel), { fileId, fileUrl })];
+  }
+
+  // Entity id lists → GenericBody
+  const entityRefs: ContextItemRefs = {
+    projectIds: asStringArray(d.project_ids),
+    agentIds: asStringArray(d.agent_ids),
+    transcriptIds:
+      asStringArray(d.transcript_ids) ?? asStringArray(d.session_ids),
+    workbookIds: asStringArray(d.workbook_ids),
+    documentIds: asStringArray(d.document_ids),
+    text:
+      typeof d.text === "string"
+        ? (d.text as string)
+        : typeof d.content === "string"
+          ? (d.content as string)
+          : null,
+  };
+
+  return [make("0", bestTitle(d, base.typeLabel), entityRefs)];
+}
+
+/** Normalize a pre-submit ManagedResource into drawer items. */
+export function normalizeResource(
+  resource: ManagedResource,
+  conversationId: string,
+): ContextDrawerItem[] {
+  const def = resolveContextItemDef(resource.blockType);
+  return expand(resource.blockType, resource.source as Data, {
+    baseId: resource.resourceId,
+    blockType: resource.blockType,
+    typeLabel: def.typeLabel,
+    icon: def.icon,
+    themeKey: def.themeKey,
+    origin: "resource",
+    conversationId,
+    editable: def.editable,
+    raw: resource.source,
+    resourceId: resource.resourceId,
+  });
+}
+
+/** Normalize a post-submit RenderBlockPayload into drawer items. */
+export function normalizeBlock(
+  block: RenderBlockPayload,
+  idx: number,
+  conversationId: string,
+): ContextDrawerItem[] {
+  if (block.type === "text") return [];
+  const def = resolveContextItemDef(block.type);
+  const baseId = block.blockId ?? `block-${idx}`;
+  return expand(block.type, block.data as Data, {
+    baseId,
+    blockType: block.type,
+    typeLabel: def.typeLabel,
+    icon: def.icon,
+    themeKey: def.themeKey,
+    origin: "block",
+    conversationId,
+    editable: def.editable,
+    raw: block,
+  });
+}

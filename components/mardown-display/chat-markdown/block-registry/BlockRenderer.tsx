@@ -702,6 +702,26 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           />
         );
       }
+      // React/JSX/TSX → compile to a live component once finalized (auto-preview
+      // like html). Streaming/incomplete shows the code; compile/runtime errors
+      // fall back to the code block silently. Execution is allowlist-scoped and
+      // in-app — see features/dynamic-react/compileReactComponent.
+      if (lang === "jsx" || lang === "tsx" || lang === "react") {
+        return (
+          <BlockComponents.ReactCodeBlock
+            key={index}
+            code={block.content}
+            language={block.language}
+            isComplete={!isStreamActive && !isBlockLoading(block)}
+            onCodeChange={
+              isStreamActive
+                ? undefined
+                : (newCode: string) =>
+                    replaceBlockContent(block.content, newCode)
+            }
+          />
+        );
+      }
       if (lang === "csv" || lang === "tsv") {
         return (
           <BlockComponents.CsvBlock

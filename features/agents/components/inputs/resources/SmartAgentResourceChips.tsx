@@ -49,6 +49,10 @@ import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHove
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
 import { DataRefHoverPreview } from "@/features/agents/components/previews/DataRefHoverPreview";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
+import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
+import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
+import { normalizeResource } from "@/features/agents/components/context-items/normalize";
+import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
@@ -199,12 +203,14 @@ interface ResourceChipProps {
   resource: ManagedResource;
   onRemove: () => void;
   onToggleEditable: () => void;
+  onOpen: () => void;
 }
 
 function ResourceChip({
   resource,
   onRemove,
   onToggleEditable,
+  onOpen,
 }: ResourceChipProps) {
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
@@ -235,6 +241,7 @@ function ResourceChip({
         title={label}
         icon={display.icon}
         themeKey={resource.blockType}
+        onClick={onOpen}
         onRemove={onRemove}
         editableState={editableState}
         onToggleEditable={onToggleEditable}
@@ -332,6 +339,19 @@ export function SmartAgentResourceChips({
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
+  const drawer = useContextItemDrawer();
+
+  const drawerItems: ContextDrawerItem[] = resources.flatMap((r) =>
+    normalizeResource(r, conversationId),
+  );
+
+  const openDrawerForResource = useCallback(
+    (resourceId: string) => {
+      const idx = drawerItems.findIndex((it) => it.resourceId === resourceId);
+      drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
+    },
+    [drawerItems, drawer],
+  );
 
   const handleRemove = useCallback(
     (resourceId: string) => {
@@ -370,9 +390,11 @@ export function SmartAgentResourceChips({
                 resource.options.editable,
               )
             }
+            onOpen={() => openDrawerForResource(resource.resourceId)}
           />
         ))}
       </AnimatePresence>
+      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

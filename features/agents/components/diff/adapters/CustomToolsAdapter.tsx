@@ -6,6 +6,7 @@ import type {
   FieldAdapter,
   FieldDiffProps,
 } from "@/components/diff/adapters/types";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface CustomToolLike {
   name: string;
@@ -49,6 +50,28 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
         const oldTool = child.oldValue as CustomToolLike | undefined;
         const newTool = child.newValue as CustomToolLike | undefined;
         const toolName = newTool?.name ?? oldTool?.name ?? child.key;
+
+        // Edited tool → word/line-level diff so only the changed text/schema
+        // is tinted instead of the whole definition.
+        if (child.changeType === "modified" && oldTool && newTool) {
+          const oldText = formatCustomTool(oldTool);
+          const newText = formatCustomTool(newTool);
+          if (oldText !== "" && newText !== "") {
+            return (
+              <div
+                key={child.key ?? i}
+                className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
+              >
+                <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
+                  {toolName}
+                </div>
+                <div className="min-w-0 overflow-x-auto">
+                  <InlineTextDiff original={oldText} modified={newText} />
+                </div>
+              </div>
+            );
+          }
+        }
 
         return (
           <div

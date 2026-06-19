@@ -13,6 +13,12 @@ import {
   patchScopeForMissingIdentifiers,
   getScopeFunctionParameters,
 } from "./allowed-imports";
+import {
+  loadBabelTransform,
+  stripImports,
+  replaceExportDefault,
+  babelTransform as babelTransformCore,
+} from "@/features/dynamic-react/compile-core";
 import type {
   ToolUiComponentRow,
   CompiledToolRenderer,
@@ -23,157 +29,17 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 
 // ---------------------------------------------------------------------------
-// Lazy babel loader
-// ---------------------------------------------------------------------------
-// `@babel/standalone` is ~5.7 MB uncompressed. Statically importing it forces
-// it into every chunk that imports the compiler, including SSR chunks where
-// `new Function()` would never run anyway. Switch to a dynamic import that
-// only runs the first time `compileToolUiComponent` is invoked (always from
-// the client, always async via `fetchAndCompileRenderer`). The reference is
-// cached so subsequent compiles are a single property lookup.
-type BabelTransform = typeof import("@babel/standalone").transform;
-let cachedBabelTransform: BabelTransform | null = null;
-let inflightBabelLoad: Promise<BabelTransform> | null = null;
-
-async function loadBabelTransform(): Promise<BabelTransform> {
-  if (cachedBabelTransform) return cachedBabelTransform;
-  if (inflightBabelLoad) return inflightBabelLoad;
-
-  inflightBabelLoad = import("@babel/standalone").then((mod) => {
-    cachedBabelTransform = mod.transform;
-    inflightBabelLoad = null;
-    return mod.transform;
-  });
-  return inflightBabelLoad;
-}
-
-// ---------------------------------------------------------------------------
-// Code transformation helpers
+// Source→source transform + lazy Babel loader now live in the shared core
+// (`@/features/dynamic-react/compile-core`) so every dynamic-React consumer
+// shares one implementation. Local thin wrapper preserves the tool filename.
 // ---------------------------------------------------------------------------
 
-/**
- * Strip all import statements — deps are injected via scope.
- * Handles both single-line and multiline imports:
- *   import React from 'react';
- *   import {
- *       foo, bar,
- *   } from 'baz';
- * Also strips "use client" / "use server" directives which are meaningless
- * (and potentially breaking) inside new Function() script mode.
- */
-function stripImports(code: string): string {
-  // Remove "use client" / "use server" directives (with or without semicolons)
-  let result = code.replace(/^\s*["']use (client|server)["'];?\s*$/gm, "");
-
-  // Remove multiline imports: import ... from '...';
-  // Matches from `import` through the closing `from '...';` spanning multiple lines
-  result = result.replace(
-    /^import\s[\s\S]*?from\s+['"][^'"]+['"]\s*;?\s*$/gm,
-    "",
-  );
-
-  // The above regex uses $ in multiline mode which only matches end-of-line,
-  // so multiline imports won't be fully removed by it alone.
-  // Use a non-greedy block match for multiline imports instead:
-  result = result.replace(
-    /import\s+(?:type\s+)?(?:\*\s+as\s+\w+|\w+(?:\s*,\s*\{[^}]*\})?|\{[^}]*\})\s+from\s+['"][^'"]+['"];?/gs,
-    "",
-  );
-
-  // Side-effect imports: import 'foo';
-  result = result.replace(/^import\s+['"][^'"]+['"];?\s*$/gm, "");
-
-  return result;
-}
-
-/**
- * Strip `export` keywords and inject a `return` so named/default exports work
- * inside `new Function()` (which runs in script mode, not module mode).
- *
- * Handles:
- *   export default ...              → return ...
- *   export const Foo = ...          → const Foo = ...   (+ return Foo appended)
- *   export let Foo = ...            → let Foo = ...     (+ return Foo appended)
- *   export var Foo = ...            → var Foo = ...     (+ return Foo appended)
- *   export function Foo() {}        → function Foo() {} (+ return Foo appended)
- *   export class Foo {}             → class Foo {}      (+ return Foo appended)
- *   export { Foo, Bar }             → (removed)
- */
-function replaceExportDefault(code: string): string {
-  let result = code;
-
-  // If there's an `export default`, convert it to `return` and we're done
-  if (/^export\s+default\s+/m.test(result)) {
-    result = result.replace(/^export\s+default\s+/m, "return ");
-    result = result.replace(/^export\s+\{[^}]+\}\s*;?\s*$/gm, "");
-    return result;
-  }
-
-  // Track the last named export so we can return it at the end
-  let lastExportedName: string | null = null;
-
-  // export const/let/var Name = ... → const/let/var Name = ...
-  result = result.replace(
-    /^export\s+(const|let|var)\s+(\w+)/gm,
-    (_match, keyword, name) => {
-      lastExportedName = name;
-      return `${keyword} ${name}`;
-    },
-  );
-
-  // export function Name(...) { → function Name(...) {
-  result = result.replace(/^export\s+function\s+(\w+)/gm, (_match, name) => {
-    lastExportedName = name;
-    return `function ${name}`;
-  });
-
-  // export class Name { → class Name {
-  result = result.replace(/^export\s+class\s+(\w+)/gm, (_match, name) => {
-    lastExportedName = name;
-    return `class ${name}`;
-  });
-
-  // Remove bare re-export blocks: export { Foo, Bar };
-  result = result.replace(/^export\s+\{[^}]+\}\s*;?\s*$/gm, "");
-
-  // If we stripped a named export, append a return for it
-  if (lastExportedName) {
-    result = result.trimEnd() + `\nreturn ${lastExportedName};`;
-  }
-
-  return result;
-}
-
-/**
- * Babel transform JSX/TSX → plain JS.
- *
- * Synchronous on purpose — internal helpers stay sync. The public entry
- * `compileToolUiComponent` awaits `loadBabelTransform()` once before any
- * compilation runs, so `cachedBabelTransform` is guaranteed non-null here.
- */
 function babelTransform(code: string, language: "tsx" | "jsx"): string {
-  if (!cachedBabelTransform) {
-    throw new Error(
-      "[DynamicToolRenderer] babelTransform invoked before loadBabelTransform() resolved. " +
-        "Call `await loadBabelTransform()` from the public entry before any sync helper.",
-    );
-  }
-
-  const presets: string[] = ["react"];
-  if (language === "tsx") {
-    presets.push("typescript");
-  }
-
-  const result = cachedBabelTransform(code, {
-    presets,
-    filename: `dynamic-tool-component.${language}`,
-  });
-
-  if (!result.code) {
-    throw new Error("Babel transform produced empty output");
-  }
-
-  return result.code;
+  return babelTransformCore(
+    code,
+    language,
+    `dynamic-tool-component.${language}`,
+  );
 }
 
 // ---------------------------------------------------------------------------

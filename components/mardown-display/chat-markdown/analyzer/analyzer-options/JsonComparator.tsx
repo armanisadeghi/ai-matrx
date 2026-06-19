@@ -171,9 +171,9 @@ export default function JsonComparator() {
     };
     
     return (
-      <div key={index} className="border-l-4 border-red-500 pl-3 py-2 mb-2 bg-red-50">
-        <div className="font-medium text-red-800">{typeLabels[diff.type]}</div>
-        <div className="text-sm text-red-600">Path: {diff.path}</div>
+      <div key={index} className="border-l-4 border-red-500 pl-3 py-2 mb-2 bg-red-50 dark:bg-red-950/20">
+        <div className="font-medium text-red-800 dark:text-red-300">{typeLabels[diff.type]}</div>
+        <div className="text-sm text-red-600 dark:text-red-400">Path: {diff.path}</div>
         {diff.leftValue !== undefined && (
           <div className="text-sm">Left: {JSON.stringify(diff.leftValue)}</div>
         )}
@@ -199,7 +199,7 @@ export default function JsonComparator() {
             className="flex-1 p-2 font-mono text-sm resize-none border-0 focus:outline-none focus:ring-0 bg-background"
           />
           {leftError && (
-            <div className="p-2 bg-red-100 text-red-800 text-sm border-t">
+            <div className="p-2 bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300 text-sm border-t">
               Error: {leftError}
             </div>
           )}
@@ -214,7 +214,7 @@ export default function JsonComparator() {
             className="flex-1 p-2 font-mono text-sm resize-none border-0 focus:outline-none focus:ring-0 bg-background"
           />
           {rightError && (
-            <div className="p-2 bg-red-100 text-red-800 text-sm border-t">
+            <div className="p-2 bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300 text-sm border-t">
               Error: {rightError}
             </div>
           )}

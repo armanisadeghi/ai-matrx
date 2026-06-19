@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type { FieldAdapter, FieldDiffProps } from "./types";
 import type { DiffNode } from "../engine/types";
 import { formatValue, filterChanges } from "../engine/diff-utils";
+import { InlineTextDiff } from "./InlineTextDiff";
 
 /* ------------------------------------------------------------------ */
 /* Consistent color scheme (theme-aware: light + dark)                */
@@ -59,15 +60,31 @@ function TwoColumnRow({
 /* ------------------------------------------------------------------ */
 
 function TextDiffRenderer({ node }: FieldDiffProps) {
-  const oldText = node.oldValue != null ? String(node.oldValue) : "—";
-  const newText = node.newValue != null ? String(node.newValue) : "—";
+  const oldStr = node.oldValue != null ? String(node.oldValue) : "";
+  const newStr = node.newValue != null ? String(node.newValue) : "";
+
+  // A genuine edit on both sides → run the word/line-level engine so only the
+  // text that actually changed is highlighted (identical text stays plain).
+  if (node.changeType === "modified" && oldStr !== "" && newStr !== "") {
+    return (
+      <div className="grid grid-cols-[200px_1fr] text-xs">
+        <div className="border-r border-border" />
+        <div className="min-w-0 overflow-x-auto">
+          <InlineTextDiff original={oldStr} modified={newStr} />
+        </div>
+      </div>
+    );
+  }
+
+  const oldText = oldStr !== "" ? oldStr : "—";
+  const newText = newStr !== "" ? newStr : "—";
 
   return (
     <TwoColumnRow
       oldContent={
         <span
           className={
-            node.changeType === "removed" || node.changeType === "modified"
+            node.changeType === "removed"
               ? "text-red-700 dark:text-red-300"
               : "text-foreground/80"
           }
@@ -78,7 +95,7 @@ function TextDiffRenderer({ node }: FieldDiffProps) {
       newContent={
         <span
           className={
-            node.changeType === "added" || node.changeType === "modified"
+            node.changeType === "added"
               ? "text-green-700 dark:text-green-300"
               : "text-foreground/80"
           }
