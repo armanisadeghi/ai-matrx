@@ -18,7 +18,6 @@ import AdminSidebarSection from "./admin-menu/AdminSidebarSection";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
 import ShellIcon from "../ShellIcon";
-import SidebarCreatorHubToggle from "../controls/SidebarCreatorHubToggle";
 import SidebarWindowToggleIsland from "./SidebarWindowToggleIsland";
 import {
   navItemsForViewer,
@@ -72,16 +71,16 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
               <NavItem key={item.label} item={item} />
             ),
           )}
-          <AdminSidebarSection />
         </div>
 
         {/* Route menu — populated by RouteMenuSlot client island */}
         <div className="shell-sidebar-route-nav" />
       </nav>
 
-      {/* Footer — Windows + Settings (admin/env/debug live in AdminSidebarSection) */}
+      {/* Footer — admin section + Windows + Settings. Lives OUTSIDE the nav so it
+          is never hidden by the route-menu view switch (e.g. on /chat). */}
       <div className="shell-sidebar-footer">
-        <SidebarCreatorHubToggle />
+        <AdminSidebarSection />
         <SidebarWindowToggleIsland />
         <NavItem item={settingsItem} />
       </div>

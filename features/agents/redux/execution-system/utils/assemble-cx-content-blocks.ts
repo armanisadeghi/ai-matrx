@@ -38,6 +38,7 @@ import type {
 } from "@/features/agents/types/request.types";
 import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
+import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -141,6 +142,15 @@ export function reconstructBlockMarkdown(block: {
     case "info":
       return `<${block.type}>\n${content}\n</${block.type}>`;
     default:
+      // Fence-promoted special languages (```tasks, ```transcript,
+      // ```structured_info, …) that aren't explicitly cased above MUST
+      // reconstruct as their language fence — otherwise persistence drops
+      // the fence and the reload splitter can never re-detect the block
+      // (e.g. a ```tasks list silently degrades to raw checkbox markdown
+      // in the chat-from-DB path while direct render routes still work).
+      if (SPECIAL_CODE_LANGUAGES.includes(block.type)) {
+        return `\`\`\`${block.type}\n${content}\n\`\`\``;
+      }
       // Unknown types fall back to content — may lose structure but text
       // survives. Server-side render_block streams with novel types
       // should either extend this switch or move to chunk streaming.

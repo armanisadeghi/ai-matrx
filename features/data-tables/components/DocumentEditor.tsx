@@ -483,11 +483,8 @@ export default function DocumentEditor({
           </Button>
         </div>
       </div>
-      <div className="relative min-h-0 flex-1 p-4 border border-red-500">
-        <div
-          ref={containerRef}
-          className="absolute inset-0 p-4 border border-blue-500"
-        />
+      <div className="relative min-h-0 flex-1">
+        <div ref={containerRef} className="absolute inset-0" />
       </div>
 
       <MatrxDynamicPanelHost

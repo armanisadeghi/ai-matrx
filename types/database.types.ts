@@ -8930,6 +8930,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cx_working_documents: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       dashboard_saved_views: {
         Row: {
           created_at: string

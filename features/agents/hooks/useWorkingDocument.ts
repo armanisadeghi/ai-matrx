@@ -25,6 +25,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
 import {
   WORKING_DOCUMENT_CONTEXT_KEY,
@@ -36,6 +37,7 @@ import {
   setContextEntries,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
+  applyAgentWorkingDocContent,
   markWorkingDocError,
   markWorkingDocSaving,
   setWorkingDocBinding,
@@ -53,7 +55,15 @@ import {
   selectWorkingDocSaving,
   selectWorkingDocTitle,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { bindWorkingDocumentToNoteThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import {
+  bindWorkingDocumentToNoteThunk,
+  ensureWorkingDocumentRowThunk,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import {
+  rowToCxWorkingDocument,
+  updateCxWorkingDocumentContent,
+  type CxWorkingDocumentRow,
+} from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
 
 const AUTOSAVE_MS = 700;
@@ -69,6 +79,55 @@ export function useWorkingDocumentContextSync(conversationId: string): void {
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId));
   const content = useAppSelector(selectWorkingDocContent(conversationId));
   const binding = useAppSelector(selectWorkingDocBinding(conversationId));
+
+  // When enabled and not yet bound to a durable source, provision the default
+  // `cx_working_documents` backing row (the Scribe pattern). This flips the
+  // published context value to `persist: "auto"`, so the agent's ctx_patch edits
+  // persist server-side and round-trip back. Never overrides an explicit note
+  // binding the user picked.
+  useEffect(() => {
+    if (enabled && binding.kind === "none") {
+      void dispatch(ensureWorkingDocumentRowThunk({ conversationId }));
+    }
+  }, [dispatch, conversationId, enabled, binding.kind]);
+
+  // Live channel: the agent's ctx_patch writes land in cx_working_documents
+  // server-side and arrive here as UPDATEs. Merge them into the slice so every
+  // editor mount reflects the agent's edit in real time (matches Scribe's
+  // studio_documents realtime path).
+  useEffect(() => {
+    if (!enabled || binding.kind !== "cx_working_document" || !binding.id) {
+      return;
+    }
+    const channel = supabase
+      .channel(`cx-working-doc:${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cx_working_documents",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "DELETE") return;
+          const row = payload.new as CxWorkingDocumentRow | undefined;
+          if (!row) return;
+          const doc = rowToCxWorkingDocument(row);
+          dispatch(
+            applyAgentWorkingDocContent({
+              conversationId,
+              content: doc.content ?? "",
+            }),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [dispatch, conversationId, enabled, binding.kind, binding.id]);
 
   useEffect(() => {
     if (!enabled) {
@@ -159,6 +218,24 @@ export function useWorkingDocument(
       if (!dirtyRef.current) return;
       dispatch(setWorkingDocContent({ conversationId, content: value }));
       dirtyRef.current = false;
+
+      if (binding.kind === "cx_working_document" && binding.id) {
+        const docId = binding.id;
+        dispatch(markWorkingDocSaving({ conversationId, saving: true }));
+        void updateCxWorkingDocumentContent(docId, value)
+          .then(() =>
+            dispatch(markWorkingDocSaving({ conversationId, saving: false })),
+          )
+          .catch(() =>
+            dispatch(
+              markWorkingDocError({
+                conversationId,
+                error: "Could not save the working document.",
+              }),
+            ),
+          );
+        return;
+      }
 
       if (binding.kind === "note" && binding.id) {
         const noteId = binding.id;

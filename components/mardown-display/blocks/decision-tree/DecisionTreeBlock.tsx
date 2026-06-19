@@ -264,18 +264,16 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         >
           {isActive && node.question ? (
             <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <div
-                  className={`relative flex-shrink-0 p-1.5 rounded-md ${isActive ? "bg-white/20" : "bg-textured"}`}
-                >
+              <div className="flex gap-2 text-sm">
+                <span className="relative flex-shrink-0 mt-[calc(0.5*(1.375em-0.875rem))]">
                   <IconComponent
-                    className={`h-3.5 w-3.5 ${isActive ? "text-white" : ""}`}
+                    className={`h-6 w-6 ${isActive ? "text-white" : ""}`}
                   />
                   {isCompleted && (
-                    <CheckCircle2 className="h-2.5 w-2.5 text-green-500 absolute -top-0.5 -right-0.5" />
+                    <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-0.5 -right-0.5" />
                   )}
-                </div>
-                <p className="text-sm font-semibold leading-snug flex-1 min-w-0">
+                </span>
+                <p className="text-sm font-semibold leading-snug flex-1 min-w-0 pt-1">
                   {node.question}
                 </p>
                 {hasChildren && showFullTree && (
@@ -328,7 +326,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                   onClick={() => handleChoice("yes")}
                   disabled={!node.yes}
                   title="Yes"
-                  className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
+                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Yes
@@ -338,7 +336,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                   onClick={() => handleChoice("no")}
                   disabled={!node.no}
                   title="No"
-                  className="flex-1 inline-flex items-center justify-center gap-1 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
+                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
                 >
                   <XCircle className="h-3.5 w-3.5" />
                   No
