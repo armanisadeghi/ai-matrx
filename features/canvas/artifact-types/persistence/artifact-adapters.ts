@@ -60,14 +60,18 @@ export const GENERIC_ADAPTER: ArtifactPersistenceAdapter = {
 
 import { FLASHCARDS_ADAPTER } from "./flashcards-adapter";
 import { QUIZ_ADAPTER } from "./quiz-adapter";
-import { TASKS_ADAPTER } from "./tasks-adapter";
 
+// NB: `tasks` has NO artifact adapter. Tasks are a data-touching type (vision
+// R7): they are never auto-created on materialize. The tasks artifact converts
+// to real `ctx_tasks` explicitly, linked via the canonical `ctx_task_associations`
+// bridge (`entity_type='artifact'`) and owned by `TasksArtifact` — not by an
+// adapter. Materialize resolves `getAdapter(undefined)` → GENERIC (no
+// onMaterialize), so a tasks block materializes as a tracked canvas row only.
 /** adapter key → adapter. */
 export const ADAPTERS: Record<string, ArtifactPersistenceAdapter> = {
   generic: GENERIC_ADAPTER,
   flashcards: FLASHCARDS_ADAPTER,
   quiz: QUIZ_ADAPTER,
-  tasks: TASKS_ADAPTER,
 };
 
 /** Resolve an adapter by key, defaulting to the generic adapter. */

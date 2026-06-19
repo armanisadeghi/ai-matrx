@@ -64,6 +64,13 @@ export type TaskChecklistProps = {
   onStateChange?: (state: CheckboxStateType) => void;
   onSave?: (state: CheckboxStateType) => void;
   hideTitle?: boolean;
+  /**
+   * Hide the built-in Reset / Save / "Save as Tasks" action row. Set when the
+   * surrounding surface owns the convert/persist actions (e.g. the tasks
+   * artifact, which converts via `ctx_task_associations`) so there is exactly
+   * one convert path, not two.
+   */
+  hideActions?: boolean;
 };
 
 // Main component
@@ -73,6 +80,7 @@ const TaskChecklist = ({
   onStateChange = (state: CheckboxStateType) => {},
   onSave = (state: CheckboxStateType) => {},
   hideTitle = false,
+  hideActions = false,
 }: TaskChecklistProps) => {
   const [checklist, setChecklist] = useState<TaskItemType[]>([]);
   const [checkboxState, setCheckboxState] =
@@ -553,6 +561,7 @@ const TaskChecklist = ({
           })}
 
           {/* Bottom right save/reset/import buttons */}
+          {!hideActions && (
           <div className="mt-6 flex justify-end space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -613,6 +622,7 @@ const TaskChecklist = ({
               </TooltipContent>
             </Tooltip>
           </div>
+          )}
         </CardContent>
       </Card>
 

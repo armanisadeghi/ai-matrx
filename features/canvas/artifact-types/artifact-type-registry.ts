@@ -61,7 +61,11 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "recipe", aliases: ["recipe", "cooking_recipe"], standaloneAliases: ["cooking_recipe"], materializable: true },
   { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true },
   { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true },
-  { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom", adapter: "tasks" },
+  // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
+  // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user
+  // action, linked via `ctx_task_associations` (entity_type='artifact'). No
+  // artifact `adapter` → materialize never creates domain rows for tasks.
+  { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom" },
   // Artifact-wrapper-only (a bare code fence / image must NOT auto-materialize):
   { canvasType: "iframe", aliases: ["iframe"], standaloneAliases: [], materializable: true },
   { canvasType: "html", aliases: ["html"], standaloneAliases: [], materializable: true },
