@@ -73,9 +73,13 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // action, linked via `ctx_task_associations` (entity_type='artifact'). No
   // artifact `adapter` → materialize never creates domain rows for tasks.
   { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom" },
-  // Artifact-wrapper-only (a bare code fence / image must NOT auto-materialize):
+  // Deliverables — a webpage / a live component IS the artifact, so a bare
+  // ```html / ```react (or ```jsx/```tsx → react) fence materializes.
+  { canvasType: "html", aliases: ["html"], standaloneAliases: ["html"], materializable: true },
+  { canvasType: "react", aliases: ["react", "jsx", "tsx"], standaloneAliases: ["react"], materializable: true },
+  // Artifact-wrapper-only (a bare ```code fence / image must NOT auto-materialize
+  // — they'd flood the library with throwaway snippets):
   { canvasType: "iframe", aliases: ["iframe"], standaloneAliases: [], materializable: true },
-  { canvasType: "html", aliases: ["html"], standaloneAliases: [], materializable: true },
   { canvasType: "code", aliases: ["code"], standaloneAliases: [], materializable: true },
   { canvasType: "image", aliases: ["image"], standaloneAliases: [], materializable: true },
 ];

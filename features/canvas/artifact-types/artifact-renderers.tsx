@@ -36,6 +36,13 @@ export interface ArtifactRendererProps {
   blockIndex?: number;
   taskId?: string;
   isStreamActive?: boolean;
+  /**
+   * True when rendered on a PUBLIC / shared surface (anonymous viewer). Renderers
+   * that execute or script-enable author content (html, react) MUST downgrade to
+   * a safe, sandboxed, non-executing view when this is set — never run untrusted
+   * author HTML/React in a visitor's session. Defaults to false (owner view).
+   */
+  isPublic?: boolean;
 }
 
 type ArtifactRendererComponent = React.ComponentType<ArtifactRendererProps>;
@@ -66,6 +73,7 @@ const RENDERERS: Record<
   questionnaire: lazy(() => import("./renderers/QuestionnaireArtifact")),
   tasks: lazy(() => import("./renderers/TasksArtifact")),
   html: lazy(() => import("./renderers/HtmlArtifact")),
+  react: lazy(() => import("./renderers/ReactArtifact")),
   iframe: lazy(() => import("./renderers/IframeArtifact")),
   code: lazy(() => import("./renderers/CodeArtifact")),
   image: lazy(() => import("./renderers/ImageArtifact")),

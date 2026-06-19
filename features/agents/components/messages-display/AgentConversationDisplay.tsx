@@ -134,7 +134,10 @@ export function AgentConversationDisplay({
   const messages = useAppSelector(selectConversationMessages(conversationId));
   const phase = useAppSelector(selectStreamPhase(conversationId));
   const latestRequestId = useAppSelector(selectLatestRequestId(conversationId));
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Anchor for the scroll-on-submit behavior: the conversation's last user
+  // message. On a new submit we scroll THIS to the top of the viewport so the
+  // rest of the page opens up for the incoming answer (see effect below).
+  const lastUserRef = useRef<HTMLDivElement>(null);
 
   const isActive =
     phase === "connecting" ||
@@ -302,34 +305,39 @@ export function AgentConversationDisplay({
     return groups;
   }, [displayEntries]);
 
-  // Auto-scroll to bottom — fires ONLY when a new message lands at the
-  // bottom of the transcript (the LAST entry's key changed AND the entry
-  // count grew). The bottom-key check is what distinguishes a normal
-  // append (new user/assistant turn → scroll) from an older-history
-  // prepend (`loadOlderMessages` adds messages at the TOP → the last
-  // key is unchanged → do not scroll). Without this guard, pagination
-  // would yank the user back to the bottom on every page.
-  //
-  // We track the LAST raw entry key (not the group key) because new
-  // iterations within an existing assistant group must also trigger an
-  // autoscroll — appending an iteration extends the group but the group's
-  // key (anchored to its first member) is unchanged. Watching the entry-
-  // level last-key preserves the original scroll-on-append behavior.
-  const prevLengthRef = useRef(displayEntries.length);
-  const prevLastKeyRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    const count = displayEntries.length;
-    const lastKey = displayEntries[count - 1]?.key;
-    if (
-      count > prevLengthRef.current &&
-      lastKey &&
-      lastKey !== prevLastKeyRef.current
-    ) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Key of the conversation's LAST user turn — the scroll anchor.
+  const lastUserKey = useMemo(() => {
+    for (let i = displayGroups.length - 1; i >= 0; i--) {
+      if (displayGroups[i].kind === "user") return displayGroups[i].key;
     }
-    prevLengthRef.current = count;
-    prevLastKeyRef.current = lastKey;
-  }, [displayEntries]);
+    return undefined;
+  }, [displayGroups]);
+
+  // Scroll-on-submit: ONE smooth scroll that pins the just-submitted user
+  // message to the top of the viewport, opening the rest of the page for the
+  // agent's streaming answer. This deliberately does NOT follow the stream —
+  // there is no continuous auto-scroll, so token/iteration appends never yank
+  // the viewport around. It fires only when the last user turn actually
+  // CHANGES (a real new submit), never on stream chunks, older-history
+  // prepends, or the initial load of an existing conversation.
+  const prevLastUserKeyRef = useRef<string | undefined>(undefined);
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    const prev = prevLastUserKeyRef.current;
+    prevLastUserKeyRef.current = lastUserKey;
+    // Skip the first commit: opening an existing conversation should land
+    // wherever the scroll container puts it, not jump the last turn to top.
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    if (lastUserKey && lastUserKey !== prev) {
+      lastUserRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [lastUserKey]);
 
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
@@ -567,14 +575,16 @@ export function AgentConversationDisplay({
       <div className={`${spacingClass} p-2 scrollbar-hide`}>
         {displayGroups.map((group) => {
           if (group.kind === "user") {
+            const isLastUser = group.key === lastUserKey;
             return (
-              <AgentUserMessage
-                key={group.key}
-                conversationId={conversationId}
-                messageId={group.messageId}
-                surfaceKey={surfaceKey}
-                compact={compact}
-              />
+              <div key={group.key} ref={isLastUser ? lastUserRef : undefined}>
+                <AgentUserMessage
+                  conversationId={conversationId}
+                  messageId={group.messageId}
+                  surfaceKey={surfaceKey}
+                  compact={compact}
+                />
+              </div>
             );
           }
 
@@ -607,8 +617,6 @@ export function AgentConversationDisplay({
             />
           );
         })}
-
-        <div ref={bottomRef} />
       </div>
     </MarkdownContextMenuProvider>
   );

@@ -83,6 +83,11 @@ export const SPECIAL_CODE_LANGUAGES = [
   "mermaid",
   "svg",
   "chart",
+  // html + react are DELIVERABLES (a webpage / a live component), not throwaway
+  // code snippets — promote them so they materialize into persistent artifacts
+  // (render-by-id, no re-creation), unlike a bare ```code fence.
+  "html",
+  "react",
   // A ```matrx fence carries one Matrx Envelope (reference / secret / directive
   // / validation). Promoted to a first-class block so MatrxEnvelopeBlock renders
   // it (chips for references, a muted card otherwise) instead of raw JSON. The
@@ -94,7 +99,12 @@ export const SPECIAL_CODE_LANGUAGES = [
  * Fence-language aliases that normalize to a canonical special language
  * (e.g. ```mmd → mermaid). Mirrors CODE_LANGUAGE_ALIASES in block_detector.py.
  */
-export const CODE_LANGUAGE_ALIASES: Record<string, string> = { mmd: "mermaid" };
+export const CODE_LANGUAGE_ALIASES: Record<string, string> = {
+  mmd: "mermaid",
+  // jsx/tsx render + materialize as a live React component (same as ```react).
+  jsx: "react",
+  tsx: "react",
+};
 
 export function normalizeCodeLanguage(
   language: string | undefined,

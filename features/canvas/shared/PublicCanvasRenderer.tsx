@@ -67,6 +67,9 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
           mode="canvas"
           data={data}
           metadata={content.metadata as Record<string, unknown> | undefined}
+          // Anonymous surface: html/react renderers downgrade to a safe,
+          // non-executing sandboxed view (no attacker scripts in a visitor's session).
+          isPublic
         />
       </div>
     );

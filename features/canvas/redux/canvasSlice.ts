@@ -26,6 +26,7 @@ export type CanvasContentType =
   | "svg"
   | "chart"
   | "questionnaire"
+  | "react"
   | "tasks";
 
 /**

@@ -8,8 +8,8 @@ import React, {
 } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { Button } from "@/components/ui/button";
-import { addUtmSource } from "@/utils/url-utm";
 import {
   Download,
   Copy,
@@ -338,62 +338,6 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
 
   // Show loading indicator during streaming if we have partial content
   const showStreamingIndicator = isStreamActive && metadata?.hasPartialContent;
-
-  // ========================================================================
-  // MARKDOWN RENDERING
-  // ========================================================================
-
-  const renderMarkdown = (text: string) => {
-    // Handle links to preserve them as JSX elements
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = linkRegex.exec(text)) !== null) {
-      // Add text before the link
-      if (match.index > lastIndex) {
-        const beforeText = text.substring(lastIndex, match.index);
-        const processedBefore = beforeText
-          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-          .replace(
-            /(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g,
-            "<em>$1</em>",
-          );
-        parts.push(processedBefore);
-      }
-
-      // Add the link as a clickable element with UTM source
-      const linkText = match[1];
-      const linkUrl = addUtmSource(match[2]);
-      parts.push(
-        `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">${linkText}</a>`,
-      );
-
-      lastIndex = linkRegex.lastIndex;
-    }
-
-    // Add remaining text after the last link
-    if (lastIndex < text.length) {
-      const remainingText = text.substring(lastIndex);
-      const processedRemaining = remainingText
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-        .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>");
-      parts.push(processedRemaining);
-    }
-
-    // If no links were found, just process formatting
-    if (parts.length === 0) {
-      return text
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-        .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>");
-    }
-
-    return parts.join("");
-  };
 
   // ========================================================================
   // EXPORT FUNCTIONS
@@ -852,11 +796,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
-                            <span
-                              dangerouslySetInnerHTML={{
-                                __html: renderMarkdown(header),
-                              }}
-                            />
+                            <InlineMarkdownWithLinks text={header} />
                           )}
                         </div>
                         {isEditingEnabled && (
@@ -934,11 +874,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                             onFocus={(e) => e.target.select()}
                           />
                         ) : row[colIndex] ? (
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: renderMarkdown(row[colIndex]),
-                            }}
-                          />
+                          <InlineMarkdownWithLinks text={row[colIndex]} />
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}

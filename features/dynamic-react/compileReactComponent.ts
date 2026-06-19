@@ -24,6 +24,7 @@ import {
   patchScopeForMissingIdentifiers,
   getScopeFunctionParameters,
   TOOL_RENDERER_IMPORTS_CONFIG,
+  detectReactCapabilities,
 } from "@/features/tool-call-visualization/dynamic/allowed-imports";
 import {
   loadBabelTransform,
@@ -31,8 +32,13 @@ import {
   replaceExportDefault,
   babelTransform,
 } from "./compile-core";
+import { createMatrxSdk } from "./sdk/matrxSdk";
 
-/** Every allowlisted import — the broadest scope, for free-form React blocks. */
+/**
+ * Every allowlisted import — the broadest scope. Prefer `detectReactCapabilities`
+ * (demand-loaded) so heavy libs only chunk-in when referenced; this remains for
+ * callers that explicitly want the full set.
+ */
 export function getReactBlockImports(): string[] {
   return TOOL_RENDERER_IMPORTS_CONFIG.map((c) => c.path);
 }
@@ -72,12 +78,19 @@ export async function compileReactComponent({
 }: CompileReactOptions): Promise<ComponentType<Record<string, unknown>>> {
   await loadBabelTransform();
 
+  // Detect needed capabilities from the ORIGINAL source (before imports are
+  // stripped) so heavy libs (recharts/three/xlsx/react-pdf/…) only load — and
+  // only chunk-in — when the block actually references them.
+  const neededImports = detectReactCapabilities(code);
+
   let processed = stripImports(code);
   processed = babelTransform(processed, language, `react-block.${language}`);
   processed = replaceExportDefault(processed);
   processed = ensureComponentReturn(processed);
 
-  const scope = buildToolRendererScope(getReactBlockImports());
+  const scope = await buildToolRendererScope(neededImports);
+  // Expose the curated, RLS-safe data SDK to generated code as `matrx`.
+  scope.matrx = createMatrxSdk();
   patchScopeForMissingIdentifiers(processed, scope);
   const { paramNames, paramValues } = getScopeFunctionParameters(scope);
 

@@ -57,12 +57,12 @@ function babelTransform(code: string, language: "tsx" | "jsx"): string {
  *   5. Patch missing PascalCase identifiers
  *   6. Execute via `new Function()` to get the component
  */
-function compileComponentCode(
+async function compileComponentCode(
   code: string,
   language: "tsx" | "jsx",
   allowedImports: string[],
   existingScope?: Record<string, any>,
-): React.ComponentType<DynamicRendererProps> {
+): Promise<React.ComponentType<DynamicRendererProps>> {
   // 1. Strip imports
   let processedCode = stripImports(code);
 
@@ -75,7 +75,7 @@ function compileComponentCode(
   // 4. Build scope (reuse if provided, e.g. when utility_code already built it)
   const scope = existingScope
     ? { ...existingScope }
-    : buildToolRendererScope(allowedImports);
+    : await buildToolRendererScope(allowedImports);
 
   // 5. Patch missing identifiers
   patchScopeForMissingIdentifiers(processedCode, scope);
@@ -100,12 +100,12 @@ function compileComponentCode(
  * Compiles utility code and returns its exports merged into the scope.
  * The utility code should use `export` statements; the compiler collects them.
  */
-function compileUtilityCode(
+async function compileUtilityCode(
   code: string,
   language: "tsx" | "jsx",
   allowedImports: string[],
-): Record<string, any> {
-  const scope = buildToolRendererScope(allowedImports);
+): Promise<Record<string, any>> {
+  const scope = await buildToolRendererScope(allowedImports);
 
   let processedCode = stripImports(code);
   processedCode = babelTransform(processedCode, language);
@@ -160,16 +160,16 @@ type CompiledHeaderFn = (
   events?: ToolEventPayload[],
 ) => any;
 
-function compileHeaderFunction(
+async function compileHeaderFunction(
   code: string,
   language: "tsx" | "jsx",
   allowedImports: string[],
   contractVersion: ContractVersion,
   existingScope?: Record<string, any>,
-): CompiledHeaderFn {
+): Promise<CompiledHeaderFn> {
   const scope = existingScope
     ? { ...existingScope }
-    : buildToolRendererScope(allowedImports);
+    : await buildToolRendererScope(allowedImports);
 
   let processedCode = stripImports(code);
 
@@ -290,14 +290,14 @@ export async function compileToolUiComponent(
 
   let sharedScope: Record<string, any> | undefined;
   if (row.utility_code?.trim()) {
-    sharedScope = compileUtilityCode(
+    sharedScope = await compileUtilityCode(
       row.utility_code,
       language,
       allowed_imports,
     );
   }
 
-  const InlineComponent = compileComponentCode(
+  const InlineComponent = await compileComponentCode(
     row.inline_code,
     language,
     allowed_imports,
@@ -307,7 +307,7 @@ export async function compileToolUiComponent(
   let OverlayComponent: React.ComponentType<DynamicRendererProps> | null = null;
   if (row.overlay_code?.trim()) {
     try {
-      OverlayComponent = compileComponentCode(
+      OverlayComponent = await compileComponentCode(
         row.overlay_code,
         language,
         allowed_imports,
@@ -324,7 +324,7 @@ export async function compileToolUiComponent(
   let getHeaderExtras: CompiledHeaderFn | null = null;
   if (row.header_extras_code?.trim()) {
     try {
-      getHeaderExtras = compileHeaderFunction(
+      getHeaderExtras = await compileHeaderFunction(
         row.header_extras_code,
         language,
         allowed_imports,
@@ -342,7 +342,7 @@ export async function compileToolUiComponent(
   let getHeaderSubtitle: CompiledHeaderFn | null = null;
   if (row.header_subtitle_code?.trim()) {
     try {
-      getHeaderSubtitle = compileHeaderFunction(
+      getHeaderSubtitle = await compileHeaderFunction(
         row.header_subtitle_code,
         language,
         allowed_imports,

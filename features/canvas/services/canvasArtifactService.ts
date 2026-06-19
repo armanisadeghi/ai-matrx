@@ -31,6 +31,7 @@ const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> = 
     quiz: "quiz",
     presentation: "presentation",
     code: "code_snippet",
+    react: "code_snippet",
     html: "html_page",
     iframe: "html_page",
     // markdown-payload types — use "other" (valid enum value)
