@@ -842,53 +842,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
-    case "questionnaire":
-      // If server already parsed the data, render directly (no dynamic import)
-      if (block.serverData) {
-        return (
-          <BlockComponents.QuestionnaireRenderer
-            key={index}
-            data={block.serverData as any}
-            questionnaireId={`questionnaire-${messageId}-${index}`}
-            conversationId={conversationId}
-            messageId={messageId}
-            blockIndex={index}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="questionnaire"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      // Fallback: Dynamic import the parser (legacy / client-side parsing)
-      const QuestionnaireWithParser = React.lazy(async () => {
-        const { separatedMarkdownParser } =
-          await import("../../markdown-classification/processors/custom/parser-separated");
-        const parsedContent = separatedMarkdownParser(block.content);
-
-        return {
-          default: () => (
-            <BlockComponents.QuestionnaireRenderer
-              data={parsedContent}
-              questionnaireId={`questionnaire-${messageId}-${index}`}
-              conversationId={conversationId}
-              messageId={messageId}
-              blockIndex={index}
-            />
-          ),
-        };
-      });
-
-      return (
-        <React.Suspense key={index} fallback={null}>
-          <QuestionnaireWithParser />
-        </React.Suspense>
-      );
+    // `questionnaire` is a materializable artifact type — handled by the unified
+    // renderer early-branch above (resolveArtifactDef + hasArtifactRenderer →
+    // QuestionnaireArtifact, which persists answers to canvas_item_state). Its
+    // legacy case was removed when enrolled.
 
     // flashcards, quiz, presentation, cooking_recipe, timeline, research,
     // resources, progress_tracker, comparison_table, troubleshooting,

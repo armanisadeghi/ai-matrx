@@ -37,6 +37,7 @@ const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> = 
     mermaid: "diagram",
     svg: "diagram",
     chart: "data_table",
+    questionnaire: "other",
     research: "report",
     resources: "other",
     progress: "other",

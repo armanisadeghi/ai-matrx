@@ -63,6 +63,7 @@ const RENDERERS: Record<
   mermaid: lazy(() => import("./renderers/MermaidArtifact")),
   svg: lazy(() => import("./renderers/SvgArtifact")),
   chart: lazy(() => import("./renderers/ChartArtifact")),
+  questionnaire: lazy(() => import("./renderers/QuestionnaireArtifact")),
   tasks: lazy(() => import("./renderers/TasksArtifact")),
   html: lazy(() => import("./renderers/HtmlArtifact")),
   iframe: lazy(() => import("./renderers/IframeArtifact")),

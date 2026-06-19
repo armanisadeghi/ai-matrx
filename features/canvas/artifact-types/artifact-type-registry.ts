@@ -65,6 +65,9 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.
   { canvasType: "svg", aliases: ["svg"], standaloneAliases: ["svg"], materializable: true },
   { canvasType: "chart", aliases: ["chart"], standaloneAliases: ["chart"], materializable: true },
+  // Interactive form — answers persist per-viewer to canvas_item_state (generic
+  // adapter), so it materializes safely (no message-bound _matrxState).
+  { canvasType: "questionnaire", aliases: ["questionnaire"], standaloneAliases: ["questionnaire"], materializable: true, persistenceStrategy: "generic" },
   // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
   // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user
   // action, linked via `ctx_task_associations` (entity_type='artifact'). No

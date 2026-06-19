@@ -25,6 +25,7 @@ export type CanvasContentType =
   | "mermaid"
   | "svg"
   | "chart"
+  | "questionnaire"
   | "tasks";
 
 /**
