@@ -42,7 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
@@ -1053,12 +1053,12 @@ function KeywordForm({
 }: KeywordFormProps) {
   return (
     <div className="space-y-3 p-4">
-      <Input
+      <ProInput
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter a keyword…"
         className="h-9 text-xs rounded-lg"
-        style={{ fontSize: "16px" }}
+        wrapperClassName="w-full"
         onKeyDown={(e) => e.key === "Enter" && onSubmit()}
         autoFocus
       />

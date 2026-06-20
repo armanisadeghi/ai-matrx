@@ -16,8 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -348,28 +348,30 @@ export function TemplatesManager() {
     <div className="space-y-5 max-h-[70dvh] overflow-y-auto pr-1">
       <div className="space-y-2">
         <label className="text-sm font-medium">Name *</label>
-        <Input
+        <ProInput
           value={formData.name}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, name: e.target.value }))
           }
           placeholder="e.g., Company Research"
           className="text-base"
-          style={{ fontSize: "16px" }}
+          wrapperClassName="w-full"
         />
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium">Description</label>
-        <Textarea
+        <ProTextarea
           value={formData.description}
           onChange={(e) =>
             setFormData((prev) => ({ ...prev, description: e.target.value }))
           }
           placeholder="What this template is for..."
-          rows={2}
-          className="text-base resize-none"
-          style={{ fontSize: "16px" }}
+          autoGrow
+          minHeight={60}
+          maxHeight={160}
+          className="text-base"
+          wrapperClassName="w-full"
         />
       </div>
 
@@ -395,12 +397,12 @@ export function TemplatesManager() {
       <div className="space-y-2">
         <label className="text-sm font-medium">Keyword Templates</label>
         <div className="flex gap-2">
-          <Input
+          <ProInput
             value={keywordInput}
             onChange={(e) => setKeywordInput(e.target.value)}
             placeholder="Add keyword..."
             className="text-base flex-1"
-            style={{ fontSize: "16px" }}
+            wrapperClassName="flex-1"
             onKeyDown={(e) =>
               e.key === "Enter" && (e.preventDefault(), addKeyword())
             }
@@ -434,12 +436,12 @@ export function TemplatesManager() {
       <div className="space-y-2">
         <label className="text-sm font-medium">Default Tags</label>
         <div className="flex gap-2">
-          <Input
+          <ProInput
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             placeholder="Add tag..."
             className="text-base flex-1"
-            style={{ fontSize: "16px" }}
+            wrapperClassName="flex-1"
             onKeyDown={(e) =>
               e.key === "Enter" && (e.preventDefault(), addTag())
             }
@@ -532,13 +534,15 @@ export function TemplatesManager() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+          <ProInput
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search templates..."
-            className="pl-9 text-base h-9"
-            style={{ fontSize: "16px" }}
+            className="text-base h-9"
+            wrapperClassName="w-full"
+            startIcon={
+              <Search className="h-4 w-4 text-muted-foreground pointer-events-none" />
+            }
           />
         </div>
         <Button

@@ -17,6 +17,8 @@
 import {
   AlertCircle,
   AudioLines,
+  Briefcase,
+  Building2,
   Captions,
   CheckSquare,
   Code2,
@@ -27,6 +29,7 @@ import {
   FolderKanban,
   Globe,
   Image as ImageIcon,
+  Layers,
   LayoutGrid,
   List,
   Mic,
@@ -49,6 +52,11 @@ import {
   WorkingDocumentFooter,
 } from "./bodies/WorkingDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
+import {
+  OrgLayerBody,
+  ProjectLayerBody,
+  ScopeLayerBody,
+} from "./bodies/ContextLayerBodies";
 
 // ── Defs ─────────────────────────────────────────────────────────────────────
 
@@ -135,6 +143,43 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_document",
     editable: false,
     Body: GenericBody,
+  },
+
+  // Active-context layers — the org / scope(s) / project / task the user set
+  // via the scope-selection system, surfaced as navigable drawer items (one
+  // "Context" chip groups them). A scope shows its items + values; org/project
+  // show an identity card; a task reuses TaskBody (native editor).
+  {
+    blockTypes: ["ctx_org"],
+    typeLabel: "Organization",
+    icon: Building2,
+    themeKey: "input_project",
+    editable: false,
+    Body: OrgLayerBody,
+  },
+  {
+    blockTypes: ["ctx_scope"],
+    typeLabel: "Scope",
+    icon: Layers,
+    themeKey: "input_project",
+    editable: false,
+    Body: ScopeLayerBody,
+  },
+  {
+    blockTypes: ["ctx_project"],
+    typeLabel: "Project",
+    icon: Briefcase,
+    themeKey: "input_project",
+    editable: false,
+    Body: ProjectLayerBody,
+  },
+  {
+    blockTypes: ["ctx_task"],
+    typeLabel: "Task",
+    icon: CheckSquare,
+    themeKey: "input_task",
+    editable: true,
+    Body: TaskBody,
   },
 
   // Reference previews.

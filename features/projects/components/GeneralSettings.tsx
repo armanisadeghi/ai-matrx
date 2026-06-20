@@ -18,8 +18,8 @@ import {
   ProjectStatusPicker,
   ProjectPriorityPicker,
   ProjectDateField,
-  ProjectOrgPicker,
 } from "./ProjectInlineEditors";
+import { ProjectContextPicker } from "./ProjectContextSection";
 import type { Project, ProjectRole } from "../types";
 
 interface GeneralSettingsProps {
@@ -99,8 +99,8 @@ export function GeneralSettings({
         </Field>
       </div>
 
-      <Field label="Organization">
-        <ProjectOrgPicker
+      <Field label="Context">
+        <ProjectContextPicker
           project={proj}
           canEdit={canEdit}
           onPatch={applyPatch}

@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Loader2, Save, FolderPlus, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -307,13 +308,13 @@ export function TopicSettingsPanel({
             >
               Name
             </label>
-            <Input
+            <ProInput
               id="topic-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Brand Profile"
               className="h-9 rounded-lg"
-              style={{ fontSize: "16px" }}
+              wrapperClassName="w-full"
             />
           </div>
 
@@ -324,14 +325,16 @@ export function TopicSettingsPanel({
             >
               Description
             </label>
-            <Textarea
+            <ProTextarea
               id="topic-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this topic about?"
-              rows={4}
-              className="min-h-[110px] resize-y rounded-lg leading-relaxed"
-              style={{ fontSize: "16px" }}
+              autoGrow
+              minHeight={110}
+              maxHeight={240}
+              className="rounded-lg leading-relaxed"
+              wrapperClassName="w-full"
             />
           </div>
 

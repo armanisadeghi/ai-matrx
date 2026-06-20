@@ -23,20 +23,13 @@ One sentence: **artifacts are the wire format; canvas is the database.**
 - `app/(public)/canvas/` — public canvas surface (discovery, view)
 - Canvas panel embedded in authenticated routes alongside Chat / Runner
 
-**Feature code — `features/artifacts/`**
-- `core/` — artifact detection + dispatch from stream events
-- `custom-components/` — type-specific renderers
-- `discovery/` — browse/search surface
-- `hooks/` — consumer hooks
-- `leaderboard/` — top artifacts
-- `redux/` — slice (artifact state, in-stream partials)
-- `services/` — persistence + fetch
-- `shared/` — cross-type primitives
-- `social/` — sharing, embedding, reactions
-- `utils/` — helpers
-- `canvas-block-meta.ts` — type metadata registry
-- `ARTIFACT-MODEL-GUIDELINES.md` — the model-facing spec
-- `docs/` — deeper references
+**Feature code — `features/artifacts/`** (thin — the `cx_artifact` discovery layer only)
+- `types.ts` — `cx_artifact` row/record types + `ArtifactType` enum
+- `components/` — `CmsArtifactList` / `CmsArtifactDetail` (the `/artifacts` library surface)
+- `docs/ARTIFACT_VISION_AND_DESIGN.md` — the target design (R1–R8) + references
+
+> The type **registry, one-renderer-per-type, materialization, and persistence
+> adapters** live in `features/canvas/artifact-types/` + `features/canvas/materialization/` — **not here.** See the Materialization section.
 
 **Feature code — `features/canvas/`**
 - `core/` — the global right-side canvas surface
@@ -99,13 +92,12 @@ Streamed as `content_block` NDJSON events (see [`features/agents/docs/STREAMING_
 
 > Adapter interface + registry: `features/canvas/artifact-types/persistence/`. See the **Materialization (LIVE)** section below for the full pipeline.
 
-### Flow 3 — Data-touching artifacts: tracked proposal → Convert (tasks)
+### Flow 3 — Data-touching artifacts: tracked proposal → Convert (tasks, tables)
 
-Data-touching types (tasks) are **never auto-created** (vision R7). The materialized artifact is a *tracked proposal*.
+Data-touching types are **never auto-bound** to a real record (vision R7) — agents emit them constantly, so auto-creating would flood the user's data. The materialized artifact is a *tracked proposal* with an explicit **Convert** that links it; thereafter the domain record is truth and `canvas_items.external_system` marks "linked."
 
-1. A `tasks` artifact renders the proposed checklist + an explicit **"Convert to tasks"** action (`TasksArtifact.tsx`).
-2. Convert creates real `ctx_tasks` via the canonical **`ctx_task_associations`** bridge (`entity_type='artifact'`, `entity_id=<canvas item id>`) — the same path `TaskPreviewWindow`/`TaskChipRow` use everywhere. No parallel linkage model.
-3. After Convert the artifact flips to a **live mirror** (`TaskChipRow`) of the real tasks; their status round-trips through the normal task surfaces. "Proposed vs linked" is derived from `canvas_items.external_system`.
+- **Tasks** (`TasksArtifact.tsx`): **"Convert to tasks"** creates real `ctx_tasks` via the canonical **`ctx_task_associations`** bridge (`entity_type='artifact'`, `entity_id=<canvas item id>`) — the same path `TaskPreviewWindow`/`TaskChipRow` use everywhere. After Convert the artifact is a live `TaskChipRow` mirror.
+- **Tables** (`TableArtifact.tsx`): an editable markdown table whose inline edits persist to the artifact (the agent sees current values via R8). **"Convert to table"** (no dialog, named from the title) creates a `udt_datasets` row via the shared `createDatasetFromTable` primitive + links it → the live realtime two-way `UserTableViewer` becomes truth. CSV blocks get **Save as table** (same primitive). One markdown-table parser: `parseMarkdownTable`.
 
 ### Flow 4 — Canvas persistence + versioning
 
@@ -195,6 +187,8 @@ Rules:
 
 ## Change log
 
+- `2026-06-19` (4) — claude: **Marathon Wave 2 — tables two-way.** A `table` artifact is an editable markdown table that does **not** auto-bind; inline edits persist to the artifact (agent sees current values via R8). One-click **Convert to table** (no dialog, named from the title) creates a real `udt_datasets` row via the shared **`createDatasetFromTable`** primitive + links it (`external_system="udt_datasets"`) → the live realtime two-way `UserTableViewer` becomes truth. CSV blocks gain **Save as table** (same primitive). The markdown-table parser is extracted to shared **`parseMarkdownTable`** (renderer + artifact path parse identically). Mirrors `TasksArtifact`'s proposal→Convert→mirror.
+- `2026-06-19` (3) — claude: **Marathon Wave 1 — foundation.** Deleted the dead competing-persistence path (`useArtifactPersistence.ts` + `extractArtifacts.ts`, zero callers). R1 version round-trip: `content-splitter-v2` carries `version` from the wire form into block metadata (passthrough/render read the real chain version, not 1). `useArtifactState` is inert for non-UUID ids (no FK-failing `canvas_item_state` writes pre-materialize). New **`refetchSingleMessage`** thunk (re-pull one `cx_message`, patch one slice entry — no whole-conversation reload). `cx_artifact.canvas_item_id` partial UNIQUE (closes the discovery-index race).
 - `2026-06-19` (2) — claude: **Render-block coverage pass.** Audited every block type (stream accumulator + splitter + BlockRenderer + registry): every real-information type materializes. Enrolled **`svg` + `chart`** as first-class artifacts (durable visuals, like `mermaid`/`diagram`) — registry + `CanvasContentType` + discovery map (svg→diagram, chart→data_table) + `SvgArtifact`/`ChartArtifact`; legacy BlockRenderer cases removed; verified live (```svg/```chart fences → `<artifact id>` + render-by-id). Media (image/video/audio/**youtube**) is file-backed (not artifacts) by design; ephemeral/UI types (thinking, tool_call, status, editor_*, decision, broker, …) correctly excluded. **Deferred:** `questionnaire` — interactive, but persists answers via message-bound `_matrxState` (`useMessageBlockPersistence`), so enrolling it needs a Wave-2-style state migration to `canvas_item_state` first (would otherwise regress working answer-persistence).
 - `2026-06-19` — claude: **Vision build R1–R8 (Waves 0–4).** Rewrite converged from the foreign `artifact_ref` content block to the canonical **R1 text form** `<artifact type id version title>body</artifact>` (`artifactWire.ts`) — one stored form the UI renders by id (R3 recognition via `isMaterializedArtifactId`), the model reads natively (fixes model-blindness with zero server work), and archives durably; all `artifact_ref` plumbing deleted, 19 live messages migrated. **Tasks** are now tracked proposals (vision R7) — auto-create removed, explicit **Convert** via `ctx_task_associations`. **Interaction state** round-trips to `canvas_item_state` (recipe/presentation/comparison wired to `useArtifactState`, joining progress/decision-tree/troubleshooting). **Server (aidream):** `conversation_artifacts` injected as read-only context each turn (`artifact_context.py`, R8) — the model sees the latest copy + status + the user's interaction state. **HTML publish** made server-idempotent. Source of truth: [`docs/ARTIFACT_VISION_AND_DESIGN.md`](docs/ARTIFACT_VISION_AND_DESIGN.md). Deploy-pending: aidream prod, mymatrx publish live-verify.
 - `2026-06-14` — claude: **Mermaid structural editing widened 5 → 9 types** + **viewport sizing overhaul**. Added round-trip-safe adapters for **journey, quadrant, state (flat stateDiagram-v2), and ER** (outline + code editing; visual tap-to-edit stays flowchart-only); each guarantees lossless round-trip or downgrades to code-only. New `MermaidViewport` does **axis-aware fit with a readability floor** (bounded frame; tall diagrams fill width + scroll down, wide mind maps fill height + scroll across; never auto-shrinks below 50%). Plus review fixes: Code-mode unmount draft-loss, CodeMirror dark theme, fidelity-gate serialize-error transparency, svg-id-map loud version-drift degrade, and an en/em-dash arrow sanitizer normalizer. 40 adapter + sanitizer tests green. See [`docs/handoffs/MERMAID_RENDER_BLOCK_HANDOFF.md`](../../docs/handoffs/MERMAID_RENDER_BLOCK_HANDOFF.md).

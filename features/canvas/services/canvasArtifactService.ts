@@ -98,6 +98,9 @@ export interface CanvasArtifactRow {
     version: number;
     parent_canvas_id: string | null;
     source_type: string;
+    /** Domain-record link (R6/R7): e.g. "udt_datasets", "ctx_tasks", "code_files". */
+    external_system: string | null;
+    external_id: string | null;
     created_at: string;
     updated_at: string;
 }

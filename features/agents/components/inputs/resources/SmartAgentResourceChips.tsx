@@ -26,6 +26,7 @@ import {
   Code2,
   Webhook,
   Folder,
+  Layers,
   LayoutGrid,
   Captions,
   AudioLines,
@@ -56,6 +57,7 @@ import { DataRefHoverPreview } from "@/features/agents/components/previews/DataR
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
+import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
@@ -350,6 +352,11 @@ export function SmartAgentResourceChips({
   const workingDocTitle = useAppSelector(selectWorkingDocTitle(conversationId));
   const drawer = useContextItemDrawer();
 
+  // The scope-selection system (org / scopes / project / task) collapses into a
+  // SINGLE "Context" chip — clicking it opens the drawer and the user navigates
+  // each layer prev/next, exactly like any other grouped context items.
+  const contextLayers = useActiveContextLayerItems(conversationId);
+
   // The live working document is CONTEXT (re-sent every turn), not an
   // attachment — when enabled it leads the strip as a differentiated chip and
   // joins the drawer's nav list.
@@ -386,6 +393,10 @@ export function SmartAgentResourceChips({
     drawer.openAt(drawerItems, 0);
   }, [drawerItems, drawer]);
 
+  const openContextLayers = useCallback(() => {
+    drawer.openAt(contextLayers.items, 0);
+  }, [contextLayers.items, drawer]);
+
   const handleRemove = useCallback(
     (resourceId: string) => {
       dispatch(removeResource({ conversationId, resourceId }));
@@ -407,10 +418,21 @@ export function SmartAgentResourceChips({
   );
 
   if (!showAttachments) return null;
-  if (resources.length === 0 && !workingDocItem) return null;
+  if (resources.length === 0 && !workingDocItem && contextLayers.count === 0)
+    return null;
 
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
+      {contextLayers.count > 0 && (
+        <ResourceAttachmentTile
+          typeLabel="Context"
+          title={contextLayers.summary}
+          icon={Layers}
+          themeKey="input_project"
+          onClick={openContextLayers}
+          className="ring-1 ring-inset ring-primary/40 bg-primary/5"
+        />
+      )}
       {workingDocItem && (
         <ResourceAttachmentTile
           typeLabel="Context"

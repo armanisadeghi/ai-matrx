@@ -260,6 +260,34 @@ function truncateLabel(label: string, max: number): string {
 }
 
 /**
+ * Radial label layout: anchor on the outer rim, baseline aimed at the hub.
+ * When that baseline would render upside-down, flip 180° and use `end` anchor
+ * so the string still starts at the rim and reads inward.
+ */
+function radialLabelLayout(
+  cx: number,
+  cy: number,
+  outerR: number,
+  midDeg: number,
+): {
+  x: number;
+  y: number;
+  rotation: number;
+  anchor: "start" | "end";
+} {
+  const pos = polar(cx, cy, outerR, midDeg);
+  const inwardDeg = (Math.atan2(cy - pos.y, cx - pos.x) * 180) / Math.PI;
+  let rotation = inwardDeg;
+  let anchor: "start" | "end" = "start";
+  const norm = ((rotation % 360) + 360) % 360;
+  if (norm > 90 && norm < 270) {
+    rotation += 180;
+    anchor = "end";
+  }
+  return { x: pos.x, y: pos.y, rotation, anchor };
+}
+
+/**
  * The wheel is drawn with segment i centered at angle `(i + 0.5) * seg` measured
  * clockwise from the top (pointer position). To bring the winner under the fixed
  * top pointer we rotate the wheel by the NEGATIVE of the winner's center angle,
@@ -313,13 +341,24 @@ function pointerAngleDeg(
   return (Math.atan2(y, x) * 180) / Math.PI + 90;
 }
 
-function slugifyContextKey(text: string): string {
-  const slug = text
+const WHEEL_CONTEXT_PREFIX = "wheel_";
+
+function slugifyKeySuffix(text: string): string {
+  return text
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_|_$/g, "");
-  return slug ? `wheel_${slug}` : "wheel_pick";
+}
+
+/** Every wheel context key MUST start with `wheel_` to avoid colliding with generic slots. */
+function ensureWheelContextKey(raw: string, fallbackSuffix = "pick"): string {
+  const trimmed = raw.trim();
+  const withoutPrefix = trimmed.startsWith(WHEEL_CONTEXT_PREFIX)
+    ? trimmed.slice(WHEEL_CONTEXT_PREFIX.length)
+    : trimmed;
+  const suffix = slugifyKeySuffix(withoutPrefix) || fallbackSuffix;
+  return `${WHEEL_CONTEXT_PREFIX}${suffix}`;
 }
 
 function resolveWheelContextKey(
@@ -328,9 +367,9 @@ function resolveWheelContextKey(
 ): string {
   const args = (entry.arguments ?? {}) as Record<string, unknown>;
   if (typeof args.context_key === "string" && args.context_key.trim()) {
-    return args.context_key.trim();
+    return ensureWheelContextKey(args.context_key);
   }
-  return slugifyContextKey(title || "pick");
+  return ensureWheelContextKey(title || "pick");
 }
 
 function resolveWheelContextValue(
@@ -543,23 +582,15 @@ const Wheel: React.FC<WheelProps> = ({
             ? "var(--color-primary-foreground, hsl(var(--primary-foreground)))"
             : SEGMENT_TEXT_FILLS[i % SEGMENT_TEXT_FILLS.length];
           const dimOpacity = settled && !isWinner ? 0.55 : 1;
-          // Radial labels — every spoke starts at the outer rim and reads inward
-          // toward the hub. Bottom-half segments flip 180° so text stays upright.
-          const toCenterRot = mid + 90;
-          const onBottom = mid > 90 && mid < 270;
-          const labelRot = single
-            ? 0
-            : onBottom
-              ? toCenterRot + 180
-              : toCenterRot;
-          const labelPos = single
-            ? { x: cx, y: cy - r * 0.4 }
-            : polar(cx, cy, outerR, mid);
-          const labelAnchor: "start" | "middle" | "end" = single
-            ? "middle"
-            : onBottom
-              ? "end"
-              : "start";
+          let labelPos = { x: cx, y: cy - r * 0.4 };
+          let labelRot = 0;
+          let labelAnchor: "start" | "middle" | "end" = "middle";
+          if (!single) {
+            const radial = radialLabelLayout(cx, cy, outerR, mid);
+            labelPos = { x: radial.x, y: radial.y };
+            labelRot = radial.rotation;
+            labelAnchor = radial.anchor;
+          }
           return (
             <g key={i}>
               <title>{label}</title>

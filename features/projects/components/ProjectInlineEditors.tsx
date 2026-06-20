@@ -30,8 +30,8 @@ import {
   Archive,
   Plus,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -187,7 +187,7 @@ export function InlineProjectName({
 
   if (editing) {
     return (
-      <Input
+      <ProInput
         autoFocus
         value={draft}
         disabled={busy}
@@ -201,7 +201,9 @@ export function InlineProjectName({
         }}
         onBlur={commit}
         className={cn("h-auto py-1", textCls, className)}
+        wrapperClassName="w-full"
         maxLength={80}
+        showCopyButton={false}
       />
     );
   }
@@ -269,7 +271,7 @@ export function InlineProjectDescription({
   if (editing) {
     return (
       <div className="space-y-1">
-        <Textarea
+        <ProTextarea
           autoFocus
           value={draft}
           disabled={busy}
@@ -281,10 +283,13 @@ export function InlineProjectDescription({
             }
           }}
           onBlur={commit}
-          rows={3}
+          autoGrow
+          minHeight={80}
+          maxHeight={200}
           maxLength={2000}
           placeholder="What is this project about? Goals, scope, links…"
-          className="w-full min-w-0 text-sm resize-y break-words"
+          className="w-full min-w-0 text-sm break-words"
+          wrapperClassName="w-full"
         />
         <p className="text-[11px] text-muted-foreground">
           {busy ? "Saving…" : "Esc to cancel · saves when you click away"}

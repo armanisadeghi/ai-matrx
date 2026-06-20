@@ -19,6 +19,8 @@ import {
   GripVertical,
   X,
   Pencil,
+  SlidersHorizontal,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DndContext,
@@ -39,22 +41,26 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
+import { AiReviewQuotaDialog } from "./AiReviewQuotaDialog";
 import type {
   AutonomyLevel,
   ResearchTemplate,
   SuggestRequest,
   SuggestApplied,
   ResearchKeyword,
+  ResearchTopic,
+  TopicQuotaFields,
 } from "../../types";
 import { keywordTemplatesFromJson } from "../../types";
 import {
   getKeywords,
+  getTopic,
   deleteKeyword as deleteKeywordService,
   updateKeywordText,
   updateTopicMeta,
@@ -96,6 +102,8 @@ type AiPhase =
       // True once the user clicks "Start Research"; UI keeps the review
       // canvas mounted so the navigation feels continuous.
       isLaunching: boolean;
+      /** Live topic quota ladder — editable before launch. */
+      quotas: TopicQuotaFields;
     }
   | { status: "error"; topicId: string | null; message: string };
 
@@ -416,7 +424,7 @@ function EditableText({
 
   if (editing) {
     return multiline ? (
-      <Textarea
+      <ProTextarea
         ref={inputRef as React.RefObject<HTMLTextAreaElement>}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -432,16 +440,15 @@ function EditableText({
           }
         }}
         disabled={busy}
-        rows={4}
-        className={cn(
-          "text-base sm:text-lg leading-relaxed resize-none",
-          className,
-        )}
-        style={{ fontSize: "16px" }}
+        autoGrow
+        minHeight={100}
+        maxHeight={240}
+        className={cn("text-base sm:text-lg leading-relaxed", className)}
         placeholder={placeholder}
+        wrapperClassName="w-full"
       />
     ) : (
-      <Input
+      <ProInput
         ref={inputRef as React.RefObject<HTMLInputElement>}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -460,8 +467,9 @@ function EditableText({
           "h-auto py-2 text-3xl sm:text-4xl font-bold tracking-tight leading-tight",
           className,
         )}
-        style={{ fontSize: "16px" }}
         placeholder={placeholder}
+        wrapperClassName="w-full"
+        showCopyButton={false}
       />
     );
   }
@@ -527,8 +535,59 @@ interface KeywordRow {
 let kwRowCounter = 0;
 const genKwRowId = () => `kw-${++kwRowCounter}`;
 
+function quotasFromTopic(topic: ResearchTopic): TopicQuotaFields {
+  return {
+    max_keywords: topic.max_keywords,
+    scrapes_per_keyword: topic.scrapes_per_keyword,
+    analyses_per_keyword: topic.analyses_per_keyword,
+    max_keyword_syntheses: topic.max_keyword_syntheses,
+    max_project_syntheses: topic.max_project_syntheses,
+    max_documents: topic.max_documents,
+    max_tag_consolidations: topic.max_tag_consolidations,
+    max_auto_tag_calls: topic.max_auto_tag_calls,
+  };
+}
+
+function provisionalQuotas(maxKeywords: number): TopicQuotaFields {
+  return {
+    max_keywords: maxKeywords,
+    scrapes_per_keyword: 5,
+    analyses_per_keyword: 3,
+    max_keyword_syntheses: 3,
+    max_project_syntheses: 1,
+    max_documents: 1,
+    max_tag_consolidations: 0,
+    max_auto_tag_calls: 0,
+  };
+}
+
+async function persistUnsavedKeywordsWithinQuota(
+  topicId: string,
+  rows: KeywordRow[],
+  maxKeywords: number,
+  addKeywords: (
+    topicId: string,
+    body: { keywords: string[] },
+  ) => Promise<Response>,
+): Promise<KeywordRow[]> {
+  const withinQuota = rows.slice(0, maxKeywords).filter((r) => !r.dbId);
+  if (withinQuota.length === 0) return rows;
+
+  await addKeywords(topicId, {
+    keywords: withinQuota.map((r) => r.value),
+  });
+  const persisted = await getKeywords(topicId);
+  const lookup = new Map(persisted.map((k) => [k.keyword.toLowerCase(), k.id]));
+  return rows.map((r) => {
+    if (r.dbId) return r;
+    const id = lookup.get(r.value.toLowerCase());
+    return id ? { ...r, dbId: id } : r;
+  });
+}
+
 interface KeywordEditorProps {
   rows: KeywordRow[];
+  maxKeywords: number;
   onAdd: (value: string) => void;
   onRemove: (row: KeywordRow) => void;
   onRename: (row: KeywordRow, next: string) => void;
@@ -537,6 +596,7 @@ interface KeywordEditorProps {
 
 function KeywordEditor({
   rows,
+  maxKeywords,
   onAdd,
   onRemove,
   onRename,
@@ -593,6 +653,7 @@ function KeywordEditor({
                 <SortableKeywordRow
                   key={row.localId}
                   row={row}
+                  overQuota={i >= maxKeywords}
                   animate={isFirstRender}
                   delayMs={isFirstRender ? i * 50 : 0}
                   onRename={(next) => onRename(row, next)}
@@ -641,6 +702,7 @@ function KeywordEditor({
 
 interface SortableKeywordRowProps {
   row: KeywordRow;
+  overQuota: boolean;
   animate: boolean;
   delayMs: number;
   onRename: (next: string) => void;
@@ -649,6 +711,7 @@ interface SortableKeywordRowProps {
 
 function SortableKeywordRow({
   row,
+  overQuota,
   animate,
   delayMs,
   onRename,
@@ -702,9 +765,14 @@ function SortableKeywordRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group flex items-center gap-2 rounded-xl border border-border/60 bg-card px-2 py-1.5 transition-colors",
-        "hover:border-violet-500/30 hover:bg-violet-500/[0.03]",
-        editing && "border-violet-500/50 bg-violet-500/[0.04]",
+        "group flex items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors",
+        overQuota
+          ? "border-destructive/50 bg-destructive/[0.06] hover:border-destructive/70 hover:bg-destructive/10"
+          : "border-border/60 bg-card hover:border-violet-500/30 hover:bg-violet-500/[0.03]",
+        editing &&
+          (overQuota
+            ? "border-destructive/70 bg-destructive/10"
+            : "border-violet-500/50 bg-violet-500/[0.04]"),
         isDragging && "shadow-lg shadow-violet-500/10 z-10",
         animate &&
           "animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-300 fill-mode-both",
@@ -743,7 +811,12 @@ function SortableKeywordRow({
         <button
           type="button"
           onClick={startEdit}
-          className="flex-1 min-w-0 text-left text-base font-medium leading-tight py-0.5 truncate hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+          className={cn(
+            "flex-1 min-w-0 text-left text-base font-medium leading-tight py-0.5 truncate transition-colors",
+            overQuota
+              ? "text-destructive hover:text-destructive/80"
+              : "hover:text-violet-700 dark:hover:text-violet-300",
+          )}
         >
           {row.value}
         </button>
@@ -795,6 +868,10 @@ interface AiCanvasProps {
   onStart?: () => void;
   onViewFirst?: () => void;
   isLaunching?: boolean;
+  maxKeywords?: number;
+  droppedByQuotaCount?: number;
+  onOpenSettings?: () => void;
+  canStart?: boolean;
 }
 
 function AiCanvas({
@@ -814,13 +891,21 @@ function AiCanvas({
   onStart,
   onViewFirst,
   isLaunching,
+  maxKeywords = 5,
+  droppedByQuotaCount = 0,
+  onOpenSettings,
+  canStart = true,
 }: AiCanvasProps) {
+  void applied;
   const isReview = variant === "review";
   const hasTitle = !!title;
   const hasDescription = description.length > 0;
   const hasKeywords = isReview
     ? !!reviewKeywordRows && reviewKeywordRows.length > 0
     : keywords.length > 0;
+  const keywordCount = reviewKeywordRows?.length ?? 0;
+  const overQuotaCount = isReview ? Math.max(0, keywordCount - maxKeywords) : 0;
+  const hasQuotaConflict = isReview && overQuotaCount > 0;
 
   return (
     <div className="space-y-10">
@@ -910,25 +995,80 @@ function AiCanvas({
       {isReview ? (
         <div
           className={cn(
-            "rounded-2xl border border-border/50 bg-card/40 p-4 sm:p-5 space-y-4",
+            "rounded-2xl border p-4 sm:p-5 space-y-4",
             "animate-in fade-in duration-500 fill-mode-both",
+            hasQuotaConflict
+              ? "border-destructive/40 bg-destructive/[0.04]"
+              : "border-border/50 bg-card/40",
           )}
         >
-          <div className="flex items-baseline justify-between gap-3">
+          {hasQuotaConflict && (
+            <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="space-y-1 min-w-0">
+                <p className="font-medium leading-snug">
+                  {overQuotaCount} keyword{overQuotaCount !== 1 ? "s" : ""}{" "}
+                  exceed your pipeline limit ({maxKeywords} max)
+                </p>
+                <p className="text-xs text-destructive/90 leading-relaxed">
+                  {droppedByQuotaCount > 0
+                    ? `The AI suggested ${keywordCount} keywords; ${droppedByQuotaCount} were not saved because of this cap. `
+                    : ""}
+                  Raise the limit in Pipeline settings or remove the highlighted
+                  keywords before starting research — only the first{" "}
+                  {maxKeywords} run in the pipeline.
+                </p>
+                {onOpenSettings && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenSettings}
+                    className="mt-1 h-8 gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    Pipeline settings
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className="flex items-baseline gap-2">
               <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-[0.18em]">
                 Keywords
               </span>
               {reviewKeywordRows && (
-                <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                  {reviewKeywordRows.length}
+                <span
+                  className={cn(
+                    "text-[11px] tabular-nums",
+                    hasQuotaConflict
+                      ? "text-destructive font-semibold"
+                      : "text-muted-foreground/70",
+                  )}
+                >
+                  {keywordCount} / {maxKeywords} max
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-muted-foreground/60">
-              These drive your search. Click to edit · drag to reorder · ✕ to
-              remove
-            </span>
+            <div className="flex items-center gap-2">
+              {onOpenSettings && !hasQuotaConflict && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onOpenSettings}
+                  className="h-8 gap-1.5 text-muted-foreground"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Pipeline settings
+                </Button>
+              )}
+              <span className="text-[11px] text-muted-foreground/60">
+                Click to edit · drag to reorder · ✕ to remove
+              </span>
+            </div>
           </div>
           {reviewKeywordRows &&
           onAddKeyword &&
@@ -937,6 +1077,7 @@ function AiCanvas({
           onReorderKeywords ? (
             <KeywordEditor
               rows={reviewKeywordRows}
+              maxKeywords={maxKeywords}
               onAdd={onAddKeyword}
               onRemove={onRemoveKeyword}
               onRename={onRenameKeyword}
@@ -995,8 +1136,8 @@ function AiCanvas({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
           <Button
             onClick={onStart}
-            disabled={isLaunching}
-            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white flex-1 sm:flex-none sm:px-7 min-h-[44px] shadow-sm shadow-violet-500/20"
+            disabled={isLaunching || !canStart}
+            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white flex-1 sm:flex-none sm:px-7 min-h-[44px] shadow-sm shadow-violet-500/20 disabled:opacity-50"
           >
             {isLaunching ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1005,6 +1146,12 @@ function AiCanvas({
             )}
             Start Research
           </Button>
+          {!canStart && (
+            <p className="text-xs text-destructive sm:max-w-xs leading-snug">
+              Resolve keyword limits before starting — remove extras or raise
+              the cap in Pipeline settings.
+            </p>
+          )}
           <Button
             variant="outline"
             onClick={onViewFirst}
@@ -1064,6 +1211,7 @@ export default function ResearchInitForm() {
 
   // ── AI state machine ──────────────────────────────────────────────────────
   const [aiPhase, setAiPhase] = useState<AiPhase>({ status: "idle" });
+  const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
@@ -1355,6 +1503,7 @@ export default function ResearchInitForm() {
         suggestedKeywords: finalSuggestedKeywords,
         keywordRows: null,
         isLaunching: false,
+        quotas: provisionalQuotas(applied.max_keywords ?? 3),
       });
     } catch (err) {
       setAiPhase((prev) => ({
@@ -1367,14 +1516,68 @@ export default function ResearchInitForm() {
   };
 
   // ── AI review actions ─────────────────────────────────────────────────────
-  const handleStartResearch = () => {
+  const handleStartResearch = async () => {
     if (aiPhase.status !== "reviewing") return;
-    const { topicId } = aiPhase;
+    const { topicId, keywordRows, quotas } = aiPhase;
+    if (!keywordRows || keywordRows.length === 0) {
+      toast.error("Add at least one keyword before starting.");
+      return;
+    }
+    if (keywordRows.length > quotas.max_keywords) {
+      toast.error(
+        `Remove ${keywordRows.length - quotas.max_keywords} keyword(s) or raise the pipeline limit.`,
+      );
+      return;
+    }
+
     setAiPhase({ ...aiPhase, isLaunching: true });
-    startTransition(() => {
-      api.runPipeline(topicId).catch(() => {});
-      router.push(`/research/topics/${topicId}`);
-    });
+    try {
+      const persisted = await persistUnsavedKeywordsWithinQuota(
+        topicId,
+        keywordRows,
+        quotas.max_keywords,
+        api.addKeywords,
+      );
+      setAiPhase((prev) =>
+        prev.status === "reviewing" && prev.topicId === topicId
+          ? { ...prev, keywordRows: persisted }
+          : prev,
+      );
+      startTransition(() => {
+        api.runPipeline(topicId).catch(() => {});
+        router.push(`/research/topics/${topicId}`);
+      });
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not save keywords.");
+      setAiPhase((prev) =>
+        prev.status === "reviewing" ? { ...prev, isLaunching: false } : prev,
+      );
+    }
+  };
+
+  const handleQuotasSaved = async (next: TopicQuotaFields) => {
+    if (aiPhase.status !== "reviewing") return;
+    const { topicId, keywordRows } = aiPhase;
+    setAiPhase((prev) =>
+      prev.status === "reviewing" ? { ...prev, quotas: next } : prev,
+    );
+
+    if (!keywordRows) return;
+    try {
+      const persisted = await persistUnsavedKeywordsWithinQuota(
+        topicId,
+        keywordRows,
+        next.max_keywords,
+        api.addKeywords,
+      );
+      setAiPhase((prev) =>
+        prev.status === "reviewing" && prev.topicId === topicId
+          ? { ...prev, keywordRows: persisted, quotas: next }
+          : prev,
+      );
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not save keywords.");
+    }
   };
 
   const handleViewTopicFirst = () => {
@@ -1385,53 +1588,60 @@ export default function ResearchInitForm() {
 
   // ── Keyword editor — load + CRUD handlers ─────────────────────────────────
   //
-  // Once the stream finishes and we transition to `reviewing`, we still need
-  // to know each keyword's database id before the user can rename / delete /
-  // reorder them. We also work around the legacy quota bug here: any keywords
-  // that were "dropped by quota" get persisted now — the user has no quota
-  // limits in this product. After backfill, we fetch the full list and
-  // hydrate `aiPhase.keywordRows`, ordered by the AI's original suggestion
-  // sequence so the user sees them in the same order the AI proposed them.
+  // Once the stream finishes and we transition to `reviewing`, we load the
+  // topic quota ladder and hydrate keyword rows for every AI suggestion.
+  // Keywords the backend dropped due to max_keywords stay visible (red styling)
+  // until the user raises the cap or removes them — we do not silently backfill.
   useEffect(() => {
     if (aiPhase.status !== "reviewing" || aiPhase.keywordRows !== null) return;
     let cancelled = false;
     const topicId = aiPhase.topicId;
-    // Newer server payloads omit `keywords_dropped_by_quota` entirely (the
-    // legacy quota concept was removed). Treat missing as empty.
-    const dropped = aiPhase.applied.keywords_dropped_by_quota ?? [];
     const aiOrder = aiPhase.suggestedKeywords;
     (async () => {
       try {
-        if (dropped.length > 0) {
-          await api.addKeywords(topicId, { keywords: dropped });
-        }
-        const persisted = await getKeywords(topicId);
+        const [topic, persisted] = await Promise.all([
+          getTopic(topicId),
+          getKeywords(topicId),
+        ]);
         if (cancelled) return;
 
-        // Order rows by the AI's original suggestion order, then any extras.
+        const quotas = topic ? quotasFromTopic(topic) : aiPhase.quotas;
+
         const byKeyword = new Map<string, ResearchKeyword>();
         for (const k of persisted) byKeyword.set(k.keyword.toLowerCase(), k);
 
-        const ordered: ResearchKeyword[] = [];
+        const rows: KeywordRow[] = [];
         for (const kw of aiOrder) {
           const match = byKeyword.get(kw.toLowerCase());
           if (match) {
-            ordered.push(match);
+            rows.push({
+              localId: genKwRowId(),
+              dbId: match.id,
+              value: match.keyword,
+              pending: false,
+            });
             byKeyword.delete(kw.toLowerCase());
+          } else {
+            rows.push({
+              localId: genKwRowId(),
+              dbId: null,
+              value: kw,
+              pending: false,
+            });
           }
         }
-        // Append anything left over (manually added in a prior session, etc.)
-        for (const remaining of byKeyword.values()) ordered.push(remaining);
+        for (const remaining of byKeyword.values()) {
+          rows.push({
+            localId: genKwRowId(),
+            dbId: remaining.id,
+            value: remaining.keyword,
+            pending: false,
+          });
+        }
 
-        const rows: KeywordRow[] = ordered.map((k) => ({
-          localId: genKwRowId(),
-          dbId: k.id,
-          value: k.keyword,
-          pending: false,
-        }));
         setAiPhase((prev) =>
           prev.status === "reviewing" && prev.topicId === topicId
-            ? { ...prev, keywordRows: rows }
+            ? { ...prev, keywordRows: rows, quotas }
             : prev,
         );
       } catch (err) {
@@ -1461,6 +1671,7 @@ export default function ResearchInitForm() {
   const handleAddKeyword = (value: string) => {
     if (aiPhase.status !== "reviewing") return;
     const topicId = aiPhase.topicId;
+    const maxKeywords = aiPhase.quotas.max_keywords;
     const localId = genKwRowId();
     const optimistic: KeywordRow = {
       localId,
@@ -1469,6 +1680,15 @@ export default function ResearchInitForm() {
       pending: true,
     };
     setKeywordRows((prev) => [...prev, optimistic]);
+
+    const nextIndex = aiPhase.keywordRows?.length ?? 0;
+    if (nextIndex >= maxKeywords) {
+      setKeywordRows((prev) =>
+        prev.map((r) => (r.localId === localId ? { ...r, pending: false } : r)),
+      );
+      return;
+    }
+
     (async () => {
       try {
         await api.addKeywords(topicId, { keywords: [value] });
@@ -1700,12 +1920,12 @@ export default function ResearchInitForm() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Topic Name</label>
-                <Input
+                <ProInput
                   value={topicName}
                   onChange={(e) => setTopicName(e.target.value)}
                   placeholder="e.g., EV Battery Technology Trends"
                   className="h-14 text-base px-4"
-                  style={{ fontSize: "16px" }}
+                  wrapperClassName="w-full"
                   autoFocus
                 />
               </div>
@@ -1727,13 +1947,15 @@ export default function ResearchInitForm() {
                   Description{" "}
                   <span className="font-normal text-xs">(optional)</span>
                 </label>
-                <Textarea
+                <ProTextarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief context about what this research covers…"
-                  className="text-base resize-none"
-                  style={{ fontSize: "16px" }}
-                  rows={2}
+                  autoGrow
+                  minHeight={60}
+                  maxHeight={160}
+                  className="text-base"
+                  wrapperClassName="w-full"
                 />
               </div>
             </div>
@@ -1772,12 +1994,12 @@ export default function ResearchInitForm() {
               <div className="space-y-4 pt-4 border-t border-border/60">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Topic Name</label>
-                  <Input
+                  <ProInput
                     value={topicName}
                     onChange={(e) => setTopicName(e.target.value)}
                     placeholder={`e.g., ${selectedTemplate.name} — Q2 2026`}
                     className="h-14 text-base px-4"
-                    style={{ fontSize: "16px" }}
+                    wrapperClassName="w-full"
                     autoFocus
                   />
                 </div>
@@ -1843,24 +2065,44 @@ export default function ResearchInitForm() {
               applied={null}
             />
           ) : aiPhase.status === "reviewing" ? (
-            <AiCanvas
-              variant="review"
-              title={aiPhase.appliedName}
-              description={aiPhase.appliedDescription ?? ""}
-              descriptionStreaming={false}
-              keywords={aiPhase.suggestedKeywords}
-              reviewKeywordRows={aiPhase.keywordRows}
-              applied={aiPhase.applied}
-              onUpdateTitle={handleUpdateTitle}
-              onUpdateDescription={handleUpdateDescription}
-              onAddKeyword={handleAddKeyword}
-              onRemoveKeyword={handleRemoveKeyword}
-              onRenameKeyword={handleRenameKeyword}
-              onReorderKeywords={handleReorderKeywords}
-              onStart={handleStartResearch}
-              onViewFirst={handleViewTopicFirst}
-              isLaunching={aiPhase.isLaunching}
-            />
+            <>
+              <AiCanvas
+                variant="review"
+                title={aiPhase.appliedName}
+                description={aiPhase.appliedDescription ?? ""}
+                descriptionStreaming={false}
+                keywords={aiPhase.suggestedKeywords}
+                reviewKeywordRows={aiPhase.keywordRows}
+                applied={aiPhase.applied}
+                onUpdateTitle={handleUpdateTitle}
+                onUpdateDescription={handleUpdateDescription}
+                onAddKeyword={handleAddKeyword}
+                onRemoveKeyword={handleRemoveKeyword}
+                onRenameKeyword={handleRenameKeyword}
+                onReorderKeywords={handleReorderKeywords}
+                onStart={handleStartResearch}
+                onViewFirst={handleViewTopicFirst}
+                isLaunching={aiPhase.isLaunching}
+                maxKeywords={aiPhase.quotas.max_keywords}
+                droppedByQuotaCount={
+                  aiPhase.applied.keywords_dropped_by_quota?.length ?? 0
+                }
+                onOpenSettings={() => setQuotaDialogOpen(true)}
+                canStart={
+                  !!aiPhase.keywordRows &&
+                  aiPhase.keywordRows.length > 0 &&
+                  aiPhase.keywordRows.length <= aiPhase.quotas.max_keywords
+                }
+              />
+              <AiReviewQuotaDialog
+                open={quotaDialogOpen}
+                onOpenChange={setQuotaDialogOpen}
+                topicId={aiPhase.topicId}
+                quotas={aiPhase.quotas}
+                keywordCount={aiPhase.keywordRows?.length ?? 0}
+                onSaved={handleQuotasSaved}
+              />
+            </>
           ) : aiPhase.status === "error" ? (
             <div className="space-y-6 py-8">
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-2">
@@ -1909,14 +2151,16 @@ export default function ResearchInitForm() {
               <div className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Subject</label>
-                  <Textarea
+                  <ProTextarea
                     value={subjectDescription}
                     onChange={(e) => setSubjectDescription(e.target.value)}
                     placeholder="e.g., How electric vehicle adoption is reshaping the used car market — pricing trends, consumer sentiment, and which brands are winning…"
-                    className="text-base resize-none min-h-[160px]"
-                    style={{ fontSize: "16px" }}
+                    autoGrow
+                    minHeight={160}
+                    maxHeight={320}
                     autoFocus
-                    rows={6}
+                    className="text-base"
+                    wrapperClassName="w-full"
                   />
                 </div>
 
@@ -1953,15 +2197,17 @@ export default function ResearchInitForm() {
                   </button>
                   {showAdditionalInstructions && (
                     <div className="mt-3">
-                      <Textarea
+                      <ProTextarea
                         value={additionalInstructions}
                         onChange={(e) =>
                           setAdditionalInstructions(e.target.value)
                         }
                         placeholder="Any extra context, constraints, or focus areas for the AI agent…"
-                        className="text-base resize-none"
-                        style={{ fontSize: "16px" }}
-                        rows={3}
+                        autoGrow
+                        minHeight={80}
+                        maxHeight={200}
+                        className="text-base"
+                        wrapperClassName="w-full"
                       />
                     </div>
                   )}

@@ -11,10 +11,15 @@
  * - **Voice input** — mic toggle with live streaming transcription, audio-level
  *   glow, and a recording-protection modal that warns before unmount while a
  *   recording or transcription is in flight.
- * - **Copy-to-clipboard** — right-side copy button with success-state animation.
+ * - **"…" actions menu** — a hover-revealed right-side menu hosting Copy (and
+ *   the natural home for future actions). It floats over the text (no reserved
+ *   right gutter) and only appears while the mouse is over the field — never
+ *   from focus alone — so it stays out of the way while typing.
  * - **Submit button** — opt-in via `onSubmit`. Renders a transparent Send
  *   tap button at the right edge. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit.
+ * - **Field navigation** — opt-in via `onEnterKey`. Plain Enter advances to the
+ *   next field instead of submitting (for sequential form flows).
  * - **Clear button** — opt-in via `clearable` (+ optional `onClear`).
  * - **Start icon** — opt-in via `startIcon` for search/filter prefixes.
  * - **iOS zoom guard** — value text is always 16px (built in); placeholder
@@ -61,20 +66,25 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
   CheckTapButton,
-  CopyTapButton,
   LoadingTapButton,
   MicOffTapButton,
   MicTapButton,
+  MoreHorizontalTapButton,
   SendTapButton,
   XTapButton,
 } from "@/components/icons/tap-buttons";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
@@ -105,7 +115,7 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   onRequestClose?: () => void;
   /** If true, prevents unmounting during recording/transcription with a warning modal. Default: true. */
   protectTranscription?: boolean;
-  /** Show the copy-to-clipboard button at the right. Default: true. */
+  /** Show the Copy action inside the "…" menu. Default: true. */
   showCopyButton?: boolean;
   /** When provided, renders a prominent submit button at the right edge. */
   onSubmit?: () => void;
@@ -119,6 +129,13 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   submitOnCmdEnter?: boolean;
   /** Submit on plain Enter. Default: false. */
   submitOnEnter?: boolean;
+  /**
+   * Field-navigation mode (opt-in). When provided, plain Enter calls
+   * `onEnterKey` (the caller typically advances focus to the next field)
+   * instead of submitting. Takes precedence over `onSubmit` / `submitOnEnter`
+   * for the Enter key, so the two are not meant to be combined.
+   */
+  onEnterKey?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   /** Optional leading icon/node — auto-applies left padding. */
   startIcon?: React.ReactNode;
   /** When true, shows a clear (×) control while the field has content. */
@@ -135,19 +152,12 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   floatingLabel?: string;
 }
 
-function rightPaddingClass(
-  hasMic: boolean,
-  showCopyButton: boolean,
-  hasSubmit: boolean,
-  clearable: boolean,
-  hasContent: boolean,
-): string {
-  const count =
-    (hasMic ? 1 : 0) +
-    (showCopyButton ? 1 : 0) +
-    (hasSubmit ? 1 : 0) +
-    (clearable && hasContent ? 1 : 0);
-  if (count >= 3) return "pr-36";
+// Reserve right padding ONLY for the persistent controls (clear + submit).
+// The hover-only controls (mic + "…" menu) float over the text with no
+// reserved gutter — they're hidden while typing, so they never sit on top of
+// text the user is actively editing.
+function rightPaddingClass(hasSubmit: boolean, showClear: boolean): string {
+  const count = (hasSubmit ? 1 : 0) + (showClear ? 1 : 0);
   if (count === 2) return "pr-24";
   if (count === 1) return "pr-11";
   return "pr-3";
@@ -177,6 +187,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       submitLabel = "Send",
       submitOnCmdEnter,
       submitOnEnter = false,
+      onEnterKey,
       startIcon,
       clearable = false,
       onClear,
@@ -191,6 +202,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const generatedId = useId();
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
     const [hasCopied, setHasCopied] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
@@ -373,15 +385,29 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         if (isHovered) setIsHovered(false);
 
         onKeyDown?.(e);
-        if (e.defaultPrevented || !onSubmit || e.key !== "Enter") return;
+        if (e.defaultPrevented || e.key !== "Enter") return;
 
-        if (cmdEnterEnabled && (e.metaKey || e.ctrlKey)) {
+        const withCmd = e.metaKey || e.ctrlKey;
+
+        // Field-navigation mode (opt-in via onEnterKey) takes precedence over
+        // submit-on-enter: plain Enter advances. Modifier+Enter is left to the
+        // caller (a single-line input has no newline to insert).
+        if (onEnterKey) {
+          if (e.shiftKey || withCmd) return;
+          e.preventDefault();
+          onEnterKey(e);
+          return;
+        }
+
+        if (!onSubmit) return;
+
+        if (cmdEnterEnabled && withCmd) {
           e.preventDefault();
           triggerSubmit();
           return;
         }
 
-        if (submitOnEnter && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+        if (submitOnEnter && !e.shiftKey && !withCmd) {
           e.preventDefault();
           triggerSubmit();
         }
@@ -389,6 +415,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       [
         isHovered,
         onKeyDown,
+        onEnterKey,
         onSubmit,
         cmdEnterEnabled,
         submitOnEnter,
@@ -402,13 +429,9 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
     const showMic = isAudioAvailable;
     const showClear = clearable && hasContent;
-    const rightPadding = rightPaddingClass(
-      showMic,
-      showCopyButton,
-      !!onSubmit,
-      clearable,
-      hasContent,
-    );
+    // The "…" menu has at least one item when copy is enabled (extensible).
+    const showMenu = !disabled && showCopyButton;
+    const rightPadding = rightPaddingClass(!!onSubmit, showClear);
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -472,13 +495,15 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         )}
 
         {/* Right control cluster — submit/clear always visible when enabled;
-            mic + copy fade on hover. Transparent tap buttons sit flush inside
-            the h-9 field without glass borders touching the input edge. */}
+            mic + "…" menu float over the text and fade in only on mouse hover
+            (never focus). The menu stays visible while its popover is open so
+            it can't vanish mid-interaction. Transparent tap buttons sit flush
+            inside the h-9 field without glass borders touching the input edge. */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10">
           <div
             className={cn(
               "flex items-center transition-opacity duration-200",
-              showHoverControls
+              showHoverControls || menuOpen
                 ? "opacity-100"
                 : "opacity-0 pointer-events-none",
             )}
@@ -529,24 +554,48 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
               </div>
             )}
 
-            {showCopyButton &&
-              (hasCopied ? (
-                <CheckTapButton
-                  variant="transparent"
-                  onClick={handleCopy}
-                  ariaLabel="Copied"
-                  tooltip="Copied"
-                  className="text-green-500"
-                />
-              ) : (
-                <CopyTapButton
-                  variant="transparent"
-                  onClick={handleCopy}
-                  ariaLabel="Copy to clipboard"
-                  tooltip="Copy"
-                  className="text-muted-foreground"
-                />
-              ))}
+            {showMenu && (
+              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                <PopoverTrigger asChild>
+                  {hasCopied ? (
+                    <CheckTapButton
+                      variant="transparent"
+                      ariaLabel="Copied"
+                      tooltip="Copied"
+                      className="text-green-500"
+                    />
+                  ) : (
+                    <MoreHorizontalTapButton
+                      variant="transparent"
+                      ariaLabel="More options"
+                      tooltip="More"
+                      className="text-muted-foreground"
+                    />
+                  )}
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  side="bottom"
+                  sideOffset={6}
+                  className="w-48 p-1"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  {showCopyButton && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCopy();
+                        setMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
 
           {showClear && (

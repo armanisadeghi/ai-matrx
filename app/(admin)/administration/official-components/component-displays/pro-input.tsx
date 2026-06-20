@@ -60,6 +60,8 @@ export default function ProInputDisplay({ component }: ComponentDisplayProps) {
   const [replaceMode, setReplaceMode] = useState("");
   const [minimal, setMinimal] = useState("");
   const [errVal, setErrVal] = useState("");
+  const [navFirst, setNavFirst] = useState("");
+  const [navSecond, setNavSecond] = useState("");
 
   if (!component) return null;
 
@@ -79,7 +81,7 @@ import { Field } from '@/components/official/Field';
   protectTranscription={true}
   onRequestClose={() => {}}
 
-  showCopyButton={true}
+  showCopyButton={true}                     // Copy item in the "…" menu
 
   onSubmit={() => {}}
   submitDisabled={false}
@@ -87,6 +89,7 @@ import { Field } from '@/components/official/Field';
   submitLabel="Send"
   submitOnCmdEnter={true}
   submitOnEnter={false}
+  onEnterKey={(e) => {}}                    // field-nav: Enter advances instead of submitting
 
   floatingLabel="Title"
 
@@ -98,16 +101,17 @@ import { Field } from '@/components/official/Field';
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Tier-2 canonical single-line input. Streaming voice, copy, submit, floating label, and protection modal — all opt-in. Hover-revealed controls auto-hide while typing."
+      description="Tier-2 canonical single-line input. Streaming voice, a hover-revealed '…' menu (Copy, extensible), submit, floating label, and protection modal. Hover-only controls float over the text and auto-hide while typing."
     >
       <div className="w-full max-w-3xl space-y-8">
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
           <p>
             <span className="font-semibold text-foreground">
-              Hover controls auto-hide on keystroke.
+              Hover controls float over the text and auto-hide on keystroke.
             </span>{" "}
-            Mic + copy reappear on mouse motion. Recording/transcribing always
-            keeps the mic visible.
+            The mic + &ldquo;…&rdquo; menu reserve no gutter and reappear on
+            mouse motion (never from focus). Recording/transcribing always keeps
+            the mic visible.
           </p>
           <p>
             <span className="font-semibold text-foreground">
@@ -127,7 +131,7 @@ import { Field } from '@/components/official/Field';
 
         <Variant
           title="1. Bare input"
-          features={["placeholder", "voice", "copy", "no label"]}
+          features={["placeholder", "voice", "… menu", "no label"]}
           code={`<ProInput
   value={v}
   onChange={(e) => setV(e.target.value)}
@@ -213,7 +217,44 @@ import { Field } from '@/components/official/Field';
         </Variant>
 
         <Variant
-          title="5. Cmd/Ctrl+Enter submit with loading state"
+          title="5. Field navigation — Enter jumps to the next field"
+          features={["onEnterKey", "sequential forms"]}
+          code={`<ProInput
+  value={first}
+  onChange={(e) => setFirst(e.target.value)}
+  onEnterKey={() => secondRef.current?.focus()}
+  placeholder="First… (Enter → next)"
+/>
+<ProInput
+  ref={secondRef}
+  value={second}
+  onChange={(e) => setSecond(e.target.value)}
+  placeholder="Second…"
+/>`}
+        >
+          <div className="space-y-2" data-pro-input-nav>
+            <ProInput
+              value={navFirst}
+              onChange={(e) => setNavFirst(e.target.value)}
+              onEnterKey={(e) => {
+                e.currentTarget
+                  .closest("[data-pro-input-nav]")
+                  ?.querySelector<HTMLInputElement>("[data-nav-second]")
+                  ?.focus();
+              }}
+              placeholder="First field — type, then press Enter"
+            />
+            <ProInput
+              value={navSecond}
+              onChange={(e) => setNavSecond(e.target.value)}
+              data-nav-second
+              placeholder="Second field — Enter landed you here"
+            />
+          </div>
+        </Variant>
+
+        <Variant
+          title="6. Cmd/Ctrl+Enter submit with loading state"
           features={["onSubmit", "isSubmitting", "submitLabel"]}
           code={`<ProInput
   value={v}
@@ -242,7 +283,7 @@ import { Field } from '@/components/official/Field';
         </Variant>
 
         <Variant
-          title="6. Voice in replace mode"
+          title="7. Voice in replace mode"
           features={["appendTranscript={false}"]}
           code={`<ProInput
   value={v}
@@ -260,12 +301,12 @@ import { Field } from '@/components/official/Field';
         </Variant>
 
         <Variant
-          title="7. Minimal (no copy)"
+          title="8. Minimal (no menu — voice only)"
           features={["showCopyButton={false}"]}
           code={`<ProInput
   value={v}
   onChange={(e) => setV(e.target.value)}
-  showCopyButton={false}
+  showCopyButton={false}    // empties the menu → "…" is hidden
   placeholder="Mic only."
 />`}
         >
@@ -273,12 +314,12 @@ import { Field } from '@/components/official/Field';
             value={minimal}
             onChange={(e) => setMinimal(e.target.value)}
             showCopyButton={false}
-            placeholder="Mic only — copy hidden."
+            placeholder="Mic only — the … menu is hidden."
           />
         </Variant>
 
         <Variant
-          title="8. Error state (aria-invalid)"
+          title="9. Error state (aria-invalid)"
           features={["aria-invalid", "Field error"]}
           code={`<Field label="Reason" htmlFor="reason" error="Required">
   <ProInput id="reason" value={v} onChange={…} aria-invalid />
@@ -300,7 +341,7 @@ import { Field } from '@/components/official/Field';
         </Variant>
 
         <Variant
-          title="9. Disabled"
+          title="10. Disabled"
           features={["disabled"]}
           code={`<ProInput value="Locked" disabled />`}
         >

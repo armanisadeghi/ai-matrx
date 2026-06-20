@@ -30,7 +30,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getProject } from "@/features/projects/service";
 import { useProjectUserRole } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { ContextAssignmentField } from "@/features/scopes/components/context-assignment/ContextAssignmentField";
+import { ProjectContextSection } from "./ProjectContextSection";
 import type { Project } from "@/features/projects/types";
 import { GeneralSettings } from "./GeneralSettings";
 import { ProjectDetails } from "./ProjectDetails";
@@ -202,18 +202,9 @@ export function ProjectManage() {
           title="Scopes"
           subtitle="Tag this project with the org's scopes."
         >
-          <ContextAssignmentField
-            mode="assignment"
-            writeMode="live"
-            subject={{
-              entityType: "project",
-              entityId: project.id,
-              title: project.name,
-              icon: FolderKanban,
-            }}
-            dimensions={["scopes"]}
-            defaultOrganizationId={project.organizationId}
-            hideSubject
+          <ProjectContextSection
+            project={project}
+            onPatch={applyPatch}
             sectionHeight={280}
             className="border-0 shadow-none"
           />

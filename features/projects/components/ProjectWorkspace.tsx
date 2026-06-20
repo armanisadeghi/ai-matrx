@@ -49,6 +49,7 @@ import {
   InlineProjectDescription,
   ProjectMetaRow,
 } from "@/features/projects/components/ProjectInlineEditors";
+import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
 import {
   CONTENT_ROLES,
   entriesByRole,
@@ -88,6 +89,22 @@ export function ProjectWorkspace() {
   const [sheetEntry, setSheetEntry] = React.useState<OrgResourceEntry | null>(
     null,
   );
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!project?.organizationId) {
+        setOrg(null);
+        return;
+      }
+      const o = await getOrganizationBySlugOrId(project.organizationId);
+      if (!cancelled && o)
+        setOrg({ name: o.name, slug: o.slug, isPersonal: o.isPersonal });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.organizationId]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -218,9 +235,22 @@ export function ProjectWorkspace() {
                 )}
               </div>
 
-              {/* Editable meta: status / priority / dates / organization */}
+              {/* Editable meta: status / priority / dates */}
               <div className="mt-3">
                 <ProjectMetaRow
+                  project={project}
+                  canEdit={canManageSettings}
+                  onPatch={applyPatch}
+                  showOrg={false}
+                />
+              </div>
+
+              {/* Context: org + scope types/scopes (persists to project) */}
+              <div className="mt-3 max-w-xl">
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                  Context
+                </p>
+                <ProjectContextPicker
                   project={project}
                   canEdit={canManageSettings}
                   onPatch={applyPatch}

@@ -11,7 +11,13 @@ import {
   Pencil,
   X,
   Check as CheckIcon,
+  Table2,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
 
 function parseCsv(content: string, delimiter: string): string[][] {
   const rows: string[][] = [];
@@ -94,6 +100,8 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
   );
   const [editValue, setEditValue] = useState("");
   const [data, setData] = useState(() => parseCsv(content, delimiter));
+  const [saving, setSaving] = useState(false);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     setData(parseCsv(content, delimiter));
@@ -107,6 +115,48 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
     await navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Save the CSV as a real, live `udt_datasets` table (CSV → UDT, the preferred
+  // home for tabular data). Reuses the shared create primitive and opens it in
+  // the Quick Data window — the same destination as the markdown-table Save.
+  const handleSaveAsTable = async () => {
+    if (headers.length === 0 || bodyRows.length === 0) {
+      toast.error("No CSV rows to save.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const safeHeaders = headers.map((h, i) => h || `Column ${i + 1}`);
+      const rows = bodyRows.map((row) => {
+        const obj: Record<string, string> = {};
+        safeHeaders.forEach((h, i) => {
+          obj[h] = row[i] ?? "";
+        });
+        return obj;
+      });
+      const result = await createDatasetFromTable({
+        name: "Table from CSV",
+        description: "Created from a chat CSV block",
+        headers: safeHeaders,
+        rows,
+      });
+      if (result.ok) {
+        toast.success(`Saved as a live table (${result.inserted} rows)`, {
+          description: "Opening — edit it as a real data table.",
+        });
+        dispatch(
+          openOverlay({
+            overlayId: "quickDataWindow",
+            data: { selectedTable: result.tableId },
+          }),
+        );
+      } else {
+        toast.error(`Save failed: ${result.error}`);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSort = (colIdx: number) => {
@@ -185,16 +235,31 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
             {bodyRows.length} rows x {headers.length} cols
           </span>
         </div>
-        <button
-          onClick={handleCopy}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleSaveAsTable}
+            disabled={saving}
+            title="Save as a live data table"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            {saving ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Table2 className="w-3.5 h-3.5" />
+            )}
+            <span>Save as table</span>
+          </button>
+          <button
+            onClick={handleCopy}
+            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          >
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-green-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">

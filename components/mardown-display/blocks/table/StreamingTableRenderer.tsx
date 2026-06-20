@@ -59,6 +59,7 @@ import {
   duplicateColumn,
   type TableShape,
 } from "../../tables/editing/tableMutations";
+import { parseMarkdownTable, type ParsedTable } from "./parseMarkdownTable";
 
 // ============================================================================
 // TYPES
@@ -85,12 +86,6 @@ interface StreamingTableRendererProps {
   theme?: string;
   onSave?: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
-}
-
-interface ParsedTable {
-  headers: string[];
-  rows: string[][];
-  normalizedData: Array<{ [key: string]: string }>;
 }
 
 // ============================================================================
@@ -259,69 +254,12 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   );
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  // Parse the table content once - splitter already gave us complete rows
-  const parsedTable = useMemo((): ParsedTable | null => {
-    try {
-      const lines = content
-        .split("\n")
-        .filter((line) => line.trim().length > 0);
-
-      // Allow 2 lines (header + separator) to show empty table during streaming
-      if (lines.length < 2) return null;
-
-      // First line = headers
-      const headerLine = lines[0];
-      if (!headerLine.includes("|")) return null;
-
-      // Second line = separator (validate but don't use)
-      const separatorLine = lines[1];
-      if (!separatorLine.match(/^\|[:\s|\-]+\|?$/)) return null;
-
-      // Parse row into cells
-      const parseRow = (line: string): string[] => {
-        const cells = line.split("|").map((cell) => cell.trim());
-        // Remove empty first/last cells from leading/trailing pipes
-        if (cells.length > 0 && cells[0] === "") cells.shift();
-        if (cells.length > 0 && cells[cells.length - 1] === "") cells.pop();
-        return cells;
-      };
-
-      const headers = parseRow(headerLine);
-      if (headers.length === 0) return null;
-
-      // Remaining lines = data rows
-      const rows = lines.slice(2).map(parseRow);
-
-      // Filter out completely empty rows
-      const validRows = rows.filter((row) =>
-        row.some((cell) => cell.length > 0),
-      );
-
-      // Generate normalized data for JSON export and database save
-      const normalizedData = validRows.map((row) => {
-        const rowData: { [key: string]: string } = {};
-        headers.forEach((header, index) => {
-          // Clean header for key (remove markdown)
-          const cleanHeader = header
-            .replace(/\*\*([^*]+)\*\*/g, "$1")
-            .replace(/\*([^*]+)\*/g, "$1")
-            .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "$1")
-            .replace(/`([^`]+)`/g, "$1")
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1|$2")
-            .trim();
-          rowData[cleanHeader] = index < row.length ? row[index] : "";
-        });
-        return rowData;
-      });
-
-      // Allow 0 rows during streaming - header will show, rows appear as they complete
-      // Only return null if we have invalid structure, not just no data yet
-      return { headers, rows: validRows, normalizedData };
-    } catch (error) {
-      console.error("[StreamingTableRenderer] Parse error:", error);
-      return null;
-    }
-  }, [content]);
+  // Parse the table content once — shared parser (also used by the artifact
+  // "Convert to table" path) so the markdown→table reading never forks.
+  const parsedTable = useMemo<ParsedTable | null>(
+    () => parseMarkdownTable(content),
+    [content],
+  );
 
   // internalTableData holds user edits. null means "not yet in edit mode — use parsedTable".
   // We never sync parsedTable → state during streaming to avoid the useEffect update cascade.

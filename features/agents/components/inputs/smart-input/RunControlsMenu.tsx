@@ -42,6 +42,8 @@ import {
   Bug,
   SlidersVertical,
   FileText,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import {
   Popover,
@@ -206,6 +208,10 @@ export function RunControlsMenu({
   ];
 
   const [open, setOpen] = useState(false);
+  // Expand the whole control surface (every tab) to a near-fullscreen sheet —
+  // the inline panels (active context, working document, tools…) get real room
+  // to work in. Reuses the exact same body; only the frame grows.
+  const [fullscreen, setFullscreen] = useState(false);
   // Attach is the primary intent of the `+` button; the gear opens on the
   // override layer when one exists, else tools.
   const [tab, setTab] = useState<Tab>(
@@ -240,7 +246,14 @@ export function RunControlsMenu({
   const TriggerIcon = variant === "plus" ? Plus : SlidersHorizontal;
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setFullscreen(false);
+      }}
+      modal={false}
+    >
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -268,13 +281,18 @@ export function RunControlsMenu({
         align={align}
         side={side}
         sideOffset={8}
-        className="w-[min(680px,calc(100vw-1rem))] p-0 border-border"
+        className={cn(
+          "p-0 border-border",
+          fullscreen
+            ? "flex h-[calc(100vh-2rem)] w-[calc(100vw-1rem)] flex-col"
+            : "w-[min(680px,calc(100vw-1rem))]",
+        )}
         container={dialogContainer ?? undefined}
       >
         <div
           role="tablist"
           aria-label="Run controls"
-          className="flex overflow-x-auto border-b border-border scrollbar-thin"
+          className="flex shrink-0 overflow-x-auto border-b border-border scrollbar-thin"
         >
           {tabs.map((t) => {
             const Icon = t.icon;
@@ -323,15 +341,34 @@ export function RunControlsMenu({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setFullscreen((v) => !v)}
+            aria-label={
+              fullscreen ? "Exit full screen" : "Expand to full screen"
+            }
+            title={fullscreen ? "Exit full screen" : "Expand to full screen"}
+            className="sticky right-0 ml-auto flex shrink-0 items-center justify-center border-l border-border bg-background px-2.5 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {fullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
+          </button>
         </div>
 
         {/* Fixed height across every tab so the popover doesn't visibly
-            resize when switching tabs. Each panel scrolls internally. */}
+            resize when switching tabs. Each panel scrolls internally. In
+            fullscreen the panel fills the remaining height instead. */}
         <div
           role="tabpanel"
           id={`runctl-panel-${conversationId}`}
           aria-labelledby={`runctl-tab-${activeTab}-${conversationId}`}
-          className="h-96 overflow-hidden"
+          className={cn(
+            "overflow-hidden",
+            fullscreen ? "min-h-0 flex-1" : "h-96",
+          )}
         >
           {activeTab === "attach" && (
             <div className="h-full overflow-y-auto">

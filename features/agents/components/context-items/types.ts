@@ -30,6 +30,9 @@ export interface ContextItemRefs {
   fileUrl?: string | null;
   projectIds?: string[];
   agentIds?: string[];
+  /** Active-context layer ids (org / single scope). */
+  orgId?: string | null;
+  scopeId?: string | null;
   transcriptIds?: string[];
   workbookIds?: string[];
   documentIds?: string[];

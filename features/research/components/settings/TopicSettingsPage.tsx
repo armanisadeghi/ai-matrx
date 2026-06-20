@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Loader2, Save, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -166,27 +167,28 @@ export default function TopicSettingsPage() {
 
         <div className="space-y-2">
           <Label htmlFor="topic-name">Topic Name</Label>
-          <Input
+          <ProInput
             id="topic-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Brand Research"
-            style={{ fontSize: "16px" }}
             disabled={saving}
+            wrapperClassName="w-full"
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="topic-description">Description</Label>
-          <Textarea
+          <ProTextarea
             id="topic-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief description of what this research covers..."
-            rows={3}
-            className="resize-none"
-            style={{ fontSize: "16px" }}
+            autoGrow
+            minHeight={80}
+            maxHeight={200}
             disabled={saving}
+            wrapperClassName="w-full"
           />
         </div>
 
@@ -223,22 +225,23 @@ export default function TopicSettingsPage() {
           <Label htmlFor="topic-tone">Tone profile</Label>
           <p className="text-xs text-muted-foreground">
             The brand voice, audience, and framing for everything this topic
-            produces — injected into every output (report, podcast, blog, slides,
-            SEO) so the whole bundle reads as one author. e.g.{" "}
+            produces — injected into every output (report, podcast, blog,
+            slides, SEO) so the whole bundle reads as one author. e.g.{" "}
             <span className="italic">
-              &ldquo;Skeptical, data-driven, for senior engineers. Plain English,
-              no hype. Always lead with the evidence.&rdquo;
+              &ldquo;Skeptical, data-driven, for senior engineers. Plain
+              English, no hype. Always lead with the evidence.&rdquo;
             </span>
           </p>
-          <Textarea
+          <ProTextarea
             id="topic-tone"
             value={toneProfile}
             onChange={(e) => setToneProfile(e.target.value)}
             placeholder="Describe the voice, audience, and framing for this topic's outputs…"
-            rows={4}
-            className="resize-none"
-            style={{ fontSize: "16px" }}
+            autoGrow
+            minHeight={100}
+            maxHeight={240}
             disabled={saving}
+            wrapperClassName="w-full"
           />
         </div>
       </section>
