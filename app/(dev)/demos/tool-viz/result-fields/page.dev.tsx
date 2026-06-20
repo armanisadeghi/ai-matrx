@@ -18,6 +18,10 @@ import React from "react";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ResearchRevivalInline } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalInline";
+import { ResearchRevivalOverlay } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalOverlay";
+import { ResearchModernInline } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernInline";
+import { ResearchModernOverlay } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernOverlay";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 // ─── Synthetic lifecycle entries ────────────────────────────────────────────
@@ -335,6 +339,70 @@ const STATE_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+// ─── Search/Research fixture (research_web text-blob format) ────────────────
+
+const RESEARCH_RESULT = `Comprehensive research using the following queries: "best omega-3 sources 2026", "omega-3 to omega-6 ratio science", "marine vs plant omega oils 2026".
+
+# All Search Results:
+
+Searched: "best omega-3 sources 2026" (24), "omega-3 to omega-6 ratio science" (21), "marine vs plant omega oils 2026" (17)
+
+---
+## "best omega-3 sources 2026" (24 results)
+
+Title: Office of Dietary Supplements - Omega-3 Fatty Acids (15 hours ago)
+URL: https://ods.od.nih.gov/factsheets/Omega3FattyAcids/
+Authoritative fact sheet on omega-3 intake, food sources, and supplementation.
+
+Title: Catching the green wave: fueling the future of omega-3 sustainability (April 10, 2026)
+URL: https://www.nature.com/articles/omega3-sustainability-2026
+Algae-derived omega-3 emerges as the most sustainable marine-free source.
+
+Title: Best Omega-3 Foods, Ranked by Bioavailability (March 2, 2026)
+URL: https://www.healthline.com/nutrition/omega-3-foods
+Fatty fish, algae oil, and walnuts top the bioavailability ranking.
+
+---
+## "omega-3 to omega-6 ratio science" (21 results)
+
+Title: It's Not the Balance but the Levels That Matter (2 days ago)
+URL: https://www.frontiersin.org/articles/omega-levels-2026
+New analysis challenges the long-held omega ratio hypothesis.
+
+Title: Dietary Omega-6/Omega-3 Ratio and Inflammation (Jan 18, 2026)
+URL: https://pubmed.ncbi.nlm.nih.gov/omega-ratio-inflammation
+Meta-analysis of 42 trials on the ratio's inflammatory markers.
+
+---
+## "marine vs plant omega oils 2026" (17 results)
+
+Title: Marine vs Plant Omega Oils: A 2026 Comparison (5 days ago)
+URL: https://www.consumerlab.com/marine-vs-plant-omega
+Head-to-head on EPA/DHA conversion efficiency and contaminants.
+`;
+
+function researchEntry(toolName: string): ToolLifecycleEntry {
+    return {
+        callId: `research-${toolName}`,
+        toolName,
+        displayName: "Deep Research",
+        status: "completed",
+        arguments: { query: "best dietary sources to balance omega fatty acids 2026" },
+        startedAt: "2026-06-19T10:00:00.000Z",
+        completedAt: "2026-06-19T10:00:08.000Z",
+        latestMessage: null,
+        latestData: null,
+        result: RESEARCH_RESULT,
+        resultPreview: null,
+        errorType: null,
+        errorMessage: null,
+        isDelegated: false,
+        events: [],
+    };
+}
+
+const RESEARCH_ENTRY = researchEntry("research_web");
+
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div className="rounded-lg border border-border bg-card p-3">
@@ -356,6 +424,34 @@ export default function ResultFieldsGalleryPage() {
                     tool renderer overhaul.
                 </p>
             </header>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Search / Research — INLINE: Version A (Revival) vs Version B (Modern)
+                </h2>
+                <div className="space-y-4">
+                    <FixtureCard label="Version A — Revival (faithful to the lost comprehensive view)">
+                        <ResearchRevivalInline entry={RESEARCH_ENTRY} events={[]} onOpenOverlay={() => {}} />
+                    </FixtureCard>
+                    <FixtureCard label="Version B — Modern (data-dense, Perplexity-style)">
+                        <ResearchModernInline entry={RESEARCH_ENTRY} events={[]} onOpenOverlay={() => {}} />
+                    </FixtureCard>
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Search / Research — FULL / MODAL view: Version A vs Version B
+                </h2>
+                <div className="space-y-4">
+                    <FixtureCard label="Version A — Revival (overlay Results body)">
+                        <ResearchRevivalOverlay entry={RESEARCH_ENTRY} />
+                    </FixtureCard>
+                    <FixtureCard label="Version B — Modern (overlay Results body)">
+                        <ResearchModernOverlay entry={RESEARCH_ENTRY} />
+                    </FixtureCard>
+                </div>
+            </section>
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
