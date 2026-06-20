@@ -4,8 +4,11 @@
  * ResultTable — a uniform object array rendered as a real, scannable table.
  *
  *   inline  — first ~5 rows + "+N more rows" (expands in place).
- *   full    — all rows; a filter <input> (font-size ≥16px) when >10 rows, and
- *             CSV + JSON copy via CopyButtons.
+ *   full    — all rows; a filter <input> (font-size ≥16px) when >10 rows.
+ *
+ * Copy is owned at the result level (GenericRenderer inline / OutputView overlay)
+ * so the table doesn't render a second, duplicate copy bar. A dedicated CSV
+ * export is a deliberate future enhancement.
  *
  * Column headers are click-to-sort (asc → desc → none). Cells render scalars
  * directly; nested objects/arrays render as a compact inline {@link ResultValue}
