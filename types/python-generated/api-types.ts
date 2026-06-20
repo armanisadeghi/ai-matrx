@@ -4411,6 +4411,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -5030,6 +5054,59 @@ export interface paths {
         put?: never;
         /** Rank Source Authority */
         post: operations["rank_source_authority_research_topics__topic_id__sources_rank_authority_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/auto-tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Auto Tag
+         * @description Run the WHOLE auto-tag pass on demand (the "Run now" button).
+         *
+         *     This is the standalone trigger for the same `_run_auto_tag_pass` the
+         *     `/run` orchestrator invokes as Phase B.5. The effective cap is, in order:
+         *     `request.max_calls` → `rs_topic.max_auto_tag_calls` → (when both are 0,
+         *     because the auto-pipeline default is OFF) the count of all eligible
+         *     included+scraped sources, so an explicit user request never silently
+         *     no-ops.
+         */
+        post: operations["run_auto_tag_research_topics__topic_id__auto_tag_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/auto-consolidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Auto Consolidate
+         * @description Run the WHOLE auto-consolidate pass on demand (the "Run now" button).
+         *
+         *     Standalone trigger for the same `_run_auto_consolidate_pass` the `/run`
+         *     orchestrator invokes as Phase D.5. The effective cap is, in order:
+         *     `request.max_calls` → `rs_topic.max_tag_consolidations` → (when both are 0)
+         *     the count of all populated tags, so an explicit user request never silently
+         *     no-ops.
+         */
+        post: operations["run_auto_consolidate_research_topics__topic_id__auto_consolidate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14298,6 +14375,40 @@ export interface components {
              */
             force: boolean;
         };
+        /**
+         * AutoConsolidatePassRequest
+         * @description Trigger the WHOLE auto-consolidate pass on demand (the "Run now" button).
+         *
+         *     `max_calls` overrides how many populated tags the pass consolidates this
+         *     run. When omitted, the topic's `rs_topic.max_tag_consolidations` is used; if
+         *     that is 0 (the auto-pipeline default = OFF), the on-demand pass instead
+         *     consolidates ALL populated tags — the user explicitly asked for it, so it
+         *     must never silently no-op.
+         */
+        AutoConsolidatePassRequest: {
+            /**
+             * Max Calls
+             * @description Cap the tags consolidated this run; defaults to the topic setting.
+             */
+            max_calls?: number | null;
+        };
+        /**
+         * AutoTagPassRequest
+         * @description Trigger the WHOLE auto-tag pass on demand (the "Run now" button).
+         *
+         *     `max_calls` overrides how many included+scraped sources the pass tags this
+         *     run. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if
+         *     that is 0 (the auto-pipeline default = OFF), the on-demand pass instead
+         *     tags ALL eligible sources — the user explicitly asked for it, so it must
+         *     never silently no-op.
+         */
+        AutoTagPassRequest: {
+            /**
+             * Max Calls
+             * @description Cap the sources tagged this run; defaults to the topic setting.
+             */
+            max_calls?: number | null;
+        };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
             selector: components["schemas"]["MessageSelector"];
@@ -17580,6 +17691,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -37168,6 +37306,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -38323,6 +38496,76 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["AuthorityRankRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_auto_tag_research_topics__topic_id__auto_tag_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AutoTagPassRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_auto_consolidate_research_topics__topic_id__auto_consolidate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AutoConsolidatePassRequest"];
             };
         };
         responses: {

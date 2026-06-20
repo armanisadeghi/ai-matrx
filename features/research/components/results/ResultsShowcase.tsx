@@ -7,8 +7,10 @@ import { Trophy, Sparkles, ArrowRight, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTopicContext } from "../../context/ResearchContext";
-import { useResearchSources } from "../../hooks/useResearchState";
-import { useResearchMedia } from "../../hooks/useResearchState";
+import {
+  useResearchSources,
+  useResearchMedia,
+} from "../../hooks/useResearchState";
 import { useCostSummary } from "../../hooks/useCostSummary";
 import { resolveTier } from "./resultsShared";
 import {

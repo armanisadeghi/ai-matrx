@@ -997,7 +997,9 @@ function DocumentCard({
         throw new Error(`Source returned ${res.status}`);
       }
       const blob = await res.blob();
-      const file = new File([blob], filename, {
+      // `File` is shadowed by the lucide-react icon imported above, so reach
+      // for the global File constructor explicitly.
+      const file = new globalThis.File([blob], filename, {
         type: blob.type || "application/pdf",
       });
       await uploadFileWithProgress(

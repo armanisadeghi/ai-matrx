@@ -386,9 +386,14 @@ export function LivePipelineActivity({
                 </div>
               )}
 
-            {expandedCompletedStages.map((kind) => renderStageView(kind))}
-
+            {/* Issue #2 — staged focus: render the ACTIVE stage(s) FIRST so the
+                newest live work is always at the top in focus. Finished stages
+                have already collapsed to the compact pill row above; any the
+                user manually re-expands drop BELOW the live work rather than
+                pushing it out of view. */}
             {activeStages.map((kind) => renderStageView(kind))}
+
+            {expandedCompletedStages.map((kind) => renderStageView(kind))}
 
             {isPipelineDone && activeStages.length === 0 && (
               <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/[0.06] p-4">

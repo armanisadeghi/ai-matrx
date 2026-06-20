@@ -17,6 +17,7 @@ import {
   Plus,
   Pencil,
   RefreshCw,
+  Combine,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -279,6 +280,28 @@ export function PipelineOrchestra() {
     await startStream(response, "synthesize", { iterationMode: "initial" });
   }, [api, topicId, startStream]);
 
+  // Tags is a MANUAL branch — `/run` never emits tag events, so the only way to
+  // produce tags is this standalone pass. Toast on failure: unlike the auto
+  // pipeline steps these are user-initiated one-shots, so a thrown request
+  // (network / 4xx) must surface rather than vanish as an unhandled rejection.
+  const handleAutoTag = useCallback(async () => {
+    try {
+      const response = await api.autoTag(topicId, {});
+      await startStream(response, "auto-tag");
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not start auto-tag");
+    }
+  }, [api, topicId, startStream]);
+
+  const handleAutoConsolidate = useCallback(async () => {
+    try {
+      const response = await api.autoConsolidate(topicId, {});
+      await startStream(response, "auto-consolidate");
+    } catch (err) {
+      toast.error((err as Error).message ?? "Could not start consolidation");
+    }
+  }, [api, topicId, startStream]);
+
   const handleRebuildReport = useCallback(async () => {
     const response = await api.synthesize(topicId, {
       scope: "project",
@@ -440,6 +463,11 @@ export function PipelineOrchestra() {
   const canRunSynthesize = p.total_analyses > 0 && !stream.isStreaming;
   const canRunReport = p.keyword_syntheses > 0 && !stream.isStreaming;
   const canRunAll = p.total_keywords > 0 && !stream.isStreaming;
+  // Tags: manual branch. Tag-creation needs scraped sources; consolidation
+  // needs existing tags. Surfaced as play buttons on the Tags node so the user
+  // can finally kick off tagging (it never runs as part of `/run`).
+  const canRunAutoTag = p.total_sources > 0 && !stream.isStreaming;
+  const canRunAutoConsolidate = p.total_tags > 0 && !stream.isStreaming;
 
   return (
     <div className="p-2 space-y-3 min-w-0">
@@ -643,7 +671,9 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunSynthesize}
               actionLabel="Synthesize keywords"
             />
-            {/* Tags — manual branch (dashed in/out, never animated flow). */}
+            {/* Tags — manual branch (dashed in/out, never animated flow).
+                Two on-demand passes: Play = auto-tag sources, Combine =
+                consolidate existing tags. Neither runs as part of `/run`. */}
             <VEdge state="dashed" />
             <OrchestraNode
               icon={Tags}
@@ -652,6 +682,13 @@ export function PipelineOrchestra() {
               hint="manual · group & consolidate"
               status={tagsStatus}
               href={`${base}/tags`}
+              onAction={handleAutoTag}
+              actionDisabled={!canRunAutoTag}
+              actionLabel="Auto-tag scraped sources"
+              onSecondaryAction={handleAutoConsolidate}
+              secondaryActionIcon={Combine}
+              secondaryActionDisabled={!canRunAutoConsolidate}
+              secondaryActionLabel="Consolidate tags"
               ribbon={
                 <span className="inline-flex items-center gap-1 text-[9px] font-medium text-muted-foreground/70">
                   <span className="px-1 py-px rounded bg-muted/50">MANUAL</span>
@@ -907,6 +944,13 @@ export function PipelineOrchestra() {
                   status={tagsStatus}
                   href={`${base}/tags`}
                   hint="manual · group & consolidate"
+                  onAction={handleAutoTag}
+                  actionDisabled={!canRunAutoTag}
+                  actionLabel="Auto-tag scraped sources"
+                  onSecondaryAction={handleAutoConsolidate}
+                  secondaryActionIcon={Combine}
+                  secondaryActionDisabled={!canRunAutoConsolidate}
+                  secondaryActionLabel="Consolidate tags"
                   ribbon={
                     <span className="inline-flex items-center gap-1 text-[9px] font-medium text-muted-foreground/70">
                       <span className="px-1 py-px rounded bg-muted/50">

@@ -38,12 +38,15 @@ export interface DiffHistoryProps {
   noteId: string;
   onRestoreVersion?: (versionNumber: number) => void;
   className?: string;
+  /** When false, panel chrome supplies the title row. Default true. */
+  showHeader?: boolean;
 }
 
 export function DiffHistory({
   noteId,
   onRestoreVersion,
   className,
+  showHeader = true,
 }: DiffHistoryProps) {
   const dispatch = useAppDispatch();
   const toast = useToastManager("diff-history");
@@ -165,14 +168,15 @@ export function DiffHistory({
 
   return (
     <Card className={cn("flex flex-col p-0 min-h-0 h-full", className)}>
-      {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-b border-border">
-        <History className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Version History</h3>
-        <Badge variant="outline" className="text-xs">
-          {versions.length} version{versions.length !== 1 ? "s" : ""}
-        </Badge>
-      </div>
+      {showHeader ? (
+        <div className="flex items-center gap-2 px-3 py-2 shrink-0 border-b border-border">
+          <History className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Version History</h3>
+          <Badge variant="outline" className="text-xs">
+            {versions.length} version{versions.length !== 1 ? "s" : ""}
+          </Badge>
+        </div>
+      ) : null}
 
       {/* Timeline */}
       <ScrollArea className="flex-1 min-h-0 overflow-x-hidden">
@@ -198,7 +202,7 @@ export function DiffHistory({
                     className="w-full flex flex-col px-2.5 py-1.5 hover:bg-muted/80 transition-colors text-left gap-0.5"
                   >
                     {/* Row 1: chevron + badges + actions */}
-                    <div className="flex items-center gap-1.5 w-full min-w-0">
+                    <div className="flex min-w-0 w-full flex-wrap items-center gap-1.5">
                       {expandedVersions.has(version.id) ? (
                         <ChevronUp className="h-3 w-3 text-muted-foreground shrink-0" />
                       ) : (

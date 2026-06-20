@@ -332,17 +332,16 @@ export function NotesWindowView({ config, className }: NotesWindowViewProps) {
             )}
           </div>
 
-          {/* Version history side panel */}
-          {showHistory && activeTabId && (
-            <div className="w-[280px] shrink-0 border-l border-border">
-              <NoteVersionHistory
-                noteId={activeTabId}
-                onClose={() => setShowHistory(false)}
-                onVersionRestored={() => {
-                  dispatch(fetchNoteContent(activeTabId));
-                }}
-              />
-            </div>
+          {/* Version history — resizable MatrxDynamic panel (desktop) / Drawer (mobile) */}
+          {activeTabId && (
+            <NoteVersionHistory
+              noteId={activeTabId}
+              open={showHistory}
+              onOpenChange={setShowHistory}
+              onVersionRestored={() => {
+                dispatch(fetchNoteContent(activeTabId));
+              }}
+            />
           )}
         </div>
       </div>

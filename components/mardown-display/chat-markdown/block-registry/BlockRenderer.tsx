@@ -275,17 +275,20 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // skeleton instead of the generic "Initializing Matrx" loader; once
       // complete, render immediately with isStreamActive=false even if later
       // blocks in the same message are still streaming.
-      if (isBlockLoading(block)) {
-        const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
-        return Loader ? (
-          <Loader key={index} />
-        ) : (
-          <div
-            key={index}
-            className="my-2 h-16 rounded-md bg-muted/40 animate-pulse"
-            aria-label={`Loading ${_def.canvasType}`}
-          />
-        );
+      // STREAM token-by-token for every type EXCEPT the complex ones that can't
+      // render partial content meaningfully. Those (recipe, quiz, presentation,
+      // … — exactly the types with a bespoke loading animation in
+      // ARTIFACT_LOADING_COMPONENTS) show their loader while the block is still
+      // streaming. EVERY OTHER type renders its real renderer with the live
+      // partial content + `isStreamActive`, so it builds up as tokens arrive
+      // (tables, flashcards, mermaid, svg, …) — never batched until complete.
+      // (Regression guard: forcing `isStreamActive={false}` + a loader for all
+      // types is what made tables/flashcards batch — see the doctrine that all
+      // render blocks stream live.)
+      const loading = isBlockLoading(block);
+      const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
+      if (loading && Loader) {
+        return <Loader key={index} />;
       }
       return (
         <ArtifactRender
@@ -299,7 +302,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           conversationId={conversationId}
           messageId={messageId}
           blockIndex={index}
-          isStreamActive={false}
+          isStreamActive={loading}
         />
       );
     }

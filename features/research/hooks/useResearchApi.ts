@@ -11,6 +11,8 @@ import type {
   AnalyzeRequest,
   AnalyzeBulkRequest,
   AuthorityRankRequest,
+  AutoTagPassRequest,
+  AutoConsolidatePassRequest,
   SynthesisRequest,
   SuggestRequest,
   AddLinksToScope,
@@ -81,6 +83,20 @@ export function useResearchApi() {
         body?: AuthorityRankRequest,
         signal?: AbortSignal,
       ) => api.post(endpoints(topicId).rankAuthority, body ?? {}, signal),
+
+      // --- Auto-tag pass (standalone "Run now" — same pass as the /run orchestrator) ---
+      autoTag: (
+        topicId: string,
+        body?: AutoTagPassRequest,
+        signal?: AbortSignal,
+      ) => api.post(endpoints(topicId).autoTag, body ?? {}, signal),
+
+      // --- Auto-consolidate pass (standalone "Run now" — same pass as /run) ---
+      autoConsolidate: (
+        topicId: string,
+        body?: AutoConsolidatePassRequest,
+        signal?: AbortSignal,
+      ) => api.post(endpoints(topicId).autoConsolidate, body ?? {}, signal),
 
       // --- Keywords (Python for validation + project_id resolution) ---
       addKeywords: (topicId: string, body: KeywordCreate) =>

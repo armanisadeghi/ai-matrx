@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, useMemo, useTransition } from "react";
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useTransition,
+  useEffect,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -54,18 +61,29 @@ import { SourceTagsInline } from "./SourceTagsInline";
 import { AuthorityRankButton } from "./AuthorityRankButton";
 import { AuthorityExportButton } from "./AuthorityExportButton";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import type { ResearchTag } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
-import type { ResearchSource, BulkAction, SourceSortBy } from "../../types";
+import type {
+  ResearchSource,
+  BulkAction,
+  SourceSortBy,
+  SortDir,
+} from "../../types";
 import type { SourceImportance } from "../../ranking";
 import {
   sourceOriginFromDb,
   sourceTypeFromDb,
   stringArrayFromJson,
 } from "../../types";
+import {
+  SCRAPE_STATUS_CONFIG,
+  SOURCE_TYPE_CONFIG,
+  ORIGIN_CONFIG,
+} from "../../constants";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 function formatPageAge(pageAge: string | null): {
@@ -86,6 +104,82 @@ function formatPageAge(pageAge: string | null): {
   return { display: `${Math.floor(days / 365)}y ago`, daysOld: days };
 }
 
+/**
+ * Client-only sort axes for columns the server `SourceSortBy` type can't
+ * express (they're derived or not indexed server-side). These sort the fetched
+ * page locally — see `localSortComparator`. Prefixed so they never collide with
+ * a real `SourceSortBy` value when both flow through the one sort state.
+ */
+type LocalSortKey =
+  | "local:source_type"
+  | "local:origin"
+  | "local:authority_tier"
+  | "local:tags";
+
+/** Anything a column header can sort by — a server field or a local-only axis. */
+type SortKey = SourceSortBy | LocalSortKey;
+
+const LOCAL_SORT_KEYS = new Set<string>([
+  "local:source_type",
+  "local:origin",
+  "local:authority_tier",
+  "local:tags",
+]);
+
+function isLocalSortKey(key: string | undefined): key is LocalSortKey {
+  return key != null && LOCAL_SORT_KEYS.has(key);
+}
+
+/** Tier rank for sorting (high → low when descending). */
+const TIER_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
+
+function tierFromSource(source: ResearchSource): string | null {
+  const t = (source.authority_tier ?? "").toLowerCase();
+  if (t === "high" || t === "medium" || t === "low") return t;
+  if (source.authority_score == null) return null;
+  if (source.authority_score >= 75) return "high";
+  if (source.authority_score >= 45) return "medium";
+  return "low";
+}
+
+/**
+ * Comparator for the client-only sort axes. Returns a stable ordering with
+ * un-set values pushed to the end regardless of direction (matches the
+ * server's `nullsFirst: false` convention). `dir` is +1 asc / -1 desc.
+ */
+function localSortComparator(
+  key: LocalSortKey,
+  dir: number,
+  tagCountFor: (id: string) => number,
+): (a: ResearchSource, b: ResearchSource) => number {
+  return (a, b) => {
+    let av: string | number | null;
+    let bv: string | number | null;
+    switch (key) {
+      case "local:source_type":
+        av = a.source_type ?? null;
+        bv = b.source_type ?? null;
+        break;
+      case "local:origin":
+        av = a.origin ?? null;
+        bv = b.origin ?? null;
+        break;
+      case "local:authority_tier":
+        av = TIER_ORDER[tierFromSource(a) ?? ""] ?? null;
+        bv = TIER_ORDER[tierFromSource(b) ?? ""] ?? null;
+        break;
+      case "local:tags":
+        av = tagCountFor(a.id);
+        bv = tagCountFor(b.id);
+        break;
+    }
+    if (av === bv) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return av < bv ? -1 * dir : 1 * dir;
+  };
+}
+
 function SortHeader({
   label,
   field,
@@ -95,10 +189,10 @@ function SortHeader({
   className,
 }: {
   label: string;
-  field: SourceSortBy;
-  currentSort?: SourceSortBy;
+  field: SortKey;
+  currentSort?: SortKey;
   currentDir?: string;
-  onSort: (field: SourceSortBy) => void;
+  onSort: (field: SortKey) => void;
   className?: string;
 }) {
   const isActive = currentSort === field;
@@ -143,6 +237,25 @@ interface SourceRowProps {
   onNavigate: (id: string, e?: React.MouseEvent) => void;
 }
 
+/** Column count of the desktop data table — keep in sync with the header +
+ *  the body row so the expandable detail row spans the full width. */
+const DESKTOP_COLUMN_COUNT = 9;
+
+/**
+ * Research topics are bounded (tens to a few hundred sources), so we fetch the
+ * WHOLE topic source set in one query and do all sorting, filtering, and
+ * pagination CLIENT-SIDE. This eliminates the previous server-page-vs-client-
+ * logic split, where client-only sort axes (`local:*`) and the authority tier
+ * filter only saw the first server page (≤50 rows by `rank`) — silently lying
+ * about the true top-authority sources beyond row 50. The server `sort_by` /
+ * `filter` params still apply as the INITIAL fetch order, but because the full
+ * set is now in hand, every sort axis and every filter is correct at any size.
+ *
+ * On the rare topic that exceeds this cap, the table shows an honest note so it
+ * never silently truncates. Bump if real topics start to approach it.
+ */
+const FETCH_ALL_LIMIT = 1000;
+
 function SourceRow({
   source,
   importance,
@@ -164,26 +277,35 @@ function SourceRow({
   const { display: pageAgeDisplay } = formatPageAge(source.page_age);
   const snippets = stringArrayFromJson(source.extra_snippets);
   const hasSnippets = snippets.length > 0;
+  const hasReasoning = !!source.authority_reasoning;
+  const isRanked = source.authority_score != null;
+  const tier = tierFromSource(source);
+  const canExpand = hasSnippets || hasReasoning;
   const needsScrape =
     source.scrape_status === "pending" ||
     source.scrape_status === "failed" ||
     source.scrape_status === "thin";
 
+  // Every data cell gets a right + bottom hairline → real gridlines. The final
+  // (actions) column drops the right border so the table edge stays clean.
+  const cellBase =
+    "border-b border-border/60 border-r [&:last-child]:border-r-0";
+
   return (
     <>
       <tr
         className={cn(
-          "border-b border-border transition-colors group",
+          "transition-colors group even:bg-muted/20 dark:even:bg-muted/10",
           !source.is_included && "opacity-50",
           navigating && "bg-muted/60",
-          !anyNavigating && "hover:bg-muted/30 cursor-pointer",
+          !anyNavigating && "hover:bg-muted/40 cursor-pointer",
           anyNavigating && !navigating && "cursor-not-allowed opacity-70",
         )}
         onClick={(e) => !anyNavigating && onNavigate(source.id, e)}
       >
         {/* Checkbox + Include + Rank stacked vertically */}
         <td
-          className="px-2 py-2.5 w-12 align-top"
+          className={cn("px-2 py-2.5 w-12 align-top", cellBase)}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center gap-1.5">
@@ -210,7 +332,7 @@ function SourceRow({
         </td>
 
         {/* Thumbnail — larger */}
-        <td className="py-2.5 pr-3 w-16 align-top">
+        <td className={cn("py-2.5 px-3 w-16 align-top", cellBase)}>
           <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
             {source.thumbnail_url ? (
               <Image
@@ -227,8 +349,8 @@ function SourceRow({
           </div>
         </td>
 
-        {/* Content: Title + URL + Description + Metadata */}
-        <td className="px-2 py-2.5 w-full max-w-0">
+        {/* Source: Title + URL + Description + hostname + tags + scrape */}
+        <td className={cn("px-2 py-2.5 w-full max-w-0 align-top", cellBase)}>
           <div className="min-w-0 overflow-hidden">
             <div className="font-medium text-sm leading-snug line-clamp-2 break-words group-hover:text-primary transition-colors">
               {source.title || source.url}
@@ -242,41 +364,16 @@ function SourceRow({
               </div>
             )}
             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <span className="text-[11px] text-muted-foreground truncate max-w-48">
-                {source.hostname}
-              </span>
-              <span className="text-muted-foreground/30">·</span>
-              <SourceTypeIcon
-                type={sourceTypeFromDb(source.source_type)}
-                size={13}
-                className="text-muted-foreground"
-              />
-              <OriginBadge origin={sourceOriginFromDb(source.origin)} />
-              {source.page_age && (
-                <>
-                  <span className="text-muted-foreground/30">·</span>
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                    {pageAgeDisplay}
-                  </span>
-                </>
-              )}
-              <span className="text-muted-foreground/30">·</span>
-              <StatusBadge status={source.scrape_status} />
-              {source.authority_score != null && (
-                <>
-                  <span className="text-muted-foreground/30">·</span>
-                  <AuthorityTierBadge
-                    score={source.authority_score}
-                    tier={source.authority_tier}
-                    reasoning={source.authority_reasoning}
-                  />
-                </>
+              {source.hostname && (
+                <span className="text-[11px] text-muted-foreground truncate max-w-48">
+                  {source.hostname}
+                </span>
               )}
               {needsScrape && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-5 px-1.5 gap-1 text-[10px] ml-1"
+                  className="h-5 px-1.5 gap-1 text-[10px]"
                   disabled={scraping || anyNavigating}
                   onClick={(e) => onScrape(source, e)}
                 >
@@ -298,24 +395,89 @@ function SourceRow({
                 onCreateTag={onCreateTag}
               />
             </div>
-            {expanded && hasSnippets && (
-              <div className="mt-2 space-y-1.5">
-                {snippets.map((snippet, i) => (
-                  <p
-                    key={i}
-                    className="text-xs text-foreground/70 leading-relaxed"
-                  >
-                    {snippet}
-                  </p>
-                ))}
-              </div>
-            )}
           </div>
+        </td>
+
+        {/* Type */}
+        <td className={cn("px-2 py-2.5 w-14 align-top text-center", cellBase)}>
+          <div
+            className="flex items-center justify-center"
+            title={SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
+          >
+            <SourceTypeIcon
+              type={sourceTypeFromDb(source.source_type)}
+              size={15}
+              className="text-muted-foreground"
+            />
+          </div>
+        </td>
+
+        {/* Origin */}
+        <td className={cn("px-2 py-2.5 w-20 align-top", cellBase)}>
+          <OriginBadge origin={sourceOriginFromDb(source.origin)} />
+        </td>
+
+        {/* Authority — first-class: tier badge + prominent score + reasoning */}
+        <td className={cn("px-2 py-2.5 w-28 align-top", cellBase)}>
+          {isRanked ? (
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "text-base font-bold tabular-nums leading-none",
+                    tier === "high" && "text-green-600 dark:text-green-400",
+                    tier === "medium" && "text-amber-600 dark:text-amber-400",
+                    tier === "low" && "text-rose-600 dark:text-rose-400",
+                  )}
+                >
+                  {source.authority_score}
+                </span>
+                {hasReasoning && (
+                  <button
+                    type="button"
+                    className="p-0.5 rounded hover:bg-muted transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpanded((v) => !v);
+                    }}
+                    title={expanded ? "Hide reasoning" : "Show reasoning"}
+                    aria-label={expanded ? "Hide reasoning" : "Show reasoning"}
+                  >
+                    {expanded ? (
+                      <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                    )}
+                  </button>
+                )}
+              </div>
+              <AuthorityTierBadge
+                score={source.authority_score}
+                tier={source.authority_tier}
+                reasoning={null}
+                scoreHidden
+              />
+            </div>
+          ) : (
+            <AuthorityTierBadge score={null} tier={null} showUnranked />
+          )}
+        </td>
+
+        {/* Age */}
+        <td className={cn("px-2 py-2.5 w-16 align-top", cellBase)}>
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+            {pageAgeDisplay}
+          </span>
+        </td>
+
+        {/* Status */}
+        <td className={cn("px-2 py-2.5 w-20 align-top", cellBase)}>
+          <StatusBadge status={source.scrape_status} />
         </td>
 
         {/* Actions */}
         <td
-          className="px-2 py-2.5 w-10 align-top"
+          className={cn("px-2 py-2.5 w-10 align-top", cellBase)}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center gap-1">
@@ -386,7 +548,7 @@ function SourceRow({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            {hasSnippets && (
+            {canExpand && (
               <button
                 className="p-0.5 rounded hover:bg-muted transition-colors"
                 onClick={(e) => {
@@ -405,6 +567,56 @@ function SourceRow({
           </div>
         </td>
       </tr>
+
+      {/* Expanded detail row — authority reasoning + search snippets, as
+          first-class READABLE text (never concatenated into the badge). */}
+      {expanded && (hasReasoning || hasSnippets) && (
+        <tr className="even:bg-muted/20 dark:even:bg-muted/10">
+          <td
+            colSpan={DESKTOP_COLUMN_COUNT}
+            className="border-b border-border/60 px-4 py-3 bg-muted/20 dark:bg-muted/10"
+          >
+            <div className="space-y-2.5">
+              {hasReasoning && (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Authority reasoning
+                    </span>
+                    {tier && (
+                      <AuthorityTierBadge
+                        score={source.authority_score}
+                        tier={source.authority_tier}
+                        reasoning={null}
+                      />
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-foreground/80 leading-relaxed max-w-3xl">
+                    {source.authority_reasoning}
+                  </p>
+                </div>
+              )}
+              {hasSnippets && (
+                <div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Snippets
+                  </span>
+                  <div className="mt-1 space-y-1.5">
+                    {snippets.map((snippet, i) => (
+                      <p
+                        key={i}
+                        className="text-xs text-foreground/70 leading-relaxed max-w-3xl"
+                      >
+                        {snippet}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
     </>
   );
 }
@@ -420,9 +632,20 @@ export default function SourceList() {
 
   const { filters, setFilters, resetFilters, hasActiveFilters } =
     useSourceFilters();
+  // Fetch the WHOLE topic source set in one query (offset 0, high cap) and do
+  // all sort/filter/pagination client-side below. The user's server-side
+  // `sort_by` / `filter` / `keyword_id` params still flow through as the
+  // INITIAL fetch order — but every client axis now sees the complete set, so
+  // it can't lie about rows past the old 50-row server page. `filters.limit`
+  // is repurposed as the CLIENT page size (not the fetch size); `filters.offset`
+  // as the CLIENT page position (see `pagedSources` / the pager below).
+  const fetchFilters = useMemo(
+    () => ({ ...filters, limit: FETCH_ALL_LIMIT, offset: 0 }),
+    [filters],
+  );
   const { data: sources, refresh: refetchSources } = useResearchSources(
     topicId,
-    filters,
+    fetchFilters,
   );
   const stream = useResearchStream(() => {
     refetchSources();
@@ -443,21 +666,82 @@ export default function SourceList() {
   const [createTagTarget, setCreateTagTarget] = useState<string | null>(null);
   const [creatingTag, setCreatingTag] = useState(false);
 
+  // Client-only sort axis (source_type / origin / authority_tier / tags) — the
+  // server `SourceSortBy` type can't carry these, so they sort the fetched page
+  // locally. Mutually exclusive with the server sort: activating one clears the
+  // other, so exactly one sort arrow is ever lit.
+  const [localSort, setLocalSort] = useState<{
+    key: LocalSortKey;
+    dir: SortDir;
+  } | null>(null);
+  // Client-only Authority TIER header filter — there is no server column for
+  // tier (it's derived from the score), so this narrows the fetched page.
+  const [tierFilter, setTierFilter] = useState<string | null>(null);
+
   const tagList = (tags as ResearchTag[]) ?? [];
   const tagsBySource = sourceTagMap ?? {};
+  const tagCountFor = useCallback(
+    (id: string) => tagsBySource[id]?.length ?? 0,
+    [tagsBySource],
+  );
 
+  // The COMPLETE topic source set (capped at FETCH_ALL_LIMIT), already carrying
+  // any server-side filter + sort the user picked.
   const allSources = (sources as ResearchSource[]) ?? [];
+  // True only when the topic genuinely exceeds the fetch cap — used to show an
+  // honest "showing first N" note so the table never silently truncates.
+  const fetchCapped = allSources.length >= FETCH_ALL_LIMIT;
+
+  // `sourceList` = the fully-processed FULL set: search + tier filter + local
+  // sort applied over EVERY fetched row (not a server page). This is what all
+  // totals, the count, the hostname facet, and the pager are derived from — so
+  // "sort by tier" / "filter Tier=high" are correct across the whole topic.
   const sourceList = useMemo(() => {
-    if (!search) return allSources;
-    return filterAndSortBySearch(allSources, search, [
-      { get: (s) => s.title, weight: "title" },
-      { get: (s) => s.hostname, weight: "subtitle" },
-      { get: (s) => s.url, weight: "subtitle" },
-      { get: (s) => s.description, weight: "body" },
-      { get: (s) => s.origin, weight: "meta" },
-      { get: (s) => s.source_type, weight: "meta" },
-    ]);
-  }, [allSources, search]);
+    // 1. Search relevance filtering/ordering (when a query is present).
+    let list = search
+      ? filterAndSortBySearch(allSources, search, [
+          { get: (s) => s.title, weight: "title" },
+          { get: (s) => s.hostname, weight: "subtitle" },
+          { get: (s) => s.url, weight: "subtitle" },
+          { get: (s) => s.description, weight: "body" },
+          { get: (s) => s.origin, weight: "meta" },
+          { get: (s) => s.source_type, weight: "meta" },
+        ])
+      : allSources;
+
+    // 2. Client-only Authority TIER header filter (no server column for tier) —
+    //    now over the FULL set, so it surfaces every high/medium/low source.
+    if (tierFilter) {
+      list = list.filter((s) => tierFromSource(s) === tierFilter);
+    }
+
+    // 3. Client-only sort axis — overrides search relevance order when set, and
+    //    sorts the FULL set so the true top rows can't hide past a server page.
+    //    Server sorts are already applied by getSources, so they pass through.
+    if (localSort) {
+      const dir = localSort.dir === "desc" ? -1 : 1;
+      list = [...list].sort(
+        localSortComparator(localSort.key, dir, tagCountFor),
+      );
+    }
+    return list;
+  }, [allSources, search, tierFilter, localSort, tagCountFor]);
+
+  // Client-side pagination over the fully-processed list. `filters.limit` is the
+  // page size and `filters.offset` the page position (both from the URL). We
+  // clamp the offset so a filter that shrinks the list can never strand the user
+  // on an empty page past the new end.
+  const pageSize = filters.limit;
+  const totalCount = sourceList.length;
+  const maxOffset =
+    totalCount === 0 ? 0 : Math.floor((totalCount - 1) / pageSize) * pageSize;
+  const pageOffset = Math.min(filters.offset, maxOffset);
+  const pagedSources = useMemo(
+    () => sourceList.slice(pageOffset, pageOffset + pageSize),
+    [sourceList, pageOffset, pageSize],
+  );
+
+  // Hostname facet reflects the WHOLE processed set, not just the visible page.
   const hostnames = useMemo(
     () =>
       [
@@ -467,6 +751,20 @@ export default function SourceList() {
       ].sort(),
     [sourceList],
   );
+
+  // The client-side controls (search, tier filter, local sort) don't flow
+  // through `setFilters`, so changing them won't auto-reset the page the way a
+  // server-filter change does. Snap back to page 1 when any of them changes so
+  // the user lands on the first results of the new view (the `pageOffset` clamp
+  // already guarantees safety; this is the expected, non-surprising behavior).
+  const clientViewKey = `${search}|${tierFilter ?? ""}|${localSort?.key ?? ""}:${localSort?.dir ?? ""}`;
+  const prevClientViewKey = useRef(clientViewKey);
+  useEffect(() => {
+    if (prevClientViewKey.current !== clientViewKey) {
+      prevClientViewKey.current = clientViewKey;
+      if (filters.offset !== 0) setFilters({ offset: 0 });
+    }
+  }, [clientViewKey, filters.offset, setFilters]);
 
   const handleNavigate = useCallback(
     (id: string, e?: React.MouseEvent) => {
@@ -481,8 +779,29 @@ export default function SourceList() {
     [navigatingId, router, topicId],
   );
 
+  // Unified "what is currently sorted" — either the server filter sort or the
+  // local sort. Exactly one is non-null at a time (the toggle enforces it).
+  const activeSort: SortKey | undefined = localSort?.key ?? filters.sort_by;
+  const activeDir: SortDir | undefined = localSort
+    ? localSort.dir
+    : filters.sort_dir;
+
+  // One tri-state toggle (asc → desc → none) shared by EVERY column header,
+  // whether it sorts server-side or client-side.
   const handleSort = useCallback(
-    (field: SourceSortBy) => {
+    (field: SortKey) => {
+      if (isLocalSortKey(field)) {
+        // Switching to a local sort: drop any server sort so only one is active.
+        if (filters.sort_by) setFilters({ sort_by: undefined, sort_dir: undefined });
+        setLocalSort((prev) => {
+          if (prev?.key !== field) return { key: field, dir: "asc" };
+          if (prev.dir === "asc") return { key: field, dir: "desc" };
+          return null;
+        });
+        return;
+      }
+      // Server sort: clear any local sort first.
+      if (localSort) setLocalSort(null);
       if (filters.sort_by === field) {
         if (filters.sort_dir === "asc") {
           setFilters({ sort_by: field, sort_dir: "desc" });
@@ -493,7 +812,7 @@ export default function SourceList() {
         setFilters({ sort_by: field, sort_dir: "asc" });
       }
     },
-    [filters.sort_by, filters.sort_dir, setFilters],
+    [filters.sort_by, filters.sort_dir, setFilters, localSort],
   );
 
   const toggleSelect = useCallback((id: string) => {
@@ -505,13 +824,22 @@ export default function SourceList() {
     });
   }, []);
 
+  // "Select all" toggles the VISIBLE page (selections persist across pages in
+  // the `selected` Set). All-selected = every row on this page is selected.
+  const pageAllSelected =
+    pagedSources.length > 0 && pagedSources.every((s) => selected.has(s.id));
   const toggleAll = useCallback(() => {
-    if (selected.size === sourceList.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(sourceList.map((s) => s.id)));
-    }
-  }, [selected.size, sourceList]);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const allOn = pagedSources.every((s) => next.has(s.id));
+      if (allOn) {
+        for (const s of pagedSources) next.delete(s.id);
+      } else {
+        for (const s of pagedSources) next.add(s.id);
+      }
+      return next;
+    });
+  }, [pagedSources]);
 
   const handleBulk = useCallback(
     async (action: BulkAction) => {
@@ -613,13 +941,55 @@ export default function SourceList() {
 
   const anyNavigating = isPending || navigatingId !== null;
 
+  // Per-column header filter options (mirror the top SourceFilters bar configs).
+  const statusFilterOptions: ColumnFilterOption[] = useMemo(
+    () =>
+      Object.entries(SCRAPE_STATUS_CONFIG).map(([id, cfg]) => ({
+        id,
+        label: cfg.label,
+      })),
+    [],
+  );
+  const typeFilterOptions: ColumnFilterOption[] = useMemo(
+    () =>
+      Object.entries(SOURCE_TYPE_CONFIG).map(([id, cfg]) => ({
+        id,
+        label: cfg.label,
+      })),
+    [],
+  );
+  const originFilterOptions: ColumnFilterOption[] = useMemo(
+    () =>
+      Object.entries(ORIGIN_CONFIG).map(([id, cfg]) => ({
+        id,
+        label: cfg.label,
+      })),
+    [],
+  );
+  const tierFilterOptions: ColumnFilterOption[] = useMemo(
+    () => [
+      { id: "high", label: "High" },
+      { id: "medium", label: "Medium" },
+      { id: "low", label: "Low" },
+    ],
+    [],
+  );
+
+  // The top bar's "reset" must also clear the local tier filter + local sort.
+  const anyFilterActive = hasActiveFilters || tierFilter != null;
+  const resetAllFilters = useCallback(() => {
+    setTierFilter(null);
+    setLocalSort(null);
+    resetFilters();
+  }, [resetFilters]);
+
   return (
     <div className="p-3 sm:p-4 space-y-3 overflow-x-hidden">
       <SourceFilters
         filters={filters}
         onFilterChange={setFilters}
-        onReset={resetFilters}
-        hasActiveFilters={hasActiveFilters}
+        onReset={resetAllFilters}
+        hasActiveFilters={anyFilterActive}
         keywords={(keywords as import("../../types").ResearchKeyword[]) ?? []}
         hostnames={hostnames}
         count={sourceList.length}
@@ -638,55 +1008,140 @@ export default function SourceList() {
 
       {/* Desktop Table */}
       {!isMobile ? (
-        <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-sm overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-muted/30 border-b border-border/50">
-                <th className="w-12 px-2 py-2">
-                  <Checkbox
-                    checked={
-                      selected.size === sourceList.length &&
-                      sourceList.length > 0
-                    }
-                    onCheckedChange={toggleAll}
-                  />
-                </th>
-                <th className="w-16 py-2 pr-3" />
-                <th className="px-2 py-2 text-left w-full">
-                  <div className="flex items-center gap-4">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Title / Description
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <SortHeader
-                        label="#"
-                        field="rank"
-                        currentSort={filters.sort_by}
-                        currentDir={filters.sort_dir}
-                        onSort={handleSort}
-                      />
-                      <SortHeader
-                        label="Age"
-                        field="page_age"
-                        currentSort={filters.sort_by}
-                        currentDir={filters.sort_dir}
-                        onSort={handleSort}
-                      />
-                      <SortHeader
-                        label="Status"
-                        field="scrape_status"
-                        currentSort={filters.sort_by}
-                        currentDir={filters.sort_dir}
-                        onSort={handleSort}
-                      />
-                    </div>
+              <tr className="bg-muted/40 [&>th]:border-b [&>th]:border-r [&>th]:border-border/60 [&>th:last-child]:border-r-0">
+                {/* Select + Rank sort */}
+                <th className="w-12 px-2 py-2 align-middle">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <Checkbox
+                      checked={pageAllSelected}
+                      onCheckedChange={toggleAll}
+                    />
+                    <SortHeader
+                      label="#"
+                      field="rank"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
                   </div>
                 </th>
+                {/* Thumbnail — no sort */}
+                <th className="w-16 px-3 py-2" />
+                {/* Source — sort by hostname */}
+                <th className="px-2 py-2 text-left w-full">
+                  <SortHeader
+                    label="Source"
+                    field="hostname"
+                    currentSort={activeSort}
+                    currentDir={activeDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                {/* Type — local sort + server filter */}
+                <th className="w-14 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Type"
+                      field="local:source_type"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Type"
+                      options={typeFilterOptions}
+                      selectedId={filters.source_type ?? null}
+                      onSelect={(id) =>
+                        setFilters({
+                          source_type: (id ??
+                            undefined) as typeof filters.source_type,
+                        })
+                      }
+                    />
+                  </div>
+                </th>
+                {/* Origin — local sort + server filter */}
+                <th className="w-20 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Origin"
+                      field="local:origin"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Origin"
+                      options={originFilterOptions}
+                      selectedId={filters.origin ?? null}
+                      onSelect={(id) =>
+                        setFilters({
+                          origin: (id ?? undefined) as typeof filters.origin,
+                        })
+                      }
+                    />
+                  </div>
+                </th>
+                {/* Authority — server score sort + local tier filter */}
+                <th className="w-28 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Authority"
+                      field="authority_score"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Tier"
+                      options={tierFilterOptions}
+                      selectedId={tierFilter}
+                      onSelect={setTierFilter}
+                    />
+                  </div>
+                </th>
+                {/* Age — server sort */}
+                <th className="w-16 px-2 py-2 text-left">
+                  <SortHeader
+                    label="Age"
+                    field="page_age"
+                    currentSort={activeSort}
+                    currentDir={activeDir}
+                    onSort={handleSort}
+                  />
+                </th>
+                {/* Status — server sort + server filter */}
+                <th className="w-20 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Status"
+                      field="scrape_status"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Status"
+                      options={statusFilterOptions}
+                      selectedId={filters.scrape_status ?? null}
+                      onSelect={(id) =>
+                        setFilters({
+                          scrape_status: (id ??
+                            undefined) as typeof filters.scrape_status,
+                        })
+                      }
+                    />
+                  </div>
+                </th>
+                {/* Actions — no sort */}
                 <th className="w-10 px-2 py-2" />
               </tr>
             </thead>
             <tbody>
-              {sourceList.map((source) => (
+              {pagedSources.map((source) => (
                 <SourceRow
                   key={source.id}
                   source={source}
@@ -708,7 +1163,7 @@ export default function SourceList() {
               ))}
             </tbody>
           </table>
-          {sourceList.length === 0 && (
+          {totalCount === 0 && (
             <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
               No sources found. Run a search to discover sources.
             </div>
@@ -717,7 +1172,7 @@ export default function SourceList() {
       ) : (
         /* Mobile Card List */
         <div className="space-y-2">
-          {sourceList.map((source) => {
+          {pagedSources.map((source) => {
             const { display: pageAgeDisplay } = formatPageAge(source.page_age);
             const isNavigating = navigatingId === source.id;
             const needsScrape =
@@ -864,7 +1319,7 @@ export default function SourceList() {
               </Link>
             );
           })}
-          {sourceList.length === 0 && (
+          {totalCount === 0 && (
             <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
               No sources found.
             </div>
@@ -872,27 +1327,38 @@ export default function SourceList() {
         </div>
       )}
 
-      {sourceList.length >= filters.limit && (
+      {/* Honest truncation note — only when the topic genuinely exceeds the
+          fetch cap, so the table never silently lies about its real size. */}
+      {fetchCapped && (
+        <div className="flex items-center justify-center pt-1">
+          <span className="text-[10px] text-muted-foreground">
+            Showing first {FETCH_ALL_LIMIT.toLocaleString()} sources of this
+            topic.
+          </span>
+        </div>
+      )}
+
+      {/* Client-side pager over the fully-processed (sorted + filtered) list.
+          Gated on the REAL processed total, so a tier filter that shrinks a
+          page can never make the pager (and "Prev") vanish — fixes bug A3. */}
+      {totalCount > pageSize && (
         <div className="flex items-center justify-center gap-1.5 pt-1">
           <button
-            disabled={filters.offset === 0}
+            disabled={pageOffset === 0}
             onClick={() =>
-              setFilters({
-                offset: Math.max(0, filters.offset - filters.limit),
-              })
+              setFilters({ offset: Math.max(0, pageOffset - pageSize) })
             }
             className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
           >
             Prev
           </button>
           <span className="text-[10px] text-muted-foreground tabular-nums px-1">
-            {filters.offset + 1}–{filters.offset + sourceList.length}
+            {pageOffset + 1}–{pageOffset + pagedSources.length} of {totalCount}
           </span>
           <button
-            onClick={() =>
-              setFilters({ offset: filters.offset + filters.limit })
-            }
-            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            disabled={pageOffset + pageSize >= totalCount}
+            onClick={() => setFilters({ offset: pageOffset + pageSize })}
+            className="h-6 px-2.5 rounded-full matrx-glass-card text-[10px] font-medium text-muted-foreground disabled:opacity-30 hover:text-foreground transition-colors"
           >
             Next
           </button>

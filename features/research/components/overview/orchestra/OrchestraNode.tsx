@@ -72,6 +72,15 @@ export interface OrchestraNodeProps {
   actionIcon?: LucideIcon;
   actionDisabled?: boolean;
   /**
+   * Optional SECOND action button (e.g. a node that can run two related passes,
+   * like Tags → auto-tag + auto-consolidate). Rendered to the left of the
+   * primary action with the same visuals. Same active/disabled rules apply.
+   */
+  onSecondaryAction?: () => Promise<void> | void;
+  secondaryActionLabel?: string;
+  secondaryActionIcon?: LucideIcon;
+  secondaryActionDisabled?: boolean;
+  /**
    * Optional ribbon strip drawn at the top of the card — used for
    * tag-source breakdowns ("S 12 · A 8"), quota chips, etc.
    */
@@ -135,6 +144,10 @@ export function OrchestraNode({
   actionLabel,
   actionIcon: ActionIcon = Play,
   actionDisabled,
+  onSecondaryAction,
+  secondaryActionLabel,
+  secondaryActionIcon: SecondaryActionIcon = Play,
+  secondaryActionDisabled,
   ribbon,
   tooltip,
   dim,
@@ -142,8 +155,10 @@ export function OrchestraNode({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionBusy, setActionBusy] = useState(false);
+  const [secondaryBusy, setSecondaryBusy] = useState(false);
   const badge = STATUS_BADGE[status];
   const showAction = onAction != null && status !== "active";
+  const showSecondaryAction = onSecondaryAction != null && status !== "active";
 
   // Bump the count visually whenever it changes — surfaces live increments.
   const countWrapRef = useRef<HTMLSpanElement>(null);
@@ -176,6 +191,18 @@ export function OrchestraNode({
       await onAction();
     } finally {
       setActionBusy(false);
+    }
+  };
+
+  const handleSecondaryAction = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onSecondaryAction || secondaryBusy || secondaryActionDisabled) return;
+    setSecondaryBusy(true);
+    try {
+      await onSecondaryAction();
+    } finally {
+      setSecondaryBusy(false);
     }
   };
 
@@ -265,31 +292,59 @@ export function OrchestraNode({
               )}
             </div>
 
-            {showAction && (
-              <button
-                type="button"
-                onClick={handleAction}
-                disabled={actionDisabled || actionBusy}
-                aria-label={actionLabel ?? "Run this stage"}
-                className={cn(
-                  "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full",
-                  "border border-border/60 bg-background/70 backdrop-blur",
-                  "text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/10",
-                  "transition-colors",
-                  "disabled:opacity-40 disabled:pointer-events-none",
-                  "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                  status === "gated" &&
-                    "opacity-100 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10",
+            {(showAction || showSecondaryAction) && (
+              <div className="flex shrink-0 items-center gap-1">
+                {showSecondaryAction && (
+                  <button
+                    type="button"
+                    onClick={handleSecondaryAction}
+                    disabled={secondaryActionDisabled || secondaryBusy}
+                    aria-label={secondaryActionLabel ?? "Run this stage"}
+                    className={cn(
+                      "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full",
+                      "border border-border/60 bg-background/70 backdrop-blur",
+                      "text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/10",
+                      "transition-colors",
+                      "disabled:opacity-40 disabled:pointer-events-none",
+                      "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                      status === "gated" &&
+                        "opacity-100 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10",
+                    )}
+                  >
+                    {secondaryBusy ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <SecondaryActionIcon className="h-3 w-3" />
+                    )}
+                  </button>
                 )}
-              >
-                {actionBusy ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ActionIcon className="h-3 w-3" />
+                {showAction && (
+                  <button
+                    type="button"
+                    onClick={handleAction}
+                    disabled={actionDisabled || actionBusy}
+                    aria-label={actionLabel ?? "Run this stage"}
+                    className={cn(
+                      "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full",
+                      "border border-border/60 bg-background/70 backdrop-blur",
+                      "text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/10",
+                      "transition-colors",
+                      "disabled:opacity-40 disabled:pointer-events-none",
+                      "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                      status === "gated" &&
+                        "opacity-100 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10",
+                    )}
+                  >
+                    {actionBusy ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ActionIcon className="h-3 w-3" />
+                    )}
+                  </button>
                 )}
-              </button>
+              </div>
             )}
-            {!showAction && status === "active" && (
+            {!showAction && !showSecondaryAction && status === "active" && (
               <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary/70 animate-pulse" />
             )}
           </div>

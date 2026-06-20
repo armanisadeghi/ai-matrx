@@ -78,6 +78,24 @@ export interface AuthorityRankRequest {
   /** Re-rank sources that already have an authority score. */
   force?: boolean;
 }
+/**
+ * Body for POST /research/topics/{id}/auto-tag.
+ * Hand-written; replace with components["schemas"]["AutoTagPassRequest"] on the
+ * next OpenAPI type regen from Python.
+ */
+export interface AutoTagPassRequest {
+  /** Cap the sources tagged this run. Omit = topic setting, else every eligible source. */
+  max_calls?: number | null;
+}
+/**
+ * Body for POST /research/topics/{id}/auto-consolidate.
+ * Hand-written; replace with components["schemas"]["AutoConsolidatePassRequest"]
+ * on the next OpenAPI type regen from Python.
+ */
+export interface AutoConsolidatePassRequest {
+  /** Cap the tags consolidated this run. Omit = topic setting, else every populated tag. */
+  max_calls?: number | null;
+}
 // topic_id was added on 2026-05-02; pending next type regen from Python
 export type SuggestRequest = components["schemas"]["SuggestRequest"] & {
   topic_id?: string | null;

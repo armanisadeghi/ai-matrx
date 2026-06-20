@@ -11433,6 +11433,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -13149,6 +13209,106 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AuthorityRankRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/auto-tag": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Run Auto Tag",
+        "description": "Run the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\nThis is the standalone trigger for the same `_run_auto_tag_pass` the\n`/run` orchestrator invokes as Phase B.5. The effective cap is, in order:\n`request.max_calls` → `rs_topic.max_auto_tag_calls` → (when both are 0,\nbecause the auto-pipeline default is OFF) the count of all eligible\nincluded+scraped sources, so an explicit user request never silently\nno-ops.",
+        "operationId": "run_auto_tag_research_topics__topic_id__auto_tag_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoTagPassRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/auto-consolidate": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Run Auto Consolidate",
+        "description": "Run the WHOLE auto-consolidate pass on demand (the \"Run now\" button).\n\nStandalone trigger for the same `_run_auto_consolidate_pass` the `/run`\norchestrator invokes as Phase D.5. The effective cap is, in order:\n`request.max_calls` → `rs_topic.max_tag_consolidations` → (when both are 0)\nthe count of all populated tags, so an explicit user request never silently\nno-ops.",
+        "operationId": "run_auto_consolidate_research_topics__topic_id__auto_consolidate_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoConsolidatePassRequest"
               }
             }
           }
@@ -39946,6 +40106,46 @@
         "title": "AuthorityRankRequest",
         "description": "Trigger AI authoritativeness ranking over a topic's sources.\n\n``source_ids=None`` ranks every included source on the topic. ``force=False``\nonly ranks sources not yet ranked (incremental); ``force=True`` re-ranks all."
       },
+      "AutoConsolidatePassRequest": {
+        "properties": {
+          "max_calls": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Calls",
+            "description": "Cap the tags consolidated this run; defaults to the topic setting."
+          }
+        },
+        "type": "object",
+        "title": "AutoConsolidatePassRequest",
+        "description": "Trigger the WHOLE auto-consolidate pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many populated tags the pass consolidates this\nrun. When omitted, the topic's `rs_topic.max_tag_consolidations` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\nconsolidates ALL populated tags — the user explicitly asked for it, so it\nmust never silently no-op."
+      },
+      "AutoTagPassRequest": {
+        "properties": {
+          "max_calls": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Calls",
+            "description": "Cap the sources tagged this run; defaults to the topic setting."
+          }
+        },
+        "type": "object",
+        "title": "AutoTagPassRequest",
+        "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
+      },
       "BatchDeleteRequest": {
         "properties": {
           "selector": {
@@ -49368,6 +49568,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {

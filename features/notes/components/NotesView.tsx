@@ -568,20 +568,19 @@ export function NotesView({ config, className }: NotesViewProps) {
               {/* Layer 2: Metadata bar (bottom — folder, tags, status) */}
               {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
             </div>
-
-            {/* Version history side panel */}
-            {showHistory && activeTabId && (
-              <div className="w-[360px] shrink-0 min-h-0 max-lg:hidden flex flex-col overflow-hidden">
-                <NoteVersionHistory
-                  noteId={activeTabId}
-                  onClose={() => setShowHistory(false)}
-                  onVersionRestored={() => {
-                    dispatch(fetchNoteContent(activeTabId));
-                  }}
-                />
-              </div>
-            )}
           </div>
+
+          {/* Version history — resizable MatrxDynamic panel (desktop) / Drawer (mobile) */}
+          {activeTabId && (
+            <NoteVersionHistory
+              noteId={activeTabId}
+              open={showHistory}
+              onOpenChange={setShowHistory}
+              onVersionRestored={() => {
+                dispatch(fetchNoteContent(activeTabId));
+              }}
+            />
+          )}
         </div>
       )}
     </NotesInstanceProvider>
