@@ -96,6 +96,101 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     { label: "empty (empty object)", value: {} },
 ];
 
+// ─── CTX renderer fixtures (ctx_get / ctx_batch / ctx_patch) ────────────────
+
+const CTX_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "ctx-get-md",
+        toolName: "ctx_get",
+        displayName: "Context",
+        arguments: { key: "patient_summary" },
+        result: {
+            key: "patient_summary",
+            type: "text",
+            label: "Patient Summary",
+            content:
+                "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. No prior cardiac history.\n\n- BP 148/92\n- HR 104\n- O2 sat 96%\n\nSee the [intake note](https://example.com) for the full timeline.",
+            total_chars: 214,
+        },
+    }),
+    entry({
+        callId: "ctx-get-table",
+        toolName: "ctx_get",
+        displayName: "Context",
+        arguments: { key: "open_cases" },
+        result: {
+            key: "open_cases",
+            type: "db_ref",
+            label: "Open Cases",
+            content: [
+                { id: "C-1042", client: "Acme Corp", stage: "Discovery", days_open: 31 },
+                { id: "C-1043", client: "Globex", stage: "Filing", days_open: 12 },
+                { id: "C-1044", client: "Initech", stage: "Review", days_open: 4 },
+            ],
+            total_chars: 0,
+        },
+    }),
+    entry({
+        callId: "ctx-batch",
+        toolName: "ctx_batch",
+        displayName: "Context",
+        arguments: {
+            requests: [
+                { key: "org_profile" },
+                { key: "active_project" },
+                { key: "missing_key" },
+            ],
+        },
+        result: {
+            count: 2,
+            requested: 3,
+            results: [
+                {
+                    key: "org_profile",
+                    success: true,
+                    output: {
+                        key: "org_profile",
+                        type: "org",
+                        label: "Organization Profile",
+                        content:
+                            "Acme Corp — enterprise legal services. 240 employees. Primary contact: Jane Doe (GC).",
+                        total_chars: 84,
+                    },
+                },
+                {
+                    key: "active_project",
+                    success: true,
+                    output: {
+                        key: "active_project",
+                        type: "project",
+                        label: "Active Project",
+                        content: { name: "Q3 Compliance Audit", owner: "j.doe", status: "in_progress" },
+                        total_chars: 0,
+                    },
+                },
+                {
+                    key: "missing_key",
+                    success: false,
+                    error: "No context object found for key 'missing_key'",
+                },
+            ],
+        },
+    }),
+    entry({
+        callId: "ctx-patch",
+        toolName: "ctx_patch",
+        displayName: "Context",
+        arguments: { key: "patient_summary", command: "str_replace" },
+        result: {
+            key: "patient_summary",
+            command: "str_replace",
+            ok: true,
+            preview:
+                "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. Aspirin 325mg administered.",
+        },
+    }),
+];
+
 // GenericRenderer state fixtures + shell fixtures.
 const STATE_ENTRIES: ToolLifecycleEntry[] = [
     entry({
@@ -147,6 +242,17 @@ export default function ResultFieldsGalleryPage() {
                     tool renderer overhaul.
                 </p>
             </header>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    CTX renderers — ctx_get / ctx_batch / ctx_patch (click a row to expand)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    {CTX_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </div>
+            </section>
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

@@ -38,6 +38,9 @@ import {
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search";
 import { RandomWheelInline } from "../renderers/random-wheel";
+import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
+import { CtxBatchInline } from "../renderers/ctx/CtxBatchInline";
+import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
 import BraveSearchDisplay from "@/features/workflows/results/registered-components/BraveSearchDisplay";
 
 import {
@@ -471,6 +474,76 @@ export const toolRendererRegistry: ToolRegistry = {
           {reranker && <span className="ml-auto">{reranker}</span>}
         </div>
       );
+    },
+  },
+
+  ctx_get: {
+    toolName: "ctx_get",
+    displayName: "Context",
+    phaseLabels: {
+      running: "Reviewing context",
+      complete: "Reviewed context",
+      errorPrefix: "Couldn't read context",
+    },
+    resultsLabel: "Context",
+    InlineComponent: CtxGetInline,
+    OverlayComponent: CtxGetInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const label =
+        typeof result?.label === "string" && result.label
+          ? (result.label as string)
+          : null;
+      if (label) return label;
+      const key = getArg<string>(entry, "key");
+      return typeof key === "string" && key ? key : null;
+    },
+  },
+
+  ctx_batch: {
+    toolName: "ctx_batch",
+    displayName: "Context",
+    phaseLabels: {
+      running: "Reviewing context",
+      complete: "Reviewed context",
+      errorPrefix: "Couldn't read context",
+    },
+    resultsLabel: "Context",
+    InlineComponent: CtxBatchInline,
+    OverlayComponent: CtxBatchInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const count =
+        typeof result?.count === "number"
+          ? (result.count as number)
+          : Array.isArray(result?.results)
+            ? (result?.results as unknown[]).length
+            : null;
+      if (count == null) return null;
+      return `${count} ${count === 1 ? "item" : "items"}`;
+    },
+  },
+
+  ctx_patch: {
+    toolName: "ctx_patch",
+    displayName: "Context",
+    phaseLabels: {
+      running: "Updating context",
+      complete: "Updated context",
+      errorPrefix: "Couldn't update context",
+    },
+    resultsLabel: "Context",
+    InlineComponent: CtxPatchInline,
+    OverlayComponent: CtxPatchInline,
+    getHeaderSubtitle: (entry) => {
+      const key = getArg<string>(entry, "key");
+      if (typeof key === "string" && key) return key;
+      const result = resultAsObject(entry);
+      return typeof result?.key === "string" && result.key
+        ? (result.key as string)
+        : null;
     },
   },
 
