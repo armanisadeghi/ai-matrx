@@ -84,10 +84,21 @@ const ToolCallVisualizationInner: React.FC<{
   // A tool call is a single line by default. Only the rich, opted-in custom
   // renderers (web_search, deep research, …) start expanded so their data
   // streams in; everything else stays one line until clicked.
-  const keepExpanded = entries.some(
-    (e) =>
-      hasCustomRenderer(e.toolName) && shouldKeepExpandedOnStream(e.toolName),
-  );
+  // Done / persisted tool calls collapse to a single line — only a LIVE,
+  // actively-streaming custom renderer (the most-recent incoming message) opens
+  // itself so its data streams in. On reload everything starts collapsed (and a
+  // collapsed body never mounts, so queries are never needlessly re-run).
+  const keepExpanded =
+    !isPersisted &&
+    entries.some(
+      (e) =>
+        (e.status === "started" ||
+          e.status === "progress" ||
+          e.status === "step" ||
+          e.status === "result_preview") &&
+        hasCustomRenderer(e.toolName) &&
+        shouldKeepExpandedOnStream(e.toolName),
+    );
   // React Compiler memoizes these derivations — no manual useMemo/useCallback.
   const [isExpanded, setIsExpanded] = useState<boolean>(keepExpanded);
   const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
@@ -212,14 +223,13 @@ const ToolCallVisualizationInner: React.FC<{
         // No persistent border — only on hover, so the row reads as plain text
         // height. The collapsed state is a single line in the transcript.
         "border border-transparent hover:border-border/60",
-        "hover:bg-muted/30 dark:hover:bg-muted/20",
         className,
       )}
     >
       <button
         onClick={() => setIsExpanded((v) => !v)}
         className={cn(
-          "flex w-full items-center justify-between px-1.5 py-0.5 text-left transition-colors hover:bg-muted/40 dark:hover:bg-muted/30",
+          "flex w-full items-center justify-between px-1.5 py-0.5 text-left transition-colors",
           isExpanded && "border-b border-border/40",
         )}
       >
@@ -235,9 +245,8 @@ const ToolCallVisualizationInner: React.FC<{
             <span
               className={cn(
                 "truncate text-xs font-medium",
-                phase === "error"
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-foreground",
+                // Errors stay calm — a recessive label, details behind the click.
+                phase === "error" ? "text-muted-foreground" : "text-foreground",
               )}
             >
               {phaseLabel}

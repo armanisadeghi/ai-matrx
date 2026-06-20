@@ -13,6 +13,7 @@ import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSource } from "../../types";
+import type { CurationAnalysisState } from "../../service";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
 
@@ -30,11 +31,20 @@ export default function ContentList() {
   const { data: importanceMap } = useSourceImportance(topicId);
   const { data: curation } = useCurationData(topicId);
 
-  /** source id → scraped char count (current version) for the Data column. */
+  /** source id → scraped char count (current version) for the Characters column. */
   const charCountMap = useMemo(() => {
     const m = new Map<string, number>();
     for (const row of curation?.rows ?? []) {
       if (row.charCount != null) m.set(row.source.id, row.charCount);
+    }
+    return m;
+  }, [curation]);
+
+  /** source id → analysis-report outcome, for the Analysis column. */
+  const analysisMap = useMemo(() => {
+    const m = new Map<string, CurationAnalysisState>();
+    for (const row of curation?.rows ?? []) {
+      m.set(row.source.id, row.analysis);
     }
     return m;
   }, [curation]);
@@ -200,10 +210,12 @@ export default function ContentList() {
           </div>
         ) : (
           <SourceResultsTable
+            interactive
             sources={filtered}
             topicId={topicId}
             rankFor={(s) => importanceMap?.get(s.id)?.bestRank ?? null}
             dataSizeFor={(s) => charCountMap.get(s.id) ?? null}
+            analysisFor={(s) => analysisMap.get(s.id) ?? null}
           />
         )}
       </div>

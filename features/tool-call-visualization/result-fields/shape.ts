@@ -31,6 +31,7 @@ export type ResultShape =
     | { kind: "empty" }
     | { kind: "scalar"; value: string | number | boolean; type: "string" | "number" | "boolean" }
     | { kind: "text"; value: string; markdown: boolean }
+    | { kind: "uuid"; value: string }
     | { kind: "url"; value: string }
     | { kind: "media"; ref: MediaRef; alt?: string }
     | { kind: "list"; items: Array<string | number | boolean | null> }
@@ -112,6 +113,13 @@ export function looksLikeImageUrl(value: string): boolean {
     const trimmed = value.trim();
     if (!looksLikeUrl(trimmed)) return false;
     return IMAGE_EXT_RE.test(trimmed);
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A whole-string RFC-4122 UUID (rendered compactly with hover-to-copy). */
+export function looksLikeUuid(s: string): boolean {
+    return UUID_RE.test(s);
 }
 
 /**
@@ -226,10 +234,11 @@ export function detectResultShape(value: unknown): ResultShape {
         return { kind: "media", ref: objectMedia, alt };
     }
 
-    // 3. Strings: media URI → url → markdown text → plain scalar/text.
+    // 3. Strings: media URI → uuid → url → markdown text → plain scalar/text.
     if (typeof value === "string") {
         const stringMedia = coerceMediaRef(value);
         if (stringMedia) return { kind: "media", ref: stringMedia };
+        if (looksLikeUuid(value)) return { kind: "uuid", value };
         if (looksLikeUrl(value)) return { kind: "url", value: value.trim() };
         if (looksLikeMarkdown(value)) return { kind: "text", value, markdown: true };
         // Single-line, short, no markdown → scalar treatment.

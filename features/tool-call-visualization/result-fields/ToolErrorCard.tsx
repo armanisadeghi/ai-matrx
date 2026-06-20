@@ -1,20 +1,21 @@
 "use client";
 
 /**
- * ToolErrorCard — the canonical structured error display for a failed tool.
- * Truthful and loud: shows the error type as a Badge, the message in full,
- * and (when present) a collapsible "detail" with the latest progress message
- * and any structured `latestData`. A failure is never reduced to a generic
- * "something went wrong".
+ * ToolErrorCard — a calm, compact notice that a tool step didn't complete.
+ *
+ * Errors must not shout: a failed step is a single quiet card row, not a big
+ * filled red alert. We surface a humanized label and (at most) the first line
+ * of the message, then point to "Details" for the full story. The complete
+ * error detail — stack trace, events, structured data — lives in the overlay's
+ * Raw tab, reached via `onOpenOverlay`. Nothing is hidden; it's just not dumped
+ * inline.
  */
 
 import React from "react";
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CircleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
-import { ResultJson } from "./ResultJson";
+import { humanizeKey } from "./shape";
 
 export interface ToolErrorCardProps {
     entry: ToolLifecycleEntry;
@@ -24,84 +25,59 @@ export interface ToolErrorCardProps {
     className?: string;
 }
 
+/** A calm one-line label — humanized `errorType` if present, else a soft default. */
+function errorLabel(errorType?: string | null): string {
+    const trimmed = errorType?.trim();
+    if (trimmed) return humanizeKey(trimmed);
+    return "Couldn't complete this step";
+}
+
+/** The first non-empty line of a message, trimmed — never a stack trace. */
+function firstLine(message?: string | null): string | null {
+    if (!message) return null;
+    for (const raw of message.split("\n")) {
+        const line = raw.trim();
+        if (line.length > 0) return line;
+    }
+    return null;
+}
+
 export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
     entry,
     onOpenOverlay,
     toolGroupId,
     className,
 }) => {
-    const [open, setOpen] = React.useState(false);
-
-    const message = entry.errorMessage ?? entry.latestMessage ?? "The tool call failed without a message.";
     const groupId = toolGroupId ?? entry.callId;
-
-    // Detail is anything beyond the headline: a distinct latest message, or
-    // structured latestData. We never hide it — just tuck it behind a toggle.
-    const hasDistinctLatest =
-        typeof entry.latestMessage === "string" &&
-        entry.latestMessage.length > 0 &&
-        entry.latestMessage !== entry.errorMessage;
-    const hasLatestData = entry.latestData != null && Object.keys(entry.latestData).length > 0;
-    const hasDetail = hasDistinctLatest || hasLatestData;
+    const label = errorLabel(entry.errorType);
+    const detail = firstLine(entry.errorMessage);
 
     return (
         <div
             className={cn(
-                "rounded-lg border border-destructive/50 bg-destructive/5 p-3",
+                "flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2",
                 className,
             )}
         >
-            <div className="flex items-start gap-2.5">
-                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-semibold text-destructive">Tool call failed</span>
-                        {entry.errorType && (
-                            <Badge variant="destructive" className="font-mono text-[10px]">
-                                {entry.errorType}
-                            </Badge>
-                        )}
-                    </div>
-                    <p className="break-words text-xs text-destructive">{message}</p>
-
-                    {hasDetail && (
-                        <Collapsible open={open} onOpenChange={setOpen}>
-                            <CollapsibleTrigger
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-destructive/80 hover:text-destructive"
-                            >
-                                {open ? (
-                                    <ChevronDown className="h-3 w-3" />
-                                ) : (
-                                    <ChevronRight className="h-3 w-3" />
-                                )}
-                                {open ? "Hide detail" : "Show detail"}
-                            </CollapsibleTrigger>
-                            <CollapsibleContent className="mt-1.5 space-y-1.5">
-                                {hasDistinctLatest && (
-                                    <p className="break-words text-[11px] text-muted-foreground">
-                                        {entry.latestMessage}
-                                    </p>
-                                )}
-                                {hasLatestData && <ResultJson data={entry.latestData} />}
-                            </CollapsibleContent>
-                        </Collapsible>
-                    )}
-                </div>
-
-                {onOpenOverlay && (
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenOverlay(`tool-group-${groupId}`);
-                        }}
-                        className="flex-shrink-0 text-xs font-medium text-destructive hover:underline"
-                    >
-                        Details
-                    </button>
+            <CircleAlert className="h-3.5 w-3.5 flex-shrink-0 text-destructive/70" />
+            <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                <span className="flex-shrink-0 text-xs font-medium text-foreground">{label}</span>
+                {detail && (
+                    <span className="min-w-0 truncate text-xs text-muted-foreground">{detail}</span>
                 )}
             </div>
+            {onOpenOverlay && (
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenOverlay(`tool-group-${groupId}`);
+                    }}
+                    className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground"
+                >
+                    Details
+                </button>
+            )}
         </div>
     );
 };

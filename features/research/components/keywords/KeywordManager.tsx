@@ -31,6 +31,7 @@ import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilter
 import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import KeywordOverlapMatrix from "./KeywordOverlapMatrix";
 
 interface KeywordStat {
   sources: number;
@@ -235,6 +236,16 @@ export default function KeywordManager() {
           <RefreshCw className="h-2.5 w-2.5" />
         </button>
       </div>
+
+      {/* Overlap read — how well the chosen keywords converge on one goal.
+          Mounts once there are ≥2 keywords; it self-handles the no-search-yet
+          and single-active-keyword states. */}
+      {items.length >= 2 && curation && (
+        <KeywordOverlapMatrix
+          rows={curation.rows}
+          keywords={curation.keywords}
+        />
+      )}
 
       <ResearchFilterBar
         title="Keywords"

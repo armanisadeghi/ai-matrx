@@ -9,30 +9,18 @@ import {
 
 type Tier = "high" | "medium" | "low";
 
-/** Tier colours follow the research badge convention (StatusBadge / OriginBadge):
- *  soft tint + tinted text + a leading dot. high → green, medium → amber, low → rose. */
+/** Restrained, professional treatment — the SCORE is the hero (clean tabular
+ *  number in foreground), the tier is a quiet uppercase qualifier with at most a
+ *  small muted dot. No bright green/amber/rose pills: quality is never coloured
+ *  with alarm hues, so `high` gets a muted emerald accent and `medium`/`low`
+ *  stay monochrome (neutral, then dimmer). Legible in light + dark via tokens. */
 const TIER_CONFIG: Record<
   Tier,
-  { label: string; bgClass: string; textClass: string; dot: string }
+  { label: string; dotClass: string }
 > = {
-  high: {
-    label: "High",
-    bgClass: "bg-green-100/70 dark:bg-green-900/25",
-    textClass: "text-green-700 dark:text-green-400",
-    dot: "#22c55e",
-  },
-  medium: {
-    label: "Medium",
-    bgClass: "bg-amber-100/70 dark:bg-amber-900/25",
-    textClass: "text-amber-700 dark:text-amber-400",
-    dot: "#f59e0b",
-  },
-  low: {
-    label: "Low",
-    bgClass: "bg-rose-100/70 dark:bg-rose-900/25",
-    textClass: "text-rose-700 dark:text-rose-400",
-    dot: "#f43f5e",
-  },
+  high: { label: "High", dotClass: "bg-emerald-500/70" },
+  medium: { label: "Medium", dotClass: "bg-muted-foreground/60" },
+  low: { label: "Low", dotClass: "bg-muted-foreground/35" },
 };
 
 function normalizeTier(tier: string | null, score: number | null): Tier | null {
@@ -56,9 +44,10 @@ interface AuthorityTierBadgeProps {
 }
 
 /**
- * Compact per-source authoritativeness chip — tier + 0-100 score, coloured by
- * tier, with the agent's reasoning on hover. Renders nothing for un-ranked
- * sources unless `showUnranked` is set.
+ * Compact per-source authoritativeness chip — the 0-100 score leads as a clean
+ * tabular number, the tier follows as a muted qualifier with a small accent dot,
+ * and the agent's reasoning is on hover. Renders nothing for un-ranked sources
+ * unless `showUnranked` is set.
  */
 export function AuthorityTierBadge({
   score,
@@ -75,7 +64,7 @@ export function AuthorityTierBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-medium whitespace-nowrap bg-muted/50 text-muted-foreground",
+          "inline-flex items-center text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground/70",
           className,
         )}
       >
@@ -85,20 +74,23 @@ export function AuthorityTierBadge({
   }
 
   const cfg = TIER_CONFIG[t];
+  const roundedScore = Math.round(score);
   const badge = (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-semibold whitespace-nowrap tabular-nums",
-        cfg.bgClass,
-        cfg.textClass,
+        "inline-flex items-baseline gap-1.5 whitespace-nowrap",
         className,
       )}
     >
-      <span
-        className="h-1 w-1 rounded-full"
-        style={{ backgroundColor: cfg.dot }}
-      />
-      {scoreHidden ? cfg.label : `${cfg.label} · ${score}`}
+      {!scoreHidden && (
+        <span className="text-[13px] font-semibold leading-none tabular-nums text-foreground">
+          {roundedScore}
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", cfg.dotClass)} />
+        {cfg.label}
+      </span>
     </span>
   );
 
@@ -109,7 +101,7 @@ export function AuthorityTierBadge({
       <TooltipTrigger asChild>{badge}</TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <p className="text-xs font-semibold">
-          Authority: {cfg.label} ({score}/100)
+          Authority: {cfg.label} ({roundedScore}/100)
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">{reasoning}</p>
       </TooltipContent>

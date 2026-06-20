@@ -17,6 +17,10 @@ import {
   Link2,
   Tag,
   HelpCircle,
+  ImageIcon,
+  Clapperboard,
+  Film,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -37,8 +41,10 @@ import Slideshow from "@/components/mardown-display/blocks/presentations/Slidesh
 import {
   parseOutputs,
   assetsFor,
+  podcastMediaFrom,
   type OutputAsset,
   type OutputKind,
+  type PodcastMedia,
 } from "./outputs";
 
 /** Research content-engine generator agents (created as data; run live via
@@ -275,7 +281,13 @@ function PodcastOutputCard({
   const liveCover =
     state.images.find((s) => s.status === "done" && s.url)?.url ?? null;
 
-  // Persist the episode into the topic's outputs index once it lands.
+  // Persist the episode into the topic's outputs index once it lands — with
+  // EVERY media URL it produced (cover, all stills, all clips, the composed
+  // video, audio). All are durable public CDN URLs (`pc_episodes` + the
+  // official-video persist write them PUBLIC, never signed — backend file
+  // rule 3), so the whole episode re-renders inline on a cold load with no
+  // re-query of the podcast domain. The /podcast/{slug} page is the deep link,
+  // not the only place the media survives.
   useEffect(() => {
     if (
       state.status === "done" &&
@@ -283,6 +295,21 @@ function PodcastOutputCard({
       !savedRef.current.has(state.episodeId)
     ) {
       savedRef.current.add(state.episodeId);
+      const imageUrls = state.images
+        .filter((s) => s.status === "done" && s.url)
+        .map((s) => s.url as string);
+      const videoUrls = state.videos
+        .filter((s) => s.status === "done" && s.url)
+        .map((s) => s.url as string);
+      const media: PodcastMedia = {
+        host_count: hostCount,
+        podcast_type: podcastType,
+        audio_url: state.audioUrl ?? undefined,
+        cover_url: imageUrls[0],
+        image_urls: imageUrls,
+        video_urls: videoUrls,
+        official_video_url: state.officialVideoUrl ?? undefined,
+      };
       const asset: OutputAsset = {
         id: state.episodeId,
         kind: "podcast",
@@ -290,13 +317,8 @@ function PodcastOutputCard({
         status: "ready",
         created_at: new Date().toISOString(),
         slug: state.episodeSlug ?? undefined,
-        // Durable refs only — episode_id + slug. The /podcast/{slug} page
-        // re-mints media; never persist the expiring signed audio URL here.
         url: state.episodeSlug ? `/podcast/${state.episodeSlug}` : undefined,
-        meta: {
-          host_count: hostCount,
-          podcast_type: podcastType,
-        },
+        meta: media as unknown as Record<string, unknown>,
       };
       onPersisted(asset)
         .then(() => toast.success(`Podcast “${asset.title}” saved to outputs`))
@@ -314,6 +336,9 @@ function PodcastOutputCard({
     state.title,
     state.episodeSlug,
     state.audioUrl,
+    state.officialVideoUrl,
+    state.images,
+    state.videos,
     defaultTitle,
     hostCount,
     podcastType,
@@ -505,41 +530,162 @@ function PodcastOutputCard({
           </div>
         )}
 
-        {/* Previously generated */}
+        {/* Previously generated — each episode re-renders its full media
+            (cover, audio, composed video, every still + clip) from the
+            persisted index, so a refresh shows everything it produced. */}
         {existing.length > 0 && (
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2 pt-1">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Generated episodes
             </span>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {existing.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5"
-                >
-                  <Headphones className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-[11px] font-medium truncate flex-1">
-                    {a.title}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </span>
-                  {a.slug && (
-                    <Link
-                      href={`/podcast/${a.slug}`}
-                      target="_blank"
-                      className="text-muted-foreground hover:text-primary shrink-0"
-                      title="Open episode"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
-                </div>
+                <PersistedEpisode key={a.id} asset={a} />
               ))}
             </div>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** A previously-generated episode, fully reconstructed from the persisted
+ *  outputs index — cover, audio, the composed video, and every still + clip.
+ *  All URLs are durable public CDN, so this is the same media the live run
+ *  produced, surviving any number of refreshes with no podcast-domain query. */
+function PersistedEpisode({ asset }: { asset: OutputAsset }) {
+  const media = useMemo<PodcastMedia>(() => podcastMediaFrom(asset), [asset]);
+  const [showMedia, setShowMedia] = useState(false);
+
+  const images = media.image_urls ?? [];
+  const clips = media.video_urls ?? [];
+  const cover = media.cover_url ?? images[0] ?? null;
+  // The cover already appears as the header thumbnail — the still strip shows
+  // the remaining alternates so nothing is duplicated or lost.
+  const extraStills = cover ? images.filter((u) => u !== cover) : images;
+  const mediaCount =
+    (media.audio_url ? 1 : 0) +
+    (media.official_video_url ? 1 : 0) +
+    images.length +
+    clips.length;
+
+  return (
+    <div className="rounded-lg border border-border/40 bg-background/40 overflow-hidden">
+      <div className="flex items-center gap-2.5 px-2.5 py-2">
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover}
+            alt=""
+            className="h-9 w-9 rounded object-cover shrink-0 border border-border/40"
+          />
+        ) : (
+          <div className="h-9 w-9 rounded bg-muted/60 flex items-center justify-center shrink-0">
+            <Headphones className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-medium truncate">{asset.title}</div>
+          <div className="text-[10px] text-muted-foreground tabular-nums">
+            {new Date(asset.created_at).toLocaleDateString()}
+            {mediaCount > 0 && (
+              <span className="ml-1.5">
+                · {mediaCount} media {mediaCount === 1 ? "item" : "items"}
+              </span>
+            )}
+          </div>
+        </div>
+        {mediaCount > 0 && (
+          <button
+            onClick={() => setShowMedia((v) => !v)}
+            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground shrink-0"
+          >
+            {showMedia ? "Hide" : "Show"} media
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform",
+                showMedia && "rotate-180",
+              )}
+            />
+          </button>
+        )}
+        {asset.slug && (
+          <Link
+            href={`/podcast/${asset.slug}`}
+            target="_blank"
+            className="text-muted-foreground hover:text-primary shrink-0"
+            title="Open episode page"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+
+      {/* Audio is always shown when present — it's the episode's core artifact. */}
+      {media.audio_url && (
+        <div className="px-2.5 pb-2">
+          <audio controls src={media.audio_url} className="w-full h-8" />
+        </div>
+      )}
+
+      {showMedia && mediaCount > 0 && (
+        <div className="border-t border-border/40 px-2.5 py-2.5 space-y-3">
+          {media.official_video_url && (
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Film className="h-3 w-3" />
+                Composed video
+              </span>
+              <video
+                controls
+                src={media.official_video_url}
+                poster={cover ?? undefined}
+                className="w-full rounded-md border border-border/40 bg-black/90 max-h-72"
+              />
+            </div>
+          )}
+
+          {clips.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clapperboard className="h-3 w-3" />
+                Clips ({clips.length})
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {clips.map((url, i) => (
+                  <video
+                    key={i}
+                    controls
+                    src={url}
+                    className="w-full rounded-md border border-border/40 bg-black/90"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {extraStills.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <ImageIcon className="h-3 w-3" />
+                Cover art &amp; stills ({images.length})
+              </span>
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                {extraStills.map((url, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={i}
+                    src={url}
+                    alt=""
+                    className="aspect-square w-full rounded object-cover border border-border/40"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

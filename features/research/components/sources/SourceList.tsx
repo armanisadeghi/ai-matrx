@@ -109,8 +109,16 @@ function formatPageAge(pageAge: string | null): {
  * express (they're derived or not indexed server-side). These sort the fetched
  * page locally — see `localSortComparator`. Prefixed so they never collide with
  * a real `SourceSortBy` value when both flow through the one sort state.
+ *
+ * `local:rank` deliberately REPLACES the server `rank` sort: the server field is
+ * a per-keyword rank, so a site that ranks #1 for one keyword and #4 for another
+ * sorts inconsistently (the column mixed 1,2,3 then 1,4,4). We sort instead by a
+ * source's BEST (lowest) rank across ALL keywords — the same number the `#N`
+ * badge already displays (`SourceImportance.bestRank`) — so the shown value and
+ * the sort key are one consistent number.
  */
 type LocalSortKey =
+  | "local:rank"
   | "local:source_type"
   | "local:origin"
   | "local:authority_tier"
@@ -120,6 +128,7 @@ type LocalSortKey =
 type SortKey = SourceSortBy | LocalSortKey;
 
 const LOCAL_SORT_KEYS = new Set<string>([
+  "local:rank",
   "local:source_type",
   "local:origin",
   "local:authority_tier",
@@ -143,19 +152,79 @@ function tierFromSource(source: ResearchSource): string | null {
 }
 
 /**
+ * The "Scrape" column shows the SCRAPE outcome (`scrape_status`). The raw values
+ * (esp. "success" → "success at what?") are ambiguous, so we relabel each one to
+ * say specifically what happened to the page. Kept local to this table (the
+ * shared `StatusBadge` / `SCRAPE_STATUS_CONFIG` are consumed elsewhere and stay
+ * untouched). `tone` drives a single restrained dot colour — no bright pills,
+ * and a failure is amber/rose, never a loud kindergarten red.
+ */
+type ScrapeTone = "ok" | "warn" | "bad" | "muted";
+const SCRAPE_OUTCOME: Record<string, { label: string; tone: ScrapeTone }> = {
+  success: { label: "Scraped", tone: "ok" },
+  complete: { label: "Scraped", tone: "ok" },
+  manual: { label: "Added by hand", tone: "ok" },
+  thin: { label: "Thin content", tone: "warn" },
+  gated: { label: "Gated", tone: "warn" },
+  pending: { label: "Pending", tone: "muted" },
+  skipped: { label: "Skipped", tone: "muted" },
+  ignored: { label: "Ignored", tone: "muted" },
+  failed: { label: "Failed", tone: "bad" },
+  dead_link: { label: "Dead link", tone: "bad" },
+  content_mismatch: { label: "Wrong content", tone: "bad" },
+};
+
+const SCRAPE_TONE_DOT: Record<ScrapeTone, string> = {
+  ok: "bg-emerald-500/80",
+  warn: "bg-amber-500/80",
+  bad: "bg-rose-500/80",
+  muted: "bg-muted-foreground/50",
+};
+
+function scrapeOutcomeFor(status: string | null | undefined): {
+  label: string;
+  tone: ScrapeTone;
+} {
+  if (!status) return { label: "—", tone: "muted" };
+  return SCRAPE_OUTCOME[status] ?? { label: status, tone: "muted" };
+}
+
+/** Restrained scrape-outcome cell: a muted semantic dot + a plain label that
+ *  states exactly what happened to the page. Matches the data-console look. */
+function ScrapeOutcomeCell({ status }: { status: string | null | undefined }) {
+  const { label, tone } = scrapeOutcomeFor(status);
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+      <span
+        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", SCRAPE_TONE_DOT[tone])}
+      />
+      {label}
+    </span>
+  );
+}
+
+/**
  * Comparator for the client-only sort axes. Returns a stable ordering with
  * un-set values pushed to the end regardless of direction (matches the
  * server's `nullsFirst: false` convention). `dir` is +1 asc / -1 desc.
+ *
+ * For `local:rank` the value is the source's BEST rank across all keywords, so
+ * ascending puts #1 first and nulls (no rank) always sort last.
  */
 function localSortComparator(
   key: LocalSortKey,
   dir: number,
   tagCountFor: (id: string) => number,
+  bestRankFor: (id: string) => number | null,
 ): (a: ResearchSource, b: ResearchSource) => number {
   return (a, b) => {
     let av: string | number | null;
     let bv: string | number | null;
     switch (key) {
+      case "local:rank":
+        av = bestRankFor(a.id);
+        bv = bestRankFor(b.id);
+        break;
       case "local:source_type":
         av = a.source_type ?? null;
         bv = b.source_type ?? null;
@@ -398,25 +467,6 @@ function SourceRow({
           </div>
         </td>
 
-        {/* Type */}
-        <td className={cn("px-2 py-2.5 w-14 align-top text-center", cellBase)}>
-          <div
-            className="flex items-center justify-center"
-            title={SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
-          >
-            <SourceTypeIcon
-              type={sourceTypeFromDb(source.source_type)}
-              size={15}
-              className="text-muted-foreground"
-            />
-          </div>
-        </td>
-
-        {/* Origin */}
-        <td className={cn("px-2 py-2.5 w-20 align-top", cellBase)}>
-          <OriginBadge origin={sourceOriginFromDb(source.origin)} />
-        </td>
-
         {/* Authority — first-class: tier badge + prominent score + reasoning */}
         <td className={cn("px-2 py-2.5 w-28 align-top", cellBase)}>
           {isRanked ? (
@@ -470,9 +520,28 @@ function SourceRow({
           </span>
         </td>
 
-        {/* Status */}
-        <td className={cn("px-2 py-2.5 w-20 align-top", cellBase)}>
-          <StatusBadge status={source.scrape_status} />
+        {/* Scrape — the SCRAPE outcome, relabeled to say what happened */}
+        <td className={cn("px-2 py-2.5 w-24 align-top", cellBase)}>
+          <ScrapeOutcomeCell status={source.scrape_status} />
+        </td>
+
+        {/* Type — de-emphasized, pushed to the right (almost always "web") */}
+        <td className={cn("px-2 py-2.5 w-14 align-top text-center", cellBase)}>
+          <div
+            className="flex items-center justify-center opacity-70"
+            title={SOURCE_TYPE_CONFIG[sourceTypeFromDb(source.source_type)].label}
+          >
+            <SourceTypeIcon
+              type={sourceTypeFromDb(source.source_type)}
+              size={14}
+              className="text-muted-foreground"
+            />
+          </div>
+        </td>
+
+        {/* Origin — de-emphasized, pushed to the right (almost always "search") */}
+        <td className={cn("px-2 py-2.5 w-20 align-top opacity-70", cellBase)}>
+          <OriginBadge origin={sourceOriginFromDb(source.origin)} />
         </td>
 
         {/* Actions */}
@@ -684,6 +753,13 @@ export default function SourceList() {
     (id: string) => tagsBySource[id]?.length ?? 0,
     [tagsBySource],
   );
+  // A source's BEST rank across all keywords — the same number the `#N` badge
+  // shows. Used as the `#` column's sort key so the displayed value and the
+  // sort are one consistent number (not the inconsistent per-keyword server rank).
+  const bestRankFor = useCallback(
+    (id: string) => importanceMap?.get(id)?.bestRank ?? null,
+    [importanceMap],
+  );
 
   // The COMPLETE topic source set (capped at FETCH_ALL_LIMIT), already carrying
   // any server-side filter + sort the user picked.
@@ -721,11 +797,11 @@ export default function SourceList() {
     if (localSort) {
       const dir = localSort.dir === "desc" ? -1 : 1;
       list = [...list].sort(
-        localSortComparator(localSort.key, dir, tagCountFor),
+        localSortComparator(localSort.key, dir, tagCountFor, bestRankFor),
       );
     }
     return list;
-  }, [allSources, search, tierFilter, localSort, tagCountFor]);
+  }, [allSources, search, tierFilter, localSort, tagCountFor, bestRankFor]);
 
   // Client-side pagination over the fully-processed list. `filters.limit` is the
   // page size and `filters.offset` the page position (both from the URL). We
@@ -942,11 +1018,14 @@ export default function SourceList() {
   const anyNavigating = isPending || navigatingId !== null;
 
   // Per-column header filter options (mirror the top SourceFilters bar configs).
+  // The Scrape filter uses the SAME clear "what happened" labels as the cells
+  // (`scrapeOutcomeFor`) so the dropdown and the column read identically — e.g.
+  // the option is "Scraped", not the ambiguous raw "Success".
   const statusFilterOptions: ColumnFilterOption[] = useMemo(
     () =>
-      Object.entries(SCRAPE_STATUS_CONFIG).map(([id, cfg]) => ({
+      Object.keys(SCRAPE_STATUS_CONFIG).map((id) => ({
         id,
-        label: cfg.label,
+        label: scrapeOutcomeFor(id).label,
       })),
     [],
   );
@@ -1021,7 +1100,7 @@ export default function SourceList() {
                     />
                     <SortHeader
                       label="#"
-                      field="rank"
+                      field="local:rank"
                       currentSort={activeSort}
                       currentDir={activeDir}
                       onSort={handleSort}
@@ -1039,51 +1118,6 @@ export default function SourceList() {
                     currentDir={activeDir}
                     onSort={handleSort}
                   />
-                </th>
-                {/* Type — local sort + server filter */}
-                <th className="w-14 px-2 py-2 text-left">
-                  <div className="flex items-center gap-1">
-                    <SortHeader
-                      label="Type"
-                      field="local:source_type"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                    />
-                    <ColumnFilterMenu
-                      label="Type"
-                      options={typeFilterOptions}
-                      selectedId={filters.source_type ?? null}
-                      onSelect={(id) =>
-                        setFilters({
-                          source_type: (id ??
-                            undefined) as typeof filters.source_type,
-                        })
-                      }
-                    />
-                  </div>
-                </th>
-                {/* Origin — local sort + server filter */}
-                <th className="w-20 px-2 py-2 text-left">
-                  <div className="flex items-center gap-1">
-                    <SortHeader
-                      label="Origin"
-                      field="local:origin"
-                      currentSort={activeSort}
-                      currentDir={activeDir}
-                      onSort={handleSort}
-                    />
-                    <ColumnFilterMenu
-                      label="Origin"
-                      options={originFilterOptions}
-                      selectedId={filters.origin ?? null}
-                      onSelect={(id) =>
-                        setFilters({
-                          origin: (id ?? undefined) as typeof filters.origin,
-                        })
-                      }
-                    />
-                  </div>
                 </th>
                 {/* Authority — server score sort + local tier filter */}
                 <th className="w-28 px-2 py-2 text-left">
@@ -1113,24 +1147,69 @@ export default function SourceList() {
                     onSort={handleSort}
                   />
                 </th>
-                {/* Status — server sort + server filter */}
-                <th className="w-20 px-2 py-2 text-left">
+                {/* Scrape — the scrape OUTCOME (server sort + server filter) */}
+                <th className="w-24 px-2 py-2 text-left">
                   <div className="flex items-center gap-1">
                     <SortHeader
-                      label="Status"
+                      label="Scrape"
                       field="scrape_status"
                       currentSort={activeSort}
                       currentDir={activeDir}
                       onSort={handleSort}
                     />
                     <ColumnFilterMenu
-                      label="Status"
+                      label="Scrape"
                       options={statusFilterOptions}
                       selectedId={filters.scrape_status ?? null}
                       onSelect={(id) =>
                         setFilters({
                           scrape_status: (id ??
                             undefined) as typeof filters.scrape_status,
+                        })
+                      }
+                    />
+                  </div>
+                </th>
+                {/* Type — de-emphasized, far right (almost always "web") */}
+                <th className="w-14 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1 opacity-70">
+                    <SortHeader
+                      label="Type"
+                      field="local:source_type"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Type"
+                      options={typeFilterOptions}
+                      selectedId={filters.source_type ?? null}
+                      onSelect={(id) =>
+                        setFilters({
+                          source_type: (id ??
+                            undefined) as typeof filters.source_type,
+                        })
+                      }
+                    />
+                  </div>
+                </th>
+                {/* Origin — de-emphasized, far right (almost always "search") */}
+                <th className="w-20 px-2 py-2 text-left">
+                  <div className="flex items-center gap-1 opacity-70">
+                    <SortHeader
+                      label="Origin"
+                      field="local:origin"
+                      currentSort={activeSort}
+                      currentDir={activeDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Origin"
+                      options={originFilterOptions}
+                      selectedId={filters.origin ?? null}
+                      onSelect={(id) =>
+                        setFilters({
+                          origin: (id ?? undefined) as typeof filters.origin,
                         })
                       }
                     />

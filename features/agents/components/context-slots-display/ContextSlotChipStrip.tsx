@@ -17,6 +17,7 @@ import type { RootState } from "@/lib/redux/store";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { ContextSlotChip } from "./ContextSlotChip";
 import { ContextSlotItemsPopover } from "./ContextSlotItemsPopover";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,14 @@ interface ContextSlotChipStripProps {
   className?: string;
   /** Show the small "Context:" label inline. Defaults to false. */
   showLabel?: boolean;
+  /**
+   * Explicit, frozen entries to render (a per-turn snapshot). When provided,
+   * the strip renders EXACTLY these and never touches the live
+   * conversation-level context. Pass this on historical message bubbles so
+   * each turn shows the context it actually carried — not the current one.
+   * Omit it only for "live / next request" surfaces (e.g. above the input).
+   */
+  entries?: InstanceContextEntry[];
 }
 
 export function ContextSlotChipStrip({
@@ -34,12 +43,17 @@ export function ContextSlotChipStrip({
   agentId,
   className,
   showLabel = false,
+  entries: entriesProp,
 }: ContextSlotChipStripProps) {
   const selectEntries = useMemo(
     () => selectInstanceContextEntries(conversationId),
     [conversationId],
   );
-  const entries = useAppSelector(selectEntries);
+  const liveEntries = useAppSelector(selectEntries);
+  // Snapshot wins when provided (even an empty array means "this turn carried
+  // no context" — honest). Only fall back to live state when no snapshot
+  // is passed at all (the live "next request" surfaces).
+  const entries = entriesProp ?? liveEntries;
 
   const slots = useAppSelector((state: RootState): ContextSlot[] | undefined =>
     agentId ? selectAgentContextSlots(state, agentId) : undefined,

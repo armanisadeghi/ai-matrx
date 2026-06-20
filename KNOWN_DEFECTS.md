@@ -17,6 +17,21 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D11 — Per-turn context snapshot is captured client-side but NOT persisted to `cx_message.metadata` (backend-gated)
+**Severity: medium — was an active "the UI lies" bug; now contained. Live turns are truthful; reloaded historical turns show NO context instead of a fake one (honest but incomplete).**
+
+**What.** The user-message context indicator (`ContextSlotChipStrip` inside [`AgentUserMessage.tsx`](features/agents/components/messages-display/user/AgentUserMessage.tsx)) used to read the **live, conversation-level** `instanceContext`, so every historical user bubble — across every conversation — displayed the *current* context as if the model had actually received it. That is a dangerous lie: it claims per-turn context tracking that did not exist.
+
+**Fix shipped (frontend).** [`execute-instance.thunk.ts`](features/agents/redux/execution-system/thunks/execute-instance.thunk.ts) now freezes the turn's real context entries (`selectInstanceContextEntries`) onto the optimistic user message's `metadata.context_snapshot` at submit. `AgentUserMessage` renders **only** that snapshot (`ContextSlotChipStrip entries={...}`) and never falls back to live context — no snapshot → no chips. So in-session turns are truthful and historical bubbles stop lying.
+
+**Why it happened.** The strip was wired to a per-conversation live slice with a code comment explicitly deferring per-turn accuracy as "a follow-up." Live state is the wrong source for a historical record.
+
+**The fence that prevents the class.** Historical record components must read a frozen per-record snapshot, never a live global/conversation slice. `ContextSlotChipStrip` keeps its live-selector behavior ONLY when no `entries` snapshot is passed (that path is reserved for "next request" surfaces above the input).
+
+**What's open.**
+1. **aidream / matrx-ai backend:** persist the per-turn context the agent actually received onto `cx_message.metadata.context_snapshot` (same shape: `InstanceContextEntry[]`) when reserving the user message. Until then, `messageRowToRecord` returns `{}` for reloaded messages and the bubble shows no context chips after a page reload — honest, but the true context is invisible post-reload.
+2. **frontend (post-backend):** once the server stamps it, reloaded conversations will automatically show the correct per-turn context with no further change (the read path already keys off `metadata.context_snapshot`).
+
 ### D10 — Picklist → `matrx` fence migration: BOUND scope-cell path not yet flipped (backend-gated)
 **Severity: low — direct/override path is live and correct; the bound path still rides the legacy encoding until aidream resolves a fence-valued cell. No data loss.**
 

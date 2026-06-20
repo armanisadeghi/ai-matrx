@@ -188,6 +188,13 @@ const messagesSlice = createSlice({
         content: MessagePart[];
         position: number;
         agentId?: string | null;
+        /**
+         * Per-turn metadata captured at submit. Critically holds the
+         * `context_snapshot` — the EXACT context entries this turn carried — so
+         * the user bubble can later show its true context instead of the live
+         * conversation-level context (which drifts as scope/working-doc change).
+         */
+        metadata?: Json;
       }>,
     ) {
       const {
@@ -196,6 +203,7 @@ const messagesSlice = createSlice({
         content,
         position,
         agentId = null,
+        metadata,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
       if (entry.byId[clientTempId]) return; // idempotent
@@ -213,7 +221,7 @@ const messagesSlice = createSlice({
         status: "reserved",
         isVisibleToModel: true,
         isVisibleToUser: true,
-        metadata: {} as Json,
+        metadata: (metadata ?? {}) as Json,
         createdAt: now,
         deletedAt: null,
         _clientStatus: "pending",

@@ -27,6 +27,7 @@ import { UrlChip } from "./UrlChips";
 import { EmptyResult } from "./EmptyResult";
 import { KeyValueGrid } from "./KeyValueGrid";
 import { ResultTable } from "./ResultTable";
+import { ShortId } from "./ShortId";
 
 export type ResultDensity = "inline" | "full";
 
@@ -41,7 +42,7 @@ export interface ResultValueProps {
 /** Depth past which inline rendering collapses to a JSON tree to stay compact. */
 const INLINE_MAX_DEPTH = 2;
 /** Inline list/table row cap before "+N more". */
-const INLINE_ROW_CAP = 5;
+const INLINE_ROW_CAP = 3;
 /** Plain-text (non-markdown) inline line clamp. */
 const INLINE_TEXT_LINES = 6;
 
@@ -137,6 +138,9 @@ export const ResultValue: React.FC<ResultValueProps> = ({
 
             case "scalar":
                 return <ResultScalar value={shape.value} type={shape.type} />;
+
+            case "uuid":
+                return <ShortId value={shape.value} />;
 
             case "url":
                 return <UrlChip url={shape.value} />;

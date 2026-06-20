@@ -845,8 +845,9 @@ function formatPhaseLabel(
   errorMessage?: string | null,
 ): string {
   if (phase === "error") {
-    const prefix = labels.errorPrefix ?? `${labels.complete} failed`;
-    return errorMessage ? `${prefix}: ${errorMessage}` : prefix;
+    // Calm error: the short prefix only. The reason/stack live behind the
+    // click (overlay Raw → Error), never shouted on the transcript line.
+    return labels.errorPrefix ?? `${labels.complete} failed`;
   }
   if (phase === "complete") return labels.complete;
   return labels.running;
@@ -900,9 +901,7 @@ export function getToolPhaseLabel(
     );
   }
   if (phase === "error") {
-    return errorMessage
-      ? `${displayName} failed: ${errorMessage}`
-      : `${displayName} failed`;
+    return `${displayName} failed`;
   }
   return displayName;
 }

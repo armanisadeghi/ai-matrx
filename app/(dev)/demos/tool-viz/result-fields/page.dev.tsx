@@ -81,6 +81,14 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
         },
     },
     {
+        label: "table with UUIDs (id shortening + hover-copy)",
+        value: [
+            { id: "0dd1a01c-24af-4c3e-9d6f-092ffaa10e4c", name: "Alpha", scope_id: "b0bf8b4e-8700-4e9c-9cac-a0cda8c22860", status: "active" },
+            { id: "b572b495-2044-421b-a066-6a9f91a0e8b5", name: "Beta", scope_id: "b0bf8b4e-8700-4e9c-9cac-a0cda8c22860", status: "pending" },
+            { id: "1febac7b-aa48-47e2-a677-f7cad1b0937a", name: "Gamma", scope_id: "565b0782-79ae-4adf-a104-9e6605cbdf90", status: "active" },
+        ],
+    },
+    {
         label: "nested object (sql-like)",
         value: {
             row_count: 2,

@@ -28,6 +28,7 @@ import { Check, Copy, FileCode2, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
@@ -192,22 +193,52 @@ export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) =>
   </div>
 );
 
-// ─── Raw data view (the "Raw I/O" tab — always present, for engineers) ───────
+// ─── Raw data view (the "Raw" tab — verbatim, for engineers) ─────────────────
+//
+// Four clearly-labeled sections, top to bottom, each rendered with the canonical
+// JsonInspector WITHOUT any interpretation or reshaping:
+//   1. Tool   — metadata about WHICH tool ran.
+//   2. Input  — entry.arguments exactly as-is (verbatim model-produced input).
+//   3. Result — entry.result exactly as-is (verbatim).
+//   4. Error  — ONLY on error: the full detail (message text + complete event log).
+// This is THE place where everything about an error lives.
+
+const RAW_SECTION_HEADING_CLS =
+  "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5";
 
 export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) => {
-  const payload = {
-    arguments: entry.arguments,
-    result: entry.result,
+  const toolMeta = {
+    toolName: entry.toolName,
+    displayName: entry.displayName,
+    callId: entry.callId,
+    status: entry.status,
+    startedAt: entry.startedAt,
+    completedAt: entry.completedAt,
+    isDelegated: entry.isDelegated,
+    errorType: entry.errorType,
+  };
+
+  const errorDetail = {
+    errorType: entry.errorType,
+    errorMessage: entry.errorMessage,
     events: entry.events,
   };
-  const fullJson = JSON.stringify(payload, null, 2);
+
+  const hasError = entry.status === "error" || Boolean(entry.errorMessage);
+
+  const bundle = {
+    tool: toolMeta,
+    input: entry.arguments,
+    result: entry.result,
+    error: hasError ? errorDetail : null,
+  };
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-shrink-0 items-center justify-between border-b border-border bg-muted/30 px-4 py-2.5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <FileCode2 className="h-3.5 w-3.5" />
-          <span>Raw input / output</span>
+          <span>Raw</span>
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
             {entry.events.length} {entry.events.length === 1 ? "event" : "events"}
           </Badge>
@@ -215,18 +246,43 @@ export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({ entry }) 
         <CopyButtons
           label="Raw data"
           size="sm"
-          human={fullJson}
+          human={() => JSON.stringify(bundle, null, 2)}
           agent={() =>
-            buildAgentInput(entry, `Raw input/output/events for the "${entry.toolName}" tool call.`, {
-              tool: entry.toolName,
+            buildAgentInput(entry, `Raw tool/input/result/error for the "${entry.toolName}" tool call.`, {
               callId: entry.callId,
-              ...payload,
+              ...bundle,
             })
           }
         />
       </div>
-      <div className="flex-1 overflow-auto p-4">
-        <ResultJson data={payload} />
+
+      <div className="flex-1 space-y-4 overflow-auto p-4">
+        <section>
+          <h3 className={RAW_SECTION_HEADING_CLS}>Tool</h3>
+          <ResultJson data={toolMeta} />
+        </section>
+
+        <section>
+          <h3 className={RAW_SECTION_HEADING_CLS}>Input</h3>
+          <ResultJson data={entry.arguments} />
+        </section>
+
+        <section>
+          <h3 className={RAW_SECTION_HEADING_CLS}>Result</h3>
+          <ResultJson data={entry.result ?? null} />
+        </section>
+
+        {hasError && (
+          <section>
+            <h3 className={RAW_SECTION_HEADING_CLS}>Error</h3>
+            {entry.errorMessage && (
+              <div className="mb-2 rounded-md border border-destructive/30 p-3 text-sm text-foreground whitespace-pre-wrap">
+                {entry.errorMessage}
+              </div>
+            )}
+            <ResultJson data={errorDetail} />
+          </section>
+        )}
       </div>
     </div>
   );

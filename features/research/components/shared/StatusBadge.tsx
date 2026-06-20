@@ -18,11 +18,18 @@ interface StatusBadgeProps {
     className?: string;
 }
 
+/**
+ * Restrained status marker: a small muted semantic dot + a monochrome label.
+ * No bright pill — the dot carries the meaning, the text stays neutral so dense
+ * tables read like a data console, not a tag cloud. Legible in light + dark via
+ * theme tokens; the dot's hue is the only colour and it sits at low opacity.
+ */
 export function StatusBadge({ status, className }: StatusBadgeProps) {
     const config = TOPIC_STATUS_CONFIG[status as TopicStatus] ?? SCRAPE_STATUS_CONFIG[status as ScrapeStatus];
+
     if (!config) {
         return (
-            <span className={cn('inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-medium whitespace-nowrap bg-muted/60 text-muted-foreground', className)}>
+            <span className={cn('inline-flex items-center text-[10px] font-medium uppercase tracking-wide whitespace-nowrap text-muted-foreground', className)}>
                 {status}
             </span>
         );
@@ -30,12 +37,10 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 
     return (
         <span className={cn(
-            'inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium whitespace-nowrap',
-            config.bgClass,
-            config.textClass,
+            'inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground',
             className,
         )}>
-            <span className="h-1 w-1 rounded-full" style={{ backgroundColor: config.color }} />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full opacity-80" style={{ backgroundColor: config.color }} />
             {config.label}
         </span>
     );

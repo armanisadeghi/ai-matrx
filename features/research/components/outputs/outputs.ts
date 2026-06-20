@@ -38,6 +38,49 @@ export interface ResearchOutputs {
   seo?: { assets: OutputAsset[] };
 }
 
+/**
+ * The podcast asset's persisted `meta`. EVERY media URL the episode produced is
+ * captured here at completion so the whole episode — cover, every still/clip,
+ * the composed video, and the audio — re-renders inline on a cold load without
+ * re-querying the podcast domain. These are all durable public CDN URLs
+ * (`pc_episodes` + the official-video persist write them public, never signed),
+ * so they survive indefinitely. Read it via `podcastMediaFrom(asset)`.
+ */
+export interface PodcastMedia {
+  host_count?: number;
+  podcast_type?: string;
+  /** Permanent CDN audio file (same value as `pc_episodes.audio_url`). */
+  audio_url?: string;
+  /** The chosen cover still (the first successful image). */
+  cover_url?: string;
+  /** Every successfully-rendered still (cover candidates / scene art). */
+  image_urls?: string[];
+  /** Every successfully-rendered video clip. */
+  video_urls?: string[];
+  /** The composed, share-ready slideshow video (clips + stills crossfaded). */
+  official_video_url?: string;
+}
+
+function asStringArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : [];
+}
+
+/** Read the typed podcast media off a persisted asset's free-form `meta`,
+ *  tolerating older assets that predate full-media persistence. */
+export function podcastMediaFrom(asset: OutputAsset): PodcastMedia {
+  const m = (asset.meta ?? {}) as Record<string, unknown>;
+  return {
+    host_count: typeof m.host_count === "number" ? m.host_count : undefined,
+    podcast_type: typeof m.podcast_type === "string" ? m.podcast_type : undefined,
+    audio_url: typeof m.audio_url === "string" ? m.audio_url : undefined,
+    cover_url: typeof m.cover_url === "string" ? m.cover_url : undefined,
+    image_urls: asStringArray(m.image_urls),
+    video_urls: asStringArray(m.video_urls),
+    official_video_url:
+      typeof m.official_video_url === "string" ? m.official_video_url : undefined,
+  };
+}
+
 export const OUTPUT_KINDS: OutputKind[] = ["podcast", "blog", "slides", "seo"];
 
 function isAsset(v: unknown): v is OutputAsset {

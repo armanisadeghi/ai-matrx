@@ -48,6 +48,7 @@ import { ContextItemDrawer } from "@/features/agents/components/context-items/Co
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
+import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { RootState } from "@/lib/redux/store";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -414,6 +415,13 @@ export function AgentUserMessage({
       ? (record.metadata as Record<string, unknown>)
       : null;
 
+  // Per-turn context this message actually carried, frozen at submit. NEVER
+  // read live conversation context for a historical bubble — that's the
+  // "context indicator is lying" bug. Absent snapshot → render no chips.
+  const contextSnapshot = Array.isArray(metadata?.context_snapshot)
+    ? (metadata?.context_snapshot as InstanceContextEntry[])
+    : null;
+
   if (!hasContent) return null;
 
   const containerMargin = compact ? "" : "ml-12";
@@ -455,15 +463,21 @@ export function AgentUserMessage({
             <FirstTurnVariables conversationId={conversationId} />
           )}
 
-          {/* Context slot chips — live state of instanceContext for this
-              conversation. Note: until the request thunk stamps the per-turn
-              context snapshot onto message metadata, every user bubble in a
-              conversation shows the same (current) context. Acceptable for
-              an in-progress run; per-turn historical accuracy is a follow-up. */}
-          <ContextSlotChipStrip
-            conversationId={conversationId}
-            agentId={agentId}
-          />
+          {/* Context slot chips — the TRUE per-turn context this message
+              carried, read ONLY from this message's own `context_snapshot`
+              metadata (frozen at submit by execute-instance.thunk). We never
+              fall back to the live conversation context here: doing so made
+              every historical bubble lie, showing the current context as if
+              the model had seen it. No snapshot → show nothing (honest).
+              Backend follow-up: persist `context_snapshot` onto cx_message.
+              metadata so it survives reload (see FEATURE.md). */}
+          {contextSnapshot && contextSnapshot.length > 0 && (
+            <ContextSlotChipStrip
+              conversationId={conversationId}
+              agentId={agentId}
+              entries={contextSnapshot}
+            />
+          )}
 
           {/* Attachment chips */}
           {normalisedBlocks.length > 0 && (

@@ -3,7 +3,7 @@
 /**
  * ResultTable — a uniform object array rendered as a real, scannable table.
  *
- *   inline  — first ~5 rows + "+N more rows" (expands in place).
+ *   inline  — first ~3 rows + "+N more rows" (expands in place).
  *   full    — all rows; a filter <input> (font-size ≥16px) when >10 rows.
  *
  * Copy is owned at the result level (GenericRenderer inline / OutputView overlay)
@@ -32,7 +32,7 @@ export interface ResultTableProps {
 
 type SortDir = "asc" | "desc" | null;
 
-const INLINE_ROW_CAP = 5;
+const INLINE_ROW_CAP = 3;
 const FILTER_THRESHOLD = 10;
 
 /** Stable scalar→string for sorting / CSV / filtering. */

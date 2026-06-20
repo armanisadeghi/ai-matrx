@@ -25,6 +25,7 @@ import type { RootState } from "@/lib/redux/store";
 import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { Json } from "@/types/database.types";
 import { generateRequestId } from "../utils/ids";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import {
@@ -33,7 +34,10 @@ import {
 } from "../instance-resources/instance-resources.selectors";
 import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
-import { selectContextPayload } from "../instance-context/instance-context.selectors";
+import {
+  selectContextPayload,
+  selectInstanceContextEntries,
+} from "../instance-context/instance-context.selectors";
 import {
   buildAmbientContext,
   isFirstTurn,
@@ -371,15 +375,26 @@ export const executeInstance = createAsyncThunk<
         if (userMessageParts) content.push(...userMessageParts);
         content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
-        const nextPosition = selectMessageCount(conversationId)(
-          getState() as RootState,
-        );
+        const stateAtSubmit = getState() as RootState;
+        const nextPosition = selectMessageCount(conversationId)(stateAtSubmit);
+        // Capture the TRUE per-turn context this message carried, frozen at
+        // submit time. The user bubble reads this snapshot — never the live
+        // conversation-level context, which keeps mutating as the user changes
+        // scope / working document. Without this freeze, every historical turn
+        // would falsely display the current context. See AgentUserMessage.
+        const contextSnapshot =
+          selectInstanceContextEntries(conversationId)(stateAtSubmit);
+        const userMessageMetadata =
+          contextSnapshot.length > 0
+            ? ({ context_snapshot: contextSnapshot } as unknown as Json)
+            : undefined;
         dispatch(
           addOptimisticUserMessage({
             conversationId,
             clientTempId: userMessageClientTempId,
             content,
             position: nextPosition,
+            metadata: userMessageMetadata,
           }),
         );
       }
