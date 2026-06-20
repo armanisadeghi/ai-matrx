@@ -287,6 +287,13 @@ left untouched.
 add a resource injection path; build dynamic-context menu filtering) — none block
 the web feature.
 
+### D6 — Dynamic (DB `tool_ui`) renderer v2 compile path hangs (Babel pipeline)
+**Severity: medium — the entire DB-driven renderer kind is non-functional; hardcoded renderers are unaffected.**
+
+**Status: strongly suspected, dev-env confirmed; needs prod-build verification.** There have been **0 working v2 `tool_ui` renderers, ever** (all historical rows were `contract_version=1` stubs). Inserting a valid v2 row (`tool-viz` overhaul, 2026-06-19) and rendering it via `DynamicInlineRenderer` reproduced a hard hang: the row **fetches fine** (RLS OK, `@babel/standalone` chunk + capability chunks all load 200), but `compileToolUiComponent` never resolves — the renderer is stuck on "Loading tool display…" with **no console error** (a pending promise). Reproduced for a full-13-import renderer AND a `react`-only minimal one AND a fresh cache-busted tool name, so it is **not** GET caching or capability loading; the never-settling await is `loadBabelTransform()` / the `import("@babel/standalone")` in `features/dynamic-react/compile-core.ts` (suspected Turbopack-dev large-CJS dynamic-import issue — may not reproduce in a prod build; verify with `next build`).
+
+**Resolution path (aligned with the approved overhaul plan):** do NOT invest in the runtime-Babel + `new Function` pipeline — replace the DB-driven renderer kind with the **declarative `ToolDisplayEntry` model** (data, not compiled TSX): no Babel, no hang, and safe for user-authored renderers. The hardcoded registry path is fully working; this defect only affects the DB path, which the declarative model supersedes. Until then, every tool without a hardcoded renderer correctly falls back to the new `GenericRenderer` (the error boundary / negative-cache scaffolding holds).
+
 ## RESOLVED
 
 ### R2 — All 11 remaining severed overlay callbacks (D7) were dead — deleted (2026-06-14)
