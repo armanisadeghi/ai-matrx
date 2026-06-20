@@ -7,7 +7,6 @@ import {
   Type,
   Brain,
   FileText,
-  DollarSign,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -48,10 +47,12 @@ export function buildHeroMetrics(input: {
   totalCostUsd: number;
   llmCalls: number;
 }): HeroMetric[] {
+  // Cost intentionally omitted from the at-a-glance band. Characters render as a
+  // plain integer (no decimal). Labels are short so they never truncate.
   return [
     {
       key: "sources",
-      label: "Sources found",
+      label: "Sources",
       value: input.sources,
       icon: Globe,
       format: "int",
@@ -72,10 +73,10 @@ export function buildHeroMetrics(input: {
     },
     {
       key: "characters",
-      label: "Characters processed",
+      label: "Characters",
       value: input.characters,
       icon: Type,
-      format: "compact",
+      format: "int",
       accent: "text-cyan-500",
     },
     {
@@ -88,21 +89,11 @@ export function buildHeroMetrics(input: {
     },
     {
       key: "reports",
-      label: "Syntheses & reports",
+      label: "Reports",
       value: input.reports,
       icon: FileText,
       format: "int",
       accent: "text-amber-500",
-    },
-    {
-      key: "cost",
-      label: "Total cost",
-      value: input.totalCostUsd,
-      icon: DollarSign,
-      format: "usd",
-      accent: "text-emerald-500",
-      hint: "what the research bought",
-      prominent: true,
     },
     {
       key: "calls",
@@ -152,7 +143,6 @@ function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm",
         "px-4 py-4 sm:px-5 sm:py-5 transition-colors hover:border-border",
-        metric.prominent && "sm:col-span-2",
       )}
     >
       {/* soft accent glow on hover */}
@@ -164,7 +154,7 @@ function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
       />
       <div className="flex items-center gap-2 text-muted-foreground">
         <Icon className={cn("h-4 w-4 shrink-0", metric.accent)} />
-        <span className="text-[11px] font-medium uppercase tracking-wide truncate">
+        <span className="text-[11px] font-medium uppercase tracking-wide whitespace-nowrap">
           {metric.label}
         </span>
       </div>
@@ -193,7 +183,7 @@ function MetricTile({ metric, index }: { metric: HeroMetric; index: number }) {
 
 export function ResultsHeroMetrics({ metrics }: { metrics: HeroMetric[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
       {metrics.map((m, i) => (
         <MetricTile key={m.key} metric={m} index={i} />
       ))}

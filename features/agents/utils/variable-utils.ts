@@ -3,6 +3,7 @@
  */
 
 import { isPicklistRef } from "@/features/agents/types/agent-definition.types";
+import { readPicklistSelection } from "@/features/matrx-envelope/referenceFence";
 
 /**
  * Sanitizes a variable name for use in {{variable_name}} placeholders.
@@ -74,13 +75,22 @@ export const formatVariableDisplayName = (name: string): string =>
     .trim();
 
 /**
- * Renders a variable value for human display. Picklist reference envelopes show their
- * public LABEL (never the secret description, which the client never has); arrays render as
- * comma-joined labels; everything else stringifies. Use this anywhere a variable value is
- * shown to a user, so an envelope never renders as "[object Object]".
+ * Renders a variable value for human display. Picklist selections show their public
+ * LABEL(s) (never the secret description, which the client never has) — reading both the
+ * new ```matrx reference fence string and the legacy `picklist_ref` envelope; arrays render
+ * as comma-joined labels; everything else stringifies. Use this anywhere a variable value
+ * is shown to a user, so a reference never renders as raw JSON or "[object Object]".
  */
 export const variableValueToDisplay = (value: unknown): string => {
-  if (isPicklistRef(value)) return value.label;
+  const isPicklistValue =
+    isPicklistRef(value) ||
+    (Array.isArray(value) && value.some(isPicklistRef)) ||
+    (typeof value === "string" && value.includes("```matrx"));
+  if (isPicklistValue) {
+    const { labels, otherText } = readPicklistSelection(value);
+    const parts = [...labels, ...otherText].filter(Boolean);
+    if (parts.length) return parts.join(", ");
+  }
   if (Array.isArray(value)) {
     return value
       .map((v) => (isPicklistRef(v) ? v.label : v == null ? "" : String(v)))
@@ -100,8 +110,13 @@ export const formatVariablesForDisplay = (
   variables: Record<string, unknown>,
 ): string =>
   Object.entries(variables)
-    .filter(([, v]) => v != null && v !== "" && !(Array.isArray(v) && v.length === 0))
-    .map(([k, v]) => `${formatVariableDisplayName(k)}: ${variableValueToDisplay(v)}`)
+    .filter(
+      ([, v]) => v != null && v !== "" && !(Array.isArray(v) && v.length === 0),
+    )
+    .map(
+      ([k, v]) =>
+        `${formatVariableDisplayName(k)}: ${variableValueToDisplay(v)}`,
+    )
     .join("\n");
 
 /** Regex matching auto-generated placeholder names like `new_variable_7`. */

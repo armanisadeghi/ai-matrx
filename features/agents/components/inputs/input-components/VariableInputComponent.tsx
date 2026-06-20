@@ -100,9 +100,9 @@ export function VariableInputComponent({
   let inputComponent: React.ReactNode;
 
   // Picklist-bound: options come from the bound list (labels only) and the value is a
-  // PicklistRefEnvelope, not text. Orthogonal to `type` — the adapter renders the chosen
-  // choice component in label space. This single branch covers Inline / Stacked / Cards /
-  // Wizard (all route through VariableInputComponent).
+  // ```matrx reference fence string (`type:"picklist_item"`), not text. Orthogonal to
+  // `type` — the adapter renders the chosen choice component in label space. This single
+  // branch covers Inline / Stacked / Cards / Wizard (all route through VariableInputComponent).
   if (customComponent?.picklist?.listId) {
     inputComponent = (
       <PicklistVariableInput

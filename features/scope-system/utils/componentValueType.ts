@@ -7,17 +7,17 @@ import type { ContextValueType } from "@/features/scope-system/redux/contextItem
  * `value_type` stays the storage discriminator so the existing cell columns and
  * the chat-injection resolver keep working unchanged.
  *
- * Structured values (picklist refs, MediaRefs, multi-select) live in `value_json`
- * → "object"/"array". Numeric components → "number" (`value_number`). Everything
- * else emits a plain string → "string" (`value_text`).
+ * Structured values (MediaRefs) live in `value_json` → "object". Numeric components →
+ * "number" (`value_number`). Picklist bindings now emit a ```matrx reference fence STRING
+ * (single or multi) → "string" (`value_text`). Everything else emits a plain string too.
  */
 export function componentToValueType(
   cc: VariableCustomComponent | undefined,
 ): ContextValueType {
   if (!cc) return "string";
 
-  // Picklist binding emits a PicklistRefEnvelope (single) or [] (multi) → value_json.
-  if (cc.picklist?.listId) return cc.picklist.multiple ? "array" : "object";
+  // Picklist binding emits a ```matrx reference fence string (single or multi) → value_text.
+  if (cc.picklist?.listId) return "string";
 
   switch (cc.type) {
     case "number":

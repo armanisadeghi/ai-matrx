@@ -6,13 +6,13 @@ import { RadioGroupInput } from "./RadioGroupInput";
 import { CheckboxGroupInput } from "./CheckboxGroupInput";
 import { PillToggleInput } from "./PillToggleInput";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
 import {
-  isPicklistRef,
-  type PicklistRefEnvelope,
-  type VariableCustomComponent,
-} from "@/features/agents/types/agent-definition.types";
+  buildPicklistItemFence,
+  readPicklistSelection,
+} from "@/features/matrx-envelope/referenceFence";
 import { usePicklistForSelection } from "@/features/user-lists/hooks/usePicklistForSelection";
-import type { PicklistSelectionItem } from "@/features/user-lists/types";
 
 interface PicklistVariableInputProps {
   value: unknown;
@@ -27,29 +27,14 @@ interface PicklistVariableInputProps {
 
 const OTHER_PREFIX = "Other: ";
 
-function envelopeFor(
-  item: PicklistSelectionItem,
-  listId: string,
-): PicklistRefEnvelope {
-  return {
-    type: "picklist_ref",
-    list_id: listId,
-    list_item_id: item.id,
-    label: item.label,
-  };
-}
-
-/** A stored value entry -> the label string the inner (label-space) component expects. */
-function entryToInner(entry: unknown): string {
-  if (isPicklistRef(entry)) return entry.label;
-  if (typeof entry === "string" && entry) return `${OTHER_PREFIX}${entry}`;
-  return "";
-}
-
 /**
  * Adapter that renders a picklist-bound variable using the existing choice components in
- * LABEL space, converting selections to/from the {@link PicklistRefEnvelope} wire value.
- * The secret description is never fetched or shown here — only labels.
+ * LABEL space, converting selections to/from the canonical ```matrx reference fence
+ * (`type:"picklist_item"`). The secret description is never fetched or shown here — only
+ * labels. The persisted value is a fence STRING (single = one item; multi = N items plus
+ * any "Other" free-text lines after the closing fence); the server resolves the fence to
+ * each item's hidden description on the wire. Legacy `picklist_ref` values still read back
+ * via {@link readPicklistSelection}.
  */
 export function PicklistVariableInput({
   value,
@@ -74,34 +59,65 @@ export function PicklistVariableInput({
   const itemByLabel = new Map(items.map((i) => [i.label, i]));
   const sharedProps = { compact, wizardMode, containerWidth };
 
-  // ── Outbound: inner label string -> envelope(s) / free-text plain string ───────
+  // The optional `{{slot}}` the fence fills (informational; the server resolves by value).
+  const slot = sanitizeVariableName(variableName);
+
+  // ── Outbound: inner label string -> matrx fence / free-text plain string ───────
   const emitSingle = (inner: string) => {
     if (inner.startsWith(OTHER_PREFIX)) {
       onChange(inner.slice(OTHER_PREFIX.length)); // free text stays a plain string
       return;
     }
     const item = itemByLabel.get(inner);
-    onChange(item ? envelopeFor(item, listId) : "");
+    onChange(
+      item
+        ? buildPicklistItemFence({
+            listId,
+            slot,
+            selections: [{ itemId: item.id, label: item.label }],
+          })
+        : "",
+    );
   };
 
   const emitMulti = (inner: string) => {
     const parts = inner ? inner.split("\n").filter(Boolean) : [];
-    const out: (PicklistRefEnvelope | string)[] = [];
+    const selections: Array<{ itemId: string; label: string }> = [];
+    const others: string[] = [];
     for (const part of parts) {
       if (part.startsWith(OTHER_PREFIX)) {
-        out.push(part.slice(OTHER_PREFIX.length));
+        const text = part.slice(OTHER_PREFIX.length);
+        if (text) others.push(text);
       } else {
         const item = itemByLabel.get(part);
-        if (item) out.push(envelopeFor(item, listId));
+        if (item) selections.push({ itemId: item.id, label: item.label });
       }
     }
-    onChange(out);
+    if (selections.length === 0 && others.length === 0) {
+      onChange("");
+      return;
+    }
+    // One fence carries every picklist item; "Other" free text trails as plain lines
+    // (the server joins resolved items with "\n"; free text passes through verbatim).
+    const fence = selections.length
+      ? buildPicklistItemFence({ listId, slot, selections })
+      : "";
+    onChange([fence, others.join("\n")].filter(Boolean).join("\n"));
   };
 
-  // ── Inbound: stored value -> inner label string ──────────────────────────────
+  // ── Inbound: stored value (fence or legacy) -> inner label string ──────────────
+  const selection = readPicklistSelection(value);
   const innerValue = multiple
-    ? (Array.isArray(value) ? value.map(entryToInner).filter(Boolean).join("\n") : "")
-    : entryToInner(value);
+    ? [
+        ...selection.refs.map((r) => r.label),
+        ...selection.otherText.map((t) => `${OTHER_PREFIX}${t}`),
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : (selection.refs[0]?.label ??
+      (selection.otherText[0]
+        ? `${OTHER_PREFIX}${selection.otherText[0]}`
+        : ""));
 
   if (loading) {
     return <Skeleton className={compact ? "h-8 w-full" : "h-9 w-full"} />;

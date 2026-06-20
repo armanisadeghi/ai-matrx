@@ -73,22 +73,29 @@ export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
 /**
  * Binding of a variable to a user picklist (udt_picklists). When set, the variable's
  * options are hydrated at runtime from the picklist (labels only — the secret `description`
- * never reaches the client) and the emitted value is a {@link PicklistRefEnvelope}, not text.
- * Orthogonal to `type`, so a picklist can render as select / radio / buttons / checkbox.
+ * never reaches the client) and the emitted value is a ```matrx reference fence string
+ * (`kind:"reference"`, `type:"picklist_item"`), not text. Orthogonal to `type`, so a
+ * picklist can render as select / radio / buttons / checkbox.
  */
 export interface PicklistBinding {
   /** udt_picklists.id */
   listId: string;
   /** Optional: restrict to a single group; otherwise all groups render as sections. */
   groupName?: string;
-  /** Allow selecting multiple items (value becomes PicklistRefEnvelope[]). */
+  /** Allow selecting multiple items (the fence then carries N items + any "Other" lines). */
   multiple?: boolean;
 }
 
 /**
- * The wire value of a picklist-bound variable: a reference, never the resolved text. The
- * server reconciles `list_item_id` to the item's hidden `description` and injects THAT into
- * the prompt. `label` is carried for display + the server's safe fallback only.
+ * The legacy wire value of a picklist-bound variable: a reference, never the resolved text.
+ * The server reconciles `list_item_id` to the item's hidden `description` and injects THAT
+ * into the prompt. `label` is carried for display + the server's safe fallback only.
+ *
+ * @deprecated READ-ONLY back-compat. Authoring now emits the canonical ```matrx reference
+ * fence (`kind:"reference"`, `type:"picklist_item"`) via
+ * `features/matrx-envelope/referenceFence.ts#buildPicklistItemFence`; this shape is only
+ * still read (through `readPicklistSelection`) so already-saved values keep working. Do NOT
+ * emit it from new code. Remove once the backend drops the parallel-encoding allowlist.
  */
 export interface PicklistRefEnvelope {
   type: "picklist_ref";
@@ -97,6 +104,7 @@ export interface PicklistRefEnvelope {
   label: string;
 }
 
+/** @deprecated Read-only back-compat guard for legacy {@link PicklistRefEnvelope} values. */
 export function isPicklistRef(value: unknown): value is PicklistRefEnvelope {
   return (
     !!value &&
@@ -117,8 +125,9 @@ export interface VariableCustomComponent {
   step?: number;
   /**
    * Picklist binding. When present, options come from the bound picklist and the variable's
-   * value is a PicklistRefEnvelope (single) or PicklistRefEnvelope[] (multi-select). Kept
-   * top-level (not stashable) so it survives component-type switches.
+   * value is a ```matrx reference fence string (one `picklist_item` item for single-select,
+   * N items + any "Other" lines for multi). Kept top-level (not stashable) so it survives
+   * component-type switches.
    */
   picklist?: PicklistBinding;
   /**

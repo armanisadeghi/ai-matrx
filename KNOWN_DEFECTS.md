@@ -17,6 +17,22 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D10 — Picklist → `matrx` fence migration: BOUND scope-cell path not yet flipped (backend-gated)
+**Severity: low — direct/override path is live and correct; the bound path still rides the legacy encoding until aidream resolves a fence-valued cell. No data loss.**
+
+**What.** Picklist-bound variable authoring now emits the canonical ` ```matrx ` reference fence (`kind:"reference"`, `type:"picklist_item"`) instead of the legacy `picklist_ref` envelope — see [`features/matrx-envelope/referenceFence.ts`](features/matrx-envelope/referenceFence.ts) (`buildPicklistItemFence`) and `PicklistVariableInput.tsx`. A picklist value reaches the backend two ways, and only one is fully migrated:
+1. **Direct / override `variables`** (FE-controlled) — the fence string is sent as the variable value, substituted into the prompt by `replace_variables`, then resolved by aidream `substitute.py#stage_reference_fences`. **Works now.**
+2. **Bound scope-cell** (server reads the persisted cell) — aidream `aidream/api/utils/scope_binding_resolution.py` still recognizes only the `_is_picklist_ref` dict. A fence-valued cell currently coerces to its text via `_coerce_variable_value` and would only resolve if `replace_variables` runs before `stage_reference_fences`. **Not verified end-to-end → bound path NOT flipped.**
+
+**Why it matters / the `value_type` caveat.** New picklist context-items persist `value_type='string'` ([`componentValueType.ts`](features/scope-system/utils/componentValueType.ts)) → the fence lands in `value_text`. EXISTING bound picklist items still carry `value_type='object'`/`'array'` in the DB; when re-saved, `buildScopeValuePayload` falls back to `value_text` (a fence string isn't valid JSON), so the value lives in `value_text` while the `value_type` column still says object/array — a drift the backend reader must tolerate (read the actual populated `value_*` column, not just trust `value_type`).
+
+**Fence / status.** FE ships the authoring switch behind the dual-read bridge `readPicklistSelection` (renders BOTH the new fence and any already-saved `picklist_ref` object/array), so nothing breaks during the transition. Existing saved `picklist_ref` rows rely on aidream's back-compat decoder (per `MATRX_ENVELOPE.md` Migration) — no FE backfill.
+
+**What's open.**
+1. **aidream:** resolve a fence-valued BOUND scope cell — read `value_text`, and ensure `replace_variables` → `stage_reference_fences` ordering applies to the bound-variable substitution chain. Verify before relying on the bound path.
+2. **aidream:** decide handling for existing `picklist_ref` scope-cell rows (back-compat decoder vs. a one-time backfill) and tolerate the `value_type` column drift above for re-saved items.
+3. **aidream (post-FE):** once (1)+(2) hold end-to-end, retire the legacy `picklist_ref` variable path and drop it from the `validate_envelope_registry.py` parallel-encoding allowlist. Then remove the FE `@deprecated` `PicklistRefEnvelope` / `isPicklistRef` (`features/agents/types/agent-definition.types.ts`).
+
 ### D9 — Scribe: agent edits to the working document apply all-at-once, not streamed
 **Severity: low — a UX gap, not data loss. Deferred: needs an aidream change.**
 

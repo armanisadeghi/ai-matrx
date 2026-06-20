@@ -16,8 +16,10 @@ export interface ScopeValueColumns {
  * The ONE place this mapping lives — shared by inline autosave (`useScopeAutoSave`) and
  * the advanced editor (`EditScopeValueSheet`) so they can never disagree.
  *
- * Structured values (MediaRef, PicklistRefEnvelope, multi-select arrays) are stored
- * verbatim in `value_json`. Strings route by the item's `value_type`.
+ * Structured values (MediaRef objects) are stored verbatim in `value_json`. Strings route
+ * by the item's `value_type` — picklist selections are now ```matrx reference fence strings
+ * and land in `value_text` (a fence string is not valid JSON, so even a legacy
+ * `object`/`array` value_type falls back to `value_text`).
  */
 export function buildScopeValuePayload(
   raw: unknown,

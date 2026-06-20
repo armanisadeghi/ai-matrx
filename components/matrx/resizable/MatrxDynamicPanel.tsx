@@ -362,6 +362,7 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
             "border-b px-3 py-2 flex items-center bg-background sticky top-0 scrollbar-none",
             isVertical ? "justify-between" : "flex-wrap gap-0",
             isMobile && "pt-[calc(var(--header-height)+0.75rem)]",
+            currentPosition === "right" && !isMobile && "pr-10",
           )}
           style={{ zIndex: 10 }}
         >

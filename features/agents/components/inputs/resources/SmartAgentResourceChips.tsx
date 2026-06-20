@@ -31,6 +31,7 @@ import {
   Captions,
   AudioLines,
   Notebook,
+  X,
   FileText as FileTextIcon,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -45,6 +46,8 @@ import {
   selectWorkingDocEnabled,
   selectWorkingDocTitle,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { setWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -336,6 +339,57 @@ function wrapWithPreview(
   }
 }
 
+/**
+ * Compact, always-present context indicator — deliberately much smaller than a
+ * ResourceAttachmentTile. Context (working document, active scope context) is
+ * ambient and persistent, so it shows as a slim pill: an icon, a short label,
+ * and a hover-revealed remove X. Click reveals the full detail in the drawer.
+ */
+function ContextPill({
+  icon: Icon,
+  label,
+  onClick,
+  onRemove,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="group inline-flex h-6 items-center rounded-full border border-primary/30 bg-primary/5 pl-2 pr-1 text-[11px] font-medium text-foreground transition-colors hover:bg-primary/10">
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex min-w-0 items-center gap-1"
+      >
+        <Icon className="h-3 w-3 shrink-0 text-primary" />
+        <span className="max-w-[120px] truncate">{label}</span>
+      </button>
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={`Remove ${label}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove();
+          }
+        }}
+        className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 opacity-0 transition-opacity hover:bg-black/10 hover:text-foreground group-hover:opacity-100 dark:hover:bg-white/10"
+      >
+        <X className="h-2.5 w-2.5" />
+      </span>
+    </div>
+  );
+}
+
 interface SmartAgentResourceChipsProps {
   conversationId: string;
 }
@@ -397,6 +451,21 @@ export function SmartAgentResourceChips({
     drawer.openAt(contextLayers.items, 0);
   }, [contextLayers.items, drawer]);
 
+  // X on the working-document chip turns it OFF for this conversation. Because
+  // `enabled` is now an explicit `false` on the instance, the default-on
+  // fallback never re-enables it — it stays removed for the session (only a
+  // brand-new instance, or the user toggling it back on, brings it back).
+  const removeWorkingDoc = useCallback(() => {
+    dispatch(setWorkingDocEnabled({ conversationId, enabled: false }));
+  }, [dispatch, conversationId]);
+
+  // X on the single "Context" chip clears the active scope-selection context
+  // (org / scopes / project / task). This is a deliberate, user-initiated clear
+  // — the same action as ClearContextButton — so nothing re-applies it.
+  const removeContextLayers = useCallback(() => {
+    dispatch(clearContext());
+  }, [dispatch]);
+
   const handleRemove = useCallback(
     (resourceId: string) => {
       dispatch(removeResource({ conversationId, resourceId }));
@@ -424,23 +493,19 @@ export function SmartAgentResourceChips({
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
       {contextLayers.count > 0 && (
-        <ResourceAttachmentTile
-          typeLabel="Context"
-          title={contextLayers.summary}
+        <ContextPill
           icon={Layers}
-          themeKey="input_project"
+          label={contextLayers.summary}
           onClick={openContextLayers}
-          className="ring-1 ring-inset ring-primary/40 bg-primary/5"
+          onRemove={removeContextLayers}
         />
       )}
       {workingDocItem && (
-        <ResourceAttachmentTile
-          typeLabel="Context"
-          title={workingDocItem.title}
+        <ContextPill
           icon={FileTextIcon}
-          themeKey="input_document"
+          label={workingDocItem.title}
           onClick={openWorkingDoc}
-          className="ring-1 ring-inset ring-primary/40 bg-primary/5"
+          onRemove={removeWorkingDoc}
         />
       )}
       <AnimatePresence mode="popLayout">

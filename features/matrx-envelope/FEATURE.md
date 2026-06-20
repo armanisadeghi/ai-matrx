@@ -13,6 +13,14 @@ route internal parts through a registry, render them, fall back gracefully.
   `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
   (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
   (`ReferenceChip`, one per item). Add a renderer = one register call.
+- `referenceFence.ts` — the **reference-fence serializer + dual-reader** (the authoring
+  primitive the backend named): `buildReferenceFence({type,items})` / `buildPicklistItemFence(...)`
+  produce the canonical ` ```matrx ` `kind:"reference"` fence string (verbatim-persistable);
+  `parseReferenceFence(value)` reads it back (tolerant of a missing ``` wrapper). The migration
+  bridge is `readPicklistSelection(value)` → `{ refs, otherText, labels }`, which reads BOTH the
+  new fence string AND the legacy `picklist_ref` envelope (object or array) so already-saved
+  values keep rendering. Pure module (no React) — consumed by picklist authoring now, table /
+  secret authoring later. Never hand-assemble a fence elsewhere.
 - `referenceResolvers.ts` — the **reference resolver registry** (the data-driven mirror for
   the `reference` kind): one entry per reference `type` → `{ resolveValue(supabase, ref),
   openItemType, openId(ref) }`. `resolveValue` fetches the LIVE value from Supabase
@@ -55,11 +63,23 @@ route internal parts through a registry, render them, fall back gracefully.
   now **come to life** (live Supabase fetch of the underlying value + click-to-open the entity
   in a window panel, graceful fallback to `display.label`) — outer-first recognition + graceful
   fallback, fence wiring, directive receipts, schema-proposal apply flow.
+- Done: **authoring (deliverable b, picklist).** Picklist-bound variables now emit the
+  ` ```matrx ` `picklist_item` reference fence (via `referenceFence.ts`) instead of the legacy
+  `picklist_ref` envelope. The value is a fence STRING (single = one item; multi = N items +
+  any "Other" free-text lines) → persists to `value_text`. The FE-controlled direct/override
+  `variables` path is live; the **bound scope-cell path is backend-gated** (aidream must resolve
+  a fence-valued bound cell) — tracked in [`KNOWN_DEFECTS.md` D10](../../KNOWN_DEFECTS.md).
 - Next: renderers for `secret` / `output_directive`-receipt-in-content if needed; the
-  reference-insert authoring picker.
+  reference-insert authoring picker; table/cell (`dataset_cell`) authoring migration.
 
 ## Change Log
 
+- 2026-06-19 — **Authoring migration (deliverable b, picklist-only).** Added `referenceFence.ts`
+  (`buildReferenceFence` / `buildPicklistItemFence` / `parseReferenceFence` + the dual-read
+  `readPicklistSelection`). Switched `PicklistVariableInput` to emit the ` ```matrx ` fence;
+  `variableValueToDisplay`, `componentToValueType` (picklist → `string`/`value_text`), and the
+  picklist type docs updated; `PicklistRefEnvelope` / `isPicklistRef` marked `@deprecated`
+  read-only back-compat. Bound scope-cell path gated on aidream (D10).
 - 2026-06-19 — `reference` blocks come to life: each chip now fetches its LIVE value from
   Supabase (`picklist_item` → picklist item description/label; `dataset_cell` → dataset-row
   cell) and is clickable to open the underlying picklist/table in a window panel (reusing the

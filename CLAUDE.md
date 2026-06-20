@@ -20,8 +20,8 @@ The five anti-patterns this kills (local types, recreated components, parallel R
 
 ## Web Access for Testing
 
-- User: `admin@admin.com` / `Password1234#`
-- Dev auto-login (localhost only, disabled in production): `http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>` — `next` defaults to `/dashboard`. If a session exists, it redirects without re-login.
+- **Form login (canonical — log in once, you're set):** open `/login`, sign in with `admin@admin.com` / `Password1234#`; the session persists for that browser. This is what reliably establishes a full client session for testing.
+- Dev auto-login (localhost only, disabled in production): `http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>` — `next` defaults to `/dashboard`. If a session exists, it redirects without re-login. (Sets a cookie; the form login above is more reliable for hydrating client data pages.)
 
 ---
 

@@ -27,9 +27,10 @@ function canonical(v: unknown): string {
  * inputs) or on change (custom-component inputs) and is a no-op when the value
  * hasn't changed since the last commit.
  *
- * `value` may be a string (textarea/date/number-as-text) OR a structured value
- * (MediaRef, PicklistRefEnvelope, array) emitted by a custom Smart-Input
- * component — structured values are stored verbatim in `value_json`.
+ * `value` may be a string (textarea/date/number-as-text, or a ```matrx reference fence
+ * string for picklist selections) OR a structured MediaRef object emitted by a custom
+ * Smart-Input component — MediaRef objects are stored verbatim in `value_json`, strings
+ * route by `value_type` (picklist fences land in `value_text`).
  *
  * The hook manages its own baseline ref internally — callers MUST NOT receive
  * a setter back, because that setter would be a fresh closure on every render
