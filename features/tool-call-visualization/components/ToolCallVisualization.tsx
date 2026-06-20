@@ -37,7 +37,7 @@ import {
   hasCustomRenderer,
   shouldKeepExpandedOnStream,
 } from "../registry/registry";
-import { prefetchRenderer } from "../dynamic/fetcher";
+import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
@@ -107,10 +107,11 @@ const ToolCallVisualizationInner: React.FC<{
   >(undefined);
   const dispatch = useAppDispatch();
 
-  // Prefetch any dynamic renderers for tools in this group.
+  // Prefetch any DB-stored renderers for tools in this group so they're
+  // fetched + compiled before the card expands.
   useEffect(() => {
     for (const e of entries) {
-      if (e.toolName) prefetchRenderer(e.toolName);
+      if (e.toolName) prefetchToolRenderer(e.toolName);
     }
   }, [entries]);
 

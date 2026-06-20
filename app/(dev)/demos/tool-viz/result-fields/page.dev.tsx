@@ -403,6 +403,25 @@ function researchEntry(toolName: string): ToolLifecycleEntry {
 
 const RESEARCH_ENTRY = researchEntry("research_web");
 
+// Dynamic (DB) renderer demo — resolves to the `tool_ui` row for `agent_call`,
+// fetched + compiled at runtime via the canonical compileSlotComponent path.
+const AGENT_CALL_ENTRY = entry({
+    callId: "agent-call-demo",
+    toolName: "agent_call",
+    displayName: "Sub-agent",
+    arguments: {
+        agent_id: "7e388760-5e21-48fc-baa6-39fd717c08e2",
+        user_input: "Summarize the omega-3 research",
+    },
+    result: {
+        agent_id: "7e388760-5e21-48fc-baa6-39fd717c08e2",
+        agent_name: "Research Summarizer",
+        model_id: "claude-opus-4-8",
+        result:
+            "## Summary\n\nThe omega-3 research converges on three themes: bioavailability, sustainability, and the ratio debate. Algae-derived sources lead on sustainability.\n\n- Fatty fish + algae oil rank highest on bioavailability\n- The ratio hypothesis is being challenged in favor of absolute levels",
+    },
+});
+
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div className="rounded-lg border border-border bg-card p-3">
@@ -450,6 +469,15 @@ export default function ResultFieldsGalleryPage() {
                     <FixtureCard label="Version B — Modern (overlay Results body)">
                         <ResearchModernOverlay entry={RESEARCH_ENTRY} />
                     </FixtureCard>
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Dynamic (DB) renderer — `agent_call` compiled from `tool_ui` via the canonical runtime (click to expand)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    <ToolCallVisualization entries={[AGENT_CALL_ENTRY]} isPersisted hasContent />
                 </div>
             </section>
 

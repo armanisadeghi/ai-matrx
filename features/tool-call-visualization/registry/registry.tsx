@@ -53,12 +53,11 @@ import {
   collectMessages,
   filterStepEvents,
 } from "../renderers/_shared";
+import { DbToolRenderer } from "../db-renderer/DbToolRenderer";
 import {
-  DynamicInlineRenderer,
-  DynamicOverlayRenderer,
-} from "../dynamic/DynamicToolRenderer";
-import { getCachedRenderer, isKnownNoDynamic } from "../dynamic/cache";
-import type { CompiledToolRenderer } from "../dynamic/types";
+  getCachedToolRenderer,
+  isKnownNoToolRenderer,
+} from "../db-renderer/toolRendererCache";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEO header extras helpers
@@ -677,14 +676,14 @@ export const toolRendererRegistry: ToolRegistry = {
 export function hasCustomRenderer(toolName: string | null): boolean {
   if (!toolName) return false;
   if (toolName in toolRendererRegistry) return true;
-  if (getCachedRenderer(toolName)) return true;
+  if (getCachedToolRenderer(toolName)) return true;
   return false;
 }
 
 export function mightHaveDynamicRenderer(toolName: string | null): boolean {
   if (!toolName) return false;
   if (toolName in toolRendererRegistry) return false;
-  if (isKnownNoDynamic(toolName)) return false;
+  if (isKnownNoToolRenderer(toolName)) return false;
   return true;
 }
 
@@ -693,25 +692,25 @@ export function getInlineRenderer(
 ): React.ComponentType<ToolRendererProps> {
   if (!toolName) return GenericRenderer;
 
+  // (1) Static, hand-written renderer wins.
   if (toolRendererRegistry[toolName]) {
     return toolRendererRegistry[toolName].InlineComponent;
   }
 
-  const dynamicCached = getCachedRenderer(toolName);
-  if (dynamicCached) {
-    const cachedToolName = toolName;
-    return (props: ToolRendererProps) => (
-      <DynamicInlineRenderer toolName={cachedToolName} {...props} />
+  // (2) Unless we already know there's no DB renderer, route through the
+  // lazy DB renderer. It self-resolves: positive cache -> compiled component,
+  // negative/error -> GenericRenderer (its own boundary fallback). We pass the
+  // toolName so the impl can fetch+compile the row on first mount.
+  if (!isKnownNoToolRenderer(toolName)) {
+    const dbToolName = toolName;
+    const DbInline: React.FC<ToolRendererProps> = (props) => (
+      <DbToolRenderer toolName={dbToolName} {...props} />
     );
+    DbInline.displayName = `DbToolRenderer(${dbToolName})`;
+    return DbInline;
   }
 
-  if (!isKnownNoDynamic(toolName)) {
-    const dynamicToolName = toolName;
-    return (props: ToolRendererProps) => (
-      <DynamicInlineRenderer toolName={dynamicToolName} {...props} />
-    );
-  }
-
+  // (3) Confirmed no DB renderer — generic is the boundary.
   return GenericRenderer;
 }
 
@@ -752,24 +751,16 @@ export function getOverlayRenderer(
     );
   }
 
-  const dynamicCached = getCachedRenderer(toolName);
-  if (dynamicCached) {
-    const cachedToolName = toolName;
-    if (dynamicCached.OverlayComponent) {
-      return (props: ToolRendererProps) => (
-        <DynamicOverlayRenderer toolName={cachedToolName} {...props} />
-      );
-    }
-    return (props: ToolRendererProps) => (
-      <DynamicInlineRenderer toolName={cachedToolName} {...props} />
+  // DB renderers are a single canonical component used for both inline and
+  // overlay. Route the overlay through the same lazy DB renderer unless we
+  // already know the tool has none.
+  if (!isKnownNoToolRenderer(toolName)) {
+    const dbToolName = toolName;
+    const DbOverlay: React.FC<ToolRendererProps> = (props) => (
+      <DbToolRenderer toolName={dbToolName} {...props} />
     );
-  }
-
-  if (!isKnownNoDynamic(toolName)) {
-    const dynamicToolName = toolName;
-    return (props: ToolRendererProps) => (
-      <DynamicOverlayRenderer toolName={dynamicToolName} {...props} />
-    );
+    DbOverlay.displayName = `DbToolRendererOverlay(${dbToolName})`;
+    return DbOverlay;
   }
 
   return GenericRenderer;
@@ -780,8 +771,9 @@ export function shouldKeepExpandedOnStream(toolName: string | null): boolean {
   if (toolRendererRegistry[toolName]) {
     return toolRendererRegistry[toolName].keepExpandedOnStream ?? false;
   }
-  const dynamic = getCachedRenderer(toolName);
-  if (dynamic) return dynamic.keepExpandedOnStream;
+  // DB renderers self-paint; the shell keeps them collapsed-by-default like any
+  // tool that didn't opt into streaming expansion. (Returning true preserves
+  // the prior default for tools with no static entry.)
   return true;
 }
 
@@ -789,8 +781,7 @@ export function getToolDisplayName(toolName: string | null): string {
   if (!toolName) return "Tool";
   if (toolRendererRegistry[toolName]?.displayName)
     return toolRendererRegistry[toolName].displayName;
-  const dynamic = getCachedRenderer(toolName);
-  if (dynamic) return dynamic.displayName;
+  // DB renderers carry no shell-level metadata — title-case the tool name.
   return toolName
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -862,11 +853,14 @@ function formatPhaseLabel(
  *
  * Resolution order:
  *   1. Static registry entry's `phaseLabels` — the most specific, hand-written.
- *   2. Dynamic (DB-stored) renderer's `phaseLabels`.
- *   3. Fallback map by `toolName` (covers widget tools not in the registry).
- *   4. Fallback map by `displayName` (covers tools whose toolName varies but
+ *   2. Fallback map by `toolName` (covers widget tools not in the registry).
+ *   3. Fallback map by `displayName` (covers tools whose toolName varies but
  *      whose surface label is known — e.g. the "Tasks" widget).
- *   5. Plain displayName with a `failed: <message>` suffix on error.
+ *   4. Plain displayName with a `failed: <message>` suffix on error.
+ *
+ * DB-stored renderers carry no shell-level `phaseLabels`; they self-paint, so
+ * they resolve through the displayName / fallback maps like any other tool
+ * without a static entry.
  */
 export function getToolPhaseLabel(
   toolName: string | null,
@@ -878,16 +872,6 @@ export function getToolPhaseLabel(
     const reg = toolRendererRegistry[toolName];
     if (reg?.phaseLabels) {
       return formatPhaseLabel(reg.phaseLabels, phase, errorMessage);
-    }
-    // `CompiledToolRenderer` doesn't formally declare `phaseLabels`, but some
-    // dynamically-compiled renderers attach one (mirrors what the static
-    // `toolRendererRegistry` entries carry). We widen the type once via cast
-    // and then narrow with `?.` — no double-cast or `as { …required: … }`.
-    const dynamic = getCachedRenderer(toolName) as
-      | (CompiledToolRenderer & { phaseLabels?: ToolPhaseLabels })
-      | null;
-    if (dynamic?.phaseLabels) {
-      return formatPhaseLabel(dynamic.phaseLabels, phase, errorMessage);
     }
     if (FALLBACK_PHASE_LABELS_BY_TOOLNAME[toolName]) {
       return formatPhaseLabel(
@@ -914,8 +898,6 @@ export function getResultsLabel(toolName: string | null): string {
   if (!toolName) return "Results";
   const renderer = toolRendererRegistry[toolName];
   if (renderer?.resultsLabel) return renderer.resultsLabel;
-  const dynamic = getCachedRenderer(toolName);
-  if (dynamic?.resultsLabel) return dynamic.resultsLabel;
   return `${getToolDisplayName(toolName)} Results`;
 }
 
@@ -933,14 +915,7 @@ export function getHeaderSubtitle(
       return null;
     }
   }
-  const dynamic = getCachedRenderer(toolName);
-  if (dynamic?.getHeaderSubtitle) {
-    try {
-      return dynamic.getHeaderSubtitle(entry, events);
-    } catch {
-      return null;
-    }
-  }
+  // DB renderers self-paint their own header; the shell shows no subtitle.
   return null;
 }
 
@@ -958,14 +933,7 @@ export function getHeaderExtras(
       return null;
     }
   }
-  const dynamic = getCachedRenderer(toolName);
-  if (dynamic?.getHeaderExtras) {
-    try {
-      return dynamic.getHeaderExtras(entry, events);
-    } catch {
-      return null;
-    }
-  }
+  // DB renderers self-paint; no shell-level header extras.
   return null;
 }
 
