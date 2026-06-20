@@ -141,7 +141,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
         headers: safeHeaders,
         rows,
       });
-      if (result.ok) {
+      if (result.success && result.tableId) {
         toast.success(`Saved as a live table (${result.inserted} rows)`, {
           description: "Opening — edit it as a real data table.",
         });
@@ -152,7 +152,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
           }),
         );
       } else {
-        toast.error(`Save failed: ${result.error}`);
+        toast.error(`Save failed: ${result.error ?? "unknown error"}`);
       }
     } finally {
       setSaving(false);

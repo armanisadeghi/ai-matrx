@@ -32,15 +32,21 @@ export interface CreateDatasetFromTableArgs {
   isPublic?: boolean;
 }
 
-export type CreateDatasetResult =
-  | { ok: true; tableId: string; inserted: number }
-  | { ok: false; error: string };
+/** Flat result (mirrors `SaveToTableResult`): `error`/`tableId` always accessible. */
+export interface CreateDatasetResult {
+  success: boolean;
+  /** The new `udt_datasets` id (present on success; also on a rows-failed partial). */
+  tableId?: string;
+  inserted: number;
+  error?: string;
+}
 
 export async function createDatasetFromTable(
   args: CreateDatasetFromTableArgs,
 ): Promise<CreateDatasetResult> {
   const { name, description, headers, rows, isPublic = false } = args;
-  if (headers.length === 0) return { ok: false, error: "Table has no columns" };
+  if (headers.length === 0)
+    return { success: false, inserted: 0, error: "Table has no columns" };
 
   // Build field defs from headers: sanitized + de-duplicated field_name, display
   // name = header, first column required (mirrors SaveTableModal.handleCreateNew).
@@ -70,7 +76,11 @@ export async function createDatasetFromTable(
     fields,
   });
   if (!created.success || !created.tableId) {
-    return { ok: false, error: created.error ?? "Failed to create table" };
+    return {
+      success: false,
+      inserted: 0,
+      error: created.error ?? "Failed to create table",
+    };
   }
   const tableId = created.tableId;
 
@@ -87,15 +97,15 @@ export async function createDatasetFromTable(
     .filter((data) => Object.keys(data).length > 0)
     .map((data) => ({ op: "insert", data }));
 
-  if (operations.length === 0) return { ok: true, tableId, inserted: 0 };
+  if (operations.length === 0) return { success: true, tableId, inserted: 0 };
 
   const writeResult = await bulkWrite({ tableId, operations });
   if (isServiceFailure(writeResult)) {
     // The dataset exists but rows failed — surface loudly (loud recovery).
-    return { ok: false, error: writeResult.error };
+    return { success: false, tableId, inserted: 0, error: writeResult.error };
   }
   const inserted = writeResult.data.results.filter(
     (r) => !isBulkOpError(r),
   ).length;
-  return { ok: true, tableId, inserted };
+  return { success: true, tableId, inserted };
 }

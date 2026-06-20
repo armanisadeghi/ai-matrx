@@ -140,7 +140,7 @@ function TableArtifactMaterialized({
         headers: parsed.headers,
         rows: parsed.normalizedData,
       });
-      if (result.ok) {
+      if (result.success && result.tableId) {
         await canvasArtifactService.setExternalLink(canvasItemId, {
           externalSystem: UDT_SYSTEM,
           externalId: result.tableId,
@@ -153,7 +153,7 @@ function TableArtifactMaterialized({
         );
         refetch();
       } else {
-        toast.error(`Convert failed: ${result.error}`);
+        toast.error(`Convert failed: ${result.error ?? "unknown error"}`);
       }
     } finally {
       setConverting(false);
