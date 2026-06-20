@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, lazy, useCallback, useMemo, useState } from "react";
-import { Table2 } from "lucide-react";
+import { Table2, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,7 @@ function TableArtifactMaterialized({
 }) {
   const { row, loading, refetch } = useCanvasItem(canvasItemId);
   const [converting, setConverting] = useState(false);
+  const [reverting, setReverting] = useState(false);
 
   const linkedTableId =
     row?.external_system === UDT_SYSTEM && row?.external_id
@@ -164,6 +165,20 @@ function TableArtifactMaterialized({
     }
   }, [content, row?.title, canvasItemId, refetch]);
 
+  // Revert a converted table back to the editable text table — unlink the UDT
+  // dataset (it is kept, not deleted; the original markdown lives in
+  // canvas_items.content). The user always has a way back.
+  const handleRevert = useCallback(async () => {
+    setReverting(true);
+    try {
+      await canvasArtifactService.setExternalLink(canvasItemId, {});
+      toast.success("Reverted to the editable text table");
+      refetch();
+    } finally {
+      setReverting(false);
+    }
+  }, [canvasItemId, refetch]);
+
   if (loading && !row) {
     return <MatrxMiniLoader />;
   }
@@ -171,12 +186,30 @@ function TableArtifactMaterialized({
   // Linked → the real, live, realtime two-way UDT table is the source of truth.
   // It carries markdown from the chat table, so render cells as rich text; the
   // chat artifact provides the context, so suppress the table's own title header
-  // (no double title).
+  // (no double title). A quiet Revert action unlinks it back to the text table.
   if (linkedTableId) {
     return (
-      <Suspense fallback={<MatrxMiniLoader />}>
-        <UserTableViewer tableId={linkedTableId} renderCellMarkdown hideHeader />
-      </Suspense>
+      <div className="space-y-1">
+        <Suspense fallback={<MatrxMiniLoader />}>
+          <UserTableViewer
+            tableId={linkedTableId}
+            renderCellMarkdown
+            hideHeader
+          />
+        </Suspense>
+        <div className="flex items-center justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 gap-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={handleRevert}
+            disabled={reverting}
+          >
+            <Undo2 className="h-3 w-3" />
+            {reverting ? "Reverting…" : "Revert to text"}
+          </Button>
+        </div>
+      </div>
     );
   }
 

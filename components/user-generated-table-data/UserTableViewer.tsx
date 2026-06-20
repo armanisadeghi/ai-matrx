@@ -1600,26 +1600,21 @@ const UserTableViewer = ({
                 return (
                   <TableHead
                     key={field.id}
-                    className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 py-3 min-w-[150px] border-b border-gray-200 dark:border-gray-700"
+                    className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 py-1.5 min-w-[150px] border-b border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-200/70 dark:hover:bg-gray-700/70"
                   >
                     <div className="flex items-center justify-between gap-1">
                       <button
                         type="button"
                         onClick={() => handleSort(field.field_name)}
-                        className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded px-1 py-0.5 hover:bg-gray-200/70 dark:hover:bg-gray-700/70"
+                        className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
                         title={`Sort by ${field.display_name}`}
                       >
-                        <div className="flex w-full items-center gap-1">
-                          <span className="truncate">{field.display_name}</span>
-                          {isSorted && (
-                            <span className="flex-shrink-0">
-                              {sortDirection === "asc" ? "↑" : "↓"}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
-                          {field.data_type}
-                        </span>
+                        <span className="truncate">{field.display_name}</span>
+                        {isSorted && (
+                          <span className="flex-shrink-0">
+                            {sortDirection === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
                       </button>
                       <ColumnHeaderMenu
                         fieldName={field.field_name}
@@ -1883,7 +1878,7 @@ const UserTableViewer = ({
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Select value={String(limit)} onValueChange={handleLimitChange}>
-              <SelectTrigger className="h-8 w-[70px] bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+              <SelectTrigger className="h-8 w-[70px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
@@ -1930,9 +1925,9 @@ const UserTableViewer = ({
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  className={
+                  className={`h-8 ${
                     currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                  }
+                  }`}
                 />
               </PaginationItem>
 
@@ -1946,6 +1941,7 @@ const UserTableViewer = ({
                     <PaginationLink
                       onClick={() => handlePageChange(pageNum)}
                       isActive={currentPage === pageNum}
+                      className="h-8 w-8"
                     >
                       {pageNum}
                     </PaginationLink>
@@ -1960,11 +1956,11 @@ const UserTableViewer = ({
                       Math.min(effectiveTotalPages, currentPage + 1),
                     )
                   }
-                  className={
+                  className={`h-8 ${
                     currentPage === effectiveTotalPages
                       ? "pointer-events-none opacity-50"
                       : ""
-                  }
+                  }`}
                 />
               </PaginationItem>
             </PaginationContent>

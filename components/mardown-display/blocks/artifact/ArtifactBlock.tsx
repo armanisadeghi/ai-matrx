@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, lazy, useMemo } from "react";
-import { Layers, Maximize2 } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
@@ -164,36 +164,36 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     };
 
     return (
-        <div className="my-3 rounded-lg border border-border bg-card overflow-hidden">
-            {/* Artifact header */}
-            <div className="flex items-center justify-between px-3 py-1.5 bg-muted/50 border-b border-border">
-                <div className="flex items-center gap-2 min-w-0">
-                    <Layers className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="text-sm font-medium text-foreground truncate">
+        <div className="group/artifact relative my-2">
+            {/* Whisper-quiet affordance row: a muted label + a hover-reveal
+                "open in canvas" icon. No background, no border, no x-padding — the
+                artifact blends into the message and uses the full content width
+                (the content provides its own structure). */}
+            <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-xs font-medium text-muted-foreground">
                         {artifactTitle}
                     </span>
                     {!isComplete && isStreamActive && (
-                        <span className="text-xs text-muted-foreground animate-pulse shrink-0">
-                            streaming...
+                        <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
+                            streaming…
                         </span>
                     )}
                 </div>
                 {isCanvasAvailable && (
                     <button
                         onClick={handleOpenCanvas}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors shrink-0"
-                        title="Open in canvas panel"
+                        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
+                        title="Open in canvas"
+                        aria-label="Open in canvas"
                     >
                         <Maximize2 className="h-3.5 w-3.5" />
-                        <span>Canvas</span>
                     </button>
                 )}
             </div>
 
-            {/* Content — routes to real renderer by type */}
-            <div className="overflow-hidden">
-                {renderContent()}
-            </div>
+            {/* Content — routes to the real renderer by type. Full width, no chrome. */}
+            <div className="overflow-hidden">{renderContent()}</div>
         </div>
     );
 };
