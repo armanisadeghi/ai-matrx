@@ -2377,20 +2377,68 @@ export interface TaskInputPart {
   editable?: boolean | null;
 }
 
+export interface FullTableBookmark {
+  type?: "full_table";
+  table_id: string;
+  table_name?: string | null;
+}
+
+export interface TableCellBookmark {
+  type?: "table_cell";
+  table_id: string;
+  row_id: string;
+  column_name: string;
+  table_name?: string | null;
+}
+
+export interface TableColumnBookmark {
+  type?: "table_column";
+  table_id: string;
+  column_name: string;
+  table_name?: string | null;
+}
+
+export interface TableRowBookmark {
+  type?: "table_row";
+  table_id: string;
+  row_id: string;
+  table_name?: string | null;
+}
+
 export interface TableInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_table";
-  bookmarks?: Record<string, unknown>[];
+  bookmarks?: (FullTableBookmark | TableColumnBookmark | TableRowBookmark | TableCellBookmark)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
   editable?: boolean | null;
 }
 
+export interface FullListBookmark {
+  type?: "full_list";
+  list_id: string;
+  list_name?: string | null;
+}
+
+export interface ListGroupBookmark {
+  type?: "list_group";
+  list_id: string;
+  group_name: string;
+  list_name?: string | null;
+}
+
+export interface ListItemBookmark {
+  type?: "list_item";
+  list_id: string;
+  item_id: string;
+  list_name?: string | null;
+}
+
 export interface ListInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_list";
-  bookmarks?: Record<string, unknown>[];
+  bookmarks?: (FullListBookmark | ListGroupBookmark | ListItemBookmark)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;

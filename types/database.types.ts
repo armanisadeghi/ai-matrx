@@ -16482,7 +16482,7 @@ export type Database = {
           project_id: string
           scrapes_per_keyword: number
           status: string
-          tag_suggestions: Json
+          tag_suggestions: Json | null
           template_id: string | null
           tone_profile: string | null
           updated_at: string | null
@@ -16510,7 +16510,7 @@ export type Database = {
           project_id: string
           scrapes_per_keyword?: number
           status?: string
-          tag_suggestions?: Json
+          tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null
           updated_at?: string | null
@@ -16538,7 +16538,7 @@ export type Database = {
           project_id?: string
           scrapes_per_keyword?: number
           status?: string
-          tag_suggestions?: Json
+          tag_suggestions?: Json | null
           template_id?: string | null
           tone_profile?: string | null
           updated_at?: string | null
@@ -28750,16 +28750,20 @@ export type Database = {
           conversation_id: string
           created_at: string
           deleted_at: string | null
+          error: Json | null
           id: string
           is_visible_to_model: boolean
           is_visible_to_user: boolean
           metadata: Json
+          model_context: Json | null
           position: number
           role: string
           source: string
           status: string
           tool_results_chars: number
+          tools_on_call: Json | null
           user_content: Json | null
+          voice: Json | null
         }
         SetofOptions: {
           from: "*"
@@ -28778,16 +28782,20 @@ export type Database = {
           conversation_id: string
           created_at: string
           deleted_at: string | null
+          error: Json | null
           id: string
           is_visible_to_model: boolean
           is_visible_to_user: boolean
           metadata: Json
+          model_context: Json | null
           position: number
           role: string
           source: string
           status: string
           tool_results_chars: number
+          tools_on_call: Json | null
           user_content: Json | null
+          voice: Json | null
         }
         SetofOptions: {
           from: "*"

@@ -13235,6 +13235,152 @@
         }
       }
     },
+    "/research/topics/{topic_id}/generate-tag-suggestions": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Generate Tag Suggestions",
+        "description": "Generate cross-cutting tag suggestions for a topic (streaming).\n\nDiscovers brand-new tag dimensions that span ≥2 keywords and persists them\nto ``rs_topic.tag_suggestions`` (none applied). The user then picks which to\ncreate via ``POST /apply-tag-suggestions``.",
+        "operationId": "generate_tag_suggestions_research_topics__topic_id__generate_tag_suggestions_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateTagsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/apply-tag-suggestions": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Apply Tag Suggestions Route",
+        "description": "Create the user-picked cross-cutting tags and assign them to sources.\n\nPlain (non-streaming) POST — the create + assign work is fast and the FE\nwants the ``{\"created\", \"assignments\"}`` result inline.",
+        "operationId": "apply_tag_suggestions_route_research_topics__topic_id__apply_tag_suggestions_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyTagsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyTagsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/tag-input-export": {
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Export Tag Input",
+        "description": "Return the exact inputs the cross-cutting tag generator would receive, so\nthe user can run the agent manually.",
+        "operationId": "export_tag_input_research_topics__topic_id__tag_input_export_get",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagInputExport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/research/topics/{topic_id}/score-sources": {
       "post": {
         "tags": [
@@ -39277,6 +39423,37 @@
         "title": "AppLogStatsResponse",
         "description": "Facet counts for the dashboard filter bar, within the active window."
       },
+      "ApplyTagsRequest": {
+        "properties": {
+          "picked_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Picked Names"
+          }
+        },
+        "type": "object",
+        "title": "ApplyTagsRequest",
+        "description": "Create the user-picked cross-cutting tags from the stored suggestions and\nassign them to the sources that sit under the spanned keywords."
+      },
+      "ApplyTagsResponse": {
+        "properties": {
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "assignments": {
+            "type": "integer",
+            "title": "Assignments",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ApplyTagsResponse",
+        "description": "Result of applying picked cross-cutting tags: how many ``rs_tag`` rows\nwere newly created and how many source<->tag assignments were written."
+      },
       "ArchiveRequest": {
         "properties": {
           "reason": {
@@ -55621,6 +55798,31 @@
         "type": "object",
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+      },
+      "GenerateTagsRequest": {
+        "properties": {
+          "user_input": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Input"
+          }
+        },
+        "type": "object",
+        "title": "GenerateTagsRequest",
+        "description": "Trigger cross-cutting tag GENERATION over a topic's keywords + ranked\nsearch results. Discovers brand-new tag dimensions that span ≥2 keywords and\npersists them as suggestions on ``rs_topic.tag_suggestions`` (none applied —\nthe user picks which to create via ``/apply-tag-suggestions``)."
       },
       "GetConversationResponse": {
         "properties": {
@@ -75755,6 +75957,23 @@
           "name"
         ],
         "title": "TagCreate"
+      },
+      "TagInputExport": {
+        "properties": {
+          "keywords_text": {
+            "type": "string",
+            "title": "Keywords Text",
+            "default": ""
+          },
+          "search_results_text": {
+            "type": "string",
+            "title": "Search Results Text",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "TagInputExport",
+        "description": "The exact inputs the cross-cutting tag generator would receive, so a user\ncan run the agent manually (``GET /topics/{topic_id}/tag-input-export``)."
       },
       "TagUpdate": {
         "properties": {

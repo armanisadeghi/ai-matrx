@@ -5060,6 +5060,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/topics/{topic_id}/generate-tag-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Tag Suggestions
+         * @description Generate cross-cutting tag suggestions for a topic (streaming).
+         *
+         *     Discovers brand-new tag dimensions that span ≥2 keywords and persists them
+         *     to ``rs_topic.tag_suggestions`` (none applied). The user then picks which to
+         *     create via ``POST /apply-tag-suggestions``.
+         */
+        post: operations["generate_tag_suggestions_research_topics__topic_id__generate_tag_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/apply-tag-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Tag Suggestions Route
+         * @description Create the user-picked cross-cutting tags and assign them to sources.
+         *
+         *     Plain (non-streaming) POST — the create + assign work is fast and the FE
+         *     wants the ``{"created", "assignments"}`` result inline.
+         */
+        post: operations["apply_tag_suggestions_route_research_topics__topic_id__apply_tag_suggestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/tag-input-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Tag Input
+         * @description Return the exact inputs the cross-cutting tag generator would receive, so
+         *     the user can run the agent manually.
+         */
+        get: operations["export_tag_input_research_topics__topic_id__tag_input_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/topics/{topic_id}/score-sources": {
         parameters: {
             query?: never;
@@ -14037,6 +14105,32 @@ export interface components {
             /** Filter Summary */
             filter_summary: string;
         };
+        /**
+         * ApplyTagsRequest
+         * @description Create the user-picked cross-cutting tags from the stored suggestions and
+         *     assign them to the sources that sit under the spanned keywords.
+         */
+        ApplyTagsRequest: {
+            /** Picked Names */
+            picked_names?: string[];
+        };
+        /**
+         * ApplyTagsResponse
+         * @description Result of applying picked cross-cutting tags: how many ``rs_tag`` rows
+         *     were newly created and how many source<->tag assignments were written.
+         */
+        ApplyTagsResponse: {
+            /**
+             * Created
+             * @default 0
+             */
+            created: number;
+            /**
+             * Assignments
+             * @default 0
+             */
+            assignments: number;
+        };
         /** ArchiveRequest */
         ArchiveRequest: {
             /** Reason */
@@ -19890,6 +19984,19 @@ export interface components {
             exclusive: boolean;
             /** Title */
             title?: string | null;
+        };
+        /**
+         * GenerateTagsRequest
+         * @description Trigger cross-cutting tag GENERATION over a topic's keywords + ranked
+         *     search results. Discovers brand-new tag dimensions that span ≥2 keywords and
+         *     persists them as suggestions on ``rs_topic.tag_suggestions`` (none applied —
+         *     the user picks which to create via ``/apply-tag-suggestions``).
+         */
+        GenerateTagsRequest: {
+            /** User Input */
+            user_input?: string | {
+                [key: string]: unknown;
+            }[] | null;
         };
         /** GetConversationResponse */
         GetConversationResponse: {
@@ -27293,6 +27400,23 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+        };
+        /**
+         * TagInputExport
+         * @description The exact inputs the cross-cutting tag generator would receive, so a user
+         *     can run the agent manually (``GET /topics/{topic_id}/tag-input-export``).
+         */
+        TagInputExport: {
+            /**
+             * Keywords Text
+             * @default
+             */
+            keywords_text: string;
+            /**
+             * Search Results Text
+             * @default
+             */
+            search_results_text: string;
         };
         /** TagUpdate */
         TagUpdate: {
@@ -38543,6 +38667,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_tag_suggestions_research_topics__topic_id__generate_tag_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GenerateTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_tag_suggestions_route_research_topics__topic_id__apply_tag_suggestions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyTagsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplyTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_tag_input_research_topics__topic_id__tag_input_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagInputExport"];
                 };
             };
             /** @description Validation Error */
