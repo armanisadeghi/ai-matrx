@@ -191,6 +191,112 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+// ─── Database / SQL renderer fixtures (sql / db_query / db_schema) ──────────
+
+const SQL_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "sql-select",
+        toolName: "sql",
+        displayName: "Database",
+        arguments: {
+            action: "query",
+            query:
+                "SELECT section, max_rows, field_count\nFROM tool_renderer_stats\nWHERE field_count > 0\nORDER BY max_rows DESC\nLIMIT 5;",
+        },
+        result: {
+            rows: [
+                { section: "results", max_rows: 200, field_count: 12 },
+                { section: "input", max_rows: 50, field_count: 8 },
+                { section: "raw", max_rows: 25, field_count: 4 },
+                { section: "summary", max_rows: 10, field_count: 3 },
+                { section: "errors", max_rows: 5, field_count: 2 },
+            ],
+        },
+    }),
+    entry({
+        callId: "sql-insert",
+        toolName: "sql",
+        displayName: "Database",
+        arguments: {
+            action: "insert",
+            table: "events",
+            data: '[{"name":"page_view"},{"name":"click"}]',
+        },
+        result: {
+            inserted: 73,
+            ids: [
+                "e1a2b3c4",
+                "f5d6e7a8",
+                "09b8c7d6",
+                "1a2b3c4d",
+                "5e6f7a8b",
+                "9c0d1e2f",
+            ],
+        },
+    }),
+    entry({
+        callId: "db-query",
+        toolName: "db_query",
+        displayName: "Database",
+        arguments: {
+            query:
+                "SELECT id, name, email\nFROM users\nWHERE active = true\nORDER BY created_at DESC\nLIMIT 3;",
+        },
+        result: {
+            rows: [
+                { id: 1, name: "Ada Lovelace", email: "ada@example.com" },
+                { id: 2, name: "Alan Turing", email: "alan@example.com" },
+                { id: 3, name: "Grace Hopper", email: "grace@example.com" },
+            ],
+        },
+    }),
+    entry({
+        callId: "db-schema",
+        toolName: "db_schema",
+        displayName: "Database",
+        arguments: { table: "users" },
+        result: {
+            rows: [
+                {
+                    table_name: "users",
+                    column_name: "id",
+                    data_type: "bigint",
+                    is_nullable: "NO",
+                    column_default: "nextval('users_id_seq')",
+                },
+                {
+                    table_name: "users",
+                    column_name: "name",
+                    data_type: "text",
+                    is_nullable: "NO",
+                    column_default: null,
+                },
+                {
+                    table_name: "users",
+                    column_name: "email",
+                    data_type: "text",
+                    is_nullable: "NO",
+                    column_default: null,
+                },
+                {
+                    table_name: "users",
+                    column_name: "active",
+                    data_type: "boolean",
+                    is_nullable: "NO",
+                    column_default: "true",
+                },
+                {
+                    table_name: "users",
+                    column_name: "created_at",
+                    data_type: "timestamptz",
+                    is_nullable: "NO",
+                    column_default: "now()",
+                },
+            ],
+        },
+    }),
+];
+
 // GenericRenderer state fixtures + shell fixtures.
 const STATE_ENTRIES: ToolLifecycleEntry[] = [
     entry({
@@ -249,6 +355,17 @@ export default function ResultFieldsGalleryPage() {
                 </h2>
                 <div className="rounded-lg border border-border bg-card p-3">
                     {CTX_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Database / SQL renderers — sql / db_query / db_schema (click a row to expand)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    {SQL_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
                 </div>

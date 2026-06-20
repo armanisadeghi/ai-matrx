@@ -33,6 +33,7 @@ import {
   getInlineRenderer,
   getToolDisplayName,
   getToolPhaseLabel,
+  getHeaderSubtitle,
   hasCustomRenderer,
   shouldKeepExpandedOnStream,
 } from "../registry/registry";
@@ -132,6 +133,15 @@ const ToolCallVisualizationInner: React.FC<{
 
   const headerSubtitle = ((): string | null => {
     if (!headerTool) return null;
+    // Prefer the renderer's DECLARED subtitle (a friendly intent, e.g.
+    // "Querying `users`" — not the raw SQL) from the registry/dynamic entry.
+    // Fall back to a generic arg grab for tools that don't declare one.
+    const declared = getHeaderSubtitle(
+      headerTool.toolName,
+      headerTool,
+      headerTool.events,
+    );
+    if (declared && declared.length > 0) return declared;
     const args = headerTool.arguments ?? {};
     const val =
       (args as Record<string, unknown>).query ??

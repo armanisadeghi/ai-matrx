@@ -41,6 +41,9 @@ import { RandomWheelInline } from "../renderers/random-wheel";
 import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
 import { CtxBatchInline } from "../renderers/ctx/CtxBatchInline";
 import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
+import { SqlInline } from "../renderers/sql/SqlInline";
+import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
+import { summarizeSql } from "../renderers/sql/summarizeSql";
 import BraveSearchDisplay from "@/features/workflows/results/registered-components/BraveSearchDisplay";
 
 import {
@@ -544,6 +547,66 @@ export const toolRendererRegistry: ToolRegistry = {
       return typeof result?.key === "string" && result.key
         ? (result.key as string)
         : null;
+    },
+  },
+
+  sql: {
+    toolName: "sql",
+    displayName: "Database",
+    phaseLabels: {
+      running: "Querying the database",
+      complete: "Queried the database",
+      errorPrefix: "Query failed",
+    },
+    resultsLabel: "Query Result",
+    InlineComponent: SqlInline,
+    OverlayComponent: SqlInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) =>
+      summarizeSql({
+        query: getArg<unknown>(entry, "query"),
+        action: getArg<unknown>(entry, "action"),
+        table: getArg<unknown>(entry, "table"),
+        data: getArg<unknown>(entry, "data"),
+      }),
+  },
+
+  db_query: {
+    toolName: "db_query",
+    displayName: "Database",
+    phaseLabels: {
+      running: "Querying the database",
+      complete: "Queried the database",
+      errorPrefix: "Query failed",
+    },
+    resultsLabel: "Query Result",
+    InlineComponent: SqlInline,
+    OverlayComponent: SqlInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) =>
+      summarizeSql({
+        query: getArg<unknown>(entry, "query"),
+        action: getArg<unknown>(entry, "action"),
+        table: getArg<unknown>(entry, "table"),
+        data: getArg<unknown>(entry, "data"),
+      }),
+  },
+
+  db_schema: {
+    toolName: "db_schema",
+    displayName: "Database",
+    phaseLabels: {
+      running: "Reading schema",
+      complete: "Read schema",
+      errorPrefix: "Couldn't read schema",
+    },
+    resultsLabel: "Schema",
+    InlineComponent: DbSchemaInline,
+    OverlayComponent: DbSchemaInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const table = getArg<string>(entry, "table");
+      return typeof table === "string" && table ? table : null;
     },
   },
 
