@@ -60,6 +60,7 @@ export const GENERIC_ADAPTER: ArtifactPersistenceAdapter = {
 
 import { FLASHCARDS_ADAPTER } from "./flashcards-adapter";
 import { QUIZ_ADAPTER } from "./quiz-adapter";
+import { HTML_ADAPTER } from "./html-adapter";
 
 // NB: `tasks` has NO artifact adapter. Tasks are a data-touching type (vision
 // R7): they are never auto-created on materialize. The tasks artifact converts
@@ -72,6 +73,7 @@ export const ADAPTERS: Record<string, ArtifactPersistenceAdapter> = {
   generic: GENERIC_ADAPTER,
   flashcards: FLASHCARDS_ADAPTER,
   quiz: QUIZ_ADAPTER,
+  html: HTML_ADAPTER,
 };
 
 /** Resolve an adapter by key, defaulting to the generic adapter. */

@@ -75,7 +75,7 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom" },
   // Deliverables — a webpage / a live component IS the artifact, so a bare
   // ```html / ```react (or ```jsx/```tsx → react) fence materializes.
-  { canvasType: "html", aliases: ["html"], standaloneAliases: ["html"], materializable: true },
+  { canvasType: "html", aliases: ["html"], standaloneAliases: ["html"], materializable: true, persistenceStrategy: "custom", adapter: "html" },
   { canvasType: "react", aliases: ["react", "jsx", "tsx"], standaloneAliases: ["react"], materializable: true },
   // Structured data / durable content — persist as artifacts (nothing dies as
   // text). table is tabular data (your UDT-tables insight); transcript syncs to
