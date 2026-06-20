@@ -1,5 +1,11 @@
 // Types for User Lists feature
 
+import type {
+  FullListBookmark as WireFullListBookmark,
+  ListGroupBookmark as WireListGroupBookmark,
+  ListItemBookmark as WireListItemBookmark,
+} from "@/types/python-generated/stream-events";
+
 export interface UserList {
   /** Normalized from `list_id` (RPC) or `id` (table query) */
   id: string;
@@ -104,30 +110,25 @@ export interface PicklistForSelection {
 }
 
 // ─── Bookmark types ──────────────────────────────────────────────────────────
+//
+// CANONICAL: a list bookmark IS a reference item (see
+// docs/protocol/MATRX_REFERENCES.md). The identity ids + the one authoritative
+// display hint (`list_name`) come from the generated wire types (imported at the
+// top of this file); producers may additionally carry purely-cosmetic hints
+// (`label`, `description`) which the backend tolerates (item model is
+// `extra="allow"`) and ignores for resolution.
 
-export interface FullListBookmark {
-  type: "full_list";
-  list_id: string;
-  list_name: string;
-  description: string;
+/** Optional, non-authoritative display hints a producer may attach to a bookmark. */
+interface BookmarkDisplayHints {
+  /** Human label for the item (canonical name; was `item_label`). */
+  label?: string;
+  /** Free-text prose describing the reference, for clipboard/preview only. */
+  description?: string;
 }
 
-export interface ListGroupBookmark {
-  type: "list_group";
-  list_id: string;
-  list_name: string;
-  group_name: string;
-  description: string;
-}
-
-export interface ListItemBookmark {
-  type: "list_item";
-  list_id: string;
-  list_name: string;
-  item_id: string;
-  item_label: string;
-  description: string;
-}
+export type FullListBookmark = WireFullListBookmark & BookmarkDisplayHints;
+export type ListGroupBookmark = WireListGroupBookmark & BookmarkDisplayHints;
+export type ListItemBookmark = WireListItemBookmark & BookmarkDisplayHints;
 
 export type UserListBookmark =
   | FullListBookmark

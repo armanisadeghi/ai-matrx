@@ -19,11 +19,13 @@ import {
   isMatrxEnvelope,
   type MatrxEnvelope,
   type ReferenceItem,
+  type ReferenceType,
 } from "@/features/matrx-envelope/envelope";
 import {
-  isPicklistRef,
-  type PicklistRefEnvelope,
-} from "@/features/agents/types/agent-definition.types";
+  isLegacyPicklistRef,
+  translateLegacyPicklistRef,
+  translateLegacyReferenceItem,
+} from "@/features/matrx-envelope/legacyTranslate";
 
 const FENCE_OPEN = "```matrx";
 const FENCE_CLOSE = "```";
@@ -46,11 +48,11 @@ function tryParseJson(raw: string): unknown {
 
 /**
  * Serialize a `kind:"reference"` envelope as the canonical ```matrx fence string
- * (verbatim-persistable). Items are typed per the reference `type`
- * (`picklist_item`, `dataset_cell`, …). The four-key shell is fixed.
+ * (verbatim-persistable). Items are the FLAT canonical shape typed per the
+ * reference `type` (`picklist_item`, `table_cell`, …). The four-key shell is fixed.
  */
 export function buildReferenceFence(args: {
-  type: string;
+  type: ReferenceType | string;
   items: ReferenceItem[];
 }): string {
   const envelope: MatrxEnvelope<ReferenceItem> = {
@@ -64,24 +66,23 @@ export function buildReferenceFence(args: {
 
 /**
  * Convenience builder for a picklist selection: one `picklist_item` reference
- * fence carrying N items (`ref:{ list_id, item_id }`, `display:{ label }`).
- * `purpose` is always `substitute` (the model resolves it to the item's hidden
- * description on the wire). `slot` is the optional `{{slot}}` it fills.
+ * fence carrying N FLAT items (`{ list_id, item_id, label? }`). The model
+ * resolves each to the item's hidden description on the wire. There is no
+ * `purpose` / `slot` / `ref` / `display` — intent is decided by position; the
+ * variable-map key the fence is bound to IS the slot.
  */
 export function buildPicklistItemFence(args: {
   listId: string;
-  slot?: string;
   selections: Array<{ itemId: string; label: string }>;
 }): string {
-  const { listId, slot, selections } = args;
+  const { listId, selections } = args;
   const items: ReferenceItem[] = selections.map((s) => {
-    const item: ReferenceItem = {
-      purpose: "substitute",
-      ref: { list_id: listId, item_id: s.itemId },
+    const item: { list_id: string; item_id: string; label?: string } = {
+      list_id: listId,
+      item_id: s.itemId,
     };
-    if (slot) item.slot = slot;
-    if (s.label) item.display = { label: s.label };
-    return item;
+    if (s.label) item.label = s.label;
+    return item as ReferenceItem;
   });
   return buildReferenceFence({ type: "picklist_item", items });
 }
@@ -141,25 +142,18 @@ export interface PicklistSelectionRead {
   labels: string[];
 }
 
-function refFromEnvelope(env: PicklistRefEnvelope): PicklistRefRead {
-  return { list_id: env.list_id, item_id: env.list_item_id, label: env.label };
-}
-
 function refsFromItems(items: unknown, into: PicklistRefRead[]): void {
   if (!Array.isArray(items)) return;
   for (const raw of items) {
-    if (!raw || typeof raw !== "object") continue;
-    const item = raw as ReferenceItem;
-    const ref = item.ref as Record<string, unknown> | undefined;
-    const itemId =
-      ref && typeof ref.item_id === "string" ? ref.item_id : undefined;
+    // Route every item through the loud translation layer — a flat canonical
+    // item passes through, a legacy nested item is flattened + screamed once.
+    const flat = translateLegacyReferenceItem(raw, "picklist_item");
+    if (!flat) continue;
+    const o = flat as unknown as Record<string, unknown>;
+    const itemId = typeof o.item_id === "string" ? o.item_id : undefined;
     if (!itemId) continue;
-    const listId =
-      ref && typeof ref.list_id === "string" ? ref.list_id : undefined;
-    const label =
-      item.display && typeof item.display.label === "string"
-        ? item.display.label
-        : "";
+    const listId = typeof o.list_id === "string" ? o.list_id : undefined;
+    const label = typeof o.label === "string" ? o.label : "";
     into.push({ list_id: listId, item_id: itemId, label });
   }
 }
@@ -181,9 +175,10 @@ export function readPicklistSelection(value: unknown): PicklistSelectionRead {
   const refs: PicklistRefRead[] = [];
   const otherText: string[] = [];
 
-  // Legacy single envelope.
-  if (isPicklistRef(value)) {
-    refs.push(refFromEnvelope(value));
+  // Legacy single envelope (loud-translated to flat).
+  if (isLegacyPicklistRef(value)) {
+    const flat = translateLegacyPicklistRef(value);
+    refs.push({ list_id: flat.list_id, item_id: flat.item_id, label: flat.label ?? "" });
     return finalize(refs, otherText);
   }
 
@@ -191,8 +186,9 @@ export function readPicklistSelection(value: unknown): PicklistSelectionRead {
   // string element too, for any half-migrated value).
   if (Array.isArray(value)) {
     for (const entry of value) {
-      if (isPicklistRef(entry)) {
-        refs.push(refFromEnvelope(entry));
+      if (isLegacyPicklistRef(entry)) {
+        const flat = translateLegacyPicklistRef(entry);
+        refs.push({ list_id: flat.list_id, item_id: flat.item_id, label: flat.label ?? "" });
       } else if (typeof entry === "string" && entry.trim()) {
         const sub = readPicklistSelection(entry);
         if (sub.refs.length) {

@@ -25,7 +25,8 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 | `WebpageBody` | `input_webpage` | preview + live iframe |
 | `DataBody` | `input_data` | preview |
 | `MediaBody` | image/audio/video/document/youtube | view (via `InlineMediaRef`) |
-| `GenericBody` | table/list/project/agent/app/transcript/workbook/document/text/editor_* + fallback | no (yet — extension targets) |
+| `BookmarkReferenceBody` | `input_table` / `input_list` | live reference chips (resolve from Supabase + open the entity), via `bookmarkToReference` |
+| `GenericBody` | project/agent/app/transcript/workbook/document/text/editor_* + fallback | no (yet — extension targets) |
 
 ## Key flows
 
@@ -55,5 +56,6 @@ Shown as a differentiated **"Context"** chip in the input strip whenever it's en
 
 ## Change log
 
+- `2026-06-20` — claude: **`input_table` / `input_list` get a real body.** New `BookmarkReferenceBody` maps each table/list bookmark to a canonical Matrx reference item (`features/matrx-envelope/bookmarkToReference.ts`) and renders the SAME live `ReferenceRenderer` chips the in-content `matrx` fences use — values resolve from Supabase, click opens the underlying table/list. Replaces `GenericBody` for these two types.
 - `2026-06-19` (2) — claude: **layout overhaul + working-document chip/diffs.** Full-height bodies; single compact icon-only footer (`Footer` added to the type def + `resolveContextItemFooter`); dynamic title via `setTitle`; dropped the bottom thumbnail rail and all descriptions. Documents/webpages/youtube now fill height (iframe via resolved `useFileSrc`). Working document surfaces as a pre-submit "Context" chip and gets an in-drawer edit↔diff toggle.
 - `2026-06-19` — claude: built the registry + shared drawer; wired both chip systems; killed the placeholder JSON modal; made notes/tasks/working-document editable in place; added re-attach-to-next-turn for edited attachments.

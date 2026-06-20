@@ -78,9 +78,15 @@ editor pills.
 | `input_webpage` | `urls: string[]` | |
 | `input_notes` | `note_ids: string[]` | |
 | `input_task` | `task_ids: string[]` | |
-| `input_table` | `bookmarks` | table bookmark objects |
-| `input_list` | `bookmarks` | list bookmark objects |
+| `input_table` | `bookmarks` | table bookmark objects — **a bookmark IS a reference item** (FLAT identity ids + display hints); types `full_table`/`table_column`/`table_row`/`table_cell` map to the `table*` reference taxonomy via `features/matrx-envelope/bookmarkToReference.ts` |
+| `input_list` | `bookmarks` | list bookmark objects — same: `full_list`/`list_group`/`list_item` → `picklist`/`picklist_group`/`picklist_item` |
 | `input_data` | `refs` | data ref objects |
+
+> **Bookmarks are reference items.** The bookmark shapes are the CANONICAL generated wire
+> types (`types/python-generated/stream-events.ts`) — re-exported from `message-types.ts`, not
+> hand-redefined. Identity ids are authoritative; `table_name`/`list_name`/`column_display_name`/
+> `label`/`description` are non-authoritative display hints (re-fetched live). See
+> [`features/matrx-envelope/FEATURE.md`](../../../matrx-envelope/FEATURE.md).
 
 ### Pending backend support (FE emits these now)
 

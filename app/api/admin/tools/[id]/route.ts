@@ -1,159 +1,172 @@
 // app/api/admin/tools/[id]/route.ts
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireAdmin } from "@/utils/auth/adminUtils";
+
+// Map requireAdmin() throws to the right HTTP status; returns null otherwise.
+function authErrorResponse(error: unknown): NextResponse | null {
+  const message = error instanceof Error ? error.message : "";
+  if (message.startsWith("Unauthorized")) {
+    return NextResponse.json({ error: message }, { status: 401 });
+  }
+  if (message.startsWith("Forbidden")) {
+    return NextResponse.json({ error: message }, { status: 403 });
+  }
+  return null;
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from('tool_def')
-      .select('*')
-      .eq('id', id)
+      .from("tool_def")
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Tool not found' },
-          { status: 404 }
-        );
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Tool not found" }, { status: 404 });
       }
-      console.error('Error fetching tool:', error);
+      console.error("Error fetching tool:", error);
       return NextResponse.json(
-        { error: 'Failed to fetch tool', details: error.message },
-        { status: 500 }
+        { error: "Failed to fetch tool", details: error.message },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ tool: data });
-
   } catch (error) {
-    console.error('API error:', error);
+    console.error("API error:", error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
-    const supabase = await createClient();
+    // tool_def has RLS with a read-only (SELECT) policy and no write policy,
+    // so writes must go through the admin client after the admin gate above.
+    const supabase = createAdminClient();
     const body = await request.json();
 
     // Don't allow updating id, created_at, or updated_at
     const { id: _, created_at, updated_at, ...updateData } = body;
 
     // Validate JSON fields if provided
-    if (updateData.parameters && typeof updateData.parameters !== 'object') {
+    if (updateData.parameters && typeof updateData.parameters !== "object") {
       return NextResponse.json(
-        { error: 'Parameters must be a valid JSON object' },
-        { status: 400 }
+        { error: "Parameters must be a valid JSON object" },
+        { status: 400 },
       );
     }
 
-    if (updateData.output_schema && typeof updateData.output_schema !== 'object') {
+    if (
+      updateData.output_schema &&
+      typeof updateData.output_schema !== "object"
+    ) {
       return NextResponse.json(
-        { error: 'Output schema must be a valid JSON object' },
-        { status: 400 }
+        { error: "Output schema must be a valid JSON object" },
+        { status: 400 },
       );
     }
 
     if (updateData.annotations && !Array.isArray(updateData.annotations)) {
       return NextResponse.json(
-        { error: 'Annotations must be an array' },
-        { status: 400 }
+        { error: "Annotations must be an array" },
+        { status: 400 },
       );
     }
 
     // Convert empty strings to null for nullable fields
-    if (updateData.category === '') updateData.category = null;
-    if (updateData.icon === '') updateData.icon = null;
+    if (updateData.category === "") updateData.category = null;
+    if (updateData.icon === "") updateData.icon = null;
 
     const { data, error } = await supabase
-      .from('tool_def')
+      .from("tool_def")
       .update(updateData)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Tool not found' },
-          { status: 404 }
-        );
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Tool not found" }, { status: 404 });
       }
-      console.error('Error updating tool:', error);
+      console.error("Error updating tool:", error);
       return NextResponse.json(
-        { error: 'Failed to update tool', details: error.message },
-        { status: 500 }
+        { error: "Failed to update tool", details: error.message },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
-      message: 'Tool updated successfully',
-      tool: data
+      message: "Tool updated successfully",
+      tool: data,
     });
-
   } catch (error) {
-    console.error('API error:', error);
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    console.error("API error:", error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
-    const { error } = await supabase
-      .from('tool_def')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from("tool_def").delete().eq("id", id);
 
     if (error) {
-      console.error('Error deleting tool:', error);
+      console.error("Error deleting tool:", error);
       return NextResponse.json(
-        { error: 'Failed to delete tool', details: error.message },
-        { status: 500 }
+        { error: "Failed to delete tool", details: error.message },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
-      message: 'Tool deleted successfully'
+      message: "Tool deleted successfully",
     });
-
   } catch (error) {
-    console.error('API error:', error);
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    console.error("API error:", error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

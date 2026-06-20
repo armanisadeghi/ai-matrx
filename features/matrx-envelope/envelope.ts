@@ -81,15 +81,91 @@ export function isDirectiveApplyEvent(value: unknown): value is DirectiveApplyEv
 }
 
 // ── Reference item (in a ```matrx fence) ─────────────────────────────────────
+//
+// The CANONICAL reference item is PURE FLAT IDENTITY: the typed ids that name
+// the thing + optional, non-authoritative display hints. NOTHING ELSE. There is
+// no `purpose` / `slot` / `ref` / `display` nesting — intent is decided by the
+// item's POSITION (in-content fence = resolve in place; variable binding = the
+// map key is the slot), never a field on the item. (See
+// docs/protocol/MATRX_REFERENCES.md — "The item shape" + "Where purpose went".)
 
+/**
+ * @deprecated The legacy intent field. It no longer lives on a canonical item —
+ * resolution is decided by position. Kept ONLY so the loud legacy-translation
+ * layer (`legacyTranslate.ts`) can type the old nested input it migrates away.
+ * Do NOT add this to a new item.
+ */
 export type ReferencePurpose = "substitute" | "expand" | "inline" | "context";
 
-export interface ReferenceItem {
-  purpose: ReferencePurpose;
-  slot?: string;
-  ref: Record<string, string>;
-  display?: { label?: string } & Record<string, unknown>;
+/** The 7-type reference taxonomy. `dataset_cell` is a legacy alias of `table_cell`. */
+export const REFERENCE_TYPES = [
+  "picklist",
+  "picklist_group",
+  "picklist_item",
+  "table",
+  "table_column",
+  "table_row",
+  "table_cell",
+] as const;
+
+export type ReferenceType = (typeof REFERENCE_TYPES)[number];
+
+/**
+ * Display hints — all optional, all non-authoritative (re-fetched live on every
+ * read). Present only for instant paint + offline/LLM readability. `extra="allow"`
+ * on the backend item model is mirrored here by the open-ended index signature so
+ * UI fetch hints (limit / offset / sort) survive a round-trip.
+ */
+export interface ReferenceItemHints {
+  label?: string;
+  table_name?: string;
+  list_name?: string;
+  column_display_name?: string;
+  description?: string;
+  [extra: string]: unknown;
 }
+
+export interface PicklistRefItem extends ReferenceItemHints {
+  list_id: string;
+}
+export interface PicklistGroupRefItem extends ReferenceItemHints {
+  list_id: string;
+  group_name: string;
+}
+export interface PicklistItemRefItem extends ReferenceItemHints {
+  list_id: string;
+  item_id: string;
+}
+export interface TableRefItem extends ReferenceItemHints {
+  table_id: string;
+}
+export interface TableColumnRefItem extends ReferenceItemHints {
+  table_id: string;
+  column_name: string;
+}
+export interface TableRowRefItem extends ReferenceItemHints {
+  table_id: string;
+  row_id: string;
+}
+export interface TableCellRefItem extends ReferenceItemHints {
+  table_id: string;
+  row_id: string;
+  column_name: string;
+}
+
+/**
+ * The canonical reference item — a flat union over the 7-type taxonomy. Every
+ * member is identity ids + {@link ReferenceItemHints}. The open index signature
+ * keeps it assignable from a generic decoded envelope (`Record<string,unknown>`).
+ */
+export type ReferenceItem =
+  | PicklistRefItem
+  | PicklistGroupRefItem
+  | PicklistItemRefItem
+  | TableRefItem
+  | TableColumnRefItem
+  | TableRowRefItem
+  | TableCellRefItem;
 
 // ── Output-schema builder (generic; mirrors aidream's schema_gen) ─────────────
 

@@ -7,7 +7,6 @@ import { CheckboxGroupInput } from "./CheckboxGroupInput";
 import { PillToggleInput } from "./PillToggleInput";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
-import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
 import {
   buildPicklistItemFence,
   readPicklistSelection,
@@ -30,11 +29,12 @@ const OTHER_PREFIX = "Other: ";
 /**
  * Adapter that renders a picklist-bound variable using the existing choice components in
  * LABEL space, converting selections to/from the canonical ```matrx reference fence
- * (`type:"picklist_item"`). The secret description is never fetched or shown here — only
- * labels. The persisted value is a fence STRING (single = one item; multi = N items plus
- * any "Other" free-text lines after the closing fence); the server resolves the fence to
- * each item's hidden description on the wire. Legacy `picklist_ref` values still read back
- * via {@link readPicklistSelection}.
+ * (`type:"picklist_item"`, FLAT items `{ list_id, item_id, label? }`). The secret
+ * description is never fetched or shown here — only labels. The persisted value is a fence
+ * STRING (single = one item; multi = N items plus any "Other" free-text lines after the
+ * closing fence); the server resolves the fence to each item's hidden description on the
+ * wire. There is no `slot` on the item — the variable name this value is bound to IS the
+ * slot. Legacy values are loud-translated on read via {@link readPicklistSelection}.
  */
 export function PicklistVariableInput({
   value,
@@ -59,9 +59,6 @@ export function PicklistVariableInput({
   const itemByLabel = new Map(items.map((i) => [i.label, i]));
   const sharedProps = { compact, wizardMode, containerWidth };
 
-  // The optional `{{slot}}` the fence fills (informational; the server resolves by value).
-  const slot = sanitizeVariableName(variableName);
-
   // ── Outbound: inner label string -> matrx fence / free-text plain string ───────
   const emitSingle = (inner: string) => {
     if (inner.startsWith(OTHER_PREFIX)) {
@@ -73,7 +70,6 @@ export function PicklistVariableInput({
       item
         ? buildPicklistItemFence({
             listId,
-            slot,
             selections: [{ itemId: item.id, label: item.label }],
           })
         : "",
@@ -100,7 +96,7 @@ export function PicklistVariableInput({
     // One fence carries every picklist item; "Other" free text trails as plain lines
     // (the server joins resolved items with "\n"; free text passes through verbatim).
     const fence = selections.length
-      ? buildPicklistItemFence({ listId, slot, selections })
+      ? buildPicklistItemFence({ listId, selections })
       : "";
     onChange([fence, others.join("\n")].filter(Boolean).join("\n"));
   };

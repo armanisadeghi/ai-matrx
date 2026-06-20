@@ -2,7 +2,7 @@
  * Utility functions for handling agent variables.
  */
 
-import { isPicklistRef } from "@/features/agents/types/agent-definition.types";
+import { isLegacyPicklistRef } from "@/features/matrx-envelope/legacyTranslate";
 import { readPicklistSelection } from "@/features/matrx-envelope/referenceFence";
 
 /**
@@ -83,8 +83,8 @@ export const formatVariableDisplayName = (name: string): string =>
  */
 export const variableValueToDisplay = (value: unknown): string => {
   const isPicklistValue =
-    isPicklistRef(value) ||
-    (Array.isArray(value) && value.some(isPicklistRef)) ||
+    isLegacyPicklistRef(value) ||
+    (Array.isArray(value) && value.some(isLegacyPicklistRef)) ||
     (typeof value === "string" && value.includes("```matrx"));
   if (isPicklistValue) {
     const { labels, otherText } = readPicklistSelection(value);
@@ -93,7 +93,7 @@ export const variableValueToDisplay = (value: unknown): string => {
   }
   if (Array.isArray(value)) {
     return value
-      .map((v) => (isPicklistRef(v) ? v.label : v == null ? "" : String(v)))
+      .map((v) => (isLegacyPicklistRef(v) ? v.label : v == null ? "" : String(v)))
       .filter(Boolean)
       .join(", ");
   }

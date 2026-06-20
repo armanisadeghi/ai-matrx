@@ -52,6 +52,7 @@ import {
   WorkingDocumentFooter,
 } from "./bodies/WorkingDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
+import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import {
   OrgLayerBody,
   ProjectLayerBody,
@@ -201,14 +202,15 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     Body: DataBody,
   },
 
-  // ── Not-yet-custom types — GenericBody for now (extension targets) ──────────
+  // Table / list bookmarks — rendered as LIVE reference chips (resolve from
+  // Supabase + open the entity), reusing the matrx-envelope ReferenceRenderer.
   {
     blockTypes: ["input_table"],
     typeLabel: "Table",
     icon: Table2,
     themeKey: "input_table",
     editable: false,
-    Body: GenericBody,
+    Body: BookmarkReferenceBody,
   },
   {
     blockTypes: ["input_list"],
@@ -216,8 +218,10 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: List,
     themeKey: "input_list",
     editable: false,
-    Body: GenericBody,
+    Body: BookmarkReferenceBody,
   },
+
+  // ── Not-yet-custom types — GenericBody for now (extension targets) ──────────
   {
     blockTypes: ["input_project"],
     typeLabel: "Project",

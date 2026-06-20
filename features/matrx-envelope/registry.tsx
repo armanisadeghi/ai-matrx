@@ -16,7 +16,16 @@
 
 import type { ComponentType } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Link2, ListChecks, Table2, Loader2 } from "lucide-react";
+import {
+  Link2,
+  List,
+  ListChecks,
+  Rows3,
+  Columns3,
+  Table,
+  Table2,
+  Loader2,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
@@ -57,9 +66,25 @@ const UUID_RE =
 
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
 function chipIcon(type: string): ComponentType<{ className?: string }> {
-  if (type === "picklist_item") return ListChecks;
-  if (type === "dataset_cell") return Table2;
-  return Link2;
+  switch (type) {
+    case "picklist":
+      return List;
+    case "picklist_group":
+      return ListChecks;
+    case "picklist_item":
+      return ListChecks;
+    case "table":
+      return Table;
+    case "table_column":
+      return Columns3;
+    case "table_row":
+      return Rows3;
+    case "table_cell":
+    case "dataset_cell":
+      return Table2;
+    default:
+      return Link2;
+  }
 }
 
 type ChipStatus = "idle" | "loading" | "ready" | "fallback";
@@ -67,12 +92,14 @@ type ChipStatus = "idle" | "loading" | "ready" | "fallback";
 /**
  * One live reference chip. Its own component (a stable boundary) so it can use
  * hooks — the LIVE-value fetch effect + the window-panel opener. Mirrors
- * `useEnrichItem`: keyed on the ref ids, `cancelled` guard, soft-fail, never
- * throws. Always shows SOMETHING (display.label while loading / on miss).
+ * `useEnrichItem`: keyed on the item ids, `cancelled` guard, soft-fail, never
+ * throws. Always shows SOMETHING (the item's display hint while loading / on miss).
  */
 function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   const open = useOpenItemPresentation();
-  const ref = coerceRefToStrings(item?.ref, `${type} chip`);
+  // The canonical item IS flat — identity ids live at the top level. Coerce the
+  // whole item to string fields (resolvers read only the id keys they need).
+  const ref = coerceRefToStrings(item, `${type} chip`);
   const resolver = getReferenceResolver(type);
   const fallback = referenceFallbackLabel(item, type);
 
@@ -159,8 +186,8 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
 
 /**
  * `reference` kind — one LIVE chip per item: fetches its authoritative value
- * from Supabase (graceful fallback to `display.label`) and opens the underlying
- * entity in a window panel on click. Chips flow inline in prose.
+ * from Supabase (graceful fallback to the item's display hints) and opens the
+ * underlying entity in a window panel on click. Chips flow inline in prose.
  */
 const ReferenceRenderer: EnvelopeRenderer = ({ envelope }) => {
   const items = Array.isArray(envelope.items)
@@ -170,7 +197,7 @@ const ReferenceRenderer: EnvelopeRenderer = ({ envelope }) => {
     <span className="my-1 inline-flex flex-wrap items-center gap-1.5 align-middle">
       {items.map((item, i) => (
         <ReferenceChip
-          key={`${envelope.type}:${item?.slot ?? JSON.stringify(item?.ref) ?? i}`}
+          key={`${envelope.type}:${JSON.stringify(item) ?? i}`}
           item={item}
           type={envelope.type}
         />

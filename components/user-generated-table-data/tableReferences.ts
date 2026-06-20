@@ -1,7 +1,13 @@
 /**
- * Unified user data reference structure
- * All fields except type, table_id, table_name, and description are optional
- * and used based on the reference type
+ * Unified user data reference structure (LEGACY table-reference producer shape).
+ *
+ * Mirrors the CANONICAL Matrx reference item for the `table*` taxonomy
+ * (docs/protocol/MATRX_REFERENCES.md): the identity ids (`table_id`, `row_id`,
+ * `column_name`) are authoritative; `table_name`, `column_display_name`, and
+ * `description` are non-authoritative display hints. Field names match the
+ * canonical wire shape so this maps 1:1 to a reference item via
+ * `features/matrx-envelope/bookmarkToReference`. All fields except `type`,
+ * `table_id`, `table_name`, and `description` are optional, used per reference type.
  */
 export interface UserDataReference {
   type: 'full_table' | 'table_row' | 'table_column' | 'table_cell';

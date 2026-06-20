@@ -48,7 +48,7 @@ export function ListItem({
     list_id: listId,
     list_name: listName,
     item_id: item.id,
-    item_label: item.label,
+    label: item.label,
     description: `Reference to item "${item.label}" in list "${listName}"`,
   };
 

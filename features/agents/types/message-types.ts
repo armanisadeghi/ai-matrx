@@ -24,6 +24,19 @@
  *                     injects it as XML.
  */
 
+// The bookmark shapes are CANONICAL generated wire types (Pydantic →
+// stream-events.ts). Import them once here and re-export below so the whole app
+// shares a single definition — no hand-authored copies that drift from the wire.
+import type {
+  FullTableBookmark,
+  TableColumnBookmark,
+  TableRowBookmark,
+  TableCellBookmark,
+  FullListBookmark,
+  ListGroupBookmark,
+  ListItemBookmark,
+} from "@/types/python-generated/stream-events";
+
 // =============================================================================
 // SECTION 1 — Media blocks (client-provided content)
 // =============================================================================
@@ -309,40 +322,16 @@ export interface TaskInputBlock extends StructuredInputBase {
 }
 
 // ─── input_table ──────────────────────────────────────────────────────────────
-// Bookmark shapes — the exact JSON the UI copies to the clipboard.
-
-/** Fetch an entire user table. */
-export interface FullTableBookmark {
-  type: "full_table";
-  table_id: string;
-  /** Cosmetic label used in the injected XML. */
-  table_name?: string;
-}
-
-/** Fetch all values in a single column. */
-export interface TableColumnBookmark {
-  type: "table_column";
-  table_id: string;
-  column_name: string;
-  table_name?: string;
-}
-
-/** Fetch a single row. */
-export interface TableRowBookmark {
-  type: "table_row";
-  table_id: string;
-  row_id: string;
-  table_name?: string;
-}
-
-/** Fetch a single cell value. */
-export interface TableCellBookmark {
-  type: "table_cell";
-  table_id: string;
-  row_id: string;
-  column_name: string;
-  table_name?: string;
-}
+// Bookmark shapes — the exact JSON the UI copies to the clipboard. CANONICAL:
+// these mirror the backend reference item models 1:1 (see
+// docs/protocol/MATRX_REFERENCES.md + features/matrx-envelope/bookmarkToReference).
+// Re-exported from the generated wire types — do NOT redefine.
+export type {
+  FullTableBookmark,
+  TableColumnBookmark,
+  TableRowBookmark,
+  TableCellBookmark,
+} from "@/types/python-generated/stream-events";
 
 export type TableBookmark =
   | FullTableBookmark
@@ -365,31 +354,13 @@ export interface TableInputBlock extends StructuredInputBase {
 }
 
 // ─── input_list ───────────────────────────────────────────────────────────────
-// Bookmark shapes — the exact JSON the UI copies to the clipboard.
-
-/** Fetch an entire user list. */
-export interface FullListBookmark {
-  type: "full_list";
-  list_id: string;
-  /** Cosmetic label used in the injected XML. */
-  list_name?: string;
-}
-
-/** Fetch all items in a specific group within a list. */
-export interface ListGroupBookmark {
-  type: "list_group";
-  list_id: string;
-  group_name: string;
-  list_name?: string;
-}
-
-/** Fetch a single list item. */
-export interface ListItemBookmark {
-  type: "list_item";
-  list_id: string;
-  item_id: string;
-  list_name?: string;
-}
+// Bookmark shapes — the exact JSON the UI copies to the clipboard. CANONICAL:
+// re-exported from the generated wire types — do NOT redefine.
+export type {
+  FullListBookmark,
+  ListGroupBookmark,
+  ListItemBookmark,
+} from "@/types/python-generated/stream-events";
 
 export type ListBookmark =
   | FullListBookmark

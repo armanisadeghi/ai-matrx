@@ -12,8 +12,8 @@
  * opener if the item-presentation registry already has the entity's window.
  *
  * Every resolver is defensive: it NEVER throws (the chip wraps it too), and a
- * missing row / soft error returns `undefined` so the chip falls back to
- * `display.label`. UUID-guarding happens at the call site (`ReferenceChip`).
+ * missing row / soft error returns `undefined` so the chip falls back to the
+ * item's display hint. UUID-guarding happens at the call site (`ReferenceChip`).
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -51,22 +51,69 @@ const stringify = (v: unknown): string | undefined => {
   }
 };
 
+/** Live value of a single dataset-row cell: `udt_dataset_rows.data[column]`. */
+async function resolveCell(
+  supabase: SupabaseClient,
+  rowId: string | undefined,
+  column: string | undefined,
+): Promise<string | undefined> {
+  if (!rowId || !column) return undefined;
+  const { data, error } = await supabase
+    .from("udt_dataset_rows")
+    .select("data")
+    .eq("id", rowId)
+    .maybeSingle();
+  if (error || !data) return undefined;
+  const cells = (data as { data?: Record<string, unknown> | null }).data;
+  if (!cells || typeof cells !== "object") return undefined;
+  return stringify(cells[column]);
+}
+
+/**
+ * The 7-type reference resolver registry (+ the `dataset_cell` legacy alias).
+ * Every `ref` passed in is the FLAT canonical item (string-coerced): identity
+ * ids live at the top level (`ref.list_id`, `ref.table_id`, …), NOT under a
+ * nested `ref` object.
+ */
 const RESOLVERS: Record<string, ReferenceResolver> = {
+  // ── Picklist family ────────────────────────────────────────────────────────
+  /** `picklist` → { list_id }. Live value = the list name. */
+  picklist: {
+    openItemType: "picklist",
+    openId: (ref) => ref.list_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.list_id) return undefined;
+      const { data, error } = await supabase
+        .from("udt_picklists")
+        .select("list_name, description")
+        .eq("id", ref.list_id)
+        .maybeSingle();
+      if (error || !data) return undefined;
+      const row = data as { list_name?: string | null; description?: string | null };
+      return stringify(row.list_name) ?? stringify(row.description);
+    },
+  },
+
+  /** `picklist_group` → { list_id, group_name }. Live value = the group name. */
+  picklist_group: {
+    openItemType: "picklist",
+    openId: (ref) => ref.list_id,
+    resolveValue: async (_supabase, ref) => stringify(ref.group_name),
+  },
+
   /**
-   * `picklist_item` → ref { list_id, item_id }. Live value is the picklist
-   * item's description (fallback to its label). The entity to open is the
-   * picklist (`list_id`).
+   * `picklist_item` → { list_id, item_id }. Live value = the item's description
+   * (fallback to its label). Opens the picklist (`list_id`).
    */
   picklist_item: {
     openItemType: "picklist",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
-      const itemId = ref.item_id;
-      if (!itemId) return undefined;
+      if (!ref.item_id) return undefined;
       const { data, error } = await supabase
         .from("udt_picklist_items")
         .select("description, label")
-        .eq("id", itemId)
+        .eq("id", ref.item_id)
         .maybeSingle();
       if (error || !data) return undefined;
       const row = data as { description?: string | null; label?: string | null };
@@ -74,29 +121,92 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     },
   },
 
-  /**
-   * `dataset_cell` → ref { dataset_id, row_id, field_name }. Live value is the
-   * row's `data[field_name]` cell. The entity to open is the dataset/table
-   * (`dataset_id`). The row table FK column is `table_id` (= dataset id), and
-   * the row is keyed by its own `id` (= `row_id`).
-   */
-  dataset_cell: {
+  // ── Table (udt dataset) family ─────────────────────────────────────────────
+  /** `table` → { table_id }. Live value = the table name. */
+  table: {
     openItemType: "table",
-    openId: (ref) => ref.dataset_id,
+    openId: (ref) => ref.table_id,
     resolveValue: async (supabase, ref) => {
-      const rowId = ref.row_id;
-      const fieldName = ref.field_name;
-      if (!rowId || !fieldName) return undefined;
+      if (!ref.table_id) return undefined;
+      const { data, error } = await supabase
+        .from("udt_datasets")
+        .select("table_name, description")
+        .eq("id", ref.table_id)
+        .maybeSingle();
+      if (error || !data) return undefined;
+      const row = data as { table_name?: string | null; description?: string | null };
+      return stringify(row.table_name) ?? stringify(row.description);
+    },
+  },
+
+  /**
+   * `table_column` → { table_id, column_name }. Live value = the column's
+   * display name (fallback to its raw field name).
+   */
+  table_column: {
+    openItemType: "table",
+    openId: (ref) => ref.table_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.table_id || !ref.column_name) return undefined;
+      const { data, error } = await supabase
+        .from("udt_dataset_fields")
+        .select("display_name, field_name")
+        .eq("table_id", ref.table_id)
+        .eq("field_name", ref.column_name)
+        .maybeSingle();
+      if (error || !data) return stringify(ref.column_name);
+      const row = data as { display_name?: string | null; field_name?: string | null };
+      return stringify(row.display_name) ?? stringify(row.field_name) ?? stringify(ref.column_name);
+    },
+  },
+
+  /**
+   * `table_row` → { table_id, row_id }. Live value = a compact preview of the
+   * row's cell values (first few), enough to identify it in a chip.
+   */
+  table_row: {
+    openItemType: "table",
+    openId: (ref) => ref.table_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.row_id) return undefined;
       const { data, error } = await supabase
         .from("udt_dataset_rows")
         .select("data")
-        .eq("id", rowId)
+        .eq("id", ref.row_id)
         .maybeSingle();
       if (error || !data) return undefined;
       const cells = (data as { data?: Record<string, unknown> | null }).data;
       if (!cells || typeof cells !== "object") return undefined;
-      return stringify(cells[fieldName]);
+      const preview = Object.values(cells)
+        .map((v) => stringify(v))
+        .filter((v): v is string => !!v)
+        .slice(0, 3)
+        .join(" · ");
+      return preview.length > 0 ? preview : undefined;
     },
+  },
+
+  /**
+   * `table_cell` → { table_id, row_id, column_name }. Live value = the row's
+   * `data[column_name]` cell. Opens the table (`table_id`).
+   */
+  table_cell: {
+    openItemType: "table",
+    openId: (ref) => ref.table_id,
+    resolveValue: async (supabase, ref) =>
+      resolveCell(supabase, ref.row_id, ref.column_name),
+  },
+
+  /**
+   * `dataset_cell` — LEGACY alias of `table_cell`. Old ids were
+   * `{ dataset_id, row_id, field_name }`; tolerate the canonical
+   * `{ table_id, row_id, column_name }` too.
+   */
+  dataset_cell: {
+    openItemType: "table",
+    openId: (ref) => ref.dataset_id ?? ref.table_id,
+    resolveValue: async (supabase, ref) =>
+      resolveCell(supabase, ref.row_id, ref.field_name ?? ref.column_name),
   },
 };
 
@@ -135,10 +245,16 @@ const humanizeType = (type: string): string =>
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .trim();
 
-/** The label an item carries (agent-provided), trimmed; else a humanized type. */
+/**
+ * The display hint an item carries (flat: `label`, else a few other readable
+ * hints), trimmed; else a humanized type. The canonical item is flat — there is
+ * no nested `display`.
+ */
 export function referenceFallbackLabel(item: ReferenceItem, type: string): string {
-  const label = item?.display?.label;
-  return typeof label === "string" && label.trim().length > 0
-    ? label.trim()
-    : humanizeType(type);
+  const hints = item as unknown as Record<string, unknown>;
+  for (const key of ["label", "column_display_name", "table_name", "list_name", "description"]) {
+    const v = hints[key];
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return humanizeType(type);
 }

@@ -51,7 +51,7 @@ A picklist item's `description` is the payload injected into agent prompts when 
 
 ## Bookmark System
 
-Three bookmark types copy a JSON reference object to clipboard for use in workflows and agent tools.
+Three bookmark types copy a JSON reference object to clipboard for use in workflows and agent tools. **A bookmark IS a Matrx reference item** — the identity ids (`list_id`, `group_name`, `item_id`) are authoritative; `list_name`, `label`, and `description` are non-authoritative display hints. The shapes re-export the canonical generated wire types (see `types.ts` + `features/matrx-envelope/FEATURE.md`).
 
 ```ts
 // List-level (ListMetaHeader)
@@ -60,8 +60,8 @@ Three bookmark types copy a JSON reference object to clipboard for use in workfl
 // Group-level (GroupSection header)
 { type: "list_group", list_id, list_name, group_name, description }
 
-// Item-level (ListItem row)
-{ type: "list_item", list_id, list_name, item_id, item_label, description }
+// Item-level (ListItem row) — note `label` (was `item_label`)
+{ type: "list_item", list_id, list_name, item_id, label, description }
 ```
 
 `BookmarkCopyButton` — click to copy, `BookmarkCheck` icon confirms for 1.5s, `sonner` toast shows what was copied.
