@@ -746,11 +746,19 @@ export function useChunkedRecordAndTranscribe({
         safetyIdRef.current = "";
       }
 
-      mediaRecorderRef.current = createRecorder(stream);
-
-      setIsRecording(true);
+      // Reset the recording clock BEFORE creating the first recorder. createRecorder
+      // stamps chunk 0's tStart = sessionRelativeSec(), which reads startTimeRef —
+      // so if we create the recorder first, chunk 0 (and the combo that inherits
+      // its tStart) gets timed against the PREVIOUS recording's start. The first
+      // recording escapes this only because startTimeRef is initially 0 (and
+      // sessionRelativeSec returns 0 for a falsy ref); every SECOND+ recording got
+      // chunk 0 stamped at the session's elapsed seconds (the "consistently 0:07"
+      // bug — those out-of-range chunks then corrupted the card's duration sort).
       startTimeRef.current = Date.now();
       pausedDurationRef.current = 0;
+      setIsRecording(true);
+
+      mediaRecorderRef.current = createRecorder(stream);
 
       startDurationTimer();
 

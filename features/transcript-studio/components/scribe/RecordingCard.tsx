@@ -73,10 +73,18 @@ export function RecordingCard({
   const cleanedSeg = useAppSelector(
     selectCleanedSegmentForRecording(sessionId, recording.id),
   );
+  // Duration: once finalized, the recording's tEnd is the recorder's wall-clock
+  // length — the ground truth. Don't derive it from the raw segments' span:
+  // those depend on per-chunk timing (and a single out-of-range chunk made the
+  // [last].tEnd − [0].tStart math collapse to ~7s). Fall back to the raw span
+  // (min→max, order-independent) only while still recording (tEnd not set yet).
   const durationSec =
-    raws.length > 0
-      ? raws[raws.length - 1]!.tEnd - raws[0]!.tStart
-      : (recording.tEnd ?? 0) - recording.tStart;
+    recording.tEnd != null
+      ? recording.tEnd - recording.tStart
+      : raws.length > 0
+        ? Math.max(...raws.map((r) => r.tEnd)) -
+          Math.min(...raws.map((r) => r.tStart))
+        : 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
 
