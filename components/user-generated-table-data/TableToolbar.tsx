@@ -139,25 +139,25 @@ export default function TableToolbar({
   };
   return (
     <>
-      {/* Toolbar UI */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
-        <div className="flex items-center w-full md:w-auto space-x-2">
+      {/* Toolbar UI — dense, single-row on desktop */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+        <div className="flex items-center w-full md:w-auto gap-1">
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
-            <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
-              <Eye className="h-4 w-4" />
+            <div className="flex items-center gap-1.5 px-1 text-xs font-medium text-purple-600 dark:text-purple-400">
+              <Eye className="h-3.5 w-3.5" />
               <span className="hidden md:inline">View Only</span>
             </div>
           ) : (
             // Edit mode: show normal action buttons
             <>
-              <Button 
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddColumnModal(true)}
                 className="whitespace-nowrap"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Column</span>
               </Button>
               <Button
@@ -165,51 +165,53 @@ export default function TableToolbar({
                 onClick={() => setShowAddRowModal(true)}
                 className="whitespace-nowrap"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Row</span>
               </Button>
               <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setShowPasteRowsDialog(true)}
                 className="whitespace-nowrap"
               >
-                <Clipboard className="h-4 w-4" />
-                <span className="hidden md:inline">Paste rows</span>
+                <Clipboard className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Paste</span>
               </Button>
             </>
           )}
         </div>
-        
-        <div className="flex-1 w-full max-w-full md:max-w-md">
-          <form onSubmit={handleSearch} className="flex gap-2">
+
+        <div className="flex-1 w-full md:max-w-sm">
+          <form onSubmit={handleSearch} className="flex gap-1">
             <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search table..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-9 pr-8"
+                className="w-full h-7 pl-7 pr-7 text-sm"
               />
               {searchTerm && (
-                <button 
+                <button
                   type="button"
                   onClick={clearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
-            <Button size="sm" type="submit" className="pb-1 h-9 whitespace-nowrap">
-              <Search className="h-4 w-4" />
+            <Button size="sm" type="submit" className="h-7 w-7 p-0" title="Search">
+              <Search className="h-3.5 w-3.5" />
             </Button>
           </form>
         </div>
-        
-        <div className="flex items-center w-full md:w-auto justify-end space-x-2">
+
+        <div className="flex items-center w-full md:w-auto justify-end gap-1">
           {/* Row Ordering Controls - only show if not read-only */}
           {!isReadOnly && (
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={() => {
@@ -226,55 +228,57 @@ export default function TableToolbar({
               className="whitespace-nowrap text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
               title={!rowOrderingEnabled ? "Enable row ordering and open reorder modal" : "Open row reordering modal"}
             >
-              <GripVertical className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Reorder Rows</span>
+              <GripVertical className="h-3.5 w-3.5 md:mr-1.5" />
+              <span className="hidden md:inline">Reorder</span>
             </Button>
           )}
-          
+
           {/* Clean HTML - only show if not read-only */}
           {!isReadOnly && hasCleanableHtmlInTable && handleBulkHtmlCleanup && (
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={handleBulkHtmlCleanup}
               className="whitespace-nowrap text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               title="Clean HTML formatting in all string fields"
             >
-              <Zap className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Clean All HTML</span>
+              <Zap className="h-3.5 w-3.5 md:mr-1.5" />
+              <span className="hidden md:inline">Clean HTML</span>
             </Button>
           )}
-          
+
           {/* Reference - always available (read-only action) */}
-          <Button 
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setShowReferenceOverlay(true)}
-            className="whitespace-nowrap"
+            className="h-7 w-7 p-0"
             title="Create Table Reference"
           >
-            <Link className="h-4 w-4 md:mr-2" />
+            <Link className="h-3.5 w-3.5" />
           </Button>
-          
+
           {/* Export - always available (read-only action) */}
-          <Button 
+          <Button
             variant="outline"
             size="sm"
             onClick={() => setShowExportModal(true)}
-            className="whitespace-nowrap"
+            className="h-7 w-7 p-0"
+            title="Export table"
           >
-            <Download className="h-4 w-4 md:mr-2" />
+            <Download className="h-3.5 w-3.5" />
           </Button>
-          
+
           {/* Settings - only show if not read-only */}
           {!isReadOnly && (
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={() => setShowTableSettingsModal(true)}
-              className="whitespace-nowrap"
+              className="h-7 w-7 p-0"
+              title="Table settings"
             >
-              <Settings className="h-4 w-4 md:mr-2" />
+              <Settings className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>

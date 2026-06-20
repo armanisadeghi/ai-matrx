@@ -303,6 +303,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           messageId={messageId}
           blockIndex={index}
           isStreamActive={loading}
+          // Restore the legacy per-type inline-edit write-back (the old switch
+          // cases passed this; the unified path must too) — editable blocks
+          // persist to cx_message.content + bust the server cache. Gated on
+          // not-streaming, exactly like the old `case "table"`.
+          onContentChange={
+            !loading && replaceBlockContent
+              ? (updated: string) =>
+                  replaceBlockContent(block.content, updated)
+              : undefined
+          }
         />
       );
     }

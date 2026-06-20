@@ -30,7 +30,6 @@ import TableToolbar from "./TableToolbar";
 import {
   Pencil,
   Trash,
-  Loader,
   Expand,
   Link,
   Zap,
@@ -41,6 +40,7 @@ import {
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
 import { EditableCell } from "@/features/data-tables/components/EditableCell";
+import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
 import { bulkWrite, upsertCell } from "@/features/data-tables/service";
 import {
@@ -48,7 +48,7 @@ import {
   type BulkMergeOp,
   type FieldDataType,
 } from "@/features/data-tables/types";
-import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
+import { TableSkeleton } from "./TableSkeleton";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -100,11 +100,25 @@ function rowIdFromRpcDataRow(row: unknown): string | undefined {
 interface UserTableViewerProps {
   tableId: string;
   showTableSelector?: boolean;
+  /**
+   * Render cell text as inline markdown (bold/italic/links) instead of showing
+   * raw `**syntax**`. OFF by default so existing data tables are unchanged; the
+   * chat artifact (whose cells hold markdown from the agent) turns it on.
+   */
+  renderCellMarkdown?: boolean;
+  /**
+   * Hide this component's own title/description header. For when an outer
+   * surface (chat artifact, canvas pane) already provides the title, so it
+   * isn't shown twice.
+   */
+  hideHeader?: boolean;
 }
 
 const UserTableViewer = ({
   tableId,
   showTableSelector = false,
+  renderCellMarkdown = false,
+  hideHeader = false,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<any>(null);
@@ -1323,7 +1337,31 @@ const UserTableViewer = ({
     }
   };
 
-  if (loading && !tableInfo) return <TableLoadingComponent />;
+  if (loading && !tableInfo)
+    return (
+      <div className="space-y-4 p-2">
+        {/* Title placeholder */}
+        <div className="space-y-2">
+          <div className="h-7 w-56 rounded bg-muted/40 animate-pulse" />
+          <div className="h-4 w-80 rounded bg-muted/30 animate-pulse" />
+        </div>
+        {/* Toolbar placeholder — mirrors the dense action row */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1">
+            <div className="h-7 w-20 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-16 rounded-md bg-muted/40 animate-pulse" />
+          </div>
+          <div className="h-7 w-full max-w-sm rounded-md bg-muted/40 animate-pulse" />
+          <div className="flex gap-1">
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+            <div className="h-7 w-7 rounded-md bg-muted/40 animate-pulse" />
+          </div>
+        </div>
+        <TableSkeleton rows={5} />
+      </div>
+    );
   if (error)
     return (
       <div className="py-6 text-center text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
@@ -1376,14 +1414,16 @@ const UserTableViewer = ({
     <div className="space-y-4 p-2">
       {/* Table header with optional selector */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">{tableInfo.table_name}</h2>
-          {tableInfo.description && (
-            <p className="text-gray-500 dark:text-gray-400">
-              {tableInfo.description}
-            </p>
-          )}
-        </div>
+        {!hideHeader && (
+          <div>
+            <h2 className="text-2xl font-bold">{tableInfo.table_name}</h2>
+            {tableInfo.description && (
+              <p className="text-gray-500 dark:text-gray-400">
+                {tableInfo.description}
+              </p>
+            )}
+          </div>
+        )}
 
         {showTableSelector && tables.length > 0 && (
           <div className="min-w-[250px]">
@@ -1605,19 +1645,31 @@ const UserTableViewer = ({
           </TableHeader>
           <TableBody>
             {showLoadingRow ? (
-              <TableRow>
-                <TableCell
-                  colSpan={fields.length + 1}
-                  className="text-center py-8"
+              // Table-shaped skeleton rows that match the real column layout —
+              // header is already rendered above, so we fill the body with
+              // pulsing placeholders instead of a single collapsed spinner line.
+              Array.from({ length: 5 }).map((_, r) => (
+                <TableRow
+                  key={`skeleton-${r}`}
+                  className={r % 2 === 1 ? "bg-muted/10" : ""}
                 >
-                  <div className="flex justify-center items-center">
-                    <Loader className="animate-spin h-5 w-5 mr-3 text-primary" />
-                    {filteringInProgress
-                      ? "Filtering data..."
-                      : "Loading data..."}
-                  </div>
-                </TableCell>
-              </TableRow>
+                  {fields.map((field, c) => (
+                    <TableCell key={`skeleton-${r}-${field.id}`} className="py-3">
+                      <div
+                        className="h-3.5 rounded bg-muted/40 animate-pulse"
+                        style={{ width: `${[88, 62, 75, 50, 80][(r + c) % 5]}%` }}
+                      />
+                    </TableCell>
+                  ))}
+                  <TableCell className="py-3">
+                    <div className="flex justify-center gap-1.5">
+                      <div className="h-5 w-5 rounded bg-muted/40 animate-pulse" />
+                      <div className="h-5 w-5 rounded bg-muted/40 animate-pulse" />
+                      <div className="h-5 w-5 rounded bg-muted/40 animate-pulse" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell
@@ -1662,7 +1714,14 @@ const UserTableViewer = ({
                                 : undefined
                             }
                           >
-                            {String(cellData.display)}
+                            {renderCellMarkdown &&
+                            typeof rawValue === "string" ? (
+                              <InlineMarkdownWithLinks
+                                text={String(cellData.display)}
+                              />
+                            ) : (
+                              String(cellData.display)
+                            )}
                           </div>
                           {cellData.multilineIndicator && (
                             <div className="text-xs text-muted-foreground mt-0.5">

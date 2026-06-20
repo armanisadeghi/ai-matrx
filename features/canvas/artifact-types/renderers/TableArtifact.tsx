@@ -28,36 +28,42 @@ const UserTableViewer = lazy(
 const UDT_SYSTEM = "udt_datasets";
 
 /**
- * Unified renderer for `table` artifacts — the original UDT-tables insight made
- * live (vision R6/R7).
+ * Unified renderer for `table` artifacts.
  *
- * Tables do NOT auto-bind to a real dataset (agents emit tables constantly →
- * binding each would flood the user's table list). Instead a materialized table
- * is an editable, persisted markdown table; inline edits round-trip to the
- * artifact (so they survive reload AND the agent's read-only artifact context
- * sees the current values next turn). An explicit one-click **Convert to table**
- * creates a real `udt_datasets` dataset (named from the artifact title, no
- * dialog) and links it — after which the live, realtime, two-way
- * `UserTableViewer` is the source of truth and the markdown is gone.
+ * GOVERNING RULE: in the normal view a table renders and behaves EXACTLY as the
+ * legacy `case "table"` did — the full `StreamingTableRenderer` toolbar (editing,
+ * sort, export CSV/JSON, etc.) and inline-edit write-back to `cx_message.content`
+ * (+ server-cache bust, so the model's next-turn history matches what the user
+ * sees). The artifact layer only ADDS: a one-click **Convert to table** that
+ * links a real `udt_datasets` row, after which the live realtime `UserTableViewer`
+ * renders from the dataset (the markdown stays in the message for the agent's
+ * history; further table edits flow to the agent as context, not history).
  *
- * Mirrors the data-touching pattern of `TasksArtifact` (proposal → Convert →
- * live mirror). CSV rides the same path (a CSV block parses as a table).
+ * No appearance/behavior change in the normal view beyond the Convert button.
  */
 export default function TableArtifact({
   raw,
   data,
+  metadata,
   artifactId,
   isStreamActive,
+  onContentChange,
 }: ArtifactRendererProps) {
   const content = typeof data === "string" ? data : raw;
   if (!content) return null;
 
-  // Pre-materialization (streaming / inline): editable markdown table only —
-  // there is no persisted row to link or version against yet.
+  // Streaming / inline (not yet a persisted artifact): identical to the old
+  // `case "table"` — full toolbar (gated on metadata.isComplete) + inline edits
+  // persisted to the message. No Convert button until there's a row to link.
   if (!isMaterializedArtifactId(artifactId)) {
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <StreamingTableRenderer content={content} isStreamActive={isStreamActive} />
+        <StreamingTableRenderer
+          content={content}
+          metadata={metadata}
+          isStreamActive={isStreamActive}
+          onContentChange={onContentChange}
+        />
       </Suspense>
     );
   }
@@ -66,6 +72,7 @@ export default function TableArtifact({
     <TableArtifactMaterialized
       canvasItemId={artifactId as string}
       fallbackContent={content}
+      onContentChange={onContentChange}
     />
   );
 }
@@ -73,9 +80,11 @@ export default function TableArtifact({
 function TableArtifactMaterialized({
   canvasItemId,
   fallbackContent,
+  onContentChange,
 }: {
   canvasItemId: string;
   fallbackContent: string;
+  onContentChange?: (newContent: string) => void;
 }) {
   const { row, loading, refetch } = useCanvasItem(canvasItemId);
   const [converting, setConverting] = useState(false);
@@ -105,11 +114,12 @@ function TableArtifactMaterialized({
     return fallbackContent;
   }, [row, fallbackContent]);
 
-  // Persist an inline edit to the artifact in place. Versioning of canvas-content
-  // edits is unified in Wave 4; a table gets the UDT's own row-versioning once
-  // converted, which is the versioning that matters for tabular data.
+  // Persist an inline edit. Update the message (so the model's history matches)
+  // when the chat threaded a write-back; ALSO keep the canvas row in sync so the
+  // artifact context + render-by-id reflect it. Either path alone is safe.
   const persistEdit = useCallback(
     (updatedMarkdown: string) => {
+      onContentChange?.(updatedMarkdown);
       void canvasItemsService
         .update(canvasItemId, {
           content: { data: updatedMarkdown, type: "table", metadata: {} },
@@ -122,7 +132,7 @@ function TableArtifactMaterialized({
           );
         });
     },
-    [canvasItemId],
+    [canvasItemId, onContentChange],
   );
 
   const handleConvert = useCallback(async () => {
@@ -136,7 +146,6 @@ function TableArtifactMaterialized({
       const name = row?.title?.trim() || "Table from chat";
       const result = await createDatasetFromTable({
         name,
-        description: "Created from a chat table",
         headers: parsed.headers,
         rows: parsed.normalizedData,
       });
@@ -145,12 +154,7 @@ function TableArtifactMaterialized({
           externalSystem: UDT_SYSTEM,
           externalId: result.tableId,
         });
-        toast.success(
-          `Converted to a live table (${result.inserted} row${
-            result.inserted !== 1 ? "s" : ""
-          })`,
-          { description: "Edits here and in /data now sync both ways." },
-        );
+        toast.success("Converted to a live table");
         refetch();
       } else {
         toast.error(`Convert failed: ${result.error ?? "unknown error"}`);
@@ -165,21 +169,29 @@ function TableArtifactMaterialized({
   }
 
   // Linked → the real, live, realtime two-way UDT table is the source of truth.
+  // It carries markdown from the chat table, so render cells as rich text; the
+  // chat artifact provides the context, so suppress the table's own title header
+  // (no double title).
   if (linkedTableId) {
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <UserTableViewer tableId={linkedTableId} />
+        <UserTableViewer tableId={linkedTableId} renderCellMarkdown hideHeader />
       </Suspense>
     );
   }
 
-  // Non-linked → editable markdown table + one-click Convert.
+  // Non-linked → the full table (identical to normal view) + one Convert button.
+  // The table is persisted, so it's complete → toolbar shows.
   return (
     <div className="space-y-2">
       <Suspense fallback={<MatrxMiniLoader />}>
-        <StreamingTableRenderer content={content} onContentChange={persistEdit} />
+        <StreamingTableRenderer
+          content={content}
+          metadata={{ isComplete: true }}
+          onContentChange={persistEdit}
+        />
       </Suspense>
-      <div className="flex items-center justify-end border-t border-border/40 px-1 pt-2">
+      <div className="flex items-center justify-end px-1">
         <Button
           size="sm"
           variant="outline"
