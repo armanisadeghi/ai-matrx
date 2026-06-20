@@ -540,6 +540,10 @@ export const toolRendererRegistry: ToolRegistry = {
     resultsLabel: "Context",
     InlineComponent: CtxPatchInline,
     OverlayComponent: CtxPatchInline,
+    // Keep expanded while the patch runs so the live working-document diff is
+    // visible end-to-end. Reloaded patches still collapse — the shell gates
+    // auto-expand on live + active.
+    keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const key = getArg<string>(entry, "key");
       if (typeof key === "string" && key) return key;

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { SourceVerdictBadge } from "./SourceVerdictBadge";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
@@ -42,6 +43,7 @@ type SortKey =
   | "source"
   | "scrape"
   | "authority"
+  | "verdict"
   | "type"
   | "characters"
   | "analysis"
@@ -250,6 +252,12 @@ export function SourceResultsTable({
             if (av === bv) return 0;
             return av < bv ? -1 * d : 1 * d;
           }
+          case "verdict": {
+            const av = num(a.final_source_score);
+            const bv = num(b.final_source_score);
+            if (av === bv) return 0;
+            return av < bv ? -1 * d : 1 * d;
+          }
           case "analysis": {
             const av = analysisFor
               ? ANALYSIS_ORDER[analysisFor(a) ?? "none"]
@@ -376,6 +384,19 @@ export function SourceResultsTable({
                 "Authority"
               )}
             </th>
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+              {interactive ? (
+                <SortHeader
+                  label="Verdict"
+                  field="verdict"
+                  active={sort.key === "verdict"}
+                  dir={sort.dir}
+                  onSort={onSort}
+                />
+              ) : (
+                "Verdict"
+              )}
+            </th>
             {interactive && (
               <th className="py-1.5 px-2 font-medium whitespace-nowrap hidden md:table-cell">
                 <div className="flex items-center gap-1">
@@ -497,6 +518,14 @@ export function SourceResultsTable({
                       —
                     </span>
                   )}
+                </td>
+                <td className="py-2 px-2 align-top">
+                  <SourceVerdictBadge
+                    finalScore={src.final_source_score}
+                    recommendedUse={src.recommended_use}
+                    analysisStatus={src.analysis_status}
+                    showUnanalyzed={false}
+                  />
                 </td>
                 {interactive && (
                   <td className="py-2 px-2 align-top hidden md:table-cell">

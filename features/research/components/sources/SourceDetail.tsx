@@ -23,9 +23,19 @@ import {
   Brain,
   TrendingUp,
   RotateCcw,
+  Check,
+  X,
+  Quote,
+  Users,
+  Building2,
+  Package,
+  FlaskConical,
+  MapPin,
+  ShieldAlert,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -54,15 +64,22 @@ import { AnalysisCard } from "../analysis/AnalysisCard";
 import { SourceTagPicker } from "./SourceTagPicker";
 import { SourceRankBadges } from "./SourceRankBadges";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { SourceVerdictBadge } from "./SourceVerdictBadge";
 import MarkdownStream from "@/components/MarkdownStream";
 import type {
   ResearchSource,
   ResearchContent,
   ResearchAnalysis,
   ResearchDataEvent,
+  PageAnalysis,
+  PageFinding,
+  EvidenceSignals,
+  BiasAndRiskSignals,
+  EntitiesMentioned,
 } from "../../types";
 import {
   jsonArrayLength,
+  pageAnalysisFromJson,
   sourceOriginFromDb,
   sourceTypeFromDb,
   stringArrayFromJson,
@@ -103,6 +120,584 @@ function MetaRow({
         {label}
       </span>
       <div className="text-xs font-medium text-right">{children}</div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE ANALYSIS DOCUMENT — renders the full structured per-page read
+// (rs_source.page_analysis). Every field is surfaced; nothing is dropped.
+// Restrained, professional treatment: integers only, scores lead as numbers,
+// muted accents (no bright pills, no alarm red), light + dark via tokens.
+// ============================================================================
+
+/** Round a 0-100 score to an integer; em-dash when absent. */
+function fmtScore(n: number | null | undefined): string {
+  return n == null ? "—" : String(Math.round(n));
+}
+
+/** A 0-100 score with a quiet meter bar + integer value (label stays separate). */
+function ScoreBar({
+  label,
+  score,
+  /** When true, a HIGH value is BAD (commercial bias) — flip the fill tone. */
+  inverted = false,
+  hint,
+}: {
+  label: string;
+  score: number | null;
+  inverted?: boolean;
+  hint?: string;
+}) {
+  const pct = score == null ? 0 : Math.max(0, Math.min(100, Math.round(score)));
+  // Goodness drives a single restrained fill tone (emerald → neutral → rose,
+  // all low-opacity). For an inverted axis, a high score is the bad end.
+  const goodness = inverted ? 100 - pct : pct;
+  const fill =
+    score == null
+      ? "bg-muted-foreground/25"
+      : goodness >= 67
+        ? "bg-emerald-500/55"
+        : goodness >= 34
+          ? "bg-muted-foreground/45"
+          : "bg-rose-500/45";
+  return (
+    <div className="space-y-1" title={hint}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] text-muted-foreground leading-none">
+          {label}
+        </span>
+        <span className="text-xs font-semibold tabular-nums text-foreground leading-none">
+          {fmtScore(score)}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+        <div
+          className={cn("h-full rounded-full transition-all", fill)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Section shell: an uppercase label + icon over its content, with breathing room. */
+function AnalysisBlock({
+  icon,
+  title,
+  count,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2.5">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {icon}
+        {title}
+        {count != null && count > 0 && (
+          <span className="text-muted-foreground/60 tabular-nums">
+            ({count})
+          </span>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** One evidence-signal row: a ✓ (present) or ✗ (absent), then the plain label. */
+function SignalRow({ present, label }: { present: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {present ? (
+        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600/80 dark:text-emerald-400/80" />
+      ) : (
+        <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+      )}
+      <span className={present ? "text-foreground/80" : "text-muted-foreground/60"}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** A neutral entity chip — monochrome, never coloured (one per entity string). */
+function EntityChip({ value }: { value: string }) {
+  return (
+    <span className="inline-flex max-w-[18rem] truncate rounded-md border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] text-foreground/75">
+      {value}
+    </span>
+  );
+}
+
+/** A grouped entity category (People / Organizations / …) — hidden when empty. */
+function EntityGroup({
+  icon,
+  label,
+  items,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  items: string[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        {icon}
+        {label}
+        <span className="text-muted-foreground/50 tabular-nums">
+          ({items.length})
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item, i) => (
+          <EntityChip key={`${item}-${i}`} value={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One core-finding card: the finding + its supporting text + confidence/importance/type. */
+function FindingCard({ finding }: { finding: PageFinding }) {
+  const confidencePct =
+    finding.confidence == null ? null : Math.round(finding.confidence);
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-2">
+      <p className="text-xs font-medium leading-relaxed text-foreground/90">
+        {finding.finding}
+      </p>
+      {finding.supporting_text && (
+        <p className="border-l-2 border-border/70 pl-2.5 text-[11px] italic leading-relaxed text-muted-foreground">
+          {finding.supporting_text}
+        </p>
+      )}
+      {(confidencePct != null || finding.importance || finding.finding_type) && (
+        <div className="flex flex-wrap items-center gap-3 pt-0.5">
+          {confidencePct != null && (
+            <span className="inline-flex items-baseline gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Confidence
+              <span className="text-[11px] font-semibold tabular-nums text-foreground">
+                {confidencePct}%
+              </span>
+            </span>
+          )}
+          {finding.importance && (
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+              {finding.importance}
+            </span>
+          )}
+          {finding.finding_type && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              {finding.finding_type}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const EVIDENCE_SIGNAL_LABELS: { key: keyof EvidenceSignals; label: string }[] = [
+  { key: "has_primary_data", label: "Primary data" },
+  { key: "has_citations", label: "Citations" },
+  { key: "has_methodology", label: "Methodology" },
+  { key: "has_expert_attribution", label: "Expert attribution" },
+  { key: "has_specific_numbers", label: "Specific numbers" },
+  { key: "has_dates", label: "Dates" },
+  { key: "has_named_sources", label: "Named sources" },
+  { key: "has_original_reporting", label: "Original reporting" },
+  { key: "has_verifiable_claims", label: "Verifiable claims" },
+];
+
+const BIAS_SIGNAL_LABELS: { key: keyof BiasAndRiskSignals; label: string }[] = [
+  { key: "is_promotional", label: "Reads as promotional" },
+  { key: "is_opinion_heavy", label: "Opinion-heavy" },
+  { key: "has_undisclosed_conflicts", label: "Possible undisclosed conflicts" },
+  { key: "has_sensational_language", label: "Sensational language" },
+  { key: "has_unsupported_claims", label: "Unsupported claims" },
+  { key: "is_outdated", label: "May be outdated" },
+];
+
+function entitiesTotal(e: EntitiesMentioned | null): number {
+  if (!e) return 0;
+  return (
+    e.people.length +
+    e.organizations.length +
+    e.products.length +
+    e.studies.length +
+    e.locations.length
+  );
+}
+
+/**
+ * The full "Page analysis" document for a single source. Renders EVERY field of
+ * the structured `PageAnalysis`. When `analysis` is null, the caller shows the
+ * honest empty state instead of this component.
+ */
+function PageAnalysisDocument({
+  analysis,
+  finalScore,
+}: {
+  analysis: PageAnalysis;
+  finalScore: number | null;
+}) {
+  const activeBias = analysis.bias_and_risk_signals
+    ? BIAS_SIGNAL_LABELS.filter(
+        ({ key }) => analysis.bias_and_risk_signals![key],
+      )
+    : [];
+  const entityCount = entitiesTotal(analysis.entities_mentioned);
+  const dates = analysis.dates;
+  const hasAnyDate =
+    dates &&
+    (dates.published_date || dates.updated_date || dates.content_timeframe);
+
+  return (
+    <div className="space-y-6">
+      {/* Header: title + the bottom-line verdict + rejection reason if any */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+              <Brain className="h-4 w-4 text-primary/70" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold leading-none">
+                Page analysis
+              </h3>
+              {analysis.page_type && (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {analysis.page_type}
+                </p>
+              )}
+            </div>
+          </div>
+          <SourceVerdictBadge
+            finalScore={finalScore}
+            recommendedUse={analysis.recommended_use}
+            analysisStatus={analysis.analysis_status}
+          />
+        </div>
+        {analysis.should_reject && analysis.rejection_reason && (
+          <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/[0.05] px-3 py-2">
+            <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500/70" />
+            <p className="text-[11px] leading-relaxed text-foreground/80">
+              <span className="font-medium text-muted-foreground">
+                Recommended for rejection:{" "}
+              </span>
+              {analysis.rejection_reason}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Score panel — the eight axes as meters + the three fused/staged scores */}
+      <AnalysisBlock
+        icon={<TrendingUp className="h-3 w-3" />}
+        title="Scores"
+      >
+        <div className="rounded-xl border border-border/60 bg-card/40 p-4 space-y-4">
+          {/* Headline scores: final · overall page value · staged pre/post */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <HeadlineScore
+              label="Final score"
+              value={finalScore}
+              emphasize
+            />
+            <HeadlineScore
+              label="Page value"
+              value={analysis.overall_page_value_score}
+            />
+            <HeadlineScore
+              label="Post-read"
+              value={analysis.authority_after_read_score}
+            />
+            <HeadlineScore
+              label="Relevance"
+              value={analysis.topic_relevance_score}
+            />
+          </div>
+          {/* The detailed quality axes as meters */}
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+            <ScoreBar
+              label="Content quality"
+              score={analysis.content_quality_score}
+            />
+            <ScoreBar
+              label="Evidence quality"
+              score={analysis.evidence_quality_score}
+            />
+            <ScoreBar label="Freshness" score={analysis.freshness_score} />
+            <ScoreBar label="Originality" score={analysis.originality_score} />
+            <ScoreBar
+              label="Specificity"
+              score={analysis.specificity_score}
+            />
+            <ScoreBar
+              label="Commercial bias"
+              score={analysis.commercial_bias_score}
+              inverted
+              hint="Higher means more commercially biased — lower is better."
+            />
+          </div>
+        </div>
+      </AnalysisBlock>
+
+      {/* Summary — the agent's prose, rendered as real markdown */}
+      {analysis.summary_markdown && (
+        <AnalysisBlock icon={<FileText className="h-3 w-3" />} title="Summary">
+          <div className="rounded-xl border border-border/60 bg-card/40 px-4 py-3">
+            <MarkdownStream content={analysis.summary_markdown} />
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Key facts */}
+      {analysis.key_facts.length > 0 && (
+        <AnalysisBlock
+          icon={<Info className="h-3 w-3" />}
+          title="Key facts"
+          count={analysis.key_facts.length}
+        >
+          <ul className="space-y-1.5">
+            {analysis.key_facts.map((fact, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs leading-relaxed">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/50" />
+                <span className="text-foreground/85">{fact}</span>
+              </li>
+            ))}
+          </ul>
+        </AnalysisBlock>
+      )}
+
+      {/* Notable quotes — styled blockquotes with the speaker attributed */}
+      {analysis.notable_quotes.length > 0 && (
+        <AnalysisBlock
+          icon={<Quote className="h-3 w-3" />}
+          title="Notable quotes"
+          count={analysis.notable_quotes.length}
+        >
+          <div className="space-y-2.5">
+            {analysis.notable_quotes.map((q, i) => (
+              <blockquote
+                key={i}
+                className="rounded-lg border-l-2 border-primary/40 bg-muted/30 px-3 py-2"
+              >
+                <p className="text-xs italic leading-relaxed text-foreground/85">
+                  &ldquo;{q.quote}&rdquo;
+                </p>
+                {q.speaker && (
+                  <footer className="mt-1 text-[11px] font-medium text-muted-foreground">
+                    — {q.speaker}
+                  </footer>
+                )}
+              </blockquote>
+            ))}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Core findings — cards */}
+      {analysis.core_findings.length > 0 && (
+        <AnalysisBlock
+          icon={<Brain className="h-3 w-3" />}
+          title="Core findings"
+          count={analysis.core_findings.length}
+        >
+          <div className="space-y-2">
+            {analysis.core_findings.map((f, i) => (
+              <FindingCard key={i} finding={f} />
+            ))}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Notable claims — claim + a supported ✓/✗ + the assessment */}
+      {analysis.notable_claims.length > 0 && (
+        <AnalysisBlock
+          icon={<CheckCircle2 className="h-3 w-3" />}
+          title="Notable claims"
+          count={analysis.notable_claims.length}
+        >
+          <div className="space-y-2">
+            {analysis.notable_claims.map((c, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-1.5"
+              >
+                <div className="flex items-start gap-2">
+                  {c.is_well_supported === true ? (
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600/80 dark:text-emerald-400/80" />
+                  ) : c.is_well_supported === false ? (
+                    <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500/60" />
+                  ) : (
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                  )}
+                  <p className="text-xs font-medium leading-relaxed text-foreground/90">
+                    {c.claim}
+                  </p>
+                </div>
+                {c.support_assessment && (
+                  <p className="pl-5.5 text-[11px] leading-relaxed text-muted-foreground">
+                    {c.support_assessment}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Evidence signals — a full ✓/✗ checklist */}
+      {analysis.evidence_signals && (
+        <AnalysisBlock
+          icon={<CheckCircle2 className="h-3 w-3" />}
+          title="Evidence signals"
+        >
+          <div className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2">
+            {EVIDENCE_SIGNAL_LABELS.map(({ key, label }) => (
+              <SignalRow
+                key={key}
+                present={analysis.evidence_signals![key]}
+                label={label}
+              />
+            ))}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Bias & risk — only the TRUE ones, as muted caution flags */}
+      {activeBias.length > 0 && (
+        <AnalysisBlock
+          icon={<AlertTriangle className="h-3 w-3" />}
+          title="Caution flags"
+          count={activeBias.length}
+        >
+          <div className="flex flex-wrap gap-2">
+            {activeBias.map(({ key, label }) => (
+              <span
+                key={key}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/[0.06] px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400/90"
+              >
+                <AlertTriangle className="h-3 w-3 shrink-0 opacity-70" />
+                {label}
+              </span>
+            ))}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Dates */}
+      {hasAnyDate && (
+        <AnalysisBlock icon={<Calendar className="h-3 w-3" />} title="Dates">
+          <div className="space-y-0 rounded-xl border border-border/60 bg-card/40 px-4 py-1">
+            {dates!.published_date && (
+              <DateRow label="Published" value={dates!.published_date} />
+            )}
+            {dates!.updated_date && (
+              <DateRow label="Updated" value={dates!.updated_date} />
+            )}
+            {dates!.content_timeframe && (
+              <DateRow label="Content timeframe" value={dates!.content_timeframe} />
+            )}
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Entities mentioned — grouped neutral chips by category */}
+      {analysis.entities_mentioned && entityCount > 0 && (
+        <AnalysisBlock
+          icon={<Users className="h-3 w-3" />}
+          title="Entities mentioned"
+          count={entityCount}
+        >
+          <div className="space-y-3 rounded-xl border border-border/60 bg-card/40 p-4">
+            <EntityGroup
+              icon={<Users className="h-3 w-3" />}
+              label="People"
+              items={analysis.entities_mentioned.people}
+            />
+            <EntityGroup
+              icon={<Building2 className="h-3 w-3" />}
+              label="Organizations"
+              items={analysis.entities_mentioned.organizations}
+            />
+            <EntityGroup
+              icon={<Package className="h-3 w-3" />}
+              label="Products"
+              items={analysis.entities_mentioned.products}
+            />
+            <EntityGroup
+              icon={<FlaskConical className="h-3 w-3" />}
+              label="Studies"
+              items={analysis.entities_mentioned.studies}
+            />
+            <EntityGroup
+              icon={<MapPin className="h-3 w-3" />}
+              label="Locations"
+              items={analysis.entities_mentioned.locations}
+            />
+          </div>
+        </AnalysisBlock>
+      )}
+
+      {/* Analysis notes — the agent's free-text closing note */}
+      {analysis.analysis_notes && (
+        <AnalysisBlock
+          icon={<FileText className="h-3 w-3" />}
+          title="Analysis notes"
+        >
+          <p className="rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-xs leading-relaxed text-foreground/80">
+            {analysis.analysis_notes}
+          </p>
+        </AnalysisBlock>
+      )}
+    </div>
+  );
+}
+
+/** A prominent headline score: big tabular number + small label (kept separate). */
+function HeadlineScore({
+  label,
+  value,
+  emphasize = false,
+}: {
+  label: string;
+  value: number | null;
+  emphasize?: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <span
+        className={cn(
+          "block tabular-nums leading-none",
+          emphasize
+            ? "text-2xl font-bold text-foreground"
+            : "text-xl font-semibold text-foreground/85",
+        )}
+      >
+        {fmtScore(value)}
+      </span>
+    </div>
+  );
+}
+
+/** One date row in the Dates block (label left, value right). */
+function DateRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border/40 py-2 last:border-0">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground/85">{value}</span>
     </div>
   );
 }
@@ -372,6 +967,11 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     ? stringArrayFromJson(typedSource.extra_snippets)
     : [];
   const hasBeenScraped = typedSource && typedSource.scrape_status !== "pending";
+  // The deep per-page read (rs_source.page_analysis), defensively narrowed.
+  // null = never analyzed → the section shows an honest empty state.
+  const pageAnalysis: PageAnalysis | null = typedSource
+    ? pageAnalysisFromJson(typedSource.page_analysis)
+    : null;
 
   const handleMarkComplete = useCallback(async () => {
     await updateSource(sourceId, { scrape_status: "complete" });
@@ -504,6 +1104,21 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <span className="text-muted-foreground">Not yet ranked</span>
                   )}
                 </MetaRow>
+                {(typedSource.final_source_score != null ||
+                  typedSource.recommended_use != null ||
+                  typedSource.analysis_status != null) && (
+                  <MetaRow
+                    label="Verdict"
+                    icon={<CheckCircle2 className="h-3 w-3" />}
+                  >
+                    <SourceVerdictBadge
+                      finalScore={typedSource.final_source_score}
+                      recommendedUse={typedSource.recommended_use}
+                      analysisStatus={typedSource.analysis_status}
+                      showUnanalyzed
+                    />
+                  </MetaRow>
+                )}
                 <MetaRow label="Origin" icon={<Tag className="h-3 w-3" />}>
                   <OriginBadge
                     origin={sourceOriginFromDb(typedSource.origin)}
@@ -806,6 +1421,33 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 {msg.message}
               </p>
             ))}
+          </div>
+        )}
+
+        {/* Page Analysis Section — the deep structured per-page read. Prominent,
+            above the raw content, because it's the agent's verdict on the page. */}
+        {typedSource && (
+          <div className="rounded-2xl border border-border/60 bg-card/30 backdrop-blur-sm p-4 sm:p-5">
+            {pageAnalysis ? (
+              <PageAnalysisDocument
+                analysis={pageAnalysis}
+                finalScore={typedSource.final_source_score}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/50">
+                  <Brain className="h-5 w-5 text-muted-foreground/30" />
+                </div>
+                <p className="text-sm font-medium text-foreground/70">
+                  Not analyzed yet
+                </p>
+                <p className="max-w-[280px] text-[11px] leading-relaxed text-muted-foreground">
+                  Once this page is read and analyzed, the full per-page
+                  breakdown — scores, key facts, findings, quotes, claims, and
+                  the use verdict — appears here.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

@@ -18,6 +18,10 @@ import React from "react";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { WorkingDocDiffInline } from "@/features/tool-call-visualization/renderers/working-document/WorkingDocDiffInline";
+import { setWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 // ─── Synthetic lifecycle entries ────────────────────────────────────────────
@@ -344,6 +348,45 @@ function FixtureCard({ label, children }: { label: string; children: React.React
     );
 }
 
+// ─── Working-document live-diff demo ────────────────────────────────────────
+// Seeds a working document into Redux, THEN renders the renderer, so the
+// "before" snapshot freezes the seeded content (str_replace → before→after diff).
+
+const WD_CONV = "wd-gallery-demo";
+const WD_BEFORE =
+    "# Project Brief\n\nThe goal is to ship the MVP by Q3. Scope includes auth, billing, and the dashboard.\n\nRisks: the timeline is aggressive and the team is small.";
+
+const wdPatchEntry = entry({
+    callId: "wd-patch",
+    toolName: "ctx_patch",
+    displayName: "Context",
+    status: "completed",
+    arguments: {
+        key: "working_document",
+        command: "str_replace",
+        old_str: "ship the MVP by Q3",
+        new_str: "ship the MVP by the end of Q2 (pulled in one quarter)",
+    },
+});
+
+function WorkingDocDemo() {
+    const dispatch = useAppDispatch();
+    const content = useAppSelector(selectWorkingDocContent(WD_CONV));
+    React.useEffect(() => {
+        dispatch(setWorkingDocContent({ conversationId: WD_CONV, content: WD_BEFORE }));
+    }, [dispatch]);
+    // Render the renderer only once the seed has landed, so its "before" freezes
+    // the seeded content (not an empty pre-seed value).
+    if (content !== WD_BEFORE) {
+        return (
+            <p className="text-xs text-muted-foreground">
+                seeding working document… (len {content.length})
+            </p>
+        );
+    }
+    return <WorkingDocDiffInline entry={wdPatchEntry} conversationId={WD_CONV} />;
+}
+
 export default function ResultFieldsGalleryPage() {
     return (
         // Mirror AgentConversationColumn's centerWrap: w-full max-w-3xl mx-auto px-2.
@@ -356,6 +399,15 @@ export default function ResultFieldsGalleryPage() {
                     tool renderer overhaul.
                 </p>
             </header>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Working document — live diff (ctx_patch str_replace on the working doc)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    <WorkingDocDemo />
+                </div>
+            </section>
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

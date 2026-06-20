@@ -23,6 +23,8 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
+import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import { WorkingDocDiffInline } from "../working-document/WorkingDocDiffInline";
 
 /** Keys a write outcome might use to carry an echoed/previewed value. */
 const PREVIEW_KEYS = [
@@ -69,7 +71,27 @@ interface Props extends ToolRendererProps {
   density?: ResultDensity;
 }
 
-export const CtxPatchInline: React.FC<Props> = ({
+/**
+ * Dispatcher: when this patch targets the working document AND we're live (have
+ * a conversation, not a reloaded snapshot), render the live before→after diff.
+ * Otherwise fall through to the standard write-confirmation card below.
+ *
+ * No hooks run before this branch, so the two render paths owning different
+ * hooks is safe under the Rules of Hooks (each is its own component).
+ */
+export const CtxPatchInline: React.FC<Props> = (props) => {
+  const { entry, isPersisted, conversationId } = props;
+  if (
+    !isPersisted &&
+    conversationId &&
+    getArg<string>(entry, "key") === WORKING_DOCUMENT_CONTEXT_KEY
+  ) {
+    return <WorkingDocDiffInline {...props} />;
+  }
+  return <CtxPatchConfirmation {...props} />;
+};
+
+const CtxPatchConfirmation: React.FC<Props> = ({
   entry,
   onOpenOverlay,
   toolGroupId,

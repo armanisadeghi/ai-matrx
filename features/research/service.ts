@@ -238,7 +238,10 @@ export async function getSource(
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  return data;
+  // `page_analysis` is raw JSONB on the row but typed `PageAnalysis` on
+  // `ResearchSource`; consumers narrow it via `pageAnalysisFromJson`. Cast
+  // through `unknown` at this single boundary (mirrors the topic path).
+  return data as unknown as ResearchSource;
 }
 
 export async function getSources(
@@ -310,7 +313,9 @@ export async function getSources(
 
     const offset = filters?.offset ?? 0;
     const limit = filters?.limit ?? 50;
-    return rows.slice(offset, offset + limit);
+    // `page_analysis` raw JSONB → `PageAnalysis` on `ResearchSource`; narrowed
+    // by consumers via `pageAnalysisFromJson`. Cast through `unknown` here.
+    return rows.slice(offset, offset + limit) as unknown as ResearchSource[];
   }
 
   // Topic-wide source list: no keyword filter, so use the global search
@@ -346,7 +351,8 @@ export async function getSources(
 
   const { data, error } = await query;
   if (error) throw error;
-  return data ?? [];
+  // See note above: cast the raw rows (JSONB `page_analysis`) to ResearchSource.
+  return (data ?? []) as unknown as ResearchSource[];
 }
 
 export async function updateSource(
@@ -360,7 +366,7 @@ export async function updateSource(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return data as unknown as ResearchSource;
 }
 
 export async function bulkUpdateSources(
@@ -699,7 +705,9 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
     .select("*")
     .eq("topic_id", topicId);
   if (srcErr) throw srcErr;
-  const sources = (srcRows ?? []) as ResearchSource[];
+  // Raw rows carry JSONB `page_analysis`; ResearchSource types it as
+  // PageAnalysis (narrowed by consumers). Cast through `unknown` at the boundary.
+  const sources = (srcRows ?? []) as unknown as ResearchSource[];
 
   // Tags + source⇄tag links
   const { data: tagRows } = await supabase

@@ -28,6 +28,7 @@ import { sourceTypeFromDb } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
+import { SourceVerdictBadge } from "../sources/SourceVerdictBadge";
 import { ColumnFilterMenu, type ColumnFilterOption } from "../sources/ColumnFilterMenu";
 import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -49,6 +50,7 @@ type SortKey =
   | "source"
   | "scrape"
   | "authority"
+  | "verdict"
   | "chars"
   | "analysis"
   | "tags"
@@ -284,6 +286,8 @@ export default function CurationTable() {
             return r.source.scrape_status ?? null;
           case "authority":
             return r.source.authority_score ?? null;
+          case "verdict":
+            return r.source.final_source_score ?? null;
           case "chars":
             return r.charCount ?? null;
           case "analysis":
@@ -561,7 +565,9 @@ export default function CurationTable() {
 
   const sortKey = sort?.key ?? null;
   const sortDir = sort?.dir ?? "asc";
-  const colCount = 9;
+  // 10 columns: select, rank, source, scrape, authority, verdict, chars,
+  // analysis, tags, included. Keep in sync with the header + body rows.
+  const colCount = 10;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -658,6 +664,15 @@ export default function CurationTable() {
                       onSelect={setTierFilter}
                     />
                   </div>
+                </th>
+                <th className="px-2 align-middle whitespace-nowrap">
+                  <SortHeader
+                    label="Verdict"
+                    field="verdict"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
                 <th className="px-2 align-middle whitespace-nowrap text-right">
                   <SortHeader
@@ -872,6 +887,13 @@ function GroupRows({
               ) : (
                 <span className="text-[11px] text-muted-foreground/40">—</span>
               )}
+            </td>
+            <td className="py-1.5 px-2 align-middle">
+              <SourceVerdictBadge
+                finalScore={s.final_source_score}
+                recommendedUse={s.recommended_use}
+                analysisStatus={s.analysis_status}
+              />
             </td>
             <td className="py-1.5 px-2 align-middle text-right text-[11px] tabular-nums whitespace-nowrap text-muted-foreground">
               {fmtInt(r.charCount)}

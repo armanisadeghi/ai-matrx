@@ -61,6 +61,7 @@ import { SourceTagsInline } from "./SourceTagsInline";
 import { AuthorityRankButton } from "./AuthorityRankButton";
 import { AuthorityExportButton } from "./AuthorityExportButton";
 import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { SourceVerdictBadge } from "./SourceVerdictBadge";
 import { ColumnFilterMenu, type ColumnFilterOption } from "./ColumnFilterMenu";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import type { ResearchTag } from "../../types";
@@ -307,8 +308,10 @@ interface SourceRowProps {
 }
 
 /** Column count of the desktop data table — keep in sync with the header +
- *  the body row so the expandable detail row spans the full width. */
-const DESKTOP_COLUMN_COUNT = 9;
+ *  the body row so the expandable detail row spans the full width.
+ *  10 = select, thumbnail, source, authority, verdict, age, scrape, type,
+ *  origin, actions. */
+const DESKTOP_COLUMN_COUNT = 10;
 
 /**
  * Research topics are bounded (tens to a few hundred sources), so we fetch the
@@ -511,6 +514,16 @@ function SourceRow({
           ) : (
             <AuthorityTierBadge score={null} tier={null} showUnranked />
           )}
+        </td>
+
+        {/* Verdict — the post-read bottom-line judgement (final score + use). */}
+        <td className={cn("px-2 py-2.5 w-24 align-top", cellBase)}>
+          <SourceVerdictBadge
+            finalScore={source.final_source_score}
+            recommendedUse={source.recommended_use}
+            analysisStatus={source.analysis_status}
+            showUnanalyzed
+          />
         </td>
 
         {/* Age */}
@@ -1137,6 +1150,16 @@ export default function SourceList() {
                     />
                   </div>
                 </th>
+                {/* Verdict — post-read judgement, server-sortable by final score */}
+                <th className="w-24 px-2 py-2 text-left">
+                  <SortHeader
+                    label="Verdict"
+                    field="final_source_score"
+                    currentSort={activeSort}
+                    currentDir={activeDir}
+                    onSort={handleSort}
+                  />
+                </th>
                 {/* Age — server sort */}
                 <th className="w-16 px-2 py-2 text-left">
                   <SortHeader
@@ -1360,6 +1383,11 @@ export default function SourceList() {
                         reasoning={source.authority_reasoning}
                       />
                     )}
+                    <SourceVerdictBadge
+                      finalScore={source.final_source_score}
+                      recommendedUse={source.recommended_use}
+                      analysisStatus={source.analysis_status}
+                    />
                     {source.page_age && (
                       <span className="text-[10px] text-muted-foreground">
                         {pageAgeDisplay}

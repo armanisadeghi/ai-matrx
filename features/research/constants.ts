@@ -175,21 +175,13 @@ export interface ResearchNavItem {
 export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
   // ── Primary pipeline steps ──────────────────────────────────────────────
   {
+    // The Topic overview now also carries the results showcase (metric tiles,
+    // Top Sources, rich media) under its "Latest Results" summary — the former
+    // standalone /results page was a dead route and has been retired.
     key: "topic",
     label: "Topic",
     icon: "LayoutDashboard",
     href: (id) => `/research/topics/${id}`,
-    group: "primary",
-    mobileVisible: true,
-  },
-  {
-    // Marquee results showcase — rebuilt from the DB so a refresh never loses
-    // it. Uses "Sparkles" (a key present in the sidebar/mobile ICON_MAP); the
-    // sidebar would render no glyph for an unmapped "Trophy".
-    key: "results",
-    label: "Results",
-    icon: "Sparkles",
-    href: (id) => `/research/topics/${id}/results`,
     group: "primary",
     mobileVisible: true,
   },
