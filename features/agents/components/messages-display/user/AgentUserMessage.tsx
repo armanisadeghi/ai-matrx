@@ -49,7 +49,58 @@ import { useContextItemDrawer } from "@/features/agents/components/context-items
 import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
+import type { ModelContextInputItem } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import type { RootState } from "@/lib/redux/store";
+
+/**
+ * Friendly label for a user-attached `input_items[].type`. These types
+ * (`input_table`, `input_notes`, …) are NOT part of the `ContextObjectType`
+ * union, so they get a hand-rolled humanized name; falls through to the raw
+ * type for anything unmapped.
+ */
+function humanizeType(type: string): string {
+  switch (type) {
+    case "input_table":
+      return "Table";
+    case "input_notes":
+      return "Note";
+    case "input_workbook":
+      return "Workbook";
+    case "input_webpage":
+      return "Webpage";
+    case "input_document":
+    case "document":
+      return "File";
+    case "image":
+      return "Image";
+    case "audio":
+      return "Audio";
+    case "video":
+      return "Video";
+    default:
+      return type;
+  }
+}
+
+/**
+ * Map a user-attached `input_items` entry to a context-chip entry. The `type`
+ * values here are outside the `ContextObjectType` union, so we cast — every
+ * downstream consumer (ContextSlotChip) already falls back gracefully on an
+ * unknown type, rendering the entry's own `label`.
+ */
+function inputItemToEntry(
+  it: ModelContextInputItem,
+  idx: number,
+): InstanceContextEntry {
+  return {
+    key: `${it.type}:${it.id ?? it.ids?.[0] ?? it.file_id ?? idx}`,
+    value: it.label ?? it.type,
+    slotMatched: false,
+    type: it.type as ContextObjectType,
+    label: it.label ?? humanizeType(it.type),
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -417,10 +468,47 @@ export function AgentUserMessage({
 
   // Per-turn context this message actually carried, frozen at submit. NEVER
   // read live conversation context for a historical bubble — that's the
-  // "context indicator is lying" bug. Absent snapshot → render no chips.
-  const contextSnapshot = Array.isArray(metadata?.context_snapshot)
-    ? (metadata?.context_snapshot as InstanceContextEntry[])
-    : null;
+  // "context indicator is lying" bug.
+  //
+  // Two sources, in priority order:
+  //   1. `record.modelContext` — the structured context the server persisted on
+  //      the cx_message row. Authoritative; survives reload. Wins when present.
+  //      It carries TWO chip-worthy lists: `items` (ambient / slot context the
+  //      agent pulled in) and `input_items` (the resources the USER attached —
+  //      tables, notes, workbooks, webpages, files). We render ambient items
+  //      first, then attached input items.
+  //   2. `metadata.context_snapshot` — the optimistic snapshot frozen at submit
+  //      by execute-instance.thunk. Covers the live, pre-reload moment before
+  //      the server record lands. Used ONLY when `modelContext` is entirely
+  //      absent (otherwise the authoritative record always wins).
+  // Absent both → render no chips (honest).
+  const modelContext = record?.modelContext;
+  const ambientEntries: InstanceContextEntry[] = (modelContext?.items ?? []).map(
+    (item) => ({
+      key: item.key,
+      // Inline items carry their literal `value`. DEFERRED items (large /
+      // remote context) have no `value` — only a `size_hint`. Without a
+      // fallback, ContextSlotChipStrip's empty-value filter drops them, so a
+      // turn whose context was entirely deferred would render ZERO chips.
+      // Fall back to the size hint (then label) so deferred context still
+      // shows a chip describing its size.
+      value: item.value ?? item.size_hint ?? item.label,
+      slotMatched: item.slot_matched,
+      type: item.type as InstanceContextEntry["type"],
+      label: item.label,
+    }),
+  );
+  const attachedEntries: InstanceContextEntry[] = (
+    modelContext?.input_items ?? []
+  ).map((it, idx) => inputItemToEntry(it, idx));
+
+  const contextSnapshot: InstanceContextEntry[] | null = modelContext
+    ? ambientEntries.length > 0 || attachedEntries.length > 0
+      ? [...ambientEntries, ...attachedEntries]
+      : null
+    : Array.isArray(metadata?.context_snapshot)
+      ? (metadata?.context_snapshot as InstanceContextEntry[])
+      : null;
 
   if (!hasContent) return null;
 
@@ -464,13 +552,13 @@ export function AgentUserMessage({
           )}
 
           {/* Context slot chips — the TRUE per-turn context this message
-              carried, read ONLY from this message's own `context_snapshot`
-              metadata (frozen at submit by execute-instance.thunk). We never
-              fall back to the live conversation context here: doing so made
-              every historical bubble lie, showing the current context as if
-              the model had seen it. No snapshot → show nothing (honest).
-              Backend follow-up: persist `context_snapshot` onto cx_message.
-              metadata so it survives reload (see FEATURE.md). */}
+              carried, read ONLY from this message's own data: the server's
+              `model_context` column (authoritative; wins on reload) or, before
+              that record lands, the optimistic `metadata.context_snapshot`
+              frozen at submit by execute-instance.thunk. We never fall back to
+              the live conversation context here: doing so made every historical
+              bubble lie, showing the current context as if the model had seen
+              it. Neither source → show nothing (honest). */}
           {contextSnapshot && contextSnapshot.length > 0 && (
             <ContextSlotChipStrip
               conversationId={conversationId}

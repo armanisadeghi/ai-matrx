@@ -1,7 +1,7 @@
 # Context Record Spec — durable, per-turn "what context did the model actually receive"
 
-**Status:** PROPOSED — ready to build. **Owner of the write path:** aidream (Python backend). **Owner of the read/display path:** matrx-frontend.
-**Origin:** [`KNOWN_DEFECTS.md` D11](../../../KNOWN_DEFECTS.md). The frontend already freezes a client-side `context_snapshot` at submit; this spec is the durable, server-authoritative version it folds into.
+**Status:** ✅ **IMPLEMENTED 2026-06-20 — but NOT as specced below.** The durable record was built as **typed columns on `cx_message`** (`tools_on_call`, `model_context`, `error`, `voice`), NOT the `cx_message_context_snapshot` table this doc proposed (which predated the discovery that `cx_request_snapshot` already captures the full wire payload — a second blob table was redundant). The context chips now read **`cx_message.model_context.items`** (mapped to `InstanceContextEntry` in `AgentUserMessage.tsx`), no longer `metadata.context_snapshot` (kept only as the optimistic in-session fallback). Authoritative impl, column shapes, and the post-deploy data migration: **aidream `docs/cx_chat/CX_MESSAGE_CALL_RECORD.md`**. The sections below are retained for design rationale only — do not build from them.
+**Origin:** [`KNOWN_DEFECTS.md` D11](../../../KNOWN_DEFECTS.md). The frontend froze a client-side `context_snapshot` at submit; the server now owns the durable record via `model_context`.
 
 ---
 
@@ -97,6 +97,36 @@ RLS: same ownership rule as `cx_message` (user owns rows for conversations they 
 
 ---
 
+## 3c. Reconciliation with the backend's existing `context_manifest` (DISCOVERED 2026-06-19)
+
+The backend already has code that writes `metadata.context_manifest = { rendered, inline_keys, deferred_keys }` — a different key and a different shape than the frontend's `metadata.context_snapshot: InstanceContextEntry[]`. **Important:** as of 2026-06-19 the manifest is **code-only — it appears in ZERO production rows** (scanned `cx_message` / `cx_request` / `cx_user_request` / `cx_conversation` for `context_manifest` / `inline_keys` / `deferred_keys`: 0). Whatever ships must be verified to actually land in `cx_message.metadata` live.
+
+**The FE's exact expected shape (the contract — do not change FE to match the manifest):**
+
+```ts
+// cx_message.metadata.context_snapshot : InstanceContextEntry[]
+interface InstanceContextEntry {
+  key: string;
+  value: unknown;
+  slotMatched: boolean;                 // matched an agent-defined context slot?
+  type: ContextObjectType;              // union below
+  label: string;
+}
+type ContextObjectType =
+  | "text" | "file_url" | "json" | "db_ref"
+  | "user" | "org" | "workspace" | "project" | "task" | "variable";
+```
+
+`context_manifest` (keys + rendered blob) lacks the per-entry `value` / `type` / `label` the chip UI requires, so having the FE read the manifest forces a lossy translation and discards the clean D11 path.
+
+**Recommendation — backend emits BOTH keys on the user `cx_message`; they're different layers, not competitors:**
+- Keep `context_manifest` for rich audit (rendered text, inline/deferred split) → feeds the Context Inspector + the snapshot table (§3b).
+- Additionally derive `context_snapshot` in the FE shape above (trivial from what the manifest already computes). For each key in `inline_keys ∪ deferred_keys`: `{ key, value, slotMatched: key∈slot keys, type: slot.type ?? infer(value), label: slot.label ?? key }`. Inference rule (FE's): string→`"text"`, URL string→`"file_url"`, object/array→`"json"`. Prefer the slot's declared type/label when slot-matched (the backend knows this authoritatively; the FE only infers).
+
+Result: one backend source of truth, the FE chips light up on reload with **zero frontend change**.
+
+---
+
 ## 4. When to write it (backend)
 
 Write at the single point where context is resolved for a turn — `resolve_full_context` (or wherever the assembled payload is finalized before the provider call), inside the same transaction that reserves the user `cx_message`:
@@ -142,4 +172,5 @@ The frontend D11 freeze stays as the **optimistic, in-session** source (instant 
 
 ## Change Log
 
+- `2026-06-19` — claude: added §3c reconciling the backend's existing (code-only, 0 prod rows) `context_manifest` with the FE's `context_snapshot: InstanceContextEntry[]` — recommend the backend emit both keys; derive the snapshot from the manifest's `inline_keys`/`deferred_keys`.
 - `2026-06-19` — claude: initial spec. Written after confirming live in Matrx Main that no per-turn (or per-conversation) record of the assembled context exists anywhere, and that the two purpose-built tables (`ctx_context_access_log`, `ctx_user_active_context`) are empty/unwired. Folds in the D11 frontend snapshot as the optimistic layer.

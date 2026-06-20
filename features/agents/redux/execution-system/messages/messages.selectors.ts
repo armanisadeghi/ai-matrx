@@ -277,14 +277,17 @@ export function extractFlatText(record: MessageRecord | undefined): string {
 
 /**
  * True when a message record represents a FAILED turn. The backend persists a
- * failed assistant turn as a real `cx_message` with `status='failed'` and
- * `metadata.failed===true` (kept in history, hidden from the model). Both the
- * transcript grouping and the message renderer read this so live and reloaded
- * failures look identical. See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
+ * failed assistant turn as a real `cx_message` with `status='failed'` and a
+ * structured top-level `error` jsonb (PRESENCE of `error` means failure). The
+ * legacy `metadata.failed===true` signal is kept as a fallback for historical /
+ * in-flight rows. Both the transcript grouping and the message renderer read
+ * this so live and reloaded failures look identical. See
+ * CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
  */
 export function isFailedRecord(record: MessageRecord | undefined): boolean {
   if (!record) return false;
   if (record.status === "failed") return true;
+  if (record.error) return true;
   const md = record.metadata;
   return (
     !!md &&
@@ -295,16 +298,19 @@ export function isFailedRecord(record: MessageRecord | undefined): boolean {
 }
 
 /**
- * The persisted error text for a failed turn. The backend stores it on
- * `metadata.error`; the message `content` is also a single text block holding
- * the same error, so we fall back to the flat text. Undefined when neither
- * exists (e.g. an in-session failure where only the active request carries the
- * error — the renderer reads that separately).
+ * The persisted error text for a failed turn. Prefers the structured top-level
+ * `error.message`; falls back to the legacy `metadata.error` string, then to
+ * the flat content text (the message `content` is also a single text block
+ * holding the same error). Undefined when none exists (e.g. an in-session
+ * failure where only the active request carries the error — the renderer reads
+ * that separately).
  */
 export function extractRecordError(
   record: MessageRecord | undefined,
 ): string | undefined {
   if (!record) return undefined;
+  const structured = record.error?.message;
+  if (typeof structured === "string" && structured.length > 0) return structured;
   const md = record.metadata;
   if (md && typeof md === "object" && !Array.isArray(md)) {
     const err = (md as Record<string, unknown>).error;

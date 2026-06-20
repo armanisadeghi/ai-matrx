@@ -7,14 +7,18 @@ import {
   type DimSource,
   type ResolvedDimensions,
 } from "./mediaDimensions";
-// YouTube-link detection — a YouTube URL is always a playable video regardless
-// of the row's `media_type`, so it must reach the video bucket (→ embed), never
-// the image tiers where it would render as a broken <img>.
-import { youtubeId } from "@/lib/media/youtube";
+// YouTube-link detection — embeddable video URLs must reach the video bucket;
+// channel/profile URLs go to `youtubeChannels` instead.
+import { isYouTubeChannelUrl, youtubeId } from "@/lib/media/youtube";
 
-/** True when the row's URL is a YouTube video link, whatever its media_type. */
+/** True when the row's URL is an embeddable YouTube video link. */
 export function isYouTubeMedia(item: ResearchMedia): boolean {
   return youtubeId(item.url) !== null;
+}
+
+/** True when the row's URL is a YouTube channel or profile page. */
+export function isYouTubeChannelMedia(item: ResearchMedia): boolean {
+  return isYouTubeChannelUrl(item.url);
 }
 
 export const ICON_MAX_DIM = 64;
@@ -250,6 +254,7 @@ export interface MediaBuckets {
   // Non-image resources — no pixel size, so they get their own groups instead
   // of the image size/aspect tiers (PDFs/videos used to land in "unknown").
   videos: ResearchMedia[];
+  youtubeChannels: ResearchMedia[];
   documents: ResearchMedia[];
   audio: ResearchMedia[];
 }
@@ -263,15 +268,19 @@ export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
     graphics: [],
     icons: [],
     videos: [],
+    youtubeChannels: [],
     documents: [],
     audio: [],
   };
 
   for (const item of items) {
-    // Non-image resources (PDFs, videos incl. YouTube links, audio) carry no
-    // intrinsic dimensions — route them to dedicated buckets, never the
-    // image size/aspect tiers. A YouTube URL is a video even if the row was
-    // stored as some other media_type, so check it first.
+    // YouTube channel/profile pages — not embeddable; own bucket.
+    if (isYouTubeChannelMedia(item)) {
+      buckets.youtubeChannels.push(item);
+      continue;
+    }
+
+    // Embeddable videos (YouTube watch/embed, Vimeo, direct files, …).
     if (item.media_type === "video" || isYouTubeMedia(item)) {
       buckets.videos.push(item);
       continue;

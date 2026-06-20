@@ -24,6 +24,7 @@ import {
   ExternalLink,
   Download,
   Loader2,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,11 @@ import {
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
 import { uploadFileWithProgress } from "@/features/files/api/files";
-import YouTubeEmbed from "@/features/files/blocks/youtube/YouTubeEmbed";
-import { parseYouTubeUrl, youTubeThumbnail } from "@/lib/media/youtube";
+import {
+  parseYouTubeUrl,
+  youTubeChannelLabel,
+  youTubeEmbedUrl,
+} from "@/lib/media/youtube";
 
 const TYPE_ICONS = {
   image: ImageIcon,
@@ -297,6 +301,7 @@ export default function MediaGallery() {
             buckets.graphics.length === 0 &&
             buckets.icons.length === 0 &&
             buckets.videos.length === 0 &&
+            buckets.youtubeChannels.length === 0 &&
             buckets.documents.length === 0 &&
             buckets.audio.length === 0 && (
               <div className="text-[10px] text-muted-foreground px-1">
@@ -312,6 +317,12 @@ export default function MediaGallery() {
           {buckets.icons.length > 0 && (
             <IconsSection
               items={buckets.icons}
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {buckets.youtubeChannels.length > 0 && (
+            <YouTubeChannelsSection
+              items={buckets.youtubeChannels}
               onToggleRelevance={handleToggleRelevance}
             />
           )}
@@ -748,15 +759,7 @@ function ResourceSection({
 
 const DIRECT_VIDEO_RE = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i;
 
-/**
- * A YouTube row plays via the shared `YouTubeEmbed` facade (poster + click-to-
- * play, no iframe until the user hits play). Detected by URL — NOT by
- * `media_type` — so a YouTube link captured as a generic resource still embeds
- * rather than rendering as a bare outbound link.
- *
- * A poster always shows: server `thumbnail_url` first, else YouTube's derived
- * `hqdefault` thumb.
- */
+/** Embeddable YouTube video — iframe player loads inline (no outbound redirect). */
 function YouTubeVideoCard({
   item,
   videoId,
@@ -768,9 +771,8 @@ function YouTubeVideoCard({
   start?: number;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
-  const label = item.alt_text || item.caption || hostLabel(item.url) || item.url;
-  const poster =
-    item.thumbnail_url || youTubeThumbnail(videoId, "hq");
+  const label =
+    item.alt_text || item.caption || hostLabel(item.url) || item.url;
 
   return (
     <div
@@ -779,13 +781,34 @@ function YouTubeVideoCard({
         item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
       )}
     >
-      <YouTubeEmbed
-        videoId={videoId}
-        start={start}
-        title={label}
-        poster={poster}
-        className="my-0 rounded-none border-0"
-      />
+      <div className="relative aspect-video w-full bg-black">
+        <iframe
+          src={youTubeEmbedUrl(videoId, { start })}
+          title={label}
+          className="absolute inset-0 h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
+      <div className="p-1.5 flex items-center justify-between gap-1">
+        <p
+          className="text-[10px] truncate text-foreground/80 flex-1"
+          title={label}
+        >
+          {label}
+        </p>
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-muted-foreground/50 hover:text-foreground transition-colors"
+          title="Open on YouTube"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
       <Button
         variant={item.is_relevant ? "default" : "outline"}
         size="icon"
@@ -802,6 +825,107 @@ function YouTubeVideoCard({
   );
 }
 
+/** YouTube channel/profile — tile card, opens on YouTube (not embeddable). */
+function YouTubeChannelCard({
+  item,
+  onToggleRelevance,
+}: {
+  item: ResearchMedia;
+  onToggleRelevance: (item: ResearchMedia) => void;
+}) {
+  const handle = youTubeChannelLabel(item.url);
+  const title = (item.alt_text || item.caption || "").trim() || handle;
+  const pathLabel = (() => {
+    try {
+      return decodeURIComponent(new URL(item.url).pathname.replace(/^\//, ""));
+    } catch {
+      return handle;
+    }
+  })();
+
+  return (
+    <div
+      className={cn(
+        "group relative flex flex-col rounded-xl border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
+      )}
+    >
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-1 flex-col"
+        title={title}
+      >
+        <div className="flex items-center justify-center bg-muted/40 px-3 py-4">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-600/10 ring-1 ring-red-600/15">
+            <Users className="h-5 w-5 text-red-600/80 dark:text-red-400/90" />
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col gap-0.5 p-2.5 pt-2">
+          <p
+            className="text-[11px] font-medium text-foreground/90 line-clamp-2 leading-snug"
+            title={title}
+          >
+            {title}
+          </p>
+          <p
+            className="text-[9px] text-muted-foreground/65 truncate"
+            title={pathLabel}
+          >
+            {pathLabel}
+          </p>
+        </div>
+      </a>
+      <div className="border-t border-border/40 px-2.5 py-1.5">
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Open on YouTube
+        </a>
+      </div>
+      <Button
+        variant={item.is_relevant ? "default" : "outline"}
+        size="icon"
+        className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity shadow-sm"
+        onClick={() => onToggleRelevance(item)}
+      >
+        {item.is_relevant ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <X className="h-3 w-3" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function YouTubeChannelsSection({ items, onToggleRelevance }: SectionProps) {
+  return (
+    <section className="space-y-2">
+      <SectionHeader
+        icon={Users}
+        title="YouTube Channels"
+        count={items.length}
+        description="Creator pages linked from sources"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+        {items.map((item) => (
+          <YouTubeChannelCard
+            key={item.id}
+            item={item}
+            onToggleRelevance={onToggleRelevance}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** Videos play INSIDE the app — YouTube/Vimeo embed, or an inline <video> for a
  * direct file. A poster (server thumbnail or a derived YouTube thumb) shows
  * until the user hits play, so we never load N iframes at once. */
@@ -814,8 +938,7 @@ function VideoCard({
 }) {
   const [playing, setPlaying] = useState(false);
 
-  // YouTube is detected by URL (not media_type) so a YouTube link captured as
-  // any media type still embeds inline via the shared facade.
+  // Embeddable YouTube watch/embed/shorts URLs → inline iframe player.
   const yt = parseYouTubeUrl(item.url);
   if (yt) {
     return (
@@ -832,7 +955,8 @@ function VideoCard({
   const poster = videoPoster(item);
   const isDirectFile = DIRECT_VIDEO_RE.test(item.url);
   const canPlayInApp = !!embed || isDirectFile;
-  const label = item.alt_text || item.caption || hostLabel(item.url) || item.url;
+  const label =
+    item.alt_text || item.caption || hostLabel(item.url) || item.url;
 
   return (
     <div
@@ -888,7 +1012,10 @@ function VideoCard({
         )}
       </div>
       <div className="p-1.5 flex items-center justify-between gap-1">
-        <p className="text-[10px] truncate text-foreground/80 flex-1" title={label}>
+        <p
+          className="text-[10px] truncate text-foreground/80 flex-1"
+          title={label}
+        >
           {label}
         </p>
         <a
@@ -925,7 +1052,7 @@ function VideoSection({ items, onToggleRelevance }: SectionProps) {
         icon={Video}
         title="Videos"
         count={items.length}
-        description="Plays in-app — YouTube/Vimeo embeds and video files"
+        description="Embeddable videos play inline via iframe"
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {items.map((item) => (
@@ -940,7 +1067,9 @@ function VideoSection({ items, onToggleRelevance }: SectionProps) {
   );
 }
 
-function docIcon(item: ResearchMedia): React.ComponentType<{ className?: string }> {
+function docIcon(
+  item: ResearchMedia,
+): React.ComponentType<{ className?: string }> {
   const ext = fileExt(item.url);
   const kind = resourceKind(item);
   if (ext === "pdf" || kind === "pdf") return FileText;

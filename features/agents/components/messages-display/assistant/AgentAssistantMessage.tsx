@@ -473,7 +473,7 @@ export function AgentAssistantMessage({
     >
       {bufferStream && isStreamActive && !failed ? (
         <div className="flex items-center justify-center py-12">
-          <BreathingOrb size={32} />
+          <BreathingOrb size={48} />
         </div>
       ) : (
         <>
@@ -498,7 +498,7 @@ export function AgentAssistantMessage({
           {isStreamActive &&
             !failed &&
             (phase === "text_streaming" || phase === "interstitial") && (
-              <BreathingOrb className="mt-1.5" size={24} />
+              <BreathingOrb className="mt-1.5" size={48} />
             )}
         </>
       )}

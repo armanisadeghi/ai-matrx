@@ -14,7 +14,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
-import type { MessageRecord } from "../messages/messages.slice";
+import type {
+  MessageRecord,
+  ToolOnCall,
+  ModelContext,
+  MessageError,
+} from "../messages/messages.slice";
 import type {
   CxUserRequestRecord,
   CxRequestRecord,
@@ -94,6 +99,12 @@ export interface CxMessageRow {
   metadata: Json;
   created_at: string;
   deleted_at: string | null;
+  // Per-turn structured columns (jsonb, nullable). The bundle RPC returns these
+  // via `to_jsonb`, so they arrive as already-parsed JSON values.
+  tools_on_call: Json | null;
+  model_context: Json | null;
+  error: Json | null;
+  voice: Json | null;
 }
 
 export interface CxToolCallRow {
@@ -248,11 +259,16 @@ export async function fetchConversationBundle(
 
   // Fallback. Runs when the RPC isn't deployed or errors transiently.
   // Shape mirrors the RPC contract so downstream code is uniform.
+  // Mirror the RPC's visibility filter: only user-visible messages reach the
+  // client. Without this, the fallback path (RPC unavailable) would leak
+  // hidden rows (e.g. condensation summaries, secret agent_template scaffolding
+  // flagged is_visible_to_user=false) that the RPC correctly excludes.
   const messageQuery = supabase
     .from("cx_message")
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
+    .eq("is_visible_to_user", true)
     .order("position", { ascending: false })
     .limit(Math.max(1, Math.min(messageLimit, 200)));
   if (beforePosition != null) {
@@ -341,6 +357,7 @@ export async function fetchConversationBundle(
       .select("id", { count: "exact", head: true })
       .eq("conversation_id", conversationId)
       .is("deleted_at", null)
+      .eq("is_visible_to_user", true)
       .lt("position", oldestPosition);
     hasMore = (olderCheck.count ?? 0) > 0;
   }
@@ -384,6 +401,12 @@ export function messageRowToRecord(row: CxMessageRow): MessageRecord {
     metadata: row.metadata,
     createdAt: row.created_at,
     deletedAt: row.deleted_at,
+    // Per-turn structured columns — copied through verbatim. The RPC already
+    // returns parsed JSON; we narrow each to its typed view at the boundary.
+    toolsOnCall: (row.tools_on_call as ToolOnCall[] | null) ?? null,
+    modelContext: (row.model_context as ModelContext | null) ?? null,
+    error: (row.error as MessageError | null) ?? null,
+    voice: row.voice,
   };
 }
 

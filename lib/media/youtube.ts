@@ -98,6 +98,81 @@ export function youtubeId(url: string): string | null {
   return parseYouTubeUrl(url)?.videoId ?? null;
 }
 
+/** YouTube site paths that are never channel/profile links. */
+const YOUTUBE_NON_CHANNEL_SEGMENTS = new Set([
+  "watch",
+  "embed",
+  "shorts",
+  "v",
+  "live",
+  "results",
+  "feed",
+  "playlist",
+  "account",
+  "about",
+  "trends",
+  "gaming",
+  "music",
+  "news",
+  "movies",
+  "premium",
+  "redirect",
+  "attribution_link",
+]);
+
+/**
+ * True when the URL points at a YouTube channel or profile page — not an
+ * embeddable video. These must open on YouTube; they cannot be iframe-embedded.
+ */
+export function isYouTubeChannelUrl(url: string): boolean {
+  if (parseYouTubeUrl(url)) return false;
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (host === "youtu.be") return false;
+    if (!host.endsWith("youtube.com") && host !== "youtube-nocookie.com") {
+      return false;
+    }
+
+    const segments = u.pathname.split("/").filter(Boolean);
+    if (segments.length === 0) return true;
+
+    const first = segments[0].toLowerCase();
+    if (YOUTUBE_NON_CHANNEL_SEGMENTS.has(first)) return false;
+
+    if (first === "user" || first === "channel" || first === "c") return true;
+    if (first.startsWith("@")) return true;
+
+    // Legacy custom URLs: youtube.com/ChannelName
+    return segments.length === 1;
+  } catch {
+    return false;
+  }
+}
+
+/** A readable channel/handle label parsed from a YouTube channel URL. */
+export function youTubeChannelLabel(url: string): string {
+  try {
+    const u = new URL(url.trim());
+    const segments = u.pathname.split("/").filter(Boolean);
+    if (segments.length === 0) return "YouTube";
+
+    const first = segments[0];
+    const firstLower = first.toLowerCase();
+    if (first.startsWith("@")) return first;
+    if (
+      firstLower === "user" ||
+      firstLower === "channel" ||
+      firstLower === "c"
+    ) {
+      return segments[1] ?? first;
+    }
+    return first;
+  } catch {
+    return "YouTube channel";
+  }
+}
+
 /** True when a thumbnail URL points at YouTube's image host (img.youtube.com / i.ytimg.com). */
 export function isYouTubeThumbnailUrl(url: string): boolean {
   try {

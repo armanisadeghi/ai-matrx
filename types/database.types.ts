@@ -8009,16 +8009,20 @@ export type Database = {
           conversation_id: string
           created_at: string
           deleted_at: string | null
+          error: Json | null
           id: string
           is_visible_to_model: boolean
           is_visible_to_user: boolean
           metadata: Json
+          model_context: Json | null
           position: number
           role: string
           source: string
           status: string
           tool_results_chars: number
+          tools_on_call: Json | null
           user_content: Json | null
+          voice: Json | null
         }
         Insert: {
           agent_id?: string | null
@@ -8028,16 +8032,20 @@ export type Database = {
           conversation_id: string
           created_at?: string
           deleted_at?: string | null
+          error?: Json | null
           id?: string
           is_visible_to_model?: boolean
           is_visible_to_user?: boolean
           metadata?: Json
+          model_context?: Json | null
           position: number
           role: string
           source?: string
           status?: string
           tool_results_chars?: number
+          tools_on_call?: Json | null
           user_content?: Json | null
+          voice?: Json | null
         }
         Update: {
           agent_id?: string | null
@@ -8047,16 +8055,20 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           deleted_at?: string | null
+          error?: Json | null
           id?: string
           is_visible_to_model?: boolean
           is_visible_to_user?: boolean
           metadata?: Json
+          model_context?: Json | null
           position?: number
           role?: string
           source?: string
           status?: string
           tool_results_chars?: number
+          tools_on_call?: Json | null
           user_content?: Json | null
+          voice?: Json | null
         }
         Relationships: [
           {

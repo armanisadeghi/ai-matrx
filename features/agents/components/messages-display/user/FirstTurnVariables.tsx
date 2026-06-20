@@ -30,17 +30,22 @@ interface FirstTurnVariablesProps {
   conversationId: string;
 }
 
-export function FirstTurnVariables({ conversationId }: FirstTurnVariablesProps) {
+export function FirstTurnVariables({
+  conversationId,
+}: FirstTurnVariablesProps) {
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
 
   const lines = useMemo(
     () =>
       Object.entries(userValues)
+        // System-reserved variables (wrapped in double underscores, e.g.
+        // `__agent_user_input__`) are not user-authored launch values — they
+        // mirror the message body itself. Rendering them here duplicated the
+        // user's text and printed a bogus "Agent User Input:" label above it.
+        .filter(([key]) => !/^__.*__$/.test(key))
         .filter(
           ([, v]) =>
-            v != null &&
-            v !== "" &&
-            !(Array.isArray(v) && v.length === 0),
+            v != null && v !== "" && !(Array.isArray(v) && v.length === 0),
         )
         .map(([key, value]) => ({
           key,
@@ -56,7 +61,10 @@ export function FirstTurnVariables({ conversationId }: FirstTurnVariablesProps) 
   return (
     <div className="flex flex-col gap-0.5 border-b border-border/60 pb-1.5 mb-0.5">
       {lines.map((l) => (
-        <div key={l.key} className="text-[11px] leading-snug text-muted-foreground">
+        <div
+          key={l.key}
+          className="text-[11px] leading-snug text-muted-foreground"
+        >
           <span className="font-medium text-foreground/70">{l.label}:</span>{" "}
           {l.value}
         </div>

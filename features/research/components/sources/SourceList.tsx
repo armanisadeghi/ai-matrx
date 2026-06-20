@@ -26,6 +26,7 @@ import {
   ArrowDown,
   Loader2,
   Globe,
+  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -86,6 +87,7 @@ import {
   ORIGIN_CONFIG,
 } from "../../constants";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 
 function formatPageAge(pageAge: string | null): {
   display: string;
@@ -205,6 +207,91 @@ function ScrapeOutcomeCell({ status }: { status: string | null | undefined }) {
 }
 
 /**
+ * The "Analysis" column shows the ANALYZE outcome — the per-page read. The state
+ * is derived from the row itself (`page_analysis` + `analysis_status`), so it's
+ * always truthful without a second fetch:
+ *  - "Analyzed"     → a page_analysis exists, or analysis_status is a real
+ *                     (non-error) classification. Quiet check, restrained blue.
+ *  - "Failed"       → analysis_status is `error` / `invalid`. MUTED AMBER, never
+ *                     red — a failed read is a soft warning, not an alarm.
+ *  - "Not analyzed" → never analyzed (no page_analysis, null status). Muted dot.
+ * Mirrors the Scrape column's restrained dot + plain-label look so the two read
+ * as a matched pair.
+ */
+const ANALYSIS_FAILED_STATUSES = new Set(["error", "invalid"]);
+
+type AnalysisState = "analyzed" | "failed" | "none";
+
+function analysisStateFor(source: ResearchSource): AnalysisState {
+  const status = source.analysis_status;
+  if (status && ANALYSIS_FAILED_STATUSES.has(status)) return "failed";
+  if (source.page_analysis != null) return "analyzed";
+  if (status) return "analyzed";
+  return "none";
+}
+
+function AnalysisOutcomeCell({ source }: { source: ResearchSource }) {
+  const state = analysisStateFor(source);
+  if (state === "analyzed") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+        <CheckCircle2 className="h-3 w-3 shrink-0 text-blue-500/80" />
+        Analyzed
+      </span>
+    );
+  }
+  if (state === "failed") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-600/90 dark:text-amber-400/90">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500/80" />
+        Failed
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+      Not analyzed
+    </span>
+  );
+}
+
+/**
+ * The always-visible inline action button shared by the Scrape + Analysis
+ * columns — the two PRIMARY actions on this page. Restrained outline button,
+ * matched sizing for both columns, with an in-flight spinner that also disables.
+ * `[status] [▶ button]` is the matched pair; this is the button half.
+ */
+function ActionTrigger({
+  label,
+  busy,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-6 px-1.5 gap-1 text-[10px] font-medium"
+      disabled={busy || disabled}
+      onClick={onClick}
+    >
+      {busy ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Play className="h-2.5 w-2.5" />
+      )}
+      {label}
+    </Button>
+  );
+}
+
+/**
  * Comparator for the client-only sort axes. Returns a stable ordering with
  * un-set values pushed to the end regardless of direction (matches the
  * server's `nullsFirst: false` convention). `dir` is +1 asc / -1 desc.
@@ -295,6 +382,7 @@ interface SourceRowProps {
   topicId: string;
   selected: boolean;
   scraping: boolean;
+  analyzing: boolean;
   navigating: boolean;
   anyNavigating: boolean;
   tags: ResearchTag[];
@@ -304,14 +392,15 @@ interface SourceRowProps {
   onSelect: (id: string) => void;
   onToggleInclude: (source: ResearchSource) => void;
   onScrape: (source: ResearchSource, e: React.MouseEvent) => void;
+  onAnalyze: (source: ResearchSource, e: React.MouseEvent) => void;
   onNavigate: (id: string, e?: React.MouseEvent) => void;
 }
 
 /** Column count of the desktop data table — keep in sync with the header +
  *  the body row so the expandable detail row spans the full width.
- *  10 = select, thumbnail, source, authority, verdict, age, scrape, type,
- *  origin, actions. */
-const DESKTOP_COLUMN_COUNT = 10;
+ *  11 = select, thumbnail, source, authority, verdict, age, scrape, analysis,
+ *  type, origin, actions. */
+const DESKTOP_COLUMN_COUNT = 11;
 
 /**
  * Research topics are bounded (tens to a few hundred sources), so we fetch the
@@ -334,6 +423,7 @@ function SourceRow({
   topicId,
   selected,
   scraping,
+  analyzing,
   navigating,
   anyNavigating,
   tags,
@@ -343,6 +433,7 @@ function SourceRow({
   onSelect,
   onToggleInclude,
   onScrape,
+  onAnalyze,
   onNavigate,
 }: SourceRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -435,29 +526,13 @@ function SourceRow({
                 {source.description}
               </div>
             )}
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              {source.hostname && (
-                <span className="text-[11px] text-muted-foreground truncate max-w-48">
+            {source.hostname && (
+              <div className="mt-1.5">
+                <span className="text-[11px] text-muted-foreground truncate max-w-48 inline-block">
                   {source.hostname}
                 </span>
-              )}
-              {needsScrape && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-5 px-1.5 gap-1 text-[10px]"
-                  disabled={scraping || anyNavigating}
-                  onClick={(e) => onScrape(source, e)}
-                >
-                  {scraping ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Download className="h-3 w-3" />
-                  )}
-                  {source.scrape_status === "pending" ? "Scrape" : "Re-scrape"}
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
             <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
               <SourceTagsInline
                 sourceId={source.id}
@@ -533,9 +608,49 @@ function SourceRow({
           </span>
         </td>
 
-        {/* Scrape — the SCRAPE outcome, relabeled to say what happened */}
-        <td className={cn("px-2 py-2.5 w-24 align-top", cellBase)}>
-          <ScrapeOutcomeCell status={source.scrape_status} />
+        {/* Scrape — status + an ALWAYS-VISIBLE trigger ([status] [▶ button]).
+            One of the two PRIMARY actions on the page: never buried in the row
+            dropdown. "Scrape" when pending/never-scraped, "Re-scrape" otherwise. */}
+        <td
+          className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-start gap-1.5">
+            <ScrapeOutcomeCell status={source.scrape_status} />
+            <ActionTrigger
+              label={needsScrape ? "Scrape" : "Re-scrape"}
+              busy={scraping}
+              disabled={anyNavigating}
+              onClick={(e) => onScrape(source, e)}
+            />
+          </div>
+        </td>
+
+        {/* Analysis — status + an ALWAYS-VISIBLE trigger, the matched pair to
+            Scrape and the page's other PRIMARY action. "Analyze" when not yet
+            analyzed, "Re-analyze" once analyzed/failed. */}
+        <td
+          className={cn("px-2 py-2.5 w-32 align-top", cellBase)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-start gap-1.5">
+            {analyzing ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+                <Loader2 className="h-3 w-3 shrink-0 animate-spin text-blue-500/80" />
+                Analyzing…
+              </span>
+            ) : (
+              <AnalysisOutcomeCell source={source} />
+            )}
+            <ActionTrigger
+              label={
+                analysisStateFor(source) === "none" ? "Analyze" : "Re-analyze"
+              }
+              busy={analyzing}
+              disabled={anyNavigating}
+              onClick={(e) => onAnalyze(source, e)}
+            />
+          </div>
         </td>
 
         {/* Type — de-emphasized, pushed to the right (almost always "web") */}
@@ -601,18 +716,24 @@ function SourceRow({
                   <DropdownMenuItem onClick={() => onToggleInclude(source)}>
                     {source.is_included ? "Exclude" : "Include"}
                   </DropdownMenuItem>
-                  {needsScrape && (
-                    <DropdownMenuItem
-                      onClick={(e) =>
-                        onScrape(source, e as unknown as React.MouseEvent)
-                      }
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      {source.scrape_status === "pending"
-                        ? "Scrape"
-                        : "Re-scrape"}
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem
+                    onClick={(e) =>
+                      onScrape(source, e as unknown as React.MouseEvent)
+                    }
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {needsScrape ? "Scrape" : "Re-scrape"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) =>
+                      onAnalyze(source, e as unknown as React.MouseEvent)
+                    }
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    {analysisStateFor(source) === "none"
+                      ? "Analyze"
+                      : "Re-analyze"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
                       updateSource(source.id, { scrape_status: "complete" })
@@ -733,6 +854,13 @@ export default function SourceList() {
     refetchSources();
     refresh();
   });
+  // A SEPARATE stream for inline analyze runs, so analyzing one row never blocks
+  // (or gets blocked by) a scrape on another — each column's action is its own
+  // in-flight lane.
+  const analyzeStream = useResearchStream(() => {
+    refetchSources();
+    refresh();
+  });
   const { data: keywords } = useResearchKeywords(topicId);
   const { data: importanceMap } = useSourceImportance(topicId);
   const { data: tags, refresh: refetchTags } = useResearchTags(topicId);
@@ -741,6 +869,7 @@ export default function SourceList() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scrapingIds, setScrapingIds] = useState<Set<string>>(new Set());
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [tagBusy, setTagBusy] = useState(false);
   // Shared "create tag" dialog target: a source id assigns the new tag to that
@@ -840,6 +969,17 @@ export default function SourceList() {
       ].sort(),
     [sourceList],
   );
+
+  // Publish the user's EXACT displayed order (full sorted + filtered set, pre-
+  // pagination) so the source DETAIL view's prev/next walks the same order the
+  // user is looking at — not the raw fetch order. Keyed on the processed list,
+  // so every sort / filter / search change re-publishes.
+  useEffect(() => {
+    setSourceNavOrder(
+      topicId,
+      sourceList.map((s) => s.id),
+    );
+  }, [topicId, sourceList]);
 
   // The client-side controls (search, tier filter, local sort) don't flow
   // through `setFilters`, so changing them won't auto-reset the page the way a
@@ -1018,6 +1158,7 @@ export default function SourceList() {
         });
         debug.pushEvents(stream.rawEvents, `scrape-${source.id}`);
       } catch {
+        toast.error("Couldn't start the scrape. Please try again.");
         setScrapingIds((prev) => {
           const next = new Set(prev);
           next.delete(source.id);
@@ -1026,6 +1167,41 @@ export default function SourceList() {
       }
     },
     [api, topicId, stream, refetchSources, debug],
+  );
+
+  // Inline ANALYZE — the matched twin of handleScrapeSource. Mark the row busy,
+  // POST the streaming analyze endpoint, drain/ignore the stream body, then
+  // refetch the source so its new analysis_status / page_analysis lands in the
+  // Analysis column. Toast + clear-busy on failure so the spinner never sticks.
+  const handleAnalyzeSource = useCallback(
+    async (source: ResearchSource, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (analyzeStream.isStreaming) return;
+      setAnalyzingIds((prev) => new Set(prev).add(source.id));
+      try {
+        const response = await api.analyzeSource(topicId, source.id);
+        analyzeStream.startStream(response, {
+          onEnd: () => {
+            refetchSources();
+            setAnalyzingIds((prev) => {
+              const next = new Set(prev);
+              next.delete(source.id);
+              return next;
+            });
+          },
+        });
+        debug.pushEvents(analyzeStream.rawEvents, `analyze-${source.id}`);
+      } catch {
+        toast.error("Couldn't start the analysis. Please try again.");
+        setAnalyzingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(source.id);
+          return next;
+        });
+      }
+    },
+    [api, topicId, analyzeStream, refetchSources, debug],
   );
 
   const anyNavigating = isPending || navigatingId !== null;
@@ -1171,7 +1347,7 @@ export default function SourceList() {
                   />
                 </th>
                 {/* Scrape — the scrape OUTCOME (server sort + server filter) */}
-                <th className="w-24 px-2 py-2 text-left">
+                <th className="w-32 px-2 py-2 text-left">
                   <div className="flex items-center gap-1">
                     <SortHeader
                       label="Scrape"
@@ -1192,6 +1368,15 @@ export default function SourceList() {
                       }
                     />
                   </div>
+                </th>
+                {/* Analysis — the ANALYZE outcome + always-visible trigger. The
+                    matched pair to Scrape; the page's other primary action. The
+                    sortable analysis signal is the score, surfaced under Verdict
+                    (final_source_score), so this header is a plain label. */}
+                <th className="w-32 px-2 py-2 text-left">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Analysis
+                  </span>
                 </th>
                 {/* Type — de-emphasized, far right (almost always "web") */}
                 <th className="w-14 px-2 py-2 text-left">
@@ -1251,6 +1436,7 @@ export default function SourceList() {
                   topicId={topicId}
                   selected={selected.has(source.id)}
                   scraping={scrapingIds.has(source.id)}
+                  analyzing={analyzingIds.has(source.id)}
                   navigating={navigatingId === source.id}
                   anyNavigating={anyNavigating}
                   tags={tagList}
@@ -1260,6 +1446,7 @@ export default function SourceList() {
                   onSelect={toggleSelect}
                   onToggleInclude={handleToggleInclude}
                   onScrape={handleScrapeSource}
+                  onAnalyze={handleAnalyzeSource}
                   onNavigate={handleNavigate}
                 />
               ))}
@@ -1393,18 +1580,34 @@ export default function SourceList() {
                         {pageAgeDisplay}
                       </span>
                     )}
-                    {needsScrape && (
-                      <button
-                        className="inline-flex items-center gap-1 h-5 px-1.5 rounded-full matrx-glass-card text-[10px] text-primary ml-auto"
-                        disabled={scrapingIds.has(source.id) || anyNavigating}
-                        onClick={(e) => handleScrapeSource(source, e)}
-                      >
-                        <Download className="h-2.5 w-2.5" />
-                        {source.scrape_status === "pending"
-                          ? "Scrape"
-                          : "Re-scrape"}
-                      </button>
-                    )}
+                  </div>
+
+                  {/* Primary actions — always-visible Scrape + Analyze, the same
+                      matched pair as the desktop columns, so the core workflow is
+                      reachable on mobile too (not buried). */}
+                  <div
+                    className="flex items-center gap-1.5"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <ActionTrigger
+                      label={needsScrape ? "Scrape" : "Re-scrape"}
+                      busy={scrapingIds.has(source.id)}
+                      disabled={anyNavigating}
+                      onClick={(e) => handleScrapeSource(source, e)}
+                    />
+                    <ActionTrigger
+                      label={
+                        analysisStateFor(source) === "none"
+                          ? "Analyze"
+                          : "Re-analyze"
+                      }
+                      busy={analyzingIds.has(source.id)}
+                      disabled={anyNavigating}
+                      onClick={(e) => handleAnalyzeSource(source, e)}
+                    />
                   </div>
 
                   {/* Tags */}

@@ -23,32 +23,18 @@ import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
 import { hydrateConversation } from "../conversations/conversations.slice";
-import {
-  hydrateMessages,
-  type MessageRecord,
-} from "../messages/messages.slice";
+import { hydrateMessages } from "../messages/messages.slice";
 import { setFocus } from "../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
-
-// Row shape for a cx_message read from the bundle (matches the RPC's JSONB).
-interface CxMessageRow {
-  id: string;
-  conversation_id: string;
-  agent_id: string | null;
-  role: string;
-  content: Json;
-  content_history: Json | null;
-  user_content: Json | null;
-  position: number;
-  source: string;
-  status: string;
-  is_visible_to_model: boolean;
-  is_visible_to_user: boolean;
-  metadata: Json;
-  created_at: string;
-  deleted_at: string | null;
-}
+// Canonical bundle row mapper + row type. Mirrors refetch-single-message.thunk —
+// using the SSOT here is load-bearing: the local copy this replaced did NOT map
+// the four per-turn columns (tools_on_call / model_context / error / voice), so
+// forked conversations silently lost tools/context/error/voice on every message.
+import {
+  messageRowToRecord,
+  type CxMessageRow,
+} from "../thunks/conversation-bundle";
 
 // Minimal fork-bundle shape — only the fields we hydrate from here. The
 // full RPC payload mirrors `get_cx_conversation_bundle`; extra fields are
@@ -85,27 +71,6 @@ interface ForkBundle {
   // tool_calls / artifacts / media also returned; not hydrated here for
   // brevity — observability hydration can be added when the Runner
   // migrates to reading from that slice for the fork path.
-}
-
-function messageRowToRecord(row: CxMessageRow): MessageRecord {
-  return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    agentId: row.agent_id,
-    role: (row.role as MessageRecord["role"]) ?? "user",
-    content: row.content,
-    contentHistory: row.content_history,
-    userContent: row.user_content,
-    position: row.position,
-    source: row.source,
-    status: row.status,
-    isVisibleToModel: row.is_visible_to_model,
-    isVisibleToUser: row.is_visible_to_user,
-    metadata: row.metadata,
-    createdAt: row.created_at,
-    deletedAt: row.deleted_at,
-    _clientStatus: "complete",
-  };
 }
 
 interface ForkConversationArgs {

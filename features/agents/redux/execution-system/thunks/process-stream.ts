@@ -1272,22 +1272,40 @@ export async function processStream({
         // so subscribers rendering message bodies don't re-render on
         // bookkeeping status changes. (See Phase 5.3 re-render audit.)
         if (d.table === "cx_message") {
+          // On a failed transition, carry the structured error + metadata
+          // through so the in-session record matches what the DB serves back on
+          // reload. The top-level `error` jsonb is the new canonical signal
+          // (PRESENCE === failure); when the event carries it nested under
+          // `metadata.error` as a `{ type, message }` object we lift it onto the
+          // record's top-level `error` field. The metadata patch stays as a
+          // fallback for legacy `{ failed:true, error:"..." }` shapes.
+          // Non-failed transitions stay status-only to avoid re-rendering
+          // message bodies on bookkeeping changes.
+          let patch: Partial<MessageRecord> = { status: d.status };
+          if (d.status === "failed" && d.metadata) {
+            patch = {
+              status: d.status,
+              metadata: d.metadata as MessageRecord["metadata"],
+            };
+            const rawError = (d.metadata as Record<string, unknown>).error;
+            if (
+              rawError &&
+              typeof rawError === "object" &&
+              !Array.isArray(rawError) &&
+              typeof (rawError as Record<string, unknown>).message === "string"
+            ) {
+              const e = rawError as Record<string, unknown>;
+              patch.error = {
+                type: typeof e.type === "string" ? e.type : "error",
+                message: e.message as string,
+              };
+            }
+          }
           dispatch(
             updateMessageRecord({
               conversationId,
               messageId: d.record_id,
-              // On a failed transition, carry the metadata through too so the
-              // in-session record reflects { failed:true, error } exactly as
-              // the DB serves it back on reload — the failed-turn renderer
-              // reads `metadata.error`. Non-failed transitions stay status-only
-              // to avoid re-rendering message bodies on bookkeeping changes.
-              patch:
-                d.status === "failed" && d.metadata
-                  ? {
-                      status: d.status,
-                      metadata: d.metadata as MessageRecord["metadata"],
-                    }
-                  : { status: d.status },
+              patch,
             }),
           );
         } else if (d.table === "cx_user_request") {

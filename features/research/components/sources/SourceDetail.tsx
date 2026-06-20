@@ -57,6 +57,7 @@ import { toast } from "sonner";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
+import { getSourceNavOrder } from "../../utils/sourceNavOrder";
 import { ContentViewer } from "./ContentViewer";
 import { PasteContentModal } from "./PasteContentModal";
 import { AnalyzeCurationDialog } from "./AnalyzeCurationDialog";
@@ -731,10 +732,18 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [showRawSearch, setShowRawSearch] = useState(false);
 
-  const sourceIds = useMemo(
-    () => (allSources as ResearchSource[] | null)?.map((s) => s.id) ?? [],
-    [allSources],
-  );
+  // prev/next (and any sidebar list) must follow the EXACT sort + filter order
+  // the user had in the /sources list. That order is published to sessionStorage
+  // by SourceList; read it back here. Use it only when it's present AND actually
+  // contains the source being viewed (a stale/empty order, or one from before
+  // this source existed, falls back to the raw fetched order — never crashes).
+  const sourceIds = useMemo(() => {
+    const fallback =
+      (allSources as ResearchSource[] | null)?.map((s) => s.id) ?? [];
+    const saved = getSourceNavOrder(topicId);
+    if (saved.length > 0 && saved.includes(sourceId)) return saved;
+    return fallback;
+  }, [allSources, topicId, sourceId]);
   const currentIndex = sourceIds.indexOf(sourceId);
   const prevSourceId = currentIndex > 0 ? sourceIds[currentIndex - 1] : null;
   const nextSourceId =

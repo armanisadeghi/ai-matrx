@@ -164,8 +164,10 @@ export async function persistTurns(
       role: turn.role,
       position: opts.startPosition + idx,
       // `cx_message.source` only allows 'user' | 'agent_template' | 'system'
-      // (CHECK constraint `cx_message_source_check`). Voice provenance
-      // lives in metadata.voice.provider — see constants.ts.
+      // (CHECK constraint `cx_message_source_check`). Per-turn voice data lives
+      // in the dedicated `voice` column below; conversation-level voice
+      // provenance (provider, model, …) lives in `cx_conversation.metadata.voice`
+      // — written by finalizeConversation. See constants.ts.
       source:
         turn.role === "user"
           ? PERSISTENCE_MESSAGE_SOURCE_USER
@@ -173,7 +175,9 @@ export async function persistTurns(
       content: [
         { type: "text", text: turn.text || "" },
       ] as unknown as Json,
-      metadata: { voice: voiceMeta } as Json,
+      // Voice-turn metadata now lives in the dedicated top-level `voice` jsonb
+      // column on cx_message (was previously nested under `metadata.voice`).
+      voice: voiceMeta as Json,
       // `cx_message.status` is a strictly enumerated CHECK constraint
       // (`cx_message_status_check`): only 'active' | 'condensed' | 'summary'
       // | 'deleted' | 'pending' | 'abandoned' | 'failed' are allowed — verified
