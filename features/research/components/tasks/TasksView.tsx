@@ -141,6 +141,8 @@ const VERDICT_ORDER: UserVerdict[] = [
   "accept_as_is",
   "gated",
   "dead_link",
+  "content_mismatch",
+  "ignored",
   "retry",
 ];
 
@@ -168,6 +170,22 @@ const VERDICT_META: Record<UserVerdict, VerdictMeta> = {
       "Page is 404, removed, or domain is dead. Removed from queue forever.",
     icon: Link2Off,
     accent: "text-zinc-500 dark:text-zinc-400",
+  },
+  content_mismatch: {
+    label: "Wrong content",
+    toastTitle: "Marked as wrong content",
+    description:
+      "Page loaded but isn't what this source claimed (redirect, wrong article, etc.). Removed from queue.",
+    icon: FileWarning,
+    accent: "text-fuchsia-700 dark:text-fuchsia-400",
+  },
+  ignored: {
+    label: "Ignore source",
+    toastTitle: "Source ignored",
+    description:
+      "Not useful for this topic — not dead or gated, just not wanted. Removed from queue.",
+    icon: Hand,
+    accent: "text-slate-600 dark:text-slate-400",
   },
   retry: {
     label: "Retry from scratch",

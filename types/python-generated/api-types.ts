@@ -44,6 +44,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/whoami": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whoami
+         * @description Identity probe for SPAs that obtain a token out-of-band.
+         *
+         *     An admin-only SPA that gets its bearer token from the cross-app session
+         *     bridge (rather than the OAuth callback) has no server-side admin gate in
+         *     that path, so it calls this to decide whether to grant access. The result
+         *     is advisory UX only — every admin API route independently re-checks
+         *     ``ctx.is_admin`` on the verified JWT, so a forged ``is_admin`` here buys
+         *     nothing. ``/auth`` is mounted public, so an unauthenticated caller simply
+         *     gets ``authenticated: false`` rather than a 401.
+         */
+        get: operations["whoami_auth_whoami_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -4991,6 +5019,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/topics/{topic_id}/sources/rank-authority": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rank Source Authority */
+        post: operations["rank_source_authority_research_topics__topic_id__sources_rank_authority_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/topics/{topic_id}/synthesize": {
         parameters: {
             query?: never;
@@ -5258,7 +5303,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload File Source */
+        /**
+         * Upload File Source
+         * @description Persist a binary research artifact + create its rs_media row.
+         *
+         *     The file goes through the canonical cloud-file pipeline (sniffed MIME, a
+         *     `cld_files` row via the SyncEngine — never a parallel storage path) and an
+         *     `rs_media` row ties it to the source so it appears in the topic gallery.
+         *     `rs_media.source_id` is NOT NULL, so `source_id` is required here.
+         */
         post: operations["upload_file_source_research_topics__topic_id__sources_upload_post"];
         delete?: never;
         options?: never;
@@ -5320,6 +5373,32 @@ export interface paths {
          *     L1 → L2 → L3 → L4 escalation.
          */
         post: operations["apply_source_verdict_research_topics__topic_id__sources__source_id__verdict_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/extension/sources/verdict_bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Source Verdict Bulk
+         * @description Apply one verdict to many sources at once — the extension's batch action
+         *     (e.g. resolve all 50 sources from a finished project in one click).
+         *
+         *     The source_ids may span topics; each source's topic is resolved server-side
+         *     and the caller's write access verified per topic. Per-source failures are
+         *     returned in `failed` rather than failing the whole call, so a few stale ids
+         *     can't sink the batch. An unknown verdict (whole-request error) is a 400.
+         */
+        post: operations["apply_source_verdict_bulk_research_extension_sources_verdict_bulk_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12776,7 +12855,7 @@ export interface paths {
         put?: never;
         /**
          * Label content with GLiNER2
-         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.
+         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title. Pass persist_transcript_id + persist_label=true to label a direct transcripts row (Voice Pad / draft saves that bypass the NOTIFY listener).
          */
         post: operations["label_content_label_post"];
         delete?: never;
@@ -14202,6 +14281,23 @@ export interface components {
             /** Created At */
             created_at: string;
         };
+        /**
+         * AuthorityRankRequest
+         * @description Trigger AI authoritativeness ranking over a topic's sources.
+         *
+         *     ``source_ids=None`` ranks every included source on the topic. ``force=False``
+         *     only ranks sources not yet ranked (incremental); ``force=True`` re-ranks all.
+         */
+        AuthorityRankRequest: {
+            /** Source Ids */
+            source_ids?: string[] | null;
+            /**
+             * Force
+             * @description Re-rank sources that already have an authority score.
+             * @default false
+             */
+            force: boolean;
+        };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
             selector: components["schemas"]["MessageSelector"];
@@ -14599,6 +14695,36 @@ export interface components {
              */
             options_json?: string | null;
         };
+        /** Body_upload_file_source_research_topics__topic_id__sources_upload_post */
+        Body_upload_file_source_research_topics__topic_id__sources_upload_post: {
+            /** File */
+            file: string;
+            /**
+             * Source Id
+             * @description The rs_source this artifact belongs to
+             */
+            source_id: string;
+            /**
+             * Media Type
+             * @description image|video|audio|document; inferred from MIME when omitted
+             */
+            media_type?: string | null;
+            /** Caption */
+            caption?: string | null;
+            /** Alt Text */
+            alt_text?: string | null;
+            /**
+             * Enrich Goal
+             * @description The enrich goal this artifact fulfils (screenshot|download|…)
+             */
+            enrich_goal?: string | null;
+            /**
+             * Visibility
+             * @description private (default; research artifacts can be paywalled/sensitive) | public | shared
+             * @default private
+             */
+            visibility: string;
+        };
         /** Body_upload_podcast_image_media_podcast_upload_image_post */
         Body_upload_podcast_image_media_podcast_upload_image_post: {
             /** File */
@@ -14948,6 +15074,37 @@ export interface components {
             ok: boolean;
             /** Error */
             error?: string | null;
+        };
+        /** BulkVerdictFailure */
+        BulkVerdictFailure: {
+            /** Source Id */
+            source_id: string;
+            /** Error */
+            error: string;
+        };
+        /**
+         * BulkVerdictRequest
+         * @description Apply one verdict to many sources at once (extension batch action). The
+         *     sources may span topics — each source's topic is resolved server-side and
+         *     the caller's write access is verified per topic.
+         */
+        BulkVerdictRequest: {
+            /** Source Ids */
+            source_ids: string[];
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
+            /** Notes */
+            notes?: string | null;
+        };
+        /** BulkVerdictResponse */
+        BulkVerdictResponse: {
+            /** Succeeded */
+            succeeded: string[];
+            /** Failed */
+            failed: components["schemas"]["BulkVerdictFailure"][];
         };
         /** CacheBustResponse */
         CacheBustResponse: {
@@ -17878,6 +18035,41 @@ export interface components {
             /** Rationale */
             rationale: string;
         };
+        /**
+         * EnrichDirective
+         * @description What the extension should go fetch + why (RESEARCH_ENRICHMENT.md §3).
+         *
+         *     `goal` is the only required field. `reason` is the human string shown to
+         *     the user ("SPA shipped an empty shell"); `hints` carries optional
+         *     machine nudges.
+         */
+        EnrichDirective: {
+            /**
+             * Goal
+             * @enum {string}
+             */
+            goal: "rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json";
+            /** Reason */
+            reason?: string | null;
+            hints?: components["schemas"]["EnrichHints"] | null;
+        };
+        /**
+         * EnrichHints
+         * @description Optional hints the server attaches to an enrich directive.
+         *
+         *     All fields optional — the extension treats them as best-effort nudges
+         *     (e.g. a CSS selector to click, a minimum char count that proves the
+         *     enrich worked). Tolerates unknown keys so the server can add new hint
+         *     types without an extension rebuild.
+         */
+        EnrichHints: {
+            /** Selector */
+            selector?: string | null;
+            /** Expect Chars Min */
+            expect_chars_min?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** EntitiesPage */
         EntitiesPage: {
             /** Items */
@@ -18010,7 +18202,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated";
+            status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /** Source Id */
             source_id: string;
             /**
@@ -18051,6 +18243,10 @@ export interface components {
             capture_level: 1 | 2 | 3;
             /** Images */
             images?: components["schemas"]["ExtensionMeasuredImage"][];
+            media?: components["schemas"]["ExtensionMedia"] | null;
+            structured?: components["schemas"]["ExtensionStructured"] | null;
+            /** Enrich Goal */
+            enrich_goal?: ("rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json") | null;
         };
         /**
          * ExtensionMeasuredImage
@@ -18071,6 +18267,84 @@ export interface components {
             /** Height */
             height?: number | null;
         };
+        /**
+         * ExtensionMedia
+         * @description Live-DOM media collectors the extension sends alongside the HTML.
+         *
+         *     Only attached when non-empty, so a media-less page POSTs the legacy body.
+         */
+        ExtensionMedia: {
+            /** Videos */
+            videos?: components["schemas"]["ExtensionMediaVideo"][];
+            /** Audio */
+            audio?: components["schemas"]["ExtensionMediaAudio"][];
+        };
+        /** ExtensionMediaAudio */
+        ExtensionMediaAudio: {
+            /** Src */
+            src: string;
+            /** Type */
+            type?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * ExtensionMediaVideo
+         * @description A video the extension found in the LIVE DOM (RESEARCH_ENRICHMENT.md §4).
+         *
+         *     Catches JS-injected `<video>` players and post-render YouTube/Vimeo iframes
+         *     the server's HTML scan misses. `src` is the resolved URL; `poster`,
+         *     `duration` (seconds), and `type` (mime) are optional metadata.
+         */
+        ExtensionMediaVideo: {
+            /** Src */
+            src: string;
+            /** Poster */
+            poster?: string | null;
+            /** Duration */
+            duration?: number | null;
+            /** Type */
+            type?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /**
+         * ExtensionPageMetadata
+         * @description Structured page metadata the extension reads from the live DOM head.
+         *
+         *     Tolerates unknown keys (`extra='allow'`) so the extension can enrich this
+         *     over time without a server change. Concretely-typed fields are the ones the
+         *     server consumes today (title/description → rs_source; the *_time fields →
+         *     rs_content published/modified dates).
+         */
+        ExtensionPageMetadata: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Canonical */
+            canonical?: string | null;
+            /** Lang */
+            lang?: string | null;
+            /** Author */
+            author?: string | null;
+            /** Published Time */
+            published_time?: string | null;
+            /** Modified Time */
+            modified_time?: string | null;
+            /** Og */
+            og?: {
+                [key: string]: string;
+            };
+            /** Twitter */
+            twitter?: {
+                [key: string]: string;
+            };
+            /** Schematypes */
+            schemaTypes?: string[];
+        } & {
+            [key: string]: unknown;
+        };
         /** ExtensionScrapeItem */
         ExtensionScrapeItem: {
             /** Source Id */
@@ -18087,7 +18361,7 @@ export interface components {
              * Scrape Status
              * @enum {string}
              */
-            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated";
+            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /**
              * Is Included
              * @default true
@@ -18100,6 +18374,13 @@ export interface components {
             next_level: 1 | 2 | 3 | 4;
             /** Attempted Levels */
             attempted_levels?: (1 | 2 | 3 | 4)[];
+            /**
+             * Task Kind
+             * @default scrape
+             * @enum {string}
+             */
+            task_kind: "scrape" | "enrich";
+            enrich?: components["schemas"]["EnrichDirective"] | null;
             /** Last Attempt At */
             last_attempt_at?: string | null;
             /** Last Char Count */
@@ -18143,6 +18424,17 @@ export interface components {
             totals?: {
                 [key: string]: number;
             };
+        };
+        /**
+         * ExtensionStructured
+         * @description JSON-LD + page metadata gathered in the same live-DOM injection.
+         */
+        ExtensionStructured: {
+            metadata?: components["schemas"]["ExtensionPageMetadata"];
+            /** Jsonld */
+            jsonLd?: {
+                [key: string]: unknown;
+            }[];
         };
         /** ExtractAtBboxBody */
         ExtractAtBboxBody: {
@@ -20713,6 +21005,8 @@ export interface components {
             content_type: components["schemas"]["ContentType"];
             /** Studio Session Id */
             studio_session_id?: string | null;
+            /** Persist Transcript Id */
+            persist_transcript_id?: string | null;
             /**
              * Persist Label
              * @default false
@@ -21703,6 +21997,74 @@ export interface components {
             include_preamble: boolean;
         };
         /**
+         * ModelCapabilitySummary
+         * @description What a model can actually do — for a capability-driven model picker. Two
+         *     layers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the
+         *     provider API accepts as input). See docs/model_capabilities/CAPABILITY_SYSTEM.md.
+         */
+        ModelCapabilitySummary: {
+            /** Input Modalities */
+            input_modalities?: string[];
+            /** Output Modalities */
+            output_modalities?: string[];
+            /**
+             * Output Type
+             * @default text
+             * @enum {string}
+             */
+            output_type: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
+            /**
+             * Interaction
+             * @default turn
+             * @enum {string}
+             */
+            interaction: "turn" | "realtime" | "extraction";
+            /** Features */
+            features?: string[];
+            /** Native Tools */
+            native_tools?: string[];
+            /**
+             * Supports Vision
+             * @default false
+             */
+            supports_vision: boolean;
+            /**
+             * Supports Audio Input
+             * @default false
+             */
+            supports_audio_input: boolean;
+            /**
+             * Supports Function Calling
+             * @default false
+             */
+            supports_function_calling: boolean;
+            /**
+             * Supports Web Search
+             * @default false
+             */
+            supports_web_search: boolean;
+            /**
+             * Multilingual
+             * @default false
+             */
+            multilingual: boolean;
+            /**
+             * Accepts Documents
+             * @default false
+             */
+            accepts_documents: boolean;
+            /**
+             * Accepts Video
+             * @default false
+             */
+            accepts_video: boolean;
+            /**
+             * Accepts Youtube
+             * @default false
+             */
+            accepts_youtube: boolean;
+        };
+        /**
          * ModelCostBreakdown
          * @description Cost subtotal for one model within a run.
          */
@@ -21749,6 +22111,23 @@ export interface components {
              * @default false
              */
             is_premium: boolean;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean;
+            /**
+             * Is Deprecated
+             * @default false
+             */
+            is_deprecated: boolean;
+            /**
+             * Output Type
+             * @default text
+             * @enum {string}
+             */
+            output_type: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
+            capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
         };
         /** MoveArgs */
         MoveArgs: {
@@ -24269,6 +24648,42 @@ export interface components {
             updated_at?: string | null;
         };
         /**
+         * ResearchUploadResponse
+         * @description Result of POST /topics/{tid}/sources/upload — the persisted artifact.
+         *
+         *     The binary lands in the canonical cloud-file pipeline (a `cld_files` row,
+         *     `file_id`) and an `rs_media` row ties it to the research source so it shows
+         *     in the topic's media gallery. `url` is the renderable URL from the file
+         *     engine (CDN when public, signed-inline when private).
+         */
+        ResearchUploadResponse: {
+            /** Media Id */
+            media_id: string;
+            /** Source Id */
+            source_id: string;
+            /** Topic Id */
+            topic_id: string;
+            /**
+             * Media Type
+             * @enum {string}
+             */
+            media_type: "image" | "video" | "document" | "audio";
+            /** Url */
+            url: string;
+            /** File Id */
+            file_id: string;
+            /** File Uri */
+            file_uri?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Enrich Goal */
+            enrich_goal?: ("rendered_dom" | "authenticated" | "expand" | "comments" | "structured" | "transcript" | "screenshot" | "download" | "xhr_json") | null;
+        };
+        /**
          * ResolveBatchRequest
          * @description Filter for batch resolve. Empty body = resolve every unresolved row.
          */
@@ -25909,7 +26324,7 @@ export interface components {
             /** Is Stale */
             is_stale?: boolean | null;
             /** Scrape Status */
-            scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated") | null;
+            scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch") | null;
         };
         /**
          * SpeakerSpec
@@ -28205,7 +28620,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated";
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
             /** Notes */
             notes?: string | null;
         };
@@ -28217,12 +28632,12 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated";
+            verdict: "accept_as_is" | "dead_link" | "retry" | "mark_complete" | "gated" | "ignored" | "content_mismatch";
             /**
              * Scrape Status
              * @enum {string}
              */
-            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated";
+            scrape_status: "pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated" | "ignored" | "content_mismatch";
             /** User Verdict At */
             user_verdict_at: string;
             /** Is Terminal */
@@ -29095,6 +29510,8 @@ export interface operations {
             query: {
                 /** @description SPA callback URL, e.g. https://admin.app.matrxserver.com/oauth/callback */
                 app_redirect: string;
+                /** @description Whether this app is admin-only. True (default) bounces non-admins to <app_redirect>/access-denied. Client-facing apps (e.g. workflow studio) pass false so any authenticated Matrx user can sign in. NOT a security boundary — every admin API route re-checks ctx.is_admin server-side; this only controls the post-login UX redirect. */
+                admin_required?: boolean;
             };
             header?: never;
             path?: never;
@@ -29152,6 +29569,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    whoami_auth_whoami_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -36303,6 +36742,10 @@ export interface operations {
         parameters: {
             query?: {
                 include_deprecated?: boolean;
+                /** @description keep only models whose primary output is one of these: text/image/video/audio/realtime/extraction */
+                output_types?: string[] | null;
+                /** @description keep only models with this capability — a feature (function_calling), native tool (web_search), or input flag (accepts_documents/accepts_video/accepts_youtube/supports_vision/supports_audio_input) */
+                capability?: string | null;
             };
             header?: never;
             path?: never;
@@ -37868,6 +38311,41 @@ export interface operations {
             };
         };
     };
+    rank_source_authority_research_topics__topic_id__sources_rank_authority_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AuthorityRankRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     synthesize_research_topics__topic_id__synthesize_post: {
         parameters: {
             query?: never;
@@ -38488,7 +38966,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_file_source_research_topics__topic_id__sources_upload_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -38496,7 +38978,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResearchUploadResponse"];
                 };
             };
             /** @description Validation Error */
@@ -38601,6 +39083,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VerdictResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_source_verdict_bulk_research_extension_sources_verdict_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkVerdictRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkVerdictResponse"];
                 };
             };
             /** @description Validation Error */

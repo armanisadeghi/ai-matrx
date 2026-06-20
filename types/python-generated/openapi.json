@@ -26,6 +26,18 @@
               "title": "App Redirect"
             },
             "description": "SPA callback URL, e.g. https://admin.app.matrxserver.com/oauth/callback"
+          },
+          {
+            "name": "admin_required",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Whether this app is admin-only. True (default) bounces non-admins to <app_redirect>/access-denied. Client-facing apps (e.g. workflow studio) pass false so any authenticated Matrx user can sign in. NOT a security boundary — every admin API route re-checks ctx.is_admin server-side; this only controls the post-login UX redirect.",
+              "default": true,
+              "title": "Admin Required"
+            },
+            "description": "Whether this app is admin-only. True (default) bounces non-admins to <app_redirect>/access-denied. Client-facing apps (e.g. workflow studio) pass false so any authenticated Matrx user can sign in. NOT a security boundary — every admin API route re-checks ctx.is_admin server-side; this only controls the post-login UX redirect."
           }
         ],
         "responses": {
@@ -140,6 +152,31 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/whoami": {
+      "get": {
+        "tags": [
+          "Auth",
+          "Auth"
+        ],
+        "summary": "Whoami",
+        "description": "Identity probe for SPAs that obtain a token out-of-band.\n\nAn admin-only SPA that gets its bearer token from the cross-app session\nbridge (rather than the OAuth callback) has no server-side admin gate in\nthat path, so it calls this to decide whether to grant access. The result\nis advisory UX only — every admin API route independently re-checks\n``ctx.is_admin`` on the verified JWT, so a forged ``is_admin`` here buys\nnothing. ``/auth`` is mounted public, so an unauthenticated caller simply\ngets ``authenticated: false`` rather than a 401.",
+        "operationId": "whoami_auth_whoami_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Whoami Auth Whoami Get"
                 }
               }
             }
@@ -10674,6 +10711,45 @@
               "default": false,
               "title": "Include Deprecated"
             }
+          },
+          {
+            "name": "output_types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "keep only models whose primary output is one of these: text/image/video/audio/realtime/extraction",
+              "title": "Output Types"
+            },
+            "description": "keep only models whose primary output is one of these: text/image/video/audio/realtime/extraction"
+          },
+          {
+            "name": "capability",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "keep only models with this capability — a feature (function_calling), native tool (web_search), or input flag (accepts_documents/accepts_video/accepts_youtube/supports_vision/supports_audio_input)",
+              "title": "Capability"
+            },
+            "description": "keep only models with this capability — a feature (function_calling), native tool (web_search), or input flag (accepts_documents/accepts_video/accepts_youtube/supports_vision/supports_audio_input)"
           }
         ],
         "responses": {
@@ -13050,6 +13126,55 @@
         }
       }
     },
+    "/research/topics/{topic_id}/sources/rank-authority": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Rank Source Authority",
+        "operationId": "rank_source_authority_research_topics__topic_id__sources_rank_authority_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorityRankRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/research/topics/{topic_id}/synthesize": {
       "post": {
         "tags": [
@@ -13987,6 +14112,7 @@
           "Research"
         ],
         "summary": "Upload File Source",
+        "description": "Persist a binary research artifact + create its rs_media row.\n\nThe file goes through the canonical cloud-file pipeline (sniffed MIME, a\n`cld_files` row via the SyncEngine — never a parallel storage path) and an\n`rs_media` row ties it to the source so it appears in the topic gallery.\n`rs_media.source_id` is NOT NULL, so `source_id` is required here.",
         "operationId": "upload_file_source_research_topics__topic_id__sources_upload_post",
         "parameters": [
           {
@@ -13999,12 +14125,24 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_source_research_topics__topic_id__sources_upload_post"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchUploadResponse"
+                }
               }
             }
           },
@@ -14176,6 +14314,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VerdictResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/extension/sources/verdict_bulk": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Apply Source Verdict Bulk",
+        "description": "Apply one verdict to many sources at once — the extension's batch action\n(e.g. resolve all 50 sources from a finished project in one click).\n\nThe source_ids may span topics; each source's topic is resolved server-side\nand the caller's write access verified per topic. Per-source failures are\nreturned in `failed` rather than failing the whole call, so a few stale ids\ncan't sink the batch. An unknown verdict (whole-request error) is a 400.",
+        "operationId": "apply_source_verdict_bulk_research_extension_sources_verdict_bulk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkVerdictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkVerdictResponse"
                 }
               }
             }
@@ -36040,7 +36220,7 @@
           "Content Labeling (GLiNER2)"
         ],
         "summary": "Label content with GLiNER2",
-        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.",
+        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title. Pass persist_transcript_id + persist_label=true to label a direct transcripts row (Voice Pad / draft saves that bypass the NOTIFY listener).",
         "operationId": "label_content_label_post",
         "requestBody": {
           "content": {
@@ -39739,6 +39919,33 @@
         ],
         "title": "AuditRow"
       },
+      "AuthorityRankRequest": {
+        "properties": {
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "Re-rank sources that already have an authority score.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "AuthorityRankRequest",
+        "description": "Trigger AI authoritativeness ranking over a topic's sources.\n\n``source_ids=None`` ranks every included source on the topic. ``force=False``\nonly ranks sources not yet ranked (incremental); ``force=True`` re-ranks all."
+      },
       "BatchDeleteRequest": {
         "properties": {
           "selector": {
@@ -40759,6 +40966,78 @@
         ],
         "title": "Body_upload_file_files_upload_post"
       },
+      "Body_upload_file_source_research_topics__topic_id__sources_upload_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id",
+            "description": "The rs_source this artifact belongs to"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type",
+            "description": "image|video|audio|document; inferred from MIME when omitted"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caption"
+          },
+          "alt_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt Text"
+          },
+          "enrich_goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrich Goal",
+            "description": "The enrich goal this artifact fulfils (screenshot|download|…)"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility",
+            "description": "private (default; research artifacts can be paywalled/sensitive) | public | shared",
+            "default": "private"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "source_id"
+        ],
+        "title": "Body_upload_file_source_research_topics__topic_id__sources_upload_post"
+      },
       "Body_upload_podcast_image_media_podcast_upload_image_post": {
         "properties": {
           "file": {
@@ -41698,6 +41977,90 @@
           "ok"
         ],
         "title": "BulkResultItem"
+      },
+      "BulkVerdictFailure": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id",
+          "error"
+        ],
+        "title": "BulkVerdictFailure"
+      },
+      "BulkVerdictRequest": {
+        "properties": {
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Ids"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "accept_as_is",
+              "dead_link",
+              "retry",
+              "mark_complete",
+              "gated",
+              "ignored",
+              "content_mismatch"
+            ],
+            "title": "Verdict"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_ids",
+          "verdict"
+        ],
+        "title": "BulkVerdictRequest",
+        "description": "Apply one verdict to many sources at once (extension batch action). The\nsources may span topics — each source's topic is resolved server-side and\nthe caller's write access is verified per topic."
+      },
+      "BulkVerdictResponse": {
+        "properties": {
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/BulkVerdictFailure"
+            },
+            "type": "array",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "succeeded",
+          "failed"
+        ],
+        "title": "BulkVerdictResponse"
       },
       "CacheBustResponse": {
         "properties": {
@@ -50215,6 +50578,82 @@
         "title": "EditWorkflowProposal",
         "description": "Suggest a graph edit (config / schema / structure). Cannot be applied\nautomatically — surfaced to the user as a recommendation."
       },
+      "EnrichDirective": {
+        "properties": {
+          "goal": {
+            "type": "string",
+            "enum": [
+              "rendered_dom",
+              "authenticated",
+              "expand",
+              "comments",
+              "structured",
+              "transcript",
+              "screenshot",
+              "download",
+              "xhr_json"
+            ],
+            "title": "Goal"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "hints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichHints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "goal"
+        ],
+        "title": "EnrichDirective",
+        "description": "What the extension should go fetch + why (RESEARCH_ENRICHMENT.md §3).\n\n`goal` is the only required field. `reason` is the human string shown to\nthe user (\"SPA shipped an empty shell\"); `hints` carries optional\nmachine nudges."
+      },
+      "EnrichHints": {
+        "properties": {
+          "selector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selector"
+          },
+          "expect_chars_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expect Chars Min"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "EnrichHints",
+        "description": "Optional hints the server attaches to an enrich directive.\n\nAll fields optional — the extension treats them as best-effort nudges\n(e.g. a CSS selector to click, a minimum char count that proves the\nenrich worked). Tolerates unknown keys so the server can add new hint\ntypes without an extension rebuild."
+      },
       "EntitiesPage": {
         "properties": {
           "items": {
@@ -50605,7 +51044,9 @@
               "skipped",
               "complete",
               "dead_link",
-              "gated"
+              "gated",
+              "ignored",
+              "content_mismatch"
             ],
             "title": "Status"
           },
@@ -50713,6 +51154,48 @@
             },
             "type": "array",
             "title": "Images"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtensionMedia"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "structured": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtensionStructured"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enrich_goal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "rendered_dom",
+                  "authenticated",
+                  "expand",
+                  "comments",
+                  "structured",
+                  "transcript",
+                  "screenshot",
+                  "download",
+                  "xhr_json"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrich Goal"
           }
         },
         "type": "object",
@@ -50768,6 +51251,226 @@
         "title": "ExtensionMeasuredImage",
         "description": "One image the extension measured in the live DOM.\n\n`src` is the browser's resolved `currentSrc` (post-lazy-load); `width`/\n`height` are `naturalWidth`/`naturalHeight` (true intrinsic pixels). The\nserver overlays these onto the HTML-parsed images so the gallery gets exact\ndimensions without re-downloading — see research/media/FEATURE.md."
       },
+      "ExtensionMedia": {
+        "properties": {
+          "videos": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionMediaVideo"
+            },
+            "type": "array",
+            "title": "Videos"
+          },
+          "audio": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionMediaAudio"
+            },
+            "type": "array",
+            "title": "Audio"
+          }
+        },
+        "type": "object",
+        "title": "ExtensionMedia",
+        "description": "Live-DOM media collectors the extension sends alongside the HTML.\n\nOnly attached when non-empty, so a media-less page POSTs the legacy body."
+      },
+      "ExtensionMediaAudio": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "src"
+        ],
+        "title": "ExtensionMediaAudio"
+      },
+      "ExtensionMediaVideo": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "poster": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "src"
+        ],
+        "title": "ExtensionMediaVideo",
+        "description": "A video the extension found in the LIVE DOM (RESEARCH_ENRICHMENT.md §4).\n\nCatches JS-injected `<video>` players and post-render YouTube/Vimeo iframes\nthe server's HTML scan misses. `src` is the resolved URL; `poster`,\n`duration` (seconds), and `type` (mime) are optional metadata."
+      },
+      "ExtensionPageMetadata": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "canonical": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canonical"
+          },
+          "lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lang"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "published_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Time"
+          },
+          "modified_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified Time"
+          },
+          "og": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Og"
+          },
+          "twitter": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Twitter"
+          },
+          "schemaTypes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Schematypes"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ExtensionPageMetadata",
+        "description": "Structured page metadata the extension reads from the live DOM head.\n\nTolerates unknown keys (`extra='allow'`) so the extension can enrich this\nover time without a server change. Concretely-typed fields are the ones the\nserver consumes today (title/description → rs_source; the *_time fields →\nrs_content published/modified dates)."
+      },
       "ExtensionScrapeItem": {
         "properties": {
           "source_id": {
@@ -50808,7 +51511,9 @@
               "skipped",
               "complete",
               "dead_link",
-              "gated"
+              "gated",
+              "ignored",
+              "content_mismatch"
             ],
             "title": "Scrape Status"
           },
@@ -50839,6 +51544,25 @@
             },
             "type": "array",
             "title": "Attempted Levels"
+          },
+          "task_kind": {
+            "type": "string",
+            "enum": [
+              "scrape",
+              "enrich"
+            ],
+            "title": "Task Kind",
+            "default": "scrape"
+          },
+          "enrich": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnrichDirective"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "last_attempt_at": {
             "anyOf": [
@@ -50993,6 +51717,24 @@
         },
         "type": "object",
         "title": "ExtensionScrapeQueue"
+      },
+      "ExtensionStructured": {
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/ExtensionPageMetadata"
+          },
+          "jsonLd": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Jsonld"
+          }
+        },
+        "type": "object",
+        "title": "ExtensionStructured",
+        "description": "JSON-LD + page metadata gathered in the same live-DOM injection."
       },
       "ExtractAtBboxBody": {
         "properties": {
@@ -58264,6 +59006,17 @@
             ],
             "title": "Studio Session Id"
           },
+          "persist_transcript_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persist Transcript Id"
+          },
           "persist_label": {
             "type": "boolean",
             "title": "Persist Label",
@@ -61063,6 +61816,104 @@
         "type": "object",
         "title": "MockStreamRequest"
       },
+      "ModelCapabilitySummary": {
+        "properties": {
+          "input_modalities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Input Modalities"
+          },
+          "output_modalities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Output Modalities"
+          },
+          "output_type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "audio",
+              "realtime",
+              "extraction"
+            ],
+            "title": "Output Type",
+            "default": "text"
+          },
+          "interaction": {
+            "type": "string",
+            "enum": [
+              "turn",
+              "realtime",
+              "extraction"
+            ],
+            "title": "Interaction",
+            "default": "turn"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "native_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Native Tools"
+          },
+          "supports_vision": {
+            "type": "boolean",
+            "title": "Supports Vision",
+            "default": false
+          },
+          "supports_audio_input": {
+            "type": "boolean",
+            "title": "Supports Audio Input",
+            "default": false
+          },
+          "supports_function_calling": {
+            "type": "boolean",
+            "title": "Supports Function Calling",
+            "default": false
+          },
+          "supports_web_search": {
+            "type": "boolean",
+            "title": "Supports Web Search",
+            "default": false
+          },
+          "multilingual": {
+            "type": "boolean",
+            "title": "Multilingual",
+            "default": false
+          },
+          "accepts_documents": {
+            "type": "boolean",
+            "title": "Accepts Documents",
+            "default": false
+          },
+          "accepts_video": {
+            "type": "boolean",
+            "title": "Accepts Video",
+            "default": false
+          },
+          "accepts_youtube": {
+            "type": "boolean",
+            "title": "Accepts Youtube",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ModelCapabilitySummary",
+        "description": "What a model can actually do — for a capability-driven model picker. Two\nlayers: MODEL-level (the per-model jsonb seam) + PROVIDER-level (what the\nprovider API accepts as input). See docs/model_capabilities/CAPABILITY_SYSTEM.md."
+      },
       "ModelCostBreakdown": {
         "properties": {
           "model_name": {
@@ -61138,6 +61989,39 @@
             "type": "boolean",
             "title": "Is Premium",
             "default": false
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary",
+            "default": false
+          },
+          "is_deprecated": {
+            "type": "boolean",
+            "title": "Is Deprecated",
+            "default": false
+          },
+          "output_type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image",
+              "video",
+              "audio",
+              "realtime",
+              "extraction"
+            ],
+            "title": "Output Type",
+            "default": "text"
+          },
+          "capabilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelCapabilitySummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -67783,6 +68667,117 @@
         "title": "ResearchTopicSummary",
         "description": "Compact projection of an rs_topic row used by topic-picker UIs.\n\nAvoids round-tripping the heavy `TopicResponse` (progress + cost\nsummary) when the consumer just needs `name` to render a list."
       },
+      "ResearchUploadResponse": {
+        "properties": {
+          "media_id": {
+            "type": "string",
+            "title": "Media Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "media_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video",
+              "document",
+              "audio"
+            ],
+            "title": "Media Type"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "file_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Uri"
+          },
+          "cdn_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cdn Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "enrich_goal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "rendered_dom",
+                  "authenticated",
+                  "expand",
+                  "comments",
+                  "structured",
+                  "transcript",
+                  "screenshot",
+                  "download",
+                  "xhr_json"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrich Goal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "media_id",
+          "source_id",
+          "topic_id",
+          "media_type",
+          "url",
+          "file_id"
+        ],
+        "title": "ResearchUploadResponse",
+        "description": "Result of POST /topics/{tid}/sources/upload — the persisted artifact.\n\nThe binary lands in the canonical cloud-file pipeline (a `cld_files` row,\n`file_id`) and an `rs_media` row ties it to the research source so it shows\nin the topic's media gallery. `url` is the renderable URL from the file\nengine (CDN when public, signed-inline when private)."
+      },
       "ResolveBatchRequest": {
         "properties": {
           "ids": {
@@ -72118,7 +73113,9 @@
                   "skipped",
                   "complete",
                   "dead_link",
-                  "gated"
+                  "gated",
+                  "ignored",
+                  "content_mismatch"
                 ]
               },
               {
@@ -78817,7 +79814,9 @@
               "dead_link",
               "retry",
               "mark_complete",
-              "gated"
+              "gated",
+              "ignored",
+              "content_mismatch"
             ],
             "title": "Verdict"
           },
@@ -78852,7 +79851,9 @@
               "dead_link",
               "retry",
               "mark_complete",
-              "gated"
+              "gated",
+              "ignored",
+              "content_mismatch"
             ],
             "title": "Verdict"
           },
@@ -78867,7 +79868,9 @@
               "skipped",
               "complete",
               "dead_link",
-              "gated"
+              "gated",
+              "ignored",
+              "content_mismatch"
             ],
             "title": "Scrape Status"
           },

@@ -617,6 +617,17 @@ export interface MediaBlockData {
   block: ImageBlock | VideoBlock | AudioBlock | DocumentBlock | YouTubeBlock;
 }
 
+export interface MediaNoticeData {
+  type?: "media_notice";
+  media_kind: string;
+  action: "dropped" | "extracted" | "transcribed" | "converted";
+  user_message: string;
+  system_message?: string;
+  provider?: string | null;
+  model?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
 export interface MemoryBufferSpawnedData {
   type?: "memory_buffer_spawned";
   conversation_id: string;
@@ -749,6 +760,7 @@ export type TypedDataPayload =
   | FunctionResultData
   | ImageOutputData
   | MediaBlockData
+  | MediaNoticeData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData
   | MemoryErrorData

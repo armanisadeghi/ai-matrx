@@ -3349,6 +3349,77 @@
     "title": "StructuredInputWarningData",
     "type": "object"
   },
+  "MediaNoticeData": {
+    "additionalProperties": false,
+    "description": "Inline notice that something happened to a media input on the way to the\nmodel — either it was rerouted/extracted to text (handled) or it could not be\nsent and was dropped. Rendered inline in the chat stream where it occurred, so\nthe (agentic-engineer) user sees exactly what the model did/didn't receive.",
+    "properties": {
+      "type": {
+        "const": "media_notice",
+        "default": "media_notice",
+        "title": "Type",
+        "type": "string"
+      },
+      "media_kind": {
+        "title": "Media Kind",
+        "type": "string"
+      },
+      "action": {
+        "enum": [
+          "dropped",
+          "extracted",
+          "transcribed",
+          "converted"
+        ],
+        "title": "Action",
+        "type": "string"
+      },
+      "user_message": {
+        "title": "User Message",
+        "type": "string"
+      },
+      "system_message": {
+        "default": "",
+        "title": "System Message",
+        "type": "string"
+      },
+      "provider": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Provider"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model"
+      },
+      "metadata": {
+        "additionalProperties": true,
+        "title": "Metadata",
+        "type": "object"
+      }
+    },
+    "required": [
+      "media_kind",
+      "action",
+      "user_message"
+    ],
+    "title": "MediaNoticeData",
+    "type": "object"
+  },
   "CategorizationResultData": {
     "additionalProperties": false,
     "properties": {
