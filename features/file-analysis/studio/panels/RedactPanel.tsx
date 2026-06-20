@@ -8,6 +8,7 @@
 import { useMemo, useState } from "react";
 import { Layers, Loader2, ShieldCheck, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
@@ -100,11 +101,7 @@ export function RedactPanel({ fileId }: Props) {
 
       <RepeatedRegionsRedactSection fileId={fileId} />
 
-      <MaskDialog
-        fileId={fileId}
-        open={maskOpen}
-        onOpenChange={setMaskOpen}
-      />
+      <MaskDialog fileId={fileId} open={maskOpen} onOpenChange={setMaskOpen} />
       <RestoreDialog
         fileId={fileId}
         open={restoreOpen}
@@ -113,7 +110,6 @@ export function RedactPanel({ fileId }: Props) {
     </div>
   );
 }
-
 
 /**
  * Detect → redact-all one-flow for repeated regions (headers / footers /
@@ -212,13 +208,12 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
               {(report.regions ?? []).map((r) => (
                 <li key={r.region_id}>
                   <label className="flex cursor-pointer items-center gap-2 rounded border border-border bg-card px-2 py-1 text-[11px]">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={accepted.has(r.region_id)}
-                      onChange={(e) => {
+                      onCheckedChange={(v) => {
                         setAccepted((prev) => {
                           const next = new Set(prev);
-                          if (e.target.checked) next.add(r.region_id);
+                          if (v === true) next.add(r.region_id);
                           else next.delete(r.region_id);
                           return next;
                         });
@@ -249,7 +244,8 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
               ) : (
                 <ShieldCheck className="h-3 w-3 mr-1" />
               )}
-              Redact {accepted.size} region{accepted.size === 1 ? "" : "s"} on all pages
+              Redact {accepted.size} region{accepted.size === 1 ? "" : "s"} on
+              all pages
             </Button>
           </>
         ))}

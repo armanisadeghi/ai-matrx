@@ -5,6 +5,7 @@ import { FieldDefinition } from "@/types/customAppTypes";
 import HelpIcon from "@/components/official/HelpIcon";
 import { FileUploadWithStorage } from "@/components/ui/file-upload/FileUploadWithStorage";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { normalizeFieldDefinition } from "@/features/applet/utils/field-normalization";
 
 interface FieldDefWithDisabled extends FieldDefinition {
@@ -365,20 +366,12 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       case "switch":
         return (
           <div className="flex items-center space-x-2">
-            <label
-              htmlFor={field.id}
-              className={`relative inline-flex items-center cursor-pointer ${field.disabled ? "opacity-60 cursor-not-allowed" : ""}`}
-            >
-              <input
-                type="checkbox"
-                id={field.id}
-                checked={!!value}
-                onChange={handleChange}
-                disabled={field.disabled}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500"></div>
-            </label>
+            <Switch
+              id={field.id}
+              checked={!!value}
+              onCheckedChange={setValue}
+              disabled={field.disabled}
+            />
             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
               {value
                 ? field.componentProps.onLabel || "Yes"

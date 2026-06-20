@@ -26,6 +26,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
@@ -448,11 +449,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
 
           {canOverride && (
             <label className="flex items-center gap-2 px-2 py-1 text-[11px] text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={overrideMode}
-                onChange={(e) => setOverrideMode(e.target.checked)}
-                className="h-3 w-3 accent-emerald-500"
+                onCheckedChange={(v) => setOverrideMode(v === true)}
               />
               Use only for this conversation (advanced)
             </label>

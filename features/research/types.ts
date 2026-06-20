@@ -96,6 +96,24 @@ export interface AutoConsolidatePassRequest {
   /** Cap the tags consolidated this run. Omit = topic setting, else every populated tag. */
   max_calls?: number | null;
 }
+/**
+ * Body for POST /research/topics/{id}/generate-tag-suggestions (streaming).
+ * Hand-written; replace with components["schemas"]["GenerateTagsRequest"] on the
+ * next OpenAPI type regen from Python.
+ */
+export interface GenerateTagsRequest {
+  /** Optional free-text guidance that steers which cross-cutting dimensions the model proposes. */
+  user_input?: string | null;
+}
+/**
+ * Body for POST /research/topics/{id}/apply-tag-suggestions.
+ * Hand-written; replace with components["schemas"]["ApplyTagsRequest"] on the
+ * next OpenAPI type regen from Python.
+ */
+export interface ApplyTagsRequest {
+  /** The `name` of each suggested dimension the user chose to create as a real tag. */
+  picked_names: string[];
+}
 // topic_id was added on 2026-05-02; pending next type regen from Python
 export type SuggestRequest = components["schemas"]["SuggestRequest"] & {
   topic_id?: string | null;
@@ -218,10 +236,17 @@ export interface TopicCostSummary {
  * three documented values per FRONTEND_SPEC §2 — Supabase column
  * regeneration would do this automatically; for now we narrow at the
  * application boundary.
+ *
+ * `tag_suggestions` is narrowed from the loose Supabase `Json` to the typed
+ * `TagSuggestionsBundle` (or null) at the same boundary.
  */
-export type ResearchTopic = Omit<ResearchTopicRow, "autonomy_level"> &
+export type ResearchTopic = Omit<
+  ResearchTopicRow,
+  "autonomy_level" | "tag_suggestions"
+> &
   TopicQuotaFields & {
     autonomy_level: "auto" | "semi" | "manual";
+    tag_suggestions: TagSuggestionsBundle | null;
   };
 
 export type LlmStatus = "success" | "failed";
@@ -561,6 +586,85 @@ export interface TagSuggestion {
   reason: string;
 }
 
+// ── Cross-cutting tag suggestions ────────────────────────────────────────────
+// A "cross-cutting" dimension is a tag the model proposes after looking across
+// the topic's keywords + search results — one theme that spans several keywords
+// rather than belonging to a single one. The user GENERATES these, PICKS which
+// to keep, and CREATES them as real `rs_tag` rows. Persisted on
+// `rs_topic.tag_suggestions`; mirrors the backend bundle shape.
+
+/** One proposed cross-cutting dimension. */
+export interface CrossCuttingTagSuggestion {
+  /** The dimension name — becomes the `rs_tag.name` when created. */
+  name: string;
+  /** The topic keywords this dimension cuts across. */
+  keywords_spanned: string[];
+  /** Model confidence, 0–1. Render as an integer percentage (never a decimal). */
+  confidence: number;
+  /** One-line rationale for why this is a useful cross-cutting tag. */
+  reason: string;
+  /** True once a real `rs_tag` has been created from this suggestion. */
+  applied: boolean;
+}
+
+/** The full `rs_topic.tag_suggestions` payload — a generation run + its results. */
+export interface TagSuggestionsBundle {
+  /** ISO timestamp of the generation run. */
+  generated_at: string;
+  /** The optional user guidance that steered this run, if any. */
+  user_input?: string | null;
+  tags: CrossCuttingTagSuggestion[];
+}
+
+/** Response from POST /research/topics/{id}/apply-tag-suggestions. */
+export interface ApplyTagsResponse {
+  /** Number of new `rs_tag` rows created this call. */
+  created: number;
+  /** Number of source→tag assignments written. */
+  assignments: number;
+}
+
+/** Response from GET /research/topics/{id}/tag-input-export. */
+export interface TagInputExportResponse {
+  /** The keyword list, formatted exactly as the agent receives it. */
+  keywords_text: string;
+  /** The search-results blob, formatted exactly as the agent receives it. */
+  search_results_text: string;
+}
+
+/**
+ * Narrow the loose Supabase `Json` from `rs_topic.tag_suggestions` into the
+ * typed bundle, dropping anything malformed. Returns null when absent/invalid.
+ * Lets components read `topic.tag_suggestions` safely regardless of store typing.
+ */
+export function tagSuggestionsFromJson(
+  raw: Json | null | undefined,
+): TagSuggestionsBundle | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  if (!Array.isArray(o.tags)) return null;
+  const tags: CrossCuttingTagSuggestion[] = o.tags
+    .filter((t): t is Record<string, unknown> => !!t && typeof t === "object")
+    .map((t) => ({
+      name: typeof t.name === "string" ? t.name : "",
+      keywords_spanned: Array.isArray(t.keywords_spanned)
+        ? t.keywords_spanned.filter(
+            (k): k is string => typeof k === "string",
+          )
+        : [],
+      confidence: typeof t.confidence === "number" ? t.confidence : 0,
+      reason: typeof t.reason === "string" ? t.reason : "",
+      applied: t.applied === true,
+    }))
+    .filter((t) => t.name.length > 0);
+  return {
+    generated_at:
+      typeof o.generated_at === "string" ? o.generated_at : "",
+    user_input: typeof o.user_input === "string" ? o.user_input : null,
+    tags,
+  };
+}
+
 // ============================================================================
 // STREAMING TYPES
 // ============================================================================
@@ -752,6 +856,15 @@ export interface DocumentComplete {
   result: Record<string, unknown>;
 }
 
+export interface TagSuggestionsStart {
+  type: "tag_suggestions_start";
+}
+
+export interface TagSuggestionsComplete {
+  type: "tag_suggestions_complete";
+  tags: CrossCuttingTagSuggestion[];
+}
+
 export interface PipelineComplete {
   type: "pipeline_complete";
   topic_id: string;
@@ -787,6 +900,8 @@ export type ResearchDataEvent =
   | ConsolidateComplete
   | SuggestTagsComplete
   | DocumentComplete
+  | TagSuggestionsStart
+  | TagSuggestionsComplete
   | PipelineComplete;
 
 /** @deprecated Use ResearchDataEvent instead — matches real backend contract */

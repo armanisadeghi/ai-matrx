@@ -10,6 +10,7 @@ import {
 import type { AssetPreset, Visibility } from "@/features/files";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ExternalLink } from "lucide-react";
 
 interface ComponentDisplayProps {
@@ -173,7 +174,11 @@ openUploader({
               label="Viewer action"
               onChange={setEnableViewerAction}
             />
-            <ToggleRow checked={compact} label="Compact" onChange={setCompact} />
+            <ToggleRow
+              checked={compact}
+              label="Compact"
+              onChange={setCompact}
+            />
             <ToggleRow
               checked={hideVariantBadges}
               label="Hide variant badges"
@@ -252,9 +257,16 @@ openUploader({
         <div className="space-y-2 pt-2 border-t border-border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">4-source picker — <code className="text-xs bg-muted px-1.5 py-0.5 rounded">showSourceTabs</code></p>
+              <p className="text-sm font-medium">
+                4-source picker —{" "}
+                <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                  showSourceTabs
+                </code>
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Upload · Library · URL · Generate — same <code className="text-[11px]">ImageUploaderResult</code> shape from every source
+                Upload · Library · URL · Generate — same{" "}
+                <code className="text-[11px]">ImageUploaderResult</code> shape
+                from every source
               </p>
             </div>
             {tabResult && (
@@ -347,11 +359,9 @@ function ToggleRow({
 }) {
   return (
     <label className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs">
-      <input
-        type="checkbox"
+      <Checkbox
         checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-3.5 w-3.5"
+        onCheckedChange={(v) => onChange(v === true)}
       />
       <span>{label}</span>
     </label>

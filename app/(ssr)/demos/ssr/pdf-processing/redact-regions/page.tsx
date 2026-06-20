@@ -4,8 +4,13 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -169,11 +174,10 @@ export default function RedactRegionsDemo() {
                 </Field>
               </div>
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={r.preserve_text}
-                  onChange={(e) =>
-                    updateRegion(i, { preserve_text: e.target.checked })
+                  onCheckedChange={(v) =>
+                    updateRegion(i, { preserve_text: v === true })
                   }
                 />
                 preserve_text — strip images/graphics only, keep text glyphs
@@ -183,9 +187,7 @@ export default function RedactRegionsDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              setRegions((prev) => [...prev, { ...EMPTY_REGION }])
-            }
+            onClick={() => setRegions((prev) => [...prev, { ...EMPTY_REGION }])}
           >
             <Plus className="h-3.5 w-3.5 mr-1" /> Add region
           </Button>
@@ -193,21 +195,14 @@ export default function RedactRegionsDemo() {
       }
     >
       <FieldGroup>
-        <Field
-          label="Reason"
-          hint="Required — written to pdf_redaction_audits"
-        >
-          <Input
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
+        <Field label="Reason" hint="Required — written to pdf_redaction_audits">
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </FieldGroup>
       <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={scrubMetadata}
-          onChange={(e) => setScrubMetadata(e.target.checked)}
+          onCheckedChange={(v) => setScrubMetadata(v === true)}
         />
         Also scrub metadata + JS + attachments
       </label>

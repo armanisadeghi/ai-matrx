@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-tools/source-kind-badge";
 import type { Database } from "@/types/database.types";
@@ -173,11 +174,9 @@ export function ToolSearchDialog({
             />
           </div>
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground select-none cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-              className="h-3 w-3"
+              onCheckedChange={(v) => setShowInactive(v === true)}
             />
             Include inactive
           </label>

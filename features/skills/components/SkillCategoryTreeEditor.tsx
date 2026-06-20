@@ -56,6 +56,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -113,9 +114,9 @@ export function SkillCategoryTreeEditor({
   // Collapsed state per node id — default expanded.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [creatingUnder, setCreatingUnder] = useState<
-    { parentId: string | null } | null
-  >(null);
+  const [creatingUnder, setCreatingUnder] = useState<{
+    parentId: string | null;
+  } | null>(null);
 
   // Flatten the visible tree into a sortable list.
   const flatNodes = useMemo<FlatNode[]>(() => {
@@ -328,9 +329,7 @@ export function SkillCategoryTreeEditor({
                     onRename={(label) => onRename(node.id, label)}
                     onSetColor={(color) => onSetColor(node.id, color)}
                     onSetIconName={(name) => onSetIconName(node.id, name)}
-                    onAddChild={() =>
-                      setCreatingUnder({ parentId: node.id })
-                    }
+                    onAddChild={() => setCreatingUnder({ parentId: node.id })}
                     onDelete={() => onDelete(node.row)}
                     isAdmin={isAdmin}
                   />
@@ -340,8 +339,9 @@ export function SkillCategoryTreeEditor({
                     parentId={creatingUnder.parentId}
                     depth={
                       creatingUnder.parentId
-                        ? (flatNodes.find((n) => n.id === creatingUnder.parentId)
-                            ?.depth ?? 0) + 1
+                        ? (flatNodes.find(
+                            (n) => n.id === creatingUnder.parentId,
+                          )?.depth ?? 0) + 1
                         : 0
                     }
                     onCancel={() => setCreatingUnder(null)}
@@ -395,8 +395,14 @@ function SortableCategoryRow({
   onDelete: () => void;
   isAdmin: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: node.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: node.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -499,7 +505,9 @@ function SortableCategoryRow({
             "flex-1 text-left truncate",
             !readOnly && "cursor-text",
           )}
-          title={readOnly ? "Read-only (system category)" : "Double-click to rename"}
+          title={
+            readOnly ? "Read-only (system category)" : "Double-click to rename"
+          }
         >
           {node.row.label}
         </button>
@@ -520,10 +528,7 @@ function SortableCategoryRow({
 
       {/* Icon name editor (typeahead) */}
       {!readOnly && (
-        <IconNamePicker
-          iconName={node.row.iconName}
-          onChange={onSetIconName}
-        />
+        <IconNamePicker iconName={node.row.iconName} onChange={onSetIconName} />
       )}
 
       {!readOnly && (
@@ -819,11 +824,9 @@ function CreateCategoryRow({
       />
       {isAdmin && (
         <label className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={isSystem}
-            onChange={(e) => setIsSystem(e.target.checked)}
-            className="h-3 w-3"
+            onCheckedChange={(v) => setIsSystem(v === true)}
           />
           System
         </label>

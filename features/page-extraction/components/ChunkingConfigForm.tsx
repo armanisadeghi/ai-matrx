@@ -34,6 +34,7 @@ import {
   useExtractionJobs,
 } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -658,14 +659,13 @@ function TemplateEditor({
           hint="Per-page PDFs are always attached when pdf_page is wired."
         >
           <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={draft.attachCombinedPdf}
-              onChange={(e) =>
+              onCheckedChange={(v) =>
                 dispatch(
                   patchDraft({
                     fileId,
-                    patch: { attachCombinedPdf: e.target.checked },
+                    patch: { attachCombinedPdf: v === true },
                   }),
                 )
               }

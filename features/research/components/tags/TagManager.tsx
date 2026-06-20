@@ -44,6 +44,7 @@ import {
 } from "../../service";
 import type { ResearchTag } from "../../types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { CrossCuttingTagsPanel } from "./CrossCuttingTagsPanel";
 
 export default function TagManager() {
   const { topicId } = useTopicContext();
@@ -205,6 +206,8 @@ export default function TagManager() {
           <span className="hidden sm:inline">Add Tag</span>
         </button>
       </div>
+
+      <CrossCuttingTagsPanel onTagsCreated={refresh} />
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">

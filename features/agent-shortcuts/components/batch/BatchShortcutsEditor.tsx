@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -628,9 +629,9 @@ export function BatchShortcutsEditor({ agent }: { agent: AgentDefinition }) {
               <div className="mt-1.5 flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400">
                 <TriangleAlert className="h-3 w-3 shrink-0" />
                 <span className="min-w-0">
-                  {tally.collide} surface(s) marked "Add" already have a shortcut
-                  — this creates an additional one. Use "Update existing" to edit
-                  instead.
+                  {tally.collide} surface(s) marked "Add" already have a
+                  shortcut — this creates an additional one. Use "Update
+                  existing" to edit instead.
                 </span>
                 <Button
                   type="button"
@@ -672,20 +673,16 @@ export function BatchShortcutsEditor({ agent }: { agent: AgentDefinition }) {
             action={
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={attentionOnly}
-                    onChange={(e) => setAttentionOnly(e.target.checked)}
-                    className="accent-primary"
+                    onCheckedChange={(v) => setAttentionOnly(v === true)}
                   />
                   Needs attention only
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={hideComplete}
-                    onChange={(e) => setHideComplete(e.target.checked)}
-                    className="accent-primary"
+                    onCheckedChange={(v) => setHideComplete(v === true)}
                   />
                   Hide complete
                 </label>

@@ -16084,6 +16084,7 @@ export type Database = {
       }
       rs_source: {
         Row: {
+          analysis_status: string | null
           authority_ranked_at: string | null
           authority_reasoning: string | null
           authority_score: number | null
@@ -16091,6 +16092,7 @@ export type Database = {
           description: string | null
           discovered_at: string | null
           extra_snippets: Json | null
+          final_source_score: number | null
           hostname: string | null
           id: string
           is_included: boolean | null
@@ -16100,10 +16102,15 @@ export type Database = {
           last_server_failure_reason: string | null
           origin: string
           page_age: string | null
+          page_analysis: Json | null
           policy_category: string | null
           policy_reason: string | null
+          post_read_score: number | null
+          pre_read_breakdown: Json | null
+          pre_read_score: number | null
           rank: number | null
           raw_search_result: Json | null
+          recommended_use: string | null
           scrape_status: string
           server_attempts: number
           server_gave_up: boolean
@@ -16117,6 +16124,7 @@ export type Database = {
           user_verdict_notes: string | null
         }
         Insert: {
+          analysis_status?: string | null
           authority_ranked_at?: string | null
           authority_reasoning?: string | null
           authority_score?: number | null
@@ -16124,6 +16132,7 @@ export type Database = {
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null
+          final_source_score?: number | null
           hostname?: string | null
           id?: string
           is_included?: boolean | null
@@ -16133,10 +16142,15 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          page_analysis?: Json | null
           policy_category?: string | null
           policy_reason?: string | null
+          post_read_score?: number | null
+          pre_read_breakdown?: Json | null
+          pre_read_score?: number | null
           rank?: number | null
           raw_search_result?: Json | null
+          recommended_use?: string | null
           scrape_status?: string
           server_attempts?: number
           server_gave_up?: boolean
@@ -16150,6 +16164,7 @@ export type Database = {
           user_verdict_notes?: string | null
         }
         Update: {
+          analysis_status?: string | null
           authority_ranked_at?: string | null
           authority_reasoning?: string | null
           authority_score?: number | null
@@ -16157,6 +16172,7 @@ export type Database = {
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null
+          final_source_score?: number | null
           hostname?: string | null
           id?: string
           is_included?: boolean | null
@@ -16166,10 +16182,15 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          page_analysis?: Json | null
           policy_category?: string | null
           policy_reason?: string | null
+          post_read_score?: number | null
+          pre_read_breakdown?: Json | null
+          pre_read_score?: number | null
           rank?: number | null
           raw_search_result?: Json | null
+          recommended_use?: string | null
           scrape_status?: string
           server_attempts?: number
           server_gave_up?: boolean
@@ -16449,6 +16470,7 @@ export type Database = {
           project_id: string
           scrapes_per_keyword: number
           status: string
+          tag_suggestions: Json
           template_id: string | null
           tone_profile: string | null
           updated_at: string | null
@@ -16476,6 +16498,7 @@ export type Database = {
           project_id: string
           scrapes_per_keyword?: number
           status?: string
+          tag_suggestions?: Json
           template_id?: string | null
           tone_profile?: string | null
           updated_at?: string | null
@@ -16503,6 +16526,7 @@ export type Database = {
           project_id?: string
           scrapes_per_keyword?: number
           status?: string
+          tag_suggestions?: Json
           template_id?: string | null
           tone_profile?: string | null
           updated_at?: string | null

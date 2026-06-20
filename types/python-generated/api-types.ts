@@ -5060,6 +5060,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/research/topics/{topic_id}/score-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Score Sources
+         * @description Recompute the PRE-READ priority score for a topic's sources on demand.
+         *
+         *     The same scoring the `/run` pipeline does as Phase C.6, exposed standalone so
+         *     a user can re-rank after tuning the scoring config. `source_ids=None` scores
+         *     every included source; otherwise only the given sources.
+         */
+        post: operations["score_sources_research_topics__topic_id__score_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/research/topics/{topic_id}/auto-tag": {
         parameters: {
             query?: never;
@@ -25645,6 +25669,19 @@ export interface components {
             admin_bypass_acl: boolean;
         };
         /**
+         * ScoreSourcesRequest
+         * @description Trigger the config-driven PRE-READ scoring over a topic's sources.
+         *
+         *     ``source_ids=None`` scores every included source on the topic; otherwise only
+         *     the given sources are (re)scored. Always recomputes from the current keyword-
+         *     rank + authority data — so a user hits this after tuning the scoring config to
+         *     re-rank their sources without re-running the whole pipeline.
+         */
+        ScoreSourcesRequest: {
+            /** Source Ids */
+            source_ids?: string[] | null;
+        };
+        /**
          * ScrubRequest
          * @description Composite scrub call — wipes the categories opted-in via flags.
          */
@@ -38496,6 +38533,41 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["AuthorityRankRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    score_sources_research_topics__topic_id__score_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ScoreSourcesRequest"];
             };
         };
         responses: {

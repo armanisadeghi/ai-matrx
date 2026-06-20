@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useTopicContext } from "../../context/ResearchContext";
 import { appendTopicOutput, getDocument, getSynthesis } from "../../service";
 import type { ResearchSynthesis } from "../../types";
@@ -431,12 +432,10 @@ function PodcastOutputCard({
           </div>
 
           <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={quickTest}
-              onChange={(e) => setQuickTest(e.target.checked)}
+              onCheckedChange={(v) => setQuickTest(v === true)}
               disabled={isRunning}
-              className="h-3.5 w-3.5 rounded border-border accent-primary"
             />
             Quick test render
             <span className="text-muted-foreground/60">(short, no media)</span>

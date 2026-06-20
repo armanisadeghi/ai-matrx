@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -104,18 +109,16 @@ export default function RenderPageDemo() {
       </FieldGroup>
       <div className="flex items-center gap-4 text-sm">
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={alpha}
-            onChange={(e) => setAlpha(e.target.checked)}
+            onCheckedChange={(v) => setAlpha(v === true)}
           />
           Alpha channel
         </label>
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={annotations}
-            onChange={(e) => setAnnotations(e.target.checked)}
+            onCheckedChange={(v) => setAnnotations(v === true)}
           />
           Include annotations
         </label>

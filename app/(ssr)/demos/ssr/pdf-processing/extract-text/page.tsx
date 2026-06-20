@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -69,34 +74,30 @@ export default function ExtractTextDemo() {
         </Field>
         <div className="flex flex-col gap-2 text-sm">
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={forceOcr}
-              onChange={(e) => setForceOcr(e.target.checked)}
+              onCheckedChange={(v) => setForceOcr(v === true)}
             />
             Force OCR (every page)
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={pageMetadata}
-              onChange={(e) => setPageMetadata(e.target.checked)}
+              onCheckedChange={(v) => setPageMetadata(v === true)}
             />
             Include page metadata
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={blockMetadata}
-              onChange={(e) => setBlockMetadata(e.target.checked)}
+              onCheckedChange={(v) => setBlockMetadata(v === true)}
             />
             Include block bboxes
           </label>
           <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={wordMetadata}
-              onChange={(e) => setWordMetadata(e.target.checked)}
+              onCheckedChange={(v) => setWordMetadata(v === true)}
             />
             Include word bboxes
           </label>

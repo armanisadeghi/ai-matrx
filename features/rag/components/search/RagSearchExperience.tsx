@@ -22,6 +22,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertCircle,
   Beaker,
@@ -497,20 +498,16 @@ function ScopeSidebar({
         </div>
         <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
         <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={scope.rerank}
-            onChange={(e) => scope.setRerank(e.target.checked)}
-            className="rounded"
+            onCheckedChange={(v) => scope.setRerank(v === true)}
           />
           <span>Rerank with Cohere</span>
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={scope.useHyde}
-            onChange={(e) => scope.setUseHyde(e.target.checked)}
-            className="rounded"
+            onCheckedChange={(v) => scope.setUseHyde(v === true)}
           />
           <span>HyDE expansion</span>
         </label>
@@ -530,11 +527,9 @@ function ScopeSidebar({
           />
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={scope.adminBypass}
-            onChange={(e) => scope.setAdminBypass(e.target.checked)}
-            className="rounded"
+            onCheckedChange={(v) => scope.setAdminBypass(v === true)}
           />
           <span>Admin: bypass ACL</span>
         </label>

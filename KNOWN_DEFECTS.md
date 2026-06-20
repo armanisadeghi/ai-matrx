@@ -28,8 +28,10 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 **The fence that prevents the class.** Historical record components must read a frozen per-record snapshot, never a live global/conversation slice. `ContextSlotChipStrip` keeps its live-selector behavior ONLY when no `entries` snapshot is passed (that path is reserved for "next request" surfaces above the input).
 
+**Full spec for the durable fix:** [`features/agents/docs/CONTEXT_RECORD_SPEC.md`](features/agents/docs/CONTEXT_RECORD_SPEC.md) — verified live (2026-06-19) that NO per-turn or per-conversation context record exists anywhere in Matrx Main, and that the two purpose-built tables (`ctx_context_access_log`, `ctx_user_active_context`) are empty/unwired. The spec defines the access-log wiring + per-turn snapshot table + `metadata.context_snapshot` mirror.
+
 **What's open.**
-1. **aidream / matrx-ai backend:** persist the per-turn context the agent actually received onto `cx_message.metadata.context_snapshot` (same shape: `InstanceContextEntry[]`) when reserving the user message. Until then, `messageRowToRecord` returns `{}` for reloaded messages and the bubble shows no context chips after a page reload — honest, but the true context is invisible post-reload.
+1. **aidream / matrx-ai backend:** persist the per-turn context the agent actually received onto `cx_message.metadata.context_snapshot` (same shape: `InstanceContextEntry[]`) when reserving the user message, plus the full snapshot per `CONTEXT_RECORD_SPEC.md`. Until then, `messageRowToRecord` returns `{}` for reloaded messages and the bubble shows no context chips after a page reload — honest, but the true context is invisible post-reload.
 2. **frontend (post-backend):** once the server stamps it, reloaded conversations will automatically show the correct per-turn context with no further change (the read path already keys off `metadata.context_snapshot`).
 
 ### D10 — Picklist → `matrx` fence migration: BOUND scope-cell path not yet flipped (backend-gated)

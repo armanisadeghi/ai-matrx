@@ -13235,6 +13235,56 @@
         }
       }
     },
+    "/research/topics/{topic_id}/score-sources": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Score Sources",
+        "description": "Recompute the PRE-READ priority score for a topic's sources on demand.\n\nThe same scoring the `/run` pipeline does as Phase C.6, exposed standalone so\na user can re-rank after tuning the scoring config. `source_ids=None` scores\nevery included source; otherwise only the given sources.",
+        "operationId": "score_sources_research_topics__topic_id__score_sources_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreSourcesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/research/topics/{topic_id}/auto-tag": {
       "post": {
         "tags": [
@@ -71265,6 +71315,27 @@
         ],
         "title": "ScopeContext",
         "description": "Snapshot of who is asking and at what scope."
+      },
+      "ScoreSourcesRequest": {
+        "properties": {
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids"
+          }
+        },
+        "type": "object",
+        "title": "ScoreSourcesRequest",
+        "description": "Trigger the config-driven PRE-READ scoring over a topic's sources.\n\n``source_ids=None`` scores every included source on the topic; otherwise only\nthe given sources are (re)scored. Always recomputes from the current keyword-\nrank + authority data — so a user hits this after tuning the scoring config to\nre-rank their sources without re-running the whole pipeline."
       },
       "ScrubRequest": {
         "properties": {

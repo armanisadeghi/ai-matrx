@@ -11,6 +11,7 @@ import { useState } from "react";
 import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type View = "split" | "inline" | "highlight";
 
@@ -163,10 +164,9 @@ export default function DiffDemoPage() {
           />
         </label>
         <label className="flex items-center gap-1">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={wordLevel}
-            onChange={(e) => setWordLevel(e.target.checked)}
+            onCheckedChange={(v) => setWordLevel(v === true)}
           />
           word-level
         </label>
@@ -184,10 +184,9 @@ export default function DiffDemoPage() {
           </select>
         </label>
         <label className="flex items-center gap-1">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={ignoreTrailingWs}
-            onChange={(e) => setIgnoreTrailingWs(e.target.checked)}
+            onCheckedChange={(v) => setIgnoreTrailingWs(v === true)}
           />
           ignore trailing ws
         </label>
@@ -260,9 +259,9 @@ export default function DiffDemoPage() {
             <li>Line-level LCS diff (add / remove / modified-pair).</li>
             <li>Word & character intra-line highlighting (light engine).</li>
             <li>
-              Highlight (single-pane: the new doc with changes tinted),
-              inline (unified), and split (side-by-side). Highlight is
-              light-engine only.
+              Highlight (single-pane: the new doc with changes tinted), inline
+              (unified), and split (side-by-side). Highlight is light-engine
+              only.
             </li>
             <li>Monaco for code / large inputs via engine=&quot;auto&quot;.</li>
             <li>Renders anywhere: inline here, or “Open in window”.</li>

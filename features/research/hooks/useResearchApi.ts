@@ -13,6 +13,10 @@ import type {
   AuthorityRankRequest,
   AutoTagPassRequest,
   AutoConsolidatePassRequest,
+  GenerateTagsRequest,
+  ApplyTagsRequest,
+  ApplyTagsResponse,
+  TagInputExportResponse,
   SynthesisRequest,
   SuggestRequest,
   AddLinksToScope,
@@ -97,6 +101,55 @@ export function useResearchApi() {
         body?: AutoConsolidatePassRequest,
         signal?: AbortSignal,
       ) => api.post(endpoints(topicId).autoConsolidate, body ?? {}, signal),
+
+      // --- Cross-cutting tags ---
+
+      /**
+       * Discover cross-cutting tag dimensions across the topic's keywords +
+       * search results. STREAMING — returns the raw Response; feed it to
+       * `useResearchStream` and watch for `tag_suggestions_complete`. Also
+       * persists the result to `rs_topic.tag_suggestions`.
+       */
+      generateTagSuggestions: (
+        topicId: string,
+        body?: GenerateTagsRequest,
+        signal?: AbortSignal,
+      ) =>
+        api.post(
+          endpoints(topicId).generateTagSuggestions,
+          body ?? {},
+          signal,
+        ),
+
+      /**
+       * Create real `rs_tag` rows from the suggestions the user picked, and
+       * assign matching sources. Plain POST → parsed JSON receipt.
+       */
+      applyTagSuggestions: async (
+        topicId: string,
+        body: ApplyTagsRequest,
+      ): Promise<ApplyTagsResponse> => {
+        const res = await api.post(
+          endpoints(topicId).applyTagSuggestions,
+          body,
+        );
+        return (await res.json()) as ApplyTagsResponse;
+      },
+
+      /**
+       * Fetch the exact agent input (keyword list + search-results blob) so the
+       * user can run the Cross-Cutting Tag Generator agent manually. GET → JSON.
+       */
+      getTagInputExport: async (
+        topicId: string,
+        signal?: AbortSignal,
+      ): Promise<TagInputExportResponse> => {
+        const res = await api.get(
+          endpoints(topicId).tagInputExport,
+          signal,
+        );
+        return (await res.json()) as TagInputExportResponse;
+      },
 
       // --- Keywords (Python for validation + project_id resolution) ---
       addKeywords: (topicId: string, body: KeywordCreate) =>

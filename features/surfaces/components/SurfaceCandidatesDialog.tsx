@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Zap, CheckSquare, Square, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -35,8 +36,14 @@ interface Props {
 
 const ALL = "__all__";
 
-export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Props) {
-  const available = SURFACE_CANDIDATES.filter((c) => !existingNames.has(c.name));
+export function SurfaceCandidatesDialog({
+  existingNames,
+  onClose,
+  onAdded,
+}: Props) {
+  const available = SURFACE_CANDIDATES.filter(
+    (c) => !existingNames.has(c.name),
+  );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activateAll, setActivateAll] = useState(false);
   const [client, setClient] = useState<string>(ALL);
@@ -49,7 +56,10 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
     if (group !== ALL && c.group !== group) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      if (!c.name.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) {
+      if (
+        !c.name.toLowerCase().includes(q) &&
+        !c.description.toLowerCase().includes(q)
+      ) {
         return false;
       }
     }
@@ -90,7 +100,9 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
           is_active: activateAll ? true : c.is_active,
         }));
       await bulkCreateSurfaces(rows);
-      toast.success(`Added ${rows.length} surface${rows.length === 1 ? "" : "s"}`);
+      toast.success(
+        `Added ${rows.length} surface${rows.length === 1 ? "" : "s"}`,
+      );
       onAdded();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bulk add failed");
@@ -99,7 +111,9 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
     }
   };
 
-  const clientOptions = Array.from(new Set(SURFACE_CANDIDATES.map((c) => c.client_name))).sort();
+  const clientOptions = Array.from(
+    new Set(SURFACE_CANDIDATES.map((c) => c.client_name)),
+  ).sort();
   const groupOptions: SurfaceCandidate["group"][] = [
     "page",
     "overlay",
@@ -117,10 +131,11 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
             Add surfaces from candidate inventory
           </DialogTitle>
           <p className="text-[11px] text-muted-foreground mt-1">
-            {available.length} candidate{available.length === 1 ? "" : "s"} available out of{" "}
-            {SURFACE_CANDIDATES.length} known. Already-seeded names are hidden. Sort_order and
-            description come from the catalog; the active state defaults to the catalog's
-            recommendation unless overridden below.
+            {available.length} candidate{available.length === 1 ? "" : "s"}{" "}
+            available out of {SURFACE_CANDIDATES.length} known. Already-seeded
+            names are hidden. Sort_order and description come from the catalog;
+            the active state defaults to the catalog's recommendation unless
+            overridden below.
           </p>
         </DialogHeader>
 
@@ -166,7 +181,11 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
             disabled={visible.length === 0 || busy}
             className="h-7 text-xs gap-1.5 ml-auto"
           >
-            {allVisibleSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+            {allVisibleSelected ? (
+              <CheckSquare className="h-3.5 w-3.5" />
+            ) : (
+              <Square className="h-3.5 w-3.5" />
+            )}
             {allVisibleSelected ? "Deselect visible" : "Select visible"}
           </Button>
         </div>
@@ -225,11 +244,9 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
         {/* Footer */}
         <DialogFooter className="px-5 py-3 border-t border-border flex-shrink-0 flex items-center justify-between gap-2">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={activateAll}
-              onChange={(e) => setActivateAll(e.target.checked)}
-              className="accent-primary"
+              onCheckedChange={(v) => setActivateAll(v === true)}
               disabled={busy}
             />
             Force-activate all selected (override catalog default)
@@ -241,7 +258,10 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
             <Button variant="ghost" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
-            <Button onClick={() => void onAdd()} disabled={busy || selected.size === 0}>
+            <Button
+              onClick={() => void onAdd()}
+              disabled={busy || selected.size === 0}
+            >
               {busy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (

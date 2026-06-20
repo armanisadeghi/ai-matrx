@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Switch } from "@/components/ui/switch";
 
 interface SimplePanelProps {
   intro?: string;
@@ -30,7 +31,7 @@ export function ToggleRow({
   defaultChecked,
 }: ToggleRowProps) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg bg-muted px-4 py-3.5">
+    <div className="flex cursor-pointer items-center justify-between gap-4 rounded-lg bg-muted px-4 py-3.5">
       <div className="min-w-0">
         <div className="text-[15px] text-foreground">{label}</div>
         {description ? (
@@ -39,12 +40,8 @@ export function ToggleRow({
           </div>
         ) : null}
       </div>
-      <input
-        type="checkbox"
-        defaultChecked={defaultChecked}
-        className="relative h-5 w-9 cursor-pointer appearance-none rounded-full bg-muted-foreground/40 transition before:absolute before:left-0.5 before:top-0.5 before:h-4 before:w-4 before:rounded-full before:bg-white before:transition checked:bg-emerald-500 checked:before:translate-x-4"
-      />
-    </label>
+      <Switch defaultChecked={defaultChecked} />
+    </div>
   );
 }
 

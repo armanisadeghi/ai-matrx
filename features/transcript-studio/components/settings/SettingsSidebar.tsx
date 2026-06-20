@@ -26,6 +26,7 @@ import { getModule } from "../../modules/registry";
 import { AgentShortcutPicker } from "./AgentShortcutPicker";
 import { IntervalSlider } from "./IntervalSlider";
 import { ModulePicker } from "./ModulePicker";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SettingsSidebarProps {
   sessionId: string;
@@ -133,16 +134,11 @@ export function SettingsSidebar({
               onChange={(ms) => update({ moduleIntervalMs: ms })}
             />
             <label className="flex items-center gap-2 text-[11px] text-foreground">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={effective.showPriorModules}
-                onChange={(e) =>
-                  update(
-                    { showPriorModules: e.currentTarget.checked },
-                    { immediate: true },
-                  )
+                onCheckedChange={(v) =>
+                  update({ showPriorModules: v === true }, { immediate: true })
                 }
-                className="h-3 w-3 accent-primary"
               />
               Show prior modules
             </label>

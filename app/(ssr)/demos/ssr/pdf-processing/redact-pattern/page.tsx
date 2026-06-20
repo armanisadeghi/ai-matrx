@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -16,7 +21,9 @@ import type { PdfRedactionPatternCatalog } from "@/features/pdf-extractor/types"
 export default function RedactPatternDemo() {
   const api = usePdfDemoApi();
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);
-  const [catalog, setCatalog] = useState<PdfRedactionPatternCatalog | null>(null);
+  const [catalog, setCatalog] = useState<PdfRedactionPatternCatalog | null>(
+    null,
+  );
   const [pattern, setPattern] = useState<string>("ssn");
   const [reason, setReason] = useState("HIPAA: remove SSNs before export");
   const [scrubMetadata, setScrubMetadata] = useState(true);
@@ -29,9 +36,8 @@ export default function RedactPatternDemo() {
     let cancelled = false;
     (async () => {
       try {
-        const c = await api.getJson<PdfRedactionPatternCatalog>(
-          "redactPatterns",
-        );
+        const c =
+          await api.getJson<PdfRedactionPatternCatalog>("redactPatterns");
         if (!cancelled) setCatalog(c);
       } catch (err) {
         if (!cancelled)
@@ -81,11 +87,16 @@ export default function RedactPatternDemo() {
       <FieldGroup>
         <Field
           label="Pattern (builtin id or raw regex)"
-          hint={activeEntry?.description ?? "Paste any regex — server uses re.compile(pattern, flags=0)."}
+          hint={
+            activeEntry?.description ??
+            "Paste any regex — server uses re.compile(pattern, flags=0)."
+          }
         >
           <div className="space-y-2">
             <select
-              value={entries.some((e) => e.id === pattern) ? pattern : "__custom__"}
+              value={
+                entries.some((e) => e.id === pattern) ? pattern : "__custom__"
+              }
               onChange={(e) => {
                 if (e.target.value === "__custom__") return;
                 setPattern(e.target.value);
@@ -118,10 +129,9 @@ export default function RedactPatternDemo() {
         </Field>
       </FieldGroup>
       <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={scrubMetadata}
-          onChange={(e) => setScrubMetadata(e.target.checked)}
+          onCheckedChange={(v) => setScrubMetadata(v === true)}
         />
         Also scrub metadata + JS + attachments (default on)
       </label>

@@ -95,6 +95,12 @@ const EXEMPT_RE = [
   /\.test\.tsx$/,
   /__tests__\//,
   /\/__mocks__\//,
+  // Pure-CSS toggle hacks — hidden inputs driving :has() / peer-checked layout,
+  // not user-visible form controls.
+  /^app\/\(core\)\/layout\.tsx$/,
+  /^app\/\(ssr\)\/layout\.tsx$/,
+  /^components\/icons\/SearchToolbar\.tsx$/,
+  /^features\/shell\/components\/header\/header-right-menu\/MenuGroup\.tsx$/,
 ];
 
 function isExempt(file: string): boolean {

@@ -21,6 +21,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { cn } from "@/styles/themes/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PencilIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
@@ -473,25 +474,16 @@ export const ConfigurableMarkdownContent: React.FC<
 
       return {
         // ---- input (checkbox) ----
-        input: ({ node, type, checked, disabled, ...props }: any) => {
+        input: ({ node, type, checked, disabled, onChange, ...props }: any) => {
           if (type === "checkbox") {
             return (
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={checked}
                 disabled={disabled}
-                className={cn(
-                  "mr-2 h-4 w-4 rounded border-2 cursor-pointer transition-colors",
-                  "focus:ring-2 focus:ring-offset-0",
-                  "bg-white dark:bg-gray-800",
-                  colors.checkboxBorderLight,
-                  `dark:${colors.checkboxBorderLight.replace("border-", "border-")}`,
-                  `text-${colors.accent}-600 dark:text-${colors.accent}-400`,
-                  `checked:${colors.checkboxCheckedBgLight} dark:checked:${colors.checkboxCheckedBgLight}`,
-                  `checked:${colors.checkboxBorderLight} dark:checked:${colors.checkboxBorderLight}`,
-                  `focus:ring-${colors.accent}-500 dark:focus:ring-${colors.accent}-400`,
-                )}
-                {...props}
+                className="mr-2"
+                onCheckedChange={(v) => {
+                  onChange?.({ target: { checked: v === true } });
+                }}
               />
             );
           }

@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -59,42 +64,35 @@ export default function ScrubDemo() {
     >
       <FieldGroup>
         <Field label="Reason">
-          <Input
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </FieldGroup>
       <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={metadata}
-            onChange={(e) => setMetadata(e.target.checked)}
+            onCheckedChange={(v) => setMetadata(v === true)}
           />
           Strip metadata (/Info + XMP + thumbnails)
         </label>
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={attachments}
-            onChange={(e) => setAttachments(e.target.checked)}
+            onCheckedChange={(v) => setAttachments(v === true)}
           />
           Strip attachments + embedded files
         </label>
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={javascript}
-            onChange={(e) => setJavascript(e.target.checked)}
+            onCheckedChange={(v) => setJavascript(v === true)}
           />
           Strip JavaScript actions
         </label>
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={flatten}
-            onChange={(e) => setFlatten(e.target.checked)}
+            onCheckedChange={(v) => setFlatten(v === true)}
           />
           Flatten annotations + widgets
         </label>

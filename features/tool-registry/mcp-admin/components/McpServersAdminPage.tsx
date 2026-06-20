@@ -20,13 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -119,7 +115,9 @@ export function McpServersAdminPage() {
         <Badge variant="outline" className="text-[10px]">
           {servers.length}
         </Badge>
-        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        {loading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -176,12 +174,17 @@ export function McpServersAdminPage() {
                       className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono text-xs truncate flex-1">{s.slug}</span>
+                        <span className="font-mono text-xs truncate flex-1">
+                          {s.slug}
+                        </span>
                         <FreshnessBadge fresh={fresh} compact />
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2">
                         <span className="truncate">{s.name}</span>
-                        <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] flex-shrink-0"
+                        >
                           {s.status}
                         </Badge>
                       </div>
@@ -194,7 +197,11 @@ export function McpServersAdminPage() {
         </aside>
         <div className="overflow-auto">
           {selected ? (
-            <ServerDetail key={selected.slug} server={selected} onRefreshed={() => void load()} />
+            <ServerDetail
+              key={selected.slug}
+              server={selected}
+              onRefreshed={() => void load()}
+            />
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
               Pick a server to view configs, connected users, and tools.
@@ -216,12 +223,34 @@ export function McpServersAdminPage() {
   );
 }
 
-function FreshnessBadge({ fresh, compact }: { fresh: SyncFreshness; compact?: boolean }) {
+function FreshnessBadge({
+  fresh,
+  compact,
+}: {
+  fresh: SyncFreshness;
+  compact?: boolean;
+}) {
   const map = {
-    fresh: { Icon: CheckCircle2, label: "fresh", className: "bg-success/10 text-success border-success/30" },
-    stale: { Icon: Clock, label: "stale", className: "bg-warning/10 text-warning border-warning/30" },
-    errored: { Icon: XCircle, label: "error", className: "bg-destructive/10 text-destructive border-destructive/30" },
-    never: { Icon: Clock, label: "never", className: "bg-muted text-muted-foreground border-border" },
+    fresh: {
+      Icon: CheckCircle2,
+      label: "fresh",
+      className: "bg-success/10 text-success border-success/30",
+    },
+    stale: {
+      Icon: Clock,
+      label: "stale",
+      className: "bg-warning/10 text-warning border-warning/30",
+    },
+    errored: {
+      Icon: XCircle,
+      label: "error",
+      className: "bg-destructive/10 text-destructive border-destructive/30",
+    },
+    never: {
+      Icon: Clock,
+      label: "never",
+      className: "bg-muted text-muted-foreground border-border",
+    },
   } as const;
   const { Icon, label, className } = map[fresh.state];
   return (
@@ -274,9 +303,13 @@ function ServerDetail({
       const result = await testMcpServer(server.id);
       setLatestTest(result);
       if (result.ok) {
-        toast.success(`${server.slug} reachable (${result.statusCode}, ${result.latencyMs}ms)`);
+        toast.success(
+          `${server.slug} reachable (${result.statusCode}, ${result.latencyMs}ms)`,
+        );
       } else {
-        toast.error(`${server.slug} unhealthy: ${result.error ?? result.message}`);
+        toast.error(
+          `${server.slug} unhealthy: ${result.error ?? result.message}`,
+        );
       }
       // Refresh the list so the persisted test result chip updates everywhere
       onRefreshed();
@@ -293,24 +326,44 @@ function ServerDetail({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-mono text-base font-semibold">{server.slug}</h2>
-              <Badge variant="outline" className="text-[10px]">{server.status}</Badge>
-              <Badge variant="secondary" className="text-[10px]">{server.transport}</Badge>
+              <h2 className="font-mono text-base font-semibold">
+                {server.slug}
+              </h2>
+              <Badge variant="outline" className="text-[10px]">
+                {server.status}
+              </Badge>
+              <Badge variant="secondary" className="text-[10px]">
+                {server.transport}
+              </Badge>
               {server.is_official && (
                 <Badge className="text-[10px]">official</Badge>
               )}
               <FreshnessBadge fresh={fresh} />
               <TestFreshnessBadge testFresh={testFresh} />
             </div>
-            <p className="text-sm mt-1">{server.name} <span className="text-muted-foreground">· {server.vendor}</span></p>
+            <p className="text-sm mt-1">
+              {server.name}{" "}
+              <span className="text-muted-foreground">· {server.vendor}</span>
+            </p>
             {server.description && (
-              <p className="text-xs text-muted-foreground mt-1 max-w-prose">{server.description}</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-prose">
+                {server.description}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {server.docs_url && (
-              <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
-                <a href={server.docs_url} target="_blank" rel="noopener noreferrer">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+              >
+                <a
+                  href={server.docs_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Docs
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -324,7 +377,11 @@ function ServerDetail({
               className="h-8 gap-1.5 text-xs"
               title="Probe the endpoint URL — does the server respond?"
             >
-              {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PlugZap className="h-3.5 w-3.5" />}
+              {testing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PlugZap className="h-3.5 w-3.5" />
+              )}
               Test connection
             </Button>
             <Button
@@ -334,7 +391,11 @@ function ServerDetail({
               disabled={refreshing}
               className="h-8 gap-1.5 text-xs"
             >
-              {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              {refreshing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
               Refresh sync
             </Button>
           </div>
@@ -349,10 +410,18 @@ function ServerDetail({
 
       <Tabs defaultValue="tools" className="flex flex-col">
         <TabsList className="h-9 self-start">
-          <TabsTrigger value="tools" className="text-xs">Tools</TabsTrigger>
-          <TabsTrigger value="configs" className="text-xs">Configs</TabsTrigger>
-          <TabsTrigger value="connections" className="text-xs">Connected users</TabsTrigger>
-          <TabsTrigger value="meta" className="text-xs">Metadata</TabsTrigger>
+          <TabsTrigger value="tools" className="text-xs">
+            Tools
+          </TabsTrigger>
+          <TabsTrigger value="configs" className="text-xs">
+            Configs
+          </TabsTrigger>
+          <TabsTrigger value="connections" className="text-xs">
+            Connected users
+          </TabsTrigger>
+          <TabsTrigger value="meta" className="text-xs">
+            Metadata
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="tools" className="m-0 mt-3">
           <ToolsTab slug={server.slug} />
@@ -372,7 +441,14 @@ function ServerDetail({
 }
 
 function ToolsTab({ slug }: { slug: string }) {
-  const [tools, setTools] = useState<{ id: string; name: string; description: string; is_active: boolean | null }[]>([]);
+  const [tools, setTools] = useState<
+    {
+      id: string;
+      name: string;
+      description: string;
+      is_active: boolean | null;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -381,14 +457,20 @@ function ToolsTab({ slug }: { slug: string }) {
     setError(null);
     void listServerTools(slug)
       .then(setTools)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load tools"))
+      .catch((e) =>
+        setError(e instanceof Error ? e.message : "Failed to load tools"),
+      )
       .finally(() => setLoading(false));
   }, [slug]);
 
   if (loading) return <InlineLoading />;
   if (error) return <ErrorBox msg={error} />;
   if (tools.length === 0) {
-    return <EmptyHint>No tools registered for this server (yet — try Refresh sync).</EmptyHint>;
+    return (
+      <EmptyHint>
+        No tools registered for this server (yet — try Refresh sync).
+      </EmptyHint>
+    );
   }
 
   return (
@@ -403,7 +485,10 @@ function ToolsTab({ slug }: { slug: string }) {
         </TableHeader>
         <TableBody>
           {tools.map((t) => (
-            <TableRow key={t.id} className={t.is_active === false ? "opacity-60" : ""}>
+            <TableRow
+              key={t.id}
+              className={t.is_active === false ? "opacity-60" : ""}
+            >
               <TableCell className="font-mono text-xs">
                 <a
                   href={`/administration/mcp-tools/${t.id}`}
@@ -414,7 +499,10 @@ function ToolsTab({ slug }: { slug: string }) {
               </TableCell>
               <TableCell className="text-xs">{t.description}</TableCell>
               <TableCell>
-                <Badge variant={t.is_active ? "default" : "secondary"} className="text-[10px]">
+                <Badge
+                  variant={t.is_active ? "default" : "secondary"}
+                  className="text-[10px]"
+                >
                   {t.is_active ? "active" : "inactive"}
                 </Badge>
               </TableCell>
@@ -484,9 +572,16 @@ function ConfigsTab({ serverId }: { serverId: string }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-muted-foreground">
-          Transport variants for this server. The default config is used when a user connects without specifying one. stdio configs need a command + args; HTTP/SSE configs typically just store the endpoint via the server row.
+          Transport variants for this server. The default config is used when a
+          user connects without specifying one. stdio configs need a command +
+          args; HTTP/SSE configs typically just store the endpoint via the
+          server row.
         </p>
-        <Button size="sm" onClick={() => setCreating(true)} className="h-7 gap-1.5 text-xs flex-shrink-0">
+        <Button
+          size="sm"
+          onClick={() => setCreating(true)}
+          className="h-7 gap-1.5 text-xs flex-shrink-0"
+        >
           <Plus className="h-3.5 w-3.5" />
           Add config
         </Button>
@@ -494,20 +589,37 @@ function ConfigsTab({ serverId }: { serverId: string }) {
       {loading && <InlineLoading />}
       {error && <ErrorBox msg={error} />}
       {!loading && configs.length === 0 && (
-        <EmptyHint>No connection configs defined yet — click "Add config" to create one.</EmptyHint>
+        <EmptyHint>
+          No connection configs defined yet — click "Add config" to create one.
+        </EmptyHint>
       )}
       <div className="space-y-2">
         {configs.map((c) => (
-          <div key={c.id} className="rounded-md border border-border bg-card p-3 space-y-2">
+          <div
+            key={c.id}
+            className="rounded-md border border-border bg-card p-3 space-y-2"
+          >
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="font-mono text-xs">{c.label}</code>
-                  <Badge variant="outline" className="text-[10px]">{c.config_type}</Badge>
-                  {c.is_default && <Badge className="text-[10px]">default</Badge>}
-                  {c.requires_docker && <Badge variant="secondary" className="text-[10px]">Docker</Badge>}
+                  <Badge variant="outline" className="text-[10px]">
+                    {c.config_type}
+                  </Badge>
+                  {c.is_default && (
+                    <Badge className="text-[10px]">default</Badge>
+                  )}
+                  {c.requires_docker && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      Docker
+                    </Badge>
+                  )}
                 </div>
-                {c.notes && <p className="text-[11px] text-muted-foreground mt-0.5">{c.notes}</p>}
+                {c.notes && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {c.notes}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {!c.is_default && (
@@ -541,12 +653,32 @@ function ConfigsTab({ serverId }: { serverId: string }) {
               </div>
             </div>
             <div className="text-[11px] font-mono text-muted-foreground space-y-0.5">
-              <div>command: <code className="bg-muted px-1 rounded">{c.command || <em>—</em>}</code></div>
+              <div>
+                command:{" "}
+                <code className="bg-muted px-1 rounded">
+                  {c.command || <em>—</em>}
+                </code>
+              </div>
               {c.args.length > 0 && (
-                <div>args: <code className="bg-muted px-1 rounded">{c.args.join(" ")}</code></div>
+                <div>
+                  args:{" "}
+                  <code className="bg-muted px-1 rounded">
+                    {c.args.join(" ")}
+                  </code>
+                </div>
               )}
-              {c.npm_package && <div>npm: <code className="bg-muted px-1 rounded">{c.npm_package}</code></div>}
-              {c.pip_package && <div>pip: <code className="bg-muted px-1 rounded">{c.pip_package}</code></div>}
+              {c.npm_package && (
+                <div>
+                  npm:{" "}
+                  <code className="bg-muted px-1 rounded">{c.npm_package}</code>
+                </div>
+              )}
+              {c.pip_package && (
+                <div>
+                  pip:{" "}
+                  <code className="bg-muted px-1 rounded">{c.pip_package}</code>
+                </div>
+              )}
               {c.min_node_version && <div>min Node: {c.min_node_version}</div>}
             </div>
           </div>
@@ -594,7 +726,9 @@ function ConfigDialog({
   const [npmPackage, setNpmPackage] = useState(config?.npm_package ?? "");
   const [pipPackage, setPipPackage] = useState(config?.pip_package ?? "");
   const [minNode, setMinNode] = useState(config?.min_node_version ?? "");
-  const [requiresDocker, setRequiresDocker] = useState(config?.requires_docker ?? false);
+  const [requiresDocker, setRequiresDocker] = useState(
+    config?.requires_docker ?? false,
+  );
   const [notes, setNotes] = useState(config?.notes ?? "");
   const [busy, setBusy] = useState(false);
 
@@ -607,7 +741,11 @@ function ConfigDialog({
     try {
       envSchema = JSON.parse(envSchemaJson || "[]");
     } catch (e) {
-      toast.error(e instanceof Error ? `Invalid env_schema JSON: ${e.message}` : "Invalid JSON");
+      toast.error(
+        e instanceof Error
+          ? `Invalid env_schema JSON: ${e.message}`
+          : "Invalid JSON",
+      );
       return;
     }
     const argsArr = argsText
@@ -660,7 +798,9 @@ function ConfigDialog({
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit config "${config.label}"` : "New config"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? `Edit config "${config.label}"` : "New config"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -678,7 +818,11 @@ function ConfigDialog({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Config type</Label>
-              <Select value={configType} onValueChange={setConfigType} disabled={busy}>
+              <Select
+                value={configType}
+                onValueChange={setConfigType}
+                disabled={busy}
+              >
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -754,21 +898,17 @@ function ConfigDialog({
               <Label className="text-xs">Flags</Label>
               <div className="flex items-center gap-3 h-9">
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isDefault}
-                    onChange={(e) => setIsDefault(e.target.checked)}
-                    className="accent-primary"
+                    onCheckedChange={(v) => setIsDefault(v === true)}
                     disabled={busy}
                   />
                   Default
                 </label>
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={requiresDocker}
-                    onChange={(e) => setRequiresDocker(e.target.checked)}
-                    className="accent-primary"
+                    onCheckedChange={(v) => setRequiresDocker(v === true)}
                     disabled={busy}
                   />
                   Requires Docker
@@ -777,7 +917,9 @@ function ConfigDialog({
             </div>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Env schema (JSON array of {`{ key, label, required, secret }`})</Label>
+            <Label className="text-xs">
+              Env schema (JSON array of {`{ key, label, required, secret }`})
+            </Label>
             <Textarea
               value={envSchemaJson}
               onChange={(e) => setEnvSchemaJson(e.target.value)}
@@ -787,7 +929,8 @@ function ConfigDialog({
               disabled={busy}
             />
             <p className="text-[11px] text-muted-foreground">
-              Drives the per-user setup form when a user connects with this config. Leave as <code>[]</code> if no env vars needed.
+              Drives the per-user setup form when a user connects with this
+              config. Leave as <code>[]</code> if no env vars needed.
             </p>
           </div>
           <div className="space-y-1">
@@ -806,8 +949,17 @@ function ConfigDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={busy || !label.trim()}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isEdit ? "Save" : "Create"}
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || !label.trim()}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : isEdit ? (
+              "Save"
+            ) : (
+              "Create"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -825,7 +977,9 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
     setError(null);
     void countConnectedUsers(serverId)
       .then(setCount)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load count"))
+      .catch((e) =>
+        setError(e instanceof Error ? e.message : "Failed to load count"),
+      )
       .finally(() => setLoading(false));
   }, [serverId]);
 
@@ -835,12 +989,16 @@ function ConnectionsTab({ serverId }: { serverId: string }) {
   return (
     <div className="rounded-md border border-border bg-card p-4 text-sm">
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums">{count ?? 0}</span>
-        <span className="text-xs text-muted-foreground">user{count === 1 ? "" : "s"} connected</span>
+        <span className="text-3xl font-semibold tabular-nums">
+          {count ?? 0}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          user{count === 1 ? "" : "s"} connected
+        </span>
       </div>
       <p className="text-[11px] text-muted-foreground mt-2">
-        Per-user connection details (auth status, last used, error count) live in the per-user
-        Connections page (Phase 6 — coming next).
+        Per-user connection details (auth status, last used, error count) live
+        in the per-user Connections page (Phase 6 — coming next).
       </p>
     </div>
   );
@@ -924,7 +1082,8 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
         title={`Endpoint reachable as of ${formatRelativeAge(testFresh.ageSec)} — HTTP ${testFresh.statusCode}, ${testFresh.latencyMs}ms`}
       >
         <PlugZap className="h-3 w-3" />
-        reachable {testFresh.latencyMs !== null ? `${testFresh.latencyMs}ms` : ""}
+        reachable{" "}
+        {testFresh.latencyMs !== null ? `${testFresh.latencyMs}ms` : ""}
       </span>
     );
   }

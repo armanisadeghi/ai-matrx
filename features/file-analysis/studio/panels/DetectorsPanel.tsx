@@ -9,12 +9,11 @@ import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledg
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import * as Api from "@/features/file-analysis/api/file-analysis";
-import type {
-  FileAnalysisResultRow,
-} from "@/features/file-analysis/api/file-analysis";
+import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
 
 interface Props {
   fileId: string;
@@ -72,9 +71,14 @@ export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
       }> = [];
       for (const row of candidateRows) {
         const spans =
-          (row.payload as { spans?: unknown[] } | null | undefined)?.spans ?? [];
+          (row.payload as { spans?: unknown[] } | null | undefined)?.spans ??
+          [];
         spans.forEach((_, idx) => {
-          actions.push({ result_id: row.id, span_index: idx, action: "accept" });
+          actions.push({
+            result_id: row.id,
+            span_index: idx,
+            action: "accept",
+          });
         });
       }
       if (!actions.length) return;
@@ -113,23 +117,29 @@ export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
           disabled={busy}
           onClick={() => void handleAcceptAllPii()}
         >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
+          {busy ? (
+            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+          ) : (
+            <Check className="h-3 w-3 mr-1" />
+          )}
           Accept all PII@{tier}
         </Button>
       </div>
 
-      {Object.entries(byKind).sort().map(([kind, rows]) => (
-        <DetectorBlock
-          key={kind}
-          kind={kind}
-          rows={
-            TIER_AWARE.has(kind)
-              ? rows.filter((r) => r.confidence_tier === tier)
-              : rows
-          }
-          onJumpToPage={onJumpToPage}
-        />
-      ))}
+      {Object.entries(byKind)
+        .sort()
+        .map(([kind, rows]) => (
+          <DetectorBlock
+            key={kind}
+            kind={kind}
+            rows={
+              TIER_AWARE.has(kind)
+                ? rows.filter((r) => r.confidence_tier === tier)
+                : rows
+            }
+            onJumpToPage={onJumpToPage}
+          />
+        ))}
 
       <FileKnowledgePanel fileId={fileId} compact />
 
@@ -211,11 +221,10 @@ function DetectorPrefsSection({ knownKinds }: { knownKinds: string[] }) {
                     key={kind}
                     className="flex cursor-pointer items-center gap-2 text-[11px]"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={enabled}
                       disabled={saving}
-                      onChange={(e) => void toggleKind(kind, e.target.checked)}
+                      onCheckedChange={(v) => void toggleKind(kind, v === true)}
                     />
                     <span className="flex-1 truncate">
                       {kind.replaceAll("_", " ")}
@@ -256,7 +265,9 @@ function DetectorBlock({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-accent/30"
       >
-        <span className="text-[11px] font-medium">{kind.replace(/_/g, " ")}</span>
+        <span className="text-[11px] font-medium">
+          {kind.replace(/_/g, " ")}
+        </span>
         <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
           {rows.length}
         </span>

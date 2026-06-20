@@ -51,6 +51,7 @@ import { toast } from "sonner";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 import {
@@ -720,13 +721,11 @@ function BillingSection({
     >
       <div className="space-y-3">
         <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border/40 bg-card/30 px-3 py-2 text-sm">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={data.billing_same_as_shipping}
-            onChange={(e) =>
-              onField("billing_same_as_shipping", e.target.checked)
+            onCheckedChange={(v) =>
+              onField("billing_same_as_shipping", v === true)
             }
-            className="h-4 w-4 rounded border-border text-primary focus:ring-1 focus:ring-primary/30"
           />
           <span>Same as shipping address</span>
         </label>

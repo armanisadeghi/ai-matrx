@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, PdfDemoShell } from "@/features/pdf-demo/components/PdfDemoShell";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  PdfDemoShell,
+} from "@/features/pdf-demo/components/PdfDemoShell";
 import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
@@ -30,7 +35,10 @@ export default function RedactRepeatedRegionsDemo() {
     setResult(null);
     try {
       const ids = acceptedIds.trim()
-        ? acceptedIds.split(",").map((s) => s.trim()).filter(Boolean)
+        ? acceptedIds
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : null;
       const blob = await api.postPdfBlob("redactRepeatedRegions", {
         ...source.payload,
@@ -63,10 +71,7 @@ export default function RedactRepeatedRegionsDemo() {
     >
       <FieldGroup>
         <Field label="Reason">
-          <Input
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
         <Field
           label="Accepted region IDs (optional)"
@@ -100,10 +105,9 @@ export default function RedactRepeatedRegionsDemo() {
         </Field>
       </FieldGroup>
       <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={scrubMetadata}
-          onChange={(e) => setScrubMetadata(e.target.checked)}
+          onCheckedChange={(v) => setScrubMetadata(v === true)}
         />
         Also scrub metadata + JS + attachments
       </label>

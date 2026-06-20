@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, ExternalLink, ListChecks } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ExternalLink,
+  ListChecks,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,37 +25,37 @@ import {
 } from "../../service";
 import type { CurationRow, CurationAnalysisState } from "../../service";
 import { sourceTypeFromDb } from "../../types";
-import { fmtCount } from "../../format";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
+import { ColumnFilterMenu, type ColumnFilterOption } from "../sources/ColumnFilterMenu";
 import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 
 type GroupBy = "none" | "keyword" | "tag";
-type SortBy = "importance" | "size" | "analysis" | "authority";
 
-const ANALYSIS_BADGE: Record<
-  CurationAnalysisState,
-  { label: string; cls: string }
-> = {
-  content: {
-    label: "Analyzed",
-    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  empty: {
-    label: "No content",
-    cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  failed: {
-    label: "Failed",
-    cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
-  none: { label: "—", cls: "text-muted-foreground" },
-};
+/**
+ * Every column sorts through ONE client-side axis (this table already holds the
+ * whole topic in memory). Tri-state per header: asc → desc → none. Exactly one
+ * arrow is ever lit — mirrors the SourceList data table so the two read the same.
+ *
+ * `rank` sorts by the source's BEST rank across all keywords (`importance.bestRank`)
+ * — the SAME number the `#N` cell shows — never a mixed per-keyword rank.
+ */
+type SortKey =
+  | "rank"
+  | "source"
+  | "scrape"
+  | "authority"
+  | "chars"
+  | "analysis"
+  | "tags"
+  | "included";
+type SortDir = "asc" | "desc";
 
+/** Analysis outcome → a SORT weight (more complete = higher). */
 const ANALYSIS_SORT: Record<CurationAnalysisState, number> = {
   content: 3,
   empty: 2,
@@ -55,10 +63,136 @@ const ANALYSIS_SORT: Record<CurationAnalysisState, number> = {
   none: 0,
 };
 
+/**
+ * Restrained analysis-state treatment — a small muted semantic dot + a plain
+ * monochrome label, matching the data-console look (never a bright pill). These
+ * are ANALYSIS REPORTS, so a failure is amber, never a loud red, and a successful
+ * analysis gets a quiet blue accent rather than kindergarten green.
+ */
+type AnalysisTone = "report" | "warn" | "bad" | "muted";
+const ANALYSIS_OUTCOME: Record<
+  CurationAnalysisState,
+  { label: string; tone: AnalysisTone }
+> = {
+  content: { label: "Report ready", tone: "report" },
+  empty: { label: "No content", tone: "warn" },
+  failed: { label: "Failed", tone: "bad" },
+  none: { label: "—", tone: "muted" },
+};
+
+const ANALYSIS_TONE_DOT: Record<AnalysisTone, string> = {
+  report: "bg-blue-500/70",
+  warn: "bg-amber-500/70",
+  bad: "bg-amber-600/70",
+  muted: "bg-muted-foreground/40",
+};
+
+function AnalysisCell({ state }: { state: CurationAnalysisState }) {
+  const { label, tone } = ANALYSIS_OUTCOME[state];
+  if (state === "none")
+    return <span className="text-[11px] text-muted-foreground/40">—</span>;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+      <span
+        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", ANALYSIS_TONE_DOT[tone])}
+      />
+      {label}
+    </span>
+  );
+}
+
+/** Restrained include/exclude marker — neutral muted dot, never a green chip. */
+function IncludedCell({
+  included,
+  onToggle,
+}: {
+  included: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label={included ? "Exclude" : "Include"}
+      title={
+        included ? "Included — click to exclude" : "Excluded — click to include"
+      }
+      className={cn(
+        "inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors hover:bg-muted",
+        included ? "text-foreground/70" : "text-muted-foreground/40",
+      )}
+    >
+      {included ? (
+        <Eye className="h-3.5 w-3.5" />
+      ) : (
+        <EyeOff className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+}
+
+/** Plain integer, comma-grouped — NO decimals, NO k/M. A size is a number; its
+ *  unit ("chars") lives in the column header, never in the cell. */
+function fmtInt(n: number | null | undefined): string {
+  if (n == null) return "—";
+  return Math.round(n).toLocaleString();
+}
+
+/** Tier order for sorting (high → low when descending). */
+const TIER_ORDER: Record<string, number> = { high: 3, medium: 2, low: 1 };
+function tierFromRow(r: CurationRow): string | null {
+  const t = (r.source.authority_tier ?? "").toLowerCase();
+  if (t === "high" || t === "medium" || t === "low") return t;
+  const score = r.source.authority_score;
+  if (score == null) return null;
+  if (score >= 75) return "high";
+  if (score >= 45) return "medium";
+  return "low";
+}
+
 function rankInKeyword(row: CurationRow, keywordId: string): number | null {
   return (
     row.importance?.perKeyword.find((p) => p.keyword_id === keywordId)?.rank ??
     null
+  );
+}
+
+/** One tri-state column header (asc → desc → none) shared by every column. */
+function SortHeader({
+  label,
+  field,
+  currentSort,
+  currentDir,
+  onSort,
+  className,
+}: {
+  label: string;
+  field: SortKey;
+  currentSort: SortKey | null;
+  currentDir: SortDir;
+  onSort: (field: SortKey) => void;
+  className?: string;
+}) {
+  const isActive = currentSort === field;
+  return (
+    <button
+      onClick={() => onSort(field)}
+      className={cn(
+        "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium text-muted-foreground hover:text-foreground transition-colors",
+        isActive && "text-foreground",
+        className,
+      )}
+    >
+      {label}
+      {isActive ? (
+        currentDir === "asc" ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : (
+          <ArrowDown className="h-3 w-3" />
+        )
+      ) : (
+        <ArrowUpDown className="h-3 w-3 opacity-40" />
+      )}
+    </button>
   );
 }
 
@@ -68,10 +202,14 @@ export default function CurationTable() {
 
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
-  const [sortBy, setSortBy] = useState<SortBy>("importance");
+  // ONE unified, client-side sort axis. null = default order (importance score,
+  // or — when grouped by keyword — each keyword's own search-rank order).
+  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir } | null>(null);
   const [keywordFilter, setKeywordFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [scrapeFilter, setScrapeFilter] = useState<string | null>(null);
+  const [tierFilter, setTierFilter] = useState<string | null>(null);
+  const [analysisFilter, setAnalysisFilter] = useState<string | null>(null);
   const [includedFilter, setIncludedFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -92,6 +230,9 @@ export default function CurationTable() {
       items = items.filter((r) => r.tags.some((t) => t.id === tagFilter));
     if (scrapeFilter)
       items = items.filter((r) => r.source.scrape_status === scrapeFilter);
+    if (tierFilter) items = items.filter((r) => tierFromRow(r) === tierFilter);
+    if (analysisFilter)
+      items = items.filter((r) => r.analysis === analysisFilter);
     if (includedFilter === "included")
       items = items.filter((r) => r.source.is_included);
     else if (includedFilter === "excluded")
@@ -106,19 +247,63 @@ export default function CurationTable() {
       );
     }
     return items;
-  }, [rows, keywordFilter, tagFilter, scrapeFilter, includedFilter, search]);
+  }, [
+    rows,
+    keywordFilter,
+    tagFilter,
+    scrapeFilter,
+    tierFilter,
+    analysisFilter,
+    includedFilter,
+    search,
+  ]);
 
-  const sortRows = (items: CurationRow[]): CurationRow[] =>
-    [...items].sort((a, b) => {
-      if (sortBy === "size") return (b.charCount ?? 0) - (a.charCount ?? 0);
-      if (sortBy === "analysis")
-        return ANALYSIS_SORT[b.analysis] - ANALYSIS_SORT[a.analysis];
-      if (sortBy === "authority")
-        return (
-          (b.source.authority_score ?? -1) - (a.source.authority_score ?? -1)
+  // Comparator for the active sort axis. Un-set values always sort last,
+  // regardless of direction (matches the SourceList convention).
+  const sortRows = useMemo(() => {
+    return (items: CurationRow[]): CurationRow[] => {
+      if (!sort) {
+        // Default order: importance score, highest first.
+        return [...items].sort(
+          (a, b) => (b.importance?.score ?? 0) - (a.importance?.score ?? 0),
         );
-      return (b.importance?.score ?? 0) - (a.importance?.score ?? 0);
-    });
+      }
+      const dir = sort.dir === "desc" ? -1 : 1;
+      const valueOf = (r: CurationRow): string | number | null => {
+        switch (sort.key) {
+          case "rank":
+            return r.importance?.bestRank ?? null;
+          case "source":
+            return (
+              r.source.hostname ??
+              r.source.title ??
+              r.source.url ??
+              ""
+            ).toLowerCase();
+          case "scrape":
+            return r.source.scrape_status ?? null;
+          case "authority":
+            return r.source.authority_score ?? null;
+          case "chars":
+            return r.charCount ?? null;
+          case "analysis":
+            return ANALYSIS_SORT[r.analysis];
+          case "tags":
+            return r.tags.length;
+          case "included":
+            return r.source.is_included ? 1 : 0;
+        }
+      };
+      return [...items].sort((a, b) => {
+        const av = valueOf(a);
+        const bv = valueOf(b);
+        if (av === bv) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        return av < bv ? -1 * dir : 1 * dir;
+      });
+    };
+  }, [sort]);
 
   const groups = useMemo(() => {
     if (groupBy === "keyword") {
@@ -129,10 +314,10 @@ export default function CurationTable() {
         return {
           key: k.id,
           label: k.keyword,
-          // Default view = this keyword's search-rank order; an explicit
-          // size/analysis sort is honored instead.
+          // Default view = this keyword's search-rank order; any explicit
+          // column sort is honored within the group instead.
           rows:
-            sortBy === "importance"
+            sort === null
               ? [...kwRows].sort(
                   (a, b) =>
                     (rankInKeyword(a, k.id) ?? Infinity) -
@@ -166,7 +351,7 @@ export default function CurationTable() {
       return g.filter((x) => x.rows.length > 0);
     }
     return [{ key: "__all", label: "", rows: sortRows(filtered) }];
-  }, [filtered, groupBy, keywords, tags, sortBy]);
+  }, [filtered, groupBy, keywords, tags, sort, sortRows]);
 
   // Unique visible source ids (a source can appear in multiple keyword/tag groups)
   const visibleIds = useMemo(() => {
@@ -199,6 +384,14 @@ export default function CurationTable() {
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+
+  // One tri-state toggle (asc → desc → none) shared by EVERY column header.
+  const handleSort = (field: SortKey) =>
+    setSort((prev) => {
+      if (prev?.key !== field) return { key: field, dir: "asc" };
+      if (prev.dir === "asc") return { key: field, dir: "desc" };
+      return null;
     });
 
   const runBulk = async (
@@ -271,6 +464,9 @@ export default function CurationTable() {
     }
   };
 
+  // Top bar keeps GROUPING + the broad facet filters. Per-column sort + the
+  // per-column header filters (Scrape / Authority tier / Analysis / Tag) compose
+  // (AND) with these — exactly the SourceList model.
   const filterDefs: FilterDef[] = useMemo(() => {
     const opt = (
       key: string,
@@ -294,18 +490,6 @@ export default function CurationTable() {
         (id) => setGroupBy((id as GroupBy) ?? "none"),
       ),
       opt(
-        "sort",
-        "Sort",
-        "Importance",
-        [
-          { id: "authority", label: "Authority" },
-          { id: "size", label: "Content size" },
-          { id: "analysis", label: "Analysis" },
-        ],
-        sortBy === "importance" ? null : sortBy,
-        (id) => setSortBy((id as SortBy) ?? "importance"),
-      ),
-      opt(
         "included",
         "Show",
         "All",
@@ -315,19 +499,6 @@ export default function CurationTable() {
         ],
         includedFilter,
         setIncludedFilter,
-      ),
-      opt(
-        "scrape",
-        "Scrape",
-        "All",
-        [
-          { id: "success", label: "Success" },
-          { id: "thin", label: "Thin" },
-          { id: "failed", label: "Failed" },
-          { id: "pending", label: "Pending" },
-        ],
-        scrapeFilter,
-        setScrapeFilter,
       ),
     ];
     if (keywords.length > 0)
@@ -353,17 +524,43 @@ export default function CurationTable() {
         ),
       );
     return defs;
-  }, [
-    groupBy,
-    sortBy,
-    includedFilter,
-    scrapeFilter,
-    keywordFilter,
-    tagFilter,
-    keywords,
-    tags,
-  ]);
+  }, [groupBy, includedFilter, keywordFilter, tagFilter, keywords, tags]);
 
+  // Per-column header filter options.
+  const scrapeFilterOptions: ColumnFilterOption[] = useMemo(
+    () => [
+      { id: "success", label: "Success" },
+      { id: "complete", label: "Complete" },
+      { id: "thin", label: "Thin" },
+      { id: "failed", label: "Failed" },
+      { id: "pending", label: "Pending" },
+    ],
+    [],
+  );
+  const tierFilterOptions: ColumnFilterOption[] = useMemo(
+    () => [
+      { id: "high", label: "High" },
+      { id: "medium", label: "Medium" },
+      { id: "low", label: "Low" },
+    ],
+    [],
+  );
+  const analysisFilterOptions: ColumnFilterOption[] = useMemo(
+    () => [
+      { id: "content", label: "Report ready" },
+      { id: "empty", label: "No content" },
+      { id: "failed", label: "Failed" },
+      { id: "none", label: "Not analyzed" },
+    ],
+    [],
+  );
+  const tagFilterOptions: ColumnFilterOption[] = useMemo(
+    () => tags.map((t) => ({ id: t.id, label: t.name })),
+    [tags],
+  );
+
+  const sortKey = sort?.key ?? null;
+  const sortDir = sort?.dir ?? "asc";
   const colCount = 9;
 
   return (
@@ -402,30 +599,122 @@ export default function CurationTable() {
         ) : (
           <table className="w-full text-left border-separate border-spacing-0">
             <thead className="sticky top-0 z-10 bg-background">
-              <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="py-1.5 pl-1 pr-1 w-8">
+              <tr className="[&>th]:border-b [&>th]:border-border/60 [&>th]:py-1.5">
+                <th className="pl-1 pr-1 w-8 align-middle">
                   <Checkbox
                     aria-label="Select all visible"
                     checked={allVisibleSelected}
                     onCheckedChange={toggleAll}
                   />
                 </th>
-                <th className="py-1.5 px-1 w-16 font-medium">Rank</th>
-                <th className="py-1.5 px-1 font-medium">Source</th>
-                <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                  Scrape
+                <th className="px-1 w-16 align-middle">
+                  <SortHeader
+                    label="Rank"
+                    field="rank"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
-                <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                  Authority
+                <th className="px-1 align-middle">
+                  <SortHeader
+                    label="Source"
+                    field="source"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
-                <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                  Size
+                <th className="px-2 align-middle whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Scrape"
+                      field="scrape"
+                      currentSort={sortKey}
+                      currentDir={sortDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Scrape"
+                      options={scrapeFilterOptions}
+                      selectedId={scrapeFilter}
+                      onSelect={setScrapeFilter}
+                    />
+                  </div>
                 </th>
-                <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                  Analysis
+                <th className="px-2 align-middle whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Authority"
+                      field="authority"
+                      currentSort={sortKey}
+                      currentDir={sortDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Tier"
+                      options={tierFilterOptions}
+                      selectedId={tierFilter}
+                      onSelect={setTierFilter}
+                    />
+                  </div>
                 </th>
-                <th className="py-1.5 px-2 font-medium">Tags</th>
-                <th className="py-1.5 px-2 w-12 font-medium text-center">In</th>
+                <th className="px-2 align-middle whitespace-nowrap text-right">
+                  <SortHeader
+                    label="Chars"
+                    field="chars"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                    className="justify-end"
+                  />
+                </th>
+                <th className="px-2 align-middle whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Analysis"
+                      field="analysis"
+                      currentSort={sortKey}
+                      currentDir={sortDir}
+                      onSort={handleSort}
+                    />
+                    <ColumnFilterMenu
+                      label="Analysis"
+                      options={analysisFilterOptions}
+                      selectedId={analysisFilter}
+                      onSelect={setAnalysisFilter}
+                    />
+                  </div>
+                </th>
+                <th className="px-2 align-middle whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <SortHeader
+                      label="Tags"
+                      field="tags"
+                      currentSort={sortKey}
+                      currentDir={sortDir}
+                      onSort={handleSort}
+                    />
+                    {tagFilterOptions.length > 0 && (
+                      <ColumnFilterMenu
+                        label="Tag"
+                        options={tagFilterOptions}
+                        selectedId={tagFilter}
+                        onSelect={setTagFilter}
+                      />
+                    )}
+                  </div>
+                </th>
+                <th className="px-2 w-12 align-middle text-center">
+                  <SortHeader
+                    label="In"
+                    field="included"
+                    currentSort={sortKey}
+                    currentDir={sortDir}
+                    onSort={handleSort}
+                    className="justify-center w-full"
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -506,8 +795,6 @@ function GroupRows({
       {group.rows.map((r) => {
         const s = r.source;
         const isSel = selected.has(s.id);
-        const ana = ANALYSIS_BADGE[r.analysis];
-        const huge = (r.charCount ?? 0) >= 20000;
         return (
           <tr
             key={`${group.key}:${s.id}`}
@@ -586,35 +873,18 @@ function GroupRows({
                 <span className="text-[11px] text-muted-foreground/40">—</span>
               )}
             </td>
-            <td
-              className={cn(
-                "py-1.5 px-2 align-middle text-[11px] tabular-nums whitespace-nowrap",
-                huge
-                  ? "text-amber-600 dark:text-amber-400 font-medium"
-                  : "text-muted-foreground",
-              )}
-              title={
-                huge ? "Large page — likely has junk worth trimming" : undefined
-              }
-            >
-              {fmtCount(r.charCount)}
+            <td className="py-1.5 px-2 align-middle text-right text-[11px] tabular-nums whitespace-nowrap text-muted-foreground">
+              {fmtInt(r.charCount)}
             </td>
             <td className="py-1.5 px-2 align-middle">
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-medium whitespace-nowrap",
-                  ana.cls,
-                )}
-              >
-                {ana.label}
-              </span>
+              <AnalysisCell state={r.analysis} />
             </td>
             <td className="py-1.5 px-2 align-middle">
               <div className="flex flex-wrap gap-1 max-w-[14rem]">
                 {r.tags.map((t) => (
                   <span
                     key={t.id}
-                    className="inline-flex rounded-full border border-border/60 bg-muted/30 px-1.5 py-px text-[10px] text-muted-foreground truncate max-w-[8rem]"
+                    className="inline-flex rounded border border-border/60 bg-muted/30 px-1.5 py-px text-[10px] text-muted-foreground truncate max-w-[8rem]"
                   >
                     {t.name}
                   </span>
@@ -622,27 +892,10 @@ function GroupRows({
               </div>
             </td>
             <td className="py-1.5 px-2 align-middle text-center">
-              <button
-                onClick={() => onToggleIncluded(s.id, !!s.is_included)}
-                aria-label={s.is_included ? "Exclude" : "Include"}
-                title={
-                  s.is_included
-                    ? "Included — click to exclude"
-                    : "Excluded — click to include"
-                }
-                className={cn(
-                  "inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
-                  s.is_included
-                    ? "text-green-600 dark:text-green-400 hover:bg-green-500/10"
-                    : "text-muted-foreground/50 hover:bg-muted",
-                )}
-              >
-                {s.is_included ? (
-                  <Eye className="h-3.5 w-3.5" />
-                ) : (
-                  <EyeOff className="h-3.5 w-3.5" />
-                )}
-              </button>
+              <IncludedCell
+                included={!!s.is_included}
+                onToggle={() => onToggleIncluded(s.id, !!s.is_included)}
+              />
             </td>
           </tr>
         );
