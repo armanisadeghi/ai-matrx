@@ -1,10 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Search, Layers } from "lucide-react";
+import {
+  ChevronLeft,
+  Search,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Globe,
+  BookOpen,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownStream from "@/components/MarkdownStream";
+import { fmtCount } from "../../format";
 import {
   useResearchKeywords,
   useResearchSources,
@@ -20,6 +31,10 @@ import type { ResearchSource, ResearchSynthesis } from "../../types";
  * can judge whether THIS keyword is carrying the research, independent of the
  * others picked alongside it.
  */
+
+// How many ranked results render before the "Show all" expander.
+const INLINE_RESULTS = 4;
+
 export function KeywordDetailView({
   topicId,
   keywordId,
@@ -28,6 +43,7 @@ export function KeywordDetailView({
   keywordId: string;
 }) {
   const router = useRouter();
+  const [resultsExpanded, setResultsExpanded] = useState(false);
 
   const { data: keywords } = useResearchKeywords(topicId);
   const { data: sources, isLoading: srcLoading } = useResearchSources(topicId, {
@@ -56,6 +72,13 @@ export function KeywordDetailView({
     (s) => s.scrape_status === "complete" || s.scrape_status === "success",
   ).length;
 
+  // Top results show by default; the rest sit behind the bottom expander.
+  const visibleSrc =
+    resultsExpanded || srcList.length <= INLINE_RESULTS
+      ? srcList
+      : srcList.slice(0, INLINE_RESULTS);
+  const hiddenSrc = srcList.length - visibleSrc.length;
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
@@ -78,11 +101,29 @@ export function KeywordDetailView({
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground mt-1">
+        {/* Prominent metrics — the expensive work behind this keyword. */}
+        <div className="mt-2 grid grid-cols-3 gap-1.5 sm:max-w-md">
+          <HeaderStat
+            icon={Globe}
+            value={fmtCount(srcList.length)}
+            label="Sources"
+            tint="text-primary"
+          />
+          <HeaderStat
+            icon={BookOpen}
+            value={fmtCount(goodScrapes)}
+            label="Pages read"
+            tint="text-green-600 dark:text-green-400"
+          />
+          <HeaderStat
+            icon={Layers}
+            value={fmtCount(synthList.length)}
+            label="Syntheses"
+            tint="text-blue-600 dark:text-blue-400"
+          />
+        </div>
+        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
           {keyword?.search_provider && <span>{keyword.search_provider}</span>}
-          <span>{srcList.length} sources</span>
-          <span>{goodScrapes} scraped</span>
-          <span>{synthList.length} synthesis</span>
           {keyword?.last_searched_at && (
             <span>
               searched {new Date(keyword.last_searched_at).toLocaleDateString()}
@@ -146,14 +187,73 @@ export function KeywordDetailView({
               No sources found for this keyword yet.
             </p>
           ) : (
-            <SourceResultsTable
-              sources={srcList}
-              topicId={topicId}
-              rankFor={(s) => rankFor(s.id)}
-            />
+            <div>
+              {/* Top results render by default; fade hints at the rest. */}
+              <div className="relative">
+                <SourceResultsTable
+                  sources={visibleSrc}
+                  topicId={topicId}
+                  rankFor={(s) => rankFor(s.id)}
+                />
+                {!resultsExpanded && hiddenSrc > 0 && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-background rounded-b-lg" />
+                )}
+              </div>
+              {srcList.length > INLINE_RESULTS && (
+                <div className="mt-2 flex justify-center">
+                  <button
+                    onClick={() => setResultsExpanded((v) => !v)}
+                    aria-expanded={resultsExpanded}
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                  >
+                    {resultsExpanded ? (
+                      <>
+                        Show less
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        Show all {srcList.length} results
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A single prominent metric tile for the keyword header — big tabular number,
+ * quiet label, subtle icon — matching the research stat-tile language.
+ */
+function HeaderStat({
+  icon: Icon,
+  value,
+  label,
+  tint,
+}: {
+  icon: typeof Globe;
+  value: string;
+  label: string;
+  tint: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border/40 bg-card/40 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5">
+        <Icon className={cn("h-3.5 w-3.5 shrink-0", tint)} />
+        <span className="text-xl font-bold leading-none tabular-nums">
+          {value}
+        </span>
+      </div>
+      <p className="mt-1 text-[10px] leading-none text-muted-foreground truncate">
+        {label}
+      </p>
     </div>
   );
 }

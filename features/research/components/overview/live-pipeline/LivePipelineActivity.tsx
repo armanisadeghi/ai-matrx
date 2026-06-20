@@ -99,11 +99,20 @@ export function LivePipelineActivity({
     [state],
   );
 
-  const completedStages = visibleStages.filter((k) =>
-    ["complete", "partial", "failed"].includes(state.stages[k].status),
+  // MUST be memoized: these feed the auto-fold useEffect's dep array (below).
+  // Computing them fresh every render produces new array refs each pass →
+  // the effect re-runs → setExpandedStages → re-render → infinite loop
+  // (React #185, "Maximum update depth exceeded").
+  const completedStages = useMemo(
+    () =>
+      visibleStages.filter((k) =>
+        ["complete", "partial", "failed"].includes(state.stages[k].status),
+      ),
+    [visibleStages, state],
   );
-  const activeStages = visibleStages.filter(
-    (k) => state.stages[k].status === "active",
+  const activeStages = useMemo(
+    () => visibleStages.filter((k) => state.stages[k].status === "active"),
+    [visibleStages, state],
   );
   const base = `/research/topics/${topicId}`;
 

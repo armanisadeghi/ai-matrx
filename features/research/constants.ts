@@ -183,6 +183,17 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     mobileVisible: true,
   },
   {
+    // Marquee results showcase — rebuilt from the DB so a refresh never loses
+    // it. Uses "Sparkles" (a key present in the sidebar/mobile ICON_MAP); the
+    // sidebar would render no glyph for an unmapped "Trophy".
+    key: "results",
+    label: "Results",
+    icon: "Sparkles",
+    href: (id) => `/research/topics/${id}/results`,
+    group: "primary",
+    mobileVisible: true,
+  },
+  {
     key: "keywords",
     label: "Keywords",
     icon: "Search",

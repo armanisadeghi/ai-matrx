@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -9,9 +9,12 @@ import {
   Search,
   RefreshCw,
   X,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
+  Globe,
+  BookOpen,
+  Type,
+  FileText,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -37,6 +40,11 @@ interface KeywordStat {
   top: { source: ResearchSource; rank: number | null }[];
 }
 
+// How many top results show inline by default (no interaction), and the hard cap
+// on how many are ever materialized per keyword.
+const INLINE_RESULTS = 4;
+const MAX_RESULTS = 10;
+
 export default function KeywordManager() {
   const { topicId } = useTopicContext();
   const { data: keywords, isLoading, refresh } = useResearchKeywords(topicId);
@@ -52,10 +60,20 @@ export default function KeywordManager() {
   const items = keywords ?? [];
 
   const { data: curation } = useCurationData(topicId);
-  const [expandedKw, setExpandedKw] = useState<string | null>(null);
+  // Expanded result sets, keyed by keyword id. Collapsed = top INLINE_RESULTS
+  // shown inline with a fade hint; expanded = the full set.
+  const [expandedKws, setExpandedKws] = useState<Set<string>>(new Set());
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedKws((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
-  // Per-keyword aggregates (results → reads → chars → reports) + top-10 by this
-  // keyword's rank, derived from the shared curation data.
+  // Per-keyword aggregates (results → reads → chars → reports) + top sources by
+  // this keyword's rank, derived from the shared curation data.
   const kwStats = useMemo(() => {
     const map = new Map<string, KeywordStat>();
     for (const row of curation?.rows ?? []) {
@@ -75,7 +93,7 @@ export default function KeywordManager() {
     }
     for (const s of map.values()) {
       s.top.sort((a, b) => (a.rank ?? Infinity) - (b.rank ?? Infinity));
-      s.top = s.top.slice(0, 10);
+      s.top = s.top.slice(0, MAX_RESULTS);
     }
     return map;
   }, [curation]);
@@ -254,76 +272,46 @@ export default function KeywordManager() {
         <div className="space-y-1.5">
           {filtered.map((kw) => {
             const stat = kwStats.get(kw.id);
-            const expanded = expandedKw === kw.id;
-            const canExpand = !!stat && stat.top.length > 0;
+            const expanded = expandedKws.has(kw.id);
+            const results = stat?.top ?? [];
+            const hasResults = results.length > 0;
+            const visibleResults =
+              expanded || results.length <= INLINE_RESULTS
+                ? results
+                : results.slice(0, INLINE_RESULTS);
+            const hiddenCount = results.length - visibleResults.length;
+            const canExpand = stat ? stat.sources > INLINE_RESULTS : false;
             return (
               <div
                 key={kw.id}
                 className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm transition-all hover:border-primary/25"
               >
-                <div className="group flex items-center gap-2 p-2.5 min-h-[44px]">
+                <div className="group flex items-start gap-2 p-2.5">
                   <Link
                     href={`/research/topics/${topicId}/keywords/${kw.id}`}
                     className="min-w-0 flex-1"
                   >
-                    <div className="font-medium text-sm leading-tight truncate">
-                      {kw.keyword}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm leading-tight truncate">
+                        {kw.keyword}
+                      </span>
+                      {kw.is_stale && (
+                        <span className="shrink-0 text-[10px] font-medium text-yellow-600 dark:text-yellow-400">
+                          Stale
+                        </span>
+                      )}
                     </div>
                     {stat ? (
-                      <div className="mt-1 flex items-center gap-1 flex-wrap text-[10px] tabular-nums text-muted-foreground">
-                        <span>
-                          <b className="text-foreground">{stat.sources}</b>{" "}
-                          results
-                        </span>
-                        <ChevronRight className="h-2.5 w-2.5 opacity-40" />
-                        <span>
-                          <b className="text-foreground">{stat.goodScrapes}</b>{" "}
-                          reads
-                        </span>
-                        <ChevronRight className="h-2.5 w-2.5 opacity-40" />
-                        <span>
-                          <b className="text-foreground">{fmtCount(stat.chars)}</b>{" "}
-                          chars
-                        </span>
-                        <ChevronRight className="h-2.5 w-2.5 opacity-40" />
-                        <span>
-                          <b className="text-foreground">{stat.reports}</b>{" "}
-                          reports
-                        </span>
-                        {kw.is_stale && (
-                          <span className="ml-1 font-medium text-yellow-600 dark:text-yellow-400">
-                            Stale
-                          </span>
-                        )}
-                      </div>
+                      <KeywordStatTiles stat={stat} />
                     ) : (
-                      <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
+                      <div className="mt-1 flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
                         <span>{kw.search_provider}</span>
                         {kw.result_count !== null && (
                           <span>{kw.result_count} results</span>
                         )}
-                        {kw.is_stale && (
-                          <span className="font-medium text-yellow-600 dark:text-yellow-400">
-                            Stale
-                          </span>
-                        )}
                       </div>
                     )}
                   </Link>
-                  {canExpand && (
-                    <button
-                      onClick={() => setExpandedKw(expanded ? null : kw.id)}
-                      aria-label={expanded ? "Hide top results" : "Show top results"}
-                      className="h-7 px-2 inline-flex items-center gap-1 rounded-lg text-[10px] text-muted-foreground hover:bg-muted/50 transition-colors shrink-0"
-                    >
-                      Top {stat.top.length}
-                      {expanded ? (
-                        <ChevronUp className="h-3 w-3" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3" />
-                      )}
-                    </button>
-                  )}
                   <button
                     className="h-7 w-7 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all shrink-0"
                     disabled={deletingId === kw.id}
@@ -336,34 +324,66 @@ export default function KeywordManager() {
                     )}
                   </button>
                 </div>
-                {expanded && stat && (
-                  <div className="grid grid-cols-1 gap-1 border-t border-border/40 p-2 sm:grid-cols-2">
-                    {stat.top.map(({ source, rank }) => (
-                      <Link
-                        key={source.id}
-                        href={`/research/topics/${topicId}/sources/${source.id}`}
-                        className="flex min-w-0 items-start gap-1.5 rounded-lg p-1.5 transition-colors hover:bg-muted/40"
-                      >
-                        <span className="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
-                          #{rank ?? "—"}
-                        </span>
-                        <Favicon
-                          hostname={source.hostname}
-                          size={14}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="truncate text-xs font-medium">
-                            {source.title || source.hostname || source.url}
-                          </div>
-                          {source.description && (
-                            <div className="line-clamp-2 text-[10px] text-muted-foreground">
-                              {source.description}
+
+                {/* Top results — shown inline by default; the rest live behind
+                    the bottom expander, with a fade hinting there's more. */}
+                {hasResults && (
+                  <div className="border-t border-border/40">
+                    <div className="relative">
+                      <div className="grid grid-cols-1 gap-0.5 p-2 sm:grid-cols-2">
+                        {visibleResults.map(({ source, rank }) => (
+                          <Link
+                            key={source.id}
+                            href={`/research/topics/${topicId}/sources/${source.id}`}
+                            className="flex min-w-0 items-start gap-1.5 rounded-lg p-1.5 transition-colors hover:bg-muted/40"
+                          >
+                            <span className="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
+                              #{rank ?? "—"}
+                            </span>
+                            <Favicon
+                              hostname={source.hostname}
+                              size={14}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-medium">
+                                {source.title || source.hostname || source.url}
+                              </div>
+                              {source.description && (
+                                <div className="line-clamp-2 text-[10px] text-muted-foreground">
+                                  {source.description}
+                                </div>
+                              )}
                             </div>
+                          </Link>
+                        ))}
+                      </div>
+                      {/* Fade hint over the last rows while collapsed. */}
+                      {!expanded && hiddenCount > 0 && (
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-b from-transparent to-background rounded-b-xl" />
+                      )}
+                    </div>
+                    {canExpand && (
+                      <div className="flex justify-center pb-1.5">
+                        <button
+                          onClick={() => toggleExpanded(kw.id)}
+                          aria-expanded={expanded}
+                          className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors"
+                        >
+                          {expanded ? (
+                            <>
+                              Show less
+                              <ChevronUp className="h-3 w-3" />
+                            </>
+                          ) : (
+                            <>
+                              Show all {stat?.sources} results
+                              <ChevronDown className="h-3 w-3" />
+                            </>
                           )}
-                        </div>
-                      </Link>
-                    ))}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -371,6 +391,66 @@ export default function KeywordManager() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The expensive work behind a keyword, made to register at a glance: results
+ * found → pages read → characters processed → reports generated. Big numbers,
+ * quiet labels, subtle iconography — the same stat-tile language used across
+ * the research surfaces.
+ */
+function KeywordStatTiles({ stat }: { stat: KeywordStat }) {
+  const tiles: {
+    icon: typeof Globe;
+    value: string;
+    label: string;
+    tint: string;
+  }[] = [
+    {
+      icon: Globe,
+      value: fmtCount(stat.sources),
+      label: "Results",
+      tint: "text-primary",
+    },
+    {
+      icon: BookOpen,
+      value: fmtCount(stat.goodScrapes),
+      label: "Pages read",
+      tint: "text-green-600 dark:text-green-400",
+    },
+    {
+      icon: Type,
+      value: fmtCount(stat.chars),
+      label: "Characters",
+      tint: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: FileText,
+      value: fmtCount(stat.reports),
+      label: "Reports",
+      tint: "text-amber-600 dark:text-amber-400",
+    },
+  ];
+  return (
+    <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+      {tiles.map(({ icon: Icon, value, label, tint }) => (
+        <div
+          key={label}
+          className="rounded-lg border border-border/40 bg-card/40 px-2 py-1.5"
+        >
+          <div className="flex items-center gap-1">
+            <Icon className={cn("h-3 w-3 shrink-0", tint)} />
+            <span className="text-lg font-bold leading-none tabular-nums">
+              {value}
+            </span>
+          </div>
+          <p className="mt-1 text-[10px] leading-none text-muted-foreground truncate">
+            {label}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

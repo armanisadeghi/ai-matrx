@@ -22,7 +22,10 @@ import {
   FileType,
   Music,
   ExternalLink,
+  Download,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -50,6 +53,9 @@ import {
   hostLabel,
 } from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
+import { uploadFileWithProgress } from "@/features/files/api/files";
+import YouTubeEmbed from "@/features/files/blocks/youtube/YouTubeEmbed";
+import { parseYouTubeUrl, youTubeThumbnail } from "@/lib/media/youtube";
 
 const TYPE_ICONS = {
   image: ImageIcon,
@@ -742,6 +748,60 @@ function ResourceSection({
 
 const DIRECT_VIDEO_RE = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i;
 
+/**
+ * A YouTube row plays via the shared `YouTubeEmbed` facade (poster + click-to-
+ * play, no iframe until the user hits play). Detected by URL — NOT by
+ * `media_type` — so a YouTube link captured as a generic resource still embeds
+ * rather than rendering as a bare outbound link.
+ *
+ * A poster always shows: server `thumbnail_url` first, else YouTube's derived
+ * `hqdefault` thumb.
+ */
+function YouTubeVideoCard({
+  item,
+  videoId,
+  start,
+  onToggleRelevance,
+}: {
+  item: ResearchMedia;
+  videoId: string;
+  start?: number;
+  onToggleRelevance: (item: ResearchMedia) => void;
+}) {
+  const label = item.alt_text || item.caption || hostLabel(item.url) || item.url;
+  const poster =
+    item.thumbnail_url || youTubeThumbnail(videoId, "hq");
+
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
+      )}
+    >
+      <YouTubeEmbed
+        videoId={videoId}
+        start={start}
+        title={label}
+        poster={poster}
+        className="my-0 rounded-none border-0"
+      />
+      <Button
+        variant={item.is_relevant ? "default" : "outline"}
+        size="icon"
+        className="absolute top-1.5 right-1.5 z-10 h-6 w-6 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+        onClick={() => onToggleRelevance(item)}
+      >
+        {item.is_relevant ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <X className="h-3 w-3" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
 /** Videos play INSIDE the app — YouTube/Vimeo embed, or an inline <video> for a
  * direct file. A poster (server thumbnail or a derived YouTube thumb) shows
  * until the user hits play, so we never load N iframes at once. */
@@ -753,6 +813,21 @@ function VideoCard({
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const [playing, setPlaying] = useState(false);
+
+  // YouTube is detected by URL (not media_type) so a YouTube link captured as
+  // any media type still embeds inline via the shared facade.
+  const yt = parseYouTubeUrl(item.url);
+  if (yt) {
+    return (
+      <YouTubeVideoCard
+        item={item}
+        videoId={yt.videoId}
+        start={yt.start}
+        onToggleRelevance={onToggleRelevance}
+      />
+    );
+  }
+
   const embed = embedInfo(item);
   const poster = videoPoster(item);
   const isDirectFile = DIRECT_VIDEO_RE.test(item.url);
@@ -876,8 +951,27 @@ function docIcon(item: ResearchMedia): React.ComponentType<{ className?: string 
   return File;
 }
 
-/** A file card with a type icon, real file name, source host, and an Open
- * action. (In-app "Save to my files" lands next, with the server endpoint.) */
+/** Logical folder the gallery saves remote documents into. */
+const SAVED_DOCS_FOLDER = "Research/Saved Documents";
+
+/** A best-effort upload filename: real file name from the URL, ensuring it
+ * carries an extension (falls back to the alt-text/caption or `document.pdf`). */
+function uploadFileName(item: ResearchMedia): string {
+  const fromUrl = fileNameFromUrl(item.url);
+  if (/\.[a-z0-9]{1,5}$/i.test(fromUrl)) return fromUrl;
+  const base =
+    (item.alt_text || item.caption || fromUrl || "document")
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .slice(0, 120) || "document";
+  const ext = fileExt(item.url) || (resourceKind(item) === "pdf" ? "pdf" : "");
+  return ext ? `${base}.${ext}` : `${base}.pdf`;
+}
+
+/** A file card with a type icon, real file name, source host, an Open action,
+ * and a "Save to library" action that pulls the remote file into the user's
+ * cloud library. */
 function DocumentCard({
   item,
   onToggleRelevance,
@@ -889,6 +983,41 @@ function DocumentCard({
   const name = (item.alt_text || "").trim() || fileNameFromUrl(item.url);
   const host = hostLabel(item.url);
   const ext = fileExt(item.url) || resourceKind(item) || "";
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    if (saving) return;
+    setSaving(true);
+    const filename = uploadFileName(item);
+    try {
+      // Pull the remote file as bytes. A cross-origin host without permissive
+      // CORS will reject this — caught below and surfaced as a clean toast.
+      const res = await fetch(item.url);
+      if (!res.ok) {
+        throw new Error(`Source returned ${res.status}`);
+      }
+      const blob = await res.blob();
+      const file = new File([blob], filename, {
+        type: blob.type || "application/pdf",
+      });
+      await uploadFileWithProgress(
+        { file, filePath: `${SAVED_DOCS_FOLDER}/${filename}` },
+        () => {
+          /* progress is fast for documents — button spinner is enough */
+        },
+      );
+      toast.success(`Saved "${filename}" to your library`);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Couldn't save "${filename}"`, {
+        description:
+          "The source may block direct downloads. Try Open, then save it manually.",
+      });
+      console.error("[MediaGallery] save to library failed:", detail, err);
+    } finally {
+      setSaving(false);
+    }
+  }, [item, saving]);
 
   return (
     <div
@@ -922,6 +1051,23 @@ function DocumentCard({
         >
           <ExternalLink className="h-3 w-3" /> Open
         </a>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60 disabled:cursor-default"
+          title="Save a copy to your cloud library"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+            </>
+          ) : (
+            <>
+              <Download className="h-3 w-3" /> Save to library
+            </>
+          )}
+        </button>
       </div>
       <Button
         variant={item.is_relevant ? "default" : "outline"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Search,
   Globe,
@@ -158,6 +158,26 @@ export function PipelineOrchestra() {
   const stream = useResearchStream();
   const pipeline = usePipelineProgress({ topic });
   const { data: costSummary } = useCostSummary(topicId);
+
+  // Defensive completion (issue #6): if the stream stops — a user cancel or a
+  // dropped connection — WITHOUT firing `onEnd`, sweep any still-active stage to
+  // terminal so no spinner is left animating forever. `finalize()` is idempotent
+  // (it stamps `completedAt`), so once it runs this guard is false and it never
+  // re-fires — no render loop.
+  useEffect(() => {
+    if (
+      !stream.isStreaming &&
+      pipeline.state.activeStage != null &&
+      pipeline.state.completedAt == null
+    ) {
+      pipeline.finalize();
+    }
+  }, [
+    stream.isStreaming,
+    pipeline.state.activeStage,
+    pipeline.state.completedAt,
+    pipeline.finalize,
+  ]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [keywordModalOpen, setKeywordModalOpen] = useState(false);

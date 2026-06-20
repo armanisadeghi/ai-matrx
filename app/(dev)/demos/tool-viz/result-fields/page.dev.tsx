@@ -1,11 +1,15 @@
 "use client";
 
 /**
- * Dev gallery for the tool-call-visualization "result field" library + the
- * generic renderer. Renders a battery of result shapes so the field library
- * can be eyeballed in isolation (no backend) across every branch of
- * `detectResultShape`. Doubles as the visual regression harness referenced by
- * the create-tool-renderer skill and the future user-facing builder.
+ * Dev gallery for the tool-call-visualization "result field" library, the
+ * generic renderer, and the full shell. Renders a battery of result shapes so
+ * the field library can be eyeballed in isolation (no backend) across every
+ * branch of `detectResultShape`. Doubles as the visual regression harness
+ * referenced by the create-tool-renderer skill and the future user builder.
+ *
+ * WIDTH: content is constrained to `max-w-3xl` + `px-2` — the EXACT canonical
+ * chat width (`AgentConversationColumn` with `constrainWidth`), so what you see
+ * here is what renders in a real chat message.
  *
  * Route: /demos/tool-viz/result-fields   (dev profile only)
  */
@@ -13,6 +17,7 @@
 import React from "react";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
+import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 // ─── Synthetic lifecycle entries ────────────────────────────────────────────
@@ -43,10 +48,6 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     { label: "scalar — number", value: 42 },
     { label: "scalar — boolean", value: true },
     { label: "url", value: "https://www.anthropic.com/research" },
-    {
-        label: "image url",
-        value: "https://images.unsplash.com/photo-1518770660439-4636190af475.jpg",
-    },
     {
         label: "markdown text",
         value:
@@ -95,8 +96,8 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     { label: "empty (empty object)", value: {} },
 ];
 
-// Shell-level entries to verify the full ToolCallVisualization path.
-const SHELL_ENTRIES: ToolLifecycleEntry[] = [
+// GenericRenderer state fixtures + shell fixtures.
+const STATE_ENTRIES: ToolLifecycleEntry[] = [
     entry({
         callId: "c1",
         toolName: "web_research_demo",
@@ -125,41 +126,35 @@ const SHELL_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-lg border border-border bg-card p-3">
+            <div className="mb-2 text-xs font-medium text-muted-foreground">{label}</div>
+            {children}
+        </div>
+    );
+}
+
 export default function ResultFieldsGalleryPage() {
     return (
-        <div className="mx-auto max-w-5xl space-y-8 p-6">
+        // Mirror AgentConversationColumn's centerWrap: w-full max-w-3xl mx-auto px-2.
+        <div className="mx-auto w-full max-w-3xl space-y-8 px-2 py-6">
             <header className="space-y-1">
                 <h1 className="text-xl font-semibold text-foreground">Tool result field library — gallery</h1>
                 <p className="text-sm text-muted-foreground">
-                    Every <code className="text-xs">ResultShape</code> branch rendered at full density, plus the full
-                    shell path. Verification harness for the generic tool renderer overhaul.
+                    Every <code className="text-xs">ResultShape</code> branch rendered at the exact canonical chat
+                    width (<code className="text-xs">max-w-3xl</code>, 768px). Verification harness for the generic
+                    tool renderer overhaul.
                 </p>
             </header>
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    ResultValue — full density
+                    ToolCallVisualization shell — real path (click a row to expand)
                 </h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {FIXTURES.map((f) => (
-                        <div key={f.label} className="rounded-lg border border-border bg-card p-3">
-                            <div className="mb-2 text-xs font-medium text-muted-foreground">{f.label}</div>
-                            <ResultValue value={f.value} density="full" />
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="space-y-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    ResultValue — inline density
-                </h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {FIXTURES.map((f) => (
-                        <div key={f.label} className="rounded-lg border border-border bg-card p-3">
-                            <div className="mb-2 text-xs font-medium text-muted-foreground">{f.label}</div>
-                            <ResultValue value={f.value} density="inline" />
-                        </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    {STATE_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
                 </div>
             </section>
@@ -168,16 +163,33 @@ export default function ResultFieldsGalleryPage() {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     GenericRenderer — completed / error / running states
                 </h2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    {SHELL_ENTRIES.map((e) => (
-                        <div key={e.callId} className="rounded-lg border border-border bg-card p-3">
-                            <div className="mb-2 text-xs font-medium text-muted-foreground">
-                                {e.displayName} — {e.status}
-                            </div>
-                            <GenericRenderer entry={e} events={e.events} toolGroupId={e.callId} />
-                        </div>
-                    ))}
-                </div>
+                {STATE_ENTRIES.map((e) => (
+                    <FixtureCard key={e.callId} label={`${e.displayName} — ${e.status}`}>
+                        <GenericRenderer entry={e} events={e.events} toolGroupId={e.callId} />
+                    </FixtureCard>
+                ))}
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    ResultValue — full density
+                </h2>
+                {FIXTURES.map((f) => (
+                    <FixtureCard key={f.label} label={f.label}>
+                        <ResultValue value={f.value} density="full" />
+                    </FixtureCard>
+                ))}
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    ResultValue — inline density
+                </h2>
+                {FIXTURES.map((f) => (
+                    <FixtureCard key={f.label} label={f.label}>
+                        <ResultValue value={f.value} density="inline" />
+                    </FixtureCard>
+                ))}
             </section>
         </div>
     );

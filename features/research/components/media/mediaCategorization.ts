@@ -7,6 +7,15 @@ import {
   type DimSource,
   type ResolvedDimensions,
 } from "./mediaDimensions";
+// YouTube-link detection — a YouTube URL is always a playable video regardless
+// of the row's `media_type`, so it must reach the video bucket (→ embed), never
+// the image tiers where it would render as a broken <img>.
+import { youtubeId } from "@/lib/media/youtube";
+
+/** True when the row's URL is a YouTube video link, whatever its media_type. */
+export function isYouTubeMedia(item: ResearchMedia): boolean {
+  return youtubeId(item.url) !== null;
+}
 
 export const ICON_MAX_DIM = 64;
 export const GRAPHIC_MAX_DIM = 200;
@@ -261,8 +270,9 @@ export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
   for (const item of items) {
     // Non-image resources (PDFs, videos incl. YouTube links, audio) carry no
     // intrinsic dimensions — route them to dedicated buckets, never the
-    // image size/aspect tiers.
-    if (item.media_type === "video") {
+    // image size/aspect tiers. A YouTube URL is a video even if the row was
+    // stored as some other media_type, so check it first.
+    if (item.media_type === "video" || isYouTubeMedia(item)) {
       buckets.videos.push(item);
       continue;
     }

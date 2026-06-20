@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff, ExternalLink, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useCurationData } from "../../hooks/useResearchState";
@@ -151,11 +152,17 @@ export default function CurationTable() {
       const g = tags.map((t) => ({
         key: t.id,
         label: t.name,
-        rows: sortRows(filtered.filter((r) => r.tags.some((x) => x.id === t.id))),
+        rows: sortRows(
+          filtered.filter((r) => r.tags.some((x) => x.id === t.id)),
+        ),
       }));
       const untagged = filtered.filter((r) => r.tags.length === 0);
       if (untagged.length)
-        g.push({ key: "__untagged", label: "Untagged", rows: sortRows(untagged) });
+        g.push({
+          key: "__untagged",
+          label: "Untagged",
+          rows: sortRows(untagged),
+        });
       return g.filter((x) => x.rows.length > 0);
     }
     return [{ key: "__all", label: "", rows: sortRows(filtered) }];
@@ -239,7 +246,9 @@ export default function CurationTable() {
     try {
       const tag = await createTag(topicId, { name });
       await addTagToSources(tag.id, [...selected]);
-      toast.success(`Created "${tag.name}" · tagged ${selected.size} source(s)`);
+      toast.success(
+        `Created "${tag.name}" · tagged ${selected.size} source(s)`,
+      );
       setCreateTagOpen(false);
       refresh();
     } catch (err) {
@@ -369,8 +378,8 @@ export default function CurationTable() {
           searchPlaceholder="Search title, host, url…"
         />
         <p className="mt-1 text-[10px] text-muted-foreground">
-          Clean up the set — exclude the junk, keep the best — then run the final
-          synthesis on what remains.
+          Clean up the set — exclude the junk, keep the best — then run the
+          final synthesis on what remains.
         </p>
       </div>
 
@@ -395,12 +404,10 @@ export default function CurationTable() {
             <thead className="sticky top-0 z-10 bg-background">
               <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="py-1.5 pl-1 pr-1 w-8">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label="Select all visible"
                     checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="h-3.5 w-3.5 cursor-pointer accent-primary align-middle"
+                    onCheckedChange={toggleAll}
                   />
                 </th>
                 <th className="py-1.5 px-1 w-16 font-medium">Rank</th>
@@ -490,7 +497,9 @@ function GroupRows({
             className="bg-muted/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-y border-border/40"
           >
             {group.label}{" "}
-            <span className="text-muted-foreground/60">({group.rows.length})</span>
+            <span className="text-muted-foreground/60">
+              ({group.rows.length})
+            </span>
           </td>
         </tr>
       )}
@@ -509,12 +518,10 @@ function GroupRows({
             )}
           >
             <td className="py-1.5 pl-1 pr-1 align-middle">
-              <input
-                type="checkbox"
+              <Checkbox
                 aria-label="Select source"
                 checked={isSel}
-                onChange={() => onToggleOne(s.id)}
-                className="h-3.5 w-3.5 cursor-pointer accent-primary align-middle"
+                onCheckedChange={() => onToggleOne(s.id)}
               />
             </td>
             <td
@@ -582,9 +589,13 @@ function GroupRows({
             <td
               className={cn(
                 "py-1.5 px-2 align-middle text-[11px] tabular-nums whitespace-nowrap",
-                huge ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground",
+                huge
+                  ? "text-amber-600 dark:text-amber-400 font-medium"
+                  : "text-muted-foreground",
               )}
-              title={huge ? "Large page — likely has junk worth trimming" : undefined}
+              title={
+                huge ? "Large page — likely has junk worth trimming" : undefined
+              }
             >
               {fmtCount(r.charCount)}
             </td>
@@ -614,7 +625,11 @@ function GroupRows({
               <button
                 onClick={() => onToggleIncluded(s.id, !!s.is_included)}
                 aria-label={s.is_included ? "Exclude" : "Include"}
-                title={s.is_included ? "Included — click to exclude" : "Excluded — click to include"}
+                title={
+                  s.is_included
+                    ? "Included — click to exclude"
+                    : "Excluded — click to include"
+                }
                 className={cn(
                   "inline-flex items-center justify-center h-6 w-6 rounded-md transition-colors",
                   s.is_included

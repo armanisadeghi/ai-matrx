@@ -15,7 +15,6 @@
 import React from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { TableColumn } from "./shape";
 import { isPlainObject } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
@@ -52,16 +51,6 @@ function compareCells(a: unknown, b: unknown): number {
     const bothNumeric = !Number.isNaN(na) && !Number.isNaN(nb) && a !== "" && b !== "";
     if (bothNumeric) return na - nb;
     return cellToText(a).localeCompare(cellToText(b));
-}
-
-/** RFC-4180-ish CSV escaping. */
-function toCsv(rows: Array<Record<string, unknown>>, columns: TableColumn[]): string {
-    const esc = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-    const header = columns.map((c) => esc(c.label)).join(",");
-    const body = rows
-        .map((row) => columns.map((c) => esc(cellToText(row[c.key]))).join(","))
-        .join("\n");
-    return `${header}\n${body}`;
 }
 
 /** Render a single cell — scalar inline, structure via compact ResultValue. */
@@ -131,36 +120,24 @@ export const ResultTable: React.FC<ResultTableProps> = ({
         }
     };
 
-    const csv = () => toCsv(sorted, columns);
-    const json = () => JSON.stringify(sorted, null, 2);
-
     return (
         <div className={cn("min-w-0 space-y-2", className)}>
-            {full && (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    {rows.length > FILTER_THRESHOLD ? (
-                        <input
-                            type="text"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder={`Filter ${rows.length} rows…`}
-                            // text-base = 16px to prevent iOS zoom-on-focus.
-                            className="h-9 w-full max-w-xs rounded-md border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:text-sm"
-                        />
-                    ) : (
-                        <span className="text-xs text-muted-foreground">
-                            {rows.length} {rows.length === 1 ? "row" : "rows"}
-                        </span>
-                    )}
-                    <CopyButtons
-                        label="Table"
-                        size="sm"
-                        human={csv}
-                        agent={json}
+            {full &&
+                (rows.length > FILTER_THRESHOLD ? (
+                    <input
+                        type="text"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        placeholder={`Filter ${rows.length} rows…`}
+                        // text-base = 16px to prevent iOS zoom-on-focus.
+                        className="h-9 w-full max-w-xs rounded-md border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:text-sm"
                     />
-                </div>
-            )}
+                ) : (
+                    <span className="text-xs text-muted-foreground">
+                        {rows.length} {rows.length === 1 ? "row" : "rows"}
+                    </span>
+                ))}
 
             <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full border-collapse text-sm">
