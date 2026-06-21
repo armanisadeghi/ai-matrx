@@ -525,6 +525,44 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
         arguments: { city: "Miami" },
         result: { city: "Miami", weather: "windy", events: ["Outdoor concert at Bayfront", "Food truck festival", "Art Basel preview"] },
     }),
+    entry({
+        callId: "db-navigate",
+        toolName: "navigate_active_tab",
+        arguments: { url: "https://platform.claude.com/docs" },
+        result: { url: "https://platform.claude.com/docs/en/api/messages", title: "Messages — Claude API Reference", status: "complete" },
+    }),
+    entry({
+        callId: "db-tabs",
+        toolName: "tabs",
+        arguments: {},
+        result: {
+            count: 3,
+            tabs: [
+                { id: 1, url: "https://mail.google.com/mail/u/0", title: "Inbox (2,927) - Gmail" },
+                { id: 2, url: "https://github.com/anthropics", title: "anthropics · GitHub" },
+                { id: 3, url: "https://aimatrx.com/chat", title: "Chat — AI Matrx" },
+            ],
+        },
+    }),
+    entry({
+        callId: "db-find",
+        toolName: "find",
+        arguments: { query: "search" },
+        result: {
+            ok: true,
+            mode: "ai",
+            matches: [
+                { ref: "7", score: 1, reason: "Directly corresponds to the page's search box." },
+                { ref: "11", score: 0.8, reason: "Secondary search affordance in the header." },
+            ],
+        },
+    }),
+    entry({
+        callId: "db-click",
+        toolName: "click_element",
+        arguments: { ref: "7" },
+        result: { ok: true, tag: "button", text: "Search" },
+    }),
 ];
 
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
