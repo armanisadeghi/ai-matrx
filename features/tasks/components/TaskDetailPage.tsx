@@ -32,7 +32,7 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import * as taskService from "@/features/tasks/services/taskService";
-import TaskAttachments from "./TaskAttachments";
+import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
 import { Input } from "@/components/ui/input";
@@ -547,7 +547,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
 
           {/* Attachments */}
           <div className="mb-6">
-            <TaskAttachments taskId={task.id} />
+            <TaskAttachmentsPanel taskId={task.id} />
           </div>
 
           {/* Subtasks */}

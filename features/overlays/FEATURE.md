@@ -202,8 +202,8 @@ A new overlay is a 3-file change:
 
    - Controller block (in `OverlayController.tsx`):
      ```tsx
-     // top
-     const MyDialog = dynamic(() => import("@/features/foo/MyDialog"), { ssr: false });
+     // top — ALWAYS lazyOverlay, never bare next/dynamic (see "Lazy loading" below)
+     const MyDialog = lazyOverlay(() => import("@/features/foo/MyDialog"));
      // ...
      // in JSX:
      {(() => {
@@ -276,7 +276,21 @@ One production-safe signal, fires at most once per page session:
 - `console.info: [overlays] NEW OverlayController active …`
   Confirms the controller mounted. (The legacy `console.warn` signals were removed with the legacy controller.)
 
-There is no longer a timeout/heartbeat middleware: the explicit controller renders synchronously, so a component that throws surfaces through React's normal error boundary rather than a silent 1.5s timeout. The whole silent-failure bug class is structurally impossible now.
+There is no longer a timeout/heartbeat middleware: the explicit controller renders synchronously, so a component that throws surfaces through React's normal error boundary rather than a silent 1.5s timeout.
+
+### Lazy loading — `lazyOverlay`, never bare `dynamic()`
+
+Every overlay is code-split with `ssr: false` (required — the initial bundle would be unusable otherwise). But a bare `next/dynamic` has **no loading state and no error boundary**, so a failed or stalled chunk (the classic production failure: stale deploy, cached file, or a chunk graph fragmented by *nested* `ssr:false` boundaries down one render path) renders **nothing** and fails silently. This was the real residual silent-failure hole.
+
+`features/overlays/boundary/lazyOverlay.tsx` closes it. It is a 1:1 drop-in for `dynamic()` and guarantees, for every overlay, one of exactly three outcomes — **the component, a loading state, or a meaningful error — never nothing**:
+
+- **`OverlayLoadingFallback`** — canonical spinner while the chunk loads, with a 10s **stall watchdog** that turns loud (console.error + "Reload page") so a chunk that never resolves *or* rejects can't spin invisibly forever.
+- **`OverlayErrorBoundary`** — per-render error boundary that catches `ChunkLoadError` / render throws, `console.error`s loudly, and renders `OverlayErrorFallback`.
+- **`OverlayErrorFallback`** — clear message + "Try again" / "Reload page". For **admins** (`selectIsAdmin`) it adds an expandable full live-Redux-state dump and a **"Copy for AI"** button (`buildOverlayErrorAgentPayload`) that packages the error, component stack, failing module, build id, and full state into the standard xml envelope for an LLM.
+
+Pass a custom `loading` as the second arg only when an overlay needs a bespoke skeleton; the error handling always applies.
+
+**Do not nest `ssr:false` boundaries down a single path.** One boundary protects everything beneath it; nesting them is what fragments the chunk graph and produces the intermittent prod-only failures this primitive surfaces.
 
 ---
 
@@ -288,6 +302,7 @@ There is no longer a timeout/heartbeat middleware: the explicit controller rende
 4. **Don't add a `kind` discriminator** to overlay metadata. The controller knows what each overlay is by rendering it explicitly; sheets / modals / windows / toasts are all just components.
 5. **Don't put functions in `openOverlay` data.** Use `callbackGroupId` via `callbackManager` (the opener hides this from callers).
 6. **Don't introduce a new "registry that the controller iterates."** The controller's render path is explicit JSX. The catalogue is metadata only; nothing iterates it to render.
+7. **Lazy-load overlays with `lazyOverlay`, never bare `dynamic()`.** It wires the canonical loading + error boundary so an overlay can never render nothing. And never nest `ssr:false` boundaries down one render path.
 
 ---
 
@@ -304,6 +319,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-06-21** — **Closed the lazy-overlay silent-failure hole (chunk-load failures).** Bare `next/dynamic` had no loading/error boundary, so a failed or stalled overlay chunk rendered nothing (intermittent prod-only bug, e.g. War Room → New Project). New `features/overlays/boundary/`: `lazyOverlay` (drop-in for `dynamic()`, injects `ssr:false` + canonical loading + per-render error boundary), `OverlayLoadingFallback` (spinner + 10s loud stall watchdog), `OverlayErrorBoundary`, `OverlayErrorFallback` (admin full Redux-state dump + "Copy for AI" via `buildOverlayErrorAgentPayload`/`overlayErrorReport.ts`). All 119 `dynamic()` declarations in `OverlayController.tsx` migrated to `lazyOverlay`. An overlay now renders the component, a loading state, or a meaningful error — never nothing.
 - **2026-06-17** — Extracted the two-mode "create with AI" body into a shared primitive `CreateWithAiTabs` (`features/agents/components/smart/CreateWithAiTabs.tsx`): both tabs stay mounted (AI lazy-mounted on first use, then retained, toggled with `hidden`) over a constant `min-h-[460px]` floor, so tab switches never resize/flash the window/dialog or remount the agent. `ProjectCreatePanel` was refactored onto it (fixes the window resize-on-switch). `TaskQuickCreateWindow` now renders a new `TaskCreatePanel` (Manual `TaskQuickCreateCore` + Use AI) built on the same primitive, with a `/tasks/new` route. Task AI tab is gated off until `TASK_CREATE_AGENT_ID` is set.
 - **2026-06-16 (update 2)** — `createProjectWindow` callbacks gained an `ai-created` event + `onAiCreated` handler (`callbacks.ts` + `useOpenCreateProjectWindow`). The "Use AI" tab's agent writes the project directly server-side, so on the run's `running/streaming → complete` edge `AgentRunWrapper.onRunComplete` → `ProjectCreatePanel` dispatches the global `invalidateAndRefetchFullContext()` (every nav-tree-derived consumer refreshes) AND emits `ai-created` for self-fetching consumers. The `/projects` hub "New project" button now opens this window (was the legacy `CreateProjectModal`) and refreshes its self-fetched list on both `created` and `ai-created`. The legacy `CreateProjectModal` is now a thin wrapper over `ProjectFormSheet`, so its remaining consumers (ResearchInitForm, ProjectList) inherit Manual + Use AI too.
 - **2026-06-16 (update)** — `createProjectWindow` (and `ProjectFormSheet`, and the new `/projects/new` route) now render `ProjectCreatePanel` instead of `ProjectFormCore` directly. The panel is a two-mode body — "Manual" (the unchanged `ProjectFormCore`) + "Use AI" (`AgentRunWrapper`, agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Still one form body shared across every surface — the panel wraps the core; nobody forks it. Pass `enableAi={false}` to get the manual-only form back.

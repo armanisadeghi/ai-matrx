@@ -26,9 +26,9 @@ import {
   selectAssociationCount,
   selectAssociationsLoading,
 } from "@/features/tasks/redux/taskAssociationsSlice";
-import { openFilePicker } from "@/features/files";
-import { requestUpload } from "@/features/files";
-import { folderForTask } from "@/features/files";
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { folderForTask } from "@/features/files/utils/folder-conventions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
@@ -43,12 +43,44 @@ export default function TaskAttachmentsPanel({
   className,
 }: TaskAttachmentsPanelProps) {
   const dispatch = useAppDispatch();
+  const { uploadMany } = useFileUpload();
   const bundle = useAppSelector(selectAssociations(taskId));
   const count = useAppSelector(selectAssociationCount(taskId));
   const isLoading = useAppSelector(selectAssociationsLoading(taskId));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isAttaching, setIsAttaching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  const attachFileIds = async (fileIds: string[]): Promise<number> => {
+    if (fileIds.length === 0) return 0;
+    let attached = 0;
+    let lastError: string | null = null;
+    for (const fileId of fileIds) {
+      try {
+        await dispatch(
+          associateWithTask({
+            taskId,
+            entityType: "user_file",
+            entityId: fileId,
+          }),
+        ).unwrap();
+        attached += 1;
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : "Attach failed";
+        console.error("[TaskAttachmentsPanel] associate failed", err);
+      }
+    }
+    if (attached === 0 && lastError) {
+      toast.error(`Could not attach file: ${lastError}`);
+    } else if (attached < fileIds.length) {
+      toast.error(
+        attached === 0
+          ? "Failed to attach files"
+          : `Attached ${attached} of ${fileIds.length} files`,
+      );
+    }
+    return attached;
+  };
 
   useEffect(() => {
     dispatch(fetchTaskAssociations(taskId));
@@ -69,21 +101,7 @@ export default function TaskAttachmentsPanel({
         description: "Pick existing files from your cloud storage.",
       });
       if (!fileIds || fileIds.length === 0) return;
-      let attached = 0;
-      for (const id of fileIds) {
-        try {
-          await dispatch(
-            associateWithTask({
-              taskId,
-              entityType: "user_file",
-              entityId: id,
-            }),
-          ).unwrap();
-          attached += 1;
-        } catch (err) {
-          console.error("[TaskAttachmentsPanel] associate failed", err);
-        }
-      }
+      const attached = await attachFileIds(fileIds);
       if (attached > 0) {
         toast.success(
           attached === 1 ? "Attached 1 file" : `Attached ${attached} files`,
@@ -109,35 +127,18 @@ export default function TaskAttachmentsPanel({
     setIsUploading(true);
     try {
       const fileArray = Array.from(files);
-      const result = await requestUpload({
-        files: fileArray,
+      const result = await uploadMany(fileArray, {
         folderPath: folderForTask(taskId),
         visibility: "private",
+        metadata: {
+          origin: "task-attachment",
+          task_id: taskId,
+        },
       });
       if (result.cancelled) return;
-      // Attach BOTH freshly-uploaded files AND files the user chose to
-      // reuse via the duplicate dialog's "Use existing" action. From
-      // the task's point of view there's no difference — the user
-      // wanted these files attached and we have a cld_files.id for
-      // each. The `aliased` path is the "we already had this PDF,
-      // attach that copy instead of wasting storage" path.
       const aliasedIds = result.aliased.map((a) => a.existingFileId);
       const fileIdsToAttach = [...result.uploaded, ...aliasedIds];
-      let attached = 0;
-      for (const fileId of fileIdsToAttach) {
-        try {
-          await dispatch(
-            associateWithTask({
-              taskId,
-              entityType: "user_file",
-              entityId: fileId,
-            }),
-          ).unwrap();
-          attached += 1;
-        } catch (err) {
-          console.error("[TaskAttachmentsPanel] associate failed", err);
-        }
-      }
+      const attached = await attachFileIds(fileIdsToAttach);
       if (attached > 0) {
         const allExisting =
           result.uploaded.length === 0 && aliasedIds.length > 0;
@@ -150,6 +151,12 @@ export default function TaskAttachmentsPanel({
               ? "Uploaded and attached 1 file"
               : `Uploaded and attached ${attached} files`,
         );
+      } else if (
+        fileIdsToAttach.length === 0 &&
+        result.failed.length === 0 &&
+        !result.cancelled
+      ) {
+        toast.error("No files were uploaded");
       }
       if (result.failed.length > 0) {
         const first = result.failed[0];

@@ -16,7 +16,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import dynamic from "next/dynamic";
+import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -60,305 +60,305 @@ import type {
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
-const AdminIndicator = dynamic(
+const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
   { ssr: false },
 );
-const StateViewerOverlay = dynamic(
+const StateViewerOverlay = lazyOverlay(
   () => import("@/components/admin/state-analyzer/StateViewerOverlay"),
   { ssr: false },
 );
-const StateViewerWindow = dynamic(
+const StateViewerWindow = lazyOverlay(
   () => import("@/components/admin/state-analyzer/StateViewerWindow"),
   { ssr: false },
 );
-const AgentAdminFindUsagesWindow = dynamic(
+const AgentAdminFindUsagesWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentAdminFindUsagesWindow").then(
       (m) => ({ default: m.AgentAdminFindUsagesWindow }),
     ),
   { ssr: false },
 );
-const AgentShortcutQuickCreateWindow = dynamic(
+const AgentShortcutQuickCreateWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentShortcutQuickCreateWindow"),
   { ssr: false },
 );
-const AgentContentWindow = dynamic(
+const AgentContentWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentContentWindow"),
   { ssr: false },
 );
-const AgentAssistantMarkdownDebugWindow = dynamic(
+const AgentAssistantMarkdownDebugWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow"),
   { ssr: false },
 );
-const AgentChatAssistant = dynamic(
+const AgentChatAssistant = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/chat-assistant/AgentChatAssistant").then(
       (m) => ({ default: m.AgentChatAssistant }),
     ),
   { ssr: false },
 );
-const AgentChatBubble = dynamic(
+const AgentChatBubble = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentChatBubble").then(
       (m) => ({ default: m.AgentChatBubble }),
     ),
   { ssr: false },
 );
-const ChatCollapsible = dynamic(
+const ChatCollapsible = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/ChatCollapsible").then(
       (m) => ({ default: m.ChatCollapsible }),
     ),
   { ssr: false },
 );
-const AgentCompactModal = dynamic(
+const AgentCompactModal = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentCompactModal").then(
       (m) => ({ default: m.AgentCompactModal }),
     ),
   { ssr: false },
 );
-const AgentConnectionsWindow = dynamic(
+const AgentConnectionsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentConnectionsWindow"),
   { ssr: false },
 );
-const AgentContentSidebarWindow = dynamic(
+const AgentContentSidebarWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentContentSidebarWindow"),
   { ssr: false },
 );
-const AgentConvertSystemWindow = dynamic(
+const AgentConvertSystemWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
   { ssr: false },
 );
-const AgentCreateAppWindow = dynamic(
+const AgentCreateAppWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentCreateAppWindow"),
   { ssr: false },
 );
-const AgentDataStorageWindow = dynamic(
+const AgentDataStorageWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
       (m) => ({ default: m.AgentDataStorageWindow }),
     ),
   { ssr: false },
 );
-const AgentDebugWindow = dynamic(
+const AgentDebugWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentDebugWindow"),
   { ssr: false },
 );
-const AgentFindUsagesWindow = dynamic(
+const AgentFindUsagesWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentFindUsagesWindow").then(
       (m) => ({ default: m.AgentFindUsagesWindow }),
     ),
   { ssr: false },
 );
-const AgentFlexiblePanel = dynamic(
+const AgentFlexiblePanel = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentFlexiblePanel").then(
       (m) => ({ default: m.AgentFlexiblePanel }),
     ),
   { ssr: false },
 );
-const AgentFloatingChat = dynamic(
+const AgentFloatingChat = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentFloatingChat").then(
       (m) => ({ default: m.AgentFloatingChat }),
     ),
   { ssr: false },
 );
-const AgentFullModal = dynamic(
+const AgentFullModal = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentFullModal").then(
       (m) => ({ default: m.AgentFullModal }),
     ),
   { ssr: false },
 );
-const AgentGateWindow = dynamic(
+const AgentGateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentGateWindow"),
   { ssr: false },
 );
-const AgentImportWindow = dynamic(
+const AgentImportWindow = lazyOverlay(
   () => import("@/features/agents/import/AgentImportWindow"),
   { ssr: false },
 );
-const AgentInlineOverlay = dynamic(
+const AgentInlineOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentInlineOverlay").then(
       (m) => ({ default: m.AgentInlineOverlay }),
     ),
   { ssr: false },
 );
-const AgentInterfaceVariationsWindow = dynamic(
+const AgentInterfaceVariationsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
       (m) => ({ default: m.AgentInterfaceVariationsWindow }),
     ),
   { ssr: false },
 );
-const AgentOptimizerWindow = dynamic(
+const AgentOptimizerWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
       (m) => ({ default: m.AgentOptimizerWindow }),
     ),
   { ssr: false },
 );
-const AgentPanelOverlay = dynamic(
+const AgentPanelOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentPanelOverlay").then(
       (m) => ({ default: m.AgentPanelOverlay }),
     ),
   { ssr: false },
 );
-const AgentRunHistoryWindow = dynamic(
+const AgentRunHistoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentRunHistoryWindow"),
   { ssr: false },
 );
-const AgentRunWindow = dynamic(
+const AgentRunWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentRunWindow"),
   { ssr: false },
 );
-const AgentSettingsWindow = dynamic(
+const AgentSettingsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSettingsWindow"),
   { ssr: false },
 );
-const AgentSidebarOverlay = dynamic(
+const AgentSidebarOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
       (m) => ({ default: m.AgentSidebarOverlay }),
     ),
   { ssr: false },
 );
-const AgentToastOverlay = dynamic(
+const AgentToastOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentToastOverlay").then(
       (m) => ({ default: m.AgentToastOverlay }),
     ),
   { ssr: false },
 );
-const AiVoiceWindow = dynamic(
+const AiVoiceWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/voice/AiVoiceWindow"),
   { ssr: false },
 );
-const AnnouncementsViewer = dynamic(
+const AnnouncementsViewer = lazyOverlay(
   () =>
     import("@/components/layout/AnnouncementsViewer").then((m) => ({
       default: m.AnnouncementsViewer,
     })),
   { ssr: false },
 );
-const AuthGateDialog = dynamic(
+const AuthGateDialog = lazyOverlay(
   () =>
     import("@/components/dialogs/AuthGateDialog").then((m) => ({
       default: m.AuthGateDialog,
     })),
   { ssr: false },
 );
-const FullscreenBrokerState = dynamic(
+const FullscreenBrokerState = lazyOverlay(
   () => import("@/features/applet/runner/response/FullscreenBrokerState"),
   { ssr: false },
 );
-const BrowserFrameWindow = dynamic(
+const BrowserFrameWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/iframe/BrowserFrameWindow"),
   { ssr: false },
 );
-const BrowserWorkbenchWindow = dynamic(
+const BrowserWorkbenchWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/iframe/BrowserWorkbenchWindow"),
   { ssr: false },
 );
-const CanvasViewerWindow = dynamic(
+const CanvasViewerWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/CanvasViewerWindow").then((m) => ({
       default: m.CanvasViewerWindow,
     })),
   { ssr: false },
 );
-const ChatDebugWindow = dynamic(
+const ChatDebugWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/ChatDebugWindow"),
   { ssr: false },
 );
-const CloudFilesWindow = dynamic(
+const CloudFilesWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/cloud-files/CloudFilesWindow"),
   { ssr: false },
 );
-const CreatorHubWindow = dynamic(
+const CreatorHubWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/creator/CreatorHubWindow"),
   { ssr: false },
 );
-const CodeEditorWindow = dynamic(
+const CodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/code/CodeEditorWindow").then(
       (m) => ({ default: m.CodeEditorWindow }),
     ),
   { ssr: false },
 );
-const CodeFileManagerWindow = dynamic(
+const CodeFileManagerWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/code/CodeFileManagerWindow").then(
       (m) => ({ default: m.CodeFileManagerWindow }),
     ),
   { ssr: false },
 );
-const CodeWorkspaceWindow = dynamic(
+const CodeWorkspaceWindow = lazyOverlay(
   () =>
     import("@/features/code/host/CodeWorkspaceWindow").then((m) => ({
       default: m.CodeWorkspaceWindow,
     })),
   { ssr: false },
 );
-const ContentEditorListWindow = dynamic(
+const ContentEditorListWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-editors/ContentEditorListWindow").then(
       (m) => ({ default: m.ContentEditorListWindow }),
     ),
   { ssr: false },
 );
-const ContentEditorWindow = dynamic(
+const ContentEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-editors/ContentEditorWindow").then(
       (m) => ({ default: m.ContentEditorWindow }),
     ),
   { ssr: false },
 );
-const ContentEditorWorkspaceWindow = dynamic(
+const ContentEditorWorkspaceWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/content-editors/ContentEditorWorkspaceWindow").then(
       (m) => ({ default: m.ContentEditorWorkspaceWindow }),
     ),
   { ssr: false },
 );
-const ContentHistoryViewer = dynamic(
+const ContentHistoryViewer = lazyOverlay(
   () =>
     import("@/features/agents/components/TO-BE-ORGANIZED/ContentHistoryViewer").then(
       (m) => ({ default: m.ContentHistoryViewer }),
     ),
   { ssr: false },
 );
-const ContextSwitcherWindow = dynamic(
+const ContextSwitcherWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ContextSwitcherWindow").then(
       (m) => ({ default: m.ContextSwitcherWindow }),
     ),
   { ssr: false },
 );
-const CropStudioWindow = dynamic(
+const CropStudioWindow = lazyOverlay(
   () => import("@/features/image-studio/components/CropStudioWindow"),
   { ssr: false },
 );
-const CuratedIconPickerWindow = dynamic(
+const CuratedIconPickerWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/icons/CuratedIconPickerWindow").then(
       (m) => ({ default: m.CuratedIconPickerWindow }),
     ),
   { ssr: false },
 );
-const CreateProjectWindow = dynamic(
+const CreateProjectWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/projects/CreateProjectWindow").then(
       (m) => {
@@ -370,186 +370,186 @@ const CreateProjectWindow = dynamic(
     ),
   { ssr: false },
 );
-const EmailDialogBridge = dynamic(
+const EmailDialogBridge = lazyOverlay(
   () => import("@/components/dialogs/EmailDialogBridge"),
   { ssr: false },
 );
-const EmailDialogWindow = dynamic(
+const EmailDialogWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/EmailDialogWindow"),
   { ssr: false },
 );
-const ExecutionInspectorWindow = dynamic(
+const ExecutionInspectorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/admin/ExecutionInspectorWindow"),
   { ssr: false },
 );
-const FeedbackWindow = dynamic(
+const FeedbackWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/FeedbackWindow").then((m) => ({
       default: m.FeedbackWindow,
     })),
   { ssr: false },
 );
-const FilePreviewWindow = dynamic(
+const FilePreviewWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
   { ssr: false },
 );
-const ItemDetailWindow = dynamic(
+const ItemDetailWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
   { ssr: false },
 );
-const NoteInfoWindow = dynamic(
+const NoteInfoWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/notes/NoteInfoWindow"),
   { ssr: false },
 );
-const FullScreenMarkdownEditorBridge = dynamic(
+const FullScreenMarkdownEditorBridge = lazyOverlay(
   () =>
     import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge").then(
       (m) => ({ default: m.FullScreenMarkdownEditorBridge }),
     ),
   { ssr: false },
 );
-const GalleryWindow = dynamic(
+const GalleryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/image/GalleryWindow"),
   { ssr: false },
 );
-const HierarchyCreationWindow = dynamic(
+const HierarchyCreationWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
   { ssr: false },
 );
-const ScopeEditWindow = dynamic(
+const ScopeEditWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ScopeEditWindow"),
   { ssr: false },
 );
-const HtmlPreviewBridge = dynamic(
+const HtmlPreviewBridge = lazyOverlay(
   () =>
     import("@/features/cx-conversation/components/HtmlPreviewBridge").then(
       (m) => ({ default: m.HtmlPreviewBridge }),
     ),
   { ssr: false },
 );
-const ImageArrivalPeekHost = dynamic(
+const ImageArrivalPeekHost = lazyOverlay(
   () =>
     import("@/features/agents/components/notifications/ImageArrivalPeekHost").then(
       (m) => ({ default: m.ImageArrivalPeekHost }),
     ),
   { ssr: false },
 );
-const ImageUploaderWindow = dynamic(
+const ImageUploaderWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/image/ImageUploaderWindow"),
   { ssr: false },
 );
-const ImageViewerWindow = dynamic(
+const ImageViewerWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/image/ImageViewerWindow").then(
       (m) => ({ default: m.ImageViewerWindow }),
     ),
   { ssr: false },
 );
-const InstanceUIStateWindow = dynamic(
+const InstanceUIStateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/InstanceUIStateWindow"),
   { ssr: false },
 );
-const JsonTruncatorDialog = dynamic(
+const JsonTruncatorDialog = lazyOverlay(
   () =>
     import("@/components/official-candidate/json-truncator/JsonTruncatorDialog"),
   { ssr: false },
 );
-const ListManagerWindow = dynamic(
+const ListManagerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ListManagerWindow"),
   { ssr: false },
 );
-const PicklistManagerV1Window = dynamic(
+const PicklistManagerV1Window = lazyOverlay(
   () => import("@/features/window-panels/windows/PicklistManagerV1Window"),
   { ssr: false },
 );
-const PicklistManagerV2Window = dynamic(
+const PicklistManagerV2Window = lazyOverlay(
   () => import("@/features/window-panels/windows/PicklistManagerV2Window"),
   { ssr: false },
 );
-const FullscreenMarkdownEditor = dynamic(
+const FullscreenMarkdownEditor = lazyOverlay(
   () =>
     import("@/components/mardown-display/markdown-classification/FullscreenMarkdownEditor"),
   { ssr: false },
 );
-const MarkdownEditorWindow = dynamic(
+const MarkdownEditorWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/MarkdownEditorWindow"),
   { ssr: false },
 );
-const MessageAnalysisWindow = dynamic(
+const MessageAnalysisWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/MessageAnalysisWindow"),
   { ssr: false },
 );
-const MessagesWindow = dynamic(
+const MessagesWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/messaging/MessagesWindow"),
   { ssr: false },
 );
-const MultiFileSmartCodeEditorWindow = dynamic(
+const MultiFileSmartCodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/multi-file-smart-code-editor/MultiFileSmartCodeEditorWindow").then(
       (m) => ({ default: m.MultiFileSmartCodeEditorWindow }),
     ),
   { ssr: false },
 );
-const DiffViewerWindow = dynamic(
+const DiffViewerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/DiffViewerWindow"),
   { ssr: false },
 );
-const NewsWindow = dynamic(
+const NewsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
 );
-const NotesWindow = dynamic(
+const NotesWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({
       default: m.NotesWindow,
     })),
   { ssr: false },
 );
-const ObservationalMemoryWindow = dynamic(
+const ObservationalMemoryWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/ObservationalMemoryWindow"),
   { ssr: false },
 );
-const PdfExtractorWindow = dynamic(
+const PdfExtractorWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/PdfExtractorWindow"),
   { ssr: false },
 );
-const ProjectsWindow = dynamic(
+const ProjectsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ProjectsWindow"),
   { ssr: false },
 );
-const QuickChatSheet = dynamic(
+const QuickChatSheet = lazyOverlay(
   () =>
     import("@/features/quick-actions/components/QuickChatSheet").then((m) => ({
       default: m.QuickChatSheet,
     })),
   { ssr: false },
 );
-const ChatHistoryWindow = dynamic(
+const ChatHistoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/ChatHistoryWindow"),
   { ssr: false },
 );
-const QuickDataSheet = dynamic(
+const QuickDataSheet = lazyOverlay(
   () =>
     import("@/features/quick-actions/components/QuickDataSheet").then((m) => ({
       default: m.QuickDataSheet,
     })),
   { ssr: false },
 );
-const QuickDataWindow = dynamic(
+const QuickDataWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/QuickDataWindow"),
   { ssr: false },
 );
-const QuickNoteSaveWindow = dynamic(
+const QuickNoteSaveWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/notes/QuickNoteSaveWindow"),
   { ssr: false },
 );
-const QuickNotesSheet = dynamic(
+const QuickNotesSheet = lazyOverlay(
   () =>
     import("@/features/notes/actions/QuickNotesSheet").then((m) => {
       console.log(
@@ -559,167 +559,167 @@ const QuickNotesSheet = dynamic(
     }),
   { ssr: false },
 );
-const QuickScribeSheet = dynamic(
+const QuickScribeSheet = lazyOverlay(
   () =>
     import("@/features/transcript-studio/components/QuickScribeSheet").then(
       (m) => ({ default: m.QuickScribeSheet }),
     ),
   { ssr: false },
 );
-const GlobalSuggestionsDrawer = dynamic(
+const GlobalSuggestionsDrawer = lazyOverlay(
   () =>
     import("@/features/kg-suggestions/components/GlobalSuggestionsDrawer").then(
       (m) => ({ default: m.GlobalSuggestionsDrawer }),
     ),
   { ssr: false },
 );
-const QuickTasksSheet = dynamic(
+const QuickTasksSheet = lazyOverlay(
   () =>
     import("@/features/tasks/components/QuickTasksSheet").then((m) => ({
       default: m.QuickTasksSheet,
     })),
   { ssr: false },
 );
-const QuickTasksWindow = dynamic(
+const QuickTasksWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/QuickTasksWindow"),
   { ssr: false },
 );
-const UtilitiesOverlay = dynamic(
+const UtilitiesOverlay = lazyOverlay(
   () =>
     import("@/features/quick-actions/components/UtilitiesOverlay").then(
       (m) => ({ default: m.UtilitiesOverlay }),
     ),
   { ssr: false },
 );
-const QuickSaveCodeDialog = dynamic(
+const QuickSaveCodeDialog = lazyOverlay(
   () =>
     import("@/features/code-files/actions/QuickSaveCodeDialog").then((m) => ({
       default: m.QuickSaveCodeDialog,
     })),
   { ssr: false },
 );
-const QuickNoteSaveOverlay = dynamic(
+const QuickNoteSaveOverlay = lazyOverlay(
   () =>
     import("@/features/notes/actions/quick-save/QuickNoteSaveOverlay").then(
       (m) => ({ default: m.QuickNoteSaveOverlay }),
     ),
   { ssr: false },
 );
-const ScraperWindow = dynamic(
+const ScraperWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ScraperWindow"),
   { ssr: false },
 );
-const ShareModal = dynamic(
+const ShareModal = lazyOverlay(
   () =>
     import("@/features/sharing/components/ShareModal").then((m) => ({
       default: m.ShareModal,
     })),
   { ssr: false },
 );
-const ShareModalWindow = dynamic(
+const ShareModalWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ShareModalWindow"),
   { ssr: false },
 );
-const SingleMessageWindow = dynamic(
+const SingleMessageWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/messaging/SingleMessageWindow"),
   { ssr: false },
 );
-const WorkingDocumentWindow = dynamic(
+const WorkingDocumentWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/WorkingDocumentWindow"),
   { ssr: false },
 );
-const SmartCodeEditorWindow = dynamic(
+const SmartCodeEditorWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/smart-code-editor/SmartCodeEditorWindow").then(
       (m) => ({ default: m.SmartCodeEditorWindow }),
     ),
   { ssr: false },
 );
-const FullscreenSocketAccordion = dynamic(
+const FullscreenSocketAccordion = lazyOverlay(
   () => import("@/components/socket/response/FullscreenSocketAccordion"),
   { ssr: false },
 );
-const StreamDebugFloating = dynamic(
+const StreamDebugFloating = lazyOverlay(
   () =>
     import("@/features/agents/components/debug/StreamDebugFloating").then(
       (m) => ({ default: m.StreamDebugFloating }),
     ),
   { ssr: false },
 );
-const StreamDebugHistoryWindow = dynamic(
+const StreamDebugHistoryWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/admin/StreamDebugHistoryWindow"),
   { ssr: false },
 );
-const TaskQuickCreateWindow = dynamic(
+const TaskQuickCreateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/tasks/TaskQuickCreateWindow"),
   { ssr: false },
 );
-const TaskEditorWindow = dynamic(
+const TaskEditorWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/tasks/TaskEditorWindow"),
   { ssr: false },
 );
-const ToolCallWindowPanel = dynamic(
+const ToolCallWindowPanel = lazyOverlay(
   () =>
     import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
-const TranscriptStudioWindow = dynamic(
+const TranscriptStudioWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/transcript-studio/TranscriptStudioWindow").then(
       (m) => ({ default: m.TranscriptStudioWindow }),
     ),
   { ssr: false },
 );
-const UndoHistoryOverlay = dynamic(
+const UndoHistoryOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/undo-history/UndoHistoryOverlay").then(
       (m) => ({ default: m.UndoHistoryOverlay }),
     ),
   { ssr: false },
 );
-const SettingsShellOverlay = dynamic(
+const SettingsShellOverlay = lazyOverlay(
   () => import("@/features/settings/components/SettingsShellOverlay"),
   { ssr: false },
 );
-const VoicePad = dynamic(
+const VoicePad = lazyOverlay(
   () => import("@/components/official-candidate/voice-pad/components/VoicePad"),
   { ssr: false },
 );
-const VoicePadAdvanced = dynamic(
+const VoicePadAdvanced = lazyOverlay(
   () =>
     import("@/components/official-candidate/voice-pad/components/VoicePadAdvanced"),
   { ssr: false },
 );
-const TranscriptionCleanup = dynamic(
+const TranscriptionCleanup = lazyOverlay(
   () =>
     import("@/components/official-candidate/transcription-cleanup/components/TranscriptionCleanup"),
   { ssr: false },
 );
-const WhatsAppMediaWindow = dynamic(
+const WhatsAppMediaWindow = lazyOverlay(
   () =>
     import("@/features/whatsapp-clone/windows/WhatsAppMediaWindow").then(
       (m) => ({ default: m.WhatsAppMediaWindow }),
     ),
   { ssr: false },
 );
-const DictionarySelectorWindow = dynamic(
+const DictionarySelectorWindow = lazyOverlay(
   () =>
     import("@/features/dictionary/components/DictionarySelectorWindow").then(
       (m) => ({ default: m.DictionarySelectorWindow }),
     ),
   { ssr: false },
 );
-const WhatsAppSettingsWindow = dynamic(
+const WhatsAppSettingsWindow = lazyOverlay(
   () =>
     import("@/features/whatsapp-clone/windows/WhatsAppSettingsWindow").then(
       (m) => ({ default: m.WhatsAppSettingsWindow }),
     ),
   { ssr: false },
 );
-const WhatsAppShellWindow = dynamic(
+const WhatsAppShellWindow = lazyOverlay(
   () =>
     import("@/features/whatsapp-clone/windows/WhatsAppShellWindow").then(
       (m) => ({ default: m.WhatsAppShellWindow }),

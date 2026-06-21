@@ -52,7 +52,7 @@ import {
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
-import TaskAttachments from "./TaskAttachments";
+import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
 import { TaskContextPicker } from "./TaskContextSection";
@@ -616,7 +616,7 @@ export default function TaskDetailsPanel({
         </div>
 
         {/* Attachments */}
-        <TaskAttachments taskId={task.id} />
+        <TaskAttachmentsPanel taskId={task.id} />
 
         {/* Subtasks */}
         <div>

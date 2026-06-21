@@ -33,8 +33,10 @@ export interface UploadProgress {
   ratio: number;
 }
 
-export interface MultiUploadOptions
-  extends Omit<UploadFilesArg, "files" | "parentFolderId" | "visibility"> {
+export interface MultiUploadOptions extends Omit<
+  UploadFilesArg,
+  "files" | "parentFolderId" | "visibility"
+> {
   /** Parent cloud-files folder id. null = root. */
   parentFolderId?: string | null;
   /** Default visibility for every file in the batch. */
@@ -71,7 +73,10 @@ export interface UseFileUploadResult {
    * the duplicate-resolution dialog when conflicts are found. Returns
    * per-file success/failure so callers can render their own progress UI.
    */
-  uploadMany: (files: File[], opts?: MultiUploadOptions) => Promise<MultiUploadResult>;
+  uploadMany: (
+    files: File[],
+    opts?: MultiUploadOptions,
+  ) => Promise<MultiUploadResult>;
   uploading: boolean;
   progress: UploadProgress | null;
   result: NormalizedFile | null;
@@ -86,7 +91,10 @@ export function useFileUpload(): UseFileUploadResult {
   const [error, setError] = useState<Error | null>(null);
 
   const upload = useCallback(
-    async (source: FileSource, opts: UploadOpts = {}): Promise<NormalizedFile> => {
+    async (
+      source: FileSource,
+      opts: UploadOpts = {},
+    ): Promise<NormalizedFile> => {
       setUploading(true);
       setError(null);
       setProgress(null);
@@ -123,6 +131,7 @@ export function useFileUpload(): UseFileUploadResult {
       const arg: UploadFilesArg = {
         files,
         parentFolderId: opts.parentFolderId ?? null,
+        folderPath: opts.folderPath ?? null,
         visibility: opts.visibility ?? "private",
         shareWith: opts.shareWith,
         shareLevel: opts.shareLevel,
