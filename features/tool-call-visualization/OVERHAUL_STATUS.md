@@ -49,6 +49,11 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 - [x] **Search/Research — TWO versions** (Revival + Modern), inline + overlay, A/B in the gallery.
 - [x] **Gallery harness** `/demos/tool-viz/result-fields`.
 - [x] **Investigation:** mapped the applet runtime as the canonical code-runner; identified the duplicate/legacy runners.
+- [x] **Canonical DB-driven renderer SHIPPED** (parallel session): `db-renderer/` on the agent-apps `compile-slot` (sync Babel) — resolution is now `static registry → DB renderer → generic`; the old async `dynamic/` hang is bypassed; verified end-to-end (`agent_call` row renders, no hang). **Track 1 essentially done** — remaining = delete the old `dynamic/` (Track 2).
+- [x] **Shell visual = Claude-Code style** — collapsed tool calls read as part of the response: no bg/border (incl. hover), chevron follows the text, body font (`text-sm`) + dimmer, `mb-2` paragraph spacing; expanded = thin-border + transparent box BELOW the chevron line with a 500ms grid-rows animation; body mounts only once ever-opened.
+- [x] **3-layer collapse/display system** — default `"auto"` (expand-while-streaming → auto-collapse 3s after done) → registry `displayMode` (`stay-open`/`never-open`) → user pref (`selectToolDisplayPreference`: verbose/minimal, stubbed). `getToolDisplayMode` + `ToolRenderer.displayMode`.
+- [x] **Realistic stream simulator** (`simulator/`) — replays only the parts that truly stream (whole query sections over time, no char-trickle) into an evolving `ToolLifecycleEntry`; gallery Play/Replay feeds both research versions + a live shell instance. Verified: q1→q2→q3 stagger; shell auto-collapses after done.
+- [x] **Applet runtime verified in local dev** — `/p/ap-world-lesson` (fully_custom Babel applet) renders; the canonical runtime works dev + prod.
 
 ---
 
