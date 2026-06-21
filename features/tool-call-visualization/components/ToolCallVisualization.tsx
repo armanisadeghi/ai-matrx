@@ -18,13 +18,13 @@
 import React, { useEffect, useState } from "react";
 import {
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Maximize2,
   PanelRightOpen,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
@@ -34,9 +34,9 @@ import {
   getToolDisplayName,
   getToolPhaseLabel,
   getHeaderSubtitle,
-  hasCustomRenderer,
-  shouldKeepExpandedOnStream,
+  getToolDisplayMode,
 } from "../registry/registry";
+import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 
@@ -81,40 +81,9 @@ const ToolCallVisualizationInner: React.FC<{
   isPersisted = false,
   className,
 }) => {
-  // A tool call is a single line by default. Only the rich, opted-in custom
-  // renderers (web_search, deep research, …) start expanded so their data
-  // streams in; everything else stays one line until clicked.
-  // Done / persisted tool calls collapse to a single line — only a LIVE,
-  // actively-streaming custom renderer (the most-recent incoming message) opens
-  // itself so its data streams in. On reload everything starts collapsed (and a
-  // collapsed body never mounts, so queries are never needlessly re-run).
-  const keepExpanded =
-    !isPersisted &&
-    entries.some(
-      (e) =>
-        (e.status === "started" ||
-          e.status === "progress" ||
-          e.status === "step" ||
-          e.status === "result_preview") &&
-        hasCustomRenderer(e.toolName) &&
-        shouldKeepExpandedOnStream(e.toolName),
-    );
-  // React Compiler memoizes these derivations — no manual useMemo/useCallback.
-  const [isExpanded, setIsExpanded] = useState<boolean>(keepExpanded);
-  const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
-  const [initialOverlayTab, setInitialOverlayTab] = useState<
-    string | undefined
-  >(undefined);
   const dispatch = useAppDispatch();
 
-  // Prefetch any DB-stored renderers for tools in this group so they're
-  // fetched + compiled before the card expands.
-  useEffect(() => {
-    for (const e of entries) {
-      if (e.toolName) prefetchToolRenderer(e.toolName);
-    }
-  }, [entries]);
-
+  // ─── Entries-derived state ──────────────────────────────────────────────
   const anyActive = entries.some(
     (e) =>
       e.status === "started" || e.status === "progress" || e.status === "step",
@@ -122,6 +91,10 @@ const ToolCallVisualizationInner: React.FC<{
   const allTerminal =
     entries.length > 0 &&
     entries.every((e) => e.status === "completed" || e.status === "error");
+  const headerTool = entries[0] ?? null;
+  // Actively streaming RIGHT NOW (live only — a reloaded snapshot is never "streaming").
+  const streamingNow = !isPersisted && anyActive;
+
   const phase: "starting" | "processing" | "complete" | "error" =
     entries.length === 0
       ? "starting"
@@ -131,7 +104,62 @@ const ToolCallVisualizationInner: React.FC<{
           ? "error"
           : "complete";
 
-  const headerTool = entries[0] ?? null;
+  // ─── Display behavior: default → tool override → user preference ─────────
+  // DEFAULT ("auto"): expand WHILE streaming, then auto-collapse 3s after done.
+  // Tool override (registry `displayMode`): "stay-open" (never auto-collapse) |
+  // "never-open" (never auto-open). User preference wins over both:
+  // "verbose" (always open) | "minimal" (never auto-open).
+  const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
+  const toolMode = getToolDisplayMode(headerTool?.toolName ?? null);
+  const effectiveMode: "auto" | "stay-open" | "never-open" =
+    userPref === "verbose"
+      ? "stay-open"
+      : userPref === "minimal"
+        ? "never-open"
+        : toolMode;
+
+  const [isExpanded, setIsExpanded] = useState<boolean>(() =>
+    effectiveMode === "never-open"
+      ? false
+      : effectiveMode === "stay-open"
+        ? true
+        : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
+  );
+  // Once the user clicks, respect their choice — stop auto-collapse fighting them.
+  const [userToggled, setUserToggled] = useState(false);
+  // Mount the body once it has EVER been open, so the collapse can animate and a
+  // live renderer keeps its state. A persisted/never-opened tool never mounts its
+  // body → no needless re-fetch/re-run on reload. State (not a render-phase ref)
+  // so it stays reactive under React Compiler.
+  const [hasEverExpanded, setHasEverExpanded] = useState<boolean>(isExpanded);
+  useEffect(() => {
+    if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
+  }, [isExpanded, hasEverExpanded]);
+
+  const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
+  const [initialOverlayTab, setInitialOverlayTab] = useState<
+    string | undefined
+  >(undefined);
+
+  // Auto mode: keep expanded while streaming; collapse 3s after it finishes.
+  useEffect(() => {
+    if (effectiveMode !== "auto" || userToggled) return;
+    if (streamingNow) {
+      setIsExpanded(true);
+      return;
+    }
+    if (allTerminal && isExpanded) {
+      const t = setTimeout(() => setIsExpanded(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
+
+  // Prefetch any DB-stored renderers so they're ready before the body mounts.
+  useEffect(() => {
+    for (const e of entries) {
+      if (e.toolName) prefetchToolRenderer(e.toolName);
+    }
+  }, [entries]);
 
   const toolDisplayName =
     entries.length > 1
@@ -220,36 +248,32 @@ const ToolCallVisualizationInner: React.FC<{
   return (
     <div
       className={cn(
-        "group/toolcard relative my-0.5 w-full overflow-hidden rounded-sm",
-        // No persistent border — only on hover, so the row reads as plain text
-        // height. The collapsed state is a single line in the transcript.
-        "border border-transparent hover:border-border/60",
+        // No background, no border — collapsed OR on hover. A done/collapsed
+        // tool call reads as part of the response, and its vertical spacing
+        // matches the gap between markdown paragraphs (`mb-2`) so it sits in the
+        // normal text rhythm. The border only appears on the expanded box below.
+        "group/toolcard relative w-full mb-2",
         className,
       )}
     >
       <button
-        onClick={() => setIsExpanded((v) => !v)}
-        className={cn(
-          "flex w-full items-center justify-between px-1.5 py-0.5 text-left transition-colors",
-          isExpanded && "border-b border-border/40",
-        )}
+        type="button"
+        onClick={() => {
+          setUserToggled(true);
+          setIsExpanded((v) => !v);
+        }}
+        className="flex w-full items-center gap-1.5 text-left"
       >
-        <div className="flex items-center gap-1.5 min-w-0">
-          {/* Verb-phrase label. Tense conveys state — no status icon. The
-              shimmer treatment on the running form supplies the motion cue. */}
+        {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
+            so the tool call reads as part of the response, not a separate box. */}
+        <span className="flex min-w-0 items-center gap-1.5">
           {phase === "processing" || phase === "starting" ? (
             <ShimmerText
               text={phaseLabel}
-              className="truncate text-xs font-medium"
+              className="truncate font-sans text-sm leading-relaxed tracking-wide"
             />
           ) : (
-            <span
-              className={cn(
-                "truncate text-xs font-medium",
-                // Errors stay calm — a recessive label, details behind the click.
-                phase === "error" ? "text-muted-foreground" : "text-foreground",
-              )}
-            >
+            <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
               {phaseLabel}
             </span>
           )}
@@ -257,92 +281,107 @@ const ToolCallVisualizationInner: React.FC<{
             (phase === "processing" || phase === "starting" ? (
               <ShimmerText
                 text={`· ${querySubtitle}`}
-                className="truncate text-xs"
+                className="truncate font-sans text-sm leading-relaxed tracking-wide"
               />
             ) : (
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground/70">
                 · {querySubtitle}
               </span>
             ))}
-        </div>
+        </span>
 
-        <div className="flex items-center gap-0.5 shrink-0">
-          {/* Action buttons — hover-only so the row stays a clean single line. */}
-          <div className="flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/toolcard:opacity-100">
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
+        {/* Chevron follows the END of the text (not pushed to the far right).
+            Collapsed points right; opening turns it down. */}
+        {isExpanded ? (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
+
+        {/* Action buttons — hover-only, after the chevron. */}
+        <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/toolcard:opacity-100">
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenWindowPanel();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 e.stopPropagation();
                 handleOpenWindowPanel();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenWindowPanel();
-                }
-              }}
-              className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-              title="Open in floating window"
-            >
-              <PanelRightOpen className="w-3 h-3" />
-            </span>
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
+              }
+            }}
+            className="cursor-pointer rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Open in floating window"
+          >
+            <PanelRightOpen className="h-3 w-3" />
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              setInitialOverlayTab(undefined);
+              setIsOverlayOpen(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
                 e.stopPropagation();
                 setInitialOverlayTab(undefined);
                 setIsOverlayOpen(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setInitialOverlayTab(undefined);
-                  setIsOverlayOpen(true);
-                }
-              }}
-              className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-              title="Open fullscreen overlay"
-            >
-              <Maximize2 className="w-3 h-3" />
-            </span>
-          </div>
-          {/* Chevron — always visible so the user knows the row is expandable */}
-          {isExpanded ? (
-            <ChevronUp className="w-3 h-3 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-3 h-3 text-muted-foreground" />
-          )}
-        </div>
+              }
+            }}
+            className="cursor-pointer rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            title="Open fullscreen overlay"
+          >
+            <Maximize2 className="h-3 w-3" />
+          </span>
+        </span>
       </button>
 
-      {isExpanded && (
-        <div className="space-y-1.5 px-1.5 py-1">
-          {entries.map((entry) => {
-            const InlineRenderer = getInlineRenderer(entry.toolName);
-            const groupDisplayName = getToolDisplayName(entry.toolName);
-            return (
-              <div key={entry.callId}>
-                {entries.length > 1 && (
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
-                    {groupDisplayName}
+      {/* Expanded body: a box that drops BELOW the chevron line — thin border,
+          TRANSPARENT background. Animates open/closed via the grid-rows trick.
+          Mounted once it has ever been opened so the close can animate (and live
+          renderers keep their state). */}
+      {hasEverExpanded && (
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,opacity] duration-500 ease-in-out",
+            isExpanded
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0",
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="mt-1 space-y-1.5 rounded-md border border-border bg-transparent p-2">
+              {entries.map((entry) => {
+                const InlineRenderer = getInlineRenderer(entry.toolName);
+                const groupDisplayName = getToolDisplayName(entry.toolName);
+                return (
+                  <div key={entry.callId}>
+                    {entries.length > 1 && (
+                      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {groupDisplayName}
+                      </div>
+                    )}
+                    <InlineRenderer
+                      entry={entry}
+                      events={entry.events}
+                      onOpenOverlay={handleOpenOverlay}
+                      onOpenWindowPanel={handleOpenWindowPanel}
+                      toolGroupId={entry.callId}
+                      isPersisted={isPersisted}
+                      conversationId={conversationId}
+                    />
                   </div>
-                )}
-                <InlineRenderer
-                  entry={entry}
-                  events={entry.events}
-                  onOpenOverlay={handleOpenOverlay}
-                  onOpenWindowPanel={handleOpenWindowPanel}
-                  toolGroupId={entry.callId}
-                  isPersisted={isPersisted}
-                  conversationId={conversationId}
-                />
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

@@ -777,6 +777,19 @@ export function shouldKeepExpandedOnStream(toolName: string | null): boolean {
   return true;
 }
 
+/**
+ * Collapse/display behavior for a tool: "auto" (expand while streaming, then
+ * auto-collapse ~3s after done — the default for every tool), "stay-open"
+ * (never auto-collapse), or "never-open" (single line until clicked). The shell
+ * layers the user preference (verbose/minimal) on top of this.
+ */
+export function getToolDisplayMode(
+  toolName: string | null,
+): "auto" | "stay-open" | "never-open" {
+  if (!toolName) return "auto";
+  return toolRendererRegistry[toolName]?.displayMode ?? "auto";
+}
+
 export function getToolDisplayName(toolName: string | null): string {
   if (!toolName) return "Tool";
   if (toolRendererRegistry[toolName]?.displayName)

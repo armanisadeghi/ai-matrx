@@ -137,6 +137,16 @@ export interface ToolRenderer {
   /** Keep the collapsible card expanded even after streaming text begins. */
   keepExpandedOnStream?: boolean;
 
+  /**
+   * Collapse/display behavior override for the shell. Default ("auto") shows
+   * the tool expanded while it streams, then auto-collapses ~3s after it
+   * finishes. "stay-open" never auto-collapses (e.g. research — it shrinks to a
+   * compact inline view rather than disappearing). "never-open" stays a single
+   * line until the user clicks. A user preference (verbose/minimal) overrides
+   * this per the resolver in `ToolCallVisualization`.
+   */
+  displayMode?: "auto" | "stay-open" | "never-open";
+
   /** The inline (stream) component. Required. */
   InlineComponent: React.ComponentType<ToolRendererProps>;
 

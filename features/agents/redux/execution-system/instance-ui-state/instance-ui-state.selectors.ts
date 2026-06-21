@@ -424,6 +424,24 @@ export const selectHideToolResults =
     state.instanceUIState.byConversationId[conversationId]?.hideToolResults ??
     false;
 
+/**
+ * How much tool-call detail to show by default. `default` = the per-tool
+ * behavior (expand while streaming → auto-collapse after done, unless a tool
+ * overrides). `verbose` = every tool always expanded. `minimal` = nothing
+ * auto-opens (single line until clicked).
+ */
+export type ToolDisplayPreference = "default" | "verbose" | "minimal";
+
+/**
+ * The user's global tool-display preference. STUBBED to "default" until the
+ * settings UI lands — the shell already honors all three values, so wiring this
+ * to a real per-user/org setting later is a one-line change here.
+ */
+export const selectToolDisplayPreference =
+  (_conversationId?: string) =>
+  (_state: RootState): ToolDisplayPreference =>
+    "default";
+
 export const selectResponseDensity =
   (conversationId: string) =>
   (state: RootState): "comfortable" | "compact" =>
