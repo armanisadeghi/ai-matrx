@@ -23,6 +23,12 @@ import { normalizeError } from "@/features/overlays/boundary/overlayErrorReport"
 interface OverlayErrorBoundaryProps {
   /** Module path of the wrapped dynamic import, for diagnostics. */
   modulePath: string | null;
+  /**
+   * Called when the user clicks "Try again". The parent (lazyOverlay) uses this
+   * to build a FRESH loadable so the import is genuinely re-attempted — without
+   * it, a cached failed import would replay the same error.
+   */
+  onRetry?: () => void;
   children: React.ReactNode;
 }
 
@@ -61,6 +67,9 @@ export class OverlayErrorBoundary extends React.Component<
   }
 
   private handleReset = (): void => {
+    // Ask the parent to swap in a fresh loadable BEFORE we clear our error, so
+    // when we re-render children they trigger a genuine new import.
+    this.props.onRetry?.();
     this.setState({ error: null, componentStack: null });
   };
 

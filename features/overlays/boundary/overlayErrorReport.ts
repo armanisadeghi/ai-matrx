@@ -18,6 +18,7 @@ import {
   buildAgentPayload,
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
+import { collectOverlayDiagnostics } from "@/features/overlays/boundary/overlayDiagnostics";
 
 export interface OverlayErrorContext {
   /** Module path of the failed dynamic import, if we could derive it. */
@@ -112,13 +113,30 @@ function liveContext(): Record<string, string> {
 export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
   const e = normalizeError(ctx.error);
   const live = liveContext();
+  const diag = collectOverlayDiagnostics(
+    ctx.isAdmin ? ctx.getReduxState() : null,
+  );
+  const skewLine = diag.deploy.deploymentSkewSuspected
+    ? `Deployment skew SUSPECTED — scripts on the page disagree on ?dpl= (ids: ${
+        diag.deploy.deploymentIdsOnPage.join(", ") || "none"
+      }). A stale tab requesting a chunk Vercel can't route is the likely cause.`
+    : null;
+  const failed = diag.network.failedOrPendingChunks;
+  const failedLine =
+    failed.length > 0
+      ? `Failed/pending chunks: ${failed.map((c) => c.name).join(", ")}`
+      : null;
   const lines = [
     `Overlay failed to render`,
     `Module: ${ctx.modulePath ?? "unknown"}`,
     `Error: ${e.name}: ${e.message}`,
     e.isChunkLoadError
-      ? `Likely cause: dynamic chunk failed to load (stale build / cache / fragmented chunk graph). A hard reload usually recovers it.`
+      ? `Likely cause: dynamic chunk failed to load (stale build / cache / deploy skew). A hard reload usually recovers it.`
       : null,
+    skewLine,
+    failedLine,
+    `Build id: ${diag.deploy.nextBuildId ?? "unknown"}`,
+    `Online: ${diag.network.online}, conn: ${diag.network.effectiveType ?? "?"}`,
     live.route ? `Route: ${live.route}` : null,
     live.url ? `URL: ${live.url}` : null,
     `At: ${new Date().toISOString()}`,
@@ -127,20 +145,20 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
 }
 
 /**
- * The exhaustive AI payload. For admins it embeds the full live Redux state so
- * an LLM has everything: the error, the component stack, the failing module,
- * page/route/browser context, and the complete app state at failure time.
+ * The AI payload. Instead of a full Redux landfill, it embeds TARGETED
+ * diagnostics: the error, the failing module + component stack, deploy/skew
+ * forensics (`?dpl=` ids, build id), network/chunk forensics (which chunks
+ * failed or hung), connection state, and ONLY the overlay-relevant slices
+ * (`overlays` / `windowManager` / `appContext` + a redacted user summary). For
+ * non-admins the state-bearing sections are omitted.
  */
 export function buildOverlayErrorAgentPayload(
   ctx: OverlayErrorContext,
 ): string {
   const e = normalizeError(ctx.error);
-
-  // Pre-sanitize everything we embed so buildAgentPayload's JSON.stringify
-  // can never throw on circular Redux state.
-  const reduxState = ctx.isAdmin
-    ? JSON.parse(safeStringify(ctx.getReduxState()))
-    : "[redacted — admin only]";
+  const diag = collectOverlayDiagnostics(
+    ctx.isAdmin ? ctx.getReduxState() : null,
+  );
 
   const data = {
     error: {
@@ -151,31 +169,39 @@ export function buildOverlayErrorAgentPayload(
     },
     failedModule: ctx.modulePath,
     componentStack: ctx.componentStack,
-    build: {
-      // Useful to spot deploy skew (the #1 chunk-load cause).
-      nodeEnv: process.env.NODE_ENV,
-      buildId:
-        (typeof window !== "undefined" &&
-          (window as unknown as { __NEXT_DATA__?: { buildId?: string } })
-            .__NEXT_DATA__?.buildId) ||
-        null,
-    },
-    reduxState,
+    deploy: diag.deploy,
+    network: diag.network,
+    loadedScripts: diag.loadedScripts,
+    page: diag.page,
+    // State-bearing sections are admin-only.
+    overlayState: ctx.isAdmin ? diag.overlayState : "[redacted — admin only]",
+    appContext: ctx.isAdmin ? diag.appContext : "[redacted — admin only]",
+    user: ctx.isAdmin ? diag.user : "[redacted — admin only]",
   };
+
+  // Sanitize once so buildAgentPayload's plain JSON.stringify can never throw
+  // on a circular ref hiding in a Redux slice.
+  const safeData = JSON.parse(safeStringify(data)) as unknown;
 
   const input: AgentPayloadInput = {
     kind: "overlay-render-error",
     location: "AI Matrx — Overlay Controller (render failure)",
-    description: `An overlay (${ctx.modulePath ?? "unknown module"}) threw while rendering. ${
+    description: `An overlay (${ctx.modulePath ?? "unknown module"}) failed while rendering. ${
       e.isChunkLoadError
         ? "This is a dynamic-import chunk load failure."
         : "This is a runtime render error."
+    }${
+      diag.deploy.deploymentSkewSuspected
+        ? " Deployment skew is suspected (scripts disagree on ?dpl=)."
+        : ""
     }`,
-    data,
+    data: safeData,
     attributes: {
       module: ctx.modulePath ?? undefined,
       errorName: e.name,
       chunkLoadError: e.isChunkLoadError,
+      deploymentSkewSuspected: diag.deploy.deploymentSkewSuspected,
+      failedChunkCount: diag.network.failedOrPendingChunks.length,
       adminDump: ctx.isAdmin,
     },
     context: liveContext(),

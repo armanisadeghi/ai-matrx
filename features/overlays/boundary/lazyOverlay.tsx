@@ -74,62 +74,83 @@ export function lazyOverlay<P extends object = Record<string, never>>(
   // race it against a timeout that REJECTS. The gap between B2 (import invoked)
   // and B3 (resolved) is exactly where prod chunk-load failures hide — and when
   // the promise hangs forever, the timeout turns it into a catchable error.
-  const tracedLoader =
-    typeof loader === "function"
-      ? ((() => {
-          console.log(
-            "[Track Overlay] B2, lazyOverlay.tsx — dynamic import() invoked (fetching chunk)",
-            { modulePath },
+  function tracedLoaderFor(attempt: number): DynamicLoader<P> {
+    if (typeof loader !== "function") return loader;
+    return (() => {
+      console.log(
+        "[Track Overlay] B2, lazyOverlay.tsx — dynamic import() invoked (fetching chunk)",
+        { modulePath, attempt },
+      );
+
+      const real = (loader as () => Promise<unknown>)().then((m) => {
+        console.log(
+          "[Track Overlay] B3, lazyOverlay.tsx — chunk loaded & module resolved",
+          { modulePath, attempt },
+        );
+        return m;
+      });
+      // Swallow a late rejection if the timeout already won the race, so it
+      // doesn't surface as an unhandled rejection. (race() still settles.)
+      real.catch(() => {});
+
+      let timer: ReturnType<typeof setTimeout>;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          const err = new Error(
+            `Overlay chunk did not load within ${OVERLAY_LOAD_TIMEOUT_MS}ms (module: ${
+              modulePath ?? "unknown"
+            }). The dynamic import() never resolved — likely a stale build, cached chunk, or deployment skew (?dpl= mismatch).`,
           );
-
-          const real = (loader as () => Promise<unknown>)().then((m) => {
-            console.log(
-              "[Track Overlay] B3, lazyOverlay.tsx — chunk loaded & module resolved",
-              { modulePath },
-            );
-            return m;
-          });
-          // Swallow a late rejection if the timeout already won the race, so it
-          // doesn't surface as an unhandled rejection. (race() still settles.)
-          real.catch(() => {});
-
-          let timer: ReturnType<typeof setTimeout>;
-          const timeout = new Promise((_, reject) => {
-            timer = setTimeout(() => {
-              const err = new Error(
-                `Overlay chunk did not load within ${OVERLAY_LOAD_TIMEOUT_MS}ms (module: ${
-                  modulePath ?? "unknown"
-                }). The dynamic import() never resolved — likely a stale build, cached chunk, or fragmented chunk graph.`,
-              );
-              // Name it ChunkLoadError so detection + messaging treat it as one.
-              err.name = "ChunkLoadError";
-              console.error(
-                "[Track Overlay] B5b, lazyOverlay.tsx — TIMEOUT: rejecting stalled import so the error boundary can catch it",
-                { modulePath, timeoutMs: OVERLAY_LOAD_TIMEOUT_MS },
-              );
-              reject(err);
-            }, OVERLAY_LOAD_TIMEOUT_MS);
-          });
-
-          return Promise.race([real, timeout]).finally(() =>
-            clearTimeout(timer),
+          // Name it ChunkLoadError so detection + messaging treat it as one.
+          err.name = "ChunkLoadError";
+          console.error(
+            "[Track Overlay] B5b, lazyOverlay.tsx — TIMEOUT: rejecting stalled import so the error boundary can catch it",
+            { modulePath, attempt, timeoutMs: OVERLAY_LOAD_TIMEOUT_MS },
           );
-        }) as DynamicLoader<P>)
-      : loader;
+          reject(err);
+        }, OVERLAY_LOAD_TIMEOUT_MS);
+      });
 
-  const Lazy = dynamic<P>(tracedLoader, {
-    ssr: false,
-    loading: () => <OverlayLoadingFallback modulePath={modulePath} />,
-    ...options,
-  }) as React.ComponentType<P>;
+      return Promise.race([real, timeout]).finally(() => clearTimeout(timer));
+    }) as DynamicLoader<P>;
+  }
+
+  // A bare `dynamic()` caches the loadable's import result for the life of the
+  // module — so re-mounting after a failure replays the SAME rejection and
+  // "Try again" is a no-op. We build a FRESH `dynamic()` per attempt (cached so
+  // a given attempt is stable across re-renders) so retry genuinely re-imports.
+  const lazyByAttempt = new Map<number, React.ComponentType<P>>();
+  function getLazy(attempt: number): React.ComponentType<P> {
+    let c = lazyByAttempt.get(attempt);
+    if (!c) {
+      c = dynamic<P>(tracedLoaderFor(attempt), {
+        ssr: false,
+        loading: () => <OverlayLoadingFallback modulePath={modulePath} />,
+        ...options,
+      }) as React.ComponentType<P>;
+      lazyByAttempt.set(attempt, c);
+    }
+    return c;
+  }
 
   function LazyOverlayComponent(props: P) {
+    const [attempt, setAttempt] = React.useState(0);
+    const Lazy = getLazy(attempt);
     console.log(
       "[Track Overlay] B1, lazyOverlay.tsx — overlay boundary rendering (mounting lazy child)",
-      { modulePath },
+      { modulePath, attempt },
     );
     return (
-      <OverlayErrorBoundary modulePath={modulePath}>
+      <OverlayErrorBoundary
+        modulePath={modulePath}
+        onRetry={() => {
+          console.log(
+            "[Track Overlay] B8, lazyOverlay.tsx — retry requested, re-importing with fresh loadable",
+            { modulePath, nextAttempt: attempt + 1 },
+          );
+          setAttempt((a) => a + 1);
+        }}
+      >
         <Lazy {...props} />
       </OverlayErrorBoundary>
     );

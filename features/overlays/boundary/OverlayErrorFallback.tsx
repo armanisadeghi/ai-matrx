@@ -11,10 +11,12 @@
  * Two audiences, one component:
  *   - Everyone: a clear message + "Try again" (re-mount the boundary) and
  *     "Reload page" (the real fix for a stale/failed chunk).
- *   - Admins: an expandable dump of EVERYTHING — the error, component stack,
- *     failing module, build id, page/route/browser context, and the full live
- *     Redux state — plus a "Copy for AI" button that packages it all into the
- *     standard xml envelope for pasting into an LLM.
+ *   - Admins: a deploy-skew banner when detected, plus an expandable view of the
+ *     TARGETED diagnostics (error, component stack, failing module, build id,
+ *     ?dpl= ids, failed/pending chunks, connection state, and the overlay-
+ *     relevant Redux slices) — and a "Copy for AI" button that packages it all
+ *     into the standard xml envelope for pasting into an LLM. NOT a full Redux
+ *     dump; for a chunk failure that's noise.
  */
 
 import * as React from "react";
@@ -36,6 +38,7 @@ import {
   safeStringify,
   type OverlayErrorContext,
 } from "@/features/overlays/boundary/overlayErrorReport";
+import { collectOverlayDiagnostics } from "@/features/overlays/boundary/overlayDiagnostics";
 
 export interface OverlayErrorFallbackProps {
   modulePath: string | null;
@@ -70,17 +73,24 @@ export function OverlayErrorFallback({
     getReduxState: () => store.getState(),
   };
 
-  // The admin dump (built lazily/once when expanded) — full state can be big.
-  const adminDump = React.useMemo(() => {
-    if (!isAdmin || !expanded) return null;
-    return safeStringify({
-      error: { name: e.name, message: e.message, stack: e.stack },
-      failedModule: modulePath,
-      componentStack,
-      reduxState: store.getState(),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, expanded]);
+  // Deploy-skew detection runs for everyone (cheap, browser-only) so we can show
+  // the right recovery hint; the heavier sectioned dump is admin + on-expand.
+  const diag = collectOverlayDiagnostics(isAdmin ? store.getState() : null);
+  const skewSuspected = diag.deploy.deploymentSkewSuspected;
+
+  const adminDump =
+    isAdmin && expanded
+      ? safeStringify({
+          error: { name: e.name, message: e.message, stack: e.stack },
+          failedModule: modulePath,
+          componentStack,
+          deploy: diag.deploy,
+          network: diag.network,
+          overlayState: diag.overlayState,
+          appContext: diag.appContext,
+          user: diag.user,
+        })
+      : null;
 
   return (
     <div className="fixed inset-0 z-[2147483001] flex items-center justify-center p-4 pointer-events-none">
@@ -102,6 +112,20 @@ export function OverlayErrorFallback({
 
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+          {skewSuspected && (
+            <div className="mb-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground">
+              <span className="font-semibold text-warning">
+                Deployment skew detected.
+              </span>{" "}
+              The page&apos;s scripts disagree on their deployment id
+              {diag.deploy.deploymentIdsOnPage.length
+                ? ` (${diag.deploy.deploymentIdsOnPage.join(", ")})`
+                : ""}
+              . This tab was likely open across a deploy — reloading pulls a
+              fresh, consistent set of chunks.
+            </div>
+          )}
+
           <div className="rounded-lg bg-muted px-3 py-2 font-mono text-xs text-foreground">
             <span className="text-destructive">{e.name}</span>: {e.message}
           </div>
@@ -126,7 +150,7 @@ export function OverlayErrorFallback({
                 ) : (
                   <ChevronRight className="h-3.5 w-3.5" />
                 )}
-                Admin diagnostics (full state dump)
+                Admin diagnostics (deploy / chunk / overlay state)
               </button>
               {expanded && adminDump && (
                 <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-muted px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
