@@ -86,7 +86,9 @@ remove `contributedToolIds`.
 ## Change Log
 
 - **2026-06-21** — Agent tools manager gains a **Bundles** category
-  (`AgentBundlesPanel` + `useAgentBundleOptions`). Bundle listers
+  (`AgentBundlesPanel` + `useAgentBundleOptions`), split into **Internal / MCP /
+  All** tabs (Internal default; classified by `isMcp` = `metadata.server_slug`)
+  so our own toolkits aren't buried under MCP servers. Bundle listers
   (`bundle:list_*`) pulled out of raw tool browsing — they were masquerading as
   an "mcp" category — into their own category; each card lists its included
   tools and flags overlap with individually-added tools. New
