@@ -19,6 +19,7 @@ import {
   Code2,
   Monitor,
   Plug,
+  Package,
   Info,
   Copy,
   Tag,
@@ -100,12 +101,28 @@ import {
   selectAllTools,
   selectToolsStatus,
 } from "@/features/agents/redux/tools/tools.selectors";
+import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { AgentBundlesPanel } from "./AgentBundlesPanel";
+import { useAgentBundleOptions } from "./useAgentBundleOptions";
 
 type ToolsTab = "server" | "custom" | "client" | "mcp";
 
 const ALL_CATEGORY = "__all__";
 const ENABLED_CATEGORY = "__enabled__";
+const BUNDLES_CATEGORY = "__bundles__";
+
+/**
+ * Bundle "lister" tools are real `tool_def` rows named `bundle:list_<name>`.
+ * They represent a whole bundle, not a single capability, so they're surfaced
+ * exclusively through the dedicated Bundles category — never mixed into normal
+ * category browsing (where 38 of them masquerading as an "mcp" category is what
+ * made bundles feel "missing"). They stay in the orphan-resolution universe so
+ * a selected bundle is never flagged as an unresolved tool.
+ */
+function isBundleListerName(name?: string | null): boolean {
+  return typeof name === "string" && name.startsWith("bundle:list_");
+}
 
 // Deterministic color palette for category icons — muted, professional tones
 // that work in both light and dark mode.
@@ -349,6 +366,16 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   const isLoading =
     !metadata && (reduxToolsStatus === "loading" || isFetchingMetadata);
 
+  // Ensure the Redux tool registry is loaded. It's the canonical source the
+  // category/orphan/bundle logic depends on; the standalone get_tools_metadata
+  // fetch below is only a degraded fallback. The thunk self-short-circuits when
+  // already loaded, so this is safe to fire on every mount.
+  useEffect(() => {
+    if (reduxToolsStatus !== "succeeded" && reduxToolsStatus !== "loading") {
+      dispatch(fetchAvailableTools());
+    }
+  }, [reduxToolsStatus, dispatch]);
+
   useEffect(() => {
     // Return early if externalTools is already available or if Redux is currently actively fetching it
     if (externalTools || reduxToolsStatus === "loading") return;
@@ -531,10 +558,16 @@ function ServerToolsTab({
     [selectedTools],
   );
 
+  // Orphan-resolution universe: EVERY globally-enabled tool, bundle listers
+  // included. Listers are hidden from browsing but must stay here so selecting
+  // a bundle never trips the "unresolved tool" banner.
   const availableIdSet = useMemo(
     () => new Set((metadata?.enabled_tools || []).map((t: any) => t.id)),
     [metadata],
   );
+
+  // Bundle catalogue — drives the Bundles category + its sidebar count.
+  const { bundles: bundleOptions } = useAgentBundleOptions();
 
   const orphanedTools = useMemo(() => {
     if (!Array.isArray(selectedTools)) return [];
@@ -634,13 +667,24 @@ function ServerToolsTab({
   }, [metadata, activeSet]);
 
   const isEnabledTab = activeCategory === ENABLED_CATEGORY;
+  const isBundlesTab = activeCategory === BUNDLES_CATEGORY;
+
+  const enabledBundleCount = useMemo(
+    () =>
+      bundleOptions.filter(
+        (b) =>
+          b.contributedToolIds.length > 0 &&
+          b.contributedToolIds.every((id) => activeSet.has(id)),
+      ).length,
+    [bundleOptions, activeSet],
+  );
 
   useEffect(() => {
-    if (isEnabledTab) return;
+    if (isEnabledTab || isBundlesTab) return;
 
     if (externalTools) {
       // Local mode
-      let filtered = externalTools;
+      let filtered = externalTools.filter((t) => !isBundleListerName(t.name));
       if (activeCategory !== ALL_CATEGORY) {
         filtered = filtered.filter(
           (t) => (t.category ?? "General") === activeCategory,
@@ -675,7 +719,17 @@ function ServerToolsTab({
       .rpc("get_tools_list", { p_active_only: true })
       .then(({ data, error }) => {
         if (active && !error && data) {
-          setToolsList(data as any);
+          // Normalize the RPC's TABLE result to the {items,...} shape and drop
+          // bundle listers (surfaced via the Bundles category instead).
+          const rows = (
+            Array.isArray(data) ? data : ((data as any).items ?? [])
+          ).filter((t: any) => !isBundleListerName(t.name));
+          setToolsList({
+            items: rows,
+            total: rows.length,
+            page_size: rows.length,
+            page_count: 1,
+          });
         }
         if (active) setIsListLoading(false);
       });
@@ -689,14 +743,16 @@ function ServerToolsTab({
     page,
     pageSize,
     isEnabledTab,
+    isBundlesTab,
     externalTools,
   ]);
 
   const visibleTools = useMemo(() => {
     if (isEnabledTab) {
-      // client side filter
-      let items = (metadata?.enabled_tools || []).filter((t: any) =>
-        activeSet.has(t.id),
+      // client side filter — exclude bundle listers (shown as bundles, not as
+      // raw tools, under the Bundles category).
+      let items = (metadata?.enabled_tools || []).filter(
+        (t: any) => activeSet.has(t.id) && !isBundleListerName(t.name),
       );
       if (debouncedSearch) {
         items = filterAndSortBySearch(items, debouncedSearch, [
@@ -746,8 +802,31 @@ function ServerToolsTab({
     );
   }, [agentId, selectedTools, visibleTools, dispatch]);
 
-  const categories = metadata?.categories || [];
-  const totalCount = metadata?.total_count || 0;
+  // Categories + total for browsing, recomputed from the registry with bundle
+  // listers removed (they live under the Bundles category). Falls back to the
+  // parent-provided tallies when the registry hasn't hydrated yet.
+  const { categories, totalCount } = useMemo(() => {
+    const enabled = metadata?.enabled_tools as any[] | undefined;
+    if (enabled && enabled.length) {
+      const counts = new Map<string, number>();
+      for (const t of enabled) {
+        if (isBundleListerName(t.name)) continue;
+        const cat = t.category || "General";
+        counts.set(cat, (counts.get(cat) || 0) + 1);
+      }
+      const cats = Array.from(counts.entries())
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => a.category.localeCompare(b.category));
+      return {
+        categories: cats,
+        totalCount: cats.reduce((sum, c) => sum + c.count, 0),
+      };
+    }
+    return {
+      categories: metadata?.categories || [],
+      totalCount: metadata?.total_count || 0,
+    };
+  }, [metadata]);
 
   if (totalCount === 0) {
     return (
@@ -904,6 +983,20 @@ function ServerToolsTab({
               highlight
             />
           )}
+          {bundleOptions.length > 0 && (
+            <CategoryItem
+              label="Bundles"
+              count={bundleOptions.length}
+              enabledCount={enabledBundleCount}
+              active={isBundlesTab}
+              onClick={() => {
+                setActiveCategory(BUNDLES_CATEGORY);
+                if (inSheet) setMobileCategorySheetOpen(false);
+              }}
+              icon={<Package className="w-3 h-3" />}
+              highlight
+            />
+          )}
           <div className="h-px bg-border mx-1 my-2" />
           {categories.map((c: any) => (
             <CategoryItem
@@ -945,8 +1038,12 @@ function ServerToolsTab({
         </div>
       </MatrxDynamicPanelHost>
 
-      {/* Right panel: tools */}
+      {/* Right panel: tools (or the Bundles browser) */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {isBundlesTab ? (
+          <AgentBundlesPanel agentId={agentId} />
+        ) : (
+          <>
         {/* Orphaned tools warning */}
         {orphanedTools.length > 0 && (
           <OrphanedToolsBanner
@@ -1213,6 +1310,8 @@ function ServerToolsTab({
               Next
             </Button>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

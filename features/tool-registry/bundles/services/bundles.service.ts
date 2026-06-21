@@ -46,6 +46,151 @@ export async function getBundle(id: string): Promise<BundleRow> {
   return data;
 }
 
+/**
+ * A bundle shaped for the agent / surface tool pickers.
+ *
+ * A bundle is "addable" to an agent (or a surface) by writing one or more
+ * `tool_def` UUIDs into the agent's `tools` array. Which UUIDs depends on the
+ * bundle's shape:
+ *
+ *  - **Lister bundle** (`listerToolId` set): adding the bundle = adding the
+ *    single `bundle:list_<name>` lister tool. The model sees ONE tool; when it
+ *    calls the lister, the backend (`bundle_lister.py`) resolves the members
+ *    and hot-swaps them in for the rest of the run. This is the context-saving
+ *    path — N member tools cost one tool slot until actually needed.
+ *  - **Static bundle** (`listerToolId` null, e.g. `agent-core`): adding the
+ *    bundle = adding every member `tool_def` UUID directly (no lister).
+ *
+ * `contributedToolIds` is exactly the set to add/remove for the agent, so the
+ * picker never has to branch on shape.
+ */
+/** A tool recorded as a member of a bundle (`tool_bundle_member` → `tool_def`). */
+export interface BundleMemberTool {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface AgentBundleOption {
+  id: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  listerToolId: string | null;
+  /** Auto-managed MCP-server bundle (members discovered at runtime). */
+  isMcp: boolean;
+  serverSlug: string | null;
+  /** Concrete member rows recorded in `tool_bundle_member`. MCP bundles report
+   * 0 until first discovery — they expand on demand via the lister. */
+  memberCount: number;
+  /** The member tools, in sort order, for the "included tools" list. Empty for
+   * auto-managed MCP bundles (their tools aren't known until runtime). */
+  members: BundleMemberTool[];
+  /** "lister" → one lister tool the model expands; "static" → members added directly. */
+  loadMode: "lister" | "static";
+  /** The `tool_def` UUID(s) to toggle on the agent for this bundle. */
+  contributedToolIds: string[];
+}
+
+/**
+ * Lists the bundles that can be added to an agent or surface, already shaped
+ * for a picker. Reads are public (RLS SELECT policy `true` on both tables), so
+ * this stays client-side — no admin route needed.
+ *
+ * Excluded on purpose: **shared-lister** bundles (>1 bundle pointing at the
+ * same lister tool — today the 14 browser bundles that all share
+ * `load_browser_tools`). They are facets of a single runtime category-loader,
+ * not independently addable units; toggling any one would toggle the shared
+ * tool for all. The `load_browser_tools` tool itself still appears in normal
+ * tool browsing for anyone who wants it directly.
+ */
+export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {
+  const client = sb();
+  const [bundlesRes, membersRes] = await Promise.all([
+    client
+      .from("tool_bundle")
+      .select("*")
+      .eq("is_active", true)
+      .order("is_system", { ascending: true })
+      .order("name", { ascending: true }),
+    client
+      .from("tool_bundle_member")
+      .select("bundle_id, tool_id, sort_order, tool:tool_def(id, name, is_active)")
+      .order("sort_order", { ascending: true }),
+  ]);
+  if (bundlesRes.error) throw bundlesRes.error;
+  if (membersRes.error) throw membersRes.error;
+
+  const bundles = (bundlesRes.data ?? []) as BundleRow[];
+  const members = (membersRes.data ?? []) as Array<{
+    bundle_id: string;
+    tool_id: string;
+    sort_order: number;
+    tool: { id: string; name: string; is_active: boolean } | null;
+  }>;
+
+  // Member tools grouped by bundle, in sort order. We carry the names so the
+  // picker can show the "included tools" list, not just a count.
+  const membersByBundle = new Map<string, BundleMemberTool[]>();
+  for (const m of members) {
+    const tool: BundleMemberTool = {
+      id: m.tool_id,
+      name: m.tool?.name ?? m.tool_id,
+      isActive: m.tool?.is_active ?? false,
+    };
+    const arr = membersByBundle.get(m.bundle_id);
+    if (arr) arr.push(tool);
+    else membersByBundle.set(m.bundle_id, [tool]);
+  }
+
+  // Detect shared listers: any lister tool referenced by more than one active
+  // bundle is a shared runtime loader, not a per-bundle lister.
+  const listerUseCount = new Map<string, number>();
+  for (const b of bundles) {
+    if (b.lister_tool_id) {
+      listerUseCount.set(
+        b.lister_tool_id,
+        (listerUseCount.get(b.lister_tool_id) ?? 0) + 1,
+      );
+    }
+  }
+
+  const options: AgentBundleOption[] = [];
+  for (const b of bundles) {
+    const memberTools = membersByBundle.get(b.id) ?? [];
+    const memberIds = memberTools.map((t) => t.id);
+    const sharedLister =
+      !!b.lister_tool_id && (listerUseCount.get(b.lister_tool_id) ?? 0) > 1;
+    if (sharedLister) continue;
+
+    const meta = (b.metadata ?? {}) as Record<string, unknown>;
+    const serverSlug =
+      typeof meta.server_slug === "string" ? meta.server_slug : null;
+
+    const contributedToolIds = b.lister_tool_id
+      ? [b.lister_tool_id]
+      : memberIds;
+    // A bundle with neither a lister nor members contributes nothing — skip it
+    // rather than offer a no-op toggle.
+    if (contributedToolIds.length === 0) continue;
+
+    options.push({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      isSystem: b.is_system,
+      listerToolId: b.lister_tool_id,
+      isMcp: !!serverSlug,
+      serverSlug,
+      memberCount: memberTools.length,
+      members: memberTools,
+      loadMode: b.lister_tool_id ? "lister" : "static",
+      contributedToolIds,
+    });
+  }
+  return options;
+}
+
 export async function listBundleMembers(
   bundleId: string,
 ): Promise<BundleMemberWithTool[]> {
