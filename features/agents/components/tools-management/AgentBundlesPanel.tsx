@@ -12,7 +12,7 @@ import {
   User,
   Zap,
   AlertTriangle,
-  Info,
+  Lightbulb,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,20 +35,50 @@ const SCOPE_TABS: { key: BundleScope; label: string }[] = [
   { key: "all", label: "All" },
 ];
 
+type OverlapKind = "none" | "suggestion" | "warning";
+
+/**
+ * Classify a bundle against the agent's current tools:
+ *
+ * - **suggestion** (green): the bundle is NOT on the agent, but the agent
+ *   already holds some of its tools individually — adding the bundle would
+ *   consolidate them. A nudge, not a problem.
+ * - **warning** (yellow): the bundle IS on the agent AND the agent also holds
+ *   some of its tools individually — real redundancy (the bundle already
+ *   provides them). Only **lister** bundles can duplicate: enabling one adds
+ *   just the lister, so a member held individually is a genuine second source.
+ *   Static bundles add their members as the same shared UUID — nothing to
+ *   duplicate, so they never warn.
+ */
+function classifyOverlap(
+  b: AgentBundleOption,
+  agentTools: Set<string>,
+): { kind: OverlapKind; heldIds: Set<string> } {
+  const enabled =
+    b.contributedToolIds.length > 0 &&
+    b.contributedToolIds.every((id) => agentTools.has(id));
+  const heldIds = new Set(
+    b.members.filter((m) => agentTools.has(m.id)).map((m) => m.id),
+  );
+  if (heldIds.size === 0) return { kind: "none", heldIds };
+  if (enabled) {
+    return { kind: b.loadMode === "lister" ? "warning" : "none", heldIds };
+  }
+  return { kind: "suggestion", heldIds };
+}
+
 /**
  * Bundles tab/category for the Agent Tools manager.
  *
  * A bundle bundles many tools behind a single lister tool the model expands on
  * demand — so an agent can carry a whole capability (GitHub, Linear, Postgres…)
- * for the cost of one tool slot instead of dozens, which is the point: cut the
- * context the model pays for up front. Selecting a bundle writes its
- * contributed `tool_def` UUID(s) into the agent's `tools` array via the same
- * `setAgentTools` path every other tool uses, so persistence + the backend
- * resolver treat it identically to a hand-picked tool.
+ * for the cost of one tool slot instead of dozens. Selecting a bundle writes
+ * its contributed `tool_def` UUID(s) into the agent's `tools` array via the
+ * same `setAgentTools` path every other tool uses.
  *
- * Each card lists the tools the bundle includes, and any of those a user has
- * ALSO added individually are flagged — not an error (it's fine), but worth
- * pointing out in case it wasn't intended.
+ * Overlap with individually-picked tools is surfaced as a gentle nudge — green
+ * "consolidate" suggestion before you add a bundle, yellow "redundant" reminder
+ * after — never as an error.
  */
 export function AgentBundlesPanel({ agentId }: { agentId: string }) {
   const dispatch = useAppDispatch();
@@ -116,35 +146,24 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     [scopeBundles, isEnabled],
   );
 
-  // Tools the user added individually that ALSO belong to a visible bundle. For
-  // lister bundles enabling never adds the members, so any member present is by
-  // hand; for static bundles a present member is "by hand" only while the bundle
-  // itself is off (once on, the bundle is what put them there). Scoped to the
-  // active tab so the banner matches what's on screen (MCP bundles have no
-  // members, so this is only ever non-empty on Internal / All).
-  const individualOverlap = useMemo(() => {
-    const ids = new Set<string>();
-    for (const b of scopeBundles) {
-      const enabled = isEnabled(b);
-      for (const m of b.members) {
-        if (!activeSet.has(m.id)) continue;
-        const byHand = b.loadMode === "lister" ? true : !enabled;
-        if (byHand) ids.add(m.id);
-      }
-    }
-    return ids;
-  }, [scopeBundles, activeSet, isEnabled]);
-
   const visibleBundles = useMemo(() => {
-    if (!search.trim()) return scopeBundles;
-    return filterAndSortBySearch(scopeBundles, search, [
-      { get: (b) => b.name, weight: "title" },
-      { get: (b) => b.description, weight: "body" },
-      { get: (b) => b.members.map((m) => m.name).join(" "), weight: "body" },
-      { get: (b) => b.serverSlug ?? "", weight: "tag" },
-      { get: (b) => b.id, weight: "id" },
-    ]);
-  }, [scopeBundles, search]);
+    const base = search.trim()
+      ? filterAndSortBySearch(scopeBundles, search, [
+          { get: (b) => b.name, weight: "title" },
+          { get: (b) => b.description, weight: "body" },
+          { get: (b) => b.members.map((m) => m.name).join(" "), weight: "body" },
+          { get: (b) => b.serverSlug ?? "", weight: "tag" },
+          { get: (b) => b.id, weight: "id" },
+        ])
+      : scopeBundles;
+    // Float "suggestion" bundles (ones that cover tools you already use) to the
+    // top so the consolidate nudge is the first thing you see. Stable sort.
+    return [...base].sort((a, b) => {
+      const ra = classifyOverlap(a, activeSet).kind === "suggestion" ? 0 : 1;
+      const rb = classifyOverlap(b, activeSet).kind === "suggestion" ? 0 : 1;
+      return ra - rb;
+    });
+  }, [scopeBundles, search, activeSet]);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -218,21 +237,6 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
         </div>
       </div>
 
-      {/* Overlap callout — individually-added tools that also live in a bundle */}
-      {individualOverlap.size > 0 && (
-        <div className="mx-3 mt-2.5 flex items-start gap-2 rounded border border-amber-400/60 dark:border-amber-600/50 bg-amber-50/60 dark:bg-amber-950/20 px-2.5 py-1.5 shrink-0">
-          <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-snug">
-            {individualOverlap.size === 1
-              ? "1 tool you added individually also belongs to a bundle below"
-              : `${individualOverlap.size} tools you added individually also belong to bundles below`}
-            {
-              " — highlighted in each list. That's fine; just flagging it in case it wasn't intended."
-            }
-          </p>
-        </div>
-      )}
-
       {/* Search */}
       <div className="px-3 py-2.5 border-b border-border shrink-0">
         <div className="relative">
@@ -273,7 +277,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
                 key={b.id}
                 bundle={b}
                 active={isEnabled(b)}
-                activeToolIds={activeSet}
+                agentTools={activeSet}
                 onToggle={() => toggleBundle(b)}
               />
             ))
@@ -287,16 +291,21 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
 function BundleCard({
   bundle,
   active,
-  activeToolIds,
+  agentTools,
   onToggle,
 }: {
   bundle: AgentBundleOption;
   active: boolean;
-  activeToolIds: Set<string>;
+  agentTools: Set<string>;
   onToggle: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const MAX_VISIBLE = 12;
+
+  const { kind, heldIds } = useMemo(
+    () => classifyOverlap(bundle, agentTools),
+    [bundle, agentTools],
+  );
 
   const loadHint =
     bundle.loadMode === "static"
@@ -307,31 +316,22 @@ function BundleCard({
           ? `Loads ${bundle.memberCount} tool${bundle.memberCount === 1 ? "" : "s"} on demand`
           : "Loads its tools on demand";
 
-  // A member counts as "added individually" when it's in the agent but not by
-  // virtue of this bundle (see AgentBundlesPanel.individualOverlap).
-  const overlapCount = useMemo(() => {
-    let n = 0;
-    for (const m of bundle.members) {
-      if (!activeToolIds.has(m.id)) continue;
-      const byHand = bundle.loadMode === "lister" ? true : !active;
-      if (byHand) n++;
-    }
-    return n;
-  }, [bundle, activeToolIds, active]);
-
   const shownMembers = expanded
     ? bundle.members
     : bundle.members.slice(0, MAX_VISIBLE);
   const overflow = bundle.members.length - shownMembers.length;
 
-  return (
-    <div
-      className={`rounded-lg border transition-all ${
-        active
+  const borderClass =
+    kind === "warning"
+      ? "border-amber-400/70 dark:border-amber-600/60 bg-amber-50/40 dark:bg-amber-950/15"
+      : kind === "suggestion"
+        ? "border-emerald-400/70 dark:border-emerald-600/60 bg-emerald-50/40 dark:bg-emerald-950/15"
+        : active
           ? "bg-secondary/10 border-secondary/30"
-          : "border-border hover:border-muted-foreground/30"
-      }`}
-    >
+          : "border-border hover:border-muted-foreground/30";
+
+  return (
+    <div className={`rounded-lg border transition-all ${borderClass}`}>
       {/* Header row — the toggle target */}
       <div
         role="button"
@@ -415,44 +415,57 @@ function BundleCard({
         </div>
       </div>
 
+      {/* Gentle overlap nudge — suggestion before adding, redundancy after */}
+      {kind === "suggestion" && (
+        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400">
+          <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
+          <span>
+            You already use {heldIds.size} of these tools individually — add this
+            bundle to consolidate, then drop the individual copies.
+          </span>
+        </div>
+      )}
+      {kind === "warning" && (
+        <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+          <span>
+            {heldIds.size} of these tools {heldIds.size === 1 ? "is" : "are"} also
+            added individually — redundant with this bundle. Consider removing the
+            individual copies.
+          </span>
+        </div>
+      )}
+
       {/* Included tools */}
       {bundle.members.length > 0 ? (
         <div className="border-t border-border/60 px-3 py-2">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="mb-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Included tools ({bundle.members.length})
             </span>
-            {overlapCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-amber-700 dark:text-amber-400">
-                <Info className="w-3 h-3" />
-                {overlapCount} already added individually
-              </span>
-            )}
           </div>
           <div className="flex flex-wrap gap-1">
             {shownMembers.map((m) => {
-              const inAgent = activeToolIds.has(m.id);
-              const byHand =
-                inAgent && (bundle.loadMode === "lister" ? true : !active);
+              const highlight = kind !== "none" && heldIds.has(m.id);
               return (
                 <span
                   key={m.id}
                   title={
-                    byHand
-                      ? "Already added individually to this agent"
-                      : inAgent
-                        ? "Provided by this bundle"
-                        : undefined
+                    highlight
+                      ? kind === "warning"
+                        ? "Also added individually — redundant"
+                        : "You already use this individually"
+                      : undefined
                   }
                   className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-mono border ${
-                    byHand
-                      ? "bg-amber-100/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-400/60 dark:border-amber-700/60"
-                      : inAgent
-                        ? "bg-secondary/10 text-secondary border-secondary/30"
-                        : "bg-muted/60 text-muted-foreground border-transparent"
+                    highlight
+                      ? kind === "warning"
+                        ? "bg-amber-100/70 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-400/60 dark:border-amber-700/60"
+                        : "bg-emerald-100/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-400/60 dark:border-emerald-700/60"
+                      : "bg-muted/60 text-muted-foreground border-transparent"
                   } ${m.isActive ? "" : "opacity-60 line-through"}`}
                 >
-                  {byHand && (
+                  {highlight && (
                     <User className="w-2.5 h-2.5 shrink-0" aria-hidden />
                   )}
                   {m.name}

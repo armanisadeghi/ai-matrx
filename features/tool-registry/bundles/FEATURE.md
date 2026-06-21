@@ -91,8 +91,13 @@ remove `contributedToolIds`.
   so our own toolkits aren't buried under MCP servers. Bundle listers
   (`bundle:list_*`) pulled out of raw tool browsing — they were masquerading as
   an "mcp" category — into their own category; each card lists its included
-  tools and flags overlap with individually-added tools. New
-  `listAgentBundleOptions()` service primitive (shape-agnostic
-  `contributedToolIds`). Verified end-to-end: lister UUID persists to
-  `agx_agent.tools`, agent runs, `tool_resolve_bundle` expands the members.
+  tools. Overlap with individually-picked tools is surfaced as a gentle nudge,
+  not an error: green **suggestion** (consolidate) on an unselected bundle that
+  covers tools you already hold (floated to top), yellow **warning**
+  (redundant) once a **lister** bundle is selected while you still hold its
+  members individually, and a matching yellow "already in bundle X" reminder on
+  the tool in the **Enabled** view. New `listAgentBundleOptions()` service
+  primitive (shape-agnostic `contributedToolIds`). Verified end-to-end: lister
+  UUID persists to `agx_agent.tools`, agent runs, `tool_resolve_bundle` expands
+  the members.
 - **2026-05-05** — Phase 3 shipped. Initial admin bundle page + service.

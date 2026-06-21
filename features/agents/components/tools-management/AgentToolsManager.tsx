@@ -679,6 +679,29 @@ function ServerToolsTab({
     [bundleOptions, activeSet],
   );
 
+  // Maps each tool the agent holds individually to the enabled LISTER bundle(s)
+  // that ALSO provide it — real redundancy (the lister expands to it at runtime
+  // and it's added individually too). Static bundles add the same shared UUID,
+  // so they aren't duplication. Drives the yellow "already in bundle X" nudge on
+  // tool cards (most visible in the Enabled view).
+  const dupBundlesByToolId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const b of bundleOptions) {
+      if (b.loadMode !== "lister") continue;
+      const enabled =
+        b.contributedToolIds.length > 0 &&
+        b.contributedToolIds.every((id) => activeSet.has(id));
+      if (!enabled) continue;
+      for (const m of b.members) {
+        if (!activeSet.has(m.id)) continue;
+        const arr = map.get(m.id);
+        if (arr) arr.push(b.name);
+        else map.set(m.id, [b.name]);
+      }
+    }
+    return map;
+  }, [bundleOptions, activeSet]);
+
   useEffect(() => {
     if (isEnabledTab || isBundlesTab) return;
 
@@ -1278,6 +1301,7 @@ function ServerToolsTab({
                     onExpand={() =>
                       setExpandedTool(expandedTool === tool.id ? null : tool.id)
                     }
+                    dupBundles={dupBundlesByToolId.get(tool.id)}
                   />
                 );
               })
@@ -3645,22 +3669,29 @@ function ToolCard({
   expanded,
   onToggle,
   onExpand,
+  dupBundles,
 }: {
   tool: any;
   active: boolean;
   expanded: boolean;
   onToggle: (name: string) => void;
   onExpand: () => void;
+  /** Names of enabled bundles that also provide this tool — when set, the tool
+   * is redundant with a bundle and the card shows a gentle yellow nudge. */
+  dupBundles?: string[];
 }) {
   const hasDetails = tool.has_details ?? true;
   const colors = getCategoryColor(tool.category);
+  const isDup = !!dupBundles && dupBundles.length > 0;
 
   return (
     <div
       className={`rounded-lg text-left transition-all border cursor-pointer select-none ${
-        active
-          ? `${colors.bg} ${colors.border}`
-          : "border-transparent hover:bg-muted/40 hover:border-border"
+        isDup
+          ? "border-amber-400/70 dark:border-amber-600/60 bg-amber-50/40 dark:bg-amber-950/15"
+          : active
+            ? `${colors.bg} ${colors.border}`
+            : "border-transparent hover:bg-muted/40 hover:border-border"
       }`}
       onClick={() => onToggle(tool.id)}
     >
@@ -3719,6 +3750,15 @@ function ToolCard({
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               {tool.description}
             </p>
+          )}
+          {isDup && (
+            <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400">
+              <Package className="w-3 h-3 shrink-0" />
+              <span>
+                Already in bundle{dupBundles!.length > 1 ? "s" : ""}:{" "}
+                {dupBundles!.join(", ")} — remove if redundant
+              </span>
+            </div>
           )}
         </div>
 
