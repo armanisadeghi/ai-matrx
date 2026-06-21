@@ -581,6 +581,37 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
             ],
         },
     }),
+    entry({
+        callId: "db-active-tab",
+        toolName: "get_active_tab",
+        arguments: {},
+        result: { tab_id: 908926627, url: "https://platform.claude.com/docs/en/api/admin/usage_report", title: "Usage Report — Claude API Reference", status: "complete" },
+    }),
+    entry({
+        callId: "db-find-text",
+        toolName: "find_text_on_page",
+        arguments: { text: "observability" },
+        result: {
+            count: 2,
+            matches: [
+                { context: "Integrations and observability", selector: "li:nth-of-type(10) > a", tag: "a", text: "observability" },
+                { context: "Observability dashboard overview", tag: "h2", text: "Observability" },
+            ],
+        },
+    }),
+    entry({
+        callId: "db-page-text",
+        toolName: "get_page_text",
+        arguments: { max_chars: 5000 },
+        result: {
+            byline: "MGM Resorts",
+            char_count: 1281,
+            ok: true,
+            title: "Bellagio — Book a Room",
+            text: "Stay dates & resort selected for Las Vegas. Guests: 2. Calendar pricing includes the average daily resort fee (if applicable) and excludes tax. Select your stay dates and resort to see availability and pricing for your trip. Bellagio offers a range of room and suite options overlooking the famous fountains.",
+            url: "https://bellagio.mgmresorts.com/book-room/",
+        },
+    }),
 ];
 
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
