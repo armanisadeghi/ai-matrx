@@ -20,7 +20,10 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * an action therefore never breaks a surface — it only upgrades the ones that
  * opt in. Add the next action's id to this union and register its handler.
  */
-export type ShellNavActionId = "create-project";
+export type ShellNavActionId =
+  | "create-project"
+  | "create-task"
+  | "create-war-room";
 
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "sidebar",
@@ -79,6 +82,16 @@ export interface ShellNavChild {
    * stays as the fallback for surfaces that don't yet understand actions.
    */
   action?: ShellNavActionId;
+  /**
+   * Marks this child as an **action** (a create/add affordance) rather than a
+   * navigation destination. Action children always render together in a
+   * dedicated section at the BOTTOM of the menu, below a divider, regardless of
+   * their position in this array — the house standard for every nav group (see
+   * `partitionNavChildren`). A child with an overlay `action` is treated as an
+   * action automatically; set this flag for plain-link creates (e.g. an
+   * "Add X" that navigates to `/x/new` with no overlay handler).
+   */
+  actionItem?: boolean;
 }
 
 export interface ShellNavItem {
@@ -482,6 +495,9 @@ export const primaryNavItems: ShellNavItem[] = [
     description: "Projects, tasks, and the War Room",
     color: "violet",
     children: [
+      // Destinations — rendered top-to-bottom. The create actions below are
+      // collected into their own section at the bottom of the menu by
+      // `partitionNavChildren`, regardless of source order.
       {
         label: "Projects",
         href: "/projects",
@@ -490,14 +506,6 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "violet",
         profileMenu: true,
         dashboard: true,
-      },
-      {
-        // Opens the Create Project window overlay in place (no routing).
-        // `href` is the graceful fallback for non-action-aware surfaces.
-        label: "Add Project",
-        href: "/projects/new",
-        iconName: "Plus",
-        action: "create-project",
       },
       {
         label: "Tasks",
@@ -517,6 +525,27 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "rose",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — every "add" for this group, grouped together below a divider.
+      // Each opens its overlay/window in place; `href` is the graceful fallback
+      // for non-action-aware surfaces (mobile sheet, ctrl-click new tab).
+      {
+        label: "New Project",
+        href: "/projects/new",
+        iconName: "Plus",
+        action: "create-project",
+      },
+      {
+        label: "New Task",
+        href: "/tasks/new",
+        iconName: "Plus",
+        action: "create-task",
+      },
+      {
+        label: "New War Room",
+        href: "/war-room/all",
+        iconName: "Plus",
+        action: "create-war-room",
       },
     ],
   },
@@ -946,6 +975,41 @@ export function groupNavChildren(
     }
   }
   return sections;
+}
+
+/**
+ * Is this child an **action** (a create/add affordance) rather than a
+ * navigation destination? True when it carries an overlay `action` handler or
+ * is explicitly flagged with `actionItem`. Single source of truth for the
+ * distinction — every surface partitions the same way.
+ */
+export function isNavActionChild(child: ShellNavChild): boolean {
+  return child.actionItem === true || child.action != null;
+}
+
+export interface PartitionedNavChildren {
+  /** Navigation destinations, grouped into labelled sections (top of the menu). */
+  sections: ShellNavChildSection[];
+  /** Create/add affordances, in source order (bottom of the menu, below a divider). */
+  actions: ShellNavChild[];
+}
+
+/**
+ * The house standard for rendering a nav group's children: navigation
+ * destinations first (grouped), then every action (create/add) collected
+ * together at the BOTTOM — independent of their order in the source array.
+ *
+ * Every menu surface (desktop flyout, mobile sheet) funnels through this so the
+ * layout is identical everywhere: destinations up top, a divider, then the
+ * "add" actions. Authors never have to hand-order actions to the end; flagging
+ * a child (via `action` or `actionItem`) is enough.
+ */
+export function partitionNavChildren(
+  children: ShellNavChild[],
+): PartitionedNavChildren {
+  const navChildren = children.filter((c) => !isNavActionChild(c));
+  const actions = children.filter(isNavActionChild);
+  return { sections: groupNavChildren(navChildren), actions };
 }
 
 /**

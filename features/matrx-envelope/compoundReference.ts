@@ -99,8 +99,23 @@ export function buildFilePageReferenceFence(args: {
   return fence("file_page", item);
 }
 
-/** Parse `segment-12` → 12; returns undefined when not parseable. */
-export function transcriptSegmentIndexFromId(segmentId: string): number | undefined {
+/** One filled context cell (scope × context item, current value). */
+export function buildContextValueReferenceFence(args: {
+  scopeId: string;
+  contextItemId: string;
+  label?: string;
+}): string {
+  const item: Record<string, string> = {
+    scope_id: args.scopeId,
+    context_item_id: args.contextItemId,
+  };
+  if (args.label?.trim()) item.label = args.label.trim();
+  return fence("context_value", item);
+}
+
+export function transcriptSegmentIndexFromId(
+  segmentId: string,
+): number | undefined {
   const m = /^segment-(\d+)$/.exec(segmentId.trim());
   if (!m) return undefined;
   const n = Number.parseInt(m[1]!, 10);

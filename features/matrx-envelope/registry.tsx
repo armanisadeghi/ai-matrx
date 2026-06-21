@@ -33,6 +33,10 @@ import {
   FileText,
   File,
   TableProperties,
+  Building2,
+  Layers,
+  Tag,
+  Box,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -106,6 +110,16 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
       return Webhook;
     case "agent_app":
       return Webhook;
+    case "organization":
+      return Building2;
+    case "scope_type":
+      return Layers;
+    case "scope":
+      return Tag;
+    case "context_item":
+      return Box;
+    case "context_value":
+      return Box;
     case "transcript":
       return Mic;
     case "transcript_segment":

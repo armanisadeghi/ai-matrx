@@ -131,6 +131,11 @@ export const REFERENCE_TYPES = [
   "document_page",
   "file",
   "file_page",
+  "organization",
+  "scope_type",
+  "scope",
+  "context_item",
+  "context_value",
 ] as const;
 
 export type ReferenceType = (typeof REFERENCE_TYPES)[number];
@@ -188,6 +193,11 @@ export interface FilePageRefItem extends ReferenceItemHints {
   file_id: string;
   page_number: string;
 }
+/** Filled cell at scope × context_item (`ctx_context_item_values`, current row). */
+export interface ContextValueRefItem extends ReferenceItemHints {
+  scope_id: string;
+  context_item_id: string;
+}
 export interface TableColumnRefItem extends ReferenceItemHints {
   table_id: string;
   column_name: string;
@@ -226,6 +236,7 @@ export type ReferenceItem =
   | WorkbookSheetRefItem
   | DocumentPageRefItem
   | FilePageRefItem
+  | ContextValueRefItem
   | RecordRefItem;
 
 // ── Output-schema builder (generic; mirrors aidream's schema_gen) ─────────────

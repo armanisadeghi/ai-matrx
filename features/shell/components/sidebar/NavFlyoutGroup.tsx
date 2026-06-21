@@ -18,7 +18,11 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
-import { groupNavChildren, type ShellNavItem } from "../../constants/nav-data";
+import {
+  partitionNavChildren,
+  type ShellNavChild,
+  type ShellNavItem,
+} from "../../constants/nav-data";
 import { useNavActions } from "../../navigation/navActions";
 
 interface NavFlyoutGroupProps {
@@ -55,6 +59,51 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
     .filter((c) => isOnRoute(pathname, c.href))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const isGroupActive = Boolean(activeHref) || isOnRoute(pathname, item.href);
+
+  // Destinations up top (grouped), create actions collected at the bottom.
+  const { sections, actions } = partitionNavChildren(children);
+
+  // One renderer for both destinations and actions so they're pixel-identical.
+  // Action entries trigger an overlay/window in place instead of navigating —
+  // render a button, run the handler, and close the flyout. (Falls back to a
+  // plain Link for navigation entries and action entries without a handler.)
+  const renderChild = (child: ShellNavChild) => {
+    const actionHandler = child.action ? navActions[child.action] : undefined;
+    if (actionHandler) {
+      return (
+        <button
+          key={child.action}
+          type="button"
+          role="menuitem"
+          className="shell-nav-flyout-item"
+          onClick={() => {
+            actionHandler();
+            setPinned(false);
+            setOpen(false);
+          }}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+          </span>
+          <span>{child.label}</span>
+        </button>
+      );
+    }
+    return (
+      <Link
+        key={child.href}
+        href={child.href}
+        role="menuitem"
+        className="shell-nav-flyout-item"
+        data-active={child.href === activeHref ? "true" : undefined}
+      >
+        <span className="shell-nav-icon">
+          <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+        </span>
+        <span>{child.label}</span>
+      </Link>
+    );
+  };
 
   const clearTimers = useCallback(() => {
     if (openTimer.current) {
@@ -207,70 +256,28 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
             onMouseLeave={scheduleClose}
           >
             <div className="shell-nav-flyout-header">{item.label}</div>
-            {groupNavChildren(children).map((section) => (
+            {sections.map((section) => (
               <div key={section.label ?? section.items[0]?.href}>
                 {section.label ? (
                   <div className="shell-nav-flyout-section">
                     {section.label}
                   </div>
                 ) : null}
-                {section.items.map((child) => {
-                  const actionHandler = child.action
-                    ? navActions[child.action]
-                    : undefined;
-
-                  // Action entries trigger an overlay/window in place instead
-                  // of navigating — render a button, run the handler, and
-                  // close the flyout. (Falls back to the Link below for plain
-                  // navigation entries.)
-                  if (actionHandler) {
-                    return (
-                      <button
-                        key={child.action}
-                        type="button"
-                        role="menuitem"
-                        className="shell-nav-flyout-item"
-                        onClick={() => {
-                          actionHandler();
-                          setPinned(false);
-                          setOpen(false);
-                        }}
-                      >
-                        <span className="shell-nav-icon">
-                          <ShellIcon
-                            name={child.iconName}
-                            size={16}
-                            strokeWidth={1.75}
-                          />
-                        </span>
-                        <span>{child.label}</span>
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      role="menuitem"
-                      className="shell-nav-flyout-item"
-                      data-active={
-                        child.href === activeHref ? "true" : undefined
-                      }
-                    >
-                      <span className="shell-nav-icon">
-                        <ShellIcon
-                          name={child.iconName}
-                          size={16}
-                          strokeWidth={1.75}
-                        />
-                      </span>
-                      <span>{child.label}</span>
-                    </Link>
-                  );
-                })}
+                {section.items.map(renderChild)}
               </div>
             ))}
+            {actions.length > 0 && (
+              <>
+                {sections.length > 0 && (
+                  <div
+                    className="shell-nav-flyout-divider"
+                    role="separator"
+                    aria-orientation="horizontal"
+                  />
+                )}
+                {actions.map(renderChild)}
+              </>
+            )}
           </div>,
           document.body,
         )}

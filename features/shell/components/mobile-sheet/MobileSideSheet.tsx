@@ -12,8 +12,8 @@
 
 import ShellIcon from "../ShellIcon";
 import {
-  groupNavChildren,
   navItemsForViewer,
+  partitionNavChildren,
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
@@ -66,8 +66,23 @@ export default function MobileSideSheet({
               plus an inline, indented set of children (mobile stacks the tree
               vertically rather than hiding it behind a collapse). */}
           <div className="shell-mobile-main-nav">
-            {visibleItems.map((item) =>
-              item.children && item.children.length > 0 ? (
+            {visibleItems.map((item) => {
+              if (!item.children || item.children.length === 0) {
+                return (
+                  <MobileSheetNavLink
+                    key={item.label}
+                    href={item.href}
+                    iconName={item.iconName}
+                    label={item.label}
+                    external={item.external}
+                  />
+                );
+              }
+              // Same standard as desktop: destinations up top, create actions
+              // collected at the bottom below a divider. Mobile has no overlay
+              // surface, so actions navigate to their graceful `href` fallback.
+              const { sections, actions } = partitionNavChildren(item.children);
+              return (
                 <div
                   key={item.label}
                   className="shell-mobile-nav-group"
@@ -79,7 +94,7 @@ export default function MobileSideSheet({
                     label={item.label}
                   />
                   <div className="shell-mobile-nav-children">
-                    {groupNavChildren(item.children).map((section) => (
+                    {sections.map((section) => (
                       <div key={section.label ?? section.items[0]?.href}>
                         {section.label ? (
                           <div className="shell-mobile-section-label">
@@ -97,18 +112,26 @@ export default function MobileSideSheet({
                         ))}
                       </div>
                     ))}
+                    {actions.length > 0 ? (
+                      <>
+                        {sections.length > 0 ? (
+                          <div className="shell-mobile-section-divider" />
+                        ) : null}
+                        {actions.map((child) => (
+                          <MobileSheetNavLink
+                            key={child.action ?? child.href}
+                            href={child.href}
+                            iconName={child.iconName}
+                            label={child.label}
+                            isChild
+                          />
+                        ))}
+                      </>
+                    ) : null}
                   </div>
                 </div>
-              ) : (
-                <MobileSheetNavLink
-                  key={item.label}
-                  href={item.href}
-                  iconName={item.iconName}
-                  label={item.label}
-                  external={item.external}
-                />
-              ),
-            )}
+              );
+            })}
 
             {/* Settings */}
             <div className="shell-mobile-section-divider" />

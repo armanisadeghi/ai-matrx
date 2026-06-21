@@ -816,14 +816,28 @@ button.shell-nav-item {
     color var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
-/* Action entries render as <button> but must look identical to the <a> items. */
+/* Action entries render as <button> but must look identical to the <a> items.
+   Inherit only the font FAMILY (buttons default to the UA font); font-size and
+   font-weight stay owned by .shell-nav-flyout-item above — using the `font`
+   shorthand here would reset those longhands to `inherit` and the button text
+   would no longer match the links. */
 button.shell-nav-flyout-item {
   width: 100%;
   border: none;
   background: transparent;
-  font: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* Spacer between a group's destinations and its create actions (the bottom
+   "add" section). Same hairline the section headers use, for cohesion. */
+.shell-nav-flyout-divider {
+  height: 1px;
+  margin: 0.25rem 0.125rem;
+  background: hsl(var(--border) / 0.6);
 }
 
 .shell-nav-flyout-item:hover {

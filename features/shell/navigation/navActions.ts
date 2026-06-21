@@ -20,17 +20,35 @@
  * opener hooks (React Compiler handles memoization; do not hand-memoize).
  */
 
+import { useRouter } from "next/navigation";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createWarRoomSession } from "@/features/war-room/redux/thunks";
 import type { ShellNavActionId } from "../constants/nav-data";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
 
 export function useNavActions(): ShellNavActionHandlers {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
 
   return {
     "create-project": () => {
       openCreateProject({});
+    },
+    "create-task": () => {
+      // Opens the non-blocking Task Quick Create window with a blank task.
+      dispatch(openOverlay({ overlayId: "taskQuickCreateWindow", data: {} }));
+    },
+    "create-war-room": () => {
+      // Creates the session server-side, then navigates into it. The thunk
+      // raises its own error toast on failure (returns null).
+      void (async () => {
+        const session = await dispatch(createWarRoomSession());
+        if (session) router.push(`/war-room/${session.id}`);
+      })();
     },
   };
 }

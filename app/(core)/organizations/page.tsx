@@ -44,6 +44,7 @@ import type {
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@/features/files";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
@@ -334,7 +335,7 @@ export default function OrganizationsPage() {
           </div>
 
           {organizations.length > 4 && (
-            <div className="relative mt-4">
+            <div className="relative mt-4 flex items-center gap-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={query}
@@ -342,6 +343,16 @@ export default function OrganizationsPage() {
                 placeholder="Search organizations…"
                 className="pl-9 max-w-sm"
               />
+              {filtered.length > 0 && (
+                <ReferencesBulkCopyButton
+                  referenceType="organization"
+                  records={filtered.map((o) => ({
+                    id: o.id,
+                    label: o.name,
+                  }))}
+                  toastLabel={`${filtered.length} organization${filtered.length === 1 ? "" : "s"}`}
+                />
+              )}
             </div>
           )}
         </Card>

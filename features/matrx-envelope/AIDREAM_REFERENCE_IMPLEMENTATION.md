@@ -19,6 +19,11 @@
 | P1 | `workbook_sheet` | — | `{ workbook_id, sheet_id, sheet_name?, workbook_name? }` | Latest `udt_workbook_snapshots` → sheet tab |
 | P2 | `document_page` | — | `{ document_id, page_index, document_name? }` | Latest doc snapshot; page = 1-based |
 | P2 | `file_page` | — | `{ file_id, page_number, label? }` | PDF page extract via file handler |
+| **P0** | **`organization`** | — (RecordRef) | `{ id, label? }` | `organizations` — org umbrella for context |
+| **P0** | **`scope_type`** | — (RecordRef) | `{ id, label? }` | `ctx_scope_types` — dimension (Client, Department, …) |
+| **P0** | **`scope`** | — (RecordRef) | `{ id, label? }` | `ctx_scopes` — value on a dimension (Dr. Nazarian, SEO, …) |
+| **P0** | **`context_item`** | — (RecordRef) | `{ id, label? }` | `ctx_context_items` — column definition (field schema) |
+| **P1** | **`context_value`** | — | `{ scope_id, context_item_id, label? }` | Current row in `ctx_context_item_values` where `is_current = true` |
 | — | Picklist V2 (UI TBD) | `full_list`, `list_group`, `list_item` | Existing shapes | Already mapped — wire V2 UI later |
 
 **Already supported (no aidream work):** `task`, `note`, `project`, `agent`, `transcript`, `transcript_session`, `workbook`, `document`, `file`/`media`, UDT table family (`table`, `table_column`, `table_row`, `table_cell`), picklist family (`picklist`, `picklist_group`, `picklist_item`).
@@ -300,6 +305,76 @@ One page of a PDF in `cld_files`.
 
 ---
 
+## P0 — Scope & context layer (org → type → scope → item → value)
+
+The scope system is the highest-signal part of agent context. Five reference types cover the hierarchy. Read `features/scopes/FEATURE.md` for the context vs scope distinction.
+
+### Dimension map
+
+| Entity | Reference `type` | Table | What it points at |
+|---|---|---|---|
+| Organization | `organization` | `organizations` | Team / personal workspace umbrella |
+| Scope type | `scope_type` | `ctx_scope_types` | A dimension (`Client`, `Department`, …) |
+| Scope | `scope` | `ctx_scopes` | One value on that dimension (`Dr. Nazarian`, `SEO`, …) |
+| Context item | `context_item` | `ctx_context_items` | Column definition (applies to every scope of a type) |
+| Context value | `context_value` | `ctx_context_item_values` | **The filled cell** — current value at `(scope_id × context_item_id)` |
+
+### Wire — RecordRef family (`organization`, `scope_type`, `scope`, `context_item`)
+
+```json
+{
+  "type": "scope",
+  "items": [{ "id": "<uuid>", "label": "Dr. Nazarian Plastic Surgery" }]
+}
+```
+
+Same `{ id, label? }` shape as `task` / `note`. Add all four to `list_referenceable()` with their tables.
+
+### Wire — `context_value` (compound cell)
+
+```json
+{
+  "type": "context_value",
+  "items": [{
+    "scope_id": "<uuid>",
+    "context_item_id": "<uuid>",
+    "label": "Dr. Nazarian · Target keywords"
+  }]
+}
+```
+
+### Resolver behavior
+
+| Type | Expand to (for LLM context) |
+|---|---|
+| `organization` | `name`, `description`; optionally scope-type summary count |
+| `scope_type` | `label_singular` / `label_plural`, `description` |
+| `scope` | `name`, `description`; optionally parent type name |
+| `context_item` | `display_name`, `description`, `value_type`, `category` |
+| `context_value` | Join scope name + item display name + **current** value from typed columns (`value_text`, `value_number`, `value_boolean`, `value_date`, `value_json`, …). Query `ctx_context_item_values` WHERE `is_current = true`. |
+
+### RLS / ownership
+
+All `ctx_*` tables are org-scoped. Resolver MUST verify the caller is a member of the org that owns the row (same rules as scope CRUD RPCs). Never leak cross-org cell values.
+
+### Agent-context integration
+
+When aidream assembles context for an invocation, these references should expand into the same payload shape the scope brokers already produce — not a parallel string format. The reference is a **pointer**; expansion reuses existing context-value fetch logic where possible.
+
+### Frontend wired
+
+- `ScopesRouteHeader.tsx` — route-aware bookmark in header-right (org home, scope type, scope hub, context item hub, scope×item value page).
+- `scopeRouteReference.ts` — maps pathname + Redux entities → fence args.
+- `app/(core)/organizations/page.tsx` — bulk copy filtered orgs.
+- FE preview resolvers in `referenceResolvers.ts`; chip icons in `registry.tsx`.
+
+### Open follow-ups (document only)
+
+- **`context_value` by value row id** — optional future `{ id }` RecordRef to a specific `ctx_context_item_values.id` for version pinning; v1 uses `(scope_id, context_item_id)` → current value only.
+- **Organization chip open** — no dedicated window yet; chip is resolve-only (`openId: undefined`).
+
+---
+
 ## Picklist V2 — options documented (UI not modified)
 
 Prod route `/lists/v2` uses `PicklistManagerV2`. **Do not add bookmark buttons until picklist UI is finalized.** Required copy dimensions (same as legacy `features/user-lists/`):
@@ -331,7 +406,7 @@ Backend: **no new types** — existing picklist bookmark → reference mapping i
 - [ ] Extend envelope `reference` type enum with all new types above.
 - [ ] Pydantic item models for each compound type (flat fields only).
 - [ ] `BOOKMARK_TYPE_TO_REFERENCE`: add `table_schema`.
-- [ ] `list_referenceable()`: add `agent_app` → `aga_apps`.
+- [ ] `list_referenceable()`: add `agent_app` → `aga_apps`, plus `organization`, `scope_type`, `scope`, `context_item`.
 
 ### Resolvers (`agent_data` / references module)
 
@@ -342,6 +417,8 @@ Backend: **no new types** — existing picklist bookmark → reference mapping i
 - [ ] `workbook_sheet` — snapshot sheet slice
 - [ ] `document_page` — snapshot page slice
 - [ ] `file_page` — PDF page extract
+- [ ] `organization`, `scope_type`, `scope`, `context_item` — RecordRef resolvers
+- [ ] `context_value` — current cell at scope × context_item (org RLS)
 
 ### Tests
 
@@ -366,6 +443,11 @@ After aidream ships models, run matrx-frontend `pnpm sync-types` so `stream-even
 | `workbook_sheet` | `compoundReference.ts` | `referenceResolvers.ts` | `WorkbookEditor` toolbar |
 | `document_page` | `compoundReference.ts` | `referenceResolvers.ts` | `DocumentEditor` toolbar |
 | `file_page` | `compoundReference.ts` | `referenceResolvers.ts` | `FilePageReferenceMenuSub` (PDF, pages 1–5) |
+| `organization` | `recordReference.ts` | `referenceResolvers.ts` | `ScopesRouteHeader`, orgs launcher bulk |
+| `scope_type` | `recordReference.ts` | `referenceResolvers.ts` | `ScopesRouteHeader` |
+| `scope` | `recordReference.ts` | `referenceResolvers.ts` | `ScopesRouteHeader` |
+| `context_item` | `recordReference.ts` | `referenceResolvers.ts` | `ScopesRouteHeader` |
+| `context_value` | `compoundReference.ts` | `referenceResolvers.ts` | `ScopesRouteHeader` (scope × item page) |
 
 Shared UI primitives: `ReferenceCopyButton`, `CompoundReferenceCopyButton`, `ReferenceCopyMenuItem`, `ReferencesBulkCopyButton`.
 
@@ -375,4 +457,5 @@ Shared UI primitives: `ReferenceCopyButton`, `CompoundReferenceCopyButton`, `Ref
 
 | Date | Change |
 |---|---|
+| 2026-06-21 | Scope/context layer: organization, scope_type, scope, context_item, context_value — FE + aidream spec |
 | 2026-06-21 | Bulk copy on agents/apps/transcripts hubs; PDF file_page submenu (pages 1–5); grouped multi-type fence builder |

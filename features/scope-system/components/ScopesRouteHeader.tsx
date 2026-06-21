@@ -51,6 +51,10 @@ import {
   contextItemHref,
   contextItemEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { CompoundReferenceCopyButton } from "@/features/matrx-envelope/components/CompoundReferenceCopyButton";
+import { buildContextValueReferenceFence } from "@/features/matrx-envelope/compoundReference";
+import { resolveScopeRouteReference } from "@/features/scope-system/utils/scopeRouteReference";
 
 /**
  * The single layout-level header for the org Scope & Context system. Mounted once
@@ -421,6 +425,20 @@ export function ScopesRouteHeader() {
     backHref = orgHref(orgSlugOrId);
   }
 
+  const routeReference = resolveScopeRouteReference({
+    pathname,
+    org: { id: org.id, name: org.name },
+    isOrgHome,
+    isOrgContextItems,
+    scopeType,
+    scope,
+    item,
+    hasScope,
+    itemParam,
+    isEdit,
+    isTypeContextItems,
+  });
+
   return (
     <>
       <PageHeader>
@@ -436,11 +454,37 @@ export function ScopesRouteHeader() {
           className="w-full"
         />
       </PageHeader>
-      {actions.filter(Boolean).length > 0 && (
+      {actions.filter(Boolean).length > 0 || routeReference ? (
         <PageHeaderRightPortal>
-          <HeaderActionGroup actions={actions} />
+          <div className="flex items-center gap-0.5">
+            {routeReference?.kind === "record" ? (
+              <ReferenceCopyButton
+                referenceType={routeReference.referenceType}
+                id={routeReference.id}
+                label={routeReference.label}
+                toastLabel={routeReference.label}
+                size="sm"
+              />
+            ) : null}
+            {routeReference?.kind === "context_value" ? (
+              <CompoundReferenceCopyButton
+                size="sm"
+                toastLabel={routeReference.label}
+                buildFence={() =>
+                  buildContextValueReferenceFence({
+                    scopeId: routeReference.scopeId,
+                    contextItemId: routeReference.contextItemId,
+                    label: routeReference.label,
+                  })
+                }
+              />
+            ) : null}
+            {actions.filter(Boolean).length > 0 ? (
+              <HeaderActionGroup actions={actions} />
+            ) : null}
+          </div>
         </PageHeaderRightPortal>
-      )}
+      ) : null}
     </>
   );
 }

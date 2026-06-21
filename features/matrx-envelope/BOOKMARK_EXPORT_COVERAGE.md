@@ -85,7 +85,7 @@ Source of truth for the entity set is the `Resource` union (`features/prompts/ty
 | **Webpage** | external | — | n/a | Attachment, not bookmark. |
 | **YouTube** | external | — | n/a | Same — attachment. |
 | **Image URL / File URL / Audio (url)** | external | — | n/a | External media; attach, don't bookmark. |
-| **Scope / context layer** | compound | scope; context item; value | ❌ out of scope | First pass skipped per catalog. |
+| **Scope / context layer** | compound | org; type; scope; item; value (**5**) | **FE done / BE pending** | `ScopesRouteHeader` + org bulk; see aidream handoff. |
 
 ---
 
@@ -144,7 +144,7 @@ Track every change here. Status: `done` | `in progress` | `blocked` | `pending`.
 | 19 | List V2 port | pending (UI) | — | Options in handoff doc; V2 unchanged. |
 | 20 | Bulk: projects hub | done | `ProjectsHub.tsx` | Pattern for other hubs. |
 | 21 | Bulk: transcripts/agents/apps hub | done | `TranscriptsListPage`, `AgentsGrid`, `AgentAppsGrid` | Transcripts uses mixed-type groups. |
-| 22 | Scope/context | pending | — | Out of scope first pass. |
+| 22 | Scope/context layer | FE done / BE pending | `ScopesRouteHeader`, `scopeRouteReference.ts`, orgs bulk | 5 dimensions in aidream handoff. |
 | 23 | Externals | n/a | — | Attachments only. |
 
 ### Resolved / aidream handoff
@@ -152,3 +152,4 @@ Track every change here. Status: `done` | `in progress` | `blocked` | `pending`.
 1. **Agent app:** wire type `agent_app` → table `aga_apps` — see handoff doc.
 2. **Sub-dimensions:** FE built for schema, segment, session_transcript, workbook_sheet, document_page; `file_page` spec only.
 3. **Picklist V2:** do not modify UI until finalized; full/group/item options documented in handoff doc.
+4. **Scope/context:** wire types `organization`, `scope_type`, `scope`, `context_item`, `context_value` — aidream handoff § Scope & context layer.

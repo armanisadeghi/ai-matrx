@@ -364,6 +364,100 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     titleFields: ["name"],
     bodyFields: ["description"],
   }),
+
+  organization: {
+    ...createRecordResolver({
+      openItemType: "scope",
+      table: "organizations",
+      select: "name, description",
+      titleFields: ["name"],
+      bodyFields: ["description"],
+    }),
+    openId: () => undefined,
+  },
+  scope_type: createRecordResolver({
+    openItemType: "scope_type",
+    table: "ctx_scope_types",
+    select: "label_singular, label_plural, description",
+    titleFields: ["label_singular", "label_plural"],
+    bodyFields: ["description"],
+  }),
+  scope: createRecordResolver({
+    openItemType: "scope",
+    table: "ctx_scopes",
+    select: "name, description",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
+  context_item: createRecordResolver({
+    openItemType: "context_item",
+    table: "ctx_context_items",
+    select: "display_name, description, value_type",
+    titleFields: ["display_name"],
+    bodyFields: ["description"],
+  }),
+
+  /** Current value at scope × context_item (the cell agents care about). */
+  context_value: {
+    openItemType: "scope",
+    openId: (ref) => ref.scope_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.scope_id || !ref.context_item_id) return stringify(ref.label);
+      const [
+        { data: value, error: valueErr },
+        { data: scope },
+        { data: item },
+      ] = await Promise.all([
+        supabase
+          .from("ctx_context_item_values")
+          .select(
+            "value_text, value_number, value_boolean, value_date, value_json",
+          )
+          .eq("scope_id", ref.scope_id)
+          .eq("context_item_id", ref.context_item_id)
+          .eq("is_current", true)
+          .maybeSingle(),
+        supabase
+          .from("ctx_scopes")
+          .select("name")
+          .eq("id", ref.scope_id)
+          .maybeSingle(),
+        supabase
+          .from("ctx_context_items")
+          .select("display_name")
+          .eq("id", ref.context_item_id)
+          .maybeSingle(),
+      ]);
+      if (valueErr) return stringify(ref.label);
+      const scopeName = stringify(
+        (scope as { name?: string | null } | null)?.name,
+      );
+      const itemName = stringify(
+        (item as { display_name?: string | null } | null)?.display_name,
+      );
+      const heading =
+        scopeName && itemName
+          ? `${scopeName} · ${itemName}`
+          : (scopeName ?? itemName ?? stringify(ref.label));
+      if (!value) return heading;
+      const row = value as {
+        value_text?: string | null;
+        value_number?: number | null;
+        value_boolean?: boolean | null;
+        value_date?: string | null;
+        value_json?: unknown;
+      };
+      const cell =
+        stringify(row.value_text) ??
+        stringify(row.value_number) ??
+        stringify(row.value_boolean) ??
+        stringify(row.value_date) ??
+        (row.value_json != null ? stringify(row.value_json) : undefined);
+      if (heading && cell) return `${heading}\n${cell}`;
+      return cell ?? heading;
+    },
+  },
+
   transcript: {
     ...createRecordResolver({
       openItemType: "file",
