@@ -22,6 +22,7 @@ import { openTab, setActiveTab } from "../../redux/tabsSlice";
 import { revertMessageThunk } from "../../redux/codeEditUndoRevert";
 import { languageFromFilename } from "../../styles/file-icon";
 import { toast } from "sonner";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   buildHistoryTripleTabId,
   HISTORY_TRIPLE_TAB_PREFIX,
@@ -73,14 +74,32 @@ export const MessageFilesStrip: React.FC<MessageFilesStripProps> = ({
     dispatch(setActiveTab(tabId));
   };
 
-  const handleRevertMessage = () => {
+  const handleRevertMessage = async () => {
     const result = dispatch(revertMessageThunk({ messageId }));
     if (result.requiresConfirmation) {
-      const confirmed = window.confirm(
-        `Reverting this message will also undo accepted edits from ${result.requiresConfirmation.laterMessageIds.length} later message(s) on the same file(s):\n\n` +
-          result.requiresConfirmation.affectedFiles.join("\n") +
-          `\n\nContinue?`,
-      );
+      const { laterMessageIds, affectedFiles } = result.requiresConfirmation;
+      const messageCount = laterMessageIds.length;
+      const confirmed = await confirm({
+        title: "Revert this message's edits?",
+        description: (
+          <div className="space-y-2">
+            <p>
+              This will also undo accepted edits from {messageCount} later{" "}
+              message{messageCount === 1 ? "" : "s"} on the same file
+              {affectedFiles.length === 1 ? "" : "s"}:
+            </p>
+            <ul className="list-disc space-y-0.5 pl-5 font-mono text-xs">
+              {affectedFiles.map((file) => (
+                <li key={file} className="break-all">
+                  {file}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        confirmLabel: "Revert",
+        variant: "destructive",
+      });
       if (!confirmed) return;
       const second = dispatch(
         revertMessageThunk({ messageId, confirmCascading: true }),
