@@ -14,7 +14,10 @@
  * Route: /demos/tool-viz/result-fields   (dev profile only)
  */
 
-import React from "react";
+import React, { useState } from "react";
+import { Play, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
@@ -22,6 +25,8 @@ import { ResearchRevivalInline } from "@/features/tool-call-visualization/render
 import { ResearchRevivalOverlay } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalOverlay";
 import { ResearchModernInline } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernInline";
 import { ResearchModernOverlay } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernOverlay";
+import { buildResearchRecording } from "@/features/tool-call-visualization/simulator/streamRecording";
+import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 // ─── Synthetic lifecycle entries ────────────────────────────────────────────
@@ -403,6 +408,13 @@ function researchEntry(toolName: string): ToolLifecycleEntry {
 
 const RESEARCH_ENTRY = researchEntry("research_web");
 
+// Realistic stream script built ONCE from the same blob the static fixtures use.
+// Pure function of constants → safe at module scope (no hook, no React Compiler
+// concern). Each query section lands as one whole part over time.
+const RESEARCH_RECORDING = buildResearchRecording(RESEARCH_RESULT, {
+    query: "best dietary sources to balance omega fatty acids 2026",
+});
+
 // Dynamic (DB) renderer demo — resolves to the `tool_ui` row for `agent_call`,
 // fetched + compiled at runtime via the canonical compileSlotComponent path.
 const AGENT_CALL_ENTRY = entry({
@@ -431,6 +443,61 @@ function FixtureCard({ label, children }: { label: string; children: React.React
     );
 }
 
+/**
+ * Realistic stream simulation. One hook call drives a single evolving
+ * `ToolLifecycleEntry`; the same entry is fed to BOTH research versions and the
+ * shell, so they stream together for a true side-by-side comparison. Press Play
+ * (then Replay) to (re)run; each query section lands as one whole part over
+ * time — no character trickle.
+ */
+function StreamSimulationSection() {
+    const [playKey, setPlayKey] = useState(0);
+    const hasPlayed = playKey > 0;
+    const simEntry = useSimulatedToolEntry(hasPlayed ? RESEARCH_RECORDING : null, { playKey });
+
+    const statusVariant =
+        simEntry.status === "completed"
+            ? "default"
+            : simEntry.status === "error"
+              ? "destructive"
+              : "secondary";
+    const statusLabel = !hasPlayed ? "idle" : simEntry.status;
+
+    return (
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Stream simulation (realistic — press Play)
+                </h2>
+                <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
+                    {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
+                    {hasPlayed ? "Replay" : "Play"}
+                </Button>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                {simEntry.latestMessage ? (
+                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
+                ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+                One simulated entry feeds all three. Query sections arrive as whole parts, spaced over time — the
+                renderers reveal them part-by-part and fast-forward when the next lands.
+            </p>
+
+            <div className="space-y-4">
+                <FixtureCard label="Version A — Revival (streaming)">
+                    <ResearchRevivalInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="Version B — Modern (streaming)">
+                    <ResearchModernInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="Shell behavior (auto-expand while streaming → auto-collapse after)">
+                    <ToolCallVisualization entries={[simEntry]} hasContent />
+                </FixtureCard>
+            </div>
+        </section>
+    );
+}
+
 export default function ResultFieldsGalleryPage() {
     return (
         // Mirror AgentConversationColumn's centerWrap: w-full max-w-3xl mx-auto px-2.
@@ -443,6 +510,8 @@ export default function ResultFieldsGalleryPage() {
                     tool renderer overhaul.
                 </p>
             </header>
+
+            <StreamSimulationSection />
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
