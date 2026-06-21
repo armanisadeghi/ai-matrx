@@ -251,10 +251,11 @@ function NewBundleDialog({
         description,
         isSystem,
       });
-      // The 2026 refactor simplified create_bundle_with_lister to return only
-      // the new bundle id; we already know the bundle name from the form, and
-      // the lister tool is only created if a name was passed (we don't pass
-      // one here, so no lister is auto-created — that's an explicit step).
+      // create_bundle_with_lister auto-creates this bundle's lister tool
+      // (`bundle:list_<name>`), binds it to the matrx-ai-core bundle_lister
+      // executor, and links it — every bundle is born with its lister, so it
+      // reduces to one tool the model expands on demand. See
+      // migrations/tool_bundle_lister_enforcement.sql.
       toast.success(`Bundle ${name} created`);
       onCreated(result.bundle_id);
     } catch (e) {
