@@ -1,33 +1,26 @@
 ---
 name: create-tool-renderer
-description: Create custom MCP tool result displays for the chat interface. Builds both inline (chat-stream preview) and overlay (full-screen modal) components that consume the canonical ToolLifecycleEntry, with proper registry integration. Use when the user wants to add a new hardcoded tool visualization, create a tool renderer, display tool results in chat, or mentions creating components for MCP tool output.
+description: Create a custom display for an MCP/agent tool's result in the chat interface — the rich UI shown when a tool call expands. Default path is a DB-LOADED renderer (agent-authored React code stored in the `tool_ui` table, compiled at runtime); a hardcoded in-repo renderer is the rare escape hatch. Use when the user wants to add/customize a tool visualization, make a tool result look good, render MCP tool output, or "author a renderer" for a tool that currently shows the generic view.
 ---
 
-# Create Tool Renderer (Hardcoded)
+# Create Tool Renderer
 
-Build a custom, hand-authored visualization for an MCP tool in the AI Matrx chat interface. Given a tool name and example data, produce production-ready inline + optional overlay components and register them.
+Make a tool call render as a first-class, beautiful surface instead of the generic JSON view. Two paths — **default to the DB path.**
 
-This skill covers **hardcoded** (in-repo) renderers only. DB-stored dynamic renderers live in `features/tool-call-visualization/dynamic/` (table: `public.tool_ui`) and are authored through the admin UI at `/administration/mcp-tools/[toolId]/ui` using the generator prompt at `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts` — not through this skill.
+| Path | When | Where the code lives |
+|---|---|---|
+| **A — DB renderer (default, ~90%)** | Any tool. Author once, renders everywhere, no repo deploy. | `tool_ui` table (runtime-compiled) |
+| **B — Hardcoded renderer (escape hatch, ~10%)** | A genuinely interactive/heavy widget that needs full repo imports. | `features/tool-call-visualization/renderers/` + registry |
 
-**Architecture snapshot:** `features/tool-call-visualization/EXPANSION.md` — data paths, default vs custom resolution, DB shapes.
+**Resolution order: in-code registry → DB renderer → generic.** A DB renderer only renders for a tool with NO in-code registry entry. Architecture: [`features/tool-call-visualization/FEATURE.md`](../../../features/tool-call-visualization/FEATURE.md).
 
-## Cardinal Rule: HIDE ABSOLUTELY NOTHING
+## Cardinal rule: HIDE NOTHING
 
-Every piece of data in the tool result MUST surface somewhere in the UI.
+Every field in the result surfaces somewhere. Inline = the key info at a glance (truncation OK with a "view all"); overlay = every field, nested object, source, metadata (long text collapses with "Show more", never omitted).
 
-- Inline: key information at a glance so users rarely need to open the overlay. Truncation here is OK if there is a "View all" button to the overlay.
-- Overlay: every field, every nested object, every source, every metadata value. Long text collapses with "Show more" — it is never omitted.
-- If a field exists in the data, it gets rendered. Period.
+## The contract (BOTH paths)
 
-## Prerequisites
-
-The user must provide:
-1. **Tool name** — the exact backend tool name, matching `entry.toolName` (e.g. `"news_get_headlines"`).
-2. **Example output data** — sample wire events or a captured `ToolLifecycleEntry` so the renderer can be typed and built.
-
-## Canonical contract
-
-Every renderer is a React component with these props (from `@/features/tool-call-visualization/types`):
+A renderer is a React component taking `ToolRendererProps` (from `@/features/tool-call-visualization/types`):
 
 ```tsx
 interface ToolRendererProps {
@@ -37,281 +30,148 @@ interface ToolRendererProps {
   onOpenWindowPanel?: (initialTab?: string) => void;
   toolGroupId?: string;
   isPersisted?: boolean;
+  conversationId?: string;
 }
 ```
 
-### `entry: ToolLifecycleEntry` — primary data source
+`entry` is the data (from `@/features/agents/types/request.types`): `toolName` (registry key), `status` (`started|progress|step|result_preview|completed|error`), `arguments` (input), `result` (final output — object, JSON string, or null), `latestMessage`, `errorMessage`, `events`. **Terminal = `status === "completed" || "error"`.** Drive UI from `entry.status`, never from array shape — a running tool with no result yet is valid.
 
-From `@/features/agents/types/request.types`:
+**The shell owns the collapsed row** (label from `tool_ui.display_name` / registry, subtitle, chevron, overlay/window buttons). Your component renders **only the expanded body** — no duplicate title row, no green-check/red-X status icons (state is conveyed by tense + shimmer on the row).
 
-| Field | Meaning |
-|---|---|
-| `callId` | Unique tool invocation id. |
-| `toolName` | Canonical backend tool name — **registry lookup key**. |
-| `displayName` | Human label (may differ from `toolName` after reload). Never use for registry lookup. |
-| `status` | `"started" \| "progress" \| "step" \| "result_preview" \| "completed" \| "error"`. |
-| `arguments` | `Record<string, unknown>` — input args sent to the tool. |
-| `startedAt` / `completedAt` | ISO timestamps. |
-| `latestMessage` | Most recent human-readable progress line. |
-| `latestData` | Most recent raw payload (tool-specific). |
-| `result` | Final output (object, string, or null). |
-| `resultPreview` | Short server-sent preview snippet. |
-| `errorType` / `errorMessage` | Populated when `status === "error"`. |
-| `isDelegated` | True for delegated/sub-agent calls. |
-| `events` | The raw `ToolEventPayload[]` for this call, in server order. |
+---
 
-Terminal state: `status === "completed" || status === "error"`.
+## Path A — DB renderer (default)
 
-### `events: ToolEventPayload[]` — optional raw log
+Agent-authored component code stored in `tool_ui`, fetched by `tool_name` + surface, compiled at runtime through the proven Agent Apps Babel sandbox (`db-renderer/` → `compileSlotComponent`). This is how most tools should be customized: no repo deploy, works for agent- and user-authored renderers, scales to every platform.
 
-Same content as `entry.events`, but passed through as a prop so renderers that rely on per-step data (Brave search step tiles, deep-research read blocks) can consume it without re-extracting. Use this only when the inline summary needs information that isn't flattened into `entry.*`.
+### The component
 
-### Shell vs renderer responsibilities
+A single self-contained default export. Import lines are **stripped** — identifiers come from the sandbox scope, so you can't import helpers from the repo:
 
-`ToolCallVisualization` owns the **collapsed row** (verb-phrase label via registry `phaseLabels`, chevron, overlay/window buttons). Your inline component renders **only inside the expanded body**. Do not render a duplicate title row or status icons on the slim line — the shell handles state via tense + shimmer.
+```tsx
+import { Folder, FileText } from "lucide-react"; // (stripped; icons come from scope)
 
-### `onOpenOverlay`, `onOpenWindowPanel`, `toolGroupId`, `isPersisted`
-
-- `onOpenOverlay(tabId?)` — fullscreen overlay. Tab ids follow `tool-group-${callId}`.
-- `onOpenWindowPanel(tabId?)` — same data in a draggable window panel (live requests group by `requestId`).
-- `toolGroupId` — mirrors `entry.callId`; pass to both open callbacks.
-- `isPersisted` — true for DB-loaded turns (`DbToolCard`). Terminal state only; `events` is usually empty today — parse `entry.result` as fallback for step-driven tools.
-
-## Shared helpers
-
-Import from `@/features/tool-call-visualization/renderers/_shared`:
-
-```ts
-collectMessages(events)      // string[] of all non-empty `message` fields
-filterStepEvents(events, step?)  // tool_step events, optionally filtered by step name
-getArg<T>(entry, key)        // typed getter for entry.arguments[key]
-resultAsObject(entry)        // parses entry.result (handles JSON strings) → object or null
-resultAsString(entry)        // stringifies entry.result for text search / regex
-isTerminal(entry)            // status === "completed" || "error"
-isSuccess(entry)             // status === "completed"
+export default function FsListRenderer({ entry }) {
+  // Inline your OWN helpers — `_shared`, `@/lib/*`, etc. are NOT in scope.
+  function asObj(x) {
+    if (x && typeof x === "object") return x;
+    if (typeof x === "string") { try { return JSON.parse(x); } catch (e) { return {}; } }
+    return {};
+  }
+  const out = asObj(entry && entry.result);          // result may be a JSON string
+  const entries = Array.isArray(out.entries) ? out.entries : [];
+  if (entry && entry.status !== "completed" && entries.length === 0)
+    return <div className="text-sm text-muted-foreground">Listing…</div>; // streaming state
+  if (!entries.length) return <div className="text-sm text-muted-foreground">Empty.</div>;
+  return (
+    <div className="overflow-hidden rounded-md border border-border">
+      {entries.map((e, i) => (
+        <div key={(e && e.path) || i} className="flex items-center gap-2 px-2.5 py-1.5">
+          {e.is_dir ? <Folder className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
+          <span className="truncate text-sm text-foreground">{e.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 ```
 
-Use these instead of re-implementing extraction logic.
+### Sandbox scope (what you CAN use)
 
-## Overlay shell
+Set by `allowed_imports`. The allow-list lives in `features/agent-apps/utils/allowed-imports.ts` — do not assume anything outside it:
 
-The feature wraps every overlay renderer in a `ToolGroupTab` that provides:
+- **`react`** — always: `React`, `useState`, `useEffect`, `useMemo`, `useCallback`, `useRef`.
+- **`lucide-react`** — always when listed: ALL icons by name (a missing icon name renders a safe placeholder, never a crash).
+- Optional UI when listed: `@/components/ui/{button,input,textarea,card,label,select,slider,switch,tabs}`, `@/components/MarkdownStream` (as `MarkdownStream`/`Markdown`).
+- **Forbidden:** arbitrary npm, `fetch`/network, the repo's `_shared` helpers, `@/lib/*`. Inline what you need. Plain JS only (the sandbox runs JS — TS types are fine in source but carry no runtime guarantee).
 
-- A gradient header bar with tool name, subtitle, result count
-- A toggle between **Results**, **Input**, and **Raw** views
-- Support for custom header subtitle/extras via the registry entry
+Default `allowed_imports`: `["react", "lucide-react"]`. Add a UI path only if you use it.
 
-**CRITICAL:** your overlay component renders inside the Results tab only. It must not render its own header, title banner, or summary strip. Use `getHeaderSubtitle` / `getHeaderExtras` in the registry entry for anything that belongs in the header.
+### The `tool_ui` row
 
-## File layout
+| Column | Required | Meaning |
+|---|---|---|
+| `tool_name` | ✓ | Exact backend tool name (`entry.toolName`). |
+| `surface_name` | ✓ | **MUST be `matrx-default/default`** (`WEB_TOOL_UI_SURFACE`, `db-renderer/surface.ts`) — the only surface the web app reads. |
+| `display_name` | ✓ | Collapsed-line label (e.g. "Weather", not "Travel Get Weather"). |
+| `inline_code` | ✓ | The component above. |
+| `header_subtitle_code` | | `export default function(entry, events) { return string }` — collapsed-line subtitle. Omit and the shell shows the most informative arg (`path`/`command`/`city`/`key`/`query`/…). |
+| `overlay_code` | | Optional richer full-screen variant; defaults to inline. |
+| `results_label` | | Noun for the result tab (e.g. "entries"). |
+| `allowed_imports` | ✓ | Default `["react","lucide-react"]`. |
+| `contract_version` | ✓ | `2`. |
+| `is_active` | ✓ | `true`. |
+
+A DB renderer is **fully self-describing**: `display_name` → label, `header_subtitle_code` → subtitle, `inline_code` → body.
+
+### Three ways to author (pick one)
+
+1. **Admin UI** — `/administration/mcp-tools/[toolId]/ui`: *Generate* tab (AI generator, prompt at `features/tool-call-visualization/admin/tool-ui-generator-prompt.ts`), *Edit Code* tab (manual + live compile errors), *Preview* tab (renders against `tool_test_sample` fixtures). Saves via `POST /api/admin/tool-ui-components` (defaults to the correct surface).
+2. **The renderer-author agent** — the AI Matrx agent specialized for this (invoke via the agent MCP / `agent_run`). Hand it the tool name + a sample result; it writes the row.
+3. **A seed migration** — idempotent `INSERT … ON CONFLICT (tool_name, surface_name) DO UPDATE` into `tool_ui` (the reference set in `migrations/tool_ui_db_renderer_examples*.sql` is the template). Apply via the Supabase MCP + record in `_schema_migrations`.
+
+### Verify (DB path)
+
+- **Gallery** — add a fixture to `app/(dev)/demos/tool-viz/result-fields/page.dev.tsx` (`DB_RENDERER_ENTRIES`) and load `/demos/tool-viz/result-fields` → "DB-loaded renderers". This is the real path (fetch → compile → render).
+- **Real chat** — run the tool; it renders inline. Reload to confirm the persisted path.
+- If it falls back to generic: check the tool has NO in-code registry entry (registry wins), `surface_name = matrx-default/default`, `is_active = true`, and the code compiles (admin *Edit Code* tab shows compile errors).
+
+---
+
+## Path B — Hardcoded renderer (escape hatch)
+
+Only when the tool needs full repo imports or heavy interactivity. Full power, but ships in the bundle and needs a deploy.
 
 ```
 features/tool-call-visualization/renderers/<kebab-tool-name>/
-├── <Tool>Inline.tsx    # required
-├── <Tool>Overlay.tsx   # optional — defaults to Inline when missing
+├── <Tool>Inline.tsx    # required — "use client"; ToolRendererProps
+├── <Tool>Overlay.tsx   # optional — defaults to Inline
 └── index.ts            # barrel
 ```
 
-Directory name is kebab-case. Component names are PascalCase and end in `Inline` / `Overlay`.
-
-## Step-by-step
-
-### 1. Create the directory and type the data
-
-Analyze the example output. Type every field, including nested objects, optional fields, string fields that contain structured markdown/XML, and metadata. Put interfaces at the top of the file or in a local `types.ts` if they're shared between inline and overlay.
-
-### 2. Write the inline renderer
-
-`<Tool>Inline.tsx` — renders inside the **expanded** region of `ToolCallVisualization` (below the single-line transcript row).
-
-Rules:
-- `"use client";` directive.
-- Implement `ToolRendererProps` from `@/features/tool-call-visualization/types`.
-- Read `entry.status` for state — do not infer state from array shape. A running tool with no result is valid (`status === "started" | "progress" | "step" | "result_preview"`); show purposeful loading UI (not a bare spinner — see Loading states below).
-- For event-driven tools, pass `events` through shared helpers rather than walking them manually. On persisted turns, `events` may be empty — also parse `entry.result`.
-- Click handlers must call `e.stopPropagation()` (the shell header toggles expand/collapse).
-- Handle missing images with `onError` fallbacks.
-- Responsive grids: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`.
-
-Standard "View all" button:
-
-```tsx
-{isTerminal(entry) && onOpenOverlay && (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onOpenOverlay(`tool-group-${toolGroupId ?? entry.callId}`);
-    }}
-    className="w-full py-2.5 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer animate-in fade-in slide-in-from-bottom"
-  >
-    View complete results
-  </button>
-)}
-```
-
-What the inline MUST show (inside the expanded body):
-- The most important summary/preview of results.
-- Key metrics or counts.
-- A preview of primary content (analysis excerpt, top results).
-- A preview of secondary content (first few source cards).
-- Count of remaining items not shown inline.
-- "View complete results" button when terminal (if an overlay adds value).
-
-Do **not** duplicate the shell's verb-phrase row or add green-check / red-X status icons on the slim line.
-
-### 3. Write the overlay renderer (when needed)
-
-`<Tool>Overlay.tsx` — renders inside the fullscreen modal's Results tab. This is where ALL data lives.
-
-Rules:
-- `"use client";`.
-- Implement `ToolRendererProps`.
-- Do **not** render a header/title strip — use registry `getHeaderSubtitle` / `getHeaderExtras`.
-- Derive parsed views from `[entry, events]` (React Compiler handles memoization — no manual `useMemo` required).
-- Wrap content in `<div className="p-6 space-y-6 bg-background">`.
-- Use semantic color variables (`bg-card`, `text-foreground`, `border-border`, `text-primary`, `text-destructive`, …) — they already handle dark mode.
-- Empty states: icon + message.
-
-Required UX features for data-rich overlays:
-- View mode toggles (e.g. Analysis / Sources / Full Text).
-- Per-section and full-export copy buttons.
-- Collapsible sections for long text (`Show more` / `Show less` — never omit).
-- Search / filter when >10 items.
-- Sort when items have sortable attributes.
-- External links always `target="_blank" rel="noopener noreferrer"` with Lucide `ExternalLink`.
-
-### 4. Barrel
-
-`<tool-name>/index.ts`:
-
-```ts
-export { ToolInline } from "./ToolInline";
-export { ToolOverlay } from "./ToolOverlay"; // omit if no overlay
-```
-
-### 5. Register
-
-Open `features/tool-call-visualization/registry/registry.tsx`, add an import, and add an entry to `toolRendererRegistry`:
+Here you CAN import the shared helpers from `@/features/tool-call-visualization/renderers/_shared` (`resultAsObject`, `collectMessages`, `filterStepEvents`, `getArg`, `isTerminal`, `isSuccess`) and anything else in the repo. Register in `features/tool-call-visualization/registry/registry.tsx`:
 
 ```tsx
 import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";
-
 // inside toolRendererRegistry:
 "<exact_tool_name>": {
   toolName: "<exact_tool_name>",
   displayName: "Human Readable Name",
-  phaseLabels: {                    // required for good slim-row UX
-    running: "Doing the thing",
-    complete: "Did the thing",
-    errorPrefix: "Failed to do the thing",
-  },
-  resultsLabel: "Short Results Label",
+  phaseLabels: { running: "Doing the thing", complete: "Did the thing", errorPrefix: "Failed to do the thing" },
+  resultsLabel: "Results",
   InlineComponent: ToolInline,
-  OverlayComponent: ToolOverlay,    // optional — falls back to InlineComponent
-  OverlayTabs: deepResearchOverlayTabs, // optional — replaces default Results tab
-  keepExpandedOnStream: true,       // optional — start expanded so data streams in
-  getHeaderSubtitle: (entry) => {
-    const query = getArg<string>(entry, "query");
-    return typeof query === "string" && query ? query : null;
-  },
-  getHeaderExtras: (entry, events) => {
-    // return JSX to render in the overlay header (badges, counters, etc.)
-    return null;
-  },
+  OverlayComponent: ToolOverlay,        // optional
+  keepExpandedOnStream: true,           // optional — open expanded while streaming
+  getHeaderSubtitle: (entry) => getArg<string>(entry, "query") ?? null,
 },
 ```
 
-`registerToolRenderer(toolName, renderer)` exists on the same module for runtime registration, but prefer the static `toolRendererRegistry` object for hardcoded tools so the registry is greppable.
+The overlay renders inside the Results tab only — never render your own header; use `getHeaderSubtitle` / `getHeaderExtras`.
 
-### 6. Verify
+Reference examples (read the registry entry for the closest shape first): `renderers/web-research/` (event log + steps), `renderers/news-api/` (clean `result`), `renderers/brave-search/` (step-event driven), `renderers/sql/` (sparse data done right).
 
-- [ ] Inline shows meaningful preview data without opening the overlay.
-- [ ] `entry.status` drives the loading/complete/error UI — not array position.
-- [ ] "View complete results" button opens the correct tab.
-- [ ] Overlay Results tab shows ALL data.
-- [ ] Overlay does **not** render its own header.
-- [ ] Registry `getHeaderSubtitle` / `getHeaderExtras` used for anything that belongs in the header.
-- [ ] Dark mode works through semantic color variables.
-- [ ] Empty states handled.
-- [ ] No lint errors.
+---
 
-## Loading states for long-running tools
+## Styling (BOTH paths)
 
-Generic spinners are not acceptable. Drive loading UI from real data whenever possible:
-
-1. **Progressive status messages** from `entry.latestMessage` — the backend pushes human-readable progress lines. Display them directly.
-2. **Step-driven progress** via `filterStepEvents(events, stepName)` — render per-step cards with metadata as it arrives.
-3. **Per-item progress** when processing multiple items (URLs, queries): show each item as a card with its own phase and a completion checkmark.
-4. **Aggregate waiting indicator** after individual items complete — cycle through realistic phase descriptions (3–7s random intervals) while waiting for the final result.
-5. **Browsing / activity indicators** for URL-visiting tools — favicon + domain chips with pulsing active state.
-
-See `features/tool-call-visualization/renderers/web-research/WebResearchInline.tsx` for the gold-standard implementation.
-
-## Styling
-
-Use semantic Tailwind color variables from `globals.css`. Do not hardcode hex/HSL or use generic shades like `blue-500`.
+Semantic Tailwind tokens only — no hex/HSL, no `blue-500`. Lucide icons only, no emoji.
 
 | Purpose | Class |
 |---|---|
-| Primary actions, links, active states | `text-primary`, `bg-primary`, `border-primary` |
+| Primary / links / active | `text-primary`, `bg-primary`, `border-primary` |
 | On-primary text | `text-primary-foreground` |
-| Body text | `text-foreground` |
-| Secondary / labels | `text-muted-foreground` |
-| Card backgrounds | `bg-card` |
-| Page background | `bg-background` |
-| Subtle backgrounds | `bg-muted`, `bg-accent` |
+| Body / secondary | `text-foreground` / `text-muted-foreground` |
+| Card / page / subtle bg | `bg-card` / `bg-background` / `bg-muted` |
 | Borders | `border-border` |
-| Success / warning / error / info | `text-success` / `text-warning` / `text-destructive` / `text-info` |
+| Success / warn / error | `text-success` / `text-warning` / `text-destructive` |
 
-Opacity modifiers: `bg-primary/5`, `bg-primary/10`, `border-primary/20`, `text-foreground/80`.
-
-Other conventions:
-- Icons: Lucide React only.
-- Cards: `bg-card rounded-lg border border-border`.
-- Hover: `hover:border-primary/30 transition-colors`.
-- Badges: `@/components/ui/badge`.
-- Buttons: `@/components/ui/button`.
-- Markdown rendering: `@/components/mardown-display/chat-markdown/BasicMarkdownContent`.
-
-Animation classes with staggered delays for lists:
-
-```tsx
-style={{
-  animationDelay: `${index * 80}ms`,
-  animationDuration: "300ms",
-  animationFillMode: "backwards",
-}}
-className="animate-in fade-in slide-in-from-bottom"
-```
-
-## Reference examples
-
-| Tool | Folder |
-|---|---|
-| Deep research (event log + steps) | `features/tool-call-visualization/renderers/web-research/` |
-| News headlines (clean `entry.result` only) | `features/tool-call-visualization/renderers/news-api/` |
-| Brave search (pure step-event driven) | `features/tool-call-visualization/renderers/brave-search/` |
-| SEO meta tags (header extras) | `features/tool-call-visualization/renderers/seo-meta-tags/` |
-| RAG search (result-only, same inline+overlay) | `features/tool-call-visualization/renderers/rag-search/` |
-| Deep research (custom OverlayTabs) | `features/tool-call-visualization/renderers/deep-research/` |
-
-Read the registry entry for whichever example matches your tool shape most closely before writing code.
-
-## Testing
-
-- Live harness: `/demos/api-tests/tool-testing` — fires real tool calls against the backend and renders the results through the registry.
-- Fixtures and preview components: `features/tool-call-visualization/testing/` (e.g. `ToolRendererPreview.tsx`, `stream-processing/`) — drop captured events in to render the renderer in isolation without a live backend.
+Cards: `bg-card rounded-md border border-border`. Opacity modifiers OK (`bg-primary/10`). External links: `target="_blank" rel="noopener noreferrer"` + Lucide `ExternalLink`.
 
 ## Final checklist
 
-- [ ] Uses `entry.status` for state, never array position.
-- [ ] `entry.arguments`, `entry.result`, `entry.errorMessage`, `entry.latestMessage` all surfaced where relevant.
-- [ ] `events` only consumed when step-level info is needed.
-- [ ] All imports point at `@/features/tool-call-visualization/*` (no legacy tool-renderer paths).
-- [ ] Inline + overlay both implement `ToolRendererProps` directly.
-- [ ] Barrel exports created.
-- [ ] Registry entry added under the exact backend tool name.
-- [ ] `getHeaderSubtitle` / `getHeaderExtras` used instead of a custom header.
-- [ ] Dark mode verified via semantic variables.
-- [ ] Empty and error states render.
-- [ ] Lints clean.
+- [ ] Drives UI from `entry.status`; handles the streaming (not-yet-complete) state.
+- [ ] Parses `entry.result` defensively (string-or-object); `result` / `arguments` / `errorMessage` surfaced where relevant.
+- [ ] No duplicate title row / status icon on the slim line (the shell owns it).
+- [ ] **DB path:** only sandbox-scope identifiers used; helpers inlined; row on `surface_name = matrx-default/default`, `contract_version = 2`, `is_active = true`; `display_name` set; verified in the gallery.
+- [ ] **Hardcoded path:** barrel + registry entry under the exact tool name; `getHeaderSubtitle`/`getHeaderExtras` instead of a custom header.
+- [ ] Semantic tokens; dark mode implicit; empty + error states render; lints clean.
