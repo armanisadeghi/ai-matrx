@@ -183,20 +183,39 @@ const ToolCallVisualizationInner: React.FC<{
 
   const headerSubtitle = ((): string | null => {
     if (!headerTool) return null;
-    // Prefer the renderer's DECLARED subtitle (a friendly intent, e.g.
-    // "Querying `users`" — not the raw SQL) from the registry/dynamic entry.
-    // Fall back to a generic arg grab for tools that don't declare one.
+    // (1) In-code registry's DECLARED subtitle (a friendly intent, e.g.
+    // "Querying `users`" — not the raw SQL).
     const declared = getHeaderSubtitle(
       headerTool.toolName,
       headerTool,
       headerTool.events,
     );
     if (declared && declared.length > 0) return declared;
-    const args = headerTool.arguments ?? {};
+    // (2) DB renderer's author-declared subtitle (`header_subtitle_code`,
+    // compiled to `(entry, events) => string`). Best-effort — a throwing or
+    // non-string subtitle is ignored, never fatal.
+    if (dbMeta?.subtitle) {
+      try {
+        const s = dbMeta.subtitle(headerTool, headerTool.events);
+        if (typeof s === "string" && s.length > 0) return s;
+      } catch {
+        // ignore — fall through to the generic arg grab
+      }
+    }
+    // (3) Generic fallback — the single most informative argument. Covers the
+    // common case (path / command / city / key / query) with zero per-tool work.
+    const args = (headerTool.arguments ?? {}) as Record<string, unknown>;
     const val =
-      (args as Record<string, unknown>).query ??
-      (args as Record<string, unknown>).q ??
-      (args as Record<string, unknown>).search;
+      args.query ??
+      args.q ??
+      args.search ??
+      args.path ??
+      args.command ??
+      args.city ??
+      args.key ??
+      args.sql ??
+      args.url ??
+      args.table;
     if (typeof val === "string" && val.length > 0) return val;
     if (Array.isArray(val) && val.length > 0) return String(val[0]);
     return null;

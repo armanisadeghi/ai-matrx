@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { WEB_TOOL_UI_SURFACE } from "@/features/tool-call-visualization/db-renderer/surface";
 
 // Map requireAdmin()/requireSuperAdmin() throws to the right HTTP status.
 function authErrorResponse(error: unknown): NextResponse | null {
@@ -79,8 +80,10 @@ export async function POST(request: NextRequest) {
     const componentData = {
       tool_id: body.tool_id || null,
       tool_name: body.tool_name,
-      // Phase-0 default; real surface picker arrives in Phase 2.
-      surface_name: body.surface_name || "matrx-admin/tool-registry",
+      // Author → render must be coherent: default to the SAME surface the
+      // runtime fetch reads (`fetchToolRendererRow`). Saving elsewhere means
+      // the renderer never appears in the web app.
+      surface_name: body.surface_name || WEB_TOOL_UI_SURFACE,
       display_name: body.display_name,
       results_label: body.results_label || null,
       inline_code: body.inline_code,

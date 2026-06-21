@@ -8,15 +8,7 @@
  * tool has no DB renderer" and falls back to the GenericRenderer.
  */
 import { supabase } from "@/utils/supabase/client";
-
-/**
- * The web app's tool-UI surface. Renderers are scoped to it so we only ever
- * fetch code authored against OUR canonical `(entry, events)` contract —
- * never a legacy `chrome-extension/pilot` v1 row (the old `toolUpdates` shape),
- * which would compile then throw on the wrong props and fall back noisily.
- * matrx-extend reads its own surface; unification revisits this later.
- */
-const WEB_TOOL_UI_SURFACE = "matrx-default/default";
+import { WEB_TOOL_UI_SURFACE } from "./surface";
 
 export interface ToolRendererRow {
   inline_code: string;
@@ -25,6 +17,8 @@ export interface ToolRendererRow {
   display_name: string | null;
   /** Author-declared noun for the result tab/overlay (e.g. "entries"). */
   results_label: string | null;
+  /** Author-declared subtitle code: `(entry, events) => string` (optional). */
+  header_subtitle_code: string | null;
 }
 
 export async function fetchToolRendererRow(
@@ -32,7 +26,9 @@ export async function fetchToolRendererRow(
 ): Promise<ToolRendererRow | null> {
   const { data, error } = await supabase
     .from("tool_ui")
-    .select("inline_code, allowed_imports, display_name, results_label")
+    .select(
+      "inline_code, allowed_imports, display_name, results_label, header_subtitle_code",
+    )
     .eq("tool_name", toolName)
     .eq("surface_name", WEB_TOOL_UI_SURFACE)
     .eq("is_active", true)
@@ -64,5 +60,9 @@ export async function fetchToolRendererRow(
       typeof data.display_name === "string" ? data.display_name : null,
     results_label:
       typeof data.results_label === "string" ? data.results_label : null,
+    header_subtitle_code:
+      typeof data.header_subtitle_code === "string"
+        ? data.header_subtitle_code
+        : null,
   };
 }

@@ -13,16 +13,22 @@
  */
 import type React from "react";
 
+import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
 import type { ToolRendererProps } from "../types";
 import { fetchToolRendererRow } from "./fetchToolRendererRow";
 import { compileToolRenderer } from "./compileToolRenderer";
 
 type ToolComponent = React.ComponentType<ToolRendererProps>;
 
-/** Author-declared shell metadata from the `tool_ui` row (label, result noun). */
+/** Compiled `header_subtitle_code`: `(entry, events) => string` (best-effort). */
+export type ToolSubtitleFn = (entry: unknown, events?: unknown) => unknown;
+
+/** Author-declared shell metadata from the `tool_ui` row (label, result noun, subtitle). */
 export interface ToolRendererMeta {
   displayName: string | null;
   resultsLabel: string | null;
+  /** Compiled subtitle fn for the collapsed line, or null if none / failed. */
+  subtitle: ToolSubtitleFn | null;
 }
 
 const positive = new Map<string, ToolComponent>();
@@ -96,9 +102,27 @@ export function loadToolRenderer(
       // Cache the author's label metadata immediately — independent of whether
       // the renderer code compiles — so the collapsed line reads "Weather"
       // (not "Travel Get Weather") even if the body falls back to generic.
+      // The optional subtitle is its own tiny compile: a `(entry, events) =>
+      // string` fn that enriches the collapsed line; a bad subtitle never
+      // breaks the row (the body + label stand on their own).
+      let subtitle: ToolSubtitleFn | null = null;
+      if (row.header_subtitle_code) {
+        try {
+          const { Component: subFn } = compileSlotComponent({
+            code: row.header_subtitle_code,
+            allowedImports: [],
+          });
+          if (typeof subFn === "function") {
+            subtitle = subFn as unknown as ToolSubtitleFn;
+          }
+        } catch {
+          // ignore — subtitle is optional, never fatal
+        }
+      }
       metaStore.set(toolName, {
         displayName: row.display_name,
         resultsLabel: row.results_label,
+        subtitle,
       });
 
       const { Component, error } = compileToolRenderer(
