@@ -563,6 +563,24 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
         arguments: { ref: "7" },
         result: { ok: true, tag: "button", text: "Search" },
     }),
+    // Authored end-to-end by the "Tool Renderer Author" AI Matrx agent
+    // (agent 678eb72e) via the agent MCP, then inserted into tool_ui — proof
+    // of the full author → DB → render loop.
+    entry({
+        callId: "db-read-page",
+        toolName: "read_page",
+        arguments: { max_elements: 200 },
+        result: {
+            count: 159,
+            elements: [
+                { href: "https://pypi.org/manage/projects/#content", name: "Skip to main content", ref: "ref:0", role: "link" },
+                { name: "Search PyPI", ref: "ref:5", role: "searchbox" },
+                { name: "Your projects", ref: "ref:14", role: "heading" },
+                { name: "Create a new project", ref: "ref:18", role: "button" },
+                { href: "https://pypi.org/account/login/", name: "Log in", ref: "ref:8", role: "link" },
+            ],
+        },
+    }),
 ];
 
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {

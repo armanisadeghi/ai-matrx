@@ -95,10 +95,12 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 - [x] **Batch folding** — DONE (see DONE section): `ToolCallBatch` folds a run of consecutive calls into one expandable line.
 - [ ] **Canonical overlay header** honoring registry `getHeaderSubtitle`/`getHeaderExtras` across overlay + window.
 
-### Track 6 — Authoring (agents + users)
-- [ ] **Rewrite `create-tool-renderer` skill** — author DB code through the unified runtime; in-code only as the rare escape hatch.
-- [ ] **Safe user-facing builder** (capture fixture → renderer) reusing `tool_test_sample` + `ToolRendererPreview`.
+### Track 6 — Authoring (agents + users) — KIT SHIPPED
+- [x] **`create-tool-renderer` skill rewritten DB-first** — two tracks (DB renderer default / hardcoded escape hatch), the sandbox scope, the `tool_ui` row, the three authoring methods, gallery verification.
+- [x] **"Tool Renderer Author" AI Matrx agent** (`agent_id 678eb72e-edad-43bc-91d9-f68759099499`, Opus 4.8, public, `create_structured`) — built via the agent-author MCP. Input: tool name + sample result. Output (schema): `display_name`, `inline_code`, `header_subtitle_code`, `results_label`, `allowed_imports`. **Proven end-to-end:** authored `read_page` → inserted into `tool_ui` → compiles + renders ("Read Page · 159 elements", role-icon element list).
+- [x] **Author → render coherent**: admin builder lives at `/administration/mcp-tools/[toolId]/ui` (Generate/Edit/Preview tabs, `POST /api/admin/tool-ui-components`) — surface bug fixed so authored renderers actually render (`WEB_TOOL_UI_SURFACE`).
 - [ ] **Drift-guard test** (port from matrx-extend).
+- [ ] **`/tool-call-visualization/admin` FeatureAdminMap** (discoverability index — convention; the tooling exists, the index doesn't yet).
 
 ### Track 7 — Backend (aidream)
 - [ ] **Continuous streaming** through long tool calls (stop going silent).
