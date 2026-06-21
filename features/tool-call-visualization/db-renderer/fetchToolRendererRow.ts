@@ -9,6 +9,15 @@
  */
 import { supabase } from "@/utils/supabase/client";
 
+/**
+ * The web app's tool-UI surface. Renderers are scoped to it so we only ever
+ * fetch code authored against OUR canonical `(entry, events)` contract —
+ * never a legacy `chrome-extension/pilot` v1 row (the old `toolUpdates` shape),
+ * which would compile then throw on the wrong props and fall back noisily.
+ * matrx-extend reads its own surface; unification revisits this later.
+ */
+const WEB_TOOL_UI_SURFACE = "matrx-default/default";
+
 export interface ToolRendererRow {
   inline_code: string;
   allowed_imports: string[];
@@ -25,6 +34,7 @@ export async function fetchToolRendererRow(
     .from("tool_ui")
     .select("inline_code, allowed_imports, display_name, results_label")
     .eq("tool_name", toolName)
+    .eq("surface_name", WEB_TOOL_UI_SURFACE)
     .eq("is_active", true)
     .maybeSingle();
 
