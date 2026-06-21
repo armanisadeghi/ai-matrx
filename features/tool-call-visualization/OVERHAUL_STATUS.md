@@ -56,6 +56,7 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 - [x] **Applet runtime verified in local dev** — `/p/ap-world-lesson` (fully_custom Babel applet) renders; the canonical runtime works dev + prod.
 - [x] **Batch folding** — a run of ≥2 consecutive tool calls folds into one `ToolCallBatch` line (lightweight toggle → full normal cards flat below, no deforming nest); `EnhancedChatMarkdown` groups slots/segments; `InlineToolBatch`/`DbToolBatch` reuse the single-tool cards. Verified live (persisted; live-stream path unverified).
 - [x] **Transcript "giant gaps" fix** (higher-level, not tool-viz code) — `AgentConversationDisplay` filters `tool`/`system` rows from `displayEntries` so an agentic turn (interleaved `assistant → tool → assistant`) stays ONE `AssistantTurnGroup` instead of fragmenting into stacked gapped groups. See `features/agents/components/chat/FEATURE.md`.
+- [x] **FOUR DB-loaded renderer examples** (`migrations/tool_ui_db_renderer_examples.sql`, contract_version 2, surface `matrx-default/default`) — agent-authored code in `tool_ui`, NONE in the codebase, compiled at runtime via `compileSlotComponent`: `fs_list` (folder/file list), `shell_execute` (terminal), `memory` (sparse status + importance bar), `travel_get_weather` (rich weather card). The reference set proving "most renderers load from the DB." **Verified live:** `memory` in a real chat (`2e287645`) and all four in the gallery (`/demos/tool-viz/result-fields` → "DB-loaded renderers"). Seed is idempotent (ON CONFLICT) + ledger-recorded.
 
 ---
 
@@ -64,9 +65,9 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 ### Track 1 — Build tool-viz on the canonical applet runtime (the centerpiece)
 - [ ] **Unify the code-runner**: ONE shared runtime = `compile-core` (Babel) + ONE allow-listed scope + ONE sandbox wrapper + error boundary + safety layers. Consumed by agent-apps, tool-viz, and inline blocks — each with its own thin data contract.
 - [ ] **Tool-result data contract** on the runtime: a tool renderer is agent-written code that receives `(entry, events)` (in) and renders (no submit-back needed for display) — the tool-viz analog of `useAgentApp()`.
-- [ ] **Tool renderers stored as agent-written code in the DB**, run through the unified runtime (replace tool-viz's separate `dynamic/compiler.ts`). Resolution: in-code registry → DB code-runner → generic fallback.
-- [ ] **Author one real DB tool renderer end-to-end** through the unified runtime + verify in gallery AND a real chat. (Resolves the old `tool_ui` hang by construction — uses the proven runtime.)
-- [ ] **Confirm the runtime renders in our local dev** (load `/p/ap-world-lesson`); if the Babel sandbox hangs in Turbopack dev but works in prod, note + fix the dev path.
+- [x] **Tool renderers stored as agent-written code in the DB**, run through the unified runtime. Resolution is live: `static registry → DB renderer (db-renderer/) → generic`. Five DB renderers now exist (`agent_call` + the four examples).
+- [x] **Author one real DB tool renderer end-to-end** + verify in gallery AND a real chat. Done four (`fs_list`/`shell_execute`/`memory`/`travel_get_weather`); the old `tool_ui` hang is bypassed (sync compiler).
+- [x] **Confirm the runtime renders in our local dev** — the four DB renderers + `/p/ap-world-lesson` all compile + render in local Turbopack dev. No dev-only hang.
 
 ### Track 2 — Legacy & duplicate PURGE (delete, don't keep)
 - [ ] **Delete Prompt Apps** (`features/prompt-apps/`, routes, `prompt_apps` usage) — greenlit, fully migrated.

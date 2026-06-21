@@ -434,6 +434,60 @@ const AGENT_CALL_ENTRY = entry({
     },
 });
 
+// DB-loaded renderer examples — each resolves to its `tool_ui` row (agent-
+// authored code), fetched + compiled at runtime via compileSlotComponent. The
+// codebase ships NONE of these renderers; they live in the DB. This is the
+// code-first dynamic path that, long-term, carries most tool UIs.
+const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "db-fs-list",
+        toolName: "fs_list",
+        displayName: "Directory",
+        arguments: { path: "/home/agent/repos", recursive: false },
+        result: {
+            path: "/home/agent/repos",
+            entries: [
+                { name: "matrx-frontend", path: "/home/agent/repos/matrx-frontend", is_dir: true, size: 4096, mtime: 1781080487 },
+                { name: "aidream", path: "/home/agent/repos/aidream", is_dir: true, size: 4096, mtime: 1781083431 },
+                { name: "matrx-extend", path: "/home/agent/repos/matrx-extend", is_dir: true, size: 4096, mtime: 1781083058 },
+                { name: "README.md", path: "/home/agent/repos/README.md", is_dir: false, size: 2048, mtime: 1781083100 },
+                { name: "deploy.sh", path: "/home/agent/repos/deploy.sh", is_dir: false, size: 512, mtime: 1781083111 },
+            ],
+        },
+    }),
+    entry({
+        callId: "db-shell",
+        toolName: "shell_execute",
+        displayName: "Shell",
+        arguments: { command: "git log --oneline -3" },
+        result: {
+            stdout: "7317e7de2 fix(chat): agentic turn renders as ONE unit + fold consecutive tool calls\n40e901215 release: v0.3.574\nc36d91c16 bookmark additions",
+            stderr: "",
+            exit_code: 0,
+            cwd: "/home/agent/repos/matrx-frontend",
+        },
+    }),
+    entry({
+        callId: "db-memory",
+        toolName: "memory",
+        displayName: "Memory",
+        arguments: {
+            key: "omega3_findings",
+            action: "store",
+            content: "Algae-derived omega-3 leads on sustainability + bioavailability; the ratio hypothesis is being challenged in favor of absolute levels.",
+            importance: 0.8,
+        },
+        result: { stored: true, key: "omega3_findings", type: "long" },
+    }),
+    entry({
+        callId: "db-weather",
+        toolName: "travel_get_weather",
+        displayName: "Weather",
+        arguments: { city: "Miami" },
+        result: { city: "Miami", condition: "windy", temperature: 83, unit: "fahrenheit" },
+    }),
+];
+
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
     return (
         <div className="rounded-lg border border-border bg-card p-3">
@@ -547,6 +601,22 @@ export default function ResultFieldsGalleryPage() {
                 </h2>
                 <div className="rounded-lg border border-border bg-card p-3">
                     <ToolCallVisualization entries={[AGENT_CALL_ENTRY]} isPersisted hasContent />
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    DB-loaded renderers — agent-authored code from `tool_ui`, NONE in the codebase (click a row to expand)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    fs_list (collection) · shell_execute (terminal) · memory (sparse status) · travel_get_weather (rich visual). Each is
+                    fetched by `tool_name` and compiled at runtime through the same Babel sandbox the Agent Apps runtime uses — the
+                    code-first path that scales to user- and agent-authored components across every platform.
+                </p>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    {DB_RENDERER_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
                 </div>
             </section>
 
