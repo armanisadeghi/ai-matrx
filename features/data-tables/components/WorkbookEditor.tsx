@@ -49,6 +49,7 @@ import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
+import { WorkbookSheetReferenceCopyButton } from "./WorkbookSheetReferenceCopyButton";
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -550,6 +551,13 @@ export default function WorkbookEditor({
             </div>
           )}
           {toolbarRightSlot}
+          {bootState === "ready" && (
+            <WorkbookSheetReferenceCopyButton
+              apiRef={apiRef}
+              workbookId={workbookId}
+              workbookName={workbookName}
+            />
+          )}
           {editable && bootState === "ready" && (
             <Button
               variant="ghost"

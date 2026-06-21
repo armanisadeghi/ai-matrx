@@ -41,6 +41,7 @@ export type AnyBookmark =
 /** Bookmark `type` → reference `type` (mirror of backend BOOKMARK_TYPE_TO_REFERENCE). */
 const BOOKMARK_TYPE_TO_REFERENCE: Record<string, ReferenceType> = {
   full_table: "table",
+  table_schema: "table_schema",
   table_column: "table_column",
   table_row: "table_row",
   table_cell: "table_cell",

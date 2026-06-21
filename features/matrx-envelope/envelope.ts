@@ -11,7 +11,11 @@
 
 export const MATRX_VERSION = 1 as const;
 
-export type MatrxKind = "output_directive" | "reference" | "secret" | "validation";
+export type MatrxKind =
+  | "output_directive"
+  | "reference"
+  | "secret"
+  | "validation";
 
 /** The universal outer shell. Items are unknown until routed by `(kind, type)`. */
 export interface MatrxEnvelope<Item = Record<string, unknown>> {
@@ -69,7 +73,9 @@ export type DirectiveApplyEvent =
   | DirectiveItemFailed
   | DirectiveApplyCompleted;
 
-export function isDirectiveApplyEvent(value: unknown): value is DirectiveApplyEvent {
+export function isDirectiveApplyEvent(
+  value: unknown,
+): value is DirectiveApplyEvent {
   if (typeof value !== "object" || value === null) return false;
   const k = (value as { kind?: unknown }).kind;
   return (
@@ -97,15 +103,34 @@ export function isDirectiveApplyEvent(value: unknown): value is DirectiveApplyEv
  */
 export type ReferencePurpose = "substitute" | "expand" | "inline" | "context";
 
-/** The 7-type reference taxonomy. `dataset_cell` is a legacy alias of `table_cell`. */
+/**
+ * UDT + record reference taxonomy. `dataset_cell` is a legacy alias of `table_cell`.
+ * Record types (`task`, `note`, …) share the backend `RecordRef { id }` item shape.
+ */
 export const REFERENCE_TYPES = [
   "picklist",
   "picklist_group",
   "picklist_item",
   "table",
+  "table_schema",
   "table_column",
   "table_row",
   "table_cell",
+  "task",
+  "note",
+  "project",
+  "agent",
+  "agent_app",
+  "transcript",
+  "transcript_segment",
+  "transcript_session",
+  "session_transcript",
+  "workbook",
+  "workbook_sheet",
+  "document",
+  "document_page",
+  "file",
+  "file_page",
 ] as const;
 
 export type ReferenceType = (typeof REFERENCE_TYPES)[number];
@@ -139,6 +164,30 @@ export interface PicklistItemRefItem extends ReferenceItemHints {
 export interface TableRefItem extends ReferenceItemHints {
   table_id: string;
 }
+/** Column definitions only — no row payload (`table_schema` / bookmark `table_schema`). */
+export interface TableSchemaRefItem extends ReferenceItemHints {
+  table_id: string;
+}
+export interface TranscriptSegmentRefItem extends ReferenceItemHints {
+  transcript_id: string;
+  segment_index: string;
+}
+export interface SessionTranscriptRefItem extends ReferenceItemHints {
+  session_id: string;
+  transcript_id: string;
+}
+export interface WorkbookSheetRefItem extends ReferenceItemHints {
+  workbook_id: string;
+  sheet_id: string;
+}
+export interface DocumentPageRefItem extends ReferenceItemHints {
+  document_id: string;
+  page_index: string;
+}
+export interface FilePageRefItem extends ReferenceItemHints {
+  file_id: string;
+  page_number: string;
+}
 export interface TableColumnRefItem extends ReferenceItemHints {
   table_id: string;
   column_name: string;
@@ -153,8 +202,13 @@ export interface TableCellRefItem extends ReferenceItemHints {
   column_name: string;
 }
 
+/** Generic id-keyed record (`task`, `note`, `agent`, …). */
+export interface RecordRefItem extends ReferenceItemHints {
+  id: string;
+}
+
 /**
- * The canonical reference item — a flat union over the 7-type taxonomy. Every
+ * The canonical reference item — a flat union over the reference taxonomy. Every
  * member is identity ids + {@link ReferenceItemHints}. The open index signature
  * keeps it assignable from a generic decoded envelope (`Record<string,unknown>`).
  */
@@ -163,9 +217,16 @@ export type ReferenceItem =
   | PicklistGroupRefItem
   | PicklistItemRefItem
   | TableRefItem
+  | TableSchemaRefItem
   | TableColumnRefItem
   | TableRowRefItem
-  | TableCellRefItem;
+  | TableCellRefItem
+  | TranscriptSegmentRefItem
+  | SessionTranscriptRefItem
+  | WorkbookSheetRefItem
+  | DocumentPageRefItem
+  | FilePageRefItem
+  | RecordRefItem;
 
 // ── Output-schema builder (generic; mirrors aidream's schema_gen) ─────────────
 

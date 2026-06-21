@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 import {
   getWorkbook,
@@ -141,14 +142,23 @@ export default function WorkbookPage({
     </>
   );
   const shareSlot = workbook ? (
-    <ShareButton
-      resourceType="udt_workbooks"
-      resourceId={workbook.id}
-      resourceName={workbook.workbook_name}
-      isOwner={isOwner}
-      variant="ghost"
-      size="sm"
-    />
+    <div className="flex items-center gap-0.5">
+      <ReferenceCopyButton
+        referenceType="workbook"
+        id={workbook.id}
+        label={workbook.workbook_name}
+        toastLabel={workbook.workbook_name}
+        size="sm"
+      />
+      <ShareButton
+        resourceType="udt_workbooks"
+        resourceId={workbook.id}
+        resourceName={workbook.workbook_name}
+        isOwner={isOwner}
+        variant="ghost"
+        size="sm"
+      />
+    </div>
   ) : null;
 
   return (

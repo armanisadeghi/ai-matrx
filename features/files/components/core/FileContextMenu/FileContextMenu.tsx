@@ -12,6 +12,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
+import { FilePageReferenceMenuSub } from "./FilePageReferenceMenuSub";
 import { useRouter } from "next/navigation";
 import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
@@ -474,6 +476,20 @@ export function FileContextMenu({
                     Copy link
                     <DropdownMenuShortcut>{cmd}L</DropdownMenuShortcut>
                   </DropdownMenuItem>
+                  {!isVirtual ? (
+                    <ReferenceCopyMenuItem
+                      kind="file"
+                      fileId={fileId}
+                      label={file?.name}
+                      toastLabel={file?.name ?? "File"}
+                    />
+                  ) : null}
+                  {file?.mimeType === "application/pdf" && !isVirtual ? (
+                    <FilePageReferenceMenuSub
+                      fileId={fileId}
+                      fileName={file?.fileName ?? file?.name}
+                    />
+                  ) : null}
                   {onShare ? (
                     <DropdownMenuItem onClick={onShare}>
                       <Share2 className="mr-2 h-4 w-4" />

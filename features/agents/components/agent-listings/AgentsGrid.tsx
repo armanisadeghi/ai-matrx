@@ -64,6 +64,7 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentSortOption } from "@/features/agents/redux/agent-consumers/slice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
+import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 const CONSUMER_ID = "agents-main";
 
 function AgentsSkeleton({ count = 4 }: { count?: number }) {
@@ -505,6 +506,17 @@ export function AgentsGrid() {
                 {filteredAgents.length} result
                 {filteredAgents.length !== 1 ? "s" : ""}
               </span>
+            )}
+
+            {filteredAgents.length > 0 && (
+              <ReferencesBulkCopyButton
+                referenceType="agent"
+                records={filteredAgents.map((a) => ({
+                  id: a.id,
+                  label: a.name,
+                }))}
+                toastLabel={`${filteredAgents.length} agent${filteredAgents.length === 1 ? "" : "s"}`}
+              />
             )}
 
             {/* New agent icon (right) */}

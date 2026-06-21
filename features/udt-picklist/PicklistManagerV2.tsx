@@ -363,7 +363,10 @@ function ListSwitcher({
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return lists;
-    return lists.filter((l) => (l.list_name ?? "").toLowerCase().includes(s) || idMatchesQuery(l, s));
+    return lists.filter(
+      (l) =>
+        (l.list_name ?? "").toLowerCase().includes(s) || idMatchesQuery(l, s),
+    );
   }, [lists, search]);
 
   return (
@@ -852,16 +855,18 @@ function ItemRow({
         }}
         buttonRef={(el) => registerRef("icon", el)}
       />
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={onRemove}
-        className="flex items-center justify-center text-muted-foreground/40 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus:opacity-100"
-        aria-label="Remove item"
-        title="Remove"
-      >
-        <Trash2 className="size-3.5" />
-      </button>
+      <div className="flex items-center justify-center">
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={onRemove}
+          className="flex h-full w-9 items-center justify-center text-muted-foreground/40 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus:opacity-100"
+          aria-label="Remove item"
+          title="Remove"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
+      </div>
     </div>
   );
 }

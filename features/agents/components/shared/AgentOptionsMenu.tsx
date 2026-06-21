@@ -64,6 +64,7 @@ import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,
 } from "./AgentDuplicateOutcomeDialog";
+import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -500,6 +501,14 @@ export function AgentOptionsMenu({
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
+          <ReferenceCopyMenuItem
+            referenceType="agent"
+            id={agentId}
+            label={agent?.name ?? undefined}
+            toastLabel={agent?.name ?? "Agent"}
+            onCopied={() => setOpen(false)}
+          />
+          <DropdownMenuSeparator />
           {/* ── This Agent ── */}
           {THIS_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => {
             if (label === "View All Versions" || label === "Drift Report") {

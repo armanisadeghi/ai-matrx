@@ -25,6 +25,7 @@ import {
   selectConversationMessages,
   isFailedRecord,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import {
   selectStreamPhase,
   selectLatestRequestId,
@@ -67,7 +68,7 @@ const ASSISTANT_MSG_DEBUG = "[ASSISTANT MESSAGE DEBUG]";
 
 interface DisplayEntry {
   key: string;
-  role: "user" | "assistant" | "system" | "tool";
+  role: MessageRole;
   /** Server-assigned `cx_message.id` for committed rows; null for the live entry. */
   messageId: string | null;
   /** Live stream request id — set only on the `__streaming__` entry. */

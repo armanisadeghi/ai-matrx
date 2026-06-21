@@ -31,6 +31,11 @@ import {
   hubItemMatchesQuery,
   sortHubItems,
 } from "@/features/transcripts/utils/hubSortFilter";
+import {
+  hubItemsToReferenceGroups,
+  referenceGroupCount,
+} from "@/features/transcripts/utils/hubReferenceGroups";
+import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 
 type HubViewMode = "cards" | "table";
 const HUB_VIEW_STORAGE_KEY = "transcripts-hub-view";
@@ -114,6 +119,13 @@ export function TranscriptsListPage() {
     [sectionViews],
   );
 
+  const hubReferenceGroups = useMemo(
+    () => hubItemsToReferenceGroups(flatTableItems),
+    [flatTableItems],
+  );
+
+  const hubReferenceCount = referenceGroupCount(hubReferenceGroups);
+
   const sectionsWithMore = useMemo(
     () => sectionViews.filter((s) => s.hasMore),
     [sectionViews],
@@ -188,6 +200,13 @@ export function TranscriptsListPage() {
               <TranscriptsSortMenu
                 sortKey={sortKey}
                 onSortChange={setSortKey}
+              />
+            ) : null}
+            {hubReferenceCount > 0 ? (
+              <ReferencesBulkCopyButton
+                groups={hubReferenceGroups}
+                toastLabel={`${hubReferenceCount} transcript hub item${hubReferenceCount === 1 ? "" : "s"}`}
+                className="mr-1 shrink-0"
               />
             ) : null}
           </div>

@@ -17,6 +17,7 @@ import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificH
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
+import { NoteReferenceCopyButton } from "../NoteReferenceCopyButton";
 import {
   DEFAULT_FILTER_STATE,
   type NotesFilterState,
@@ -241,6 +242,14 @@ export default function MobileNotesView() {
                 </button>
               ))}
             </div>
+
+            {/* Copy reference */}
+            <NoteReferenceCopyButton
+              noteId={selectedNote.id}
+              label={selectedNote.label}
+              size="sm"
+              className="h-7 w-7"
+            />
 
             {/* Save state */}
             <div className="flex-shrink-0 flex items-center relative">

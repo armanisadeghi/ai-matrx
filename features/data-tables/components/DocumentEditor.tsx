@@ -48,6 +48,7 @@ import {
 } from "../document-service";
 import { isServiceFailure } from "../types";
 import { DocumentHistoryViewer } from "./DocumentHistoryViewer";
+import { DocumentPageReferenceCopyButton } from "./DocumentPageReferenceCopyButton";
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -460,6 +461,12 @@ export default function DocumentEditor({
             </div>
           )}
           {toolbarRightSlot}
+          {bootState === "ready" && (
+            <DocumentPageReferenceCopyButton
+              documentId={documentId}
+              documentName={documentName}
+            />
+          )}
           {editable && bootState === "ready" && (
             <Button
               variant="ghost"

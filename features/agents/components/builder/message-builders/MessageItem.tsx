@@ -47,7 +47,10 @@ import {
   BlockList,
   BlockType,
 } from "@/features/agents/components/builder/message-builders/AddBlockButton";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
+import type {
+  AgentDefinitionMessage,
+  PrimingMessageRole,
+} from "@/features/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -212,7 +215,7 @@ export function MessageItem({
   );
 
   const handleRoleChange = useCallback(
-    (role: "user" | "assistant") => {
+    (role: PrimingMessageRole) => {
       if (!allMessages) return;
       const updated = allMessages.map((m, i) =>
         i === messageIndex ? { ...m, role } : m,
@@ -640,7 +643,7 @@ export function MessageItem({
         <div className="flex items-center gap-1">
           <Select
             value={displayRole}
-            onValueChange={(v) => handleRoleChange(v as "user" | "assistant")}
+            onValueChange={(v) => handleRoleChange(v as PrimingMessageRole)}
           >
             <SelectTrigger className="h-4 bg-transparent text-foreground !border-none hover:bg-accent w-auto min-w-[120px] text-xs !shadow-none focus:ring-0 focus:ring-offset-0 [&>svg]:opacity-0 [&>svg]:group-hover:opacity-100 [&>svg]:transition-opacity">
               <SelectValue />

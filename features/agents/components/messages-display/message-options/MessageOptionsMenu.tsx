@@ -27,11 +27,12 @@ import {
   resumePendingAuthAction,
   type MessageActionContext,
 } from "./messageActionRegistry";
+import type { PrimingMessageRole } from "@/features/agents/types/agent-message-types";
 
 export interface MessageOptionsMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  role: "user" | "assistant";
+  role: PrimingMessageRole;
   /** Flat-text rendering of the message content (for copy/print/TTS). */
   content: string;
   /** Server-assigned `cx_message.id`. Null hides mutation actions. */

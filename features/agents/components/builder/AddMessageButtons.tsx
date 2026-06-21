@@ -9,6 +9,7 @@ import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice
 import type {
   AgentDefinitionMessage,
   TextBlock,
+  PrimingMessageRole,
 } from "@/features/agents/types/agent-message-types";
 
 interface AddMessageButtonsProps {
@@ -22,7 +23,7 @@ export function AddMessageButtons({ agentId }: AddMessageButtonsProps) {
   );
 
   const handleAddMessage = useCallback(
-    (role: "user" | "assistant") => {
+    (role: PrimingMessageRole) => {
       if (!allMessages) return;
       const textBlock: TextBlock = { type: "text", text: "" };
       const newMessage: AgentDefinitionMessage = { role, content: [textBlock] };

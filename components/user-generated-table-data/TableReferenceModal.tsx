@@ -69,6 +69,14 @@ export default function TableReferenceModal({
       table_name: tableName,
     });
 
+  // Canonical ```matrx``` reference fence for column schema only.
+  const generateSchemaReference = () =>
+    buildBookmarkReferenceFence({
+      type: "table_schema",
+      table_id: tableId,
+      table_name: tableName,
+    });
+
   // Canonical ```matrx``` reference fence for a single row.
   const generateRowReference = (rowId: string) =>
     buildBookmarkReferenceFence({
@@ -128,6 +136,32 @@ export default function TableReferenceModal({
             </div>
             <Textarea
               value={generateTableReference()}
+              readOnly
+              rows={7}
+              className="text-xs font-mono bg-gray-50 dark:bg-gray-900"
+            />
+          </div>
+
+          {/* Schema Reference */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">
+                Table Schema Reference
+              </Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  copyToClipboard(generateSchemaReference(), "schema")
+                }
+                className="flex items-center space-x-1"
+              >
+                <Copy className="h-3 w-3" />
+                <span>{copiedReference === "schema" ? "Copied!" : "Copy"}</span>
+              </Button>
+            </div>
+            <Textarea
+              value={generateSchemaReference()}
               readOnly
               rows={7}
               className="text-xs font-mono bg-gray-50 dark:bg-gray-900"

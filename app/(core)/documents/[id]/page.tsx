@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 import {
   getDocument,
@@ -146,14 +147,23 @@ export default function DocumentPage({
     </>
   );
   const shareSlot = doc ? (
-    <ShareButton
-      resourceType="udt_documents"
-      resourceId={doc.id}
-      resourceName={doc.document_name}
-      isOwner={isOwner}
-      variant="ghost"
-      size="sm"
-    />
+    <div className="flex items-center gap-0.5">
+      <ReferenceCopyButton
+        referenceType="document"
+        id={doc.id}
+        label={doc.document_name}
+        toastLabel={doc.document_name}
+        size="sm"
+      />
+      <ShareButton
+        resourceType="udt_documents"
+        resourceId={doc.id}
+        resourceName={doc.document_name}
+        isOwner={isOwner}
+        variant="ghost"
+        size="sm"
+      />
+    </div>
   ) : null;
 
   return (

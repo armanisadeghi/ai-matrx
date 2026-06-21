@@ -21,6 +21,7 @@ import { useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import {
   selectStreamPhase,
   selectLatestRequestId,
@@ -48,7 +49,7 @@ const AgentAssistantMessage = dynamic(
 
 interface DisplayMessage {
   key: string;
-  role: "user" | "assistant" | "system";
+  role: MessageRole;
   messageId: string;
   requestId: string | null;
   isStreamActive: boolean;

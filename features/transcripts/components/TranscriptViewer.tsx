@@ -26,6 +26,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -351,6 +352,13 @@ export function TranscriptViewer() {
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <ReferenceCopyButton
+                referenceType="transcript"
+                id={activeTranscript.id}
+                label={activeTranscript.title}
+                toastLabel={activeTranscript.title}
+                size="sm"
+              />
               {plainTranscriptText.trim().length > 0 && (
                 <Button
                   variant="ghost"
@@ -572,6 +580,7 @@ export function TranscriptViewer() {
                 <AdvancedTranscriptViewer
                   content={transcriptContent}
                   hideTitle={true}
+                  transcriptId={activeTranscript?.id}
                   onUpdateTranscript={handleUpdateSegments}
                   onTimeClick={handleTranscriptTimeClick}
                   currentTime={currentTime}

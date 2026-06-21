@@ -17,6 +17,9 @@ import {
   Webhook,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Bookmark } from "lucide-react";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { buildSessionTranscriptReferenceFence } from "@/features/matrx-envelope/compoundReference";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -147,6 +150,53 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
 
   const menuItems: ActionSheetItem[] = [
     {
+      key: "copy-session-ref",
+      label: "Copy session reference",
+      description: "Paste into chat as a live reference chip",
+      icon: <Bookmark className="h-4 w-4" />,
+      onSelect: async () => {
+        try {
+          await navigator.clipboard.writeText(
+            buildRecordReferenceFence({
+              type: "transcript_session",
+              id: sessionId,
+              label: session?.title,
+            }),
+          );
+          toast.success("Reference copied to clipboard", {
+            description: session?.title ?? "Session",
+          });
+        } catch {
+          toast.error("Failed to copy reference");
+        }
+      },
+    },
+    ...(session?.transcriptId
+      ? ([
+          {
+            key: "copy-session-transcript-ref",
+            label: "Copy linked transcript reference",
+            description:
+              "Session + materialized transcript — paste into chat as a chip",
+            icon: <Bookmark className="h-4 w-4" />,
+            onSelect: async () => {
+              try {
+                await navigator.clipboard.writeText(
+                  buildSessionTranscriptReferenceFence({
+                    sessionId,
+                    transcriptId: session.transcriptId!,
+                    label: session.title ?? undefined,
+                  }),
+                );
+                toast.success("Transcript reference copied");
+              } catch {
+                toast.error("Failed to copy reference");
+              }
+            },
+          },
+        ] satisfies ActionSheetItem[])
+      : []),
+    {
       key: "view-raw",
       label: "View raw transcripts",
       description: "Verbatim text of every recording",
@@ -216,183 +266,183 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   }, [sessionId, dispatch]);
 
   return (
-   <ScribeCitationProvider sessionId={sessionId}>
-    <div className="flex h-dvh flex-col overflow-hidden bg-textured">
-      {/* Header (shell chrome is hidden on this route — see shell.css) */}
-      <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="flex h-12 w-full items-center gap-2">
-          {onBack && (
+    <ScribeCitationProvider sessionId={sessionId}>
+      <div className="flex h-dvh flex-col overflow-hidden bg-textured">
+        {/* Header (shell chrome is hidden on this route — see shell.css) */}
+        <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="flex h-12 w-full items-center gap-2">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Back to sessions"
+                className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground active:bg-accent"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            {/* Title shortened (max-w) to make room for the voice-playback stop
+              control that appears next to the mic while audio is playing. */}
+            <div className="hidden min-w-0 max-w-[12rem] flex-1 sm:block">
+              {mounted && session ? (
+                <EditableSessionTitle
+                  sessionId={sessionId}
+                  title={session.title}
+                  className="truncate text-sm font-medium"
+                />
+              ) : (
+                <span className="text-sm font-medium text-muted-foreground">
+                  Loading…
+                </span>
+              )}
+            </div>
+            {/* Mode tabs — Record / Agent / Live. Centered on small screens
+              (where the title is hidden to reclaim width), inline otherwise. */}
+            <div className="flex flex-1 justify-center sm:flex-none sm:justify-start">
+              <div className="flex shrink-0 rounded-full bg-muted p-0.5">
+                {MODE_TABS.map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setScreen(key)}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors",
+                      screen === key
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Voice playback stop — only renders while a voice reply is
+              loading/playing, so audio can be stopped from any tab. */}
+            <VoicePlaybackButton />
+            {/* Custom Dictionary moved into the ⋮ session menu (declutters the
+              header — it's supplementary, not a primary control). */}
+            {/* Recording control — inline, session-global. Tap to start; while
+              recording it pulses red and stops. */}
             <button
               type="button"
-              onClick={onBack}
-              aria-label="Back to sessions"
-              className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground active:bg-accent"
+              onClick={
+                recorder.isOwnedRecording
+                  ? recorder.stop
+                  : () => void recorder.start()
+              }
+              disabled={recordingBlocked || recorder.isFinalizing}
+              aria-label={
+                recorder.isOwnedRecording
+                  ? "Stop recording"
+                  : recorder.isFinalizing
+                    ? "Saving previous recording"
+                    : "Add recording"
+              }
+              className={cn(
+                "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
+                recorder.isOwnedRecording
+                  ? "bg-red-500 text-white active:scale-95"
+                  : recordingBlocked || recorder.isFinalizing
+                    ? "cursor-not-allowed text-muted-foreground"
+                    : "text-foreground active:bg-accent",
+              )}
             >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          )}
-          {/* Title shortened (max-w) to make room for the voice-playback stop
-              control that appears next to the mic while audio is playing. */}
-          <div className="hidden min-w-0 max-w-[12rem] flex-1 sm:block">
-            {mounted && session ? (
-              <EditableSessionTitle
-                sessionId={sessionId}
-                title={session.title}
-                className="truncate text-sm font-medium"
-              />
-            ) : (
-              <span className="text-sm font-medium text-muted-foreground">
-                Loading…
-              </span>
-            )}
-          </div>
-          {/* Mode tabs — Record / Agent / Live. Centered on small screens
-              (where the title is hidden to reclaim width), inline otherwise. */}
-          <div className="flex flex-1 justify-center sm:flex-none sm:justify-start">
-            <div className="flex shrink-0 rounded-full bg-muted p-0.5">
-              {MODE_TABS.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setScreen(key)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors",
-                    screen === key
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Voice playback stop — only renders while a voice reply is
-              loading/playing, so audio can be stopped from any tab. */}
-          <VoicePlaybackButton />
-          {/* Custom Dictionary moved into the ⋮ session menu (declutters the
-              header — it's supplementary, not a primary control). */}
-          {/* Recording control — inline, session-global. Tap to start; while
-              recording it pulses red and stops. */}
-          <button
-            type="button"
-            onClick={
-              recorder.isOwnedRecording
-                ? recorder.stop
-                : () => void recorder.start()
-            }
-            disabled={recordingBlocked || recorder.isFinalizing}
-            aria-label={
-              recorder.isOwnedRecording
-                ? "Stop recording"
-                : recorder.isFinalizing
-                  ? "Saving previous recording"
-                  : "Add recording"
-            }
-            className={cn(
-              "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
-              recorder.isOwnedRecording
-                ? "bg-red-500 text-white active:scale-95"
-                : recordingBlocked || recorder.isFinalizing
-                  ? "cursor-not-allowed text-muted-foreground"
-                  : "text-foreground active:bg-accent",
-            )}
-          >
-            {recorder.isOwnedRecording ? (
-              <>
-                {!recorder.isPaused && (
-                  <span
-                    aria-hidden
-                    /* Desktop only — on mobile the bottom bar owns the pulsing
+              {recorder.isOwnedRecording ? (
+                <>
+                  {!recorder.isPaused && (
+                    <span
+                      aria-hidden
+                      /* Desktop only — on mobile the bottom bar owns the pulsing
                        "Recording" indicator, so we don't double up. */
-                    className="absolute inset-0 hidden animate-ping rounded-full bg-red-500/40 sm:block"
-                  />
-                )}
-                <Square className="relative h-4 w-4 fill-current" />
-              </>
-            ) : recorder.isFinalizing ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Mic className="h-5 w-5" />
-            )}
-          </button>
-          {/* Session menu */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Session options"
-            className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground active:bg-accent"
-          >
-            <MoreVertical className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
+                      className="absolute inset-0 hidden animate-ping rounded-full bg-red-500/40 sm:block"
+                    />
+                  )}
+                  <Square className="relative h-4 w-4 fill-current" />
+                </>
+              ) : recorder.isFinalizing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </button>
+            {/* Session menu */}
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Session options"
+              className="-mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground active:bg-accent"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          </div>
+        </header>
 
-      {/* Assistant agent bar + working document — rendered once here so they
+        {/* Assistant agent bar + working document — rendered once here so they
           sit at the top of EVERY tab identically (Record / Agent / Live / …).
           Single shared instances; tabs below never duplicate them. */}
-      <AssistantAgentBar sessionId={sessionId} />
-      <WorkingDocumentHeader sessionId={sessionId} />
+        <AssistantAgentBar sessionId={sessionId} />
+        <WorkingDocumentHeader sessionId={sessionId} />
 
-      {/* Body — all three modes stay mounted; switching tabs only flips
+        {/* Body — all three modes stay mounted; switching tabs only flips
           visibility. This keeps one shared state across Record / Agent / Live:
           nothing unmounts, re-fetches, re-resolves the conversation, or flashes
           a spinner when you move between tabs. */}
-      <main className="relative min-h-0 flex-1">
-        <div className={cn("h-full", screen !== "capture" && "hidden")}>
-          <ScribeCaptureScreen sessionId={sessionId} />
-        </div>
-        <div className={cn("h-full", screen !== "agent" && "hidden")}>
-          <AssistantScreen sessionId={sessionId} />
-        </div>
-        <div className={cn("h-full", screen !== "live" && "hidden")}>
-          <ScribeLiveScreen sessionId={sessionId} />
-        </div>
-        <div className={cn("h-full", screen !== "agent2" && "hidden")}>
-          <ExperimentalAgentScreen sessionId={sessionId} />
-        </div>
-      </main>
+        <main className="relative min-h-0 flex-1">
+          <div className={cn("h-full", screen !== "capture" && "hidden")}>
+            <ScribeCaptureScreen sessionId={sessionId} />
+          </div>
+          <div className={cn("h-full", screen !== "agent" && "hidden")}>
+            <AssistantScreen sessionId={sessionId} />
+          </div>
+          <div className={cn("h-full", screen !== "live" && "hidden")}>
+            <ScribeLiveScreen sessionId={sessionId} />
+          </div>
+          <div className={cn("h-full", screen !== "agent2" && "hidden")}>
+            <ExperimentalAgentScreen sessionId={sessionId} />
+          </div>
+        </main>
 
-      {/* Session audio transport — one shared player across every tab. Surfaces
+        {/* Session audio transport — one shared player across every tab. Surfaces
           only once a recording card or an agent `<audiocite>` citation seeks it
           (or the user plays the session), giving full scrub / ±10s / speed that
           the per-card play button never had. */}
-      <SessionAudioPlayer sessionId={sessionId} />
+        <SessionAudioPlayer sessionId={sessionId} />
 
-      <ActionSheet
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-        title={session?.title || "Session"}
-        items={menuItems}
-        contentClassName="min-h-[50dvh]"
-      />
-      {sessionViewer && (
-        <SessionTranscriptViewer
-          sessionId={sessionId}
-          mode={sessionViewer}
-          open={sessionViewer !== null}
-          onClose={() => setSessionViewer(null)}
-          allowRefresh
+        <ActionSheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          title={session?.title || "Session"}
+          items={menuItems}
+          contentClassName="min-h-[50dvh]"
         />
-      )}
-      <TextInputDialog
-        open={renameOpen}
-        onOpenChange={setRenameOpen}
-        title="Rename session"
-        defaultValue={session?.title ?? ""}
-        confirmLabel="Save"
-        onConfirm={(value) => {
-          void dispatch(
-            updateSessionThunk({
-              id: sessionId,
-              patch: { title: value.trim() },
-            }),
-          );
-          setRenameOpen(false);
-        }}
-      />
-    </div>
-   </ScribeCitationProvider>
+        {sessionViewer && (
+          <SessionTranscriptViewer
+            sessionId={sessionId}
+            mode={sessionViewer}
+            open={sessionViewer !== null}
+            onClose={() => setSessionViewer(null)}
+            allowRefresh
+          />
+        )}
+        <TextInputDialog
+          open={renameOpen}
+          onOpenChange={setRenameOpen}
+          title="Rename session"
+          defaultValue={session?.title ?? ""}
+          confirmLabel="Save"
+          onConfirm={(value) => {
+            void dispatch(
+              updateSessionThunk({
+                id: sessionId,
+                patch: { title: value.trim() },
+              }),
+            );
+            setRenameOpen(false);
+          }}
+        />
+      </div>
+    </ScribeCitationProvider>
   );
 }

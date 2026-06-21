@@ -4,6 +4,7 @@ import { AgentSelectorIsland } from "./AgentSelectorIsland";
 import { AgentModeController } from "./AgentModeController";
 import { AgentSaveStatus } from "./AgentSaveStatus";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
+import { AgentReferenceCopyButton } from "./AgentReferenceCopyButton";
 import { AgentHeaderMobile } from "./AgentHeaderMobile";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
@@ -63,6 +64,7 @@ export function AgentHeader({
         />
         <div className="flex items-center gap-1.5 shrink-0">
           <AgentSaveStatus agentId={agentId} />
+          <AgentReferenceCopyButton agentId={agentId} agentName={agentName} />
           <div className="w-px h-4 bg-border/50" />
           <AgentOptionsMenu agentId={agentId} basePath={basePath} />
         </div>

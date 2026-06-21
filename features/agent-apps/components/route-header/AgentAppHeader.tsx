@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AgentAppBackButton } from "./AgentAppBackButton";
 import { AgentAppHeaderTabs } from "./AgentAppHeaderTabs";
+import { AgentAppHeaderActions } from "./AgentAppHeaderActions";
 import type { AgentAppHeaderTab } from "./AgentAppHeaderTabs";
 
 interface AgentAppHeaderProps {
@@ -46,7 +47,7 @@ export function AgentAppHeader({
         appId={appId}
         active={active}
       />
-      <div className="w-[40px] shrink-0" aria-hidden />
+      <AgentAppHeaderActions appId={appId} appName={appName} />
     </div>
   );
 }

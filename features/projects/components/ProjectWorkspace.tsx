@@ -60,6 +60,7 @@ import { OrgResourceRoleSection } from "@/features/organizations/components/OrgR
 import { ContainerResourceSheet } from "@/features/organizations/components/ContainerResourceSheet";
 import { ProjectTaskList } from "./ProjectTaskList";
 import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -293,6 +294,14 @@ export function ProjectWorkspace() {
 
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex items-center gap-2">
+                <ReferenceCopyButton
+                  referenceType="project"
+                  id={project.id}
+                  label={project.name}
+                  toastLabel={project.name}
+                  size="md"
+                  className="h-8 w-8"
+                />
                 <ProjectCopyForAiButton
                   projectId={project.id}
                   projectName={project.name}

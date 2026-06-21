@@ -55,8 +55,14 @@ import {
   UserRound,
   MergeIcon,
   Link,
+  Bookmark,
   ChevronsUpDown,
 } from "lucide-react";
+import {
+  buildTranscriptSegmentReferenceFence,
+  transcriptSegmentIndexFromId,
+} from "@/features/matrx-envelope/compoundReference";
+import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +90,8 @@ export type TranscriptViewerProps = {
   currentTime?: number;
   /** When true, copy + edit icons stay visible (not hover-only). */
   showInlineActions?: boolean;
+  /** When set, segment context menu can copy a `transcript_segment` reference. */
+  transcriptId?: string;
 };
 
 export type TranscriptStats = {
@@ -108,6 +116,7 @@ type TranscriptSegmentItemProps = {
   searchTerm: string;
   isLastSegment: boolean;
   showInlineActions: boolean;
+  transcriptId?: string;
   onTimeClick: (seconds: number) => void;
   onEdit: (segment: TranscriptSegment) => void;
   onSplit: (segment: TranscriptSegment) => void;
@@ -139,6 +148,7 @@ const TranscriptSegmentItem = React.memo(
     onDelete,
     registerRef,
     showInlineActions,
+    transcriptId,
   }: TranscriptSegmentItemProps) => {
     const itemRef = useRef<HTMLDivElement | null>(null);
 
@@ -373,6 +383,28 @@ const TranscriptSegmentItem = React.memo(
             <ContextMenuItem onClick={() => onCopy(segment.text, segment.id)}>
               <Copy className="h-4 w-4 mr-2" /> Copy Text
             </ContextMenuItem>
+            {transcriptId ? (
+              <ContextMenuItem
+                onClick={async () => {
+                  const segmentIndex =
+                    transcriptSegmentIndexFromId(segment.id) ?? index;
+                  try {
+                    await navigator.clipboard.writeText(
+                      buildTranscriptSegmentReferenceFence({
+                        transcriptId,
+                        segmentIndex,
+                        label: segment.text.slice(0, 80),
+                      }),
+                    );
+                    toast.success("Segment reference copied");
+                  } catch {
+                    toast.error("Failed to copy segment reference");
+                  }
+                }}
+              >
+                <Bookmark className="h-4 w-4 mr-2" /> Copy Reference
+              </ContextMenuItem>
+            ) : null}
             <ContextMenuItem
               onClick={() => {
                 const timeText = `${window.location.href.split("#")[0]}#t=${segment.seconds}`;
@@ -413,6 +445,7 @@ const AdvancedTranscriptViewer = ({
   readOnly = false,
   currentTime = -1,
   showInlineActions = false,
+  transcriptId,
 }: TranscriptViewerProps) => {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [showTimecodes, setShowTimecodes] = useState(true);
@@ -844,6 +877,7 @@ const AdvancedTranscriptViewer = ({
               searchTerm={searchTerm}
               isLastSegment={index >= transcript.length - 1}
               showInlineActions={showInlineActions}
+              transcriptId={transcriptId}
               onTimeClick={handleTimeClick}
               onEdit={openEditModal}
               onSplit={openSplitModal}

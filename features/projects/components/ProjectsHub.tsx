@@ -14,6 +14,7 @@
 import React from "react";
 import Link from "next/link";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useRouter } from "next/navigation";
 import {
   FolderKanban,
@@ -359,6 +360,13 @@ export function ProjectsHub({
                 <TableIcon className="h-4 w-4" />
               </button>
             </div>
+            {filtered.length > 0 && (
+              <ReferencesBulkCopyButton
+                referenceType="project"
+                records={filtered.map((p) => ({ id: p.id, label: p.name }))}
+                toastLabel={`${filtered.length} project${filtered.length === 1 ? "" : "s"}`}
+              />
+            )}
             <Button size="sm" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-1.5" />
               New project

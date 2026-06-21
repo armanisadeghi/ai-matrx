@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { useToastManager } from "@/hooks/useToastManager";
 import type { TaskWithProject } from "@/features/tasks/types";
 import Link from "next/link";
@@ -363,6 +364,15 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
               )}
             </Button>
           )}
+
+          <ReferenceCopyButton
+            referenceType="task"
+            id={task.id}
+            label={task.title}
+            toastLabel={task.title}
+            size="md"
+            className="h-8 w-8"
+          />
 
           <ShareButton
             resourceType="task"

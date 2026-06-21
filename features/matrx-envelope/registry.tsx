@@ -25,12 +25,23 @@ import {
   Table,
   Table2,
   Loader2,
+  CheckSquare,
+  StickyNote,
+  FolderKanban,
+  Webhook,
+  Mic,
+  FileText,
+  File,
+  TableProperties,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
-import type { MatrxEnvelope, ReferenceItem } from "@/features/matrx-envelope/envelope";
+import type {
+  MatrxEnvelope,
+  ReferenceItem,
+} from "@/features/matrx-envelope/envelope";
 import {
   coerceRefToStrings,
   getReferenceResolver,
@@ -55,7 +66,10 @@ export function registerEnvelopeRenderer(
 }
 
 /** The renderer for `(kind, type)`: type-specific → kind-default → null (fallback). */
-export function getEnvelopeRenderer(kind: string, type: string): EnvelopeRenderer | null {
+export function getEnvelopeRenderer(
+  kind: string,
+  type: string,
+): EnvelopeRenderer | null {
   return _registry.get(`${kind}:${type}`) ?? _registry.get(kind) ?? null;
 }
 
@@ -82,6 +96,38 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
     case "table_cell":
     case "dataset_cell":
       return Table2;
+    case "task":
+      return CheckSquare;
+    case "note":
+      return StickyNote;
+    case "project":
+      return FolderKanban;
+    case "agent":
+      return Webhook;
+    case "agent_app":
+      return Webhook;
+    case "transcript":
+      return Mic;
+    case "transcript_segment":
+      return Mic;
+    case "session_transcript":
+      return Mic;
+    case "transcript_session":
+      return Mic;
+    case "workbook":
+      return TableProperties;
+    case "workbook_sheet":
+      return TableProperties;
+    case "document":
+      return FileText;
+    case "document_page":
+      return FileText;
+    case "table_schema":
+      return Columns3;
+    case "file":
+    case "media":
+    case "file_page":
+      return File;
     default:
       return Link2;
   }
@@ -152,8 +198,7 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
 
   const openId = resolver?.openId(ref);
   const openType = resolver?.openItemType;
-  const canOpen =
-    !!openId && !!openType && UUID_RE.test(openId);
+  const canOpen = !!openId && !!openType && UUID_RE.test(openId);
 
   const handleClick = () => {
     if (canOpen && openId && openType) {

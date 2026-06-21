@@ -69,6 +69,7 @@ import type {
   AgentAppArchFilter,
   AgentAppVisibilityFilter,
 } from "@/features/agent-apps/redux/agent-app-consumers/slice";
+import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 
 const SORT_OPTIONS: { value: AgentAppSortOption; label: string }[] = [
   { value: "updated-desc", label: "Recently Updated" },
@@ -441,6 +442,17 @@ export function AgentAppsGrid({
             </button>
           ))}
         </div>
+
+        {filteredApps.length > 0 && (
+          <ReferencesBulkCopyButton
+            referenceType="agent_app"
+            records={filteredApps.map((app) => ({
+              id: app.id,
+              label: app.name,
+            }))}
+            toastLabel={`${filteredApps.length} app${filteredApps.length === 1 ? "" : "s"}`}
+          />
+        )}
 
         {/* New app */}
         <Link href={newAppHref}>

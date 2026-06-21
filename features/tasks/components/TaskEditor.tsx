@@ -68,6 +68,7 @@ import { cn } from "@/utils/cn";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 type Priority = TaskPriority;
 
@@ -446,6 +447,15 @@ function TaskEditorInner({
             location={embedded ? "War Room — task tile" : "Tasks — task editor"}
             size="icon"
           />
+
+          <ReferenceCopyButton
+            referenceType="task"
+            id={taskId}
+            label={effective.title}
+            toastLabel={effective.title || "Task"}
+            size="sm"
+            className="h-6 w-6"
+          />
         </div>
       ) : (
         <div className="shrink-0 border-b border-border/50 bg-card/40 px-3 h-9 flex items-center gap-1.5">
@@ -478,6 +488,13 @@ function TaskEditorInner({
               taskId={taskId}
               taskTitle={effective.title}
               location="Tasks — task editor"
+              size="sm"
+            />
+            <ReferenceCopyButton
+              referenceType="task"
+              id={taskId}
+              label={effective.title}
+              toastLabel={effective.title || "Task"}
               size="sm"
             />
             {isDirty && (

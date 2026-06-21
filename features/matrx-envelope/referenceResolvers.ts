@@ -51,6 +51,64 @@ const stringify = (v: unknown): string | undefined => {
   }
 };
 
+/** First non-empty string field on a row (mirrors backend record resolver). */
+function firstField(
+  row: Record<string, unknown>,
+  fields: string[],
+): string | undefined {
+  for (const field of fields) {
+    const v = stringify(row[field]);
+    if (v) return v;
+  }
+  return undefined;
+}
+
+interface RecordResolverConfig {
+  openItemType: KnownItemType;
+  table: string;
+  select: string;
+  titleFields: string[];
+  bodyFields?: string[];
+}
+
+async function resolveFileReferenceValue(
+  supabase: SupabaseClient,
+  ref: Record<string, string>,
+): Promise<string | undefined> {
+  if (!ref.file_id) return undefined;
+  const { data, error } = await supabase
+    .from("cld_files")
+    .select("file_name, mime_type")
+    .eq("id", ref.file_id)
+    .maybeSingle();
+  if (error || !data) return undefined;
+  const row = data as unknown as Record<string, unknown>;
+  return firstField(row, ["file_name"]) ?? firstField(row, ["mime_type"]);
+}
+
+function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
+  return {
+    openItemType: config.openItemType,
+    openId: (ref) => ref.id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.id) return undefined;
+      const { data, error } = await supabase
+        .from(config.table)
+        .select(config.select)
+        .eq("id", ref.id)
+        .maybeSingle();
+      if (error || !data) return undefined;
+      const row = data as unknown as Record<string, unknown>;
+      const heading = firstField(row, config.titleFields);
+      const body = config.bodyFields
+        ? firstField(row, config.bodyFields)
+        : undefined;
+      if (heading && body) return `${heading}\n${body}`;
+      return heading ?? body;
+    },
+  };
+}
+
 /** Live value of a single dataset-row cell: `udt_dataset_rows.data[column]`. */
 async function resolveCell(
   supabase: SupabaseClient,
@@ -89,7 +147,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("id", ref.list_id)
         .maybeSingle();
       if (error || !data) return undefined;
-      const row = data as { list_name?: string | null; description?: string | null };
+      const row = data as {
+        list_name?: string | null;
+        description?: string | null;
+      };
       return stringify(row.list_name) ?? stringify(row.description);
     },
   },
@@ -116,7 +177,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("id", ref.item_id)
         .maybeSingle();
       if (error || !data) return undefined;
-      const row = data as { description?: string | null; label?: string | null };
+      const row = data as {
+        description?: string | null;
+        label?: string | null;
+      };
       return stringify(row.description) ?? stringify(row.label);
     },
   },
@@ -134,8 +198,56 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("id", ref.table_id)
         .maybeSingle();
       if (error || !data) return undefined;
-      const row = data as { table_name?: string | null; description?: string | null };
+      const row = data as {
+        table_name?: string | null;
+        description?: string | null;
+      };
       return stringify(row.table_name) ?? stringify(row.description);
+    },
+  },
+
+  /** `table_schema` → { table_id }. Live value = column schema summary. */
+  table_schema: {
+    openItemType: "table",
+    openId: (ref) => ref.table_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.table_id) return undefined;
+      const [
+        { data: table, error: tableErr },
+        { data: fields, error: fieldsErr },
+      ] = await Promise.all([
+        supabase
+          .from("udt_datasets")
+          .select("table_name")
+          .eq("id", ref.table_id)
+          .maybeSingle(),
+        supabase
+          .from("udt_dataset_fields")
+          .select("display_name, field_name, data_type")
+          .eq("table_id", ref.table_id)
+          .order("field_order", { ascending: true }),
+      ]);
+      if (tableErr || fieldsErr) return undefined;
+      const name =
+        stringify(
+          (table as { table_name?: string | null } | null)?.table_name,
+        ) ?? stringify(ref.table_name);
+      const cols = (fields ?? [])
+        .map((f) => {
+          const row = f as {
+            display_name?: string | null;
+            field_name?: string | null;
+            data_type?: string | null;
+          };
+          const label =
+            stringify(row.display_name) ?? stringify(row.field_name);
+          const dt = stringify(row.data_type);
+          return label ? (dt ? `${label} (${dt})` : label) : undefined;
+        })
+        .filter((v): v is string => !!v)
+        .slice(0, 8);
+      const schema = cols.length > 0 ? cols.join(", ") : "schema";
+      return name ? `${name}: ${schema}` : schema;
     },
   },
 
@@ -155,8 +267,15 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         .eq("field_name", ref.column_name)
         .maybeSingle();
       if (error || !data) return stringify(ref.column_name);
-      const row = data as { display_name?: string | null; field_name?: string | null };
-      return stringify(row.display_name) ?? stringify(row.field_name) ?? stringify(ref.column_name);
+      const row = data as {
+        display_name?: string | null;
+        field_name?: string | null;
+      };
+      return (
+        stringify(row.display_name) ??
+        stringify(row.field_name) ??
+        stringify(ref.column_name)
+      );
     },
   },
 
@@ -208,10 +327,201 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) =>
       resolveCell(supabase, ref.row_id, ref.field_name ?? ref.column_name),
   },
+
+  // ── RecordRef family (atomic Matrx entities) ───────────────────────────────
+  task: createRecordResolver({
+    openItemType: "task",
+    table: "ctx_tasks",
+    select: "title, description",
+    titleFields: ["title"],
+    bodyFields: ["description"],
+  }),
+  note: createRecordResolver({
+    openItemType: "note",
+    table: "notes",
+    select: "label, content",
+    titleFields: ["label"],
+    bodyFields: ["content"],
+  }),
+  project: createRecordResolver({
+    openItemType: "project",
+    table: "ctx_projects",
+    select: "name, description",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
+  agent: createRecordResolver({
+    openItemType: "agent",
+    table: "agx_agent",
+    select: "name, description",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
+  agent_app: createRecordResolver({
+    openItemType: "app",
+    table: "aga_apps",
+    select: "name, description",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
+  transcript: {
+    ...createRecordResolver({
+      openItemType: "file",
+      table: "transcripts",
+      select: "title, description",
+      titleFields: ["title"],
+      bodyFields: ["description"],
+    }),
+    // No transcript window wired in item-presentation yet — resolve-only chip.
+    openId: () => undefined,
+  },
+  transcript_session: createRecordResolver({
+    openItemType: "session",
+    table: "studio_sessions",
+    select: "title",
+    titleFields: ["title"],
+  }),
+
+  /** One segment inside a stored transcript (`segment_index` = 0-based parse order). */
+  transcript_segment: {
+    openItemType: "file",
+    openId: (ref) => ref.transcript_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.transcript_id) return undefined;
+      const idx = Number.parseInt(ref.segment_index ?? "", 10);
+      if (!Number.isFinite(idx) || idx < 0) return stringify(ref.label);
+      const { data, error } = await supabase
+        .from("transcripts")
+        .select("title, content")
+        .eq("id", ref.transcript_id)
+        .maybeSingle();
+      if (error || !data) return stringify(ref.label);
+      const row = data as {
+        title?: string | null;
+        content?: string | null;
+      };
+      const content = stringify(row.content);
+      if (!content) return stringify(row.title) ?? stringify(ref.label);
+      // Segments are `[m:ss] text` lines in stored markdown content.
+      const lines = content.split(/\n+/).filter((l) => l.trim().length > 0);
+      const line = lines[idx];
+      if (line) {
+        const title = stringify(row.title);
+        return title ? `${title} · ${line.trim()}` : line.trim();
+      }
+      return stringify(row.title) ?? stringify(ref.label);
+    },
+  },
+
+  /** Transcript materialized from / linked to a studio session. */
+  session_transcript: {
+    openItemType: "session",
+    openId: (ref) => ref.session_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.transcript_id) return undefined;
+      const { data, error } = await supabase
+        .from("transcripts")
+        .select("title, description")
+        .eq("id", ref.transcript_id)
+        .maybeSingle();
+      if (error || !data) return stringify(ref.label);
+      const row = data as {
+        title?: string | null;
+        description?: string | null;
+      };
+      const title = stringify(row.title);
+      const body = stringify(row.description);
+      if (title && body) return `${title}\n${body}`;
+      return title ?? body ?? stringify(ref.label);
+    },
+  },
+
+  workbook: createRecordResolver({
+    openItemType: "workbook",
+    table: "udt_workbooks",
+    select: "workbook_name, description",
+    titleFields: ["workbook_name"],
+    bodyFields: ["description"],
+  }),
+  document: createRecordResolver({
+    openItemType: "document",
+    table: "udt_documents",
+    select: "document_name, description",
+    titleFields: ["document_name"],
+    bodyFields: ["description"],
+  }),
+
+  workbook_sheet: {
+    openItemType: "workbook",
+    openId: (ref) => ref.workbook_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.workbook_id || !ref.sheet_id) return undefined;
+      const hint =
+        stringify(ref.sheet_name) ??
+        stringify(ref.workbook_name) ??
+        stringify(ref.label);
+      const { data, error } = await supabase
+        .from("udt_workbooks")
+        .select("workbook_name")
+        .eq("id", ref.workbook_id)
+        .maybeSingle();
+      if (error || !data) return hint;
+      const wbName = stringify(
+        (data as { workbook_name?: string | null }).workbook_name,
+      );
+      const sheet = stringify(ref.sheet_name) ?? ref.sheet_id;
+      if (wbName) return `${wbName} · ${sheet}`;
+      return sheet ?? hint;
+    },
+  },
+
+  document_page: {
+    openItemType: "document",
+    openId: (ref) => ref.document_id,
+    resolveValue: async (supabase, ref) => {
+      if (!ref.document_id) return undefined;
+      const page = ref.page_index ? `p.${ref.page_index}` : undefined;
+      const { data, error } = await supabase
+        .from("udt_documents")
+        .select("document_name")
+        .eq("id", ref.document_id)
+        .maybeSingle();
+      if (error || !data) return stringify(ref.label);
+      const name = stringify(
+        (data as { document_name?: string | null }).document_name,
+      );
+      if (name && page) return `${name} · ${page}`;
+      return name ?? page ?? stringify(ref.label);
+    },
+  },
+
+  /** `file` / `media` — `{ file_id }`, resolved owner-scoped via cld_files. */
+  file: {
+    openItemType: "file",
+    openId: (ref) => ref.file_id,
+    resolveValue: resolveFileReferenceValue,
+  },
+  file_page: {
+    openItemType: "file",
+    openId: (ref) => ref.file_id,
+    resolveValue: async (supabase, ref) => {
+      const base = await resolveFileReferenceValue(supabase, ref);
+      const page = ref.page_number ? `p.${ref.page_number}` : undefined;
+      if (base && page) return `${base} · ${page}`;
+      return base ?? page ?? stringify(ref.label);
+    },
+  },
+  media: {
+    openItemType: "file",
+    openId: (ref) => ref.file_id,
+    resolveValue: resolveFileReferenceValue,
+  },
 };
 
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip). */
-export function getReferenceResolver(type: string): ReferenceResolver | undefined {
+export function getReferenceResolver(
+  type: string,
+): ReferenceResolver | undefined {
   return RESOLVERS[type];
 }
 
@@ -232,7 +542,9 @@ export function coerceRefToStrings(
       out[k] = v;
     } else if (typeof v === "number" || typeof v === "boolean") {
       // A non-string id is recoverable but a sign the producer is off-contract.
-      console.warn(`[matrx-reference] ${context}: ref.${k} was ${typeof v}, coerced to string`);
+      console.warn(
+        `[matrx-reference] ${context}: ref.${k} was ${typeof v}, coerced to string`,
+      );
       out[k] = String(v);
     }
   }
@@ -250,9 +562,18 @@ const humanizeType = (type: string): string =>
  * hints), trimmed; else a humanized type. The canonical item is flat — there is
  * no nested `display`.
  */
-export function referenceFallbackLabel(item: ReferenceItem, type: string): string {
+export function referenceFallbackLabel(
+  item: ReferenceItem,
+  type: string,
+): string {
   const hints = item as unknown as Record<string, unknown>;
-  for (const key of ["label", "column_display_name", "table_name", "list_name", "description"]) {
+  for (const key of [
+    "label",
+    "column_display_name",
+    "table_name",
+    "list_name",
+    "description",
+  ]) {
     const v = hints[key];
     if (typeof v === "string" && v.trim().length > 0) return v.trim();
   }

@@ -27,6 +27,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
 import type { Json } from "@/types/database.types";
+import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
@@ -117,7 +118,7 @@ export interface MessageRecord {
   id: string;
   conversationId: string;
   agentId: string | null;
-  role: "system" | "user" | "assistant";
+  role: MessageRole;
   /**
    * Stored as `Json` to match the Supabase row shape verbatim. At runtime this
    * is a `MessagePart[]` — narrow it via `parseMessageContent(record.content)`

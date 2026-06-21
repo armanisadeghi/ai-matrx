@@ -39,6 +39,7 @@ import {
 import * as taskService from "@/features/tasks/services/taskService";
 import { TaskContextPicker } from "../TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 
 interface MobileTaskDetailsProps {
   task: any;
@@ -225,51 +226,60 @@ export default function MobileTaskDetails({
               {task.title}
             </h1>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex-shrink-0 h-7 w-7 rounded-full"
-              >
-                <MoreVertical size={16} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {isDirty && (
-                <>
-                  <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? (
-                      <>
-                        <Loader2 size={16} className="mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-destructive focus:text-destructive"
-              >
-                {isDeleting ? (
+          <div className="flex items-center gap-0.5 shrink-0">
+            <ReferenceCopyButton
+              referenceType="task"
+              id={task.id}
+              label={task.title}
+              toastLabel={task.title || "Task"}
+              size="sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0 h-7 w-7 rounded-full"
+                >
+                  <MoreVertical size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isDirty && (
                   <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={16} className="mr-2" />
-                    Delete Task
+                    <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
+                      {isSaving ? (
+                        <>
+                          <Loader2 size={16} className="mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                   </>
                 )}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="text-destructive focus:text-destructive"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} className="mr-2" />
+                      Delete Task
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 

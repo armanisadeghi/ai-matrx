@@ -53,6 +53,7 @@ interface TableReferenceOverlayProps {
   // Optional overrides for flexibility
   defaultReferenceType?:
     | "full_table"
+    | "table_schema"
     | "table_row"
     | "table_column"
     | "table_cell";
@@ -63,7 +64,12 @@ interface TableReferenceOverlayProps {
   onReferenceGenerated?: (reference: any) => void;
 }
 
-type ReferenceType = "full_table" | "table_row" | "table_column" | "table_cell";
+type ReferenceType =
+  | "full_table"
+  | "table_schema"
+  | "table_row"
+  | "table_column"
+  | "table_cell";
 
 export default function TableReferenceOverlay({
   isOpen,
@@ -198,6 +204,13 @@ export default function TableReferenceOverlay({
           description: `Reference to entire table "${tableInfo?.table_name || "Unknown Table"}"`,
         };
 
+      case "table_schema":
+        return {
+          type: "table_schema" as const,
+          ...baseReference,
+          description: `Reference to column schema of "${tableInfo?.table_name || "Unknown Table"}"`,
+        };
+
       case "table_row":
         if (!selectedRowId) return null;
         return {
@@ -299,6 +312,7 @@ export default function TableReferenceOverlay({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="full_table">Entire Table</SelectItem>
+                <SelectItem value="table_schema">Table Schema (columns only)</SelectItem>
                 <SelectItem value="table_row">Specific Row</SelectItem>
                 <SelectItem value="table_column">Entire Column</SelectItem>
                 <SelectItem value="table_cell">Specific Cell</SelectItem>

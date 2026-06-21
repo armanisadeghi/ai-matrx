@@ -72,6 +72,7 @@ import {
 } from "../redux/selectors";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
+import { NoteReferenceCopyButton } from "./NoteReferenceCopyButton";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteMetadataBar } from "./NoteMetadataBar";
@@ -210,6 +211,9 @@ export function NotesView({ config, className }: NotesViewProps) {
   }, [dispatch, instanceId, routeNoteId, singleNote]);
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
+  const activeNoteLabel = useAppSelector((s) =>
+    activeTabId ? selectNoteLabel(s, activeTabId) : null,
+  );
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const splitNoteId = useAppSelector(selectInstanceSplitNoteId(instanceId));
   const splitNoteLabel = useAppSelector(
@@ -476,6 +480,14 @@ export function NotesView({ config, className }: NotesViewProps) {
             {/* Active note's action bar — fed remotely by the primary
                 NoteContentEditor (preview/split modes register here).
                 Renders nothing in plain/wysiwyg modes (no provider). */}
+            {activeTabId && (
+              <div className="ml-auto flex items-center gap-0.5 shrink-0 max-lg:hidden">
+                <NoteReferenceCopyButton
+                  noteId={activeTabId}
+                  label={activeNoteLabel ?? undefined}
+                />
+              </div>
+            )}
             {activeTabId && (
               <RichDocumentActionSurface
                 surfaceId={`note-detail-${activeTabId}`}
