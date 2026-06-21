@@ -24,6 +24,17 @@ import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 import type { AgentBundleOption } from "@/features/tool-registry/bundles/services/bundles.service";
 
+// Internal toolkits vs third-party MCP-server bundles are kept on separate tabs
+// so our own bundles aren't buried under dozens of MCP entries. "Internal" is
+// the default. An MCP bundle is one backed by an MCP server (it carries a
+// `server_slug` → `isMcp`); everything else is internal.
+type BundleScope = "internal" | "mcp" | "all";
+const SCOPE_TABS: { key: BundleScope; label: string }[] = [
+  { key: "internal", label: "Internal" },
+  { key: "mcp", label: "MCP" },
+  { key: "all", label: "All" },
+];
+
 /**
  * Bundles tab/category for the Agent Tools manager.
  *
@@ -46,6 +57,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
   );
   const { bundles, status, error } = useAgentBundleOptions();
   const [search, setSearch] = useState("");
+  const [scope, setScope] = useState<BundleScope>("internal");
 
   const activeSet = useMemo(
     () =>
@@ -84,18 +96,35 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
     [agentId, selectedTools, dispatch],
   );
 
-  const enabledCount = useMemo(
-    () => bundles.filter(isEnabled).length,
-    [bundles, isEnabled],
+  const counts = useMemo(
+    () => ({
+      internal: bundles.filter((b) => !b.isMcp).length,
+      mcp: bundles.filter((b) => b.isMcp).length,
+      all: bundles.length,
+    }),
+    [bundles],
   );
 
-  // Tools the user added individually that ALSO belong to a bundle. For lister
-  // bundles enabling never adds the members, so any member present is by hand;
-  // for static bundles a present member is "by hand" only while the bundle
-  // itself is off (once on, the bundle is what put them there).
+  const scopeBundles = useMemo(() => {
+    if (scope === "mcp") return bundles.filter((b) => b.isMcp);
+    if (scope === "internal") return bundles.filter((b) => !b.isMcp);
+    return bundles;
+  }, [bundles, scope]);
+
+  const enabledCount = useMemo(
+    () => scopeBundles.filter(isEnabled).length,
+    [scopeBundles, isEnabled],
+  );
+
+  // Tools the user added individually that ALSO belong to a visible bundle. For
+  // lister bundles enabling never adds the members, so any member present is by
+  // hand; for static bundles a present member is "by hand" only while the bundle
+  // itself is off (once on, the bundle is what put them there). Scoped to the
+  // active tab so the banner matches what's on screen (MCP bundles have no
+  // members, so this is only ever non-empty on Internal / All).
   const individualOverlap = useMemo(() => {
     const ids = new Set<string>();
-    for (const b of bundles) {
+    for (const b of scopeBundles) {
       const enabled = isEnabled(b);
       for (const m of b.members) {
         if (!activeSet.has(m.id)) continue;
@@ -104,18 +133,18 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
       }
     }
     return ids;
-  }, [bundles, activeSet, isEnabled]);
+  }, [scopeBundles, activeSet, isEnabled]);
 
   const visibleBundles = useMemo(() => {
-    if (!search.trim()) return bundles;
-    return filterAndSortBySearch(bundles, search, [
+    if (!search.trim()) return scopeBundles;
+    return filterAndSortBySearch(scopeBundles, search, [
       { get: (b) => b.name, weight: "title" },
       { get: (b) => b.description, weight: "body" },
       { get: (b) => b.members.map((m) => m.name).join(" "), weight: "body" },
       { get: (b) => b.serverSlug ?? "", weight: "tag" },
       { get: (b) => b.id, weight: "id" },
     ]);
-  }, [bundles, search]);
+  }, [scopeBundles, search]);
 
   if (status === "loading" || status === "idle") {
     return (
@@ -154,13 +183,39 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
             </Badge>
           )}
           <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
-            {visibleBundles.length} of {bundles.length}
+            {visibleBundles.length} of {scopeBundles.length}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-tight">
+        <p className="text-[11px] text-muted-foreground leading-tight mb-2">
           A bundle carries many tools behind one lister the model expands on
           demand — one tool slot instead of dozens, so it costs far less context.
         </p>
+        {/* Internal vs MCP scope */}
+        <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5">
+          {SCOPE_TABS.map((tab) => {
+            const isActive = scope === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setScope(tab.key)}
+                className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  isActive
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`tabular-nums ${
+                    isActive ? "text-secondary" : "text-muted-foreground/70"
+                  }`}
+                >
+                  {counts[tab.key]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Overlap callout — individually-added tools that also live in a bundle */}
@@ -207,7 +262,9 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
               <Search className="w-5 h-5 opacity-40" />
               <p className="text-xs">
-                {search ? `No bundles match "${search}"` : "No bundles available"}
+                {search
+                  ? `No ${scope === "all" ? "" : scope + " "}bundles match "${search}"`
+                  : `No ${scope === "all" ? "" : scope + " "}bundles available`}
               </p>
             </div>
           ) : (
