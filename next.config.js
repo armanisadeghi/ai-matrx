@@ -60,13 +60,28 @@ const nextConfig = {
     // Giving the second instance its own distDir gives it its own lock, so they
     // coexist safely. Unset in production / normal dev → ".next" as before.
     distDir: process.env.NEXT_DISTDIR || ".next",
-    // Vercel Skew Protection: when enabled in the Vercel project settings,
-    // Vercel injects NEXT_DEPLOYMENT_ID at build time. Setting `deploymentId`
-    // makes Next.js append `?dpl=<id>` to every chunk fetch, and Vercel routes
-    // those requests to the matching deployment — so old browser tabs after a
-    // deploy still load their original chunks instead of 404ing on hashes that
-    // no longer exist. Without this, ChunkLoadError crashes stale tabs.
-    deploymentId: process.env.NEXT_DEPLOYMENT_ID,
+    // Vercel Skew Protection — DISABLED on purpose (2026-06-21).
+    //
+    // The previous line was `deploymentId: process.env.NEXT_DEPLOYMENT_ID`.
+    // Two bugs made it actively break the app instead of protecting stale tabs:
+    //   1. `NEXT_DEPLOYMENT_ID` is NOT a Vercel-injected variable — the real one
+    //      is `VERCEL_DEPLOYMENT_ID`. So it resolved to an EMPTY string, and Next
+    //      stamped every SSR-emitted asset URL with a meaningless `?dpl=` (no id).
+    //   2. Under Turbopack (our prod bundler) the client-side runtime chunk loader
+    //      does NOT apply `deploymentId`, so it requests the SAME chunks WITHOUT
+    //      `?dpl=`. Result: the SSR script tag and the runtime request use two
+    //      different URLs for one chunk. A lazily-imported chunk's script loads
+    //      (200, no network error) but registers under a URL the runtime isn't
+    //      awaiting → the dynamic `import()` never resolves and hangs forever
+    //      (see features/overlays/boundary/lazyOverlay.tsx ChunkLoadError timeout).
+    //
+    // With no `deploymentId`, nothing carries `?dpl=`, every URL is consistent,
+    // and lazy chunks resolve. Stale-tab protection is better handled by Vercel's
+    // native Skew Protection (Project Settings → Advanced) which does not depend
+    // on this framework query-param path. Re-introduce `deploymentId` ONLY with
+    // `process.env.VERCEL_DEPLOYMENT_ID` AND once Turbopack threads `dpl` through
+    // its runtime chunk loader — until then the query-param approach is broken.
+    // deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
 
     // Build performance optimizations
     productionBrowserSourceMaps: false,
@@ -408,8 +423,11 @@ const nextConfig = {
     env: {
         // Expose deployment ID to the client for diagnostics — lets the global
         // error logger include "this tab is on deployment X" so we can correlate
-        // errors with stale-tab vs. genuinely-broken builds.
-        NEXT_PUBLIC_DEPLOYMENT_ID: process.env.NEXT_DEPLOYMENT_ID,
+        // errors with stale-tab vs. genuinely-broken builds. Reads the REAL
+        // Vercel-injected var (`VERCEL_DEPLOYMENT_ID`); `NEXT_DEPLOYMENT_ID` was
+        // a non-existent variable that always resolved empty (see `deploymentId`
+        // note above). Diagnostics-only — NOT used for asset/chunk URLs.
+        NEXT_PUBLIC_DEPLOYMENT_ID: process.env.VERCEL_DEPLOYMENT_ID,
         GROQ_API_KEY: process.env.GROQ_API_KEY,
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
