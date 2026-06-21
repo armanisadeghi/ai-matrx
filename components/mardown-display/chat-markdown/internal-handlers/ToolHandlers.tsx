@@ -20,9 +20,12 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectHideToolResults } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   selectToolLifecycle,
+  selectToolLifecycleMap,
   type ContentSegmentDbTool,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
 import { persistedToolEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 
 // ============================================================================
@@ -65,6 +68,53 @@ export const InlineToolCard: React.FC<InlineToolCardProps> = ({
 };
 
 // ============================================================================
+// INLINE TOOL BATCH — folds a run of consecutive LIVE tool calls into one
+// expandable line. Subscribes once to the request's lifecycle map, derives the
+// run's entries (count + streaming state), and renders the normal single-tool
+// cards as children — no reshaping, no nesting that deforms the cards.
+// ============================================================================
+
+interface InlineToolBatchProps {
+  requestId: string;
+  callIds: string[];
+  conversationId: string;
+}
+
+export const InlineToolBatch: React.FC<InlineToolBatchProps> = ({
+  requestId,
+  callIds,
+  conversationId,
+}) => {
+  const hidden = useAppSelector(selectHideToolResults(conversationId));
+  const lifecycleMap = useAppSelector(selectToolLifecycleMap(requestId));
+
+  // React Compiler memoizes this — no manual useMemo (per repo convention).
+  const entries: ToolLifecycleEntry[] = [];
+  if (lifecycleMap) {
+    for (const id of callIds) {
+      const e = lifecycleMap[id];
+      if (e) entries.push(e);
+    }
+  }
+
+  if (hidden) return null;
+  if (entries.length === 0) return null;
+
+  return (
+    <ToolCallBatch entries={entries} conversationId={conversationId}>
+      {callIds.map((callId) => (
+        <InlineToolCard
+          key={callId}
+          requestId={requestId}
+          callId={callId}
+          conversationId={conversationId}
+        />
+      ))}
+    </ToolCallBatch>
+  );
+};
+
+// ============================================================================
 // DB TOOL CARD — renders a completed tool call from DB-loaded message parts.
 // ============================================================================
 
@@ -97,5 +147,45 @@ export const DbToolCard: React.FC<DbToolCardProps> = ({
       hasContent
       isPersisted
     />
+  );
+};
+
+// ============================================================================
+// DB TOOL BATCH — folds a run of consecutive PERSISTED tool calls (DB-loaded)
+// into one expandable line. Mirror of InlineToolBatch for the reload path:
+// converts each segment to a lifecycle entry, renders the normal DbToolCards
+// as children. All persisted tools are terminal, so the batch defaults
+// collapsed.
+// ============================================================================
+
+interface DbToolBatchProps {
+  segments: ContentSegmentDbTool[];
+  conversationId: string;
+}
+
+export const DbToolBatch: React.FC<DbToolBatchProps> = ({
+  segments,
+  conversationId,
+}) => {
+  const hidden = useAppSelector(selectHideToolResults(conversationId));
+
+  // React Compiler memoizes this — no manual useMemo (per repo convention).
+  const entries: ToolLifecycleEntry[] = segments.map((s) =>
+    persistedToolEntry(s),
+  );
+
+  if (hidden) return null;
+  if (segments.length === 0) return null;
+
+  return (
+    <ToolCallBatch entries={entries} conversationId={conversationId} isPersisted>
+      {segments.map((segment, i) => (
+        <DbToolCard
+          key={`${segment.callId}-${i}`}
+          segment={segment}
+          conversationId={conversationId}
+        />
+      ))}
+    </ToolCallBatch>
   );
 };

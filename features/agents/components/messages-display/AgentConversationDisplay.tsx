@@ -180,6 +180,20 @@ export function AgentConversationDisplay({
 
     const entries: DisplayEntry[] = [];
     for (const rec of messages) {
+      // `tool` / `system` rows never render as their own turn and MUST be
+      // dropped HERE, not in the grouping pass. Tool-result rows are V2 DB
+      // stubs whose payloads inline onto the preceding assistant's tool_call
+      // segments (`selectMessageInterleavedContent` returns no segments for
+      // them); system rows are display-skipped downstream. This is load-
+      // bearing: in V2 `position` order an agentic turn is assistant → tool →
+      // assistant → …, so a tool row sits BETWEEN two assistant iterations. If
+      // it survives into `displayGroups` it flushes the open turn group,
+      // fragmenting ONE logical answer into several stacked groups — each with
+      // its own `space-y-6` gap (and, pre-fix, its own action bar). That
+      // fragmentation is the "giant gaps between tool calls and text" report:
+      // those iterations are a single turn and must render as one seamless
+      // `AssistantTurnGroup`.
+      if (rec.role === "tool" || rec.role === "system") continue;
       const isStreamingMessage = rec.id === streamingAssistantId;
       // Skip empty reserved assistants UNLESS they're the active streaming
       // bubble (in which case the requestId-driven MarkdownStream path

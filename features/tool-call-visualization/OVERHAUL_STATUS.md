@@ -54,6 +54,8 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 - [x] **3-layer collapse/display system** — default `"auto"` (expand-while-streaming → auto-collapse 3s after done) → registry `displayMode` (`stay-open`/`never-open`) → user pref (`selectToolDisplayPreference`: verbose/minimal, stubbed). `getToolDisplayMode` + `ToolRenderer.displayMode`.
 - [x] **Realistic stream simulator** (`simulator/`) — replays only the parts that truly stream (whole query sections over time, no char-trickle) into an evolving `ToolLifecycleEntry`; gallery Play/Replay feeds both research versions + a live shell instance. Verified: q1→q2→q3 stagger; shell auto-collapses after done.
 - [x] **Applet runtime verified in local dev** — `/p/ap-world-lesson` (fully_custom Babel applet) renders; the canonical runtime works dev + prod.
+- [x] **Batch folding** — a run of ≥2 consecutive tool calls folds into one `ToolCallBatch` line (lightweight toggle → full normal cards flat below, no deforming nest); `EnhancedChatMarkdown` groups slots/segments; `InlineToolBatch`/`DbToolBatch` reuse the single-tool cards. Verified live (persisted; live-stream path unverified).
+- [x] **Transcript "giant gaps" fix** (higher-level, not tool-viz code) — `AgentConversationDisplay` filters `tool`/`system` rows from `displayEntries` so an agentic turn (interleaved `assistant → tool → assistant`) stays ONE `AssistantTurnGroup` instead of fragmenting into stacked gapped groups. See `features/agents/components/chat/FEATURE.md`.
 
 ---
 
@@ -89,7 +91,7 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 
 ### Track 5 — Three-view model + shell completion
 - [ ] **Dedicated full-route view** (3rd mode) for huge results — open a tool result as its own page.
-- [ ] **Batch folding** — fold a run of consecutive calls into one expandable line.
+- [x] **Batch folding** — DONE (see DONE section): `ToolCallBatch` folds a run of consecutive calls into one expandable line.
 - [ ] **Canonical overlay header** honoring registry `getHeaderSubtitle`/`getHeaderExtras` across overlay + window.
 
 ### Track 6 — Authoring (agents + users)

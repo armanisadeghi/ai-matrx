@@ -25,12 +25,18 @@ import {
   selectAllRenderBlocks,
   SPECIAL_RENDER_BLOCK_TYPES,
   type ContentSegment,
+  type ContentSegmentDbTool,
   type UnifiedSlot,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectMessageInterleavedContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { InlineToolCard, DbToolCard } from "./internal-handlers/ToolHandlers";
+import {
+  InlineToolCard,
+  DbToolCard,
+  InlineToolBatch,
+  DbToolBatch,
+} from "./internal-handlers/ToolHandlers";
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
@@ -100,6 +106,72 @@ function renderBlockToContentBlock(rb: RenderBlockPayload): RenderBlock {
     alt: (rb.data as Record<string, unknown>)?.alt as string | undefined,
     isStreamingBlock: rb.status === "streaming",
   };
+}
+
+// A run of this many or more consecutive tool calls (no text / thinking
+// between them) folds into a single expandable "N tool calls" line — the
+// agent fired several tools back-to-back without speaking, so the transcript
+// shouldn't be a wall of rows. Runs shorter than this render as normal cards.
+const TOOL_BATCH_MIN = 2;
+
+/** A live unified slot, or a folded run of consecutive tool slots. */
+type GroupedSlot =
+  | UnifiedSlot
+  | { kind: "tool_batch"; callIds: string[]; seq: number };
+
+function groupConsecutiveToolSlots(slots: UnifiedSlot[]): GroupedSlot[] {
+  const out: GroupedSlot[] = [];
+  for (let i = 0; i < slots.length; ) {
+    const s = slots[i];
+    if (s.kind === "tool") {
+      const callIds: string[] = [s.callId];
+      let j = i + 1;
+      while (j < slots.length && slots[j].kind === "tool") {
+        callIds.push((slots[j] as { callId: string }).callId);
+        j++;
+      }
+      out.push(
+        callIds.length >= TOOL_BATCH_MIN
+          ? { kind: "tool_batch", callIds, seq: s.seq }
+          : s,
+      );
+      i = j;
+    } else {
+      out.push(s);
+      i++;
+    }
+  }
+  return out;
+}
+
+/** A persisted content segment, or a folded run of consecutive db_tool segments. */
+type GroupedSegment =
+  | ContentSegment
+  | { type: "db_tool_batch"; segments: ContentSegmentDbTool[]; key: string };
+
+function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
+  const out: GroupedSegment[] = [];
+  for (let i = 0; i < segments.length; ) {
+    const seg = segments[i];
+    if (seg.type === "db_tool") {
+      const run: ContentSegmentDbTool[] = [seg];
+      let j = i + 1;
+      while (j < segments.length && segments[j].type === "db_tool") {
+        run.push(segments[j] as ContentSegmentDbTool);
+        j++;
+      }
+      out.push(
+        run.length >= TOOL_BATCH_MIN
+          ? { type: "db_tool_batch", segments: run, key: `db-tool-batch-${run[0].callId}` }
+          : seg,
+      );
+      i = j;
+    } else {
+      out.push(seg);
+      i++;
+    }
+  }
+  return out;
 }
 
 export const EnhancedChatMarkdownInternal: React.FC<
@@ -192,6 +264,19 @@ export const EnhancedChatMarkdownInternal: React.FC<
 
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
     (s) => s.type === "db_tool" || s.type === "thinking",
+  );
+
+  // Fold runs of consecutive tool calls into one expandable batch line so a
+  // back-to-back burst (e.g. ten `tool_def` updates) isn't a wall of rows.
+  // Only the rendering is regrouped; the `hasUnifiedSpecial` /
+  // `hasDbInterleavedSpecial` branch checks still read the raw arrays.
+  const groupedSlots = useMemo(
+    () => groupConsecutiveToolSlots(unifiedSlots),
+    [unifiedSlots],
+  );
+  const groupedSegments = useMemo(
+    () => groupConsecutiveDbTools(messageInterleavedContent),
+    [messageInterleavedContent],
   );
 
   // NB: materialized artifacts are plain text now (vision R1) — both the
@@ -546,7 +631,17 @@ export const EnhancedChatMarkdownInternal: React.FC<
       <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
         <div className={containerStyles}>
           {hasUnifiedSpecial && requestId
-            ? unifiedSlots.map((slot, i) => {
+            ? groupedSlots.map((slot, i) => {
+                if (slot.kind === "tool_batch") {
+                  return (
+                    <InlineToolBatch
+                      key={`tool-batch-${slot.seq}`}
+                      requestId={requestId}
+                      callIds={slot.callIds}
+                      conversationId={conversationId ?? ""}
+                    />
+                  );
+                }
                 if (slot.kind === "render_block") {
                   const rb = renderBlocksMap[slot.blockId];
                   if (!rb) return null;
@@ -634,7 +729,16 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 return null;
               })
             : hasDbInterleavedSpecial
-              ? messageInterleavedContent.map((segment, segIdx) => {
+              ? groupedSegments.map((segment, segIdx) => {
+                  if (segment.type === "db_tool_batch") {
+                    return (
+                      <DbToolBatch
+                        key={segment.key}
+                        segments={segment.segments}
+                        conversationId={conversationId ?? ""}
+                      />
+                    );
+                  }
                   if (segment.type === "db_tool") {
                     return (
                       <DbToolCard
