@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { buildBookmarkReferenceFence } from "@/features/matrx-envelope/bookmarkToReference";
 import type { UserListBookmark } from "../types";
 
 interface BookmarkCopyButtonProps {
@@ -26,7 +27,7 @@ export function BookmarkCopyButton({
     e.stopPropagation();
     e.preventDefault();
     try {
-      await navigator.clipboard.writeText(JSON.stringify(bookmark, null, 2));
+      await navigator.clipboard.writeText(buildBookmarkReferenceFence(bookmark));
       setCopied(true);
       toast.success("Bookmark copied to clipboard", {
         description: label,

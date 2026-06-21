@@ -210,7 +210,10 @@ export function MediaVariableInput({
         <div className="flex items-stretch gap-2 px-2 py-1.5 rounded-md border border-border bg-muted/40">
           {hasThumbnail ? (
             <InlineMediaRef
-              ref={previewSrc}
+              // For an owned file pass the file_id (bare UUID) — not the
+              // already-resolved signed URL — so InlineMediaRef can re-mint on
+              // expiry. URL-valued inputs pass through as-is.
+              ref={isFileId ? stored : previewSrc}
               size={{ width: 40, height: 40 }}
               fit="cover"
               rounded="none"

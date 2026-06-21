@@ -143,7 +143,7 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 export const UnifiedVideoBlockRenderer: React.FC<
   UnifiedVideoBlockRendererProps
 > = ({ block, variant = "inline", onCompactClick, extraActions }) => {
-  const { src, status, posterUrl } = useUnifiedVideoUrl(block);
+  const { src, status, posterUrl, reportLoadError } = useUnifiedVideoUrl(block);
   const isMobile = useIsMobile();
   const fileId = block.origin === "matrx" ? block.fileId : null;
 
@@ -152,8 +152,7 @@ export const UnifiedVideoBlockRenderer: React.FC<
   const [isExpanded, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const showError =
-    (status === "error" && !src) || block.status === "error";
+  const showError = (status === "error" && !src) || block.status === "error";
 
   const handleExpand = useCallback(() => setIsExpanded(true), []);
   const longPressHandlers = useLongPress(() => setDrawerOpen(true));
@@ -275,6 +274,10 @@ export const UnifiedVideoBlockRenderer: React.FC<
                 playsInline
                 preload="metadata"
                 className="block max-w-full h-auto max-h-[28rem] rounded-lg min-h-[200px] min-w-[280px] bg-black"
+                onError={() => {
+                  // Owned files never just "expire" — re-mint before giving up.
+                  void reportLoadError(src);
+                }}
               />
             )}
 

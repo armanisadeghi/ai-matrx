@@ -106,3 +106,15 @@ export function sumSeverityCounts(
   }
   return out;
 }
+
+/** Worst severity with a non-zero count. Pass `skip` to ignore tiers (e.g. info-only drift stays neutral). */
+export function worstSeverityFromCounts(
+  counts: Partial<Record<DriftSeverity, number>>,
+  skip: ReadonlySet<DriftSeverity> = new Set(),
+): DriftSeverity | null {
+  for (const sev of DRIFT_SEVERITY_ORDER) {
+    if (skip.has(sev)) continue;
+    if ((counts[sev] ?? 0) > 0) return sev;
+  }
+  return null;
+}

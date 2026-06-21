@@ -13,6 +13,7 @@ import {
   XIcon,
   CopyIcon,
 } from "lucide-react";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -21,7 +22,12 @@ interface ImageBlockProps {
   alt?: string;
 }
 
-const ImageBlock: React.FC<ImageBlockProps> = ({ src, alt = "Image" }) => {
+const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) => {
+  // A markdown image can be one of our own (signed-S3) files. Route the URL
+  // through the self-heal primitive so an expired signature re-mints from the
+  // recovered file_id instead of rendering a broken image. For non-owned URLs
+  // this is a transparent passthrough.
+  const { src, onError: handleImageError } = useRemintableSrc(srcProp);
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -149,6 +155,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src, alt = "Image" }) => {
         src={src}
         alt={alt}
         onDoubleClick={handleExpand}
+        onError={handleImageError}
         className="w-full h-auto rounded-3xl object-contain cursor-zoom-in"
         style={{ maxHeight: MAX_IMAGE_HEIGHT }}
       />
@@ -296,6 +303,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src, alt = "Image" }) => {
             alt={alt}
             onClick={(e) => e.stopPropagation()}
             onDoubleClick={handleCloseExpanded}
+            onError={handleImageError}
             style={{
               transform: `scale(${zoomLevel})`,
               transformOrigin: "center center",

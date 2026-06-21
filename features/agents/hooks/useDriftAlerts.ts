@@ -1,6 +1,6 @@
 /**
  * useDriftAlerts — dispatch-on-idle hook for the caller's open drift alerts,
- * powering the agents-page banner. Exposes dismiss + view-stamp actions.
+ * powering the agents-page header drift indicator. Exposes dismiss + view-stamp actions.
  */
 
 "use client";

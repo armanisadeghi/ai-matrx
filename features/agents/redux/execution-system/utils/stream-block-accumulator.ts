@@ -28,6 +28,7 @@ import {
   extractAudioLink,
   detectImageMarkdown,
   detectVideoMarkdown,
+  detectMatrxFileMarkdown,
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
@@ -557,6 +558,26 @@ export class StreamBlockAccumulator {
         this.openBlock("text", dispatch);
         return;
       }
+    }
+
+    // ── Our own file link ─────────────────────────────────────────────
+    // A plain link / bare URL to a file we generated and stored (signed S3,
+    // CDN, public bucket, share link). Runs AFTER image/video/audio so our
+    // media with a dedicated home takes its richer path first. The renderer
+    // re-derives url/label/surrounding-text from the line content, discovers
+    // the real file type, and renders the universal inline previewer (or
+    // degrades to the link). Confirm with the full recognizer so a prefilter
+    // marker hit on a non-file URL (e.g. an app `/share/` page) falls to text.
+    if (
+      hasCandidate(flags, Candidate.MATRX_FILE) &&
+      detectMatrxFileMarkdown(rawLine).isMatrxFile
+    ) {
+      this.closeCurrentBlock(dispatch);
+      this.openBlock("matrx_file", dispatch);
+      this.appendToCurrentBlock(rawLine);
+      this.closeCurrentBlock(dispatch);
+      this.openBlock("text", dispatch);
+      return;
     }
 
     // ── MATRX broker ──────────────────────────────────────────────────

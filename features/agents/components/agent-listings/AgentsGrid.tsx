@@ -64,8 +64,6 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import type { AgentSortOption } from "@/features/agents/redux/agent-consumers/slice";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
-import { AgentDriftBanner } from "@/features/agents/components/usages/AgentDriftBanner";
-
 const CONSUMER_ID = "agents-main";
 
 function AgentsSkeleton({ count = 4 }: { count?: number }) {
@@ -414,9 +412,6 @@ export function AgentsGrid() {
 
   return (
     <>
-      {/* Drift detected on your agents — show-once, dismissible (weekly scan). */}
-      <AgentDriftBanner />
-
       {/* Desktop controls — single row: Filter | Search | tabs | result count | New */}
       {!isMobile && (
         <div className="mb-3 pt-8">

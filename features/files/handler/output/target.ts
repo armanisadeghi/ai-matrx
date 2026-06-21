@@ -29,6 +29,7 @@ import {
   preferIdentityLocator,
 } from "../utils/prefer-locator";
 import { pythonShareUrl } from "../utils/python-base";
+import { isSignedUrl } from "@/lib/media/signed-url";
 import type {
   FileTarget,
   MediaBlock,
@@ -189,13 +190,9 @@ function toOgImage(file: NormalizedFile): string {
   // OG previews are scraped offline by social platforms — never use a
   // signed URL (it'll expire before the scrape) and never use a same-origin
   // proxy (auth-required). Prefer permanent CDN > share-link bytes endpoint.
-  if (file.url && !isSignedS3Url(file.url)) return file.url;
+  if (file.url && !isSignedUrl(file.url)) return file.url;
   if (file.shareToken) return pythonShareUrl(file.shareToken);
   throw new Error("file-handler: no permanent URL available for OG image");
-}
-
-function isSignedS3Url(url: string): boolean {
-  return /[?&]X-Amz-Signature=/i.test(url);
 }
 
 // ---------------------------------------------------------------------------

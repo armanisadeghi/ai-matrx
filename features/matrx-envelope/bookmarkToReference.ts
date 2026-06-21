@@ -27,6 +27,7 @@ import {
   type ReferenceItem,
   type ReferenceType,
 } from "@/features/matrx-envelope/envelope";
+import { buildReferenceFence } from "@/features/matrx-envelope/referenceFence";
 
 export type AnyBookmark =
   | FullTableBookmark
@@ -87,4 +88,24 @@ export function bookmarksToReferenceEnvelopes(
     type,
     items,
   }));
+}
+
+/**
+ * Build the canonical ```matrx``` reference fence(s) for one or more bookmarks —
+ * the single correct artifact to copy to the clipboard or show in a "copy this"
+ * textarea. Pasted into chat it resolves to a live reference chip; pasted
+ * anywhere else it is still self-describing canonical JSON.
+ *
+ * NEVER hand-roll `JSON.stringify(bookmark)` for a user-facing copy: a bare
+ * bookmark object is NOT recognized by the chat envelope splitter and is the
+ * exact legacy mistake this seam exists to kill. Always route through here.
+ *
+ * Returns one fence per distinct reference type (joined by a blank line), or an
+ * empty string if nothing maps.
+ */
+export function buildBookmarkReferenceFence(bookmarks: unknown): string {
+  const list = Array.isArray(bookmarks) ? bookmarks : [bookmarks];
+  return bookmarksToReferenceEnvelopes(list)
+    .map((env) => buildReferenceFence({ type: env.type, items: env.items }))
+    .join("\n\n");
 }

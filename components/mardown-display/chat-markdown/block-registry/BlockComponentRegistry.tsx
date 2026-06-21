@@ -36,6 +36,9 @@ const ConsolidatedReasoningVisualization = lazy(
 );
 const ImageBlock = lazy(() => import("../../blocks/images/ImageBlock"));
 const VideoBlock = lazy(() => import("../../blocks/videos/VideoBlock"));
+const MatrxFileBlock = lazy(
+  () => import("../../blocks/matrx-file/MatrxFileBlock"),
+);
 const TranscriptBlock = lazy(
   () => import("../../blocks/transcripts/TranscriptBlock"),
 );
@@ -304,6 +307,11 @@ export const BlockComponents = {
   VideoBlock: (props: any) => (
     <LazyBlockWrapper>
       <VideoBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MatrxFileBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <MatrxFileBlock {...props} />
     </LazyBlockWrapper>
   ),
   YouTubeEmbedBlock: (props: any) => (

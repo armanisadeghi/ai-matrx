@@ -7,6 +7,7 @@ import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/
 import { AssistantActionBar } from "@/features/agents/components/messages-display/assistant/AssistantActionBar";
 import { PromptErrorMessage } from "../PromptErrorMessage";
 import { Button } from "@/components/ui/button";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 interface PromptAssistantMessageProps {
   content: string;
@@ -41,6 +42,10 @@ export function PromptAssistantMessage({
 }: PromptAssistantMessageProps) {
   const [isAudioLinkCopied, setIsAudioLinkCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  // A TTS audio response is one of our own files — never let an expired
+  // signature kill playback; the primitive re-mints from the recovered file_id.
+  const { src: audioSrc, onError: handleAudioError } =
+    useRemintableSrc(audioUrl);
 
   // DOM-capture print (Tier 2 — captures all rendered blocks)
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
@@ -99,7 +104,13 @@ export function PromptAssistantMessage({
               </span>
             )}
           </div>
-          <audio controls autoPlay src={audioUrl} className="w-full" />
+          <audio
+            controls
+            autoPlay
+            src={audioSrc}
+            onError={handleAudioError}
+            className="w-full"
+          />
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"

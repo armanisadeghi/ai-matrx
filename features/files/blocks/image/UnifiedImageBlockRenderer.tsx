@@ -200,7 +200,8 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 export const UnifiedImageBlockRenderer: React.FC<
   UnifiedImageBlockRendererProps
 > = ({ block, variant = "inline", onCompactClick, extraActions }) => {
-  const { src, status, isPlaceholder, fileId } = useUnifiedImageUrl(block);
+  const { src, status, isPlaceholder, fileId, reportLoadError } =
+    useUnifiedImageUrl(block);
   const isMobile = useIsMobile();
   const isMatrx = block.origin === "matrx";
   const hasExtra = !!extraActions && extraActions.length > 0;
@@ -440,7 +441,15 @@ export const UnifiedImageBlockRenderer: React.FC<
                   imageLoaded ? "opacity-100" : "opacity-0",
                 ].join(" ")}
                 onLoad={() => setLoadedSrc(src)}
-                onError={() => setErrorSrc(src)}
+                onError={() => {
+                  // A user's own file never just "expires" — try to re-mint
+                  // before surfacing a terminal error. Only when the handler
+                  // can do nothing more do we mark this src as failed.
+                  const failed = src;
+                  void reportLoadError(failed).then((handled) => {
+                    if (!handled) setErrorSrc(failed);
+                  });
+                }}
               />
             )}
 

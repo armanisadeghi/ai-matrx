@@ -31,8 +31,14 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
     typeof metadata?.signed_url === "string" ? metadata.signed_url : null;
   const downloadFromMeta =
     typeof metadata?.download_url === "string" ? metadata.download_url : null;
-  const fileIdFromMeta =
-    typeof metadata?.file_id === "string" ? metadata.file_id : null;
+  // `file_id` is stored at the TOP LEVEL of the media part by the backend
+  // (and only sometimes mirrored into metadata). Prefer the top-level value —
+  // losing it forces the block to recover the id from an expiring URL, and if
+  // that fails the block collapses to `external` and can never re-mint. An
+  // owned file must ALWAYS keep its file_id.
+  const fileId =
+    (typeof part.file_id === "string" ? part.file_id : null) ??
+    (typeof metadata?.file_id === "string" ? metadata.file_id : null);
 
   // The on-disk `url` field is whatever was visible at save time — could be
   // CDN, could be signed (long-expired by now). Forward as the fallback.
@@ -43,7 +49,7 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
       type: "image_output",
       url: fallbackUrl,
       mime_type: part.mime_type ?? "image/*",
-      file_id: fileIdFromMeta,
+      file_id: fileId,
       cdn_url: cdnFromMeta,
       signed_url: signedFromMeta,
       download_url: downloadFromMeta,

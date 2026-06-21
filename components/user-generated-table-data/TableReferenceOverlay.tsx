@@ -23,6 +23,7 @@ import {
   isPaginatedDataRow,
   unwrapGetUserTableDataPaginatedRows,
 } from "@/utils/user-tables-rpc";
+import { buildBookmarkReferenceFence } from "@/features/matrx-envelope/bookmarkToReference";
 
 interface TableField {
   id: string;
@@ -237,8 +238,10 @@ export default function TableReferenceOverlay({
   };
 
   const currentReference = generateReference();
+  // User-facing artifact is the canonical ```matrx``` reference fence (pasteable
+  // into chat → live chip). The raw object is still handed to onReferenceGenerated.
   const referenceJson = currentReference
-    ? JSON.stringify(currentReference, null, 2)
+    ? buildBookmarkReferenceFence(currentReference)
     : "";
 
   // Get display value for selected row
@@ -488,12 +491,13 @@ export default function TableReferenceOverlay({
           {/* Usage Instructions */}
           <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-md">
             <h4 className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
-              Usage in Workflows
+              How to use
             </h4>
             <p className="text-xs text-green-600 dark:text-green-300">
-              Copy the generated reference and paste it into workflow nodes that
-              support table data retrieval. The reference contains all the
-              information needed to fetch the specified data.
+              Copy the generated reference and paste it into chat — it resolves
+              to a live reference chip the agent can read. The reference
+              contains all the identity information needed to fetch the
+              specified data.
             </p>
           </div>
         </div>

@@ -18,6 +18,7 @@ import { fileHandler } from "@/features/files";
 import type { CloudFileRecord } from "@/features/files";
 import type { AppStore } from "@/lib/redux/store";
 import type { ImageSource } from "@/components/image/context/SelectedImagesProvider";
+import { signedUrlExpiresAtMs } from "@/lib/media/signed-url";
 
 /**
  * Imperative file lookup against the cloudFiles slice. This module is
@@ -48,24 +49,11 @@ export interface ResolvedCloudUrl {
 }
 
 /**
- * Best-effort parse of the expiry from an AWS-signed URL. Returns `null`
- * for permanent CDN URLs (no `X-Amz-Date` / `X-Amz-Expires` query params).
+ * Best-effort parse of the expiry from a signed S3 URL (both AWS dialects).
+ * Returns `null` for permanent CDN URLs (no signature params). Delegates to the
+ * canonical `lib/media/signed-url` primitive.
  */
-function parseExpiry(url: string): number | null {
-  try {
-    const u = new URL(url);
-    const date = u.searchParams.get("X-Amz-Date");
-    const expires = u.searchParams.get("X-Amz-Expires");
-    if (!date || !expires) return null;
-    const iso = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}T${date.slice(9, 11)}:${date.slice(11, 13)}:${date.slice(13, 15)}Z`;
-    const startedAt = Date.parse(iso);
-    const ttlMs = Number.parseInt(expires, 10) * 1000;
-    if (!Number.isFinite(startedAt) || !Number.isFinite(ttlMs)) return null;
-    return startedAt + ttlMs;
-  } catch {
-    return null;
-  }
-}
+const parseExpiry = signedUrlExpiresAtMs;
 
 export async function resolveCloudFileUrl(
   store: AppStore,

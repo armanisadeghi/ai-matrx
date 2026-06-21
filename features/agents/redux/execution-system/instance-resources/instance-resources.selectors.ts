@@ -53,6 +53,23 @@ function toResourceIdList(content: unknown): string[] {
 }
 
 /**
+ * Normalize the source of an `input_table` / `input_list` resource into the
+ * `bookmarks` ARRAY the wire contract requires (`TableInputPart.bookmarks` /
+ * `ListInputPart.bookmarks` are `Bookmark[]`). Pickers store a single picked
+ * `TableReference` / list bookmark on `source`, so a naive `bookmarks = source`
+ * shipped a bare object and the backend silently dropped it — the reference
+ * never resolved. Bookmark items are already canonical (typed ids + optional
+ * `extra="allow"` display hints per docs/protocol/MATRX_REFERENCES.md), so we
+ * only array-wrap and drop empties; we never strip hint fields.
+ */
+function toBookmarkList(content: unknown): Record<string, unknown>[] {
+  const entries = Array.isArray(content) ? content : [content];
+  return entries.filter(
+    (e): e is Record<string, unknown> => !!e && typeof e === "object",
+  );
+}
+
+/**
  * All resources for an instance, sorted by sortOrder.
  */
 export const selectInstanceResources = (conversationId: string) =>
@@ -211,10 +228,10 @@ export const selectResourcePayloads = (conversationId: string) =>
               payload.task_ids = toResourceIdList(content);
               break;
             case "input_table":
-              payload.bookmarks = content;
+              payload.bookmarks = toBookmarkList(content);
               break;
             case "input_list":
-              payload.bookmarks = content;
+              payload.bookmarks = toBookmarkList(content);
               break;
             case "input_data":
               payload.refs = content;

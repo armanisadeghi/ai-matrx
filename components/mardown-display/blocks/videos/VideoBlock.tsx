@@ -13,13 +13,18 @@ import {
     Volume2Icon,
     VolumeXIcon,
 } from "lucide-react";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 interface VideoBlockProps {
     src: string;
     alt?: string;
 }
 
-const VideoBlock: React.FC<VideoBlockProps> = ({ src, alt = "Video" }) => {
+const VideoBlock: React.FC<VideoBlockProps> = ({ src: srcProp, alt = "Video" }) => {
+    // A markdown video can be one of our own (signed-S3) files. Route the URL
+    // through the self-heal primitive so an expired signature re-mints from the
+    // recovered file_id instead of a dead <video>. Passthrough for non-owned URLs.
+    const { src, onError: handleVideoError } = useRemintableSrc(srcProp);
     const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
     const [showCopySuccess, setShowCopySuccess] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
@@ -127,6 +132,7 @@ const VideoBlock: React.FC<VideoBlockProps> = ({ src, alt = "Video" }) => {
                 className="max-w-full pt-2 h-auto rounded-3xl"
                 controls
                 preload="metadata"
+                onError={handleVideoError}
             >
                 Your browser does not support the video tag.
             </video>
@@ -244,6 +250,7 @@ const VideoBlock: React.FC<VideoBlockProps> = ({ src, alt = "Video" }) => {
                                 src={src}
                                 controls
                                 className="max-h-[90dvh] max-w-[90vw]"
+                                onError={handleVideoError}
                             >
                                 Your browser does not support the video tag.
                             </video>

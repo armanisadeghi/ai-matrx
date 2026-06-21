@@ -23,8 +23,9 @@
  *   - GET `${BACKEND_URL}/share/{token}/download`      — public share-link bytes
  *   - GET URLs registered via `register-url-mapping` postMessage         — CDN URLs, etc.
  *
- * Signed S3 URLs (anything carrying `X-Amz-Signature`) are NEVER cached
- * because they expire. Same rule as the page-side IDB store.
+ * Signed S3 URLs (either AWS dialect — SigV4 `X-Amz-*` or SigV2
+ * `AWSAccessKeyId`/`Signature`/`Expires`) are NEVER cached because they
+ * expire. Same rule as the page-side IDB store.
  *
  * Postmessage protocol (page → SW):
  *   - `{ kind: 'set-config', backendUrl, userId }`
@@ -301,11 +302,18 @@ const registeredUrls = new Set<string>();
 // synchronous regex in `isPotentiallyOurs` without needing the Set.
 // The IDB url-map store remains authoritative for the actual cache lookup.
 
+// Mirror of `lib/media/signed-url.ts#SIGNED_URL_RE` — the SW has no app
+// imports, so keep this in sync by hand. Must match BOTH AWS dialects:
+// SigV4 (`X-Amz-*`) and SigV2 (`AWSAccessKeyId`/`Signature`/`Expires`).
+const SIGNED_URL_RE =
+    /[?&](x-amz-signature|x-amz-credential|x-amz-date|x-amz-expires|awsaccesskeyid|signature|expires)=/i;
+
 function isPotentiallyOurs(request: Request, parsed: URL): boolean {
     if (request.method !== "GET") return false;
-    // Signed S3 URLs are never cached — they expire. Short-circuit before
-    // any other check so we never even hand them to the page.
-    if (parsed.searchParams.has("X-Amz-Signature")) return false;
+    // Signed S3 URLs (either AWS signing dialect) are never cached — they
+    // expire. Short-circuit before any other check so we never even hand
+    // them to the page.
+    if (SIGNED_URL_RE.test(parsed.search)) return false;
     // Backend file-download / share-download endpoints — synchronous match.
     if (config.backendUrl && parsed.origin === config.backendUrl) {
         if (FILES_DOWNLOAD_RE.test(parsed.pathname)) return true;

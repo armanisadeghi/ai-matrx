@@ -35,6 +35,10 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import {
+  getOrMintSignedUrl,
+  invalidateSignedUrl,
+} from "@/features/files/handler/intelligence/signed-url-cache";
 import type { FileSource } from "@/features/files/handler/types";
 import type { MediaRef } from "@/features/files/types";
 
@@ -555,7 +559,21 @@ export function InlineMediaRef({
   className,
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
-  const url = useFileSrc(source);
+  const resolvedUrl = useFileSrc(source);
+  const sourceFileId =
+    source && source.kind === "file_id" ? source.fileId : null;
+
+  // A freshly re-minted URL after the resolved one failed to load. For an
+  // owned file, a dead URL is a non-event — we re-mint from file_id rather
+  // than surface a broken image.
+  const [remintedUrl, setRemintedUrl] = useState<string | null>(null);
+  const remintAttempts = useRef(0);
+  useEffect(() => {
+    setRemintedUrl(null);
+    remintAttempts.current = 0;
+  }, [sourceFileId]);
+
+  const url = remintedUrl ?? resolvedUrl;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
@@ -573,10 +591,31 @@ export function InlineMediaRef({
         HTMLImageElement | HTMLVideoElement | HTMLAudioElement
       >,
     ) => {
+      // Owned file (file_id source) → re-mint before surfacing an error.
+      if (sourceFileId && remintAttempts.current < 2) {
+        remintAttempts.current += 1;
+        console.warn(
+          "[file-handler] inline media failed to load — re-minting owned " +
+            `file (a user's own file never just 'expires'). fileId=${sourceFileId} ` +
+            `attempt=${remintAttempts.current}`,
+        );
+        invalidateSignedUrl(sourceFileId);
+        getOrMintSignedUrl(sourceFileId)
+          .then((fresh) => setRemintedUrl(fresh.url))
+          .catch((err) => {
+            console.error(
+              `[file-handler] inline re-mint FAILED for ${sourceFileId}`,
+              err,
+            );
+            setHasLoadError(true);
+            onError?.(event);
+          });
+        return;
+      }
       setHasLoadError(true);
       onError?.(event);
     },
-    [onError],
+    [onError, sourceFileId],
   );
 
   const defaultIcon =

@@ -25,12 +25,27 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import {
+  getOrMintSignedUrl,
+  invalidateSignedUrl,
+} from "@/features/files/handler/intelligence/signed-url-cache";
+import { isSignedUrl } from "@/lib/media/signed-url";
 import type { FileSource } from "@/features/files/handler/types";
 import type { UnifiedImageBlock } from "./types";
 
 const EXPIRY_SAFETY_MARGIN_MS = 30 * 1000;
+
+/**
+ * A `cdnUrl` is only "permanent" if it is NOT itself a signed URL. The backend
+ * (and some adapters) can mistakenly file an expiring signed URL into the
+ * `cdnUrl` slot; treating that as permanent skips the re-mint path and the image
+ * dies on expiry. For an owned file that must never happen — so we re-check here.
+ */
+function isPermanentCdn(cdnUrl: string | null | undefined): cdnUrl is string {
+  return !!cdnUrl && !isSignedUrl(cdnUrl);
+}
 
 export interface UseUnifiedImageUrlResult {
   /** Best URL to render right now. null when nothing usable is available. */
@@ -47,19 +62,49 @@ export interface UseUnifiedImageUrlResult {
    * that operate on the underlying file (share, visibility change).
    */
   fileId: string | null;
+  /**
+   * Call from the renderer's `<img onError>`. For an OWNED file (matrx +
+   * fileId) this invalidates the cached signed URL and re-mints a fresh one —
+   * because a user's own file URL expiring is a non-event, not an error. The
+   * returned promise resolves `true` when a re-mint was triggered (the caller
+   * should NOT show a terminal error and instead wait for the new `src`), or
+   * `false` when there is nothing more we can do (not ours, or re-mint failed).
+   */
+  reportLoadError: (failedSrc: string | null) => Promise<boolean>;
 }
+
+const MAX_REMINT_ATTEMPTS = 2;
 
 export function useUnifiedImageUrl(
   block: UnifiedImageBlock | null,
 ): UseUnifiedImageUrlResult {
+  // A freshly re-minted URL, set by `reportLoadError` after an owned file's
+  // served URL failed to load. Overrides the resolved `src` so the same <img>
+  // retries with a guaranteed-fresh signature.
+  const [override, setOverride] = useState<{
+    fileId: string;
+    url: string;
+  } | null>(null);
+  const remintAttempts = useRef(0);
+
+  const blockFileId = block?.origin === "matrx" ? block.fileId : null;
+
+  // Reset the re-mint budget whenever the underlying file changes so a new
+  // image in the same renderer instance starts fresh.
+  const lastFileIdRef = useRef(blockFileId);
+  if (lastFileIdRef.current !== blockFileId) {
+    lastFileIdRef.current = blockFileId;
+    remintAttempts.current = 0;
+  }
+
   // Decide whether we need to ask the handler to resolve. Public matrx
-  // blocks with a cdnUrl never need the handler — the URL is permanent.
+  // blocks with a TRUE permanent CDN url never need the handler. A signed url
+  // sitting in the cdn slot is NOT permanent — fall through to minting.
   const needsHandlerResolution = useMemo(() => {
     if (!block) return false;
     if (block.origin === "external") return false;
-    if (block.visibility === "public" && block.cdnUrl) return false;
-    // Trust a non-expired signed URL for the initial render; the handler
-    // call still runs in the background to register expiry refresh.
+    if (block.visibility === "public" && isPermanentCdn(block.cdnUrl))
+      return false;
     return true;
   }, [block]);
 
@@ -75,7 +120,42 @@ export function useUnifiedImageUrl(
     kind: "html_src",
   });
 
-  return useMemo<UseUnifiedImageUrlResult>(() => {
+  // The override only applies to the current file; reset when the file changes.
+  const activeOverrideUrl =
+    override && override.fileId === blockFileId ? override.url : null;
+
+  const reportLoadError = useCallback(
+    async (failedSrc: string | null): Promise<boolean> => {
+      if (!blockFileId) return false; // not an owned file — caller errors out
+      if (remintAttempts.current >= MAX_REMINT_ATTEMPTS) return false;
+      remintAttempts.current += 1;
+      // LOUD recovery: a recovery firing means a real bug got past the
+      // proactive classification — surface it so it can't hide.
+      console.warn(
+        "[file-handler] owned image URL failed to load — re-minting from " +
+          "file_id (a user's own file never just 'expires'). " +
+          `fileId=${blockFileId} attempt=${remintAttempts.current} ` +
+          `failedSrc=${String(failedSrc).slice(0, 120)}`,
+      );
+      invalidateSignedUrl(blockFileId);
+      try {
+        const fresh = await getOrMintSignedUrl(blockFileId);
+        setOverride({ fileId: blockFileId, url: fresh.url });
+        return true;
+      } catch (err) {
+        console.error(
+          `[file-handler] re-mint FAILED for owned file ${blockFileId}`,
+          err,
+        );
+        return false;
+      }
+    },
+    [blockFileId],
+  );
+
+  const resolved = useMemo<
+    Omit<UseUnifiedImageUrlResult, "reportLoadError">
+  >(() => {
     if (!block) {
       return {
         src: null,
@@ -112,8 +192,18 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — public + cdnUrl: permanent, no expiry plumbing ──────────
-    if (block.visibility === "public" && block.cdnUrl) {
+    // ── Matrx — re-minted override wins: a fresh URL from reportLoadError ──
+    if (activeOverrideUrl) {
+      return {
+        src: activeOverrideUrl,
+        status: "ready",
+        isPlaceholder: false,
+        fileId: block.fileId,
+      };
+    }
+
+    // ── Matrx — public + TRUE permanent CDN url: no expiry plumbing ─────
+    if (block.visibility === "public" && isPermanentCdn(block.cdnUrl)) {
       return {
         src: block.cdnUrl,
         status: "ready",
@@ -132,11 +222,14 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — handler still resolving but we have a valid signed URL ──
+    // ── Matrx — handler still resolving but we have a PROVABLY-fresh
+    // signed URL. We only serve a signed URL whose expiry is known AND in
+    // the future. An unknown expiry (null) is NOT trusted — for an owned
+    // file we'd rather wait for the mint than render a URL that may be dead.
     const signedStillValid =
-      block.signedUrl &&
-      (block.signedUrlExpiresAt === null ||
-        block.signedUrlExpiresAt > Date.now() + EXPIRY_SAFETY_MARGIN_MS);
+      !!block.signedUrl &&
+      block.signedUrlExpiresAt !== null &&
+      block.signedUrlExpiresAt > Date.now() + EXPIRY_SAFETY_MARGIN_MS;
     if (signedStillValid && block.signedUrl) {
       return {
         src: block.signedUrl,
@@ -146,8 +239,8 @@ export function useUnifiedImageUrl(
       };
     }
 
-    // ── Matrx — fall back to cdnUrl even on non-public when present ─────
-    if (block.cdnUrl) {
+    // ── Matrx — fall back to a TRUE permanent cdnUrl even on non-public ──
+    if (isPermanentCdn(block.cdnUrl)) {
       return {
         src: block.cdnUrl,
         status: handlerStatus === "resolving" ? "refreshing" : "ready",
@@ -187,7 +280,12 @@ export function useUnifiedImageUrl(
       isPlaceholder: false,
       fileId: block.fileId,
     };
-  }, [block, handlerUrl, handlerStatus]);
+  }, [block, handlerUrl, handlerStatus, activeOverrideUrl]);
+
+  return useMemo<UseUnifiedImageUrlResult>(
+    () => ({ ...resolved, reportLoadError }),
+    [resolved, reportLoadError],
+  );
 }
 
 function toDataUri(base64: string, mime: string | null): string {

@@ -26,7 +26,10 @@ const EMPTY_AGGS: AgentUsageAggregate[] = [];
 const EMPTY_ALERTS: DriftAlertRow[] = [];
 
 export const makeSelectUsageCache = (scope: UsageScope, agentId: string) =>
-  createSelector(selectUsageCaches, (caches) => caches[usageCacheKey(scope, agentId)] ?? null);
+  createSelector(
+    selectUsageCaches,
+    (caches) => caches[usageCacheKey(scope, agentId)] ?? null,
+  );
 
 export const makeSelectUsageRows = (scope: UsageScope, agentId: string) =>
   createSelector(
@@ -49,7 +52,10 @@ export const makeSelectUsageGroups = (scope: UsageScope, agentId: string) =>
       arr.push(r);
       groups.set(r.usageType, arr);
     }
-    return Array.from(groups.entries()).map(([usageType, items]) => ({ usageType, items }));
+    return Array.from(groups.entries()).map(([usageType, items]) => ({
+      usageType,
+      items,
+    }));
   });
 
 export interface RedFlagSummary {
@@ -64,26 +70,37 @@ export interface RedFlagSummary {
 const REMEDIABLE = new Set(["shortcut", "app", "prompt_app", "derived_agent"]);
 
 export const makeSelectRedFlagSummary = (scope: UsageScope, agentId: string) =>
-  createSelector(makeSelectUsageRows(scope, agentId), (rows): RedFlagSummary => {
-    const bySeverity: Record<DriftSeverity, number> = {
-      breaking: 0,
-      silent_breaking: 0,
-      warning: 0,
-      info: 0,
-    };
-    let stalePins = 0;
-    const updatableKeys: Array<{ usageType: string; usageId: string }> = [];
-    for (const r of rows) {
-      if (r.worstSeverity) bySeverity[r.worstSeverity] += 1;
-      if (r.stalePin) stalePins += 1;
-      if (r.managedByCaller && r.stalePin && REMEDIABLE.has(r.usageType)) {
-        updatableKeys.push({ usageType: r.usageType, usageId: r.usageId });
+  createSelector(
+    makeSelectUsageRows(scope, agentId),
+    (rows): RedFlagSummary => {
+      const bySeverity: Record<DriftSeverity, number> = {
+        breaking: 0,
+        silent_breaking: 0,
+        warning: 0,
+        info: 0,
+      };
+      let stalePins = 0;
+      const updatableKeys: Array<{ usageType: string; usageId: string }> = [];
+      for (const r of rows) {
+        if (r.worstSeverity) bySeverity[r.worstSeverity] += 1;
+        if (r.stalePin) stalePins += 1;
+        if (r.managedByCaller && r.stalePin && REMEDIABLE.has(r.usageType)) {
+          updatableKeys.push({ usageType: r.usageType, usageId: r.usageId });
+        }
       }
-    }
-    const hasRedFlags =
-      bySeverity.breaking > 0 || bySeverity.silent_breaking > 0 || bySeverity.warning > 0;
-    return { bySeverity, stalePins, totalUsages: rows.length, updatableKeys, hasRedFlags };
-  });
+      const hasRedFlags =
+        bySeverity.breaking > 0 ||
+        bySeverity.silent_breaking > 0 ||
+        bySeverity.warning > 0;
+      return {
+        bySeverity,
+        stalePins,
+        totalUsages: rows.length,
+        updatableKeys,
+        hasRedFlags,
+      };
+    },
+  );
 
 /** Admin-scope rows filtered client-side by the filter bar. */
 export interface AdminUsageFilters {
@@ -93,19 +110,28 @@ export interface AdminUsageFilters {
   usageType?: string | null;
 }
 
-export const makeSelectFilteredAdminRows = (agentId: string, filters: AdminUsageFilters) =>
+export const makeSelectFilteredAdminRows = (
+  agentId: string,
+  filters: AdminUsageFilters,
+) =>
   createSelector(makeSelectUsageRows("admin", agentId), (rows) =>
     rows.filter((r) => {
-      if (filters.ownerUserId && r.ownerUserId !== filters.ownerUserId) return false;
-      if (filters.organizationId && r.organizationId !== filters.organizationId) return false;
+      if (filters.ownerUserId && r.ownerUserId !== filters.ownerUserId)
+        return false;
+      if (filters.organizationId && r.organizationId !== filters.organizationId)
+        return false;
       if (filters.usageType && r.usageType !== filters.usageType) return false;
-      if (filters.severity && r.worstSeverity !== filters.severity) return false;
+      if (filters.severity && r.worstSeverity !== filters.severity)
+        return false;
       return true;
     }),
   );
 
 export const makeSelectRowMutation = (usageType: string, usageId: string) =>
-  createSelector(selectRowMutations, (m) => m[rowMutationKey(usageType, usageId)] ?? null);
+  createSelector(
+    selectRowMutations,
+    (m) => m[rowMutationKey(usageType, usageId)] ?? null,
+  );
 
 // ── Report ──────────────────────────────────────────────────────────────────
 
@@ -120,7 +146,11 @@ export type ReportSortKey =
   | "warning"
   | "stalePins";
 
-export const makeSelectReportSorted = (scope: UsageScope, sortKey: ReportSortKey, desc: boolean) =>
+export const makeSelectReportSorted = (
+  scope: UsageScope,
+  sortKey: ReportSortKey,
+  desc: boolean,
+) =>
   createSelector(makeSelectReport(scope), (entry) => {
     if (scope === "admin") {
       const rows = [...entry.adminRows];
@@ -133,7 +163,14 @@ export const makeSelectReportSorted = (scope: UsageScope, sortKey: ReportSortKey
   });
 
 function cmpUser(
-  a: { agentName: string; myUsageCount: number; myBreaking: number; mySilent: number; myWarning: number; myStalePins: number },
+  a: {
+    agentName: string;
+    myUsageCount: number;
+    myBreaking: number;
+    mySilent: number;
+    myWarning: number;
+    myStalePins: number;
+  },
   b: typeof a,
   key: ReportSortKey,
 ): number {
@@ -154,7 +191,14 @@ function cmpUser(
 }
 
 function cmpAdmin(
-  a: { agentName: string; usageCount: number; breaking: number; silent: number; warning: number; stalePins: number },
+  a: {
+    agentName: string;
+    usageCount: number;
+    breaking: number;
+    silent: number;
+    warning: number;
+    stalePins: number;
+  },
   b: typeof a,
   key: ReportSortKey,
 ): number {
@@ -211,11 +255,20 @@ export const selectDriftAlerts = createSelector(
   (a) => a.items ?? EMPTY_ALERTS,
 );
 
-export const selectDriftAlertsStatus = createSelector(selectAlertsState, (a) => a.status);
+export const selectDriftAlertsStatus = createSelector(
+  selectAlertsState,
+  (a) => a.status,
+);
 
-/** Active, undismissed alerts — what the agents-page banner shows. */
-export const selectActiveBannerAlerts = createSelector(selectDriftAlerts, (items) =>
-  items.filter((a) => (a.status === "pending" || a.status === "acknowledged") && !a.dismissedAt),
+/** Active, undismissed alerts — what the agents-page header indicator reads. */
+export const selectActiveBannerAlerts = createSelector(
+  selectDriftAlerts,
+  (items) =>
+    items.filter(
+      (a) =>
+        (a.status === "pending" || a.status === "acknowledged") &&
+        !a.dismissedAt,
+    ),
 );
 
 export const selectUnseenAlertCount = createSelector(

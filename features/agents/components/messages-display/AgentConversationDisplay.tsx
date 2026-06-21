@@ -67,7 +67,7 @@ const ASSISTANT_MSG_DEBUG = "[ASSISTANT MESSAGE DEBUG]";
 
 interface DisplayEntry {
   key: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
   /** Server-assigned `cx_message.id` for committed rows; null for the live entry. */
   messageId: string | null;
   /** Live stream request id — set only on the `__streaming__` entry. */

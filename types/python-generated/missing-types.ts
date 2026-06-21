@@ -143,6 +143,28 @@ export interface SchemaProposalRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * A reference to one of OUR OWN files (a cld_files-backed signed S3 URL, a
+ * public CDN URL, a Supabase public-bucket URL, or a share-link byte endpoint)
+ * found as a plain markdown link / bare URL in streamed/persisted text. Unlike
+ * `image`/`audio`/`video` blocks this carries NO declared type — the renderer
+ * recovers a `file_id` (or other `FileSource`) via `recognizeOurFileUrl`,
+ * discovers the real file type (sniffed from the URL or by hydrating the
+ * cld_files row), and renders the universal inline previewer. Signed URLs
+ * auto-re-mint through the file handler. On any failure it degrades to the
+ * original markdown link. The original line stays on `content` so it survives
+ * the DB round-trip and re-detects on reload. Client-only — see
+ * content-splitter-v2.ts `detectMatrxFileMarkdown` +
+ * components/mardown-display/blocks/matrx-file/MatrxFileBlock.tsx.
+ */
+export interface MatrxFileRenderBlock {
+  type: "matrx_file";
+  content: string;
+  src?: string;
+  alt?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
@@ -153,7 +175,8 @@ export type ClientOnlyRenderBlock =
   | ItemPresentationRenderBlock
   | YoutubeRenderBlock
   | MatrxEnvelopeRenderBlock
-  | SchemaProposalRenderBlock;
+  | SchemaProposalRenderBlock
+  | MatrxFileRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

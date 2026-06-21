@@ -1,6 +1,6 @@
 /**
  * The one severity badge — consumed by find-usages rows, the red-flags strip,
- * the drift report, the agents-page banner, and the DM chips. Driven entirely
+ * the drift report, the agents-page header, and the DM chips. Driven entirely
  * by DRIFT_SEVERITY_META so retuning severity presentation is a one-file change.
  */
 
@@ -42,7 +42,9 @@ export function DriftSeverityBadge({
     >
       <Icon className={size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5"} aria-hidden />
       {!iconOnly && <span>{meta.label}</span>}
-      {count != null && <span className="tabular-nums opacity-90">{count}</span>}
+      {count != null && (
+        <span className="tabular-nums opacity-90">{count}</span>
+      )}
     </span>
   );
 }

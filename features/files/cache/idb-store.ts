@@ -14,8 +14,9 @@
  *   - Owned files (pinned version):  `${userId}:${fileId}:${N}:${checksum}`
  *   - URL-keyed entries (share-link bytes, etc.): `${userId}:url:${sha256(url)}`
  *
- * Signed S3 URLs (anything carrying `X-Amz-Signature`) are NEVER cached
- * because they expire — caching them would create stale-URL bugs.
+ * Signed S3 URLs (either AWS dialect — SigV4 `X-Amz-*` or SigV2
+ * `AWSAccessKeyId`/`Signature`/`Expires`) are NEVER cached because they
+ * expire — caching them would create stale-URL bugs.
  *
  * Failure modes:
  *   - Private browsing / IDB disabled / quota exceeded: `openBlobCacheDb()`

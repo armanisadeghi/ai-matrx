@@ -86,6 +86,8 @@ import {
 import { generateRequestId } from "../utils/ids";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
+import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
 import { resolveBackendForConversation } from "./resolve-base-url";
@@ -474,6 +476,22 @@ export const executeManualInstance = createAsyncThunk<
         state.instanceUserInput.byConversationId[conversationId];
       const userInputText = userInputEntry?.text ?? "";
       const userMessageParts = userInputEntry?.messageParts ?? undefined;
+
+      // First-turn variables strip (`FirstTurnVariables` on the user bubble)
+      // reads `userValues`, not definition defaults. Mirror executeInstance:
+      // stamp the exact resolved payload we're about to send so the live
+      // bubble matches a reload from `cx_conversation.variables`.
+      if (isFirstTurn(state, conversationId)) {
+        const variables = selectVariablesForRequest(conversationId)(state);
+        if (variables && Object.keys(variables).length > 0) {
+          dispatch(
+            setUserVariableValues({
+              conversationId,
+              values: variables,
+            }),
+          );
+        }
+      }
 
       // ─────────────────────────────────────────────────────────────────────
       // OPTIMISTIC USER BUBBLE — fire synchronously BEFORE any await so the

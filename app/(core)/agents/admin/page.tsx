@@ -26,7 +26,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       url: "/agents/all",
       label: "All agents",
       description:
-        "The agents gallery — list, filter, open, fork. Hosts the drift banner.",
+        "The agents gallery — list, filter, open, fork. Drift severity shows in the page header.",
       filePath: "app/(core)/agents/all/page.tsx",
       status: "Live",
     },
@@ -71,10 +71,10 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "AgentDriftBanner",
-      filePath: "features/agents/components/usages/AgentDriftBanner.tsx",
+      name: "AgentsListHeader (drift indicator)",
+      filePath: "features/agents/components/shell/AgentsListHeader.tsx",
       description:
-        "Dismissible 'drift detected' callout on the agents page (weekly-scan-fed).",
+        "Agents gallery header — severity-colored Drift report link when weekly-scan alerts are active.",
       tier: "official",
     },
     {

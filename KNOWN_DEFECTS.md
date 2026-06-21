@@ -184,6 +184,55 @@ URLs and work fine; the new pipeline regressed.
   across the generation fix, the heal tool, the frontend (`lib/media/durability.ts`),
   and the DB guard (`mtx_is_durable_media_url`).
 
+**Update — 2026-06-21: "owned image goes dark" regression + codebase-wide self-heal sweep.**
+- **What.** Owned AI-generated images in real conversations rendered "Image
+  unavailable" forever once their signature expired — a direct violation of the
+  load-bearing rule (*a user's own file URL never just "expires"; re-mint from
+  `file_id`*).
+- **Why.** Two compounding regressions: (a) `from-image-output-data.ts` classified
+  signed URLs with a **SigV4-only** regex, but our image backend mints **SigV2**
+  (`AWSAccessKeyId`/`Signature`/`Expires=`), so SigV2 owned URLs were misread as
+  *permanent CDN* → re-mint was skipped; (b) the global expiry-wheel that used to
+  proactively re-mint was removed, deleting the safety net that had masked (a). The
+  `fromCxMediaPart` adapter also dropped the top-level `file_id`, so even the
+  on-demand re-mint had no identity to mint from.
+- **The fences.**
+  1. **Canonical signed-URL primitive** — `lib/media/signed-url.ts`
+     (`isSignedUrl` / `signedUrlExpiresAtMs`) knows **both** AWS dialects. Every
+     detector now routes through it (`from-image-output-data.ts`,
+     `parse-signed-url-expiry.ts`, `lib/media/durability.ts`,
+     `lib/media/our-file-sources.ts`, `features/files/handler/output/target.ts`,
+     `components/image/cloud/resolveCloudFileUrl.ts`, and the blob-cache service
+     worker `features/files/cache/service-worker/src/sw.ts`). No more dialect-blind
+     classification anywhere.
+  2. **Owned-file invariant in the unified hooks** — `useUnifiedImageUrl` /
+     `useUnifiedVideoUrl`: never treat a signed URL as a permanent `cdnUrl`, only
+     serve a signed URL with a *proven-future* expiry, always allow minting for an
+     owned `file_id`, and an `onError`→invalidate+re-mint backstop in the renderers
+     (`UnifiedImageBlockRenderer`, `UnifiedVideoBlockRenderer`, `InlineMediaRef`).
+  3. **Raw-URL self-heal primitive** — `features/files/handler/hooks/useRemintableSrc.ts`.
+     For surfaces holding only a *URL string* (markdown `![](signed-url)`, legacy
+     `audioUrl` props) it recognizes our-own URLs, recovers the `file_id`, and
+     re-mints on load failure. Consumed by the markdown `ImageBlock` / `VideoBlock`
+     (which the splitter routes our-own image/video links to *before* the
+     handler-backed `matrx_file` path) and the legacy raw-`<audio>` surfaces
+     (`cx-chat` / `cx-conversation` / `prompts` assistant messages). Closes the same
+     bug class in the one remaining path where owned media reached a raw element.
+  4. **CLAUDE.md rule** — a one-sentence firm statement of the invariant added to
+     the Media durability section.
+- **What's still open (low severity, self-recovering).**
+  - **File-preview previewers** (`FilePreview/previewers/SvgPreview.tsx`,
+    `AudioPreview.tsx`) and **`MediaThumbnail` (`ImageThumb`)** render from a signed
+    `url` / `publicUrl` with a *terminal* `onError` (icon/error UI, no in-view
+    re-mint). They are NOT the dark-forever bug — the parent re-mints from `file_id`
+    on every mount, so they recover on reopen; only an *in-view* expiry of a
+    long-open preview fails to recover, and `publicUrl` is durable by the DB guard.
+    Cheap fix when desired: route the element through `useRemintableSrc` (it
+    recovers the `file_id` from the signed URL).
+  - **`MediaVariableInput`** previously handed `<InlineMediaRef>` the resolved
+    signed-URL string instead of the `file_id` (losing re-mint ability) — **fixed**
+    2026-06-21 (now passes the bare `file_id`).
+
 ---
 
 ### D2 — Org/scope authorization boundary is open (deferred to the pre-launch security overhaul)

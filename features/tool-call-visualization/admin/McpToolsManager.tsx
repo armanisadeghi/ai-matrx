@@ -1669,37 +1669,74 @@ function ColumnFilterControl({
           />
         )}
         {column.type === "enum" && (
-          <div className="max-h-56 overflow-y-auto space-y-1">
-            {enumOptions.length === 0 ? (
-              <div className="text-xs text-muted-foreground">No values</div>
-            ) : (
-              enumOptions.map((opt) => {
-                const selected = value?.enumValues?.includes(opt) ?? false;
-                return (
-                  <label
-                    key={opt}
-                    className="flex items-center gap-2 text-xs cursor-pointer py-0.5"
-                  >
-                    <Checkbox
-                      checked={selected}
-                      onCheckedChange={() => {
-                        const cur = new Set(value?.enumValues ?? []);
-                        if (cur.has(opt)) cur.delete(opt);
-                        else cur.add(opt);
-                        onChange({
-                          ...(value ?? {}),
-                          enumValues: Array.from(cur),
-                        });
-                      }}
-                    />
-                    <span className="truncate" title={opt}>
-                      {formatText(opt)}
-                    </span>
-                  </label>
-                );
-              })
+          <>
+            {enumOptions.length > 0 && (
+              <div className="flex items-center justify-between gap-2 pb-1 border-b border-border/60">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() =>
+                    onChange({
+                      ...(value ?? {}),
+                      enumValues: [...enumOptions],
+                    })
+                  }
+                  disabled={
+                    enumOptions.length > 0 &&
+                    enumOptions.every((opt) => value?.enumValues?.includes(opt))
+                  }
+                >
+                  Select all
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() =>
+                    onChange({
+                      ...(value ?? {}),
+                      enumValues: [],
+                    })
+                  }
+                  disabled={(value?.enumValues?.length ?? 0) === 0}
+                >
+                  Clear all
+                </Button>
+              </div>
             )}
-          </div>
+            <div className="max-h-56 overflow-y-auto space-y-1">
+              {enumOptions.length === 0 ? (
+                <div className="text-xs text-muted-foreground">No values</div>
+              ) : (
+                enumOptions.map((opt) => {
+                  const selected = value?.enumValues?.includes(opt) ?? false;
+                  return (
+                    <label
+                      key={opt}
+                      className="flex items-center gap-2 text-xs cursor-pointer py-0.5"
+                    >
+                      <Checkbox
+                        checked={selected}
+                        onCheckedChange={() => {
+                          const cur = new Set(value?.enumValues ?? []);
+                          if (cur.has(opt)) cur.delete(opt);
+                          else cur.add(opt);
+                          onChange({
+                            ...(value ?? {}),
+                            enumValues: Array.from(cur),
+                          });
+                        }}
+                      />
+                      <span className="truncate" title={opt}>
+                        {formatText(opt)}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </>
         )}
         {column.type === "boolean" && (
           <Select

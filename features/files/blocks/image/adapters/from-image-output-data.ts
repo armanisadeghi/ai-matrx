@@ -33,6 +33,7 @@ import type {
 import { extractFileIdFromUrl } from "../helpers/extract-file-id-from-url";
 import { parseFilenameFromUrl } from "../helpers/parse-filename-from-url";
 import { parseSignedUrlExpiry } from "../helpers/parse-signed-url-expiry";
+import { isSignedUrl } from "@/lib/media/signed-url";
 
 /**
  * Read a string from a metadata bag, returning null when missing / wrong type.
@@ -87,11 +88,12 @@ export function fromImageOutputData(
   // we use `url` as the best-effort source URL.
   const fallbackUrl = data.url;
 
-  // Heuristic: if `fallbackUrl` carries the X-Amz signature markers, treat
-  // it as a signed URL (so expiry is detected). Otherwise treat as cdn.
-  const fallbackLooksSigned =
-    typeof fallbackUrl === "string" &&
-    /[?&]X-Amz-(Date|Signature|Expires)=/.test(fallbackUrl);
+  // If `fallbackUrl` carries ANY signature markers (SigV2 `AWSAccessKeyId`/
+  // `Signature`/`Expires` OR SigV4 `X-Amz-*`), it is an EXPIRING signed URL —
+  // never a permanent CDN URL. Misclassifying a signed URL as CDN here is the
+  // bug that made owned images go dark forever: it skips the re-mint path. Use
+  // the canonical detector so every dialect is recognized.
+  const fallbackLooksSigned = isSignedUrl(fallbackUrl);
 
   const finalSignedUrl =
     signedUrl ?? (fallbackLooksSigned ? fallbackUrl : null);

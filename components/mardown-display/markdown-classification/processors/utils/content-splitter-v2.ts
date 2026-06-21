@@ -31,6 +31,10 @@ import {
   isYouTubeThumbnailUrl,
   youTubeWatchUrl,
 } from "@/lib/media/youtube";
+import {
+  recognizeOurFileUrl,
+  mightBeOurFileUrl,
+} from "@/lib/media/our-file-sources";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1394,6 +1398,77 @@ function detectAudioMarkdown(line: string): {
   return { isAudio: false };
 }
 
+// Strip up to two wrapping emphasis markers (`**`, `*`, `_`) that hug the
+// extracted file token so the surrounding markdown islands don't render stray
+// `**`. The user's intent: emphasis around a file link is meaningless noise.
+function trimEmphasisEnd(text: string): string {
+  return text.replace(/(?:\*\*|\*|_){1,2}\s*$/, "");
+}
+function trimEmphasisStart(text: string): string {
+  return text.replace(/^\s*(?:\*\*|\*|_){1,2}/, "");
+}
+
+/**
+ * Detect a link (or bare URL) to one of OUR OWN files anywhere in a line.
+ *
+ * Unlike image/video/audio detection, the URL carries no declared type — we
+ * only assert "this is ours" via `recognizeOurFileUrl`. The match can sit
+ * mid-line; we return the text BEFORE (`pre`) and AFTER (`post`) the file token
+ * so the renderer can render `markdown(pre) → inline file → markdown(post)` and
+ * handle the inline case gracefully without shattering the paragraph.
+ *
+ * Accepts both `[label](our-url)` (optionally `!`-prefixed) and a bare
+ * `our-url`. Returns the FIRST our-file match on the line.
+ */
+export function detectMatrxFileMarkdown(line: string): {
+  isMatrxFile: boolean;
+  url?: string;
+  label?: string;
+  pre?: string;
+  post?: string;
+} {
+  // Cheap pre-gate: skip the regex passes entirely unless the line carries one
+  // of our host markers somewhere.
+  if (!mightBeOurFileUrl(line)) return { isMatrxFile: false };
+
+  // 1. Markdown link form: `[label](url)` or `![label](url)`.
+  const linkRe = /!?\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(line)) !== null) {
+    const url = m[2];
+    if (recognizeOurFileUrl(url)) {
+      const start = m.index;
+      const end = m.index + m[0].length;
+      return {
+        isMatrxFile: true,
+        url,
+        label: m[1] || "",
+        pre: trimEmphasisEnd(line.slice(0, start)),
+        post: trimEmphasisStart(line.slice(end)),
+      };
+    }
+  }
+
+  // 2. Bare URL form: the URL sits in the text with no markdown link wrapper.
+  const bareRe = /(https?:\/\/[^\s)]+)/g;
+  while ((m = bareRe.exec(line)) !== null) {
+    const url = m[1].replace(/[).,;]+$/, ""); // drop trailing punctuation
+    if (recognizeOurFileUrl(url)) {
+      const start = m.index;
+      const end = m.index + url.length;
+      return {
+        isMatrxFile: true,
+        url,
+        label: "",
+        pre: trimEmphasisEnd(line.slice(0, start)),
+        post: trimEmphasisStart(line.slice(end)),
+      };
+    }
+  }
+
+  return { isMatrxFile: false };
+}
+
 /**
  * Detect a standalone YouTube link and promote it to a playable `youtube`
  * block. Recognizes three author shapes, each of which must be the WHOLE line
@@ -1774,6 +1849,38 @@ export const splitContentIntoBlocksV2 = (
         content: trimmedLine,
         src: audioCheck.src,
         alt: audioCheck.alt,
+      });
+
+      i++;
+      continue;
+    }
+
+    // 4.7. Check for a link to one of OUR OWN files (signed S3 / public CDN /
+    // Supabase public / share-link). This runs AFTER image/video/audio so any
+    // of our media with a dedicated, richer home (an `![](our-image)`, a `.mp3`
+    // link, a YouTube thumbnail) takes that path first. It runs BEFORE the
+    // generic table/text fallbacks so a plain `[label](our-url)` link isn't
+    // swallowed as text. The renderer discovers the real file type and renders
+    // the universal inline previewer; on failure it degrades to the link.
+    const matrxFileCheck = detectMatrxFileMarkdown(line);
+    if (matrxFileCheck.isMatrxFile) {
+      if (currentText.trim()) {
+        blocks.push({ type: "text", content: currentText.trimEnd() });
+        currentText = "";
+      }
+
+      blocks.push({
+        type: "matrx_file",
+        // Keep the original line on content so the DB round-trip re-emits it
+        // (reconstructBlockMarkdown default → content) and reload re-detects.
+        content: trimmedLine,
+        src: matrxFileCheck.url,
+        alt: matrxFileCheck.label,
+        metadata: {
+          pre: matrxFileCheck.pre,
+          post: matrxFileCheck.post,
+          label: matrxFileCheck.label,
+        },
       });
 
       i++;

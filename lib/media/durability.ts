@@ -13,7 +13,8 @@
 // Render durable media via the canonical `<InlineMediaRef>` (it re-mints from a
 // file_id for authed owners). NEVER hand-render our media with a raw <img src>.
 
-const SIGNED_URL_RE = /[?&](x-amz-signature|x-amz-credential|expires|signature)=/i;
+import { isSignedUrl } from "@/lib/media/signed-url";
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,7 +23,7 @@ export type MediaUrlKind = "empty" | "durable" | "expiring";
 /** Mirror of the DB `mtx_is_durable_media_url` classifier. */
 export function classifyMediaUrl(url: string | null | undefined): MediaUrlKind {
   if (!url) return "empty";
-  return SIGNED_URL_RE.test(url) ? "expiring" : "durable";
+  return isSignedUrl(url) ? "expiring" : "durable";
 }
 
 export function isDurableMediaUrl(url: string | null | undefined): boolean {
@@ -37,7 +38,9 @@ export function isDurableMediaUrl(url: string | null | undefined): boolean {
 export function fileIdFromUserFilesUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    if (!/(^|\.)matrx-user-files\.s3|s3[.-].*amazonaws\.com/i.test(u.hostname)) {
+    if (
+      !/(^|\.)matrx-user-files\.s3|s3[.-].*amazonaws\.com/i.test(u.hostname)
+    ) {
       return null;
     }
     const segs = u.pathname.split("/").filter(Boolean); // [user_id, file_id, …]

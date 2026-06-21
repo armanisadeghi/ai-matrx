@@ -11,6 +11,8 @@
  * If no candidates are found → the line is guaranteed to be plain text.
  */
 
+import { OUR_FILE_URL_MARKERS } from "@/lib/media/our-file-sources";
+
 // ============================================================================
 // CANDIDATE CATEGORIES
 // ============================================================================
@@ -33,6 +35,7 @@ export const Candidate = {
   TREE: 1 << 8, // Box-drawing / ASCII tree characters
   BARE_JSON: 1 << 9, // { "key": ... } JSON object without code fences
   AUDIO: 1 << 10, // [Audio URL: ...] or a standalone …/clip.mp3 link
+  MATRX_FILE: 1 << 11, // link/URL to one of OUR files (signed S3 / CDN / public / share)
 } as const;
 
 /**
@@ -49,6 +52,19 @@ function isStandaloneAudioLink(trimmed: string): boolean {
   const link = trimmed.match(/^!?\[.*?\]\((https?:\/\/[^\s)]+)\)$/);
   if (link) return AUDIO_EXT_RE.test(link[1]);
   if (/^https?:\/\/[^\s)]+$/.test(trimmed)) return AUDIO_EXT_RE.test(trimmed);
+  return false;
+}
+
+/**
+ * Cheap substring gate: does the line carry one of our file-host markers?
+ * Reuses `OUR_FILE_URL_MARKERS` (imported at top) so it can't drift from the
+ * real `recognizeOurFileUrl`. The gate only flags a CANDIDATE; the
+ * splitter/accumulator confirm with the full recognizer.
+ */
+function mightBeOurFile(trimmed: string): boolean {
+  for (let mi = 0; mi < OUR_FILE_URL_MARKERS.length; mi++) {
+    if (trimmed.includes(OUR_FILE_URL_MARKERS[mi])) return true;
+  }
   return false;
 }
 
@@ -331,6 +347,13 @@ export function classifyLine(line: string, trimmed: string): CandidateFlags {
     if (looksLikeAsciiTree(trimmed)) {
       flags |= Candidate.TREE;
     }
+  }
+
+  // Our-own-file link: a markdown link or bare URL pointing at a file we
+  // generated and stored. Cheap substring gate; the splitter/accumulator
+  // confirm with the full `recognizeOurFileUrl`.
+  if (!(flags & Candidate.MATRX_FILE) && mightBeOurFile(trimmed)) {
+    flags |= Candidate.MATRX_FILE;
   }
 
   return flags;

@@ -10,8 +10,8 @@
  *
  * Source of truth is the instance variable slice's `userValues`, which is
  * identically populated on both paths:
- *   - Live turn 1: `executeInstance` stamps the exact `payload.variables` it
- *     sends into `userValues`.
+ *   - Live turn 1: `executeInstance` / `executeManualInstance` stamp the exact
+ *     resolved variables they send into `userValues`.
  *   - Reload: `loadConversation` stamps `cx_conversation.variables` into
  *     `userValues`.
  * So this strip renders the same lines whether the turn just happened or was

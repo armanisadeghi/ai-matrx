@@ -19,6 +19,7 @@ import {
 } from "./_legacy-stubs";
 import { editMessage } from "./_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-conversation/utils/buildContentBlocksForSave";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 import { chatConversationsActions } from "./_legacy-stubs";
 import { AssistantActionBar } from "@/features/cx-chat/components/messages/AssistantActionBar";
 import type { ConversationMessage } from "./_legacy-stubs";
@@ -115,6 +116,10 @@ export function AssistantMessage({
   const audioMimeType = (
     message as ConversationMessage & { audioMimeType?: string }
   ).audioMimeType;
+  // A TTS audio response is one of our own files — never let an expired
+  // signature kill playback; the primitive re-mints from the recovered file_id.
+  const { src: audioSrc, onError: handleAudioError } =
+    useRemintableSrc(audioUrl);
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;
@@ -197,7 +202,13 @@ export function AssistantMessage({
                 </span>
               )}
             </div>
-            <audio controls autoPlay src={audioUrl} className="w-full" />
+            <audio
+              controls
+              autoPlay
+              src={audioSrc}
+              onError={handleAudioError}
+              className="w-full"
+            />
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"

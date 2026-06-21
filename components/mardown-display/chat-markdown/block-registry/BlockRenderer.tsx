@@ -309,8 +309,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           // not-streaming, exactly like the old `case "table"`.
           onContentChange={
             !loading && replaceBlockContent
-              ? (updated: string) =>
-                  replaceBlockContent(block.content, updated)
+              ? (updated: string) => replaceBlockContent(block.content, updated)
               : undefined
           }
         />
@@ -618,6 +617,20 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           key={index}
           src={block.src!}
           alt={block.alt}
+        />
+      );
+
+    case "matrx_file":
+      // A link/bare URL to one of OUR files. The component re-derives the URL +
+      // surrounding text from `content`, discovers the real file type, and
+      // renders the universal inline previewer (or degrades to the link).
+      return (
+        <BlockComponents.MatrxFileBlock
+          key={index}
+          content={block.content}
+          src={block.src}
+          alt={block.alt}
+          metadata={block.metadata}
         />
       );
 

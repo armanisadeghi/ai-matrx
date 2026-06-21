@@ -186,6 +186,8 @@ New input shape → extend `FileSource` in `features/files/handler/types.ts` and
 
 ### Media durability — public/owned media is NEVER a raw signed URL
 
+**A user's own file URL never "expires": on any signed-URL detection (via `isSignedUrl` from `@/lib/media/signed-url`, which knows both AWS dialects) or media load failure, re-mint from its `file_id` — never treat a signed URL as permanent and never let "expired" surface as an error.**
+
 A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days later; an anonymous public page can't re-mint it (see [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) D1).
 - **Render only via `<InlineMediaRef>` (`@/features/files`)** — never a raw `<img>`/`<video>` `src` for our media; it re-mints from `file_id` for authed owners and serves CDN/public URLs. Raw tags can't self-heal.
 - **Persist durable refs** (public/CDN URL or `file_id`), never expiring URLs. Got a signed URL from a stream? Recover the `file_id` (`lib/media/durability.ts#fileIdFromUserFilesUrl`) first.
