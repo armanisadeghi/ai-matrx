@@ -12,6 +12,10 @@ import { supabase } from "@/utils/supabase/client";
 export interface ToolRendererRow {
   inline_code: string;
   allowed_imports: string[];
+  /** Author-declared label for the collapsed shell line (e.g. "Weather"). */
+  display_name: string | null;
+  /** Author-declared noun for the result tab/overlay (e.g. "entries"). */
+  results_label: string | null;
 }
 
 export async function fetchToolRendererRow(
@@ -19,7 +23,7 @@ export async function fetchToolRendererRow(
 ): Promise<ToolRendererRow | null> {
   const { data, error } = await supabase
     .from("tool_ui")
-    .select("inline_code, allowed_imports")
+    .select("inline_code, allowed_imports, display_name, results_label")
     .eq("tool_name", toolName)
     .eq("is_active", true)
     .maybeSingle();
@@ -46,5 +50,9 @@ export async function fetchToolRendererRow(
   return {
     inline_code: data.inline_code,
     allowed_imports: allowedImports,
+    display_name:
+      typeof data.display_name === "string" ? data.display_name : null,
+    results_label:
+      typeof data.results_label === "string" ? data.results_label : null,
   };
 }

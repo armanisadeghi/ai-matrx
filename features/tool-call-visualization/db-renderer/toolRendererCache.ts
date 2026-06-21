@@ -19,13 +19,32 @@ import { compileToolRenderer } from "./compileToolRenderer";
 
 type ToolComponent = React.ComponentType<ToolRendererProps>;
 
+/** Author-declared shell metadata from the `tool_ui` row (label, result noun). */
+export interface ToolRendererMeta {
+  displayName: string | null;
+  resultsLabel: string | null;
+}
+
 const positive = new Map<string, ToolComponent>();
 const negative = new Set<string>();
 const inflight = new Map<string, Promise<ToolComponent | null>>();
+// Row metadata is cached independently of the compiled component: it's set the
+// moment the row is fetched (BEFORE compile), so the collapsed label improves
+// even if the renderer code fails to compile and we fall back to generic.
+const metaStore = new Map<string, ToolRendererMeta>();
 
 /** Returns the cached compiled component for a tool, or null if not cached. */
 export function getCachedToolRenderer(toolName: string): ToolComponent | null {
   return positive.get(toolName) ?? null;
+}
+
+/**
+ * Author-declared metadata for a tool's DB renderer (display_name, results_label),
+ * or null if no row has been fetched yet. Synchronous — reads the cache only;
+ * `useDbToolMeta` drives the fetch + re-render for live label resolution.
+ */
+export function getCachedToolMeta(toolName: string): ToolRendererMeta | null {
+  return metaStore.get(toolName) ?? null;
 }
 
 /** Cache a freshly compiled component and clear any negative mark. */
@@ -73,6 +92,14 @@ export function loadToolRenderer(
         markNoToolRenderer(toolName);
         return null;
       }
+
+      // Cache the author's label metadata immediately — independent of whether
+      // the renderer code compiles — so the collapsed line reads "Weather"
+      // (not "Travel Get Weather") even if the body falls back to generic.
+      metaStore.set(toolName, {
+        displayName: row.display_name,
+        resultsLabel: row.results_label,
+      });
 
       const { Component, error } = compileToolRenderer(
         row.inline_code,
@@ -123,4 +150,5 @@ export function invalidateToolRenderer(toolName: string): void {
   positive.delete(toolName);
   negative.delete(toolName);
   inflight.delete(toolName);
+  metaStore.delete(toolName);
 }

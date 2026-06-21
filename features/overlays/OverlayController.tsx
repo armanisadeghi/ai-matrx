@@ -369,6 +369,7 @@ const CreateProjectWindow = lazyOverlay(
       },
     ),
   { ssr: false },
+  "@/features/window-panels/windows/projects/CreateProjectWindow",
 );
 const EmailDialogBridge = lazyOverlay(
   () => import("@/components/dialogs/EmailDialogBridge"),

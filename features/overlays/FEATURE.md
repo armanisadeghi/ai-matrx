@@ -284,7 +284,8 @@ Every overlay is code-split with `ssr: false` (required — the initial bundle w
 
 `features/overlays/boundary/lazyOverlay.tsx` closes it. It is a 1:1 drop-in for `dynamic()` and guarantees, for every overlay, one of exactly three outcomes — **the component, a loading state, or a meaningful error — never nothing**:
 
-- **`OverlayLoadingFallback`** — canonical spinner while the chunk loads, with a 10s **stall watchdog** that turns loud (console.error + "Reload page") so a chunk that never resolves *or* rejects can't spin invisibly forever.
+- **`OverlayLoadingFallback`** — canonical spinner while the chunk loads, with a 10s loud stall console-warning.
+- **Hard load timeout (the key fix).** A hung `import()` that never resolves *and* never rejects isn't an error, so an error boundary alone can't catch it (confirmed in prod: trace `B2` fired, `B3` never did). `lazyOverlay` races the import against a `OVERLAY_LOAD_TIMEOUT_MS` (12s) timeout that **rejects** with a `ChunkLoadError`, converting a stall into a catchable error so the rich admin error fallback always takes over.
 - **`OverlayErrorBoundary`** — per-render error boundary that catches `ChunkLoadError` / render throws, `console.error`s loudly, and renders `OverlayErrorFallback`.
 - **`OverlayErrorFallback`** — clear message + "Try again" / "Reload page". For **admins** (`selectIsAdmin`) it adds an expandable full live-Redux-state dump and a **"Copy for AI"** button (`buildOverlayErrorAgentPayload`) that packages the error, component stack, failing module, build id, and full state into the standard xml envelope for an LLM.
 

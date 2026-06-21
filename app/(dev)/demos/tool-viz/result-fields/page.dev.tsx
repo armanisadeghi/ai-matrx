@@ -442,7 +442,9 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
     entry({
         callId: "db-fs-list",
         toolName: "fs_list",
-        displayName: "Directory",
+        // No displayName — the collapsed label resolves from the tool_ui row's
+        // display_name ("Directory") via useDbToolMeta, proving a DB renderer
+        // owns its label too, not just its body.
         arguments: { path: "/home/agent/repos", recursive: false },
         result: {
             path: "/home/agent/repos",
@@ -458,7 +460,6 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
     entry({
         callId: "db-shell",
         toolName: "shell_execute",
-        displayName: "Shell",
         arguments: { command: "git log --oneline -3" },
         result: {
             stdout: "7317e7de2 fix(chat): agentic turn renders as ONE unit + fold consecutive tool calls\n40e901215 release: v0.3.574\nc36d91c16 bookmark additions",
@@ -470,7 +471,6 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
     entry({
         callId: "db-memory",
         toolName: "memory",
-        displayName: "Memory",
         arguments: {
             key: "omega3_findings",
             action: "store",
@@ -482,7 +482,6 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
     entry({
         callId: "db-weather",
         toolName: "travel_get_weather",
-        displayName: "Weather",
         arguments: { city: "Miami" },
         result: { city: "Miami", condition: "windy", temperature: 83, unit: "fahrenheit" },
     }),

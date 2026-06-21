@@ -56,6 +56,7 @@ import {
 import { DbToolRenderer } from "../db-renderer/DbToolRenderer";
 import {
   getCachedToolRenderer,
+  getCachedToolMeta,
   isKnownNoToolRenderer,
 } from "../db-renderer/toolRendererCache";
 
@@ -792,9 +793,15 @@ export function getToolDisplayMode(
 
 export function getToolDisplayName(toolName: string | null): string {
   if (!toolName) return "Tool";
+  // (1) In-code registry wins — it's the canonical renderer for the 10%.
   if (toolRendererRegistry[toolName]?.displayName)
     return toolRendererRegistry[toolName].displayName;
-  // DB renderers carry no shell-level metadata — title-case the tool name.
+  // (2) DB renderer's author-declared label (e.g. "Weather" for the
+  // `travel_get_weather` tool_ui row). Sync cache read — `useDbToolMeta` in the
+  // shell drives the fetch + re-render so this resolves on the next frame.
+  const dbName = getCachedToolMeta(toolName)?.displayName;
+  if (dbName) return dbName;
+  // (3) No metadata anywhere — title-case the tool name.
   return toolName
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))

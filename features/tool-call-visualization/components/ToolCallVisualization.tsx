@@ -38,6 +38,7 @@ import {
 } from "../registry/registry";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
+import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
@@ -110,6 +111,10 @@ const ToolCallVisualizationInner: React.FC<{
   // "never-open" (never auto-open). User preference wins over both:
   // "verbose" (always open) | "minimal" (never auto-open).
   const userPref = useAppSelector(selectToolDisplayPreference(conversationId));
+  // A DB renderer's author-declared label (e.g. "Weather" for `travel_get_weather`).
+  // Resolves async on first sight, then re-renders — so a fully DB-authored tool
+  // controls its collapsed line, not just its expanded body.
+  const dbMeta = useDbToolMeta(headerTool?.toolName ?? null);
   const toolMode = getToolDisplayMode(headerTool?.toolName ?? null);
   const effectiveMode: "auto" | "stay-open" | "never-open" =
     userPref === "verbose"
@@ -166,10 +171,15 @@ const ToolCallVisualizationInner: React.FC<{
       ? `${entries.length} Tools`
       : !headerTool
         ? getToolDisplayName(null)
-        : headerTool.displayName &&
-            headerTool.displayName !== headerTool.toolName
-          ? headerTool.displayName
-          : getToolDisplayName(headerTool.toolName);
+        : // A DB renderer's declared label is authoritative for its own tool —
+          // it wins over the raw as-called name. (In-code tools have no dbMeta,
+          // so they keep the entry.displayName → registry path unchanged.)
+          dbMeta?.displayName
+          ? dbMeta.displayName
+          : headerTool.displayName &&
+              headerTool.displayName !== headerTool.toolName
+            ? headerTool.displayName
+            : getToolDisplayName(headerTool.toolName);
 
   const headerSubtitle = ((): string | null => {
     if (!headerTool) return null;

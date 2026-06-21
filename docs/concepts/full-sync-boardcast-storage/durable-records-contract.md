@@ -2,7 +2,7 @@
 
 Single source of truth for how any feature record is **edited, dirty-tracked, saved, versioned, and soft-deleted**. One declaration, one drop-in hook, one set of guarantees — from "never lose a keystroke" (notes) to "save only when I click Save" (agent builder), and every point between.
 
-Status: `proposed` — agreed direction, pre-implementation. First consumer: **Tasks + Projects**.
+Status: `agreed` — direction + the four core decisions locked (§10). First consumer: **Tasks + Projects**. **The code is the hard part — that is where effort goes; the DB scaffolding is the easy, well-trodden part.**
 Last updated: 2026-06-21.
 
 This **realizes and extends decisions.md D3** ("all per-feature auto-save hooks/middleware are replaced by a single `autoSave` capability"). D3 shipped the engine in Phase 5 but never wired a consumer, and never covered baseline-diff dirty tracking, the manual/hybrid spectrum, versioning, or soft-delete. This doc closes that gap.
@@ -24,10 +24,11 @@ They share an identical data model and differ in **exactly one dimension: when t
 
 ## 1. Non-negotiables (inherit decisions.md N1–N8)
 
+- **ONE state, edited live (locked, D-A).** There is no separate "draft" copy of a record. Edits write **directly into the single canonical Redux slice** every feature already reads. `isDirty` means only "this differs from the server." **Recovery is one action that re-pulls from the server** — the sole source of truth — and clears dirty. Spinning up a parallel/shadow draft store is forbidden; it is exactly the duplication the move-everything-to-Redux effort eliminated.
 - **One system.** No new parallel autosave. This **extends `lib/sync`** (the existing `autoSave` capability + scheduler), it does not sit beside it.
 - **Drop-in.** A feature adds durability by declaring one policy + consuming one hook. No bespoke middleware, no per-feature save hook. (decisions.md N3, O5.)
 - **All Redux.** Dirty state, baseline, undo, save lifecycle live in the slice. The commit scheduler is middleware (matches `lib/sync` + notes). Thunks for explicit save / create / delete / restore / promote. **Sagas only** for genuinely long-running orchestration — never reached for by default.
-- **Never-lose is the floor, not the ceiling.** Even `manual` mode flushes dirty data on hard boundaries so work is not lost; the user only controls the *normal* save cadence.
+- **The unsaved-changes modal is mandatory everywhere (locked, D-D).** Any attempt to navigate away or close the page while a record is dirty MUST raise a modal that names **exactly what will be lost** (which fields/changes), not a generic warning. Whether a feature *also* auto-flushes on leave is per-feature; the warning modal is universal.
 - **Net-negative code.** Each migration deletes the feature's bespoke autosave/dirty/version/diff code (decisions.md N6). Notes' `autoSaveMiddleware` + `useAutoSave`, agents' duplicate version/timeline code are the named deletion targets.
 
 ---
@@ -36,13 +37,15 @@ They share an identical data model and differ in **exactly one dimension: when t
 
 One field selects where a record sits between the extremes. Set per **feature / route / table** (and overridable per record where a feature needs it).
 
-| `mode` | Normal save cadence | Boundary flush (blur / route-change / unmount / `pagehide` / tab-hide) | Reference |
+| `mode` | Normal save cadence | Auto-flush dirty on leave (`flushOnHide`) | Reference |
 |---|---|---|---|
-| `auto` | Debounced write while editing (content-adaptive) | Always | Notes |
-| `hybrid` | **No** write while editing; user clicks Save | Always (dirty data is flushed, never lost) | Tasks/Projects (first consumer) |
-| `manual` | User clicks Save only | Optional, opt-in per policy (`flushOnHide`) | Agent builder |
+| `auto` | Debounced write while editing (content-adaptive) | On | Notes |
+| `hybrid` | **No** write while editing; user clicks Save | Per-feature (default on) | Tasks/Projects (first consumer) |
+| `manual` | User clicks Save only | Per-feature (default off) | Agent builder |
 
-`hybrid` is the "in between" — the dirty indicator + Save button feel of the agent builder, with the safety net of notes. It is the default recommendation for form-like records (tasks, projects, settings rows).
+`hybrid` is the "in between" — the dirty indicator + Save button feel of the agent builder, with notes' optional safety net. It is the default recommendation for form-like records (tasks, projects, settings rows).
+
+**`flushOnHide` is per-feature (locked, D-D)** — each feature picks whether leaving the page silently rescues unsaved work. **Independently and universally, the unsaved-changes warning modal (§4.4) always fires** and enumerates exactly what is unsaved. Auto-flush is a convenience; the modal is the guarantee.
 
 **Debounce** (`auto`/`hybrid` flush timing) reuses the proven content-adaptive tiers from notes (`features/notes/redux/notes.types.ts`): `<1k chars → 3s`, `<10k → 5s`, `≥10k → 10s`. Constant or `(record,id)=>number`, per `AutoSaveConfig.debounceMs` (`lib/sync/types.ts`).
 
@@ -78,6 +81,8 @@ On every user edit, in one reducer:
 5. **Derive `_dirty`** from `_dirtyFields` — it can never drift.
 
 This precision (no false-positive dirty) is what the agent builder has and notes lacks. It is mandatory in the shared kit.
+
+**Baseline + recovery (locked, D-A).** `_fieldHistory` (the per-field last-saved value) is tracking metadata **on the canonical record itself** — it is not a second copy of the record, just the "before" anchor for dirty/diff. **Revert = one action:** clear `_dirtyFields`/`_fieldHistory` and re-pull the record from the server (`fetchTask`-style), since the server is the single source of truth. No shadow draft, no client-side "original record" cache.
 
 ### 3.3 Nested / related entities
 
@@ -127,8 +132,8 @@ Returns a stable object: `{ value, patch(field, v), isDirty, isSaving, error, sa
 
 ### 4.4 UI primitives
 
-- **`<SaveStatus>`** — dirty dot → "Saving…" → "Saved" / "Conflict", with a manual Save affordance. One component, every surface.
-- **`useUnsavedChangesGuard(isDirty)`** — in-app router block + `beforeunload`. **The missing primitive** — no nav guard exists in the repo today. Required for `hybrid`/`manual`.
+- **`<SaveStatus>`** — dirty dot → "Saving…" → "Saved", with a manual Save affordance. One component, every surface.
+- **`useUnsavedChangesGuard({ isDirty, changes })`** — in-app router block + `beforeunload`, raising a **mandatory modal that lists exactly what is unsaved** (the dirty fields / change summary), never a generic "you have unsaved changes." **The missing primitive** — no nav guard exists in the repo today. Required on every durable surface (locked, D-D). The `changes` summary is derived from `_dirtyFields` + `_fieldHistory` by the same diff engine that powers §5, so "what you'll lose" and "what changed" are one computation.
 - **`<VersionTimeline>`** — §5.
 
 ---
@@ -140,7 +145,8 @@ Versioning is **DB-trigger-driven and orthogonal to commit timing** — folding 
 - **DB is already ~canonical:** an 8-entity "snapshot-on-write" trigger family (3 triggers: `set_initial_version` BEFORE INSERT, `create_v1_snapshot` AFTER INSERT, `snapshot_version` BEFORE UPDATE with an `app.skip_version_snapshot` guard + `IS NOT DISTINCT FROM` dirty-check) feeding one dispatcher RPC set: `get_version_history` / `get_version_snapshot` / `get_version_diff` / `promote_version` / `restore_version` / `purge_old_versions`, keyed by `entity_type`. `note_versions` is the richest reference shape (`change_source`, `change_type`, `diff_metadata`).
 - **Frontend is already generic:** `features/versioning/` (hooks + `useVersionHistory`) over those RPCs, and the entity-agnostic structured diff engine `components/diff/engine` + adapter registry. The diff "before" side is the record's `_fieldHistory` baseline (unsaved) or a fetched snapshot (historical) — same engine.
 - **The policy declaring `versioning` provides:** the snapshot column set + `entity_type`. History / diff / restore / promote come automatically via `useVersionHistory` + a new shared **`<VersionTimeline>`** (collapses the duplicated `VersionHistoryTimeline` (agents) and `NoteVersionHistoryPanel` (notes) into one).
-- **Gaps to close in the generalization phase:** `features/versioning` `VersionEntityType` is stale (3 of 8 supported); the per-entity dispatcher `ELSIF` ladder should become a metadata-driven registry; agents' parallel `agx_*` version RPCs and notes' `restore_note_version` reconcile onto the generic set.
+- **Model the agents (`agx_*`) DB mechanism (locked, D-C).** Create auto-makes v1; **history always holds every snapshot including v1 and the current version**; the DB triggers do the work. **No pruning/retention is built now** — keep all versions. Reference-aware purging is a later concern. The DB side here is the *easy* part; effort goes into the frontend code.
+- **Gaps to close in the generalization phase:** `features/versioning` `VersionEntityType` is stale (3 of 8 supported); the per-entity dispatcher `ELSIF` ladder should become a metadata-driven registry; notes' `restore_note_version` reconciles onto the generic set.
 
 ---
 
@@ -157,7 +163,7 @@ Versioning is **DB-trigger-driven and orthogonal to commit timing** — folding 
 - **No re-render storms** — local typing buffer keeps keystrokes out of Redux until debounce (notes pattern); per-property + per-field-dirty memoized `createSelector`s (both references); edits are plain Immer mutations. Components subscribe to one scalar each.
 - **No loops** — `markSaved` is **never** a `triggerActions` entry; baseline reconciliation cannot oscillate `_dirty`; rehydrate + broadcast-echo actions are excluded from the trigger/persist path; realtime echoes suppressed via `isPendingEcho`.
 - **Never-lose** — layered flush (debounce → boundary flush → `pagehide`); retry keeps the record `_dirty` on write failure; **partial-field writes** (only `_dirtyFields`) so concurrent edits to different fields never clobber; the DB version snapshot is the ultimate recovery; soft-delete (never hard) is recoverable from trash.
-- **Conflict** — start with notes' app-layer detection (realtime + dirty-preserving server merge → `_error:"conflict"` → resolver UI). No DB optimistic lock (auto-`updated_at` triggers make it a no-op). LWW is **not** acceptable for multi-tab records — this is where the contract is stricter than `lib/sync`'s current LWW default.
+- **Conflict — deliberately minimal (locked, D-B).** With one canonical Redux state and one server source of truth, **Redux applies actions in arrival order**; there is no second draft to reconcile against. No heavy notes-style resolver, no DB optimistic lock. Dirty edits are preserved over incoming server data; recovery is the one-action server re-pull. A rich compare-and-choose resolver may be added **per high-collision table later** — it is not built now.
 - **Identity-scoped** — all caches + in-flight writes purge on identity swap (inherited from `lib/sync`).
 
 ---
@@ -166,9 +172,9 @@ Versioning is **DB-trigger-driven and orthogonal to commit timing** — folding 
 
 `ctx_tasks` / `ctx_projects` move off the manual `useState` + Save button (`features/tasks/components/TaskDetailPage.tsx`, `TaskDetailsPanel.tsx`) onto the kit in **`hybrid`** mode:
 
-- Editable draft + `_dirty/_saving` via the slice-kit (today task data lives in the shared `agent-context/tasks` slice — the draft layer is decided in implementation: a dedicated editor-draft map vs. tracking fields on the shared slice).
-- `<SaveStatus>` + `useUnsavedChangesGuard`.
-- DB: add `ctx_tasks` / `ctx_projects` to the versioning dispatcher (snapshot table + 3 triggers + `entity_type`) and add `deleted_at` + the soft-delete RPC trio. Migrations applied via Supabase MCP, verified live, ledger-recorded, `db-types` regenerated (per CLAUDE.md migration law).
+- **Tracking fields + `applyFieldEdit` added directly onto the existing shared `agent-context/tasks` (and projects) slice** — no separate draft store (D-A). Every existing reader keeps reading the same slice. Revert re-pulls from the server.
+- `<SaveStatus>` + `useUnsavedChangesGuard` (mandatory modal listing the dirty fields).
+- DB (the easy part — do it, don't dwell): add `ctx_tasks` / `ctx_projects` to the versioning dispatcher (snapshot table + 3 triggers + `entity_type`, agx-modeled: auto v1 on create, keep all) and add `deleted_at` + the soft-delete RPC trio. Migrations via Supabase MCP, verified live, ledger-recorded, `db-types` regenerated (per CLAUDE.md migration law).
 
 ---
 
@@ -185,9 +191,9 @@ Each phase ships a real consumer and a real deletion. No phase leaves two system
 
 ---
 
-## 10. Open decisions (resolve at implementation)
+## 10. Locked decisions
 
-- **D-A** — Tasks/Projects draft storage: tracking fields on the shared `agent-context` slices vs. a dedicated editor-draft map. (Leaning: dedicated map — isolates in-progress edits from sidebar/picker readers.)
-- **D-B** — Conflict UX depth for hybrid records: reuse notes' `NoteConflictWindow`-style resolver, or a lighter toast-and-reload for low-collision tables.
-- **D-C** — Snapshot retention default (keep-N + always-v1) and whether to adopt the reference-aware `agx_purge_versions` model globally.
-- **D-D** — Whether `manual` mode defaults `flushOnHide` on (safety) or off (true agent-builder parity). (Leaning: on, with opt-out.)
+- **D-A — One state, edited live.** Edits write directly into the single canonical Redux slice; no draft/shadow store. `isDirty` = "differs from server"; revert = one action that re-pulls from the server. `_fieldHistory` is per-field baseline metadata on the record, not a copy.
+- **D-B — Minimal conflict handling.** One source of truth + Redux action ordering is the model. No heavy resolver, no optimistic lock now; per-table resolver possible later.
+- **D-C — No pruning now; model the `agx_*` DB mechanism.** Auto v1 on create, keep every version (incl. v1 + current). DB is the easy part — **effort goes into the frontend code.**
+- **D-D — `flushOnHide` is per-feature; the unsaved-changes modal is universal and mandatory.** The modal must state exactly which changes/fields will be lost.

@@ -34,6 +34,7 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 import { getToolDisplayName } from "../registry/registry";
+import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 
 export interface ToolCallBatchProps {
@@ -74,9 +75,13 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
     if (!first) return null;
     return entries.every((e) => e.toolName === first) ? first : null;
   })();
+  // DB renderer's declared label for a uniform run (e.g. "Directory · 6 calls").
+  const uniformMeta = useDbToolMeta(uniformToolName);
   const label = (() => {
     if (uniformToolName) {
-      return `${getToolDisplayName(uniformToolName)} · ${count} calls`;
+      const name =
+        uniformMeta?.displayName ?? getToolDisplayName(uniformToolName);
+      return `${name} · ${count} calls`;
     }
     return `${count} tool calls`;
   })();
