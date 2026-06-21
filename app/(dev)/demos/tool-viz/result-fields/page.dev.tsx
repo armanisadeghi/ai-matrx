@@ -485,6 +485,46 @@ const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [
         arguments: { city: "Miami" },
         result: { city: "Miami", condition: "windy", temperature: 83, unit: "fahrenheit" },
     }),
+    entry({
+        callId: "db-fs-read",
+        toolName: "fs_read",
+        arguments: { path: "scripts/deploy.sh" },
+        result: {
+            path: "/home/agent/repos/matrx-frontend/scripts/deploy.sh",
+            content: "#!/usr/bin/env bash\nset -euo pipefail\n\n# Build the core profile and ship to Vercel\nMATRX_PROFILE=core pnpm build\npnpm db-types\nvercel deploy --prod\n",
+            size: 156,
+            truncated: false,
+        },
+    }),
+    entry({
+        callId: "db-data-record",
+        toolName: "data",
+        arguments: { action: "get", resource: "project", id: "2c3d7caf" },
+        // Shape-tolerant: this is the single-record variant ({record, resource_type}).
+        result: {
+            resource_type: "project",
+            record: {
+                id: "2c3d7caf-678a-423a-9c5c-d5b1d19b5934",
+                name: "Universal Layout for Org Scope & Context System",
+                slug: "universal-layout-org-scope-context",
+                status: "active",
+                created_at: "2026-06-19 04:26:19+00",
+                settings: { __matrx_apply_key: "req:2df1b117" },
+            },
+        },
+    }),
+    entry({
+        callId: "db-restaurants",
+        toolName: "travel_get_restaurants",
+        arguments: { city: "Miami" },
+        result: { city: "Miami", restaurants: ["Joe's Stone Crab", "Casa French Bistro", "Versailles", "KYU"] },
+    }),
+    entry({
+        callId: "db-events",
+        toolName: "travel_get_events",
+        arguments: { city: "Miami" },
+        result: { city: "Miami", weather: "windy", events: ["Outdoor concert at Bayfront", "Food truck festival", "Art Basel preview"] },
+    }),
 ];
 
 function FixtureCard({ label, children }: { label: string; children: React.ReactNode }) {
