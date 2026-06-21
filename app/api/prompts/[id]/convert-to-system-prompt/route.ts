@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { collectMustacheVariableNamesFromMessagesJson } from "@/features/prompts/utils/collect-template-variables-from-messages-json";
@@ -123,10 +124,7 @@ export async function POST(
     const functionality = await getFunctionalityById(body.functionality_id);
 
     if (!functionality) {
-      console.error(
-        "Invalid functionality_id:",
-        body.functionality_id,
-      );
+      console.error("Invalid functionality_id:", body.functionality_id);
       return NextResponse.json(
         { error: "Invalid functionality_id provided - not found in database" },
         { status: 400 },
@@ -170,7 +168,9 @@ export async function POST(
       category: body.category,
     });
 
-    const { data: newSystemPrompt, error: insertError } = await supabase
+    // system_prompts is RLS-protected with no write policy — use the admin client.
+    const admin = createAdminClient();
+    const { data: newSystemPrompt, error: insertError } = await admin
       .from("system_prompts")
       .insert({
         system_prompt_id: systemPromptId,

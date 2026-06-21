@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import {
@@ -106,7 +107,9 @@ export async function POST(
 
     // Validate against functionality requirements if functionality_id exists
     if (systemPrompt.functionality_id) {
-      const functionality = await getFunctionalityById(systemPrompt.functionality_id);
+      const functionality = await getFunctionalityById(
+        systemPrompt.functionality_id,
+      );
 
       if (!functionality) {
         return NextResponse.json(
@@ -170,8 +173,10 @@ export async function POST(
       systemPrompt.prompt_snapshot,
     );
 
-    // Update the system prompt with the new link
-    const { data: updatedSystemPrompt, error: updateError } = await supabase
+    // Update the system prompt with the new link.
+    // system_prompts is RLS-protected with no write policy — use the admin client.
+    const admin = createAdminClient();
+    const { data: updatedSystemPrompt, error: updateError } = await admin
       .from("system_prompts")
       .update({
         source_prompt_id: body.prompt_id,

@@ -1,3 +1,8 @@
+// app/api/admin/bundles/[id]/members/[toolId]/route.ts
+//
+// Admin-gated alias update + removal for tool_bundle_member
+// (RLS read-only, no write policy).
+
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
@@ -13,52 +18,37 @@ function authErrorResponse(error: unknown): NextResponse | null {
   return null;
 }
 
-/**
- * PUT - Resolve or update an incident.
- */
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string; toolId: string }> },
 ) {
   try {
     await requireAdmin();
-    const { id } = await params;
-    const supabase = createAdminClient();
+    const { id: bundleId, toolId } = await params;
     const body = await request.json();
 
-    const updateData: Record<string, unknown> = {};
-
-    if (body.resolved !== undefined) {
-      updateData.resolved = body.resolved;
-      if (body.resolved) {
-        updateData.resolved_at = new Date().toISOString();
-      } else {
-        updateData.resolved_at = null;
-        updateData.resolved_by = null;
-      }
-    }
-    if (body.resolved_by !== undefined) {
-      updateData.resolved_by = body.resolved_by;
-    }
-    if (body.resolution_notes !== undefined) {
-      updateData.resolution_notes = body.resolution_notes;
+    if (typeof body.local_alias !== "string" || !body.local_alias) {
+      return NextResponse.json(
+        { error: "local_alias is required" },
+        { status: 400 },
+      );
     }
 
-    const { data, error } = await supabase
-      .from("tool_ui_incident")
-      .update(updateData)
-      .eq("id", id)
-      .select()
-      .single();
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("tool_bundle_member")
+      .update({ local_alias: body.local_alias })
+      .eq("bundle_id", bundleId)
+      .eq("tool_id", toolId);
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to update incident", details: error.message },
+        { error: "Failed to update bundle member", details: error.message },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ message: "Incident updated", incident: data });
+    return NextResponse.json({ success: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
@@ -72,31 +62,29 @@ export async function PUT(
   }
 }
 
-/**
- * DELETE - Remove an incident.
- */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string; toolId: string }> },
 ) {
   try {
     await requireAdmin();
-    const { id } = await params;
-    const supabase = createAdminClient();
+    const { id: bundleId, toolId } = await params;
 
+    const supabase = createAdminClient();
     const { error } = await supabase
-      .from("tool_ui_incident")
+      .from("tool_bundle_member")
       .delete()
-      .eq("id", id);
+      .eq("bundle_id", bundleId)
+      .eq("tool_id", toolId);
 
     if (error) {
       return NextResponse.json(
-        { error: "Failed to delete incident", details: error.message },
+        { error: "Failed to remove bundle member", details: error.message },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ message: "Incident deleted" });
+    return NextResponse.json({ success: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

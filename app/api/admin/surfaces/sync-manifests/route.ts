@@ -13,7 +13,7 @@
 // Super-admin only.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { applyManifestSync } from "@/features/surfaces/services/manifest-sync.service";
 
@@ -40,7 +40,9 @@ export async function POST(request: NextRequest) {
   } | null;
 
   try {
-    const supabase = await createClient();
+    // ui_surface* tables are RLS-protected with no write policy — use the admin
+    // client for these super-admin-gated writes.
+    const supabase = createAdminClient();
     const result = await applyManifestSync(supabase, {
       deleteStale: body?.deleteStale ?? false,
       createMissingSurfaces: body?.createMissingSurfaces ?? false,

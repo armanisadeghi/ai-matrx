@@ -11,13 +11,23 @@ export type BundleUpsert = Tables["tool_bundle"]["Insert"];
 
 export interface BundleMemberWithTool {
   member: BundleMemberRow;
-  tool: { id: string; name: string; description: string; is_active: boolean | null } | null;
+  tool: {
+    id: string;
+    name: string;
+    description: string;
+    is_active: boolean | null;
+  } | null;
 }
 
 const sb = () => createClient();
 
-export async function listBundles(opts?: { includeInactive?: boolean }): Promise<BundleRow[]> {
-  let q = sb().from("tool_bundle").select("*").order("name", { ascending: true });
+export async function listBundles(opts?: {
+  includeInactive?: boolean;
+}): Promise<BundleRow[]> {
+  let q = sb()
+    .from("tool_bundle")
+    .select("*")
+    .order("name", { ascending: true });
   if (!opts?.includeInactive) {
     q = q.eq("is_active", true);
   }
@@ -27,12 +37,18 @@ export async function listBundles(opts?: { includeInactive?: boolean }): Promise
 }
 
 export async function getBundle(id: string): Promise<BundleRow> {
-  const { data, error } = await sb().from("tool_bundle").select("*").eq("id", id).single();
+  const { data, error } = await sb()
+    .from("tool_bundle")
+    .select("*")
+    .eq("id", id)
+    .single();
   if (error) throw error;
   return data;
 }
 
-export async function listBundleMembers(bundleId: string): Promise<BundleMemberWithTool[]> {
+export async function listBundleMembers(
+  bundleId: string,
+): Promise<BundleMemberWithTool[]> {
   const { data, error } = await sb()
     .from("tool_bundle_member")
     .select("*, tool:tool_def(id, name, description, is_active)")
@@ -41,7 +57,12 @@ export async function listBundleMembers(bundleId: string): Promise<BundleMemberW
     .order("local_alias", { ascending: true });
   if (error) throw error;
   type Joined = BundleMemberRow & {
-    tool: { id: string; name: string; description: string; is_active: boolean | null } | null;
+    tool: {
+      id: string;
+      name: string;
+      description: string;
+      is_active: boolean | null;
+    } | null;
   };
   return ((data ?? []) as Joined[]).map((row) => ({
     member: {
@@ -55,6 +76,25 @@ export async function listBundleMembers(bundleId: string): Promise<BundleMemberW
   }));
 }
 
+// Writes to tool_bundle / tool_bundle_member can't go through the browser client:
+// both tables are RLS-protected with a read-only SELECT policy and no write
+// policy, so a user-session write silently affects zero rows. These mutations
+// are routed through admin-gated Next.js API routes that use the service client.
+// (Reads above stay client-side — public SELECT works fine.)
+async function adminFetch(url: string, init: RequestInit): Promise<any> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      json?.error || json?.details || `Request failed (${res.status})`,
+    );
+  }
+  return json;
+}
+
 export async function updateBundle(
   id: string,
   patch: Partial<{
@@ -65,14 +105,11 @@ export async function updateBundle(
     lister_tool_id: string | null;
   }>,
 ): Promise<BundleRow> {
-  const { data, error } = await sb()
-    .from("tool_bundle")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const json = await adminFetch(`/api/admin/bundles/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+  return json.bundle as BundleRow;
 }
 
 export async function setBundleMemberAlias(
@@ -80,12 +117,10 @@ export async function setBundleMemberAlias(
   toolId: string,
   alias: string,
 ): Promise<void> {
-  const { error } = await sb()
-    .from("tool_bundle_member")
-    .update({ local_alias: alias })
-    .eq("bundle_id", bundleId)
-    .eq("tool_id", toolId);
-  if (error) throw error;
+  await adminFetch(`/api/admin/bundles/${bundleId}/members/${toolId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ local_alias: alias }),
+  });
 }
 
 export async function addBundleMember(args: {
@@ -94,28 +129,32 @@ export async function addBundleMember(args: {
   localAlias: string;
   sortOrder?: number;
 }): Promise<void> {
-  const { error } = await sb().from("tool_bundle_member").insert({
-    bundle_id: args.bundleId,
-    tool_id: args.toolId,
-    local_alias: args.localAlias,
-    sort_order: args.sortOrder ?? 100,
+  await adminFetch(`/api/admin/bundles/${args.bundleId}/members`, {
+    method: "POST",
+    body: JSON.stringify({
+      tool_id: args.toolId,
+      local_alias: args.localAlias,
+      sort_order: args.sortOrder ?? 100,
+    }),
   });
-  if (error) throw error;
 }
 
-export async function removeBundleMember(bundleId: string, toolId: string): Promise<void> {
-  const { error } = await sb()
-    .from("tool_bundle_member")
-    .delete()
-    .eq("bundle_id", bundleId)
-    .eq("tool_id", toolId);
-  if (error) throw error;
+export async function removeBundleMember(
+  bundleId: string,
+  toolId: string,
+): Promise<void> {
+  await adminFetch(`/api/admin/bundles/${bundleId}/members/${toolId}`, {
+    method: "DELETE",
+  });
 }
 
-export async function searchToolsForBundle(query: string): Promise<
-  { id: string; name: string; description: string }[]
-> {
-  let q = sb().from("tool_def").select("id, name, description").eq("is_active", true);
+export async function searchToolsForBundle(
+  query: string,
+): Promise<{ id: string; name: string; description: string }[]> {
+  let q = sb()
+    .from("tool_def")
+    .select("id, name, description")
+    .eq("is_active", true);
   if (query.trim()) {
     q = q.or(buildSearchOr(query, ["name"]));
   }

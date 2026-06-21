@@ -15,7 +15,7 @@
 // Super-admin only.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import {
   remediateBrokenMapping,
@@ -94,7 +94,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient();
+    // agx_agent_surface is RLS-protected; super-admin gated above, use admin client.
+    const supabase = createAdminClient();
     const result = await remediateBrokenMapping(supabase, args);
     return NextResponse.json({ result });
   } catch (e) {

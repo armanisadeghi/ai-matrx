@@ -23,6 +23,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 
 interface RouteParams {
   params: Promise<{ serverId: string }>;
@@ -60,13 +61,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     .single();
 
   if (serverError || !server) {
-    return NextResponse.json({ error: "MCP server not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "MCP server not found" },
+      { status: 404 },
+    );
   }
 
   const result = await runTest(server);
 
   // Persist outcome (best-effort; failure here doesn't fail the test response).
-  await supabase
+  // tool_mcp_server is RLS-protected with no write policy — use the admin client.
+  const admin = createAdminClient();
+  await admin
     .from("tool_mcp_server")
     .update({
       last_tested_at: new Date().toISOString(),
