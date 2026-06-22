@@ -24,8 +24,11 @@ import { ToolCallVisualization } from "@/features/tool-call-visualization/compon
 import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
 import { SearchInline } from "@/features/tool-call-visualization/renderers/search/SearchInline";
 import { SearchOverlay } from "@/features/tool-call-visualization/renderers/search/SearchOverlay";
+import { ScrapeInline } from "@/features/tool-call-visualization/renderers/scrape/ScrapeInline";
+import { ScrapeOverlay } from "@/features/tool-call-visualization/renderers/scrape/ScrapeOverlay";
 import {
     buildResearchRecording,
+    buildScrapeRecording,
     buildSearchRecording,
 } from "@/features/tool-call-visualization/simulator/streamRecording";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
@@ -580,6 +583,141 @@ const SEARCH_LIVE_SNAPSHOT: ToolLifecycleEntry = {
     completedAt: null,
 };
 
+// ─── Scrape / page-read fixtures (web_read / core_web_read_web_pages) ────────
+//
+// The REAL wire shape (verified from cx_tool_call): the read tools return
+// `{ pages: [{ url, content }] }` WHOLE at completion, with each page body
+// wrapped in the `Here is the content from page <url>: """…"""` envelope (which
+// parseScrape strips). Title is derived best-effort from the body; preview
+// image + AI review are OPTIONAL — present only if the page object carries them.
+
+const SCRAPE_PAGE_ENVELOPE = (url: string, body: string): string =>
+    `Here is the content from page ${url}: """\n${body}"""`;
+
+// IMAGE-ABSENT fixture — the real, common shape: multiple pages, content only.
+const SCRAPE_RESULT_NO_IMAGE = {
+    pages: [
+        {
+            url: "https://ods.od.nih.gov/factsheets/Omega3FattyAcids/",
+            content: SCRAPE_PAGE_ENVELOPE(
+                "https://ods.od.nih.gov/factsheets/Omega3FattyAcids/",
+                "# Omega-3 Fatty Acids\n\nOmega-3 fatty acids are a family of polyunsaturated fats the body cannot make from scratch. The three main types are ALA (plant oils), EPA, and DHA (marine sources). Fatty fish such as salmon, mackerel, and sardines are the richest dietary sources of EPA and DHA, while flaxseed, chia, and walnuts supply ALA.\n\nThe Office of Dietary Supplements recommends most adults obtain omega-3s through food first, reserving supplementation for those with low fish intake.",
+            ),
+        },
+        {
+            url: "https://www.healthline.com/nutrition/omega-3-foods",
+            content: SCRAPE_PAGE_ENVELOPE(
+                "https://www.healthline.com/nutrition/omega-3-foods",
+                "# 12 Foods Very High in Omega-3\n\nFatty fish, algae oil, and walnuts top the bioavailability ranking. Mackerel delivers the highest EPA + DHA per serving, followed by salmon and cod liver oil. For plant-based eaters, algae oil is the only source providing preformed EPA and DHA, making it the standout vegan option.",
+            ),
+        },
+        {
+            url: "https://www.consumerlab.com/marine-vs-plant-omega",
+            content: SCRAPE_PAGE_ENVELOPE(
+                "https://www.consumerlab.com/marine-vs-plant-omega",
+                "# Marine vs Plant Omega Oils: A 2026 Comparison\n\nHead-to-head testing on EPA/DHA conversion efficiency and contaminant load. Marine sources deliver preformed EPA/DHA, while plant ALA converts inefficiently (5–10%). Algae oil bridges the gap, offering marine-grade omega-3 without the contaminant risk of some fish oils.",
+            ),
+        },
+    ],
+};
+
+const SCRAPE_ARGS_NO_IMAGE = {
+    urls: [
+        "https://ods.od.nih.gov/factsheets/Omega3FattyAcids/",
+        "https://www.healthline.com/nutrition/omega-3-foods",
+        "https://www.consumerlab.com/marine-vs-plant-omega",
+    ],
+};
+
+// IMAGE-PRESENT fixture — a single page whose object ALSO carries an optional
+// preview image + an AI-review line (the best-effort enrichment path). Proves
+// the card renders the image via InlineMediaRef and the review chip.
+const SCRAPE_RESULT_WITH_IMAGE = {
+    pages: [
+        {
+            url: "https://www.nature.com/articles/omega3-sustainability-2026",
+            image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80",
+            ai_review:
+                "Strong primary source: peer-reviewed, directly on-topic for omega-3 sustainability, with quantified conversion data.",
+            content: SCRAPE_PAGE_ENVELOPE(
+                "https://www.nature.com/articles/omega3-sustainability-2026",
+                "# Catching the Green Wave: Fueling the Future of Omega-3 Sustainability\n\nAlgae-derived omega-3 emerges as the most sustainable marine-free source. Cultivated photobioreactors yield EPA and DHA at densities rivaling wild fish stocks, sidestepping overfishing and ocean contaminant accumulation. The authors project algae oil could supply 30% of global omega-3 demand by 2030.",
+            ),
+        },
+    ],
+};
+
+const SCRAPE_ARGS_WITH_IMAGE = {
+    urls: ["https://www.nature.com/articles/omega3-sustainability-2026"],
+};
+
+function scrapeEntry(
+    toolName: string,
+    result: unknown,
+    args: Record<string, unknown>,
+    callId: string,
+): ToolLifecycleEntry {
+    return {
+        callId,
+        toolName,
+        displayName: "Web Page Reader",
+        status: "completed",
+        arguments: args,
+        startedAt: "2026-06-22T10:00:00.000Z",
+        completedAt: "2026-06-22T10:00:06.000Z",
+        latestMessage: null,
+        latestData: null,
+        result,
+        resultPreview: null,
+        errorType: null,
+        errorMessage: null,
+        isDelegated: false,
+        events: [],
+    };
+}
+
+const SCRAPE_ENTRY_NO_IMAGE = scrapeEntry(
+    "core_web_read_web_pages",
+    SCRAPE_RESULT_NO_IMAGE,
+    SCRAPE_ARGS_NO_IMAGE,
+    "scrape-no-image",
+);
+const SCRAPE_ENTRY_WITH_IMAGE = scrapeEntry(
+    "web_read",
+    SCRAPE_RESULT_WITH_IMAGE,
+    SCRAPE_ARGS_WITH_IMAGE,
+    "scrape-with-image",
+);
+
+const SCRAPE_RECORDING = buildScrapeRecording(
+    SCRAPE_RESULT_NO_IMAGE,
+    SCRAPE_ARGS_NO_IMAGE,
+    { toolName: "core_web_read_web_pages", displayName: "Web Page Reader" },
+);
+
+// STATIC mid-stream snapshot — status "progress", NO pages parsed yet, but the
+// "Browsing <url>" activity events present. Drives the READING-WAVE card path
+// WITHOUT the simulator timer, so the reading shimmer + one-card-per-page is
+// verifiable even when Fast Refresh is thrashing the Play demo.
+const SCRAPE_READING_SNAPSHOT: ToolLifecycleEntry = {
+    ...scrapeEntry(
+        "core_web_read_web_pages",
+        null,
+        SCRAPE_ARGS_NO_IMAGE,
+        "scrape-reading-snapshot",
+    ),
+    status: "progress",
+    completedAt: null,
+    events: SCRAPE_ARGS_NO_IMAGE.urls.map((url, i) => ({
+        event: "tool_progress" as const,
+        call_id: "scrape-reading-snapshot",
+        tool_name: "core_web_read_web_pages",
+        timestamp: Date.now() + i,
+        message: `Browsing ${url}`,
+        data: undefined,
+    })),
+};
+
 // Dynamic (DB) renderer demo — resolves to the `tool_ui` row for `agent_call`,
 // fetched + compiled at runtime via the canonical compileSlotComponent path.
 const AGENT_CALL_ENTRY = entry({
@@ -880,6 +1018,58 @@ function ResearchStreamSection() {
     );
 }
 
+/**
+ * Live scrape (press Play) — the Wave-2 SCRAPE renderer in its READING phase.
+ * One simulated entry drives both the raw inline renderer and the full shell.
+ * Each page begins reading a beat apart (a "Browsing <url>" event), so the
+ * left-to-right reading-wave card appears per page; on completion every card
+ * fast-forwards to its filled state (title + snippet + char count).
+ */
+function LiveScrapeSection() {
+    const [playKey, setPlayKey] = useState(0);
+    const hasPlayed = playKey > 0;
+    const simEntry = useSimulatedToolEntry(hasPlayed ? SCRAPE_RECORDING : null, { playKey });
+
+    const statusVariant =
+        simEntry.status === "completed"
+            ? "default"
+            : simEntry.status === "error"
+              ? "destructive"
+              : "secondary";
+    const statusLabel = !hasPlayed ? "idle" : simEntry.status;
+
+    return (
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Live scrape / page-read (press Play)
+                </h2>
+                <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
+                    {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
+                    {hasPlayed ? "Replay" : "Play"}
+                </Button>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                {simEntry.latestMessage ? (
+                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
+                ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+                One full CARD per page with a left-to-right reading-wave shimmer while reading; pages start a beat
+                apart (Browsing &lt;url&gt;), then each card fills in (title · snippet · char count) on completion.
+                Press Play to run.
+            </p>
+            <div className="space-y-4">
+                <FixtureCard label="ScrapeInline — READING wave → filled cards (raw renderer)">
+                    <ScrapeInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="Shell behavior (web_read — live: auto-expand → auto-collapse after)">
+                    <ToolCallVisualization entries={[simEntry]} hasContent />
+                </FixtureCard>
+            </div>
+        </section>
+    );
+}
+
 export default function ResultFieldsGalleryPage() {
     return (
         // Mirror AgentConversationColumn's centerWrap: w-full max-w-3xl mx-auto px-2.
@@ -935,6 +1125,65 @@ export default function ResultFieldsGalleryPage() {
                 <FixtureCard label="SearchOverlay — overlay Results body">
                     <SearchOverlay entry={SEARCH_ENTRY} />
                 </FixtureCard>
+            </section>
+
+            {/* ─── Wave 2: scrape / page-read cards ─────────────────────────── */}
+
+            <LiveScrapeSection />
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Scrape — READING wave (STATIC mid-stream, timer-independent)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A <code className="text-xs">status: &quot;progress&quot;</code> entry with NO pages parsed yet but
+                    the &quot;Browsing &lt;url&gt;&quot; activity events present — one reading-wave card per page,
+                    independent of the Play timer.
+                </p>
+                <FixtureCard label="ScrapeInline — READING cards (static progress entry)">
+                    <ScrapeInline entry={SCRAPE_READING_SNAPSHOT} events={SCRAPE_READING_SNAPSHOT.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Scrape — DONE, image ABSENT (real wire shape: pages = content only)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    The common case: <code className="text-xs">{`{pages:[{url,content}]}`}</code> with the
+                    <code className="text-xs"> Here is the content from page …: &quot;&quot;&quot;…&quot;&quot;&quot;</code> envelope stripped, title
+                    derived best-effort from the body, no preview image. Click a row to open the full reader overlay.
+                </p>
+                <div className="space-y-4">
+                    <FixtureCard label="ScrapeInline — filled cards, no image (raw renderer)">
+                        <ScrapeInline entry={SCRAPE_ENTRY_NO_IMAGE} events={[]} onOpenOverlay={() => {}} />
+                    </FixtureCard>
+                    <FixtureCard label="Shell — persisted (click to expand)">
+                        <ToolCallVisualization entries={[SCRAPE_ENTRY_NO_IMAGE]} isPersisted hasContent />
+                    </FixtureCard>
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Scrape — DONE, image PRESENT + AI-review (best-effort enrichment)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A page object that ALSO carries an optional preview image (rendered via{" "}
+                    <code className="text-xs">InlineMediaRef</code>, never a raw <code className="text-xs">&lt;img&gt;</code>) and an AI-review line (shown ONLY because it&apos;s present).
+                </p>
+                <FixtureCard label="ScrapeInline — page card with preview image + review line">
+                    <ScrapeInline entry={SCRAPE_ENTRY_WITH_IMAGE} events={[]} onOpenOverlay={() => {}} />
+                </FixtureCard>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Scrape — FULL / MODAL view (page list · full content · image · review)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3" style={{ height: 520 }}>
+                    <ScrapeOverlay entry={SCRAPE_ENTRY_WITH_IMAGE} />
+                </div>
             </section>
 
             <ResearchStreamSection />

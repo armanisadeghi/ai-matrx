@@ -305,3 +305,77 @@ export function buildSearchRecording(
 
   return { toolName, displayName, args, steps, finalResult: fullBlob };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scrape / page-read recording (web_read, core_web_read_web_pages)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Reading a page takes real time — pages start a beat apart, finish slow. */
+const READ_START_GAP_MS = 500;
+const READ_WORK_MS = 2600;
+
+/**
+ * Build a realistic recording for a page-read tool call (`web_read`,
+ * `core_web_read_web_pages`) from its final result object.
+ *
+ * The wire reality: the read tools return the FULL `{ pages: [...] }` object
+ * WHOLE at `tool_completed` — they do NOT trickle page bodies. What DOES stream
+ * is the per-URL browsing ACTIVITY: a `tool_progress` "Browsing <url>" beat as
+ * each page begins fetching. So this recording emits:
+ *
+ *   t=0          → `tool_started`  (data: { urls })
+ *   staggered    → `tool_progress` "Browsing <url>" per page (drives the
+ *                  left-to-right reading-wave card to appear for that page)
+ *   after work   → `tool_completed` (finalResult = the whole pages object)
+ *
+ * The ScrapeInline renderer reading-waves each browsing URL while the call is
+ * live, then fills in every page card the instant `tool_completed` lands.
+ *
+ * `result` must be the page-read object (`{ pages: [{ url, content, … }] }`);
+ * the requested URLs are read from `result.pages[*].url` (falling back to
+ * `args.urls`) so the browsing beats line up with the pages that come back.
+ */
+export function buildScrapeRecording(
+  result: { pages?: Array<{ url?: string }> } | Record<string, unknown>,
+  args: Record<string, unknown>,
+  opts?: { toolName?: string; displayName?: string },
+): StreamRecording {
+  const toolName = opts?.toolName ?? "web_read";
+  const displayName = opts?.displayName ?? "Web Page Reader";
+
+  const pages = Array.isArray((result as { pages?: unknown }).pages)
+    ? ((result as { pages: Array<{ url?: string }> }).pages)
+    : [];
+  const urlsFromPages = pages
+    .map((p) => (typeof p.url === "string" ? p.url : ""))
+    .filter(Boolean);
+  const urlsFromArgs = Array.isArray(args.urls)
+    ? (args.urls as unknown[]).filter(
+        (u): u is string => typeof u === "string" && u.length > 0,
+      )
+    : [];
+  const urls = urlsFromPages.length > 0 ? urlsFromPages : urlsFromArgs;
+
+  const steps: StreamStep[] = [
+    { afterMs: 0, event: "tool_started", data: { ...args } },
+  ];
+
+  // Each page begins reading a short beat after the previous — the cards appear
+  // staggered, each running its own reading-wave until completion.
+  let lastStart = 0;
+  urls.forEach((url, index) => {
+    lastStart = READ_START_GAP_MS * (index + 1);
+    steps.push({
+      afterMs: lastStart,
+      event: "tool_progress",
+      message: `Browsing ${url}`,
+    });
+  });
+
+  // Completion lands after the slowest page finishes its read window.
+  const completeAt =
+    (urls.length > 0 ? lastStart : 0) + READ_WORK_MS;
+  steps.push({ afterMs: completeAt, event: "tool_completed" });
+
+  return { toolName, displayName, args, steps, finalResult: result };
+}

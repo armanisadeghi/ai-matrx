@@ -451,6 +451,20 @@
     }
   }
 
+  /* Reading wave — a left-to-right sweep used by the scrape/read-page cards
+     (features/tool-call-visualization/renderers/scrape) to mimic a person
+     reading a page top-to-bottom while the content is being fetched. The
+     element is a wide highlight bar translated across an overflow-hidden card;
+     it enters from the left and exits to the right, then repeats. */
+  @keyframes readingWave {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+
   @keyframes progressSpin {
     0% {
       stroke-dashoffset: 88;

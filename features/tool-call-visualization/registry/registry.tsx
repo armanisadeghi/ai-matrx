@@ -17,6 +17,9 @@ import { GenericRenderer } from "./GenericRenderer";
 
 import { SearchInline } from "../renderers/search/SearchInline";
 import { SearchOverlay } from "../renderers/search/SearchOverlay";
+import { ScrapeInline } from "../renderers/scrape/ScrapeInline";
+import { ScrapeOverlay } from "../renderers/scrape/ScrapeOverlay";
+import { parseScrape } from "../renderers/scrape/parseScrape";
 import { NewsInline, NewsOverlay } from "../renderers/news-api";
 import {
   SeoMetaTagsInline,
@@ -171,6 +174,46 @@ function searchHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
           {parsed.domains.length}{" "}
           {parsed.domains.length === 1 ? "domain" : "domains"}
         </span>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scrape / page-read header helpers — shared by web_read /
+// core_web_read_web_pages (the unified ScrapeInline/ScrapeOverlay renderer).
+// Subtitle = the first URL's domain (or "N pages"); extras = pages / chars.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function scrapeHeaderSubtitle(entry: ToolLifecycleEntry): string | null {
+  const parsed = parseScrape(entry);
+  const urls = parsed.requestedUrls;
+  if (urls.length === 1) {
+    try {
+      return new URL(urls[0]).hostname.replace(/^www\./, "");
+    } catch {
+      return urls[0];
+    }
+  }
+  if (urls.length > 1) return `${urls.length} pages`;
+  if (parsed.pages.length > 0) {
+    return parsed.pages.length === 1
+      ? parsed.pages[0].domain
+      : `${parsed.pages.length} pages`;
+  }
+  return null;
+}
+
+function scrapeHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
+  const parsed = parseScrape(entry);
+  if (parsed.pages.length === 0) return null;
+  return (
+    <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+      <span>
+        {parsed.pages.length} {parsed.pages.length === 1 ? "page" : "pages"} read
+      </span>
+      {parsed.totalChars > 0 && (
+        <span>{parsed.totalChars.toLocaleString()} chars</span>
       )}
     </div>
   );
@@ -404,6 +447,22 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  web_read: {
+    toolName: "web_read",
+    displayName: "Web Page Reader",
+    phaseLabels: {
+      running: "Reading the page",
+      complete: "Read the page",
+      errorPrefix: "Failed to read the page",
+    },
+    resultsLabel: "Pages Read",
+    InlineComponent: ScrapeInline,
+    OverlayComponent: ScrapeOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: scrapeHeaderSubtitle,
+    getHeaderExtras: scrapeHeaderExtras,
+  },
+
   core_web_read_web_pages: {
     toolName: "core_web_read_web_pages",
     displayName: "Web Page Reader",
@@ -413,9 +472,11 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Failed to read web pages",
     },
     resultsLabel: "Pages Read",
-    InlineComponent: DeepResearchInline,
-    OverlayTabs: deepResearchOverlayTabs,
+    InlineComponent: ScrapeInline,
+    OverlayComponent: ScrapeOverlay,
     keepExpandedOnStream: true,
+    getHeaderSubtitle: scrapeHeaderSubtitle,
+    getHeaderExtras: scrapeHeaderExtras,
   },
 
   rag_search: {
@@ -779,6 +840,7 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "web_search_v1",
   "research_web",
   "core_web_search_and_read",
+  "web_read",
   "core_web_read_web_pages",
   "rag_search",
   "get_user_lists",
