@@ -166,6 +166,10 @@ The whole integration is now **two rows + one component**. RPCs, validation, lab
 
 If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareUrl()`, or any "resource-type → table-name" map: stop. That work has already been generalized into the registry and you are recreating it.
 
+### NOT this system: data-store / library publishing
+
+[Shared Knowledge Resources](../rag/FEATURE.md#shared-knowledge-resources) (`features/rag/` library stores) are shared by an **ownership-asymmetry** model, not this registry: a system org owns the content, READ is granted via `rag.data_store_grants` (audience global / industry / org), and WRITE stays gated by data-store ownership. Do **NOT** register `data_store` in `shareable_resource_registry` or route library publishing through `useSharing` / `permissions` — that would imply per-user grants + `has_permission()` RLS, the wrong model. The publish UI (`DataStorePublishPanel`) deliberately *mirrors* `ShareModal`'s structure but uses its own grant RPCs over HTTP.
+
 ---
 
 ## Invariants & gotchas

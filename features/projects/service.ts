@@ -49,6 +49,24 @@ function normalizeOrgId(
   return organizationId;
 }
 
+/** Resolve null / pseudo-org to the user's real personal org id (never leave NULL). */
+async function resolveOrganizationId(
+  organizationId: string | null | undefined,
+): Promise<string | null> {
+  const normalized = normalizeOrgId(organizationId);
+  if (normalized) return normalized;
+
+  const currentUserId = requireUserId();
+  const { data, error } = await supabase.rpc("ensure_personal_organization", {
+    p_user_id: currentUserId,
+  });
+  if (error || !data) {
+    console.error("Error resolving personal organization:", error?.message);
+    return null;
+  }
+  return data;
+}
+
 // ============================================================================
 // DB Row Interfaces
 // ============================================================================
@@ -64,7 +82,13 @@ export async function createProject(
 ): Promise<ProjectResult> {
   try {
     const { name, slug, description, settings } = options;
-    const organizationId = normalizeOrgId(options.organizationId);
+    const organizationId = await resolveOrganizationId(options.organizationId);
+    if (!organizationId) {
+      return {
+        success: false,
+        error: "Could not resolve organization for this project",
+      };
+    }
 
     const nameValidation = validateProjectName(name);
     if (!nameValidation.valid) {

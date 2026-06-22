@@ -10,6 +10,9 @@ export const DATA_STORE_KINDS = [
   "project",
   "reference",
   "inbox",
+  // Shared Knowledge Resources: a system-owned, read-only library store
+  // (Matrx Library org) published to tenants by audience.
+  "library",
 ] as const;
 
 export type DataStoreKind = (typeof DATA_STORE_KINDS)[number];

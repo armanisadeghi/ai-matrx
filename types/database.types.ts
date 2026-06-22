@@ -10906,6 +10906,66 @@ export type Database = {
         }
         Relationships: []
       }
+      industries: {
+        Row: {
+          created_at: string
+          default_template_id: string | null
+          description: string | null
+          facet: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_template_id?: string | null
+          description?: string | null
+          facet?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_template_id?: string | null
+          description?: string | null
+          facet?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "industries_default_template_id_fkey"
+            columns: ["default_template_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "industries_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation_codes: {
         Row: {
           code: string
@@ -11384,6 +11444,39 @@ export type Database = {
           target_scope_id?: string
           target_slot_key?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      library_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          data_store_id: string | null
+          detail: Json
+          id: string
+          industry_id: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          data_store_id?: string | null
+          detail?: Json
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          data_store_id?: string | null
+          detail?: Json
+          id?: string
+          industry_id?: string | null
+          organization_id?: string | null
         }
         Relationships: []
       }
@@ -12426,6 +12519,45 @@ export type Database = {
             columns: ["issue_class_id"]
             isOneToOne: false
             referencedRelation: "ops_issue_class"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_industries: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          industry_id: string
+          is_primary: boolean
+          organization_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          industry_id: string
+          is_primary?: boolean
+          organization_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          industry_id?: string
+          is_primary?: boolean
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_industries_industry_id_fkey"
+            columns: ["industry_id"]
+            isOneToOne: false
+            referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_industries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -20446,6 +20578,35 @@ export type Database = {
         }
         Relationships: []
       }
+      system_orgs: {
+        Row: {
+          created_at: string
+          description: string | null
+          key: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          key: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          key?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_orgs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_personal_org_failures: {
         Row: {
           created_at: string
@@ -26376,6 +26537,10 @@ export type Database = {
     }
     Functions: {
       _count_super_admins: { Args: never; Returns: number }
+      _library_assert_super_admin: {
+        Args: { p_actor: string }
+        Returns: undefined
+      }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
         Returns: Json
@@ -31006,6 +31171,67 @@ export type Database = {
         }
         Returns: boolean
       }
+      industry_assign_org: {
+        Args: {
+          p_actor?: string
+          p_industry_id: string
+          p_is_primary?: boolean
+          p_organization_id: string
+        }
+        Returns: {
+          assigned_by: string | null
+          created_at: string
+          industry_id: string
+          is_primary: boolean
+          organization_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "org_industries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      industry_unassign_org: {
+        Args: {
+          p_actor?: string
+          p_industry_id: string
+          p_organization_id: string
+        }
+        Returns: undefined
+      }
+      industry_upsert: {
+        Args: {
+          p_actor?: string
+          p_default_template_id?: string
+          p_description?: string
+          p_facet?: string
+          p_name: string
+          p_parent_id?: string
+          p_slug: string
+          p_sort_order?: number
+        }
+        Returns: {
+          created_at: string
+          default_template_id: string | null
+          description: string | null
+          facet: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "industries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       invite_to_organization: {
         Args: {
           email_address: string
@@ -31164,6 +31390,10 @@ export type Database = {
           p_keep_count?: number
         }
         Returns: number
+      }
+      rag_source_has_library_grant: {
+        Args: { p_org_id?: string; p_source_id: string; p_source_kind: string }
+        Returns: boolean
       }
       rag_user_can_see_cld_file: {
         Args: { p_file_id: string }
@@ -31634,6 +31864,7 @@ export type Database = {
           session_id: string
         }[]
       }
+      system_org_id: { Args: { p_key: string }; Returns: string }
       to_snake_case: { Args: { input_text: string }; Returns: string }
       tool_executor_walk_parents: {
         Args: { p_name: string }

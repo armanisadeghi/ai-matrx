@@ -26,8 +26,10 @@ import {
   Database,
   FilePlus,
   Loader2,
+  Lock,
   Pencil,
   Plus,
+  Share2,
   Trash2,
   Upload,
   X,
@@ -59,6 +61,9 @@ import {
 } from "@/features/rag/types/data-stores-ext";
 import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
 import { fileHandler } from "@/features/files";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
 
 export function DataStoresPage() {
   const router = useRouter();
@@ -314,6 +319,8 @@ function StoreDetailPanel({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [dropPending, setDropPending] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
   // Rich members — server-enriched view of what's actually in the store
   // (file name, size, processing status, page/chunk counts). Replaces
@@ -468,13 +475,18 @@ function StoreDetailPanel({
     );
   }
   const s = detail.store;
+  // Shared Knowledge Resources: a 'granted' store is a shared library the
+  // caller may search but not mutate — writes are gated server-side too.
+  const readOnly = !!s.readOnly;
+  // The Publish action is for super-admins curating library-owned stores.
+  const canPublish = isSuperAdmin && s.kind === "library" && !readOnly;
 
   return (
     <div
       className="relative flex flex-col h-full overflow-hidden"
-      onDragOver={onPanelDragOver}
-      onDragLeave={onPanelDragLeave}
-      onDrop={(e) => void onPanelDrop(e)}
+      onDragOver={readOnly ? undefined : onPanelDragOver}
+      onDragLeave={readOnly ? undefined : onPanelDragLeave}
+      onDrop={readOnly ? undefined : (e) => void onPanelDrop(e)}
     >
       {dragActive && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none rounded-md border-2 border-dashed border-primary bg-primary/10">
@@ -507,33 +519,52 @@ function StoreDetailPanel({
               org {s.organizationId.slice(0, 8)}
             </span>
           )}
+          {readOnly && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Shared library · read-only
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setEditing((e) => !e)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive"
-              onClick={async () => {
-                if (
-                  !confirm(
-                    `Permanently delete data store "${s.name}"? Members will be removed but the underlying documents are not affected.`,
-                  )
-                )
-                  return;
-                const ok = await detail.deleteStore();
-                if (ok) onDeleted();
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete
-            </Button>
+            {canPublish && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPublishOpen(true)}
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                Publish
+              </Button>
+            )}
+            {!readOnly && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditing((e) => !e)}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive"
+                  onClick={async () => {
+                    if (
+                      !confirm(
+                        `Permanently delete data store "${s.name}"? Members will be removed but the underlying documents are not affected.`,
+                      )
+                    )
+                      return;
+                    const ok = await detail.deleteStore();
+                    if (ok) onDeleted();
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
         {s.description && (
@@ -566,22 +597,26 @@ function StoreDetailPanel({
             Members ({detail.members.length})
           </h2>
           <div className="flex items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setPickerOpen(true)}
-            >
-              <FilePlus className="h-3.5 w-3.5" /> Pick from your files
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-muted-foreground"
-              onClick={() => setAdvancedOpen(true)}
-              title="Bind a non-cld_file source by id"
-            >
-              <Plus className="h-3.5 w-3.5" /> Advanced
-            </Button>
+            {!readOnly && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <FilePlus className="h-3.5 w-3.5" /> Pick from your files
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground"
+                  onClick={() => setAdvancedOpen(true)}
+                  title="Bind a non-cld_file source by id"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Advanced
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -614,16 +649,27 @@ function StoreDetailPanel({
               await detail.removeMember(sourceKind, sourceId);
               richMembers.refresh();
             }}
+            readOnly={readOnly}
           />
         )}
 
-        {detail.members.length > 0 && (
+        {!readOnly && detail.members.length > 0 && (
           <div className="text-[11px] text-muted-foreground/70 pt-1">
             Tip: drag files from your computer onto this panel to upload + bind
             + queue for RAG in one step.
           </div>
         )}
       </div>
+
+      {/* Publish to an audience (Shared Knowledge Resources) — super-admin only */}
+      {canPublish && (
+        <DataStorePublishPanel
+          isOpen={publishOpen}
+          onClose={() => setPublishOpen(false)}
+          storeId={storeId}
+          storeName={s.name}
+        />
+      )}
 
       {/* Pick-from-your-files dialog */}
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>

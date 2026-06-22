@@ -9,13 +9,16 @@ export default function ResearchNewTopicPage() {
   return (
     <>
       <PageHeader>
-        <Link
-          href="/research/topics"
-          className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
-          aria-label="Back to topics"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Link>
+        <div className="flex items-center w-full min-w-0">
+          <Link
+            href="/research/topics"
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -ml-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
+            aria-label="Back to topics"
+          >
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Back to Topics</span>
+          </Link>
+        </div>
       </PageHeader>
       <div className="h-dvh w-full overflow-y-auto bg-textured">
         {/* Spacer so initial content starts below the glass header */}

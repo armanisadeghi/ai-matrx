@@ -3,12 +3,14 @@
 /**
  * Working-document drawer body. The working document is a live, collaborative
  * context item re-sent every turn — editing it here reaches the agent
- * automatically (no re-attach). Two views, toggled from the footer:
+ * automatically (no re-attach). Three views, toggled from the footer:
  *
- *   • Edit  — the native `ProTextarea` editor, full height (same surface as
- *             `WorkingDocumentPanel`, minus its header chrome).
- *   • Diff  — "what the agent last changed", via the canonical `DiffViewer`
- *             (light engine, highlight view) fed by `useWorkingDocChanges`.
+ *   • Edit     — the native `ProTextarea` editor, full height (same surface as
+ *                `WorkingDocumentPanel`, minus its header chrome).
+ *   • Preview  — rendered markdown via `MarkdownStream` (click to return to
+ *                edit — same contract as agent-builder message preview).
+ *   • Diff     — "what the agent last changed", via the canonical `DiffViewer`
+ *                (light engine, highlight view) fed by `useWorkingDocChanges`.
  *
  * Only the Body mounts `useWorkingDocument` (which owns the realtime channel +
  * context-sync effects). It publishes the bits the Footer needs (view toggle,
@@ -16,8 +18,9 @@
  * never double-mounts the hook.
  */
 
+import dynamic from "next/dynamic";
 import { useEffect, useSyncExternalStore } from "react";
-import { GitCompare, Loader2, Pencil } from "lucide-react";
+import { Eye, GitCompare, Loader2, Pencil, SquarePilcrow } from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
@@ -30,10 +33,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { ContextItemBodyProps } from "../types";
 
+const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
+  ssr: false,
+});
+
+type WorkingDocView = "edit" | "preview" | "diff";
+
 // ── Tiny per-conversation store shared between Body and Footer ───────────────
 
 interface WorkingDocViewState {
-  view: "edit" | "diff";
+  view: WorkingDocView;
   hasUnseenChange: boolean;
   saving: boolean;
 }
@@ -65,7 +74,7 @@ function patch(conversationId: string, next: Partial<WorkingDocViewState>) {
   store.set(conversationId, merged);
   emit();
 }
-function setView(conversationId: string, view: "edit" | "diff") {
+function setView(conversationId: string, view: WorkingDocView) {
   patch(conversationId, { view });
 }
 function useWorkingDocView(conversationId: string): WorkingDocViewState {
@@ -115,6 +124,28 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
     );
   }
 
+  if (view === "preview") {
+    return (
+      <div
+        className="h-full min-h-0 cursor-text overflow-y-auto overscroll-contain p-3"
+        onClick={() => setView(conversationId, "edit")}
+        title="Click to edit"
+      >
+        {draft.trim() ? (
+          <MarkdownStream
+            content={draft}
+            hideCopyButton
+            className="text-base leading-relaxed"
+          />
+        ) : (
+          <span className="text-sm italic text-muted-foreground">
+            Empty. Ask the agent to draft this — or click to type here.
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <ProTextarea
       value={draft}
@@ -146,10 +177,35 @@ export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
           <button
             type="button"
             onClick={() =>
-              setView(conversationId, view === "diff" ? "edit" : "diff")
+              setView(conversationId, view === "preview" ? "edit" : "preview")
             }
             className={cn(
               "ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent",
+              view === "preview"
+                ? "text-purple-500"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {view === "preview" ? (
+              <Pencil className="h-3.5 w-3.5" />
+            ) : (
+              <SquarePilcrow className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {view === "preview" ? "Back to editor" : "Matrx preview"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() =>
+              setView(conversationId, view === "diff" ? "edit" : "diff")
+            }
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent",
               view === "diff"
                 ? "text-foreground"
                 : hasUnseenChange
@@ -158,7 +214,7 @@ export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
             )}
           >
             {view === "diff" ? (
-              <Pencil className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" />
             ) : (
               <span className="relative">
                 <GitCompare className="h-3.5 w-3.5" />

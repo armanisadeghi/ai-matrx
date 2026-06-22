@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@/features/files";
 import type { Organization, OrgRole } from "../types";
 import { GeneralSettings } from "./GeneralSettings";
+import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
@@ -301,6 +302,11 @@ export function OrgManage({
             </Card>
           </section>
         )}
+
+        {/* Industries — org's industry memberships (Shared Knowledge Resources) */}
+        <section className="px-1">
+          <OrgIndustriesSection orgId={displayOrganization.id} />
+        </section>
 
         {/* Module settings — per-kind org rules (placeholder tasklist UI) */}
         {canManageSettings && (

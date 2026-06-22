@@ -30,7 +30,7 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
       <button
         onClick={() => onSelect(null)}
         className={cn(
-          "rounded-xl border-2 border-dashed p-4 text-left transition-colors min-h-[44px]",
+          "rounded-xl border-2 border-dashed p-4 text-left text-foreground transition-colors min-h-[44px]",
           !selected
             ? "border-primary bg-primary/5"
             : "border-border hover:border-primary/30",
@@ -40,7 +40,9 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
           <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
             <FileText className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="font-semibold text-sm">No Template</span>
+          <span className="font-semibold text-sm text-foreground">
+            No Template
+          </span>
         </div>
         <p className="text-xs text-muted-foreground">
           Start from scratch with your own keywords and settings.
@@ -54,7 +56,7 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
             key={template.id}
             onClick={() => onSelect(template)}
             className={cn(
-              "rounded-xl border-2 p-4 text-left transition-colors min-h-[44px]",
+              "rounded-xl border-2 p-4 text-left text-foreground transition-colors min-h-[44px]",
               selected?.id === template.id
                 ? "border-primary bg-primary/5"
                 : "border-border hover:border-primary/30",
@@ -64,7 +66,9 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <FileText className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-semibold text-sm">{template.name}</span>
+              <span className="font-semibold text-sm text-foreground">
+                {template.name}
+              </span>
             </div>
             {template.description && (
               <p className="text-xs text-muted-foreground line-clamp-2">
@@ -76,7 +80,7 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
                 {previewKws.slice(0, 3).map((kw) => (
                   <span
                     key={kw}
-                    className="text-[10px] bg-muted rounded-full px-2 py-0.5"
+                    className="text-[10px] bg-muted text-foreground rounded-full px-2 py-0.5"
                   >
                     {kw}
                   </span>

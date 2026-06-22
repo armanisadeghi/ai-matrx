@@ -1,6 +1,6 @@
 // features/scopes/utils/formatOrgDisplayName.ts
 
-export const PERSONAL_ORG_LABEL = "Personal Org";
+export const PERSONAL_ORG_LABEL = "Personal";
 
 export function formatOrgDisplayName(org: {
   name: string;

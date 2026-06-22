@@ -54,6 +54,8 @@ export interface RichMemberTableProps {
     sourceId: string,
   ) => Promise<unknown> | unknown;
   onRefresh?: () => void;
+  /** Read-only (shared library) store — hide the remove control. */
+  readOnly?: boolean;
 }
 
 export function RichMemberTable({
@@ -62,6 +64,7 @@ export function RichMemberTable({
   error,
   onRemove,
   onRefresh,
+  readOnly = false,
 }: RichMemberTableProps) {
   const [searchTarget, setSearchTarget] = useState<RichMember | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<RichMember | null>(null);
@@ -228,15 +231,17 @@ export function RichMemberTable({
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-destructive"
-                      title="Remove from this store"
-                      onClick={() => setConfirmRemove(m)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {!readOnly && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0 text-destructive"
+                        title="Remove from this store"
+                        onClick={() => setConfirmRemove(m)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>

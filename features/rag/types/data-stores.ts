@@ -21,6 +21,14 @@ export interface DataStore {
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Shared Knowledge Resources access tier for the current caller:
+   * `'owner'` (created it) | `'org'` (org member) | `'granted'` (a shared
+   * library published to the org — read-only). Absent on legacy callers.
+   */
+  access?: "owner" | "org" | "granted";
+  /** True only for `'granted'` stores — searchable but not mutable here. */
+  readOnly?: boolean;
 }
 
 export interface DataStoreMember {

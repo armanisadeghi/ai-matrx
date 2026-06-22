@@ -36,6 +36,8 @@ interface ApiDataStoreSummary {
   kind: string;
   member_count: number;
   is_active: boolean;
+  access?: string;
+  read_only?: boolean;
 }
 
 interface ApiDataStoreMember {
@@ -56,6 +58,14 @@ interface ApiDataStoreDetail {
   is_active: boolean;
   settings: Record<string, unknown>;
   members: ApiDataStoreMember[];
+  access?: string;
+  read_only?: boolean;
+}
+
+type StoreAccess = "owner" | "org" | "granted";
+
+function coerceAccess(v: string | undefined): StoreAccess {
+  return v === "org" || v === "granted" ? v : "owner";
 }
 
 function summaryToStore(s: ApiDataStoreSummary): DataStoreWithMemberCount {
@@ -71,6 +81,8 @@ function summaryToStore(s: ApiDataStoreSummary): DataStoreWithMemberCount {
     createdBy: null,
     createdAt: "",
     updatedAt: "",
+    access: coerceAccess(s.access),
+    readOnly: s.read_only ?? false,
     memberCount: s.member_count,
   };
 }
@@ -88,6 +100,8 @@ function detailToStore(d: ApiDataStoreDetail): DataStore {
     createdBy: null,
     createdAt: "",
     updatedAt: "",
+    access: coerceAccess(d.access),
+    readOnly: d.read_only ?? false,
   };
 }
 

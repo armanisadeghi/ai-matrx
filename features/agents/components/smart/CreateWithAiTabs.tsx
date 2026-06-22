@@ -9,10 +9,16 @@
  * `agentId` + `sourceFeature` that powers the AI tab.
  *
  * Layout contract (the load-bearing part): the body has a constant height floor
- * and BOTH tabs stay mounted once visited (the AI tab is lazy-mounted on first
- * use, then retained), toggled with `hidden`. Switching tabs therefore never
- * resizes, flashes, or remounts the agent — the chrome around it (modal, window,
- * route) stays perfectly still.
+ * (`min-h-[460px]`) and is a positioning context. The Manual / extra tabs render
+ * in normal flow; the AI pane fills the floor via `absolute inset-0` because the
+ * agent runner is built entirely from absolutely-positioned children and so has
+ * zero intrinsic height — and `h-full` would collapse to 0 in auto-height chrome
+ * (Dialog/Drawer set only `max-h`, not a definite `height`, and percentage
+ * heights ignore `min-height`). Filling the rendered box keeps the agent visible
+ * in modal/drawer chrome, not just the definite-height WindowPanel. BOTH tabs
+ * stay mounted once visited (the AI tab is lazy-mounted on first use, then
+ * retained), toggled with `hidden`, so switching never resizes, flashes, or
+ * remounts the agent — the chrome around it stays still.
  *
  * Mobile note: the switcher is a two-option segmented toggle, not a tab strip —
  * Manual and Use AI are mutually-exclusive entry methods, never two sections of
@@ -172,8 +178,22 @@ export function CreateWithAiTabs({
         </div>
       </div>
 
-      {/* Constant height floor → tab switches never resize the chrome. */}
-      <div className="flex-1 min-h-[460px]">
+      {/*
+       * Constant height floor → tab switches never resize the chrome.
+       *
+       * `relative` is load-bearing: the AI pane (AgentRunner) is built entirely
+       * out of absolutely-positioned children and contributes zero intrinsic
+       * height, so it needs a definite-height positioning context to fill. We
+       * give the AI pane `absolute inset-0` rather than `h-full` because CSS
+       * `height:100%` resolves against the parent's computed `height` (not its
+       * `min-height`) — in auto-height chrome (Dialog/Drawer, which only set
+       * `max-h`) `h-full` collapses to 0 and the agent renders blank. `inset-0`
+       * fills the rendered box (which DOES honor `min-h-[460px]`), so the agent
+       * shows in modal/drawer chrome too — not just the definite-height
+       * WindowPanel. The Manual tab stays in normal flow so the dialog still
+       * grows to fit the hand-authored form.
+       */}
+      <div className="relative flex-1 min-h-[460px]">
         <div
           className={cn(
             "h-full min-h-0",
@@ -185,7 +205,7 @@ export function CreateWithAiTabs({
         </div>
 
         {enableAi && mountedTabs.has("ai") && (
-          <div className={cn("h-full min-h-0", mode !== "ai" && "hidden")}>
+          <div className={cn("absolute inset-0", mode !== "ai" && "hidden")}>
             <AgentRunWrapper
               agentId={agentId}
               sourceFeature={sourceFeature}

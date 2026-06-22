@@ -110,8 +110,31 @@ Splitting them into `features/rag/` would split the cloudFiles slice across two 
 
 ---
 
+## Shared Knowledge Resources
+
+Curated, system-owned RAG content (canonical example: the **AMA Guides 5th Edition**) ingested **once** and published **read-only** to many tenants by audience — without each tenant re-processing it, and without letting them mutate it.
+
+**The read/write asymmetry (why read-only is free):** these stores are owned by a dedicated **"Matrx Library" org** (`system_orgs.key='library'`). WRITE/manage is gated by data-store ownership (`can_access_data_store` = creator/org-member) — no tenant qualifies, so every mutation 403s with no new code. READ is granted by a single OR-branch in the RAG visibility clause (`matrx_rag.search._build_visibility_clause`) admitting a chunk when its source's data_store has a grant reaching the caller.
+
+**Three-tier audience = one primitive** (`rag.data_store_grants`): `global` | `industry` (→ orgs in that [industry](../industries/FEATURE.md)) | `organization` (a direct grant or self-service opt-in on a `discoverable` store). Grants attach to the container, so they cover every member source's chunks.
+
+**Ingest profile:** library content is ingested with **NER + scope-association OFF** (`ingest_source(run_ner=False)`) — cross-tenant content has no tenant scopes/entities to extract, and the agent fan-out would be wasted cost.
+
+**FE surfaces:**
+- `hooks/useDataStoreGrants.ts` — publish / revoke / list grants over HTTP.
+- `components/data-stores/DataStorePublishPanel.tsx` — audience-tab publish dialog (mirrors `ShareModal`; super-admin only). Opened from `DataStoresPage` for `kind:"library"` stores.
+- `DataStoresPage` / `RichMemberTable` — a `'granted'` store shows a "Shared library · read-only" badge and hides Edit / Delete / Add-member / remove / drag-drop. `access` / `readOnly` ride on the data-store list/detail responses.
+- Tenant catalog (browse `discoverable` + subscribe) — Phase 2; backend endpoints (`/rag/library-catalog`) already exist.
+
+**Backend (aidream):** the ACL branch + `can_read_data_store` + grants-aware `list_data_stores`/`get_data_store` + the `run_ner` profile + `/rag/data-stores/{id}/grants` and `/rag/library-catalog` endpoints + `services/rag/library_grants.py` (wraps the SECURITY DEFINER RPCs). DB: migrations `0116`–`0119`.
+
+**Guardrail:** this is the ownership-asymmetry model — it deliberately does NOT use `shareable_resource_registry` / `permissions` / `useSharing` (that would imply per-user grants + `has_permission()` RLS). See [`features/sharing/FEATURE.md`](../sharing/FEATURE.md).
+
+---
+
 ## Change log
 
+- **2026-06-21 (shared knowledge)** — Shared Knowledge Resources foundation (see section above): `rag.data_store_grants` audience model (global / industry / opt-in), read-only-by-ownership-asymmetry, NER-off library ingest profile, `DataStorePublishPanel` + read-only treatment in `DataStoresPage`/`RichMemberTable`, `useDataStoreGrants`, grants/catalog endpoints, `data-stores-ext.ts` `"library"` kind. Paired with the new `features/industries/` taxonomy. Backend ACL branch + read-widening + `services/rag/library_grants.py`; DB migrations `0116`–`0119`.
 - **2026-06-21** — User-facing RAG vocabulary: "chunks" → **Segments** / **Knowledge Segments**, pipeline **chunk** stage → **segment**, in-progress **Chunking** → **Segmenting**. Canonical labels live in `constants/vocabulary.ts`; DB/API `chunk*` fields unchanged.
 - **2026-06-09** — claude: **removed two `AnimatePresence` exit-driven view swaps that can leave stale content layered over live content under React Compiler** (`reactCompiler: true` — same class of bug just fixed in `AgentConversationColumn` for `/chat/new`). `StageAnimations.tsx` (`StageHero`) swapped two `absolute inset-0` panels (gradient backdrop + per-stage hero animation) on `activeStage` via `AnimatePresence mode="sync"` + `exit` — a stalled exit stacks stale stage panels; now plain keyed `motion.div`s (enter-only fade, instant unmount). `RagSearchExperience.tsx` results panel used `AnimatePresence mode="wait"` + `FADE_IN_UP` (which carries `exit`) — worse under `mode="wait"`: a stalled exit blocks the NEXT query's results from ever mounting; now a plain `key={response.query}` conditional with enter-only animation. Benign list-map `AnimatePresence` usages (job rows, chunk particles, hit cards) left as-is.
 - **2026-05-06** — Feature created via consolidation. Absorbed `features/library/`, `features/data-stores/`, `features/documents/`, and `features/rag-search-ui/` into a single feature; pulled the rag-shaped pieces out of `features/files/` (api: ingest/search; hooks: useFileIngest/useRagSearch; components: ProcessForRagButton/RagSearchHits). Files-table chrome that reads `cloudFiles.ragStatus` (rag-thunks, RagStatusCell, RagFilterPicker) intentionally stayed in `features/files/`. All routes (`/rag`, `/rag/library`, `/rag/data-stores`, `/rag/search`, `/rag/repositories`, `/rag/viewer/[id]`) compile and return 200.

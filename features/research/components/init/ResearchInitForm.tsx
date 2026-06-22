@@ -68,6 +68,9 @@ import {
   createTag,
 } from "../../service";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { groupProjectsByOrgDisplay } from "@/features/agent-context/utils/groupProjectsByOrgDisplay";
+import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
+import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 import TextArrayInput from "@/components/official/TextArrayInput";
@@ -257,24 +260,51 @@ function StepDots({ step }: { step: 1 | 2 }) {
 interface ProjectListProps {
   selectedId: string | null;
   onSelect: (id: string, name: string) => void;
-  onCreateNew: () => void;
+  onCreateInOrg: (orgId: string) => void;
   isLoading: boolean;
   projectsByOrg: {
     org: { id: string; name: string };
     projects: { id: string; name: string; org_id: string }[];
   }[];
   flatProjects: { id: string; name: string; org_id: string }[];
-  showOrgHeaders: boolean;
+  orgsForCreate: { id: string; name: string }[];
+}
+
+function ProjectOrgHeader({
+  orgName,
+  onCreate,
+}: {
+  orgName: string;
+  onCreate: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-1 pt-2 pb-0.5">
+      <p className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+        <Building2 className="h-3 w-3 shrink-0" />
+        <span className="truncate">{orgName}</span>
+      </p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+        aria-label={`Create project in ${orgName}`}
+        onClick={onCreate}
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
 }
 
 function ProjectList({
   selectedId,
   onSelect,
-  onCreateNew,
+  onCreateInOrg,
   isLoading,
   projectsByOrg,
   flatProjects,
-  showOrgHeaders,
+  orgsForCreate,
 }: ProjectListProps) {
   return (
     <div className="space-y-1.5">
@@ -283,67 +313,64 @@ function ProjectList({
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       ) : flatProjects.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">
-          No projects yet. Create one below to get started.
-        </p>
+        <div className="space-y-3 py-2">
+          <p className="text-sm text-muted-foreground text-center">
+            No projects yet. Create one in an organization.
+          </p>
+          <div className="space-y-1">
+            {orgsForCreate.map((org) => (
+              <ProjectOrgHeader
+                key={org.id}
+                orgName={org.name}
+                onCreate={() => onCreateInOrg(org.id)}
+              />
+            ))}
+          </div>
+        </div>
       ) : (
-        <>
-          {projectsByOrg.map(({ org, projects }) => (
-            <div key={org.id} className="space-y-1.5">
-              {showOrgHeaders && (
-                <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1 pt-2 pb-0.5">
-                  <Building2 className="h-3 w-3" />
-                  {org.name}
-                </p>
-              )}
-              {projects.map((project) => {
-                const isSelected = selectedId === project.id;
-                return (
-                  <button
-                    key={project.id}
-                    type="button"
-                    onClick={() => onSelect(project.id, project.name)}
+        projectsByOrg.map(({ org, projects }) => (
+          <div key={org.id} className="space-y-1.5">
+            <ProjectOrgHeader
+              orgName={org.name}
+              onCreate={() => onCreateInOrg(org.id)}
+            />
+            {projects.map((project) => {
+              const isSelected = selectedId === project.id;
+              return (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => onSelect(project.id, project.name)}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-xl border p-4 text-left text-foreground transition-all duration-150",
+                    isSelected
+                      ? "border-primary/40 bg-primary/5 shadow-sm"
+                      : "border-border/60 bg-card hover:border-primary/20 hover:bg-muted/40",
+                  )}
+                >
+                  <div
                     className={cn(
-                      "w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all duration-150",
+                      "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                       isSelected
-                        ? "border-primary/40 bg-primary/5 shadow-sm"
-                        : "border-border/60 bg-card hover:border-primary/20 hover:bg-muted/40",
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      {isSelected ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <FolderOpen className="h-4 w-4" />
-                      )}
-                    </div>
-                    <span className="font-medium text-sm">{project.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </>
+                    {isSelected ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <FolderOpen className="h-4 w-4" />
+                    )}
+                  </div>
+                  <span className="font-medium text-sm text-foreground">
+                    {project.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))
       )}
-      <button
-        type="button"
-        onClick={onCreateNew}
-        className="w-full flex items-center gap-3 rounded-xl border-2 border-dashed border-border/60 p-4 text-left transition-colors hover:border-primary/30 mt-2"
-      >
-        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-          <Plus className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <span className="text-sm font-medium text-muted-foreground">
-          Create New Project
-        </span>
-      </button>
     </div>
   );
 }
@@ -443,7 +470,10 @@ function EditableText({
         autoGrow
         minHeight={100}
         maxHeight={240}
-        className={cn("text-base sm:text-lg leading-relaxed", className)}
+        className={cn(
+          "text-base sm:text-lg leading-relaxed text-foreground",
+          className,
+        )}
         placeholder={placeholder}
         wrapperClassName="w-full"
       />
@@ -464,7 +494,7 @@ function EditableText({
         }}
         disabled={busy}
         className={cn(
-          "h-auto py-2 text-3xl sm:text-4xl font-bold tracking-tight leading-tight",
+          "h-auto py-2 text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-foreground",
           className,
         )}
         placeholder={placeholder}
@@ -486,7 +516,7 @@ function EditableText({
         <p
           onClick={start}
           className={cn(
-            "cursor-text rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/40",
+            "cursor-text rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/40 text-foreground",
             className,
           )}
         >
@@ -496,7 +526,7 @@ function EditableText({
         <h2
           onClick={start}
           className={cn(
-            "cursor-text rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/40",
+            "cursor-text rounded-md -mx-2 px-2 py-1 transition-colors hover:bg-muted/40 text-foreground",
             className,
           )}
         >
@@ -668,11 +698,11 @@ function KeywordEditor({
       {/* Add new */}
       <div
         className={cn(
-          "group flex items-center gap-2 rounded-xl border border-dashed border-border/60 bg-transparent px-3 py-2 transition-colors",
-          "focus-within:border-violet-500/50 focus-within:bg-violet-500/[0.03] hover:border-violet-500/40",
+          "group flex items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-3 py-2 transition-colors",
+          "focus-within:border-primary focus-within:bg-muted/50 hover:border-primary/50",
         )}
       >
-        <Plus className="h-4 w-4 text-muted-foreground/70 group-focus-within:text-violet-500/80 shrink-0 transition-colors" />
+        <Plus className="h-4 w-4 text-muted-foreground group-focus-within:text-primary shrink-0 transition-colors" />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -690,7 +720,7 @@ function KeywordEditor({
           <button
             type="button"
             onClick={submitDraft}
-            className="text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 px-2 py-0.5 rounded transition-colors"
+            className="text-xs font-medium text-primary hover:text-primary/80 px-2 py-0.5 rounded transition-colors"
           >
             Add
           </button>
@@ -767,13 +797,13 @@ function SortableKeywordRow({
       className={cn(
         "group flex items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors",
         overQuota
-          ? "border-destructive/50 bg-destructive/[0.06] hover:border-destructive/70 hover:bg-destructive/10"
-          : "border-border/60 bg-card hover:border-violet-500/30 hover:bg-violet-500/[0.03]",
+          ? "border-destructive/50 bg-destructive/10 hover:border-destructive/70 hover:bg-destructive/15"
+          : "border-border bg-muted hover:border-primary/40 hover:bg-muted/80",
         editing &&
           (overQuota
-            ? "border-destructive/70 bg-destructive/10"
-            : "border-violet-500/50 bg-violet-500/[0.04]"),
-        isDragging && "shadow-lg shadow-violet-500/10 z-10",
+            ? "border-destructive/70 bg-destructive/15"
+            : "border-primary bg-background ring-1 ring-primary/20"),
+        isDragging && "shadow-md z-10",
         animate &&
           "animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-300 fill-mode-both",
       )}
@@ -804,7 +834,7 @@ function SortableKeywordRow({
               setEditing(false);
             }
           }}
-          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-medium"
+          className="flex-1 min-w-0 bg-transparent border-0 outline-none text-base font-medium text-foreground"
           style={{ fontSize: "16px" }}
         />
       ) : (
@@ -815,7 +845,7 @@ function SortableKeywordRow({
             "flex-1 min-w-0 text-left text-base font-medium leading-tight py-0.5 truncate transition-colors",
             overQuota
               ? "text-destructive hover:text-destructive/80"
-              : "hover:text-violet-700 dark:hover:text-violet-300",
+              : "text-foreground hover:text-primary",
           )}
         >
           {row.value}
@@ -938,13 +968,13 @@ function AiCanvas({
             <EditableText
               value={title!}
               onCommit={onUpdateTitle}
-              className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-balance"
+              className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-balance text-foreground"
               placeholder="Untitled topic"
             />
           ) : (
             <h2
               key={title}
-              className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-balance animate-in fade-in slide-in-from-bottom-2 duration-500"
+              className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-balance text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
             >
               {title}
             </h2>
@@ -999,7 +1029,7 @@ function AiCanvas({
             "animate-in fade-in duration-500 fill-mode-both",
             hasQuotaConflict
               ? "border-destructive/40 bg-destructive/[0.04]"
-              : "border-border/50 bg-card/40",
+              : "border-border/60 bg-card",
           )}
         >
           {hasQuotaConflict && (
@@ -1108,9 +1138,9 @@ function AiCanvas({
                   key={kw}
                   style={{ animationDelay: `${i * 70}ms` }}
                   className={cn(
-                    "inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium",
+                    "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium",
                     "animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-300 fill-mode-both",
-                    "border-violet-500/30 bg-violet-500/[0.06] text-foreground",
+                    "bg-primary text-primary-foreground",
                   )}
                 >
                   {kw}
@@ -1118,12 +1148,12 @@ function AiCanvas({
               ))}
               <span
                 aria-hidden
-                className="inline-flex items-center rounded-full border border-dashed border-violet-500/30 px-3 py-1"
+                className="inline-flex items-center rounded-full border border-dashed border-primary/40 bg-muted/50 px-3 py-1"
               >
                 <span className="flex gap-1">
-                  <span className="h-1 w-1 rounded-full bg-violet-500/60 animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1 w-1 rounded-full bg-violet-500/60 animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1 w-1 rounded-full bg-violet-500/60 animate-bounce" />
+                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1 w-1 rounded-full bg-primary animate-bounce" />
                 </span>
               </span>
             </div>
@@ -1177,6 +1207,9 @@ export default function ResearchInitForm() {
   const dispatch = useAppDispatch();
   const [, startTransition] = useTransition();
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
+  const [createProjectOrgId, setCreateProjectOrgId] = useState<string | null>(
+    null,
+  );
   const [showAdditionalInstructions, setShowAdditionalInstructions] =
     useState(false);
 
@@ -1215,13 +1248,19 @@ export default function ResearchInitForm() {
 
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
-  const projectsByOrg = orgs
-    .map((org) => ({
-      org,
-      projects: flatProjects.filter((p) => p.org_id === org.id),
-    }))
-    .filter((g) => g.projects.length > 0);
-  const showOrgHeaders = orgs.length > 1;
+  const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
+  const orgsForCreate = orgs
+    .filter((org) => !isPersonalPseudoOrgId(org.id))
+    .sort((a, b) => {
+      if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
+      return formatOrgDisplayName(a).localeCompare(formatOrgDisplayName(b));
+    })
+    .map((org) => ({ id: org.id, name: formatOrgDisplayName(org) }));
+
+  const openCreateProject = (orgId: string) => {
+    setCreateProjectOrgId(orgId);
+    setCreateProjectOpen(true);
+  };
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   const goToStep = (mode: Mode, step: number) => {
@@ -1823,12 +1862,12 @@ export default function ResearchInitForm() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-full py-10 px-4 sm:px-6">
+    <div className="flex flex-col items-center justify-start min-h-full py-10 px-4 sm:px-6 text-foreground">
       {/* ── Step 0: Mode Selection ── */}
       {currentStep === 0 && (
         <div className="w-full max-w-2xl space-y-10">
           <div className="text-center space-y-3">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
               Start a Research Topic
             </h1>
             <p className="text-muted-foreground text-lg">
@@ -1840,13 +1879,13 @@ export default function ResearchInitForm() {
             <button
               type="button"
               onClick={() => handleModeSelect("manual")}
-              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left transition-all duration-200 hover:border-blue-500/40 hover:bg-blue-500/5 hover:shadow-lg min-h-[210px]"
+              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left text-foreground transition-all duration-200 hover:border-blue-500/40 hover:bg-blue-500/5 hover:shadow-lg min-h-[210px]"
             >
               <div className="h-11 w-11 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                 <Hand className="h-5 w-5 text-blue-500" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-base font-semibold">
+                <h2 className="text-base font-semibold text-foreground">
                   I&apos;ll build it myself
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -1859,13 +1898,13 @@ export default function ResearchInitForm() {
             <button
               type="button"
               onClick={() => handleModeSelect("template")}
-              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left transition-all duration-200 hover:border-amber-500/40 hover:bg-amber-500/5 hover:shadow-lg min-h-[210px]"
+              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left text-foreground transition-all duration-200 hover:border-amber-500/40 hover:bg-amber-500/5 hover:shadow-lg min-h-[210px]"
             >
               <div className="h-11 w-11 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500/20 transition-colors">
                 <LayoutTemplate className="h-5 w-5 text-amber-500" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-base font-semibold">
+                <h2 className="text-base font-semibold text-foreground">
                   I&apos;ll use a template
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -1878,13 +1917,15 @@ export default function ResearchInitForm() {
             <button
               type="button"
               onClick={() => handleModeSelect("ai")}
-              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left transition-all duration-200 hover:border-violet-500/40 hover:bg-violet-500/5 hover:shadow-lg min-h-[210px]"
+              className="group relative flex flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left text-foreground transition-all duration-200 hover:border-violet-500/40 hover:bg-violet-500/5 hover:shadow-lg min-h-[210px]"
             >
               <div className="h-11 w-11 rounded-xl bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
                 <Atom className="h-5 w-5 text-violet-500" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-base font-semibold">Help me shape this</h2>
+                <h2 className="text-base font-semibold text-foreground">
+                  Help me shape this
+                </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Describe your subject. AI structures the research.
                 </p>
@@ -1905,11 +1946,11 @@ export default function ResearchInitForm() {
                 <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
                   <Hand className="h-3.5 w-3.5 text-blue-500" />
                 </div>
-                <span className="text-xs font-medium text-blue-500 uppercase tracking-wider">
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                   Manual
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                 What are you researching?
               </h1>
               <p className="text-muted-foreground">
@@ -1919,19 +1960,23 @@ export default function ResearchInitForm() {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Topic Name</label>
+                <label className="text-sm font-medium text-foreground">
+                  Topic Name
+                </label>
                 <ProInput
                   value={topicName}
                   onChange={(e) => setTopicName(e.target.value)}
                   placeholder="e.g., EV Battery Technology Trends"
-                  className="h-14 text-base px-4"
+                  className="h-14 text-base text-foreground px-4"
                   wrapperClassName="w-full"
                   autoFocus
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Keywords</label>
+                <label className="text-sm font-medium text-foreground">
+                  Keywords
+                </label>
                 <p className="text-xs text-muted-foreground">
                   Add at least one. Press Enter or use commas to add multiple.
                 </p>
@@ -1954,7 +1999,7 @@ export default function ResearchInitForm() {
                   autoGrow
                   minHeight={60}
                   maxHeight={160}
-                  className="text-base"
+                  className="text-base text-foreground"
                   wrapperClassName="w-full"
                 />
               </div>
@@ -1973,11 +2018,11 @@ export default function ResearchInitForm() {
                 <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
                   <LayoutTemplate className="h-3.5 w-3.5 text-amber-500" />
                 </div>
-                <span className="text-xs font-medium text-amber-500 uppercase tracking-wider">
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                   Template
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                 Choose a template
               </h1>
               <p className="text-muted-foreground">
@@ -1993,26 +2038,28 @@ export default function ResearchInitForm() {
             {selectedTemplate && (
               <div className="space-y-4 pt-4 border-t border-border/60">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Topic Name</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Topic Name
+                  </label>
                   <ProInput
                     value={topicName}
                     onChange={(e) => setTopicName(e.target.value)}
                     placeholder={`e.g., ${selectedTemplate.name} — Q2 2026`}
-                    className="h-14 text-base px-4"
+                    className="h-14 text-base text-foreground px-4"
                     wrapperClassName="w-full"
                     autoFocus
                   />
                 </div>
                 {selectedKeywords.length > 0 && (
-                  <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
-                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-2">
+                  <div className="rounded-xl bg-muted/50 border border-border p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
                       Keywords from template
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedKeywords.map((kw) => (
                         <span
                           key={kw}
-                          className="inline-flex items-center rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 px-2.5 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 text-xs font-medium"
                         >
                           {kw}
                         </span>
@@ -2135,11 +2182,11 @@ export default function ResearchInitForm() {
                   <div className="h-6 w-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
                     <Atom className="h-3.5 w-3.5 text-violet-500" />
                   </div>
-                  <span className="text-xs font-medium text-violet-500 uppercase tracking-wider">
+                  <span className="text-xs font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wider">
                     AI-Assisted
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                   What are you curious about?
                 </h1>
                 <p className="text-muted-foreground">
@@ -2150,7 +2197,9 @@ export default function ResearchInitForm() {
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Subject</label>
+                  <label className="text-sm font-medium text-foreground">
+                    Subject
+                  </label>
                   <ProTextarea
                     value={subjectDescription}
                     onChange={(e) => setSubjectDescription(e.target.value)}
@@ -2159,13 +2208,15 @@ export default function ResearchInitForm() {
                     minHeight={160}
                     maxHeight={320}
                     autoFocus
-                    className="text-base"
+                    className="text-base text-foreground"
                     wrapperClassName="w-full"
                   />
                 </div>
 
                 <div className="rounded-xl bg-violet-500/5 border border-violet-500/15 p-4 space-y-2">
-                  <p className="text-sm font-medium">AI will handle:</p>
+                  <p className="text-sm font-medium text-foreground">
+                    AI will handle:
+                  </p>
                   <ul className="space-y-1 text-sm text-muted-foreground">
                     {[
                       "Polish the topic name and write a description",
@@ -2206,7 +2257,7 @@ export default function ResearchInitForm() {
                         autoGrow
                         minHeight={80}
                         maxHeight={200}
-                        className="text-base"
+                        className="text-base text-foreground"
                         wrapperClassName="w-full"
                       />
                     </div>
@@ -2216,7 +2267,9 @@ export default function ResearchInitForm() {
                 {/* Project selection inline for AI path */}
                 <div className="space-y-3 pt-2 border-t border-border/60">
                   <div>
-                    <label className="text-sm font-medium">Project</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Project
+                    </label>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Which project should this topic live in?
                     </p>
@@ -2227,11 +2280,11 @@ export default function ResearchInitForm() {
                       setSelectedProjectId(id);
                       setSelectedProjectName(name);
                     }}
-                    onCreateNew={() => setCreateProjectOpen(true)}
+                    onCreateInOrg={openCreateProject}
                     isLoading={projectsLoading}
                     projectsByOrg={projectsByOrg}
                     flatProjects={flatProjects}
-                    showOrgHeaders={showOrgHeaders}
+                    orgsForCreate={orgsForCreate}
                   />
                 </div>
               </div>
@@ -2247,7 +2300,7 @@ export default function ResearchInitForm() {
             <StepDots step={2} />
             <div className="space-y-8">
               <div className="space-y-2">
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                   Choose a Project
                 </h1>
                 <p className="text-muted-foreground">
@@ -2277,11 +2330,11 @@ export default function ResearchInitForm() {
                   setSelectedProjectId(id);
                   setSelectedProjectName(name);
                 }}
-                onCreateNew={() => setCreateProjectOpen(true)}
+                onCreateInOrg={openCreateProject}
                 isLoading={projectsLoading}
                 projectsByOrg={projectsByOrg}
                 flatProjects={flatProjects}
-                showOrgHeaders={showOrgHeaders}
+                orgsForCreate={orgsForCreate}
               />
             </div>
           </div>
@@ -2342,13 +2395,18 @@ export default function ResearchInitForm() {
 
       <CreateProjectModal
         isOpen={createProjectOpen}
-        onClose={() => setCreateProjectOpen(false)}
+        onClose={() => {
+          setCreateProjectOpen(false);
+          setCreateProjectOrgId(null);
+        }}
+        organizationId={createProjectOrgId}
         redirectOnSuccess={false}
         onSuccess={(project) => {
           dispatch(invalidateNavTree());
           setSelectedProjectId(project.id);
           setSelectedProjectName(project.name);
           setCreateProjectOpen(false);
+          setCreateProjectOrgId(null);
         }}
       />
     </div>

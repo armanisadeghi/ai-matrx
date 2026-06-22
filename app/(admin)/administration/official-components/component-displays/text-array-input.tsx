@@ -1,22 +1,24 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ComponentEntry } from '../parts/component-list';
-import { ComponentDisplayWrapper } from '../component-usage';
-import TextArrayInput from '@/components/official/TextArrayInput';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { ComponentEntry } from "../parts/component-list";
+import { ComponentDisplayWrapper } from "../component-usage";
+import TextArrayInput from "@/components/official/TextArrayInput";
+import { Label } from "@/components/ui/label";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
 }
 
-export default function TextArrayInputDisplay({ component }: ComponentDisplayProps) {
+export default function TextArrayInputDisplay({
+  component,
+}: ComponentDisplayProps) {
   if (!component) return null;
 
-  const [basicTags, setBasicTags] = useState(['react', 'nextjs', 'typescript']);
-  const [urlList, setUrlList] = useState(['example.com', 'github.com']);
-  const [allowDuplicates, setAllowDuplicates] = useState(['item1', 'item2']);
-  
+  const [basicTags, setBasicTags] = useState(["react", "nextjs", "typescript"]);
+  const [urlList, setUrlList] = useState(["example.com", "github.com"]);
+  const [allowDuplicates, setAllowDuplicates] = useState(["item1", "item2"]);
+
   // Example code with all available props
   const code = `import TextArrayInput from '@/components/official/TextArrayInput';
 
@@ -26,7 +28,7 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
   onChange={setTags}
   placeholder="Add items (press Enter)"    // Default: "Add items (press Enter)"
   className=""                             // Additional className for wrapper
-  chipClassName="bg-gradient-radial from-primary via-primary to-primary/80 text-primary-foreground"
+  chipClassName="bg-primary text-primary-foreground"
   uniqueFilter={true}                      // Default: true - prevents duplicates
   showCopyIcon={true}                      // Default: true - shows copy button
   shouldCleanUrl={false}                   // Default: false - clean URLs with cleanUrl()
@@ -92,12 +94,14 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Current value: <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+              Current value:{" "}
+              <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
                 {JSON.stringify(basicTags)}
               </code>
             </p>
             <p className="text-xs text-muted-foreground">
-              💡 <strong>Tip:</strong> Type "vue, angular, svelte" to add multiple items at once
+              💡 <strong>Tip:</strong> Type "vue, angular, svelte" to add
+              multiple items at once
             </p>
           </div>
         </div>
@@ -119,7 +123,8 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              💡 URLs are automatically cleaned (removes protocols, www, trailing slashes)
+              💡 URLs are automatically cleaned (removes protocols, www,
+              trailing slashes)
             </p>
           </div>
         </div>
@@ -179,12 +184,11 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
           <div className="p-4 border rounded-lg bg-white dark:bg-gray-800 space-y-4">
             <div className="space-y-1.5">
               <Label>Internal State (No Props)</Label>
-              <TextArrayInput 
-                placeholder="Manages its own state..."
-              />
+              <TextArrayInput placeholder="Manages its own state..." />
             </div>
             <p className="text-xs text-muted-foreground">
-              Component manages its own state when no value/onChange props provided
+              Component manages its own state when no value/onChange props
+              provided
             </p>
           </div>
         </div>
@@ -246,9 +250,13 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
           <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300 list-disc list-inside">
             <li>Press Enter or click away to add items</li>
             <li>Separate multiple items with commas: "item1, item2, item3"</li>
-            <li>Click the copy icon to copy all items as comma-separated text</li>
+            <li>
+              Click the copy icon to copy all items as comma-separated text
+            </li>
             <li>Click X on any chip to remove that item</li>
-            <li>Use shouldCleanUrl for URL lists (removes protocols, www, etc.)</li>
+            <li>
+              Use shouldCleanUrl for URL lists (removes protocols, www, etc.)
+            </li>
             <li>Set uniqueFilter to false if you need duplicate entries</li>
             <li>Customize chip appearance with chipClassName prop</li>
             <li>Works in both controlled and uncontrolled modes</li>
@@ -258,4 +266,3 @@ export default function TextArrayInputDisplay({ component }: ComponentDisplayPro
     </ComponentDisplayWrapper>
   );
 }
-
