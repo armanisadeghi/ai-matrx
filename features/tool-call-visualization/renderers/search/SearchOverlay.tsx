@@ -1,22 +1,23 @@
 "use client";
 
 /**
- * ResearchModernOverlay — Version B full view for the web-search / research
- * tool family. HIDES NOTHING.
+ * SearchOverlay — the full "hide nothing" Results view for the web-search family
+ * (`web_search`, `core_web_search`, `web_search_v1`), rendered in the fullscreen
+ * overlay and the floating window panel.
  *
- * Layout:
- *   • Header stat rail (queries / sources / reads / domains) + a domain
+ * Grafted from Research-Modern's overlay. Layout:
+ *   • The AI answer / summary on top WHEN present (research report) — else the
+ *     view leads with results.
+ *   • A header stat rail (queries / sources / reads / domains) + a domain-
  *     coverage chip row.
- *   • A query filter + a free-text filter <input> (16px) + sort (relevance /
- *     domain / date) over the COMPLETE de-duplicated source list, rendered as a
- *     dense table-like list.
- *   • When the tool deep-read pages, a "Reading" section with a left sources
- *     list and a right reading pane (Perplexity-style) showing the full fetched
- *     page text via BasicMarkdownContent.
- *   • News results render as a dense list with thumbnails (InlineMediaRef) and
- *     a source filter.
+ *   • A query filter + a free-text filter <input> (16px → no iOS zoom) + sort
+ *     (relevance / domain / date) over the COMPLETE base-URL-deduped source
+ *     list, as a dense ranked list.
+ *   • A "Reading" pane (sources left, content right) when the tool deep-read
+ *     pages — best-effort; most plain searches have none.
  *
- * Pure parser + canonical contract reuse mirrors the inline component.
+ * Same canonical contract + `parseSearch` as the inline renderer. Semantic
+ * tokens only; favicons via the Google favicon service.
  */
 
 import React, { useMemo, useState } from "react";
@@ -26,32 +27,29 @@ import {
     ExternalLink,
     Layers,
     BookOpenText,
-    Newspaper,
     Calendar,
     ArrowUpDown,
     FileText,
+    Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { urlToMediaRef } from "@/features/files/redux/converters";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
-import { resultAsObject, resultAsString } from "../_shared";
+import { resultAsString } from "../_shared";
 import {
-    parseResearch,
-    parseHeadlines,
+    parseSearch,
     getFaviconUrl,
     getDomain,
     formatDate,
-    type ResearchRead,
-    type ResearchSource,
-} from "./parseResearch";
+    type SearchRead,
+    type SearchSource,
+} from "./parseSearch";
 
 type SortKey = "relevance" | "domain" | "date";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared atoms
+// Atoms
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Favicon: React.FC<{ url: string; className?: string }> = ({ url, className }) => {
@@ -76,7 +74,28 @@ const StatChip: React.FC<{ icon: React.ReactNode; value: number | string; label:
     </div>
 );
 
-const SourceRow: React.FC<{ source: ResearchSource; rank: number }> = ({ source, rank }) => {
+const FilterPill: React.FC<{
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    title?: string;
+}> = ({ active, onClick, children, title }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        className={cn(
+            "inline-flex max-w-[280px] items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
+            active
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-muted-foreground hover:bg-muted/50",
+        )}
+    >
+        <span className="truncate">{children}</span>
+    </button>
+);
+
+const SourceRow: React.FC<{ source: SearchSource; rank: number }> = ({ source, rank }) => {
     const date = formatDate(source.date);
     return (
         <a
@@ -114,7 +133,7 @@ const SourceRow: React.FC<{ source: ResearchSource; rank: number }> = ({ source,
 // Reading pane (deep reads) — sources list left, content right
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ReadingPane: React.FC<{ reads: ResearchRead[] }> = ({ reads }) => {
+const ReadingPane: React.FC<{ reads: SearchRead[] }> = ({ reads }) => {
     const [active, setActive] = useState(0);
     const current = reads[active];
 
@@ -127,7 +146,6 @@ const ReadingPane: React.FC<{ reads: ResearchRead[] }> = ({ reads }) => {
                 </span>
             </div>
             <div className="flex flex-col md:h-[420px] md:flex-row">
-                {/* Left: sources list */}
                 <div className="flex-shrink-0 divide-y divide-border/60 overflow-y-auto border-b border-border md:w-64 md:border-b-0 md:border-r">
                     {reads.map((r, i) => (
                         <button
@@ -154,8 +172,6 @@ const ReadingPane: React.FC<{ reads: ResearchRead[] }> = ({ reads }) => {
                         </button>
                     ))}
                 </div>
-
-                {/* Right: reading pane */}
                 <div className="min-w-0 flex-1 overflow-y-auto p-4">
                     {current ? (
                         <>
@@ -196,143 +212,22 @@ const ReadingPane: React.FC<{ reads: ResearchRead[] }> = ({ reads }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// News overlay branch
+// Main overlay
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NewsOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ entry }) => {
-    const { articles, totalResults } = useMemo(() => parseHeadlines(resultAsObject(entry)), [entry]);
-    const [activeSource, setActiveSource] = useState<string>("all");
-
-    const sources = useMemo(() => {
-        const set = new Set<string>();
-        for (const a of articles) if (a.source) set.add(a.source);
-        return Array.from(set).sort();
-    }, [articles]);
-
-    const filtered = useMemo(
-        () => (activeSource === "all" ? articles : articles.filter((a) => a.source === activeSource)),
-        [articles, activeSource],
-    );
-
-    if (articles.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-                <Newspaper className="h-10 w-10 opacity-40" />
-                <p className="text-sm">No headlines available.</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-4 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-                <StatChip icon={<Newspaper className="h-4 w-4" />} value={totalResults} label="headlines" />
-                <StatChip icon={<Layers className="h-4 w-4" />} value={sources.length} label="sources" />
-            </div>
-            {sources.length > 1 && (
-                <div className="flex flex-wrap gap-1.5">
-                    <FilterPill active={activeSource === "all"} onClick={() => setActiveSource("all")}>
-                        All ({articles.length})
-                    </FilterPill>
-                    {sources.map((s) => (
-                        <FilterPill key={s} active={activeSource === s} onClick={() => setActiveSource(s)}>
-                            {s} ({articles.filter((a) => a.source === s).length})
-                        </FilterPill>
-                    ))}
-                </div>
-            )}
-            <div className="space-y-2">
-                {filtered.map((a, i) => (
-                    <a
-                        key={`${a.url}-${i}`}
-                        href={a.url || undefined}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="group flex gap-3 rounded-md border border-border bg-card p-3 transition-colors hover:border-primary/40"
-                    >
-                        <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded border border-border bg-muted">
-                            {a.imageUrl ? (
-                                <InlineMediaRef
-                                    ref={urlToMediaRef(a.imageUrl)}
-                                    as="img"
-                                    size="fill"
-                                    fit="cover"
-                                    alt={a.title}
-                                    fallback="icon"
-                                    fallbackIcon={<Newspaper className="h-5 w-5 text-muted-foreground/50" />}
-                                />
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center">
-                                    <Newspaper className="h-5 w-5 text-muted-foreground/40" />
-                                </div>
-                            )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                                {a.source && (
-                                    <Badge variant="secondary" className="font-normal">
-                                        {a.source}
-                                    </Badge>
-                                )}
-                                {a.publishedAt && (
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Calendar className="h-3 w-3" />
-                                        {formatDate(a.publishedAt)}
-                                    </span>
-                                )}
-                            </div>
-                            <h3 className="mt-1 text-sm font-semibold text-foreground group-hover:text-primary">
-                                {a.title}
-                            </h3>
-                            {a.description && (
-                                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
-                            )}
-                        </div>
-                    </a>
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const FilterPill: React.FC<{
-    active: boolean;
-    onClick: () => void;
-    children: React.ReactNode;
-    title?: string;
-}> = ({ active, onClick, children, title }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        title={title}
-        className={cn(
-            "inline-flex max-w-[280px] items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
-            active
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground hover:bg-muted/50",
-        )}
-    >
-        <span className="truncate">{children}</span>
-    </button>
-);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Search overlay branch
-// ─────────────────────────────────────────────────────────────────────────────
-
-const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ entry }) => {
-    const parsed = useMemo(() => parseResearch(resultAsString(entry)), [entry]);
-    const { queries, groups, reads, allSources, domains, totalReported } = parsed;
+export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
+    const parsed = useMemo(() => parseSearch(resultAsString(entry)), [entry]);
+    const { queries, groups, reads, sources, domains, totalReported, report } = parsed;
 
     const [activeQuery, setActiveQuery] = useState<string | null>(null);
     const [filter, setFilter] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("relevance");
 
-    // Base list: scoped to active query group or the full de-duplicated list.
-    const base: ResearchSource[] = useMemo(() => {
-        if (!activeQuery) return allSources;
+    // Base list: scoped to active query group or the full deduped list.
+    const base: SearchSource[] = useMemo(() => {
+        if (!activeQuery) return sources;
         const g = groups.find((x) => x.query === activeQuery);
-        if (!g) return allSources;
+        if (!g) return sources;
         return g.results
             .filter((r) => r.url)
             .map((r) => ({
@@ -342,9 +237,9 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
                 date: r.date,
                 snippet: r.snippet,
             }));
-    }, [activeQuery, allSources, groups]);
+    }, [activeQuery, sources, groups]);
 
-    const visible: ResearchSource[] = useMemo(() => {
+    const visible: SearchSource[] = useMemo(() => {
         const q = filter.trim().toLowerCase();
         let list = q
             ? base.filter(
@@ -357,7 +252,7 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
         if (sortKey === "domain") {
             list = [...list].sort((a, b) => a.domain.localeCompare(b.domain));
         } else if (sortKey === "date") {
-            const ts = (s: ResearchSource) => {
+            const ts = (s: SearchSource) => {
                 const t = s.date ? Date.parse(s.date) : NaN;
                 return Number.isNaN(t) ? 0 : t;
             };
@@ -366,7 +261,7 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
         return list;
     }, [base, filter, sortKey]);
 
-    if (allSources.length === 0 && reads.length === 0) {
+    if (sources.length === 0 && reads.length === 0 && !report) {
         return (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
                 <div className="text-center">
@@ -380,11 +275,24 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
     return (
         <div className="h-full w-full overflow-y-auto bg-background">
             <div className="space-y-4 p-4">
+                {/* AI answer / summary on top WHEN present. */}
+                {report && (
+                    <div className="rounded-lg border border-primary/15 bg-primary/5 p-4">
+                        <div className="mb-2 flex items-center gap-1.5">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-semibold text-foreground">AI Matrx answer</span>
+                        </div>
+                        <div className="text-sm leading-relaxed text-foreground/90">
+                            <BasicMarkdownContent content={report} />
+                        </div>
+                    </div>
+                )}
+
                 {/* Stat rail */}
                 <div className="flex flex-wrap items-center gap-2">
                     <StatChip icon={<Search className="h-4 w-4" />} value={queries.length} label={queries.length === 1 ? "query" : "queries"} />
-                    <StatChip icon={<Globe className="h-4 w-4" />} value={allSources.length} label="sources" />
-                    {totalReported > allSources.length && (
+                    <StatChip icon={<Globe className="h-4 w-4" />} value={sources.length} label="sources" />
+                    {totalReported > sources.length && (
                         <StatChip icon={<Globe className="h-4 w-4" />} value={totalReported} label="reported" />
                     )}
                     {reads.length > 0 && (
@@ -414,7 +322,7 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
                     {queries.length > 1 && (
                         <div className="flex flex-wrap gap-1.5">
                             <FilterPill active={activeQuery === null} onClick={() => setActiveQuery(null)}>
-                                All sources ({allSources.length})
+                                All sources ({sources.length})
                             </FilterPill>
                             {groups.map((g) => (
                                 <FilterPill
@@ -436,7 +344,6 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
                                 placeholder={`Filter ${base.length} sources…`}
-                                // text-base = 16px to prevent iOS zoom-on-focus.
                                 className="h-9 w-full max-w-md rounded-md border border-border bg-background pl-9 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:text-sm"
                             />
                         </div>
@@ -484,20 +391,4 @@ const SearchOverlayBody: React.FC<{ entry: ToolRendererProps["entry"] }> = ({ en
             </div>
         </div>
     );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main overlay — branches between news / search bodies (no hooks in the parent,
-// so the two branches keep independent, stable hook orders).
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const ResearchModernOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
-    if (entry.toolName === "news_get_headlines") {
-        return (
-            <div className="h-full w-full overflow-y-auto bg-background">
-                <NewsOverlayBody entry={entry} />
-            </div>
-        );
-    }
-    return <SearchOverlayBody entry={entry} />;
 };

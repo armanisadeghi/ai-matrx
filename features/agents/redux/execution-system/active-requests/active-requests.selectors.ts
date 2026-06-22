@@ -834,6 +834,28 @@ export const selectHasInlineError = (requestId: string) =>
     slots.some((s) => s.kind === "error"),
   );
 
+/**
+ * True while a given tool call is the LATEST activity in the stream — i.e. its
+ * `tool` slot is the final `unifiedSlot` and the model has not yet emitted any
+ * text / render block / further tool after it. Flips false the moment a later
+ * slot (a new tool, or the answer text) arrives.
+ *
+ * This drives the search renderer's two phases: while latest → the LIVE
+ * rolling-window feed (paced reveal, conveyor); once a later slot lands → snap
+ * (fast-forward) to the clean persistent Google/Perplexity-class results view.
+ * So even a COMPLETED tool keeps showing the live feed until the model moves on
+ * — exactly how the big providers behave.
+ *
+ * Derived from `selectUnifiedSlots` so it can never disagree with what's
+ * actually rendered. Memoized via `createSelector` (chains the slots selector).
+ */
+export const selectIsLatestToolActivity = (requestId: string, callId: string) =>
+  createSelector(selectUnifiedSlots(requestId), (slots): boolean => {
+    if (slots.length === 0) return false;
+    const last = slots[slots.length - 1];
+    return last.kind === "tool" && last.callId === callId;
+  });
+
 /** Pending tool calls that haven't been resolved yet. Memoized. */
 export const selectUnresolvedToolCalls = (requestId: string) =>
   createSelector(

@@ -1,14 +1,16 @@
 /**
- * parseResearch — pure, defensive parser for the web-search / research family
- * of tool results (`research_web`, `core_web_search`, `core_web_search_and_read`,
- * `news_get_headlines`).
+ * parseSearch — the ONE canonical parser for the web-search / research family
+ * (`web_search`, `core_web_search`, `web_search_v1`, `research_web`,
+ * `core_web_search_and_read`, `news_get_headlines`).
  *
- * These tools all emit a single TEXT blob (or, for headlines, a JSON object).
- * The blob shape varies across tool versions, so this parser is intentionally
- * tolerant: it walks the text, recognizes the pieces it knows, and silently
- * skips anything it doesn't. Missing pieces yield empty arrays — never throws.
+ * This consolidates the three formerly-duplicated `parseResearch.ts` parsers
+ * (research-modern + research-revival) and the deep-research `parser.ts` into a
+ * single tolerant parser. Every search renderer in the codebase consumes this.
  *
- * ─── Recognized text shapes ──────────────────────────────────────────────────
+ * ─── The wire reality (verified from the DB) ─────────────────────────────────
+ *
+ * These tools all emit a single TEXT blob (headlines emit JSON). The blob is
+ * NOT token-streamed — it arrives WHOLE at `tool_completed`. Shape:
  *
  *   Comprehensive research using the following queries: "q1", "q2", "q3".
  *
@@ -21,7 +23,8 @@
  *
  *   Title: Some Page Title (April 10, 2026)
  *   URL: https://example.com/path
- *   <optional snippet / Description: / Extra Snippets: lines>
+ *   Description: ...
+ *   Extra Snippets: ...
  *
  *   Title: Another Title (1 day ago)
  *   URL: https://www.nih.gov/...
@@ -32,10 +35,12 @@
  *   <read_result>
  *   url: https://...
  *   title: ...
- *   <page text...>
+ *   <page text…>
  *   </read_result>
  *
- * `news_get_headlines` returns JSON, handled separately by {@link parseHeadlines}.
+ * The parser walks the text, recognizes the pieces it knows, and silently skips
+ * the rest. Missing pieces yield empty arrays — it NEVER throws, and it is
+ * robust to zero queries / any query count / a partial mid-stream blob.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -44,7 +49,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** A single search hit under one query. */
-export interface ResearchResult {
+export interface SearchResult {
     title: string;
     url: string;
     /** Trailing "(date)" parsed from the title line, e.g. "1 day ago". */
@@ -54,22 +59,22 @@ export interface ResearchResult {
 }
 
 /** One query and the hits returned for it. */
-export interface ResearchGroup {
+export interface SearchGroup {
     query: string;
     /** Reported count from the header (may exceed `results.length`). */
     count: number;
-    results: ResearchResult[];
+    results: SearchResult[];
 }
 
-/** A page that a deep-read tool actually fetched and returned content for. */
-export interface ResearchRead {
+/** A page whose full content a deep-read tool actually fetched. */
+export interface SearchRead {
     url: string;
     title?: string;
     text: string;
 }
 
-/** A de-duplicated, domain-stamped source row for the unified ranked list. */
-export interface ResearchSource {
+/** A base-URL-deduped, domain-stamped source row for the unified ranked list. */
+export interface SearchSource {
     title: string;
     url: string;
     domain: string;
@@ -77,19 +82,25 @@ export interface ResearchSource {
     snippet?: string;
 }
 
-export interface ParsedResearch {
+export interface ParsedSearch {
     /** All queries, in order — from the "Searched:" line or group headers. */
     queries: string[];
-    /** Per-query result groups. */
-    groups: ResearchGroup[];
+    /** Per-query result groups (each group de-duped by base URL internally). */
+    groups: SearchGroup[];
     /** Pages whose full content was fetched (deep reads). */
-    reads: ResearchRead[];
-    /** Every source, de-duplicated by URL, with domain stamped. */
-    allSources: ResearchSource[];
+    reads: SearchRead[];
+    /** Every source, de-duplicated by BASE URL, with domain stamped + ranked. */
+    sources: SearchSource[];
     /** Distinct domains with their source counts, ranked desc by count. */
     domains: Array<{ domain: string; count: number }>;
     /** Total reported result count across all query headers. */
     totalReported: number;
+    /**
+     * A synthesized AI answer / summary when one is present in the blob (the
+     * "# Curated Research Results" section that the research sub-agent writes).
+     * `null` for plain search (no summary) → the renderer leads with results.
+     */
+    report: string | null;
 }
 
 /** A single headline article from `news_get_headlines`. */
@@ -108,24 +119,75 @@ export interface ParsedHeadlines {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// URL helpers
+// URL helpers — the canonical favicon / domain / base-URL-dedupe utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Hostname without leading `www.`, or a best-effort slice when unparseable. */
 export function getDomain(url: string): string {
     try {
         return new URL(url).hostname.replace(/^www\./, "");
     } catch {
-        // Best-effort for bare hostnames or malformed urls.
         const stripped = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
         const slash = stripped.indexOf("/");
         return slash === -1 ? stripped : stripped.slice(0, slash);
     }
 }
 
-export function getFaviconUrl(url: string): string {
+/** Google favicon endpoint for a URL's host; empty string when unparseable. */
+export function getFaviconUrl(url: string, size = 32): string {
     const domain = getDomain(url);
     if (!domain) return "";
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+}
+
+/**
+ * The canonical base-URL dedupe key for a result.
+ *
+ * Base URL = scheme + host (www-stripped) + pathname, WITHOUT query string or
+ * fragment. So `example.com/article?utm=a` and `example.com/article?utm=b`
+ * collapse to one source — a real search engine never lists the same page
+ * twice just because the tracking params differ. Falls back to the raw,
+ * lower-cased string (minus a trailing slash) when the URL won't parse.
+ */
+export function baseUrlKey(url: string): string {
+    if (!url) return "";
+    try {
+        const u = new URL(url);
+        const host = u.hostname.replace(/^www\./, "");
+        const path = u.pathname.replace(/\/+$/, "");
+        return `${host}${path}`.toLowerCase();
+    } catch {
+        return url.trim().replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+    }
+}
+
+/**
+ * De-duplicate a list of result-like items by their BASE URL, preserving order
+ * (the first occurrence wins). Generic over anything carrying a `url`.
+ */
+export function dedupeByBaseUrl<T extends { url: string }>(items: T[]): T[] {
+    const seen = new Set<string>();
+    const out: T[] = [];
+    for (const item of items) {
+        const key = baseUrlKey(item.url);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+    }
+    return out;
+}
+
+/** Format an ISO date / freeform date string for compact display. */
+export function formatDate(value: string | undefined): string | undefined {
+    if (!value) return undefined;
+    // Already-relative ("1 day ago") or freeform — pass through.
+    const parsed = Date.parse(value);
+    if (Number.isNaN(parsed)) return value;
+    return new Date(parsed).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,8 +201,8 @@ const READ_BLOCK_RE = /<read_result>([\s\S]*?)<\/read_result>/g;
  * return both the parsed reads and the text with those blocks removed (so the
  * search-result parser doesn't trip over embedded page bodies).
  */
-function extractReads(raw: string): { reads: ResearchRead[]; rest: string } {
-    const reads: ResearchRead[] = [];
+function extractReads(raw: string): { reads: SearchRead[]; rest: string } {
+    const reads: SearchRead[] = [];
     let match: RegExpExecArray | null;
     READ_BLOCK_RE.lastIndex = 0;
     while ((match = READ_BLOCK_RE.exec(raw)) !== null) {
@@ -184,11 +246,11 @@ function parseSearchedLine(raw: string): string[] {
 }
 
 /**
- * Parse a single result entry block into a {@link ResearchResult}.
- * Handles both the rich form (Description: / Extra Snippets:) and the lean
- * form (a freeform snippet line directly after URL).
+ * Parse a single result entry block into a {@link SearchResult}. Handles both
+ * the rich form (Description: / Extra Snippets:) and the lean form (a freeform
+ * snippet line directly after URL).
  */
-function parseResultEntry(block: string): ResearchResult | null {
+function parseResultEntry(block: string): SearchResult | null {
     const titleLine = block.match(/^\s*Title:\s*(.+)$/m)?.[1]?.trim();
     const url = block.match(/^\s*URL:\s*(.+)$/im)?.[1]?.trim();
     if (!titleLine && !url) return null;
@@ -196,9 +258,7 @@ function parseResultEntry(block: string): ResearchResult | null {
     // Trailing "(date)" on the title line.
     const dateMatch = titleLine?.match(/\(([^)]+)\)\s*$/);
     const date = dateMatch?.[1]?.trim();
-    const title = (titleLine ?? url ?? "")
-        .replace(/\s*\([^)]+\)\s*$/, "")
-        .trim();
+    const title = (titleLine ?? url ?? "").replace(/\s*\([^)]+\)\s*$/, "").trim();
 
     const description = block.match(/^\s*Description:\s*(.+)$/m)?.[1]?.trim();
     const extra = block.match(/^\s*Extra Snippets:\s*(.+)$/m)?.[1]?.trim();
@@ -232,14 +292,20 @@ function parseResultEntry(block: string): ResearchResult | null {
 /**
  * Parse all per-query groups. Group headers look like:
  *   ## "query text" (24 results)
- * Followed by a run of `Title:/URL:/…` entries separated by blank lines.
+ * Followed by a run of `Title:/URL:/…` entries separated by blank lines. Each
+ * group's results are de-duped by base URL so a group never lists a page twice.
  */
-function parseGroups(raw: string): ResearchGroup[] {
-    const groups: ResearchGroup[] = [];
-    // Split on group headers, keeping the header via a capturing lookahead.
-    const headerRe = /^##\s+"([^"]+)"\s*\((\d+)\s*results?\)\s*$/gim;
+function parseGroups(raw: string): SearchGroup[] {
+    const groups: SearchGroup[] = [];
+    // Header: `## "query" (24 results)` or `## "query" (24)`.
+    const headerRe = /^##\s+"([^"]+)"\s*\((\d+)(?:\s+results?)?\)\s*$/gim;
 
-    const headers: Array<{ query: string; count: number; index: number; headerLen: number }> = [];
+    const headers: Array<{
+        query: string;
+        count: number;
+        index: number;
+        headerLen: number;
+    }> = [];
     let hm: RegExpExecArray | null;
     while ((hm = headerRe.exec(raw)) !== null) {
         headers.push({
@@ -263,60 +329,81 @@ function parseGroups(raw: string): ResearchGroup[] {
             .trim();
 
         const entries = body.split(/\n\s*\n(?=\s*Title:)/i);
-        const results: ResearchResult[] = [];
+        const results: SearchResult[] = [];
         for (const entry of entries) {
             if (!/Title:/i.test(entry) && !/URL:/i.test(entry)) continue;
             const parsed = parseResultEntry(entry);
             if (parsed) results.push(parsed);
         }
 
-        groups.push({ query: h.query, count: h.count || results.length, results });
+        groups.push({
+            query: h.query,
+            count: h.count || results.length,
+            results: dedupeByBaseUrl(results),
+        });
     }
 
     return groups;
+}
+
+/**
+ * Extract the synthesized "# Curated Research Results" report when present.
+ * Plain search blobs have no such section → returns null.
+ */
+function extractReport(raw: string): string | null {
+    const CURATED = "# Curated Research Results";
+    const NEXT_STEPS = "\n## Next steps:";
+    const start = raw.indexOf(CURATED);
+    if (start === -1) return null;
+    const after = raw.slice(start + CURATED.length);
+    const nsIdx = after.indexOf(NEXT_STEPS);
+    const reportRaw = (nsIdx !== -1 ? after.slice(0, nsIdx) : after).trim();
+    const report = reportRaw
+        .replace(/^The following is the result of[^\n]*\n+/i, "")
+        .trim();
+    return report.length > 0 ? report : null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public: main parser
 // ─────────────────────────────────────────────────────────────────────────────
 
+const EMPTY_PARSED: ParsedSearch = {
+    queries: [],
+    groups: [],
+    reads: [],
+    sources: [],
+    domains: [],
+    totalReported: 0,
+    report: null,
+};
+
 /**
- * Parse a research/search tool's text result into structured data.
- * Always returns a well-formed shape — empty arrays when nothing matched.
+ * Parse a search/research tool's text result into structured data. Always
+ * returns a well-formed shape — empty arrays when nothing matched.
  */
-export function parseResearch(raw: string | null | undefined): ParsedResearch {
-    const empty: ParsedResearch = {
-        queries: [],
-        groups: [],
-        reads: [],
-        allSources: [],
-        domains: [],
-        totalReported: 0,
-    };
-    if (!raw || typeof raw !== "string") return empty;
+export function parseSearch(raw: string | null | undefined): ParsedSearch {
+    if (!raw || typeof raw !== "string") return EMPTY_PARSED;
 
     const { reads, rest } = extractReads(raw);
     const groups = parseGroups(rest);
+    const report = extractReport(raw);
 
     // Queries: prefer the explicit "Searched:" line, fall back to group headers.
     const searchedQueries = parseSearchedLine(rest);
     const groupQueries = groups.map((g) => g.query);
     const queries = searchedQueries.length > 0 ? searchedQueries : groupQueries;
-    // Ensure every group query is represented even if the Searched line was partial.
     for (const q of groupQueries) {
         if (!queries.includes(q)) queries.push(q);
     }
 
-    // De-duplicate sources by URL, stamping domain.
-    const seen = new Set<string>();
-    const allSources: ResearchSource[] = [];
+    // De-duplicate the unified source list by BASE URL, stamping domain. Reads
+    // are sources too — append any not already listed.
+    const flat: SearchSource[] = [];
     for (const group of groups) {
         for (const r of group.results) {
             if (!r.url) continue;
-            const key = r.url.trim();
-            if (seen.has(key)) continue;
-            seen.add(key);
-            allSources.push({
+            flat.push({
                 title: r.title,
                 url: r.url,
                 domain: getDomain(r.url),
@@ -325,23 +412,20 @@ export function parseResearch(raw: string | null | undefined): ParsedResearch {
             });
         }
     }
-    // Reads are also sources — include any that weren't already listed.
     for (const rd of reads) {
         if (!rd.url) continue;
-        const key = rd.url.trim();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        allSources.push({
+        flat.push({
             title: rd.title ?? getDomain(rd.url),
             url: rd.url,
             domain: getDomain(rd.url),
             snippet: rd.text ? rd.text.slice(0, 240) : undefined,
         });
     }
+    const sources = dedupeByBaseUrl(flat);
 
     // Domain coverage, ranked by count desc then name asc.
     const domainCounts = new Map<string, number>();
-    for (const s of allSources) {
+    for (const s of sources) {
         if (!s.domain) continue;
         domainCounts.set(s.domain, (domainCounts.get(s.domain) ?? 0) + 1);
     }
@@ -354,7 +438,7 @@ export function parseResearch(raw: string | null | undefined): ParsedResearch {
         0,
     );
 
-    return { queries, groups, reads, allSources, domains, totalReported };
+    return { queries, groups, reads, sources, domains, totalReported, report };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -389,7 +473,7 @@ function sourceName(value: unknown): string | undefined {
 /**
  * Parse a `news_get_headlines` result object. Tolerates the camelCase wire
  * shape (`urlToImage`, `publishedAt`, `source.name`) AND the snake_case variant
- * (`url_to_image`, `published_at`) seen elsewhere in the codebase.
+ * (`url_to_image`, `published_at`).
  */
 export function parseHeadlines(
     result: Record<string, unknown> | null | undefined,
@@ -423,17 +507,4 @@ export function parseHeadlines(
               : articles.length;
 
     return { articles, totalResults };
-}
-
-/** Format an ISO date / freeform date string for compact display. */
-export function formatDate(value: string | undefined): string | undefined {
-    if (!value) return undefined;
-    // Already-relative ("1 day ago") or freeform — pass through.
-    const parsed = Date.parse(value);
-    if (Number.isNaN(parsed)) return value;
-    return new Date(parsed).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-    });
 }

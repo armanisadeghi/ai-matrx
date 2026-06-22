@@ -446,6 +446,7 @@ const ToolCallVisualizationInner: React.FC<{
                         toolGroupId={entry.callId}
                         isPersisted={isPersisted}
                         conversationId={conversationId}
+                        requestId={requestId}
                       />
                     )}
                   </div>

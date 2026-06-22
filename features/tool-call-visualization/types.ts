@@ -70,6 +70,15 @@ export interface ToolRendererProps {
    * renderers can publish user overrides into instance context.
    */
   conversationId?: string;
+
+  /**
+   * Owning active-request id — threaded from the live chat shell so renderers
+   * can subscribe to stream-position selectors (e.g.
+   * `selectIsLatestToolActivity` for the search renderer's live→persistent
+   * fast-forward). Undefined for persisted snapshots / the simulator, where
+   * renderers fall back to `entry.status`.
+   */
+  requestId?: string;
 }
 
 /**

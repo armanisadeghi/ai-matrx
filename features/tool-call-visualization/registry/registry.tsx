@@ -15,7 +15,8 @@ import type {
 } from "../types";
 import { GenericRenderer } from "./GenericRenderer";
 
-import { BraveSearchInline } from "../renderers/brave-search";
+import { SearchInline } from "../renderers/search/SearchInline";
+import { SearchOverlay } from "../renderers/search/SearchOverlay";
 import { NewsInline, NewsOverlay } from "../renderers/news-api";
 import {
   SeoMetaTagsInline,
@@ -23,14 +24,6 @@ import {
 } from "../renderers/seo-meta-tags";
 import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles";
 import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions";
-import {
-  WebResearchInline,
-  WebResearchOverlay,
-} from "../renderers/web-research";
-import {
-  CoreWebSearchInline,
-  CoreWebSearchOverlay,
-} from "../renderers/core-web-search";
 import {
   DeepResearchInline,
   deepResearchOverlayTabs,
@@ -44,7 +37,6 @@ import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
-import BraveSearchDisplay from "@/features/workflows/results/registered-components/BraveSearchDisplay";
 
 import {
   resultAsObject,
@@ -53,6 +45,7 @@ import {
   collectMessages,
   filterStepEvents,
 } from "../renderers/_shared";
+import { parseSearch } from "../renderers/search/parseSearch";
 import { DbToolRenderer } from "../db-renderer/DbToolRenderer";
 import {
   getCachedToolRenderer,
@@ -148,6 +141,42 @@ function seoDescriptionsHeaderExtras(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Search header helpers — shared by web_search / core_web_search / web_search_v1
+// (the unified SearchInline/SearchOverlay renderer). Subtitle = the query (or
+// "N queries"); extras = sources / domains counts once the result lands.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function searchHeaderSubtitle(entry: ToolLifecycleEntry): string | null {
+  const queries = getArg<unknown[]>(entry, "queries");
+  if (Array.isArray(queries) && queries.length > 0) {
+    return queries.length === 1
+      ? String(queries[0])
+      : `${queries.length} queries`;
+  }
+  const query = getArg<string>(entry, "query");
+  return typeof query === "string" && query ? query : null;
+}
+
+function searchHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
+  const parsed = parseSearch(resultAsString(entry));
+  if (parsed.sources.length === 0) return null;
+  return (
+    <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+      <span>
+        {parsed.sources.length}{" "}
+        {parsed.sources.length === 1 ? "source" : "sources"}
+      </span>
+      {parsed.domains.length > 0 && (
+        <span>
+          {parsed.domains.length}{" "}
+          {parsed.domains.length === 1 ? "domain" : "domains"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Static tool registry
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -161,17 +190,11 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Web search failed",
     },
     resultsLabel: "Search Results",
-    InlineComponent: BraveSearchInline,
-    OverlayComponent: (props: ToolRendererProps) => {
-      const first = filterStepEvents(props.events, "brave_default_page")[0];
-      if (!first) return <GenericRenderer {...props} />;
-      // BraveSearchDisplay expects legacy { type, content } — adapt here.
-      const adapted = {
-        type: "brave_default_page" as const,
-        content: first.metadata,
-      };
-      return <BraveSearchDisplay data={adapted as never} />;
-    },
+    InlineComponent: SearchInline,
+    OverlayComponent: SearchOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: searchHeaderSubtitle,
+    getHeaderExtras: searchHeaderExtras,
   },
 
   news_get_headlines: {
@@ -259,50 +282,11 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Web research failed",
     },
     resultsLabel: "Research Results",
-    InlineComponent: WebResearchInline,
-    OverlayComponent: WebResearchOverlay,
+    InlineComponent: SearchInline,
+    OverlayComponent: SearchOverlay,
     keepExpandedOnStream: true,
-    getHeaderSubtitle: (entry) => {
-      const queries = getArg<unknown[]>(entry, "queries");
-      if (Array.isArray(queries) && queries.length > 0) {
-        return queries.length === 1
-          ? String(queries[0])
-          : `${queries.length} queries`;
-      }
-      const query = getArg<string>(entry, "query");
-      return typeof query === "string" ? query : null;
-    },
-    getHeaderExtras: (entry, events) => {
-      const queries = getArg<unknown[]>(entry, "queries");
-      const query = getArg<string>(entry, "query");
-      const queryCount = Array.isArray(queries)
-        ? queries.length
-        : typeof query === "string"
-          ? 1
-          : 0;
-      const messages = collectMessages(events);
-      const browsingCount = messages.filter((m) =>
-        m.startsWith("Browsing "),
-      ).length;
-      if (queryCount === 0 && browsingCount === 0) return null;
-      const parts: string[] = [];
-      if (queryCount > 0)
-        parts.push(`${queryCount} ${queryCount === 1 ? "query" : "queries"}`);
-      if (browsingCount > 0) {
-        parts.push(
-          `${browsingCount} deep ${browsingCount === 1 ? "read" : "reads"}`,
-        );
-      } else if (queryCount > 0) {
-        parts.push(`~${queryCount * 3} deep reads`);
-      }
-      return (
-        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
-          <span className="flex items-center gap-1">
-            {parts.join(" \u00B7 ")}
-          </span>
-        </div>
-      );
-    },
+    getHeaderSubtitle: searchHeaderSubtitle,
+    getHeaderExtras: searchHeaderExtras,
   },
 
   core_web_search: {
@@ -314,9 +298,11 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Multi-query search failed",
     },
     resultsLabel: "Search Results",
-    InlineComponent: CoreWebSearchInline,
-    OverlayComponent: CoreWebSearchOverlay,
+    InlineComponent: SearchInline,
+    OverlayComponent: SearchOverlay,
     keepExpandedOnStream: true,
+    getHeaderSubtitle: searchHeaderSubtitle,
+    getHeaderExtras: searchHeaderExtras,
   },
 
   research_web: {

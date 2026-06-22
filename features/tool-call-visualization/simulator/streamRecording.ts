@@ -242,3 +242,66 @@ export function buildResearchRecording(
     finalResult: fullBlob,
   };
 }
+
+/** Search cadence — snappier than deep research; parallel queries land fast. */
+const SEARCH_MIN_GAP_MS = 900;
+const SEARCH_MAX_GAP_MS = 1600;
+
+/**
+ * Build a realistic recording for a web-search tool call (`web_search`,
+ * `core_web_search`, `web_search_v1`) from its final text blob.
+ *
+ * Mirrors `buildResearchRecording` but with a faster, search-engine-like
+ * cadence: each parallel query's result SECTION lands as one whole part over
+ * time (the wire delivers whole sections, never a char trickle), so the
+ * SearchInline renderer's rolling-window conveyor reveals them a few at a time
+ * and fast-forwards to the persistent Google-class view when the next lands /
+ * the tool completes.
+ *
+ * The first progress step re-emits the preamble (intro + "All Search Results" +
+ * the "Searched:" summary) ahead of the first section so the accumulating text
+ * matches real wire order. `tool_completed` then swaps in the canonical blob.
+ */
+export function buildSearchRecording(
+  fullBlob: string,
+  args: Record<string, unknown>,
+  opts?: { toolName?: string; displayName?: string },
+): StreamRecording {
+  const toolName = opts?.toolName ?? "web_search";
+  const displayName = opts?.displayName ?? "Web Search";
+  const preamble = extractPreamble(fullBlob);
+  const sections = splitResearchSections(fullBlob);
+
+  const steps: StreamStep[] = [
+    { afterMs: 0, event: "tool_started", data: { ...args } },
+  ];
+
+  const gapFor = (index: number): number => {
+    if (sections.length <= 1) return SEARCH_MIN_GAP_MS;
+    const ratio = index / (sections.length - 1);
+    return Math.round(
+      SEARCH_MIN_GAP_MS + ratio * (SEARCH_MAX_GAP_MS - SEARCH_MIN_GAP_MS),
+    );
+  };
+
+  let elapsed = 400; // small lead-in before the first section lands
+  sections.forEach((section, index) => {
+    elapsed += gapFor(index);
+    const isFirst = index === 0;
+    const appendResult =
+      isFirst && preamble.length > 0
+        ? `${preamble}\n\n${section.text}`
+        : section.text;
+    steps.push({
+      afterMs: elapsed,
+      event: "tool_progress",
+      message: `Searched "${section.query}" (${section.count})`,
+      appendResult,
+    });
+  });
+
+  elapsed += gapFor(sections.length);
+  steps.push({ afterMs: elapsed, event: "tool_completed" });
+
+  return { toolName, displayName, args, steps, finalResult: fullBlob };
+}

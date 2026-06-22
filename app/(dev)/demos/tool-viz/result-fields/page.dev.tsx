@@ -22,11 +22,12 @@ import { ResultValue } from "@/features/tool-call-visualization/result-fields/Re
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
-import { ResearchRevivalInline } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalInline";
-import { ResearchRevivalOverlay } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalOverlay";
-import { ResearchModernInline } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernInline";
-import { ResearchModernOverlay } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernOverlay";
-import { buildResearchRecording } from "@/features/tool-call-visualization/simulator/streamRecording";
+import { SearchInline } from "@/features/tool-call-visualization/renderers/search/SearchInline";
+import { SearchOverlay } from "@/features/tool-call-visualization/renderers/search/SearchOverlay";
+import {
+    buildResearchRecording,
+    buildSearchRecording,
+} from "@/features/tool-call-visualization/simulator/streamRecording";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
@@ -446,6 +447,139 @@ const RESEARCH_RECORDING = buildResearchRecording(RESEARCH_RESULT, {
     query: "best dietary sources to balance omega fatty acids 2026",
 });
 
+// ─── Web-search fixture (3 parallel queries, ~5 results each) ───────────────
+//
+// DELIBERATELY contains DUPLICATE base URLs across queries to prove base-URL
+// dedupe — the SAME favicon must NEVER appear twice in the live conveyor or the
+// persistent list:
+//   • healthline.com/nutrition/omega-3-foods appears in Q1 and Q3 (differing
+//     ?utm tracking params → same base URL → ONE source).
+//   • ods.od.nih.gov/.../Omega3FattyAcids appears in Q1 and Q2.
+// After dedupe the unified source list collapses these. No AI answer (plain
+// search) → the persistent view leads with results, not a summary.
+const SEARCH_RESULT = `Comprehensive research using the following queries: "best omega-3 food sources", "omega-3 supplements ranked 2026", "algae omega-3 vs fish oil".
+
+# All Search Results:
+
+Searched: "best omega-3 food sources" (5), "omega-3 supplements ranked 2026" (5), "algae omega-3 vs fish oil" (5)
+
+---
+## "best omega-3 food sources" (5 results)
+
+Title: Office of Dietary Supplements - Omega-3 Fatty Acids (15 hours ago)
+URL: https://ods.od.nih.gov/factsheets/Omega3FattyAcids/?src=search
+Description: Authoritative fact sheet on omega-3 intake, food sources, and supplementation.
+
+Title: Best Omega-3 Foods, Ranked by Bioavailability (March 2, 2026)
+URL: https://www.healthline.com/nutrition/omega-3-foods?utm_source=serp
+Description: Fatty fish, algae oil, and walnuts top the bioavailability ranking.
+
+Title: 12 Foods Very High in Omega-3 (Jan 9, 2026)
+URL: https://www.medicalnewstoday.com/articles/omega-3-foods
+Description: Mackerel, salmon, cod liver oil, herring, and oysters lead the list.
+
+Title: Omega-3 in Walnuts and Flaxseed (Feb 20, 2026)
+URL: https://www.webmd.com/diet/omega-3-plant-sources
+Description: Plant ALA sources and how the body converts them to EPA/DHA.
+
+Title: Seafood Nutrition: Omega-3 Content by Species (Dec 2025)
+URL: https://www.seafoodhealthfacts.org/omega-3-by-species
+Description: Comparison table of EPA + DHA per 100g across common seafood.
+
+---
+## "omega-3 supplements ranked 2026" (5 results)
+
+Title: Best Fish Oil Supplements of 2026 (April 1, 2026)
+URL: https://www.consumerlab.com/reviews/fish-oil-supplements
+Description: Independent lab testing for purity, freshness, and label accuracy.
+
+Title: Office of Dietary Supplements - Omega-3 Fatty Acids (15 hours ago)
+URL: https://ods.od.nih.gov/factsheets/Omega3FattyAcids/?ref=supplements
+Description: Same authoritative fact sheet, surfaced again under supplements.
+
+Title: Top Algae Oil Supplements, Tested (March 18, 2026)
+URL: https://www.healthline.com/nutrition/algae-oil-supplements
+Description: Vegan EPA/DHA options that rival fish oil on absorption.
+
+Title: NSF-Certified Omega-3 Brands (Feb 2026)
+URL: https://www.nsf.org/certified-omega-3
+Description: Third-party certified supplements for sport and general use.
+
+Title: How to Choose an Omega-3 Supplement (Jan 2026)
+URL: https://www.health.harvard.edu/omega-3-supplement-guide
+Description: EPA vs DHA ratios, dosing, and what the evidence supports.
+
+---
+## "algae omega-3 vs fish oil" (5 results)
+
+Title: Algae Oil vs Fish Oil: A 2026 Comparison (5 days ago)
+URL: https://www.consumerlab.com/algae-vs-fish-oil
+Description: Head-to-head on EPA/DHA conversion efficiency and contaminants.
+
+Title: Best Omega-3 Foods, Ranked by Bioavailability (March 2, 2026)
+URL: https://www.healthline.com/nutrition/omega-3-foods?utm_source=compare
+Description: The same bioavailability ranking, re-surfaced for the comparison.
+
+Title: Is Algae Oil as Good as Fish Oil? (Feb 11, 2026)
+URL: https://www.medicalnewstoday.com/articles/algae-oil-benefits
+Description: Reviews the evidence on plant-derived EPA/DHA equivalence.
+
+Title: Sustainable Omega-3: The Algae Advantage (April 10, 2026)
+URL: https://www.nature.com/articles/omega3-sustainability-2026
+Description: Algae-derived omega-3 emerges as the most sustainable source.
+
+Title: Marine vs Plant Omega Oils (Dec 2025)
+URL: https://www.examine.com/marine-vs-plant-omega
+Description: Evidence summary on conversion, dosing, and outcomes.
+`;
+
+const SEARCH_ARGS = {
+    queries: [
+        "best omega-3 food sources",
+        "omega-3 supplements ranked 2026",
+        "algae omega-3 vs fish oil",
+    ],
+};
+
+function searchEntry(toolName: string): ToolLifecycleEntry {
+    return {
+        callId: `search-${toolName}`,
+        toolName,
+        displayName: "Web Search",
+        status: "completed",
+        arguments: SEARCH_ARGS,
+        startedAt: "2026-06-19T10:00:00.000Z",
+        completedAt: "2026-06-19T10:00:05.000Z",
+        latestMessage: null,
+        latestData: null,
+        result: SEARCH_RESULT,
+        resultPreview: null,
+        errorType: null,
+        errorMessage: null,
+        isDelegated: false,
+        events: [],
+    };
+}
+
+const SEARCH_ENTRY = searchEntry("web_search");
+const SEARCH_RECORDING = buildSearchRecording(SEARCH_RESULT, SEARCH_ARGS, {
+    toolName: "web_search",
+    displayName: "Web Search",
+});
+
+// A STATIC mid-stream snapshot — status "progress" with the full result already
+// parsed. Drives the LIVE conveyor code path WITHOUT the simulator timer, so the
+// rolling-window invariant (≤4 rows at once, deduped) is verifiable even when
+// Fast Refresh is thrashing the timer-driven Play demo. The conveyor still
+// advances on the renderer's own internal reveal timer, but the window cap is
+// structural regardless of reveal position.
+const SEARCH_LIVE_SNAPSHOT: ToolLifecycleEntry = {
+    ...searchEntry("web_search"),
+    callId: "search-live-snapshot",
+    status: "progress",
+    completedAt: null,
+};
+
 // Dynamic (DB) renderer demo — resolves to the `tool_ui` row for `agent_call`,
 // fetched + compiled at runtime via the canonical compileSlotComponent path.
 const AGENT_CALL_ENTRY = entry({
@@ -655,13 +789,66 @@ function FixtureCard({ label, children }: { label: string; children: React.React
 }
 
 /**
- * Realistic stream simulation. One hook call drives a single evolving
- * `ToolLifecycleEntry`; the same entry is fed to BOTH research versions and the
- * shell, so they stream together for a true side-by-side comparison. Press Play
- * (then Replay) to (re)run; each query section lands as one whole part over
- * time — no character trickle.
+ * Live search (press Play) — the Wave-1 canonical SEARCH renderer in its LIVE
+ * rolling-window phase. One simulated entry drives both the raw inline renderer
+ * and the full shell (NOT isPersisted, so it streams). The 3 parallel query
+ * sections arrive as whole parts over time; the renderer reveals them a few at
+ * a time (conveyor) and fast-forwards to the persistent Google-class view on
+ * completion. The fixture has duplicate base URLs across queries → confirm at
+ * most ~4 result rows at once and NO duplicate favicons.
  */
-function StreamSimulationSection() {
+function LiveSearchSection() {
+    const [playKey, setPlayKey] = useState(0);
+    const hasPlayed = playKey > 0;
+    const simEntry = useSimulatedToolEntry(hasPlayed ? SEARCH_RECORDING : null, { playKey });
+
+    const statusVariant =
+        simEntry.status === "completed"
+            ? "default"
+            : simEntry.status === "error"
+              ? "destructive"
+              : "secondary";
+    const statusLabel = !hasPlayed ? "idle" : simEntry.status;
+
+    return (
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Live search (press Play)
+                </h2>
+                <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
+                    {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
+                    {hasPlayed ? "Replay" : "Play"}
+                </Button>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                {simEntry.latestMessage ? (
+                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
+                ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+                Rolling-window conveyor: at most ~4 result rows visible at once, deduped by base URL (no
+                duplicate favicon), sliding in as older rows flow out. On completion it fast-forwards to the
+                clean persistent results view. Press Play to run.
+            </p>
+
+            <div className="space-y-4">
+                <FixtureCard label="SearchInline — LIVE conveyor → PERSISTENT (raw renderer)">
+                    <SearchInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="Shell behavior (live: auto-expand while streaming → auto-collapse after)">
+                    <ToolCallVisualization entries={[simEntry]} hasContent />
+                </FixtureCard>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * Research stream simulation — the legacy research blob still streamed through
+ * the shell, to keep the research/scrape recording exercised ahead of Waves
+ * 2–3. Each query section lands as one whole part over time.
+ */
+function ResearchStreamSection() {
     const [playKey, setPlayKey] = useState(0);
     const hasPlayed = playKey > 0;
     const simEntry = useSimulatedToolEntry(hasPlayed ? RESEARCH_RECORDING : null, { playKey });
@@ -678,33 +865,17 @@ function StreamSimulationSection() {
         <section className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Stream simulation (realistic — press Play)
+                    Research stream simulation (press Play)
                 </h2>
                 <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
                     {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
                     {hasPlayed ? "Replay" : "Play"}
                 </Button>
                 <Badge variant={statusVariant}>{statusLabel}</Badge>
-                {simEntry.latestMessage ? (
-                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
-                ) : null}
             </div>
-            <p className="text-xs text-muted-foreground">
-                One simulated entry feeds all three. Query sections arrive as whole parts, spaced over time — the
-                renderers reveal them part-by-part and fast-forward when the next lands.
-            </p>
-
-            <div className="space-y-4">
-                <FixtureCard label="Version A — Revival (streaming)">
-                    <ResearchRevivalInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
-                </FixtureCard>
-                <FixtureCard label="Version B — Modern (streaming)">
-                    <ResearchModernInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
-                </FixtureCard>
-                <FixtureCard label="Shell behavior (auto-expand while streaming → auto-collapse after)">
-                    <ToolCallVisualization entries={[simEntry]} hasContent />
-                </FixtureCard>
-            </div>
+            <FixtureCard label="Shell behavior (research_web — Wave 3 renderer)">
+                <ToolCallVisualization entries={[simEntry]} hasContent />
+            </FixtureCard>
         </section>
     );
 }
@@ -722,33 +893,58 @@ export default function ResultFieldsGalleryPage() {
                 </p>
             </header>
 
-            <StreamSimulationSection />
+            <LiveSearchSection />
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Search / Research — INLINE: Version A (Revival) vs Version B (Modern)
+                    Live search — STATIC mid-stream snapshot (timer-independent)
                 </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A <code className="text-xs">status: &quot;progress&quot;</code> entry with the full result already
+                    parsed — the LIVE conveyor without the Play timer. Confirms the rolling-window cap (≤4 rows at
+                    once) and base-URL dedupe even when HMR is unstable.
+                </p>
+                <FixtureCard label="SearchInline — LIVE conveyor (static progress entry)">
+                    <SearchInline entry={SEARCH_LIVE_SNAPSHOT} events={[]} onOpenOverlay={() => {}} />
+                </FixtureCard>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Search — PERSISTENT (final Google-class view, deduped)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    The fast-forwarded result: 3 parallel queries grouped, base-URL-deduped source list (the
+                    healthline + nih duplicates across queries collapse to one each). No AI answer (plain search) →
+                    leads with results. Click a row to expand the full overlay.
+                </p>
                 <div className="space-y-4">
-                    <FixtureCard label="Version A — Revival (faithful to the lost comprehensive view)">
-                        <ResearchRevivalInline entry={RESEARCH_ENTRY} events={[]} onOpenOverlay={() => {}} />
+                    <FixtureCard label="SearchInline — persistent (raw renderer)">
+                        <SearchInline entry={SEARCH_ENTRY} events={[]} onOpenOverlay={() => {}} />
                     </FixtureCard>
-                    <FixtureCard label="Version B — Modern (data-dense, Perplexity-style)">
-                        <ResearchModernInline entry={RESEARCH_ENTRY} events={[]} onOpenOverlay={() => {}} />
+                    <FixtureCard label="Shell — persisted (click to expand)">
+                        <ToolCallVisualization entries={[SEARCH_ENTRY]} isPersisted hasContent />
                     </FixtureCard>
                 </div>
             </section>
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Search / Research — FULL / MODAL view: Version A vs Version B
+                    Search — FULL / MODAL view (hide nothing: filter · sort · all sources)
                 </h2>
-                <div className="space-y-4">
-                    <FixtureCard label="Version A — Revival (overlay Results body)">
-                        <ResearchRevivalOverlay entry={RESEARCH_ENTRY} />
-                    </FixtureCard>
-                    <FixtureCard label="Version B — Modern (overlay Results body)">
-                        <ResearchModernOverlay entry={RESEARCH_ENTRY} />
-                    </FixtureCard>
+                <FixtureCard label="SearchOverlay — overlay Results body">
+                    <SearchOverlay entry={SEARCH_ENTRY} />
+                </FixtureCard>
+            </section>
+
+            <ResearchStreamSection />
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Research (research_web) — Wave 3 renderer, static blob (click to expand)
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    <ToolCallVisualization entries={[RESEARCH_ENTRY]} isPersisted hasContent />
                 </div>
             </section>
 
