@@ -21,6 +21,8 @@ conversion-oriented sales landing shown to guests at `/rag/data-stores`.
 - `features/knowledge/components/KnowledgeShowcasePage.tsx` — the page (server component).
 - `features/knowledge/components/KnowledgePipelineDiagram.tsx` — `"use client"` interactive,
   theme-aware rebuild of the source SVG (tap a phase to focus it).
+- `app/(core)/knowledge/extractions/` — extraction dataset catalog + per-dataset grid
+  (see `features/page-extraction/FEATURE.md`); linked from the Knowledge nav menu.
 
 ## Source asset
 
@@ -122,6 +124,7 @@ the walkthrough is live today except CSV-as-knowledge (step 1, partial); the
 
 ## Change log
 
+- **2026-06-21** — Added `/knowledge/extractions` to the Knowledge nav menu (shell `nav-data.ts`).
 - **2026-06-06** — Feature created. Built `/knowledge` informational showcase:
   theme-aware interactive pipeline diagram (rebuilt from the source SVG), truthful
   capability grid linking real surfaces, the deposition worked example, and the

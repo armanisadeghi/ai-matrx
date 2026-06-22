@@ -62,6 +62,14 @@ export interface PageExtractionJob {
    * Null means "inherit the agent default" (the common case).
    */
   rag_boost: number | null;
+  /**
+   * Per-dataset column ordering for the review grid
+   * (/knowledge/extractions/[id]). An ordered array of `ExtractionColumn.key`
+   * values. Columns derived from `output_schema` / inferred rows are arranged
+   * to match this order; any key not listed falls back to its natural
+   * position. Empty array = natural order (the default).
+   */
+  column_order: string[];
   owner_id: string;
   organization_id: string | null;
   project_id: string | null;
@@ -162,12 +170,14 @@ export interface PageExtractionResult {
 
 export type PageExtractionJobInsert = Omit<
   PageExtractionJob,
-  "id" | "created_at" | "updated_at" | "latest_run_id"
+  "id" | "created_at" | "updated_at" | "latest_run_id" | "column_order"
 > & {
   id?: string;
   created_at?: string;
   updated_at?: string;
   latest_run_id?: string | null;
+  /** Defaulted to '[]' by the DB; arranged later from the review grid. */
+  column_order?: string[];
 };
 
 export type PageExtractionJobUpdate = Partial<PageExtractionJobInsert>;

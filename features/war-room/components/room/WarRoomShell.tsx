@@ -44,7 +44,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { cn } from "@/lib/utils";
 import {
@@ -74,10 +73,14 @@ import {
 import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
-// The TIER-2 ROOM agent panel pulls the whole agent execution graph (via
-// AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
-// /war-room/[id] bundle — it only loads the first time the user opens the panel.
-const RoomAgentPanel = dynamic(() => import("./RoomAgentPanel"), {
+// The TIER-2 ROOM agent panel — its floating WindowPanel wrapper plus the whole
+// agent execution graph (via AgentConversationColumn). Lazy-load it so neither
+// the heavy agent column NOR the window-panel lazy graph (100+ chunks) ships in
+// the /war-room/[id] route bundle — it only loads the first time the user opens
+// the panel. RoomAgentWindow owns the static WindowPanel import so the shell
+// (which lives in the route's boot graph) never trips the window-panels
+// bundle-leak guard.
+const RoomAgentWindow = dynamic(() => import("./RoomAgentWindow"), {
   ssr: false,
   loading: () => null,
 });
@@ -96,11 +99,6 @@ const MasterWatchLayer = dynamic(
     ),
   { ssr: false, loading: () => null },
 );
-
-// Room Agent window size. Docked bottom-right on open (computed from the
-// viewport in `initialRect` below).
-const ROOM_AGENT_W = 460;
-const ROOM_AGENT_H = 620;
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   return (
@@ -260,28 +258,10 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           right on first open; the user can drag/resize from there. Inline-
           managed: `onClose` is the required close binding (no overlayId). ── */}
       {roomAgentOpen && (
-        <WindowPanel
-          id={`war-room-room-agent-${sessionId}`}
-          title="Room Agent"
-          titleNode={
-            <span className="flex items-center gap-1.5 min-w-0">
-              <Bot className="size-3.5 shrink-0 text-primary" />
-              <span className="truncate">Room Agent</span>
-            </span>
-          }
+        <RoomAgentWindow
+          sessionId={sessionId}
           onClose={() => setRoomAgentOpen(false)}
-          width={ROOM_AGENT_W}
-          height={ROOM_AGENT_H}
-          minWidth={360}
-          minHeight={420}
-          initialRect={{
-            x: Math.max(16, window.innerWidth - ROOM_AGENT_W - 24),
-            y: Math.max(16, window.innerHeight - ROOM_AGENT_H - 24),
-          }}
-          bodyClassName="p-0"
-        >
-          <RoomAgentPanel sessionId={sessionId} />
-        </WindowPanel>
+        />
       )}
 
       {/* Live-watch layer — always mounted so a room-agent tool / toast can open

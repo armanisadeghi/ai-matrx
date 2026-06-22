@@ -373,6 +373,13 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Network",
       },
       {
+        label: "Extractions",
+        href: "/knowledge/extractions",
+        iconName: "Table",
+        description:
+          "Review, manage, and export structured datasets extracted from documents",
+      },
+      {
         label: "Data Stores",
         href: "/rag/data-stores",
         iconName: "Database",

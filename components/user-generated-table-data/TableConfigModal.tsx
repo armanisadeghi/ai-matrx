@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
 import { changeFieldType } from "@/features/data-tables/service";
@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,6 +104,15 @@ export default function TableConfigModal({
   // Fields state
   const [fields, setFields] = useState<TableField[]>([]);
   const [draggedField, setDraggedField] = useState<string | null>(null);
+  // Index where the dragged item would land (drop ghost position). This is the
+  // index in the list *between* cards (0 = before first card, length = after last).
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+  // Scroll container + auto-scroll machinery. While dragging near the top/bottom
+  // edges we scroll the list so the user can reach off-screen rows.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRaf = useRef<number | null>(null);
+  const autoScrollVelocity = useRef(0);
 
   // Track changes
   const [hasChanges, setHasChanges] = useState(false);
@@ -160,40 +169,113 @@ export default function TableConfigModal({
     setHasChanges(true);
   };
 
+  // Continuous auto-scroll loop. Runs while a non-zero velocity is set; the
+  // velocity is recalculated on every dragOver based on pointer proximity to
+  // the scroll container's top/bottom edges.
+  const stepAutoScroll = useCallback(() => {
+    const el = scrollRef.current;
+    const v = autoScrollVelocity.current;
+    if (el && v !== 0) {
+      el.scrollTop += v;
+      autoScrollRaf.current = requestAnimationFrame(stepAutoScroll);
+    } else {
+      autoScrollRaf.current = null;
+    }
+  }, []);
+
+  const updateAutoScroll = useCallback(
+    (clientY: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Activation zone height (px) at each edge.
+      const zone = 64;
+      const maxSpeed = 18;
+      let velocity = 0;
+      const distTop = clientY - rect.top;
+      const distBottom = rect.bottom - clientY;
+      if (distTop < zone) {
+        // Closer to the edge → faster. Ease quadratically.
+        const ratio = Math.max(0, Math.min(1, (zone - distTop) / zone));
+        velocity = -Math.ceil(maxSpeed * ratio * ratio);
+      } else if (distBottom < zone) {
+        const ratio = Math.max(0, Math.min(1, (zone - distBottom) / zone));
+        velocity = Math.ceil(maxSpeed * ratio * ratio);
+      }
+      autoScrollVelocity.current = velocity;
+      if (velocity !== 0 && autoScrollRaf.current === null) {
+        autoScrollRaf.current = requestAnimationFrame(stepAutoScroll);
+      }
+    },
+    [stepAutoScroll],
+  );
+
+  const stopAutoScroll = useCallback(() => {
+    autoScrollVelocity.current = 0;
+    if (autoScrollRaf.current !== null) {
+      cancelAnimationFrame(autoScrollRaf.current);
+      autoScrollRaf.current = null;
+    }
+  }, []);
+
+  // Cleanup any pending RAF on unmount.
+  useEffect(() => () => stopAutoScroll(), [stopAutoScroll]);
+
   // Handle drag and drop for field reordering
   const handleDragStart = (e: React.DragEvent, fieldId: string) => {
     setDraggedField(fieldId);
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  // Compute the drop index for a card based on whether the pointer is in the
+  // top or bottom half of the hovered card.
+  const handleCardDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    updateAutoScroll(e.clientY);
+    if (!draggedField) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isAfter = e.clientY > rect.top + rect.height / 2;
+    setDropIndex(isAfter ? index + 1 : index);
   };
 
-  const handleDrop = (e: React.DragEvent, targetFieldId: string) => {
-    e.preventDefault();
-
-    if (!draggedField || draggedField === targetFieldId) return;
-
+  const reorder = (toIndex: number) => {
+    if (!draggedField) return;
     const draggedIndex = fields.findIndex((f) => f.id === draggedField);
-    const targetIndex = fields.findIndex((f) => f.id === targetFieldId);
+    if (draggedIndex === -1) return;
 
-    if (draggedIndex === -1 || targetIndex === -1) return;
+    // Adjust target when removing an earlier item shifts indices.
+    let insertAt = toIndex;
+    if (draggedIndex < toIndex) insertAt -= 1;
 
     const newFields = [...fields];
     const [draggedItem] = newFields.splice(draggedIndex, 1);
-    newFields.splice(targetIndex, 0, draggedItem);
+    newFields.splice(insertAt, 0, draggedItem);
 
-    // Update field orders
-    const updatedFields = newFields.map((field, index) => ({
+    const updatedFields = newFields.map((field, idx) => ({
       ...field,
-      field_order: index + 1,
+      field_order: idx + 1,
     }));
 
-    setFields(updatedFields);
+    if (insertAt !== draggedIndex) {
+      setFields(updatedFields);
+      setHasChanges(true);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dropIndex !== null) reorder(dropIndex);
     setDraggedField(null);
-    setHasChanges(true);
+    setDropIndex(null);
+    stopAutoScroll();
+  };
+
+  const handleDragEnd = () => {
+    setDraggedField(null);
+    setDropIndex(null);
+    stopAutoScroll();
   };
 
   // Handle save
@@ -414,7 +496,18 @@ export default function TableConfigModal({
           </TabsList>
 
           <TabsContent value="fields" className="flex-1 overflow-hidden mt-4">
-            <div className="space-y-4 max-h-[50dvh] overflow-y-auto pr-2">
+            <div
+              ref={scrollRef}
+              className="space-y-2 max-h-[50dvh] overflow-y-auto pr-2 scroll-smooth"
+              onDragOver={(e) => {
+                // Keep auto-scroll responsive even when hovering gaps between cards.
+                if (draggedField) {
+                  e.preventDefault();
+                  updateAutoScroll(e.clientY);
+                }
+              }}
+              onDrop={handleDrop}
+            >
               {Object.keys(dataTypeChanges).length > 0 && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
@@ -431,70 +524,53 @@ export default function TableConfigModal({
               )}
 
               {fields.map((field, index) => (
-                <Card
-                  key={field.id}
-                  className={`cursor-move transition-all ${
-                    draggedField === field.id ? "opacity-50 scale-95" : ""
-                  } ${dataTypeChanges[field.id] ? "ring-2 ring-amber-400" : ""}`}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, field.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, field.id)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <CardTitle className="text-sm">
-                            {field.display_name}
-                          </CardTitle>
-                          <p className="text-xs text-muted-foreground">
-                            Order: {field.field_order} • Field:{" "}
-                            {field.field_name}
+                <React.Fragment key={field.id}>
+                  {/* Drop ghost — a colored bar showing exactly where the
+                      dragged card will land. */}
+                  {draggedField && dropIndex === index && (
+                    <div className="h-1.5 -my-0.5 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)] transition-all" />
+                  )}
+                  <Card
+                    className={`cursor-move transition-all ${
+                      draggedField === field.id ? "opacity-40 scale-[0.98]" : ""
+                    } ${
+                      dataTypeChanges[field.id] ? "ring-2 ring-amber-400" : ""
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, field.id)}
+                    onDragOver={(e) => handleCardDragOver(e, index)}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={field.display_name}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  field.id,
+                                  "display_name",
+                                  e.target.value,
+                                )
+                              }
+                              className="h-7 text-sm"
+                            />
+                          </div>
+                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                            #{field.field_order} • {field.field_name}
                           </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getDataTypeColor(field.data_type)}>
-                          {field.data_type}
-                        </Badge>
-                        {dataTypeChanges[field.id] && (
-                          <Badge
-                            variant="outline"
-                            className="text-amber-600 border-amber-400"
-                          >
-                            Will convert
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Display Name</Label>
-                        <Input
-                          value={field.display_name}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              field.id,
-                              "display_name",
-                              e.target.value,
-                            )
-                          }
-                          className="h-8"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Data Type</Label>
+
                         <Select
                           value={field.data_type}
                           onValueChange={(value) =>
                             handleFieldChange(field.id, "data_type", value)
                           }
                         >
-                          <SelectTrigger className="h-8">
+                          <SelectTrigger className="h-7 w-28 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -512,43 +588,66 @@ export default function TableConfigModal({
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`required-${field.id}`}
-                          checked={field.is_required}
-                          onCheckedChange={(checked) =>
-                            handleFieldChange(field.id, "is_required", checked)
-                          }
-                        />
-                        <Label
-                          htmlFor={`required-${field.id}`}
-                          className="text-xs"
-                        >
-                          Required
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`public-${field.id}`}
-                          checked={field.is_public}
-                          onCheckedChange={(checked) =>
-                            handleFieldChange(field.id, "is_public", checked)
-                          }
-                        />
-                        <Label
-                          htmlFor={`public-${field.id}`}
-                          className="text-xs"
-                        >
-                          Public
-                        </Label>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`required-${field.id}`}
+                              checked={field.is_required}
+                              onCheckedChange={(checked) =>
+                                handleFieldChange(
+                                  field.id,
+                                  "is_required",
+                                  checked,
+                                )
+                              }
+                            />
+                            <Label
+                              htmlFor={`required-${field.id}`}
+                              className="text-[11px]"
+                            >
+                              Req
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Checkbox
+                              id={`public-${field.id}`}
+                              checked={field.is_public}
+                              onCheckedChange={(checked) =>
+                                handleFieldChange(
+                                  field.id,
+                                  "is_public",
+                                  checked,
+                                )
+                              }
+                            />
+                            <Label
+                              htmlFor={`public-${field.id}`}
+                              className="text-[11px]"
+                            >
+                              Pub
+                            </Label>
+                          </div>
+                        </div>
+
+                        {dataTypeChanges[field.id] && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 text-amber-600 border-amber-400"
+                          >
+                            Will convert
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </Card>
+                  {/* Drop ghost at the very end of the list. */}
+                  {draggedField &&
+                    dropIndex === index + 1 &&
+                    index === fields.length - 1 && (
+                      <div className="h-1.5 -my-0.5 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)] transition-all" />
+                    )}
+                </React.Fragment>
               ))}
             </div>
           </TabsContent>

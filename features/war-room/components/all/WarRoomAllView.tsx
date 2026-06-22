@@ -10,7 +10,6 @@ import dynamic from "next/dynamic";
 import { Radar, LayoutGrid } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   selectListStatus,
   selectSessionsList,
@@ -21,11 +20,15 @@ import { SessionCard } from "./SessionCard";
 import { NewSessionButton } from "./NewSessionButton";
 import { NewRoomFromProjectButton } from "./NewRoomFromProjectButton";
 
-// The master agent panel pulls the whole agent execution graph (via
-// AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
-// /war-room/all bundle — it only loads the first time the user opens the panel.
-const MasterAgentPanel = dynamic(
-  () => import("@/features/war-room/components/master/MasterAgentPanel"),
+// The master agent panel — its floating WindowPanel wrapper plus the whole agent
+// execution graph (via AgentConversationColumn). Lazy-load it so neither the
+// heavy agent column NOR the window-panel lazy graph (100+ chunks) ships in the
+// /war-room/all route bundle — it only loads the first time the user opens the
+// panel. MasterAgentWindow owns the static WindowPanel import so the view (which
+// lives in the route's boot graph) never trips the window-panels bundle-leak
+// guard.
+const MasterAgentWindow = dynamic(
+  () => import("@/features/war-room/components/master/MasterAgentWindow"),
   { ssr: false, loading: () => null },
 );
 
@@ -41,11 +44,6 @@ const MasterWatchLayer = dynamic(
     ),
   { ssr: false, loading: () => null },
 );
-
-// Master Agent window size. Docked bottom-right on open (computed from the
-// viewport in `initialRect` below).
-const MASTER_W = 460;
-const MASTER_H = 620;
 
 export function WarRoomAllView() {
   const dispatch = useAppDispatch();
@@ -137,30 +135,7 @@ export function WarRoomAllView() {
           while open (closing unmounts the heavy agent column). Docked bottom-
           right on first open; the user can drag/resize from there. Inline-
           managed: `onClose` is the required close binding (no overlayId). */}
-      {masterOpen && (
-        <WindowPanel
-          id="war-room-master-agent"
-          title="Master Agent — all rooms"
-          titleNode={
-            <span className="flex items-center gap-1.5 min-w-0">
-              <Radar className="size-3.5 shrink-0 text-primary" />
-              <span className="truncate">Master Agent — all rooms</span>
-            </span>
-          }
-          onClose={() => setMasterOpen(false)}
-          width={MASTER_W}
-          height={MASTER_H}
-          minWidth={360}
-          minHeight={420}
-          initialRect={{
-            x: Math.max(16, window.innerWidth - MASTER_W - 24),
-            y: Math.max(16, window.innerHeight - MASTER_H - 24),
-          }}
-          bodyClassName="p-0"
-        >
-          <MasterAgentPanel />
-        </WindowPanel>
-      )}
+      {masterOpen && <MasterAgentWindow onClose={() => setMasterOpen(false)} />}
 
       {/* Live-watch layer — always mounted so a master tool / toast can open a
           watch window for a thread agent even when the Master panel is closed.

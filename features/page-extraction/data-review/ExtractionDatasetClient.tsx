@@ -24,11 +24,11 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowUpDown,
-  Check,
   Columns3,
   Copy,
   ExternalLink,
   Eye,
+  GripVertical,
   Layers,
   Loader2,
   MoreHorizontal,
@@ -37,6 +37,21 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,9 +193,61 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     }));
   }, [job, normalizedRows]);
 
+  // Apply the dataset's saved column order. Keys present in `column_order`
+  // lead in that order; any column not listed (e.g. a freshly added field)
+  // keeps its natural position behind them. Empty order = natural order.
+  const orderedColumns = useMemo(() => {
+    const order = job?.column_order ?? [];
+    if (order.length === 0) return columns;
+    const pos = new Map(order.map((k, i) => [k, i]));
+    return [...columns].sort((a, b) => {
+      const ai = pos.has(a.key)
+        ? (pos.get(a.key) as number)
+        : Number.MAX_SAFE_INTEGER;
+      const bi = pos.has(b.key)
+        ? (pos.get(b.key) as number)
+        : Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
+  }, [columns, job?.column_order]);
+
   const visibleColumns = useMemo(
-    () => columns.filter((c) => !hidden.has(c.key)),
-    [columns, hidden],
+    () => orderedColumns.filter((c) => !hidden.has(c.key)),
+    [orderedColumns, hidden],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
+  const persistColumnOrder = useCallback(
+    async (nextKeys: string[]) => {
+      if (!job) return;
+      const prev = job;
+      setJob({ ...job, column_order: nextKeys });
+      try {
+        await updateJob(job.id, { column_order: nextKeys });
+      } catch (e) {
+        setJob(prev);
+        toast.error("Could not save column order", {
+          description: e instanceof Error ? e.message : undefined,
+        });
+      }
+    },
+    [job],
+  );
+
+  const onColumnDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const fullKeys = orderedColumns.map((c) => c.key);
+      const from = fullKeys.indexOf(String(active.id));
+      const to = fullKeys.indexOf(String(over.id));
+      if (from < 0 || to < 0) return;
+      void persistColumnOrder(arrayMove(fullKeys, from, to));
+    },
+    [orderedColumns, persistColumnOrder],
   );
 
   // ── Search + sort ──────────────────────────────────────────────────────────
@@ -626,30 +693,25 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                   />
                 </th>
                 <th className="w-14 px-2 py-2 font-medium">Page</th>
-                {visibleColumns.map((c) => (
-                  <th
-                    key={c.key}
-                    onClick={() => toggleSort(c.key)}
-                    className={cn(
-                      "cursor-pointer select-none whitespace-nowrap px-3 py-2 font-medium hover:text-foreground",
-                      sortKey === c.key && "text-foreground",
-                    )}
-                    title={COLUMN_SOURCE_META[c.source]?.hint}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={onColumnDragEnd}
+                >
+                  <SortableContext
+                    items={visibleColumns.map((c) => c.key)}
+                    strategy={horizontalListSortingStrategy}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {c.label}
-                      {COLUMN_SOURCE_META[c.source]?.editable && (
-                        <Pencil className="h-2.5 w-2.5 opacity-40" />
-                      )}
-                      <ArrowUpDown
-                        className={cn(
-                          "h-3 w-3",
-                          sortKey === c.key ? "opacity-100" : "opacity-30",
-                        )}
+                    {visibleColumns.map((c) => (
+                      <SortableHeaderCell
+                        key={c.key}
+                        column={c}
+                        active={sortKey === c.key}
+                        onToggleSort={toggleSort}
                       />
-                    </span>
-                  </th>
-                ))}
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 <th className="w-10 px-2 py-2" />
               </tr>
             </thead>
@@ -838,5 +900,70 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         onConfirm={runConfirmed}
       />
     </div>
+  );
+}
+
+/**
+ * A draggable, sortable column header. The grip handle starts a reorder
+ * drag; clicking the label still toggles the sort (a pure click never moves
+ * far enough to trip the drag's 5px activation distance).
+ */
+function SortableHeaderCell({
+  column,
+  active,
+  onToggleSort,
+}: {
+  column: ExtractionColumn;
+  active: boolean;
+  onToggleSort: (key: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: column.key });
+
+  return (
+    <th
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={cn(
+        "select-none whitespace-nowrap px-3 py-2 font-medium",
+        isDragging ? "z-20 bg-muted opacity-90" : "",
+        active && "text-foreground",
+      )}
+      title={COLUMN_SOURCE_META[column.source]?.hint}
+    >
+      <span className="inline-flex items-center gap-1">
+        <button
+          type="button"
+          className="cursor-grab touch-none text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+          aria-label={`Drag to reorder ${column.label}`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3 w-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggleSort(column.key)}
+          className="inline-flex cursor-pointer items-center gap-1 hover:text-foreground"
+        >
+          {column.label}
+          {COLUMN_SOURCE_META[column.source]?.editable && (
+            <Pencil className="h-2.5 w-2.5 opacity-40" />
+          )}
+          <ArrowUpDown
+            className={cn("h-3 w-3", active ? "opacity-100" : "opacity-30")}
+          />
+        </button>
+      </span>
+    </th>
   );
 }
