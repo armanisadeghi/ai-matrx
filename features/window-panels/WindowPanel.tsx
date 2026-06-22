@@ -168,6 +168,21 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
    * and closing it shrinks it back, keeping the body content width constant.
    */
   sidebarExpandsWindow?: boolean;
+  /**
+   * Content for a collapsible RIGHT secondary panel — the canonical home for a
+   * history / inspector / details pane that belongs to the window, not the body.
+   * Resizable, mirrors the left `sidebar`. Desktop only; handle mobile in the
+   * consumer (e.g. a Drawer) — see `features/notes` for the reference pattern.
+   */
+  secondaryPanel?: React.ReactNode;
+  /** Whether the secondary panel is open (default: true when `secondaryPanel` is provided). */
+  secondaryPanelOpen?: boolean;
+  /** Default width for the secondary panel in pixels (default: 360) */
+  secondaryPanelDefaultSize?: number;
+  /** Minimum width in pixels for the secondary panel (default: 240) */
+  secondaryPanelMinSize?: number;
+  /** Class name applied to the secondary panel content wrapper */
+  secondaryPanelClassName?: string;
   /** Content rendered in a full-width footer bar below the body. Renders as a single flex row. For zoned layout, use footerLeft/footerCenter/footerRight instead. */
   footer?: React.ReactNode;
   /** Left-aligned footer content (use instead of `footer` for zoned layout) */
@@ -283,6 +298,11 @@ export function WindowPanel({
   defaultSidebarOpen = true,
   sidebarClassName,
   sidebarExpandsWindow = false,
+  secondaryPanel,
+  secondaryPanelOpen,
+  secondaryPanelDefaultSize = 360,
+  secondaryPanelMinSize = 240,
+  secondaryPanelClassName,
   footer,
   footerLeft,
   footerCenter,
@@ -842,33 +862,68 @@ export function WindowPanel({
   // ────────────────────────────────────────────────────────────────────────
   // MAXIMIZED — portalled to body so it covers the full viewport
   // ────────────────────────────────────────────────────────────────────────
-  const innerBody = hasSidebar ? (
-    <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
-      <ResizablePanel
-        panelRef={sidebarPanelRef}
-        defaultSize={sidebarOpen ? sidebarDefaultSize : 0}
-        minSize={sidebarMinSize}
-        collapsible
-        collapsedSize={0}
-        groupResizeBehavior="preserve-pixel-size"
-        onResize={handleSidebarResize}
-        style={{ overflow: "hidden" }}
-      >
-        <div
-          className={cn(
-            "h-full flex flex-col min-h-0 overflow-y-auto scrollbar-thin",
-            sidebarClassName,
-          )}
-        >
-          {sidebar}
-        </div>
-      </ResizablePanel>
-      <ResizableHandle />
-      <ResizablePanel minSize={200}>{children}</ResizablePanel>
-    </ResizablePanelGroup>
-  ) : (
-    children
-  );
+  // A secondary (right) panel is shown when content is provided and it's open.
+  // Stable `id` props (sidebar/body/secondary) keep panel identity so toggling
+  // the secondary panel doesn't tear down the body (and the live editor inside).
+  const hasSecondaryPanel =
+    secondaryPanel != null && (secondaryPanelOpen ?? true);
+
+  const innerBody =
+    hasSidebar || hasSecondaryPanel ? (
+      <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
+        {hasSidebar && (
+          <>
+            <ResizablePanel
+              id="sidebar"
+              panelRef={sidebarPanelRef}
+              defaultSize={sidebarOpen ? sidebarDefaultSize : 0}
+              minSize={sidebarMinSize}
+              collapsible
+              collapsedSize={0}
+              groupResizeBehavior="preserve-pixel-size"
+              onResize={handleSidebarResize}
+              style={{ overflow: "hidden" }}
+            >
+              <div
+                className={cn(
+                  "h-full flex flex-col min-h-0 overflow-y-auto scrollbar-thin",
+                  sidebarClassName,
+                )}
+              >
+                {sidebar}
+              </div>
+            </ResizablePanel>
+            <ResizableHandle />
+          </>
+        )}
+        <ResizablePanel id="body" minSize={200}>
+          {children}
+        </ResizablePanel>
+        {hasSecondaryPanel && (
+          <>
+            <ResizableHandle />
+            <ResizablePanel
+              id="secondary"
+              defaultSize={secondaryPanelDefaultSize}
+              minSize={secondaryPanelMinSize}
+              groupResizeBehavior="preserve-pixel-size"
+              style={{ overflow: "hidden" }}
+            >
+              <div
+                className={cn(
+                  "h-full flex flex-col min-h-0",
+                  secondaryPanelClassName,
+                )}
+              >
+                {secondaryPanel}
+              </div>
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+    ) : (
+      children
+    );
 
   const bodyContent = isDeprecated ? (
     <div className="h-full flex flex-col min-h-0">

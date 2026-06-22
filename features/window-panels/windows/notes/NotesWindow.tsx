@@ -28,11 +28,15 @@ import {
   fetchNotesList,
   fetchAllNoteScopes,
 } from "@/features/notes/redux/thunks";
-import { selectInstanceActiveTab } from "@/features/notes/redux/selectors";
+import {
+  selectInstanceActiveTab,
+  selectInstanceHistoryOpen,
+} from "@/features/notes/redux/selectors";
 import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
 import { NoteSidebar } from "@/features/notes/components/NoteSidebar";
 import { NoteViewControls } from "@/features/notes/components/NoteViewControls";
 import { NoteMetadataBar } from "@/features/notes/components/NoteMetadataBar";
+import { NoteHistoryPane } from "@/features/notes/components/NoteHistoryPane";
 import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 
 export interface NotesWindowProps
@@ -88,6 +92,9 @@ export function NotesWindow({
   const activeTabId = useAppSelector(
     selectInstanceActiveTab(notesInstanceId),
   );
+  const historyOpen = useAppSelector(
+    selectInstanceHistoryOpen(notesInstanceId),
+  );
 
   return (
     <NotesInstanceProvider value={notesInstanceId}>
@@ -115,6 +122,16 @@ export function NotesWindow({
         footer={
           activeTabId ? <NoteMetadataBar noteId={activeTabId} /> : undefined
         }
+        secondaryPanel={
+          activeTabId && historyOpen ? (
+            <NoteHistoryPane
+              instanceId={notesInstanceId}
+              noteId={activeTabId}
+            />
+          ) : undefined
+        }
+        secondaryPanelDefaultSize={360}
+        secondaryPanelMinSize={280}
         onClose={onClose}
         {...windowProps}
       >
