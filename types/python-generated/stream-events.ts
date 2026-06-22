@@ -2405,10 +2405,16 @@ export interface TableRowBookmark {
   table_name?: string | null;
 }
 
+export interface TableSchemaBookmark {
+  type?: "table_schema";
+  table_id: string;
+  table_name?: string | null;
+}
+
 export interface TableInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_table";
-  bookmarks?: (FullTableBookmark | TableColumnBookmark | TableRowBookmark | TableCellBookmark)[];
+  bookmarks?: (FullTableBookmark | TableColumnBookmark | TableRowBookmark | TableCellBookmark | TableSchemaBookmark)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;

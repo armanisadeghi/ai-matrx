@@ -480,14 +480,14 @@ export function FileContextMenu({
                     <ReferenceCopyMenuItem
                       kind="file"
                       fileId={fileId}
-                      label={file?.name}
-                      toastLabel={file?.name ?? "File"}
+                      label={file?.fileName}
+                      toastLabel={file?.fileName ?? "File"}
                     />
                   ) : null}
                   {file?.mimeType === "application/pdf" && !isVirtual ? (
                     <FilePageReferenceMenuSub
                       fileId={fileId}
-                      fileName={file?.fileName ?? file?.name}
+                      fileName={file?.fileName}
                     />
                   ) : null}
                   {onShare ? (

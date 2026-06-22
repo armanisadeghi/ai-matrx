@@ -29,6 +29,8 @@ export interface ToolRendererMeta {
   resultsLabel: string | null;
   /** Compiled subtitle fn for the collapsed line, or null if none / failed. */
   subtitle: ToolSubtitleFn | null;
+  /** Collapse behavior: "stay-open" when the row marks the result as the point. */
+  displayMode: "auto" | "stay-open" | "never-open" | null;
 }
 
 const positive = new Map<string, ToolComponent>();
@@ -123,6 +125,9 @@ export function loadToolRenderer(
         displayName: row.display_name,
         resultsLabel: row.results_label,
         subtitle,
+        // A DB renderer marks "the result IS the point" via keep_expanded_on_stream
+        // → the shell keeps it expanded when done (see getToolDisplayMode).
+        displayMode: row.keep_expanded_on_stream ? "stay-open" : null,
       });
 
       const { Component, error } = compileToolRenderer(

@@ -384,7 +384,14 @@ const ToolCallWindowPanel: React.FC<ToolCallWindowPanelProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  if (requestId && callIds.length > 0) {
+  // Live mode is selected by `requestId` ALONE — the opener signals "show every
+  // tool in this request" with `callIds: []` (LiveEntriesProvider returns all
+  // when callIds is empty). Requiring `callIds.length > 0` here was the
+  // window-panel-empty bug: the opener's `callIds: []` fell through to snapshot
+  // mode with `entries: null`. If the live store has been pruned (e.g. after
+  // reload — observability rehydrate drops `toolLifecycle`), fall back to the
+  // snapshot `entries` the opener now always passes.
+  if (requestId) {
     return (
       <LiveEntriesProvider
         requestId={requestId}
@@ -393,7 +400,7 @@ const ToolCallWindowPanel: React.FC<ToolCallWindowPanelProps> = ({
           <ToolCallWindowPanelBody
             instanceId={instanceId}
             onClose={onClose}
-            entries={liveEntries}
+            entries={liveEntries.length > 0 ? liveEntries : (entries ?? [])}
             initialCallId={initialCallId}
             initialTab={initialTab}
           />

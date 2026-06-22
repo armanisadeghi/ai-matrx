@@ -7746,6 +7746,7 @@ export type Database = {
           app_instance_id: string | null
           cache_state: Json
           config: Json
+          conversation_type: string
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -7784,6 +7785,7 @@ export type Database = {
           app_instance_id?: string | null
           cache_state?: Json
           config?: Json
+          conversation_type?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -7822,6 +7824,7 @@ export type Database = {
           app_instance_id?: string | null
           cache_state?: Json
           config?: Json
+          conversation_type?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -12650,6 +12653,7 @@ export type Database = {
           chunk_overlap: number
           chunk_size: number
           chunking_strategy: string
+          column_order: Json
           created_at: string
           description: string | null
           extra_inputs: Json
@@ -12681,6 +12685,7 @@ export type Database = {
           chunk_overlap?: number
           chunk_size?: number
           chunking_strategy?: string
+          column_order?: Json
           created_at?: string
           description?: string | null
           extra_inputs?: Json
@@ -12712,6 +12717,7 @@ export type Database = {
           chunk_overlap?: number
           chunk_size?: number
           chunking_strategy?: string
+          column_order?: Json
           created_at?: string
           description?: string | null
           extra_inputs?: Json

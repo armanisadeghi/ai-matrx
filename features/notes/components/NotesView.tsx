@@ -211,8 +211,8 @@ export function NotesView({ config, className }: NotesViewProps) {
   }, [dispatch, instanceId, routeNoteId, singleNote]);
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
-  const activeNoteLabel = useAppSelector((s) =>
-    activeTabId ? selectNoteLabel(s, activeTabId) : null,
+  const activeNoteLabel = useAppSelector(
+    activeTabId ? selectNoteLabel(activeTabId) : () => null,
   );
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const splitNoteId = useAppSelector(selectInstanceSplitNoteId(instanceId));

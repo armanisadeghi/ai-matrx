@@ -146,9 +146,20 @@ const ToolCallVisualizationInner: React.FC<{
     string | undefined
   >(undefined);
 
-  // Auto mode: keep expanded while streaming; collapse 3s after it finishes.
+  // Collapse behavior. Once the user clicks, their choice sticks.
+  //   stay-open  → expand and never auto-collapse (handles the DB case where
+  //                the mode resolves async AFTER the initial render — e.g. a
+  //                reloaded news-like DB tool starts collapsed, then expands
+  //                once its `keep_expanded_on_stream` meta lands).
+  //   never-open → leave collapsed.
+  //   auto       → expand while streaming; collapse 3s after it finishes.
   useEffect(() => {
-    if (effectiveMode !== "auto" || userToggled) return;
+    if (userToggled) return;
+    if (effectiveMode === "stay-open") {
+      setIsExpanded(true);
+      return;
+    }
+    if (effectiveMode === "never-open") return;
     if (streamingNow) {
       setIsExpanded(true);
       return;
@@ -266,7 +277,10 @@ const ToolCallVisualizationInner: React.FC<{
         data: {
           requestId: requestId ?? null,
           callIds: requestId ? [] : entries.map((e) => e.callId),
-          entries: requestId ? null : entries,
+          // ALWAYS pass the current entries as a snapshot fallback — in live
+          // mode the panel prefers the live store but falls back to this if it
+          // has been pruned (reload/cleanup), so the panel is never empty.
+          entries,
           initialCallId: seedCallId !== "no-entry" ? seedCallId : null,
           initialTab: initialTab ?? null,
         },

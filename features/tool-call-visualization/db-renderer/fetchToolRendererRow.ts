@@ -19,6 +19,8 @@ export interface ToolRendererRow {
   results_label: string | null;
   /** Author-declared subtitle code: `(entry, events) => string` (optional). */
   header_subtitle_code: string | null;
+  /** True = the result is the point; keep the inline view expanded ("stay-open"). */
+  keep_expanded_on_stream: boolean;
 }
 
 export async function fetchToolRendererRow(
@@ -27,7 +29,7 @@ export async function fetchToolRendererRow(
   const { data, error } = await supabase
     .from("tool_ui")
     .select(
-      "inline_code, allowed_imports, display_name, results_label, header_subtitle_code",
+      "inline_code, allowed_imports, display_name, results_label, header_subtitle_code, keep_expanded_on_stream",
     )
     .eq("tool_name", toolName)
     .eq("surface_name", WEB_TOOL_UI_SURFACE)
@@ -64,5 +66,6 @@ export async function fetchToolRendererRow(
       typeof data.header_subtitle_code === "string"
         ? data.header_subtitle_code
         : null,
+    keep_expanded_on_stream: data.keep_expanded_on_stream === true,
   };
 }

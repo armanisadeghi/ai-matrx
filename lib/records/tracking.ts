@@ -143,7 +143,7 @@ export function applyFieldEdit<T, K extends keyof T & string>(
     opts.maxUndoBytes ?? DEFAULT_MAX_UNDO_BYTES,
   );
 
-  record[field] = value;
+  (record as Record<string, unknown>)[field] = value;
 
   const baseline = record._fieldHistory[field];
   if (wasDirty && isEqual(value, baseline)) {

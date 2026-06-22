@@ -779,16 +779,49 @@ export function shouldKeepExpandedOnStream(toolName: string | null): boolean {
 }
 
 /**
+ * Tools whose RESULT is the deliverable the user asked for — news, search,
+ * research, RAG, SEO reports, lists, the wheel spin. Their inline view stays
+ * expanded when done ("stay-open"): folding away the very thing the user
+ * wanted makes no sense. A per-entry `displayMode` (in-code) or the DB row's
+ * `keep_expanded_on_stream` flag (DB renderers) overrides this list; this is
+ * just the zero-edit default for the existing in-code result-is-purpose tools.
+ */
+const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
+  "news_get_headlines",
+  "web_search",
+  "core_web_search",
+  "web_search_v1",
+  "research_web",
+  "core_web_search_and_read",
+  "core_web_read_web_pages",
+  "rag_search",
+  "get_user_lists",
+  "seo_check_meta_tags_batch",
+  "seo_check_meta_titles",
+  "seo_check_meta_descriptions",
+  "random_wheel",
+]);
+
+/**
  * Collapse/display behavior for a tool: "auto" (expand while streaming, then
  * auto-collapse ~3s after done — the default for every tool), "stay-open"
  * (never auto-collapse), or "never-open" (single line until clicked). The shell
  * layers the user preference (verbose/minimal) on top of this.
+ *
+ * Resolution: in-code registry `displayMode` → DB renderer's declared mode
+ * (its `keep_expanded_on_stream` → "stay-open", surfaced via `getCachedToolMeta`)
+ * → the result-is-purpose default set → "auto".
  */
 export function getToolDisplayMode(
   toolName: string | null,
 ): "auto" | "stay-open" | "never-open" {
   if (!toolName) return "auto";
-  return toolRendererRegistry[toolName]?.displayMode ?? "auto";
+  const registered = toolRendererRegistry[toolName]?.displayMode;
+  if (registered) return registered;
+  const dbMode = getCachedToolMeta(toolName)?.displayMode;
+  if (dbMode) return dbMode;
+  if (RESULT_IS_PURPOSE_TOOLS.has(toolName)) return "stay-open";
+  return "auto";
 }
 
 export function getToolDisplayName(toolName: string | null): string {
