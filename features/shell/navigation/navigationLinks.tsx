@@ -9,6 +9,7 @@ import {
   adminNavItems,
   settingsItem,
   adminItemOnSurface,
+  isNavActionChild,
   type AdminNavSurface,
   type ShellNavItem,
   type ShellNavChild,
@@ -80,6 +81,10 @@ function flattenPrimaryNav(items: ShellNavItem[]): NavigationLink[] {
   for (const item of items) {
     out.push(shellItemToNavigationLink(item));
     for (const child of item.children ?? []) {
+      // Action children (create/add affordances) are menu-only — they're not
+      // navigation destinations, so they never enter flattened link lists
+      // (dashboard tiles, profile menu, 404 suggestions, flat sidebars).
+      if (isNavActionChild(child)) continue;
       out.push(shellChildToNavigationLink(child, item));
     }
   }
@@ -111,7 +116,7 @@ export interface NavigationLink {
 function flattenForFlatSidebar(items: ShellNavItem[]): NavigationLink[] {
   const out: NavigationLink[] = [];
   for (const item of items) {
-    const children = item.children ?? [];
+    const children = (item.children ?? []).filter((c) => !isNavActionChild(c));
     if (children.length > 0 && item.dashboard === false) {
       for (const child of children) {
         out.push(shellChildToNavigationLink(child, item));

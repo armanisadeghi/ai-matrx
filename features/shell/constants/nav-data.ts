@@ -23,7 +23,8 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
 export type ShellNavActionId =
   | "create-project"
   | "create-task"
-  | "create-war-room";
+  | "create-war-room"
+  | "create-note";
 
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "sidebar",
@@ -205,7 +206,6 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/agents/content-blocks",
         iconName: "FileText",
       },
-      { label: "New Agent", href: "/agents/new", iconName: "Plus" },
       {
         label: "Agent Connections",
         href: "/agent-connections",
@@ -219,6 +219,13 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Swords",
         description:
           "Compare agents side by side — models, prompts, and outputs",
+      },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Agent",
+        href: "/agents/new",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },
@@ -251,6 +258,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "indigo",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider.
+      {
+        // Creates a blank draft note in place, then opens it.
+        label: "New Note",
+        href: "/notes",
+        iconName: "Plus",
+        action: "create-note",
       },
     ],
   },
@@ -293,6 +308,13 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "teal",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Table",
+        href: "/data/create",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },
@@ -420,6 +442,13 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Research",
+        href: "/research/topics/new",
+        iconName: "Plus",
+        actionItem: true,
+      },
     ],
   },
   {
@@ -486,6 +515,13 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "sky",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Podcast",
+        href: "/podcast/studio/create",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },
@@ -683,7 +719,6 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "List",
         exact: true,
       },
-      { label: "New Transcript", href: "/transcripts/new", iconName: "Plus" },
       {
         label: "Processor",
         href: "/transcripts/processor",
@@ -692,6 +727,13 @@ export const primaryNavItems: ShellNavItem[] = [
       { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
       { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
       { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Transcript",
+        href: "/transcripts/new",
+        iconName: "Plus",
+        actionItem: true,
+      },
     ],
   },
   {
@@ -743,6 +785,13 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "blue",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider.
+      {
+        label: "New Schedule",
+        href: "/schedules/new",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },

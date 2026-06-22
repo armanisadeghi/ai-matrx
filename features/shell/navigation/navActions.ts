@@ -21,10 +21,12 @@
  */
 
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createWarRoomSession } from "@/features/war-room/redux/thunks";
+import { createNewNote } from "@/features/notes/redux/thunks";
 import type { ShellNavActionId } from "../constants/nav-data";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
@@ -48,6 +50,18 @@ export function useNavActions(): ShellNavActionHandlers {
       void (async () => {
         const session = await dispatch(createWarRoomSession());
         if (session) router.push(`/war-room/${session.id}`);
+      })();
+    },
+    "create-note": () => {
+      // Creates a blank draft note in the DB, then opens it. Matches the
+      // in-page "New Note" button behavior (create-then-open).
+      void (async () => {
+        try {
+          const note = await dispatch(createNewNote({})).unwrap();
+          if (note?.id) router.push(`/notes/${note.id}`);
+        } catch {
+          toast.error("Couldn't create the note");
+        }
       })();
     },
   };
