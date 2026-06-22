@@ -23,6 +23,7 @@
 
 import { useCallback } from "react";
 import { ArrowLeft, GitBranch } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";

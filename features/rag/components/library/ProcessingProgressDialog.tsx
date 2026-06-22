@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Frame type — what the dialog renders. Caller's job is to convert their

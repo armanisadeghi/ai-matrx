@@ -45,6 +45,7 @@ import {
   Rainbow,
 } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { DocumentViewer } from "@/features/rag/components/documents/DocumentViewer";

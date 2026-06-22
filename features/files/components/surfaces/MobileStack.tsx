@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import {

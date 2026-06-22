@@ -23,6 +23,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, FileText, Layers, Stars, Zap } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { cn } from "@/lib/utils";
 import type {
   ProcessingFrame,
   ProcessingStageId,

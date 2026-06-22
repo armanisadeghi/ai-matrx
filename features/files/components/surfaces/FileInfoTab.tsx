@@ -27,6 +27,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {

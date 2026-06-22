@@ -30,6 +30,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import type { ProcessingStageId } from "./ProcessingProgressDialog";

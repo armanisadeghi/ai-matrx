@@ -36,6 +36,7 @@ import {
   setActiveFolderId,
   setKindFilter,
 } from "@/features/files/redux/slice";
+import { loadFolderContents } from "@/features/files/redux/thunks";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { PermissionsDialog } from "@/features/files/components/core/PermissionsDialog/PermissionsDialog";
