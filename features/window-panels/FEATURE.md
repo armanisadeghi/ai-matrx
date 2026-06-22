@@ -216,6 +216,21 @@ export default function MyFeatureWindow({ isOpen, onClose, selectedId, search }:
 
 ---
 
+## Slots — how to add chrome
+
+**The body is content ONLY. Every piece of chrome — header, footer, sidebar, secondary panel — is a `WindowPanel` prop slot, not body JSX.** Compose chrome by passing the right slot; never hand-roll a header bar or a footer row inside `children`. Reference consumer: `windows/notes/NotesWindow.tsx`.
+
+**Canonical body recipe** — `bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"`.
+
+| Slot | Props | Contract |
+|---|---|---|
+| **Header** | `title` (string) / `titleNode` (rich JSX, wins over `title`), `actionsLeft`, `actionsRight` | The title is **absolute-centered** across the full header width. Keep header actions **compact** — wide action clusters can reach the centered title and overlap it (known rough edge, see Known gaps). `actions` is deprecated → maps to `actionsRight`. |
+| **Footer** | `footer` (single flex row) **OR** `footerLeft` / `footerCenter` / `footerRight` (zoned, mutually exclusive with `footer`) | Renders only when content is provided. `footer` wins if both are passed. |
+| **Sidebar (left)** | `sidebar`, `sidebarDefaultSize` (200px), `sidebarMinSize` (100px), `defaultSidebarOpen` (true), `sidebarClassName` | Resizable + collapsible; a toggle appears next to the traffic lights. **`sidebarExpandsWindow` is a footgun** — it mutates the window rect on every toggle (a second sizing path that fights drag/snap). Avoid; leave it `false`. |
+| **Secondary panel (right)** | `secondaryPanel`, `secondaryPanelOpen` (default true when `secondaryPanel` is set), `secondaryPanelDefaultSize` (360px), `secondaryPanelMinSize` (240px), `secondaryPanelClassName` | The canonical home for a **history / inspector / details pane** that belongs to the window, not the body. Resizable, mirrors the sidebar. **Desktop only** — no built-in mobile presentation; the consumer handles mobile (e.g. a Drawer). Reference: `features/notes` `NoteHistoryPane`. |
+
+---
+
 ## Slices
 
 All three live under `lib/redux/slices/`:
@@ -341,13 +356,16 @@ Bundle: the entire Tools grid + all 53 Lucide icons ship only after the user fir
 
 ## Bundle invariant
 
-**Non-negotiable**: no window component or its heavy dependencies may ship in the initial bundle.
+**Non-negotiable**: `WindowPanel`, the `OverlayController`, the registry, and every `windows/**/*Window.tsx` MUST stay behind the lazy boundary — loaded ONLY via `lazyOverlay(() => import(...))` / `dynamic(..., { ssr: false })`. **NEVER static-import any of them from a route, layout, provider, or boot module.** One static import collapses 100+ lazy overlay chunks into that route's bundle. Read the `code-splitting` skill before adding any `import` of a window-panel file.
+
+**Route-shared units must not import `WindowPanel`.** A component used both inside a window and on a plain page (e.g. the notes `NoteViewControls` / `NotePresenceBanner` / `NoteHistoryPane`) is content that drops INTO a slot — it takes no `WindowPanel` import, so a route rendering it never drags the window stack into its bundle. (These reference `WindowPanel` in comments only; verified zero import.)
 
 Enforced by:
 1. Every registry entry's `componentImport` is a lazy `() => import(...)` — Next.js chunks it on demand.
-2. `UnifiedOverlayController`, `OverlaySurface`, and `useOverlay` have zero static imports of any window component.
-3. `SidebarWindowToggle` (1,402-line tools grid) is `dynamic(..., { ssr: false })` at the shell mount site.
-4. `scripts/check-bundle-size.ts` gates per-route bundle growth at +2 KB per PR.
+2. **Runtime guard** — `assertLazyLoaded("…/WindowPanel.tsx")` runs at `WindowPanel.tsx` module top (`utils/lazy-bundle-guard.ts`). If the file is parsed during boot it screams a red `[WINDOW-PANELS BUNDLE LEAK]` console banner with the eager-import chain (the leaking file is the top frame). Relies on the side-effect import `import "@/features/window-panels/utils/lazy-bundle-guard"` in `app/DeferredSingletons.tsx` running at boot so the guard's macrotask is scheduled. Deduped per session via `window.__WP_LEAK_REPORTED__`.
+3. The overlay controller and `useOverlay` have zero static imports of any window component.
+4. `SidebarWindowToggle` (tools grid) is `dynamic(..., { ssr: false })` at the shell mount site.
+5. `scripts/check-bundle-size.ts` gates per-route bundle growth at +2 KB per PR — threshold-dependent; the runtime guard catches leaks it misses.
 
 ---
 
@@ -421,7 +439,7 @@ Enforced by:
 
 ## Known gaps / future work
 
-1. **Phase 6 — WindowPanel decomposition.** The 1,500-line shell wants to be split into `ResizeFrame` / `WindowHeader` / `TrafficLights` / `Chrome` / `SaveDropdown` / `PersistenceBinding`. Pure internal refactor; public prop surface stays identical.
+1. **Phase 6 — WindowPanel decomposition.** The 1,500-line shell wants to be split into `ResizeFrame` / `WindowHeader` / `TrafficLights` / `Chrome` / `SaveDropdown` / `PersistenceBinding`. Pure internal refactor; public prop surface stays identical. **No header/footer is extracted as a standalone sub-component yet** — chrome lives inline in the shell. Sub-issue: the header has **5 divergent implementations** (desktop `WindowHeader`, mobile-fullscreen `MobileWindowHeader`, mobile-drawer `MobileDrawerSurface`, mobile-card `MobileCardSurface`, popout `PopoutTopBar`) that share no code — consolidate to one core header. Whatever is built **stays behind the lazy boundary** (see Bundle invariant).
 2. **Phase 7 — Persistence hardening.**
    - Typed link between `defaultData` and `onCollectData` (registry generic parameter).
    - Autosave-on-blur opt-in per entry.
@@ -436,6 +454,8 @@ Enforced by:
 5. **`windowManagerSlice` split** (geometry / state / tray / zIndex). Deferred to Phase 13 unless profiling flags tray-op cost.
 6. **Responsive tray slot math.** `WindowTray.tsx` pulls desktop chip width from the centralized constants, but `windowManagerSlice`'s slot placement math still uses desktop dimensions. Safe mid-session reshuffle is a Phase 13 item.
 7. **Redux DevTools namespace.** Slices are flat (`overlays/*`, `windowManager/*`). Migrating to `windowPanels/overlays/*` would be cosmetic but breaks downstream action-type string matches.
+8. **Header title collision.** The header `title`/`titleNode` is absolute-centered across the full width, so very wide `actionsLeft` / `actionsRight` can visually overlap it. Fix is left/center/right tracks (flex columns) instead of an absolute-centered title. Tracked with the Phase 6 header consolidation. Stays behind the lazy boundary.
+9. **`secondaryPanel` has no built-in mobile presentation.** Desktop-only slot; the consumer owns mobile (e.g. a Drawer) — `features/notes` `NoteHistoryPane` is the reference. A first-class mobile route for the slot is deferred.
 
 ---
 
@@ -568,6 +588,7 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
+- **2026-06-22** — **`secondaryPanel` slot added** (Windows Panel System Overhaul, Phase 2) — a collapsible, resizable RIGHT panel mirroring `sidebar`, the canonical home for a history / inspector / details pane that belongs to the window (not the body). Props `secondaryPanel` / `secondaryPanelOpen` / `secondaryPanelDefaultSize` (360px) / `secondaryPanelMinSize` (240px) / `secondaryPanelClassName`. Desktop only — the consumer handles mobile (Drawer). Reference: `features/notes` `NoteHistoryPane`. Slot contract documented in [`## Slots — how to add chrome`](#slots--how-to-add-chrome).
 - **2026-06-22** — **Notes window is now a reference-correct `WindowPanel` consumer** (Windows Panel System Overhaul, Phase 1) — alongside TranscriptionCleanup / VoicePad / SmartCodeEditorWindow. `windows/notes/NotesWindow.tsx` is a thin composition root: all chrome lives in `WindowPanel` slots (`sidebar` / `actionsRight` / `footer`), the body is content-only, geometry comes from explicit `width`/`height`/`position`, and the rect-mutating `sidebarExpandsWindow` is **gone** — single resize system, no second sizing path. See `features/notes/FEATURE.md`.
 - **2026-06-14** — Deleted legacy `LegacyNotesWindow` / singleton `notesWindow` overlay. Canonical multi-instance Notes window is now `overlayId: notesWindow` (dropped `notesBetaWindow` id, `notes-beta-*` instance keys, and duplicate registry/opener entries).
 - **2026-06-14** — **Silent-render guard** (see [`## Silent-render guard`](#silent-render-guard)). Root-caused a class of silent window-panel non-renders: stale in-memory `windowManagerSlice` state retained across client-side navigation (reset only on full reload) — chiefly the global `windowsHidden` flag rendering every panel `visibility:hidden`, plus re-opening a minimized/off-screen window being a no-op. Fix: `revealWindow` primitive + reveal-on-open middleware; `registerWindow`/`unregisterWindow` can no longer strand `windowsHidden`; new `overlayRenderWatchdogMiddleware` loudly reports + self-heals any "opened but not visible" panel. 17 new tests.
