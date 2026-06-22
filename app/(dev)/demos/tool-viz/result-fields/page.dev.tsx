@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
 import { ResearchRevivalInline } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalInline";
 import { ResearchRevivalOverlay } from "@/features/tool-call-visualization/renderers/research-revival/ResearchRevivalOverlay";
 import { ResearchModernInline } from "@/features/tool-call-visualization/renderers/research-modern/ResearchModernInline";
@@ -194,17 +195,35 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
         },
     }),
     entry({
+        // str_replace — the human diff. Persisted (reload) path: before=old_str,
+        // after=new_str. The inserted sentence is highlighted; the unchanged
+        // surrounding text is NOT — an insert must not mark everything changed.
         callId: "ctx-patch",
         toolName: "ctx_patch",
         displayName: "Context",
-        arguments: { key: "patient_summary", command: "str_replace" },
-        result: {
+        arguments: {
             key: "patient_summary",
             command: "str_replace",
-            ok: true,
-            preview:
-                "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. Aspirin 325mg administered.",
+            old_str:
+                "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. No prior cardiac history.\n\n- BP 148/92\n- HR 104",
+            new_str:
+                "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. Aspirin 325mg administered en route. No prior cardiac history.\n\n- BP 148/92\n- HR 96 (down from 104)",
         },
+        result: { key: "patient_summary", command: "str_replace", matched_at_pass: "exact", new_size_chars: 180, persist: "auto" },
+    }),
+    entry({
+        // overwrite — no before, so the new content renders as markdown (the
+        // "beautiful new content" persisted), no diff.
+        callId: "ctx-patch-overwrite",
+        toolName: "ctx_patch",
+        displayName: "Context",
+        arguments: {
+            key: "working_document",
+            command: "overwrite",
+            new_str:
+                "# Discharge Plan\n\n- **Medications:** aspirin 81mg daily, atorvastatin 40mg nightly\n- **Follow-up:** cardiology in 1 week\n- **Activity:** light activity, no lifting > 10 lbs for 48h\n\nCall if chest pain returns or worsens.",
+        },
+        result: { key: "working_document", command: "overwrite", new_size_chars: 230, persist: "auto" },
     }),
 ];
 
@@ -765,6 +784,22 @@ export default function ResultFieldsGalleryPage() {
                 <div className="rounded-lg border border-border bg-card p-3">
                     {CTX_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    ctx_patch — human diff + new content (PatchDiffInline, rendered directly)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    str_replace shows the highlight diff (inserted text tinted, unchanged plain — an insert doesn't mark
+                    everything changed); overwrite renders the new content as markdown. Works the SAME on reload, since the
+                    diff is reconstructed from the persisted args. Toggle Changes / Result.
+                </p>
+                <div className="space-y-3">
+                    {CTX_ENTRIES.filter((e) => e.toolName === "ctx_patch").map((e) => (
+                        <PatchDiffInline key={e.callId} entry={e} events={[]} isPersisted toolGroupId={e.callId} />
                     ))}
                 </div>
             </section>

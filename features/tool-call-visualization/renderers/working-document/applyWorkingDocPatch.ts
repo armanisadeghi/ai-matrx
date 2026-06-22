@@ -6,7 +6,7 @@
  * we can compute an instant before→after locally for snappy feedback while the
  * server's authoritative re-read is still in flight. A slightly-different local
  * fuzzy match is acceptable — the renderer reconciles to the server result on
- * completion (see WorkingDocDiffInline).
+ * completion (see PatchDiffInline).
  *
  * Text-shaped commands (str_replace / append / prepend / overwrite / insert)
  * produce a meaningful diff. Structural commands (json_patch / json_merge)

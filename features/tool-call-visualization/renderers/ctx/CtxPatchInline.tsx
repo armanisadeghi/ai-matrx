@@ -23,8 +23,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { ResultValue, type ResultDensity } from "../../result-fields/ResultValue";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
-import { WorkingDocDiffInline } from "../working-document/WorkingDocDiffInline";
+import { PatchDiffInline } from "../working-document/PatchDiffInline";
 
 /** Keys a write outcome might use to carry an echoed/previewed value. */
 const PREVIEW_KEYS = [
@@ -72,21 +71,26 @@ interface Props extends ToolRendererProps {
 }
 
 /**
- * Dispatcher: when this patch targets the working document AND we're live (have
- * a conversation, not a reloaded snapshot), render the live before→after diff.
- * Otherwise fall through to the standard write-confirmation card below.
+ * Dispatcher: a TEXT patch (carries `new_str`, not a structural json_* edit)
+ * renders through `PatchDiffInline` — the human-friendly diff/content view that
+ * works BOTH live (full-document before→after diff) and on reload (the change
+ * reconstructed from the args, which survive persistence) for the working
+ * document AND any other ctx key. Structural / contentless patches fall through
+ * to the simple write-confirmation card.
  *
  * No hooks run before this branch, so the two render paths owning different
  * hooks is safe under the Rules of Hooks (each is its own component).
  */
 export const CtxPatchInline: React.FC<Props> = (props) => {
-  const { entry, isPersisted, conversationId } = props;
-  if (
-    !isPersisted &&
-    conversationId &&
-    getArg<string>(entry, "key") === WORKING_DOCUMENT_CONTEXT_KEY
-  ) {
-    return <WorkingDocDiffInline {...props} />;
+  const { entry } = props;
+  const command = getArg<string>(entry, "command");
+  const newStr = getArg<string>(entry, "new_str");
+  const isTextPatch =
+    typeof newStr === "string" &&
+    command !== "json_patch" &&
+    command !== "json_merge";
+  if (isTextPatch) {
+    return <PatchDiffInline {...props} />;
   }
   return <CtxPatchConfirmation {...props} />;
 };
