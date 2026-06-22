@@ -37,7 +37,7 @@ export const renameRoomHandler: WarRoomMasterToolHandler<
         ok: false,
         message:
           "Couldn't rename — no room with that id is loaded. Use a room_id " +
-          "from war_room_overview.",
+          "from war_room.",
       };
     }
 

@@ -50,6 +50,10 @@ import type {
   WarRoomTileNote,
   WarRoomTileAttachment,
 } from "@/features/war-room/types";
+import {
+  buildWarRoomContextEntry,
+  type WarRoomRoomModel,
+} from "@/features/war-room/service/warRoomContextXml";
 
 // ── Read-only roster value shapes (plain data — no `mutable`/`source` ⇒ ctx_get) ──
 
@@ -86,18 +90,8 @@ export interface MasterRoomEntry {
   threads: MasterThreadEntry[];
 }
 
-export interface MasterOverviewValue {
-  type: "war_room_overview";
-  roomCount: number;
-  rooms: MasterRoomEntry[];
-  _hint: string;
-}
-
-interface MasterRoleValue {
-  type: "master_role";
-  role: string;
-  _hint: string;
-}
+// The master's read-only context is now the single inline `war_room` block
+// (scope="all") — see warRoomContextXml.ts. No per-key overview/role dicts.
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -148,27 +142,16 @@ export type ThreadStatusResolver = (
 export async function buildMasterAgentContext(
   resolveStatus?: ThreadStatusResolver,
 ): Promise<AssistantContextEntry[]> {
-  const roleValue: MasterRoleValue = {
-    type: "master_role",
-    role:
-      "You are the War Room master agent. You oversee ALL of the user's War " +
-      "Rooms and every thread inside them. Use `war_room_overview` to see the " +
-      "full roster: which rooms exist, what threads each contains, and each " +
-      "thread's task, note, audio, and file signal. Help the user reason " +
-      "across rooms — find, compare, prioritize, and summarize work that " +
-      "spans threads. You can SEE everything here; acting on a specific " +
-      "thread (reading its full chain, messaging its agent) comes through " +
-      "dedicated tools.",
-    _hint:
-      "READ-ONLY framing. Describes your role as the cross-room overseer.",
-  };
-
-  const roleEntry: AssistantContextEntry = {
-    key: "master_role",
-    value: roleValue,
-    type: "text",
-    label: "Master agent role (read-only)",
-  };
+  const masterRole =
+    "You are the War Room master agent. You oversee ALL of the user's War " +
+    "Rooms and every thread inside them — the full roster is listed below. " +
+    "Help the user reason across rooms: find, compare, prioritize, summarize. " +
+    "Read a thread's chain or message its agent with your tools.";
+  const masterHowTo =
+    "Read a thread's chain with war_room_read_thread(thread_id). Message a " +
+    "thread's agent with war_room_message_thread(thread_id). Create or rename " +
+    "a room with war_room_create_room / war_room_rename_room. Read or edit any " +
+    "resource by id with the data / data_action tools.";
 
   let sessions: WarRoomSession[] = [];
   try {
@@ -180,22 +163,13 @@ export async function buildMasterAgentContext(
   }
 
   if (sessions.length === 0) {
-    const emptyOverview: MasterOverviewValue = {
-      type: "war_room_overview",
-      roomCount: 0,
-      rooms: [],
-      _hint:
-        "READ-ONLY. The user has no War Rooms yet. Offer to help them start " +
-        "one, or answer from general knowledge.",
-    };
     return [
-      roleEntry,
-      {
-        key: "war_room_overview",
-        value: emptyOverview,
-        type: "text",
-        label: "All War Rooms — roster (read-only)",
-      },
+      buildWarRoomContextEntry({
+        scope: "all",
+        role: masterRole,
+        howTo: masterHowTo,
+        rooms: [],
+      }),
     ];
   }
 
@@ -386,26 +360,34 @@ export async function buildMasterAgentContext(
     };
   });
 
-  const overviewValue: MasterOverviewValue = {
-    type: "war_room_overview",
-    roomCount: rooms.length,
-    rooms,
-    _hint:
-      "READ-ONLY index of every War Room and its threads. Each thread carries " +
-      "a `conversationId` (the thread agent's conversation — null when none " +
-      "exists yet), a live `status`, and light signal (taskTitle, noteSnippet, " +
-      "hasAudio, fileCount). This is a ROSTER, not full content: to read a " +
-      "thread's actual conversation or documents, use the dedicated thread " +
-      "tools (coming soon). Prioritize by what the user asks across rooms.",
-  };
+  const sessionById = new Map(sessions.map((s) => [s.id, s]));
+  const roomModels: WarRoomRoomModel[] = rooms.map((r) => {
+    const projectId = sessionById.get(r.roomId)?.project_id ?? null;
+    return {
+      id: r.roomId,
+      title: r.title,
+      description: r.description,
+      basis: projectId ? "project" : "standalone",
+      projectId,
+      threads: r.threads.map((e) => ({
+        id: e.threadId,
+        title: e.threadTitle,
+        conversationId: e.conversationId,
+        status: e.status,
+        taskTitle: e.taskTitle,
+        noteSnippet: e.noteSnippet,
+        hasAudio: e.hasAudio,
+        fileCount: e.fileCount,
+      })),
+    };
+  });
 
   return [
-    roleEntry,
-    {
-      key: "war_room_overview",
-      value: overviewValue,
-      type: "text",
-      label: "All War Rooms — roster (read-only)",
-    },
+    buildWarRoomContextEntry({
+      scope: "all",
+      role: masterRole,
+      howTo: masterHowTo,
+      rooms: roomModels,
+    }),
   ];
 }

@@ -123,6 +123,10 @@ export function buildSessionResourceContextEntries(
   sessionId: string,
 ): AssistantContextEntry[] {
   const session = selectSessionById(sessionId)(state);
+  // War Room tiles get the dedicated inline `war_room` block (which already
+  // carries the room's project + every thread), so the standalone session brief
+  // would only duplicate it there. This brief is for the standalone Scribe.
+  if (session?.source === "war_room") return [];
   const projectId = session?.projectId ?? null;
   if (!projectId) return [];
 

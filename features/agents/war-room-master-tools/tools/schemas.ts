@@ -8,7 +8,7 @@
  * acting on garbage.
  *
  * `thread_id` is the roster's `threadId` (= the war-room TILE id the master sees
- * in `war_room_overview`). `room_id` is the roster's `roomId` (=
+ * in `war_room`). `room_id` is the roster's `roomId` (=
  * `ctx_war_room_sessions.id`).
  */
 

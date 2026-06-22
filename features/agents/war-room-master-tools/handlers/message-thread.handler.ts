@@ -102,7 +102,7 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         mode,
         message:
           "Unknown thread — no tile with that id is visible to you. Use a " +
-          "thread_id from war_room_overview.",
+          "thread_id from war_room.",
       };
     }
 

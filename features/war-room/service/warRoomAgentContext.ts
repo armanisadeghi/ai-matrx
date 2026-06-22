@@ -1,205 +1,153 @@
 /**
  * features/war-room/service/warRoomAgentContext.ts
  *
- * Builds the READ-ONLY context objects that let a War Room tile's "Agent+"
- * assistant SEE the tile's own work — its Task (with subtasks), its active Note,
- * and its attached Files/Documents — as first-class context the agent can
- * `ctx_get` every turn.
+ * Builds the TIER-1 (per-thread / tile) War Room agent's context: the ONE
+ * inline `war_room` block (scope="thread"). The agent instantly sees, with no
+ * tool call, where it is — its current thread in full (task, note, audio,
+ * files) AND the rest of the room around it (every sibling thread with its
+ * task/status), plus the room's project. It pulls heavy bodies with tools.
  *
- * These are MERGED INTO (not replacing) the Scribe studio context that
- * `buildAssistantContextEntries` already produces for the tile's audio session.
- * The audio transcript is therefore already present as `session_cleaned` /
- * `all_raw`; we deliberately DO NOT duplicate it here.
+ * This REPLACED the old pile of deferred dicts (`tile_task` / `tile_notes` /
+ * `tile_files`): those rendered DEFERRED (a dict over ~200 chars), so the agent
+ * had to `ctx_get` even to read its own task. One small inline overview + tools
+ * for the details is the contract — see `warRoomContextXml.ts` (the single
+ * `war_room` serializer shared by all three tiers).
  *
- * Why a separate builder (not folded into assistantContextBuilder): the studio
- * builder is shared with the Scribe studio, which has NO tile. Keeping the tile
- * entries here — passed in as `extraEntries` — keeps the shared scribe/studio
- * context pristine (Scribe passes nothing → it is unchanged).
+ * Sync + Redux-only: the active room's tiles, tasks, notes, attachments, and
+ * audio links are all hydrated on room load, so this never fetches. Sibling
+ * threads are listed by their TILE id — the agent reads a sibling's chain with
+ * `war_room_read_thread(thread_id=<tile id>)` (the handler resolves the
+ * conversation server-side), so no sibling conversation id is needed here.
  *
- * Naming contract (so the model understands the relationships, and so these
- * never collide with the studio keys recording_NN / session_cleaned / etc.):
- *   - `tile_task`   — the tile's task: title, status, priority, due date,
- *                     description, AND its subtasks. Omitted if the tile has no
- *                     task.
- *   - `tile_notes`  — the tile's active note (the same note the Notes tab
- *                     edits). Omitted if the tile has no note / the note is
- *                     empty of content AND has no label.
- *   - `tile_files`  — a concise readable list of the tile's attached files and
- *                     documents (name + kind). Omitted if nothing is attached.
- *
- * READ-ONLY: every value here is a plain data snapshot with no `mutable` /
- * `source` keys, so the server exposes only `ctx_get` for them — never
- * `ctx_patch`. (Editing tools come later; the only writable object in this
- * conversation remains `working_document`.) Priority emphasis in the
- * descriptions, per the spec: Tasks first, then Notes, then Files.
+ * Merged in by `TileAgentPanel` via `useStudioAssistant`'s `buildExtraEntries`;
+ * the audio transcript (`session_cleaned` / `working_document`) is already in
+ * the studio context, so it is NOT duplicated here.
  */
 
 import type { RootState } from "@/lib/redux/store";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
-import {
-  selectSubtasksByParent,
-  selectTaskById,
-  type TaskRecord,
-} from "@/features/agent-context/redux/tasksSlice";
+import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
   selectActiveNoteId,
   selectAttachmentsForTile,
+  selectAudioSessionIdsForTile,
+  selectSessionById,
   selectTileById,
+  selectTileIdsForSession,
 } from "@/features/war-room/redux/selectors";
+import type { WarRoomTile } from "@/features/war-room/types";
+import {
+  buildWarRoomContextEntry,
+  type WarRoomContextModel,
+  type WarRoomRoomModel,
+  type WarRoomThreadModel,
+} from "@/features/war-room/service/warRoomContextXml";
 
-// ── Read-only value shapes (plain data — no `mutable`/`source` ⇒ ctx_get only) ──
-
-interface TileTaskContextValue {
-  type: "task";
-  id: string;
-  title: string;
-  status: string;
-  priority: string | null;
-  due_date: string | null;
-  description: string | null;
-  subtasks: {
-    id: string;
-    title: string;
-    status: string;
-    priority: string | null;
-    due_date: string | null;
-  }[];
-  /** Model-facing read-only + priority hint, carried in the value so it
-   *  survives even if the host strips unknown entry-level keys. */
-  _hint: string;
+/** A readable thread label — its own title, else its task's, else positional. */
+function threadLabel(
+  tile: WarRoomTile,
+  taskTitle: string | undefined,
+  index: number,
+): string {
+  const own = tile.title?.trim();
+  if (own) return own;
+  if (taskTitle?.trim()) return taskTitle.trim();
+  return `Thread ${index + 1}`;
 }
 
-interface TileNoteContextValue {
-  type: "note";
-  id: string;
-  label: string | null;
-  content: string;
-  _hint: string;
-}
+/** Build one thread model for a tile, reading whatever Redux has hydrated. */
+function tileToThreadModel(
+  state: RootState,
+  tile: WarRoomTile,
+  index: number,
+): WarRoomThreadModel {
+  const task = tile.task_id ? selectTaskById(state, tile.task_id) : undefined;
+  const noteId =
+    selectActiveNoteId(tile.id)(state) ?? tile.note_id ?? null;
+  const note = noteId ? selectNoteById(noteId)(state) : undefined;
+  const noteContent = (note?.content ?? "").trim();
+  const audioCount = selectAudioSessionIdsForTile(tile.id)(state).length;
+  const fileCount = selectAttachmentsForTile(tile.id)(state).length;
 
-interface TileFilesContextValue {
-  type: "file_list";
-  count: number;
-  files: { kind: "file" | "document"; name: string }[];
-  _hint: string;
-}
-
-function toSubtaskValue(t: TaskRecord): TileTaskContextValue["subtasks"][number] {
   return {
-    id: t.id,
-    title: t.title,
-    status: t.status,
-    priority: t.priority,
-    due_date: t.due_date,
+    id: tile.id,
+    title: threadLabel(tile, task?.title, index),
+    // Tier 1 doesn't resolve sibling conversation ids; the read tool takes the
+    // tile id and resolves the chain itself.
+    conversationId: null,
+    taskId: tile.task_id ?? null,
+    taskTitle: task?.title,
+    taskStatus: task?.status,
+    noteId,
+    noteChars: noteContent ? noteContent.length : undefined,
+    hasAudio: audioCount > 0,
+    fileCount,
   };
 }
 
 /**
- * Build the READ-ONLY tile context entries (task, notes, files) for one tile.
- * Returns an empty array when the tile has nothing to show — callers pass these
- * as `extraEntries` to `buildAssistantContextEntries`, which (combined with the
- * no-empty-push guard in useStudioAssistant) means an empty result never wipes
- * anything.
- *
- * All data is read straight from Redux (already hydrated on room load:
- * hydrateTileTasks for the parent task, loadTileSubtasks for subtasks, the notes
- * slice for note content, attachmentsByTile for attachments). This never
- * refetches what Redux already holds.
+ * Build the Tier-1 thread agent's context: a single inline `war_room` entry.
+ * Returns `[]` only when the tile itself isn't in Redux (nothing to describe);
+ * the no-empty-push guard then leaves prior context intact.
  */
 export function buildTileAgentContextEntries(
   state: RootState,
   tileId: string,
 ): AssistantContextEntry[] {
-  const entries: AssistantContextEntry[] = [];
-
   const tile = selectTileById(tileId)(state);
-  if (!tile) return entries;
+  if (!tile) return [];
 
-  // ── tile_task (highest priority) ──────────────────────────────────────
-  // No mutable/source on the value ⇒ the server exposes only ctx_get for it
-  // (the agent can read it, not edit it). Priority emphasis lives in `_hint`.
-  const taskId = tile.task_id;
-  if (taskId) {
-    const task = selectTaskById(state, taskId);
-    if (task) {
-      const subtasks = selectSubtasksByParent(state, taskId).map(toSubtaskValue);
-      const subtaskNote =
-        subtasks.length > 0
-          ? ` It has ${subtasks.length} subtask(s) in \`subtasks\`.`
-          : "";
-      const value: TileTaskContextValue = {
-        type: "task",
-        id: task.id,
-        title: task.title,
-        status: task.status,
-        priority: task.priority ?? null,
-        due_date: task.due_date ?? null,
-        description: task.description ?? null,
-        subtasks,
-        _hint:
-          "READ-ONLY. The primary work item for this tile — prioritize it." +
-          subtaskNote,
-      };
-      entries.push({
-        key: "tile_task",
-        value,
-        type: "text",
-        label: "This tile's task (read-only)",
-      });
-    }
-  }
+  const roomId = tile.session_id;
+  const room = roomId ? selectSessionById(roomId)(state) : null;
+  const roomTitle = room?.title?.trim() || "this War Room";
+  const projectId = room?.project_id ?? tile.project_id ?? null;
+  const projectName = projectId
+    ? (selectProjectById(state, projectId)?.name ?? undefined)
+    : undefined;
 
-  // ── tile_notes (second priority) ──────────────────────────────────────
-  const noteId = selectActiveNoteId(tileId)(state) ?? tile.note_id ?? null;
-  if (noteId) {
-    const note = selectNoteById(noteId)(state);
-    const content = (note?.content ?? "").trim();
-    const label = note?.label ?? null;
-    // Omit a note that has neither content nor a meaningful label.
-    if (content || (label && label !== "War Room note")) {
-      const value: TileNoteContextValue = {
-        type: "note",
-        id: noteId,
-        label,
-        content,
-        _hint: "READ-ONLY. The user's working note for this tile.",
-      };
-      entries.push({
-        key: "tile_notes",
-        value,
-        type: "text",
-        label: "This tile's note (read-only)",
-      });
-    }
-  }
+  // Every thread in the room (best-effort — siblings beyond the current tile
+  // are present once the room is hydrated). The current tile is always present.
+  const siblingIds = roomId ? selectTileIdsForSession(roomId)(state) : [];
+  const tileIds = siblingIds.includes(tileId)
+    ? siblingIds
+    : [tileId, ...siblingIds];
 
-  // ── tile_files (third priority) ───────────────────────────────────────
-  const attachments = selectAttachmentsForTile(tileId)(state);
-  if (attachments.length > 0) {
-    const files = attachments.map((a) => ({
-      kind: (a.entity_type === "document" ? "document" : "file") as
-        | "file"
-        | "document",
-      name:
-        (a.label && a.label.trim()) ||
-        (a.entity_type === "document" ? "Untitled document" : "File"),
-    }));
-    const value: TileFilesContextValue = {
-      type: "file_list",
-      count: files.length,
-      files,
-      _hint:
-        "READ-ONLY. Files and documents the user attached to this tile " +
-        "(names only).",
-    };
-    entries.push({
-      key: "tile_files",
-      value,
-      type: "text",
-      label: "This tile's files & documents (read-only)",
-    });
-  }
+  const threads: WarRoomThreadModel[] = tileIds
+    .map((id, index) => {
+      const t = id === tileId ? tile : selectTileById(id)(state);
+      return t ? tileToThreadModel(state, t, index) : null;
+    })
+    .filter((t): t is WarRoomThreadModel => t !== null);
 
-  return entries;
+  const roomModel: WarRoomRoomModel = {
+    id: roomId ?? "",
+    title: roomTitle,
+    basis: projectId ? "project" : "standalone",
+    projectId,
+    projectName,
+    threads,
+  };
+
+  const model: WarRoomContextModel = {
+    scope: "thread",
+    role:
+      `You are the agent for ONE thread inside the War Room "${roomTitle}". ` +
+      "Work the thread marked <current_thread>; the rest of the room is shown " +
+      "so you have the full picture. Everything you need is here — do not " +
+      "re-query the database to rediscover it; use your tools to pull a " +
+      "specific body or to act.",
+    howTo:
+      "Edit THIS thread's task/note with your war_room tools (the user " +
+      "approves each). Read this thread's transcript with " +
+      'context(action="get", key="session_cleaned"). Read ANOTHER thread\'s ' +
+      "chain with war_room_read_thread(thread_id=<its id>). Read or edit any " +
+      "task / note / project / other resource by id with the data / " +
+      "data_action tools.",
+    room: roomModel,
+    currentThreadId: tileId,
+  };
+
+  return [buildWarRoomContextEntry(model)];
 }

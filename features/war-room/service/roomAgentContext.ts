@@ -65,26 +65,18 @@ import type {
 // Re-export so the room hook (and any future consumer) imports the resolver type
 // from the room module without reaching across to the master file.
 export type { ThreadStatusResolver } from "@/features/war-room/service/masterAgentContext";
+import {
+  buildWarRoomContextEntry,
+  type WarRoomThreadModel,
+} from "@/features/war-room/service/warRoomContextXml";
 
 // ── Read-only roster value shapes (plain data — no `mutable`/`source` ⇒ ctx_get) ──
 // A thread carries the SAME shape the master roster uses (`MasterThreadEntry`),
 // so the shared war-room-master-tools (read_thread / message_thread) resolve a
 // thread the same way regardless of which tier surfaced it.
 
-export interface RoomThreadsValue {
-  type: "war_room_threads";
-  roomId: string;
-  roomTitle: string;
-  threadCount: number;
-  threads: MasterThreadEntry[];
-  _hint: string;
-}
-
-interface RoomRoleValue {
-  type: "room_agent_role";
-  role: string;
-  _hint: string;
-}
+// The room's read-only context is now the single inline `war_room` block
+// (scope="room") — see warRoomContextXml.ts. No per-key roster/role dicts.
 
 // ── Helpers (identical semantics to masterAgentContext.ts) ─────────────────
 
@@ -131,9 +123,11 @@ export async function buildRoomAgentContext(
 ): Promise<AssistantContextEntry[]> {
   // Resolve the room's identity first (title used in the role framing + roster).
   let roomTitle = "this War Room";
+  let projectId: string | null = null;
   try {
     const session = await getSession(sessionId);
     if (session?.title?.trim()) roomTitle = session.title.trim();
+    projectId = session?.project_id ?? null;
   } catch (err) {
     // Loud recovery: the agent can still operate on the thread roster; only the
     // human-readable room name in the framing degrades.
@@ -143,27 +137,31 @@ export async function buildRoomAgentContext(
     );
   }
 
-  const roleValue: RoomRoleValue = {
-    type: "room_agent_role",
-    role:
-      `You are the agent for the War Room "${roomTitle}". You oversee the ` +
-      "threads in THIS ONE War Room — not the user's other rooms. Use " +
-      "`war_room_threads` to see this room's roster: which threads it contains, " +
-      "and each thread's task, note, audio, and file signal. Help the user " +
-      "reason across the threads in this room — find, compare, prioritize, and " +
-      "summarize work that spans them. You can read a thread's full conversation " +
-      "and message a thread's agent with the thread tools, and rename this room. " +
-      "Act within this room.",
-    _hint:
-      "READ-ONLY framing. Describes your role as the overseer of a SINGLE room.",
-  };
-
-  const roleEntry: AssistantContextEntry = {
-    key: "room_agent_role",
-    value: roleValue,
-    type: "text",
-    label: "Room agent role (read-only)",
-  };
+  const roomRole =
+    `You are the agent for the War Room "${roomTitle}". You oversee its ` +
+    "threads — every one is listed below — not the user's other rooms. Reason " +
+    "across them: find, compare, prioritize, summarize. Read a thread's chain " +
+    "or delegate into it with your thread tools. Act within this room.";
+  const roomHowTo =
+    "Read a thread's chain with war_room_read_thread(thread_id). Message a " +
+    "thread's agent with war_room_message_thread(thread_id). Rename this room " +
+    "with war_room_rename_room. Read or edit any task / note / project by id " +
+    "with the data / data_action tools.";
+  const toEntry = (
+    threadModels: WarRoomThreadModel[],
+  ): AssistantContextEntry =>
+    buildWarRoomContextEntry({
+      scope: "room",
+      role: roomRole,
+      howTo: roomHowTo,
+      room: {
+        id: sessionId,
+        title: roomTitle,
+        basis: projectId ? "project" : "standalone",
+        projectId,
+        threads: threadModels,
+      },
+    });
 
   // Tiles for THIS room only (the master builder fans out across every room; the
   // single-room scope is exactly what keeps this agent acting within its room).
@@ -178,25 +176,7 @@ export async function buildRoomAgentContext(
   }
 
   if (tiles.length === 0) {
-    const emptyThreads: RoomThreadsValue = {
-      type: "war_room_threads",
-      roomId: sessionId,
-      roomTitle,
-      threadCount: 0,
-      threads: [],
-      _hint:
-        "READ-ONLY. This War Room has no threads yet. Offer to help the user " +
-        "add one, or answer from general knowledge.",
-    };
-    return [
-      roleEntry,
-      {
-        key: "war_room_threads",
-        value: emptyThreads,
-        type: "text",
-        label: `Threads in "${roomTitle}" — roster (read-only)`,
-      },
-    ];
+    return [toEntry([])];
   }
 
   const allTileIds = tiles.map((t) => t.id);
@@ -360,29 +340,15 @@ export async function buildRoomAgentContext(
     return entry;
   });
 
-  const threadsValue: RoomThreadsValue = {
-    type: "war_room_threads",
-    roomId: sessionId,
-    roomTitle,
-    threadCount: threads.length,
-    threads,
-    _hint:
-      "READ-ONLY index of every thread in THIS War Room. Each thread carries a " +
-      "`conversationId` (the thread agent's conversation — null when none exists " +
-      "yet), a live `status`, and light signal (taskTitle, noteSnippet, " +
-      "hasAudio, fileCount). This is a ROSTER, not full content: to read a " +
-      "thread's actual conversation or message its agent, use the thread tools " +
-      "(`war_room_read_thread` / `war_room_message_thread`). Stay within this " +
-      "room; prioritize by what the user asks across its threads.",
-  };
-
-  return [
-    roleEntry,
-    {
-      key: "war_room_threads",
-      value: threadsValue,
-      type: "text",
-      label: `Threads in "${roomTitle}" — roster (read-only)`,
-    },
-  ];
+  const threadModels: WarRoomThreadModel[] = threads.map((e) => ({
+    id: e.threadId,
+    title: e.threadTitle,
+    conversationId: e.conversationId,
+    status: e.status,
+    taskTitle: e.taskTitle,
+    noteSnippet: e.noteSnippet,
+    hasAudio: e.hasAudio,
+    fileCount: e.fileCount,
+  }));
+  return [toEntry(threadModels)];
 }

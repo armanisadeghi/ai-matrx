@@ -171,7 +171,10 @@ export default function TileAgentPanel({
     dispatch(
       setClientTools({
         conversationId,
-        tools: [...WAR_ROOM_TOOL_NAMES],
+        // Plus war_room_read_thread (read-only, no tile binding) so this
+        // thread's agent can read ANOTHER thread's chain by its tile id — the
+        // sibling threads are listed in the inline `war_room` block.
+        tools: [...WAR_ROOM_TOOL_NAMES, "war_room_read_thread"],
       }),
     );
     return () => {

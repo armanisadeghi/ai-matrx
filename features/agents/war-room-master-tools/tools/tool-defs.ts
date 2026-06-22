@@ -33,7 +33,7 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
     name: "war_room_read_thread",
     description:
       "Read the recent conversation of one thread's agent. Pass the thread's " +
-      "`thread_id` from `war_room_overview`. Returns the most recent messages " +
+      "`thread_id` from `war_room`. Returns the most recent messages " +
       "in that thread's chain so you can see what was discussed before acting. " +
       "Read-only — runs immediately, changes nothing.",
     input_schema: {
@@ -41,7 +41,7 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
       properties: {
         thread_id: {
           type: "string",
-          description: "The thread's id (the `threadId` from war_room_overview).",
+          description: "The thread's id (the `threadId` from war_room).",
         },
         limit: {
           type: "number",
@@ -57,7 +57,7 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
     name: "war_room_message_thread",
     description:
       "Send a message to one thread's agent. Pass the thread's `thread_id` " +
-      "from `war_room_overview`. mode='fresh' (default) starts a NEW " +
+      "from `war_room`. mode='fresh' (default) starts a NEW " +
       "conversation seeded with that thread's task, notes, and files plus your " +
       "message — a clean, well-scoped ask with no prior history. mode='fork' " +
       "branches the thread's EXISTING conversation (keeping its full history) " +
@@ -69,7 +69,7 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
       properties: {
         thread_id: {
           type: "string",
-          description: "The thread's id (the `threadId` from war_room_overview).",
+          description: "The thread's id (the `threadId` from war_room).",
         },
         message: {
           type: "string",
@@ -111,13 +111,13 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
     name: "war_room_rename_room",
     description:
       "Rename an existing War Room. Pass the room's `room_id` from " +
-      "`war_room_overview`. Runs immediately.",
+      "`war_room`. Runs immediately.",
     input_schema: {
       type: "object",
       properties: {
         room_id: {
           type: "string",
-          description: "The room's id (the `roomId` from war_room_overview).",
+          description: "The room's id (the `roomId` from war_room).",
         },
         title: { type: "string", description: "The new room title." },
       },

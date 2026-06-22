@@ -86,8 +86,9 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
       reportWarRoomError("room-agent/context", err, { toast: false });
       return;
     }
-    // NEVER clobber good context with an empty set — `room_agent_role` is always
-    // present on success, so this only skips when the build itself failed.
+    // NEVER clobber good context with an empty set — the single inline
+    // `war_room` entry is always present on success, so this only skips when the
+    // build itself failed.
     if (entries.length > 0) {
       dispatch(setContextEntries({ conversationId, entries }));
     }
