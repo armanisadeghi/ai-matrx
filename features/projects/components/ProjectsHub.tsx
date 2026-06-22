@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import {
   Table,
   TableHeader,
@@ -1153,6 +1154,13 @@ function ProjectsTable({
                       className="flex items-center justify-end gap-1.5"
                       onClick={(e) => e.stopPropagation()}
                     >
+                      <ProjectCopyForAiButton
+                        projectId={p.id}
+                        projectName={p.name}
+                        location="Projects — hub table"
+                        size="icon"
+                        className="h-7 w-7"
+                      />
                       <Button
                         size="sm"
                         variant="ghost"
@@ -1281,6 +1289,13 @@ function ProjectHubCard({
       </div>
 
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border bg-card">
+        <ProjectCopyForAiButton
+          projectId={project.id}
+          projectName={project.name}
+          location="Projects — hub cards"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+        />
         <Button size="sm" onClick={() => router.push(href)} className="flex-1">
           Open
           <ArrowRight className="h-3.5 w-3.5 ml-1.5" />

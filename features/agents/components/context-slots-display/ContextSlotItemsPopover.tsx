@@ -7,7 +7,7 @@
  * Click → popover list; row click → detail sheet.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Boxes } from "lucide-react";
 import {
   Popover,
@@ -15,6 +15,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
   ContextSlot,
@@ -25,7 +27,8 @@ import {
   CONTEXT_TYPE_TILE_LABEL,
   resolveContextSlotTileTheme,
 } from "./contextSlotTile.theme";
-import { contextSlotValuePreview } from "./contextSlotPreview";
+import { contextSlotEntryPreview } from "./contextSlotPreview";
+import { getKnownContextDefinition } from "./knownContextValues";
 import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
 import { ContextSlotTile } from "./ContextSlotTile";
 
@@ -46,12 +49,23 @@ export function ContextSlotItemsPopover({
 }: ContextSlotItemsPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] =
+    useState<InstanceContextEntry | null>(null);
+
+  const selectLiveEntries = useMemo(
+    () => selectInstanceContextEntries(conversationId),
+    [conversationId],
+  );
+  const liveEntries = useAppSelector(selectLiveEntries);
+  const liveValueByKey = useMemo(
+    () => new Map(liveEntries.map((e) => [e.key, e.value])),
+    [liveEntries],
+  );
 
   const count = entries.length;
 
-  const openDetail = (key: string) => {
-    setSelectedKey(key);
+  const openDetail = (entry: InstanceContextEntry) => {
+    setSelectedEntry(entry);
     setPopoverOpen(false);
     setDetailOpen(true);
   };
@@ -83,16 +97,23 @@ export function ContextSlotItemsPopover({
               const type: ContextObjectType = slot?.type ?? entry.type;
               const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
               const theme = resolveContextSlotTileTheme(type);
-              const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
+              const typeLabel =
+                getKnownContextDefinition(entry.key)?.typeLabel ??
+                CONTEXT_TYPE_TILE_LABEL[type] ??
+                "Context";
               const label =
                 slot?.label?.trim() || entry.label?.trim() || entry.key;
-              const preview = contextSlotValuePreview(entry.value, type);
+              const preview = contextSlotEntryPreview(
+                entry,
+                type,
+                liveValueByKey.get(entry.key),
+              );
 
               return (
                 <button
                   key={entry.key}
                   type="button"
-                  onClick={() => openDetail(entry.key)}
+                  onClick={() => openDetail(entry)}
                   className={cn(
                     "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left",
                     "transition-colors hover:bg-accent/80",
@@ -121,13 +142,14 @@ export function ContextSlotItemsPopover({
         </PopoverContent>
       </Popover>
 
-      {selectedKey && (
+      {selectedEntry && (
         <ContextSlotDetailSheet
           open={detailOpen}
           onOpenChange={setDetailOpen}
           conversationId={conversationId}
           agentId={agentId}
-          contextKey={selectedKey}
+          contextKey={selectedEntry.key}
+          snapshotValue={selectedEntry.value}
         />
       )}
     </>

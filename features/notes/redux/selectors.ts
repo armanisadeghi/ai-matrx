@@ -327,6 +327,14 @@ export const selectInstanceSplitNoteId = (instanceId: string) =>
     ),
   );
 
+export const selectInstanceHistoryOpen = (instanceId: string) =>
+  cached(`instHistory:${instanceId}`, () =>
+    createSelector(
+      selectInstancesMap,
+      (instances): boolean => instances[instanceId]?.historyOpen ?? false,
+    ),
+  );
+
 export const selectInstanceTabInteractionAt = (instanceId: string) =>
   cached(`instTabInteractionAt:${instanceId}`, () =>
     createSelector(

@@ -54,22 +54,32 @@ export function NotesResourcePicker({
     return notes.filter((note) => note.folder_name === selectedFolder);
   }, [notes, selectedFolder]);
 
+  const isSearching = searchQuery.trim().length > 0;
+
+  const noteMatchesQuery = (note: Note, query: string) =>
+    note.label.toLowerCase().includes(query) ||
+    note.content.toLowerCase().includes(query) ||
+    idMatchesQuery(note, query);
+
   // Filter notes/folders by search
   const filteredFolders = useMemo(() => {
-    if (!searchQuery.trim()) return folders;
+    if (!isSearching) return folders;
     const query = searchQuery.toLowerCase();
     return folders.filter(
       (folder) =>
         folder.toLowerCase().includes(query) ||
         notes.some(
           (note) =>
-            note.folder_name === folder &&
-            (note.label.toLowerCase().includes(query) ||
-              note.content.toLowerCase().includes(query) ||
-              idMatchesQuery(note, query)),
+            note.folder_name === folder && noteMatchesQuery(note, query),
         ),
     );
-  }, [folders, notes, searchQuery]);
+  }, [folders, notes, searchQuery, isSearching]);
+
+  const searchMatchedNotes = useMemo(() => {
+    if (!isSearching) return [];
+    const query = searchQuery.toLowerCase();
+    return notes.filter((note) => noteMatchesQuery(note, query));
+  }, [notes, searchQuery, isSearching]);
 
   // Reset expanded note when folder or search changes
   React.useEffect(() => {
@@ -77,15 +87,10 @@ export function NotesResourcePicker({
   }, [selectedFolder, searchQuery]);
 
   const filteredNotes = useMemo(() => {
-    if (!searchQuery.trim()) return folderNotes;
+    if (!isSearching) return folderNotes;
     const query = searchQuery.toLowerCase();
-    return folderNotes.filter(
-      (note) =>
-        note.label.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query) ||
-        idMatchesQuery(note, query),
-    );
-  }, [folderNotes, searchQuery]);
+    return folderNotes.filter((note) => noteMatchesQuery(note, query));
+  }, [folderNotes, searchQuery, isSearching]);
 
   return (
     <div className="flex flex-col max-h-[460px]">
@@ -212,8 +217,115 @@ export function NotesResourcePicker({
               </div>
             )}
           </div>
+        ) : isSearching ? (
+          // Search: matching folders + matching notes (flat)
+          <div className="p-1 space-y-2">
+            {filteredFolders.length === 0 && searchMatchedNotes.length === 0 ? (
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">
+                No results found
+              </div>
+            ) : (
+              <>
+                {filteredFolders.length > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      Folders
+                    </div>
+                    {filteredFolders.map((folder) => {
+                      const { icon: Icon, color } =
+                        getFolderIconAndColor(folder);
+                      const count = folderCounts[folder] || 0;
+
+                      return (
+                        <button
+                          key={folder}
+                          onClick={() => setSelectedFolder(folder)}
+                          className="w-full flex items-center gap-2 px-2 py-2 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors group"
+                        >
+                          <Icon
+                            className="w-4 h-4 flex-shrink-0"
+                            style={{ color: color || undefined }}
+                          />
+                          <span className="flex-1 text-xs font-medium text-gray-900 dark:text-gray-100 text-left truncate">
+                            {folder}
+                          </span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                            {count}
+                          </span>
+                          <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 flex-shrink-0" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {searchMatchedNotes.length > 0 && (
+                  <div className="space-y-0.5">
+                    <div className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                      Notes
+                    </div>
+                    {searchMatchedNotes.map((note) => {
+                      const isExpanded = expandedNoteId === note.id;
+
+                      return (
+                        <div
+                          key={note.id}
+                          className="rounded overflow-hidden border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all"
+                        >
+                          <div className="flex items-start gap-2 px-2 py-2">
+                            <button
+                              onClick={() => onSelect(note)}
+                              className="flex-1 text-left hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors rounded px-1 py-0.5 -mx-1 -my-0.5 min-w-0"
+                            >
+                              <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate mb-0.5">
+                                {note.label}
+                              </div>
+                              {!isExpanded && (
+                                <>
+                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-tight">
+                                    {note.content || "Empty note"}
+                                  </div>
+                                  <div className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
+                                    {note.folder_name}
+                                  </div>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedNoteId(isExpanded ? null : note.id);
+                              }}
+                              className="flex-shrink-0 p-1 -mr-1 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded transition-colors"
+                              title={
+                                isExpanded ? "Hide details" : "Show details"
+                              }
+                            >
+                              <ChevronDown
+                                className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="px-2 pb-2 space-y-2 bg-background/50">
+                              <div className="max-h-32 overflow-y-auto scrollbar-thin rounded bg-white dark:bg-zinc-900 p-2 border-border">
+                                <div className="text-[11px] text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                  {note.content || "Empty note"}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         ) : (
-          // Show folders
+          // Browse folders
           <div className="p-1">
             {filteredFolders.length === 0 ? (
               <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-8">

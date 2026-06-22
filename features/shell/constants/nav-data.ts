@@ -528,9 +528,9 @@ export const primaryNavItems: ShellNavItem[] = [
 
   {
     // Group parent — Projects, Tasks, and the War Room.
-    label: "Projects",
+    label: "Workspaces",
     href: "/projects",
-    iconName: "FolderKanban",
+    iconName: "LayoutGrid",
     section: "primary",
     dockOrder: 7,
     profileMenu: false,

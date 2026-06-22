@@ -57,6 +57,18 @@ export interface OverlayDiagnostics {
     globallyHidden: unknown;
   };
   appContext: unknown;
+  /**
+   * The in-flight agent work at error time — the single most important thing to
+   * preserve when an overlay carrying an agent runner (e.g. "Create with AI")
+   * blows up. For every live conversation we capture WHAT THE USER TYPED (their
+   * request, verbatim), which agent it targets, and the run status — so a chunk
+   * failure that nukes the panel never silently destroys the user's message.
+   * Conversations with a non-empty typed request are listed first.
+   */
+  agentExecution: {
+    conversationCount: number;
+    conversations: AgentConversationDiag[];
+  };
   user: {
     id: unknown;
     isAdmin: unknown;
@@ -80,6 +92,98 @@ interface ChunkTiming {
   transferSize: number | null;
   initiatorType: string;
   completed: boolean;
+}
+
+export interface AgentConversationDiag {
+  conversationId: string;
+  agentId: unknown;
+  agentName: unknown;
+  title: unknown;
+  status: unknown;
+  displayMode: unknown;
+  /** The user's typed-but-unsent request, verbatim (truncated if huge). */
+  inputText: string | null;
+  inputTextLength: number;
+  inputTextTruncated: boolean;
+  /** Count of message parts (attachments / rich segments) staged with the input. */
+  messagePartCount: number;
+  /** True when this conversation has a non-empty typed request (work at risk). */
+  hasPendingInput: boolean;
+}
+
+/** Hard cap so the dump stays readable, but generous enough to keep real work. */
+const MAX_DIAG_CONVERSATIONS = 25;
+const MAX_INPUT_TEXT_CHARS = 8000;
+
+/**
+ * Pull the live agent-execution state out of the (possibly null) Redux snapshot.
+ * Reads only the three byConversationId slices and is defensive about every
+ * field — these slices are absent in the slim store and may not be loaded.
+ */
+function collectAgentExecution(
+  s: Record<string, unknown>,
+): OverlayDiagnostics["agentExecution"] {
+  const conversations = (s.conversations as Record<string, unknown>) ?? null;
+  const userInput = (s.instanceUserInput as Record<string, unknown>) ?? null;
+  const uiState = (s.instanceUIState as Record<string, unknown>) ?? null;
+
+  const byId =
+    (conversations?.byConversationId as Record<
+      string,
+      Record<string, unknown>
+    >) ?? {};
+  const inputById =
+    (userInput?.byConversationId as Record<string, Record<string, unknown>>) ??
+    {};
+  const uiById =
+    (uiState?.byConversationId as Record<string, Record<string, unknown>>) ??
+    {};
+
+  // Union of conversation ids across all three slices — typed input can exist
+  // for a conversation the conversations slice hasn't fully registered yet.
+  const ids = new Set<string>([
+    ...Object.keys(byId),
+    ...Object.keys(inputById),
+    ...Object.keys(uiById),
+  ]);
+
+  const rows: AgentConversationDiag[] = [];
+  for (const conversationId of ids) {
+    const conv = byId[conversationId] ?? {};
+    const input = inputById[conversationId] ?? {};
+    const ui = uiById[conversationId] ?? {};
+
+    const rawText = typeof input.text === "string" ? input.text : null;
+    const truncated = !!rawText && rawText.length > MAX_INPUT_TEXT_CHARS;
+    const parts = Array.isArray(input.messageParts) ? input.messageParts : [];
+
+    rows.push({
+      conversationId,
+      agentId: conv.agentId ?? ui.agentId ?? null,
+      agentName: ui.agentName ?? ui.displayNameOverride ?? null,
+      title: conv.title ?? ui.displayTitle ?? null,
+      status: conv.status ?? null,
+      displayMode: ui.displayMode ?? null,
+      inputText: truncated ? rawText!.slice(0, MAX_INPUT_TEXT_CHARS) : rawText,
+      inputTextLength: rawText?.length ?? 0,
+      inputTextTruncated: truncated,
+      messagePartCount: parts.length,
+      hasPendingInput: !!rawText && rawText.trim().length > 0,
+    });
+  }
+
+  // Conversations with work at risk (typed input) first, then by recency-ish
+  // (we have no timestamp here, so input-bearing → has parts → rest).
+  rows.sort((a, b) => {
+    if (a.hasPendingInput !== b.hasPendingInput)
+      return a.hasPendingInput ? -1 : 1;
+    return b.inputTextLength - a.inputTextLength;
+  });
+
+  return {
+    conversationCount: rows.length,
+    conversations: rows.slice(0, MAX_DIAG_CONVERSATIONS),
+  };
 }
 
 function getNextBuildId(): string | null {
@@ -268,6 +372,7 @@ export function collectOverlayDiagnostics(
       globallyHidden: wm.globallyHidden ?? wm.hidden ?? null,
     },
     appContext: s.appContext ?? null,
+    agentExecution: collectAgentExecution(s),
     user: {
       id: user.id,
       isAdmin: user.isAdmin,

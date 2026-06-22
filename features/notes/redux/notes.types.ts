@@ -161,6 +161,8 @@ export interface NotesInstance {
    * mount / URL hydration), so auto-move stays disabled.
    */
   tabInteractionAt: number | null;
+  /** Version-history side panel open in THIS instance (per-instance, persistable). */
+  historyOpen: boolean;
 }
 
 /**

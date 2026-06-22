@@ -23,6 +23,7 @@ import { TileProjectMarker } from "../tile/TileProjectMarker";
 import { TileTabContent } from "../tile/TileTabContent";
 import { TileMetricChips } from "../tile/TileMetricChips";
 import { TileOptionsMenu } from "../tile/TileOptionsMenu";
+import { TileCopyForAiButton } from "../shared/TileCopyForAiButton";
 import { PulseGlyph } from "../tile/PulseGlyph";
 import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
@@ -102,6 +103,7 @@ export function StageTile({
         </div>
 
         <div className="shrink-0 flex items-center gap-1">
+          <TileCopyForAiButton tileId={tileId} />
           <TileContextOverride tileId={tileId} />
           {actions.canExpand ? (
             <button
@@ -113,7 +115,12 @@ export function StageTile({
               <Maximize2 className="size-4" />
             </button>
           ) : null}
-          <TileOptionsMenu actions={actions} isStaged size="md" />
+          <TileOptionsMenu
+            actions={actions}
+            tileId={tileId}
+            isStaged
+            size="md"
+          />
         </div>
       </div>
 

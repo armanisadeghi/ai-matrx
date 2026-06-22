@@ -31,6 +31,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import remarkMatrxVariable from "@/components/mardown-display/chat-markdown/matrx-variables/remarkMatrxVariable";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
+import {
+  TableRenderPathDiagnostic,
+  type TableRenderDiagnosticContext,
+} from "@/components/mardown-display/blocks/table/TableRenderPathDiagnostic";
 
 const INLINE_VARIABLE_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_.]*)\}\}/g;
 
@@ -156,6 +160,8 @@ interface BasicMarkdownContentProps {
   onEditRequest?: () => void;
   messageId?: string;
   showCopyButton?: boolean;
+  /** Admin-only table fallback diagnostics (see TableRenderPathDiagnostic). */
+  tableRenderDiagnostic?: Omit<TableRenderDiagnosticContext, "renderPath">;
 }
 
 export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
@@ -164,6 +170,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
   onEditRequest,
   messageId,
   showCopyButton = true,
+  tableRenderDiagnostic,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
 
@@ -813,10 +820,23 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         <MatrxVariableInline {...props} />
       ),
       table: ({ node, children, ...props }: any) => (
-        <div className="my-3 overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm border-collapse" {...props}>
-            {children}
-          </table>
+        <div>
+          <div className="my-3 overflow-x-auto rounded-md border border-border">
+            <table className="w-full text-sm border-collapse" {...props}>
+              {children}
+            </table>
+          </div>
+          {tableRenderDiagnostic ? (
+            <TableRenderPathDiagnostic
+              context={{
+                ...tableRenderDiagnostic,
+                renderPath: "BasicMarkdownContent",
+                contentPreview:
+                  tableRenderDiagnostic.contentPreview ??
+                  content.slice(0, 120).replace(/\n/g, " "),
+              }}
+            />
+          ) : null}
         </div>
       ),
       thead: ({ node, children, ...props }: any) => (
@@ -852,8 +872,8 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         </td>
       ),
     }),
-    [],
-  ); // Empty deps - LinkWrapper is stable
+    [tableRenderDiagnostic, content],
+  );
 
   return (
     <div

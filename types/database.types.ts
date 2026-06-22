@@ -7946,6 +7946,47 @@ export type Database = {
           },
         ]
       }
+      cx_conversation_documents: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          document_id: string
+          enabled: boolean
+          id: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          document_id: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          document_id?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "cx_working_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cx_media: {
         Row: {
           conversation_id: string | null
@@ -8948,9 +8989,10 @@ export type Database = {
       cx_working_documents: {
         Row: {
           content: string
-          conversation_id: string
+          conversation_id: string | null
           created_at: string
           id: string
+          kind: string
           title: string
           updated_at: string
           user_id: string
@@ -8958,9 +9000,10 @@ export type Database = {
         }
         Insert: {
           content?: string
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
+          kind?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -8968,9 +9011,10 @@ export type Database = {
         }
         Update: {
           content?: string
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
+          kind?: string
           title?: string
           updated_at?: string
           user_id?: string

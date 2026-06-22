@@ -28,6 +28,7 @@ import { TileTabSelect } from "./TileTabSelect";
 import { TileTabContent } from "./TileTabContent";
 import { TileMetricChips } from "./TileMetricChips";
 import { TileOptionsMenu } from "./TileOptionsMenu";
+import { TileCopyForAiButton } from "../shared/TileCopyForAiButton";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
 import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
 import { useRoomView } from "../room/roomViewContext";
@@ -104,6 +105,9 @@ export function WarRoomTile({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          <span onClick={(e) => e.stopPropagation()}>
+            <TileCopyForAiButton tileId={tileId} />
+          </span>
           <TileTabSelect
             active={shownTab}
             flavor={flavor}
@@ -124,6 +128,7 @@ export function WarRoomTile({
 
           <TileOptionsMenu
             actions={actions}
+            tileId={tileId}
             onStage={onStage}
             onOpenContext={() => setContextOpen(true)}
             contextActive={metrics.contextOverridden}

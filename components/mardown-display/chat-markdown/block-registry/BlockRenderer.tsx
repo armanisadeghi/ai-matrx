@@ -250,10 +250,25 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           onEditRequest={onContentChange ? handleOpenEditor : undefined}
           messageId={messageId}
           showCopyButton={false}
+          tableRenderDiagnostic={{
+            blockType: block.type,
+            conversationId,
+            messageId,
+            requestId,
+          }}
         />
       );
     },
-    [index, isStreamActive, onContentChange, handleOpenEditor, messageId],
+    [
+      index,
+      isStreamActive,
+      onContentChange,
+      handleOpenEditor,
+      messageId,
+      block.type,
+      conversationId,
+      requestId,
+    ],
   );
 
   // ── Unified artifact renderer (Wave B) ───────────────────────────────────

@@ -1,67 +1,72 @@
 /**
  * Instance Working Document selectors.
  *
- * Per-property selectors keyed by conversationId. All return either primitives
- * or stable stored references (Immer only swaps a reference when that exact
- * sub-object is mutated), so none need `createSelector` memoisation.
+ * Per-property selectors keyed by `(conversationId, kind)`. `kind` defaults to
+ * "working" so every existing call site (which passes only a conversationId)
+ * is unchanged. All return primitives or stable stored references (Immer only
+ * swaps a reference when that exact sub-object is mutated), so none need
+ * `createSelector` memoisation.
  */
 
 import type { RootState } from "@/lib/redux/store";
 import {
+  DEFAULT_DOC_KIND,
   NO_BINDING,
+  workingDocKey,
   type InstanceWorkingDocumentState,
   type WorkingDocumentBinding,
+  type WorkingDocumentKind,
 } from "./instance-working-document.slice";
 
+const entryOf = (
+  state: RootState,
+  conversationId: string,
+  kind: WorkingDocumentKind,
+): InstanceWorkingDocumentState | undefined =>
+  state.instanceWorkingDocument.byKey[workingDocKey(conversationId, kind)];
+
 export const selectWorkingDocEntry =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): InstanceWorkingDocumentState | undefined =>
-    state.instanceWorkingDocument.byConversationId[conversationId];
+    entryOf(state, conversationId, kind);
 
 export const selectWorkingDocEnabled =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): boolean =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.enabled ??
-    // Default ON: the working document is a default collaboration surface the
-    // user can turn off — not a manual opt-in. An explicit `false` (user
-    // toggled off) is always respected; only the absence of an entry defaults
-    // to enabled.
-    true;
+    // OPT-IN: off unless an entry says otherwise. The durable on/off is
+    // restored from the cx_conversation_documents junction on mount; absent
+    // any entry the document is off.
+    entryOf(state, conversationId, kind)?.enabled ?? false;
 
 export const selectWorkingDocContent =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): string =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.content ??
-    "";
+    entryOf(state, conversationId, kind)?.content ?? "";
 
 export const selectWorkingDocTitle =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): string =>
     // Empty by default — the document is "unnamed" until the user names it.
-    // Display surfaces fall back to "Working document" for an empty title; we
-    // never persist that fallback as a real title.
-    state.instanceWorkingDocument.byConversationId[conversationId]?.title ?? "";
+    // Display surfaces fall back ("Working document" / "Scratchpad") for an
+    // empty title; we never persist that fallback as a real title.
+    entryOf(state, conversationId, kind)?.title ?? "";
 
 export const selectWorkingDocBinding =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): WorkingDocumentBinding =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.binding ??
-    NO_BINDING;
+    entryOf(state, conversationId, kind)?.binding ?? NO_BINDING;
 
 export const selectWorkingDocSaving =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): boolean =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.saving ??
-    false;
+    entryOf(state, conversationId, kind)?.saving ?? false;
 
 export const selectWorkingDocError =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): string | null =>
-    state.instanceWorkingDocument.byConversationId[conversationId]?.lastError ??
-    null;
+    entryOf(state, conversationId, kind)?.lastError ?? null;
 
 export const selectWorkingDocAgentRevision =
-  (conversationId: string) =>
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): number =>
-    state.instanceWorkingDocument.byConversationId[conversationId]
-      ?.agentRevision ?? 0;
+    entryOf(state, conversationId, kind)?.agentRevision ?? 0;

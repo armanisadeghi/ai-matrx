@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
+import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
@@ -162,7 +163,11 @@ function groupConsecutiveDbTools(segments: ContentSegment[]): GroupedSegment[] {
       }
       out.push(
         run.length >= TOOL_BATCH_MIN
-          ? { type: "db_tool_batch", segments: run, key: `db-tool-batch-${run[0].callId}` }
+          ? {
+              type: "db_tool_batch",
+              segments: run,
+              key: `db-tool-batch-${run[0].callId}`,
+            }
           : seg,
       );
       i = j;
@@ -315,7 +320,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
       const clientBlocks: RenderBlock[] = reduxRenderBlocks
         .filter((rb) => rb.content?.trim())
         .map(renderBlockToContentBlock);
-      return { blocks: clientBlocks, blockError: false };
+      return {
+        blocks: expandTextBlocksInList(clientBlocks),
+        blockError: false,
+      };
     }
 
     // New protocol: server already processed the blocks — convert to RenderBlock shape.
@@ -342,7 +350,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
           const textBlocks = splitContentIntoBlocksV2(currentContent);
           const parsed = Array.isArray(textBlocks) ? textBlocks : [];
           return {
-            blocks: [...parsed, ...supplementaryBlocks],
+            blocks: [...expandTextBlocksInList(parsed), ...supplementaryBlocks],
             blockError: false,
           };
         } catch {
@@ -363,7 +371,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
     try {
       const result = splitContentIntoBlocksV2(currentContent);
 
-      return { blocks: Array.isArray(result) ? result : [], blockError: false };
+      return {
+        blocks: expandTextBlocksInList(Array.isArray(result) ? result : []),
+        blockError: false,
+      };
     } catch (error) {
       console.error(
         "[MarkdownStream] Error splitting content into blocks:",

@@ -62,6 +62,7 @@ import {
 import { EditableTitle } from "../shared/EditableTitle";
 import { SessionContextButton } from "./SessionContextButton";
 import { RoomProjectButton } from "./RoomProjectButton";
+import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
 import { RoomIdentityButton } from "./RoomIdentityButton";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
@@ -228,6 +229,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
             {ready ? <InstrumentProjector /> : null}
             {ready ? <DensityDial /> : null}
             <RoomIdentityButton sessionId={sessionId} />
+            <RoomProjectCopyForAiButton sessionId={sessionId} />
             <RoomProjectButton sessionId={sessionId} />
             <SessionContextButton sessionId={sessionId} />
             <button

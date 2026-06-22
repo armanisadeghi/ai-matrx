@@ -22,6 +22,11 @@ import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/cha
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import {
+  registerSurface,
+  unregisterSurface,
+} from "@/features/agents/redux/surfaces/surfaces.slice";
+import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface QuickChatSheetProps {
@@ -30,7 +35,16 @@ interface QuickChatSheetProps {
 
 const SOURCE_FEATURE = "quick-chat";
 const HISTORY_SCOPE = "quick-chat";
-const LOADED_SURFACE_KEY = "quick-chat:loaded";
+/** Registry key for fork/retry routing — distinct from per-conversation focus keys. */
+const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";
+
+function liveSurfaceKey(agentId: string, session: number): string {
+  return `quick-chat:live:${agentId}:${session}`;
+}
+
+function loadedSurfaceKey(conversationId: string): string {
+  return `quick-chat:loaded:${conversationId}`;
+}
 
 /**
  * QuickChatSheet — pop-over chat that mirrors the live `/chat` route.
@@ -62,6 +76,9 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
 
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const activeSurfaceKeyRef = useRef<string | null>(null);
+
   // Opening the history sidebar should GROW the panel (push its left edge into
   // the page) rather than eat the chat's width — when there's room. The width
   // boost is released when the sidebar closes or the panel unmounts.
@@ -72,12 +89,28 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
     return () => surface?.requestWidthBoost(0);
   }, [showHistory, surface]);
 
+  // Register as a widget surface so fork/retry/navigation intents stay scoped
+  // to Quick Chat and never bleed into the `/chat` page surface.
+  useEffect(() => {
+    dispatch(
+      registerSurface({
+        surfaceKey: QUICK_CHAT_PANEL_SURFACE,
+        kind: "widget",
+      }),
+    );
+    return () => {
+      dispatch(unregisterSurface(QUICK_CHAT_PANEL_SURFACE));
+      const key = activeSurfaceKeyRef.current;
+      if (key) dispatch(clearFocus(key));
+    };
+  }, [dispatch]);
+
   // Live launcher — gated off while viewing a loaded (history) conversation.
   // The surface key carries `session` so "New chat" / agent-switch always mints
   // a fresh conversation rather than reviving the previous one.
-  const liveSurfaceKey = `quick-chat:${agentId}:${session}`;
+  const currentLiveSurfaceKey = liveSurfaceKey(agentId, session);
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
-    surfaceKey: liveSurfaceKey,
+    surfaceKey: currentLiveSurfaceKey,
     sourceFeature: SOURCE_FEATURE,
     ready: !loadedConversationId,
     config: { responseDensity: "compact" },
@@ -85,7 +118,11 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
 
   const isLoaded = !!loadedConversationId;
   const conversationId = loadedConversationId ?? liveConversationId ?? null;
-  const surfaceKey = isLoaded ? LOADED_SURFACE_KEY : liveSurfaceKey;
+  const surfaceKey = isLoaded
+    ? loadedSurfaceKey(loadedConversationId)
+    : currentLiveSurfaceKey;
+
+  activeSurfaceKeyRef.current = surfaceKey;
 
   // Drop the cursor straight into the message box once the conversation is
   // ready — the user came here to type, not to click. The input renders a beat
@@ -109,6 +146,7 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
   }, [conversationId]);
 
   const handleNewChat = useCallback(() => {
+    loadAbortRef.current?.abort();
     setLoadedConversationId(null);
     setSession((s) => s + 1);
   }, []);
@@ -116,6 +154,7 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
   const handleSelectAgent = useCallback(
     (id: string) => {
       if (id === agentId && !loadedConversationId) return;
+      loadAbortRef.current?.abort();
       setLoadedConversationId(null);
       setAgentId(id);
       setSession((s) => s + 1);
@@ -125,14 +164,22 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
 
   const handleOpenConversation = useCallback(
     async (conv: ConversationListItem) => {
+      const targetSurfaceKey = loadedSurfaceKey(conv.conversationId);
+
+      loadAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      loadAbortRef.current = ctrl;
+
       try {
         if (conv.agentId) {
+          setAgentId(conv.agentId);
           await dispatch(
             createManualInstance({
               agentId: conv.agentId,
               conversationId: conv.conversationId,
               apiEndpointMode: "agent",
               responseDensity: "compact",
+              sourceFeature: SOURCE_FEATURE,
             }),
           )
             .unwrap()
@@ -140,15 +187,23 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
               /* instance may already exist — loadConversation handles it */
             });
         }
+
+        if (ctrl.signal.aborted) return;
+
         await dispatch(
           loadConversation({
             conversationId: conv.conversationId,
-            surfaceKey: LOADED_SURFACE_KEY,
+            surfaceKey: targetSurfaceKey,
+            signal: ctrl.signal,
           }),
-        );
+        ).unwrap();
+
+        if (ctrl.signal.aborted) return;
+
         setLoadedConversationId(conv.conversationId);
-        setShowHistory(false);
+        // Keep the history sidebar open — closing it felt like a full panel reset.
       } catch (error) {
+        if (ctrl.signal.aborted) return;
         console.error("[QuickChatSheet] Failed to open conversation:", error);
       }
     },
@@ -209,8 +264,10 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
           <div className="w-64 shrink-0 border-r border-border">
             <ChatHistorySidebar
               scopeId={HISTORY_SCOPE}
+              surfaceId="chat"
               activeConversationId={conversationId}
               onOpenConversation={handleOpenConversation}
+              surfaceKey={QUICK_CHAT_PANEL_SURFACE}
               excludeSourceFeatures={["voice-agent"]}
             />
           </div>
@@ -220,7 +277,6 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
           {conversationId ? (
             <div className="flex min-h-0 flex-1 overflow-hidden justify-center">
               <AgentConversationColumn
-                key={conversationId}
                 conversationId={conversationId}
                 surfaceKey={surfaceKey}
                 constrainWidth

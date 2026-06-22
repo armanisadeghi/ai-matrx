@@ -136,6 +136,12 @@ export function lazyOverlay<P extends object = Record<string, never>>(
   function LazyOverlayComponent(props: P) {
     const [attempt, setAttempt] = React.useState(0);
     const Lazy = getLazy(attempt);
+    // Every overlay rendered by the OverlayController is handed an `onClose`
+    // that dispatches `closeOverlay({overlayId, instanceId})`. The error
+    // boundary sits between the controller and the component, so without this
+    // the fallback has no way to dismiss the overlay — the user is trapped and
+    // forced to reload. Forward it so "Close" actually closes this instance.
+    const onClose = (props as { onClose?: () => void } | undefined)?.onClose;
     console.log(
       "[Track Overlay] B1, lazyOverlay.tsx — overlay boundary rendering (mounting lazy child)",
       { modulePath, attempt },
@@ -143,6 +149,7 @@ export function lazyOverlay<P extends object = Record<string, never>>(
     return (
       <OverlayErrorBoundary
         modulePath={modulePath}
+        onClose={typeof onClose === "function" ? onClose : undefined}
         onRetry={() => {
           console.log(
             "[Track Overlay] B8, lazyOverlay.tsx — retry requested, re-importing with fresh loadable",

@@ -20,9 +20,12 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
+import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 
 interface WorkingDocumentPanelProps {
   conversationId: string;
+  /** Which document this panel edits. Default "working". */
+  kind?: WorkingDocumentKind;
   className?: string;
   /** Show the "Open as window" button in the header. Default true. */
   showOpenInWindow?: boolean;
@@ -38,6 +41,7 @@ interface WorkingDocumentPanelProps {
 
 export function WorkingDocumentPanel({
   conversationId,
+  kind = "working",
   className,
   showOpenInWindow = true,
   showEnableToggle = true,
@@ -54,7 +58,11 @@ export function WorkingDocumentPanel({
     flush,
     setEnabled,
     openAsWindow,
-  } = useWorkingDocument(conversationId);
+  } = useWorkingDocument(conversationId, kind);
+
+  const isScratch = kind === "scratch";
+  const docNoun = isScratch ? "scratchpad" : "working document";
+  const docTitleFallback = isScratch ? "Scratchpad" : "Working document";
 
   const [hasCopied, setHasCopied] = useState(false);
 
@@ -80,10 +88,12 @@ export function WorkingDocumentPanel({
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-medium text-foreground">
-              {title || "Working document"}
+              {title || docTitleFallback}
             </span>
             <span className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-              {isBound ? (
+              {isScratch ? (
+                "Private to you — the agent can read it, but never edits it"
+              ) : isBound ? (
                 <>
                   <Link2 className="h-3 w-3 shrink-0" />
                   <span className="truncate">
@@ -91,7 +101,7 @@ export function WorkingDocumentPanel({
                   </span>
                 </>
               ) : (
-                "Not saved — bind a note to keep it"
+                "Auto-saved to this conversation"
               )}
             </span>
           </div>
@@ -160,7 +170,11 @@ export function WorkingDocumentPanel({
             value={draft}
             onChange={(e) => onChange(e.target.value)}
             onBlur={flush}
-            placeholder="Empty. Ask the agent to draft or rework this document — or type here. Your edits and the agent's stay in sync each round."
+            placeholder={
+              isScratch
+                ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."
+                : "Empty. Ask the agent to draft or rework this document — or type here. Your edits and the agent's stay in sync each round."
+            }
             wrapperClassName="flex min-h-0 flex-1 flex-col p-3"
             className="h-full min-h-0 flex-1 resize-none border-0 bg-transparent text-base leading-relaxed text-foreground shadow-none focus-visible:ring-0"
           />
@@ -169,15 +183,16 @@ export function WorkingDocumentPanel({
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
           <FileText className="h-8 w-8 text-muted-foreground/40" />
           <p className="max-w-xs text-sm text-muted-foreground">
-            The working document is off. Turn it on to collaborate with the
-            agent on a shared, living document.
+            {isScratch
+              ? "The scratchpad is off. Turn it on for a private space the agent can read but never edits."
+              : "The working document is off. Turn it on to collaborate with the agent on a shared, living document."}
           </p>
           <button
             type="button"
             onClick={() => setEnabled(true)}
             className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
           >
-            Enable working document
+            Enable {docNoun}
           </button>
         </div>
       )}

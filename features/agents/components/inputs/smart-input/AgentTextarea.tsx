@@ -85,6 +85,24 @@ export function AgentTextarea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isExpanded, setIsExpanded] = useState(false);
+  // When collapsing back from expanded mode (e.g. after submit) we want a
+  // longer, eased transition for a smooth glide down — distinct from the fast
+  // per-keystroke auto-resize, which must stay snappy to avoid flicker.
+  const [isCollapsing, setIsCollapsing] = useState(false);
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const collapseSmoothly = useCallback(() => {
+    setIsCollapsing(true);
+    setIsExpanded(false);
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    collapseTimer.current = setTimeout(() => setIsCollapsing(false), 350);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    };
+  }, []);
 
   // Redux — primitive selectors, no object churn
   const inputText = useAppSelector(selectUserInputText(conversationId));
@@ -112,6 +130,15 @@ export function AgentTextarea({
 
   // Undo/redo — intercepts Cmd+Z / Ctrl+Z
   useInstanceInputUndoRedo({ conversationId });
+
+  // After a submit the input is emptied, so expanded mode no longer makes
+  // sense — glide it back down smoothly. Triggered when the submission enters
+  // its in-flight ("pending") phase while the box is expanded.
+  useEffect(() => {
+    if (isSubmitting && isExpanded) {
+      collapseSmoothly();
+    }
+  }, [isSubmitting, isExpanded, collapseSmoothly]);
 
   // Expand icon: show whenever expanded OR text is long enough to need it (hidden in singleRow)
   const showExpand =
@@ -271,7 +298,11 @@ export function AgentTextarea({
           onChange={(e) => handleTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholderText}
-          className="w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 transition-[height] duration-150 ease-out motion-reduce:transition-none"
+          className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 transition-[height] motion-reduce:transition-none ${
+            isCollapsing
+              ? "duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              : "duration-150 ease-out"
+          }`}
           style={{ minHeight: compact ? 28 : 40 }}
           rows={1}
           data-agent-main-input

@@ -3417,6 +3417,11 @@ export default function OverlayController() {
       {/* notesWindow — multi-instance */}
       {instancesById.notesWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
+        // windowInstanceId falls back to the overlay instance id (not undefined)
+        // so each overlay instance maps to a DISTINCT notes instance instead of
+        // every window collapsing onto notes-default. (Non-"default" ids don't yet
+        // round-trip through the registry's static urlSync key "notes" — fine until
+        // multi-instance URL sync lands.)
         return (
           <NotesWindow
             key={inst.instanceId}
@@ -3432,7 +3437,7 @@ export default function OverlayController() {
             windowInstanceId={
               typeof data?.windowInstanceId === "string"
                 ? data.windowInstanceId
-                : undefined
+                : inst.instanceId
             }
           />
         );

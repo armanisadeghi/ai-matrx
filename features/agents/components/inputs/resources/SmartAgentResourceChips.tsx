@@ -26,13 +26,10 @@ import {
   Code2,
   Webhook,
   Folder,
-  Layers,
   LayoutGrid,
   Captions,
   AudioLines,
   Notebook,
-  X,
-  FileText as FileTextIcon,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
@@ -42,12 +39,6 @@ import {
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import {
-  selectWorkingDocEnabled,
-  selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { setWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -60,7 +51,6 @@ import { DataRefHoverPreview } from "@/features/agents/components/previews/DataR
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { useActiveContextLayerItems } from "@/features/agents/components/context-items/useActiveContextLayerItems";
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { DataRef } from "@/features/agents/types/message-types";
@@ -339,57 +329,6 @@ function wrapWithPreview(
   }
 }
 
-/**
- * Compact, always-present context indicator — deliberately much smaller than a
- * ResourceAttachmentTile. Context (working document, active scope context) is
- * ambient and persistent, so it shows as a slim pill: an icon, a short label,
- * and a hover-revealed remove X. Click reveals the full detail in the drawer.
- */
-function ContextPill({
-  icon: Icon,
-  label,
-  onClick,
-  onRemove,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  onClick: () => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="group inline-flex h-6 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 pl-2 pr-1 text-[11px] font-medium text-foreground transition-colors hover:bg-primary/10">
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex min-w-0 cursor-pointer items-center gap-1"
-      >
-        <Icon className="h-3 w-3 shrink-0 text-primary" />
-        <span className="max-w-[120px] truncate">{label}</span>
-      </button>
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label={`Remove ${label}`}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onRemove();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            onRemove();
-          }
-        }}
-        className="ml-0.5 inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground/70 opacity-0 transition-opacity hover:bg-black/10 hover:text-foreground group-hover:opacity-100 dark:hover:bg-white/10"
-      >
-        <X className="h-2.5 w-2.5" />
-      </span>
-    </div>
-  );
-}
-
 interface SmartAgentResourceChipsProps {
   conversationId: string;
 }
@@ -400,40 +339,14 @@ export function SmartAgentResourceChips({
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
-  const workingDocEnabled = useAppSelector(
-    selectWorkingDocEnabled(conversationId),
-  );
-  const workingDocTitle = useAppSelector(selectWorkingDocTitle(conversationId));
   const drawer = useContextItemDrawer();
 
-  // The scope-selection system (org / scopes / project / task) collapses into a
-  // SINGLE "Context" chip — clicking it opens the drawer and the user navigates
-  // each layer prev/next, exactly like any other grouped context items.
-  const contextLayers = useActiveContextLayerItems(conversationId);
-
-  // The live working document is CONTEXT (re-sent every turn), not an
-  // attachment — when enabled it leads the strip as a differentiated chip and
-  // joins the drawer's nav list.
-  const workingDocItem: ContextDrawerItem | null = workingDocEnabled
-    ? {
-        id: "working_document",
-        blockType: "working_document",
-        typeLabel: "Context",
-        title: workingDocTitle?.trim() || "Working document",
-        icon: FileTextIcon,
-        themeKey: "input_document",
-        origin: "block",
-        conversationId,
-        editable: true,
-        refs: {},
-        raw: null,
-      }
-    : null;
-
-  const drawerItems: ContextDrawerItem[] = [
-    ...(workingDocItem ? [workingDocItem] : []),
-    ...resources.flatMap((r) => normalizeResource(r, conversationId)),
-  ];
+  // Only real attachments/resources render here now. Working document, the
+  // scratchpad, and active scope context are no longer intrusive composer chips
+  // — their on/off state shows as a single dot on the ContextDocsMenu icon.
+  const drawerItems: ContextDrawerItem[] = resources.flatMap((r) =>
+    normalizeResource(r, conversationId),
+  );
 
   const openDrawerForResource = useCallback(
     (resourceId: string) => {
@@ -442,29 +355,6 @@ export function SmartAgentResourceChips({
     },
     [drawerItems, drawer],
   );
-
-  const openWorkingDoc = useCallback(() => {
-    drawer.openAt(drawerItems, 0);
-  }, [drawerItems, drawer]);
-
-  const openContextLayers = useCallback(() => {
-    drawer.openAt(contextLayers.items, 0);
-  }, [contextLayers.items, drawer]);
-
-  // X on the working-document chip turns it OFF for this conversation. Because
-  // `enabled` is now an explicit `false` on the instance, the default-on
-  // fallback never re-enables it — it stays removed for the session (only a
-  // brand-new instance, or the user toggling it back on, brings it back).
-  const removeWorkingDoc = useCallback(() => {
-    dispatch(setWorkingDocEnabled({ conversationId, enabled: false }));
-  }, [dispatch, conversationId]);
-
-  // X on the single "Context" chip clears the active scope-selection context
-  // (org / scopes / project / task). This is a deliberate, user-initiated clear
-  // — the same action as ClearContextButton — so nothing re-applies it.
-  const removeContextLayers = useCallback(() => {
-    dispatch(clearContext());
-  }, [dispatch]);
 
   const handleRemove = useCallback(
     (resourceId: string) => {
@@ -487,27 +377,10 @@ export function SmartAgentResourceChips({
   );
 
   if (!showAttachments) return null;
-  if (resources.length === 0 && !workingDocItem && contextLayers.count === 0)
-    return null;
+  if (resources.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-1.5 px-2 pt-1.5 pb-0.5 shrink-0">
-      {contextLayers.count > 0 && (
-        <ContextPill
-          icon={Layers}
-          label={contextLayers.summary}
-          onClick={openContextLayers}
-          onRemove={removeContextLayers}
-        />
-      )}
-      {workingDocItem && (
-        <ContextPill
-          icon={FileTextIcon}
-          label={workingDocItem.title}
-          onClick={openWorkingDoc}
-          onRemove={removeWorkingDoc}
-        />
-      )}
       <AnimatePresence mode="popLayout">
         {resources.map((resource) => (
           <ResourceChip

@@ -27,9 +27,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { TileActions } from "@/features/war-room/hooks/useTileActions";
+import { useTileCopyForAiTarget } from "../shared/TileCopyForAiButton";
+import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
 export function TileOptionsMenu({
   actions,
+  tileId,
   onStage,
   isStaged,
   size = "sm",
@@ -37,6 +41,7 @@ export function TileOptionsMenu({
   contextActive,
 }: {
   actions: TileActions;
+  tileId?: string;
   onStage?: () => void;
   isStaged?: boolean;
   size?: "sm" | "md";
@@ -45,6 +50,8 @@ export function TileOptionsMenu({
   /** Highlights the Context item + labels it "overridden" when this tile overrides the session context. */
   contextActive?: boolean;
 }) {
+  const copyTarget = useTileCopyForAiTarget(tileId ?? "");
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -76,6 +83,31 @@ export function TileOptionsMenu({
               )}
             />
             {contextActive ? "Context (overridden)" : "Context"}
+          </DropdownMenuItem>
+        ) : null}
+        {tileId && copyTarget ? (
+          <DropdownMenuItem
+            className="gap-2 p-0 focus:bg-transparent"
+            onSelect={(e) => e.preventDefault()}
+            asChild
+          >
+            {copyTarget.kind === "project" ? (
+              <ProjectCopyForAiButton
+                projectId={copyTarget.id}
+                projectName={copyTarget.name}
+                location="War Room — tile menu"
+                size="sm"
+                className="h-8 w-full justify-start rounded-none px-2 font-normal hover:bg-accent"
+              />
+            ) : (
+              <TaskCopyForAiButton
+                taskId={copyTarget.id}
+                taskTitle={copyTarget.name}
+                location="War Room — tile menu"
+                size="sm"
+                className="h-8 w-full justify-start rounded-none px-2 font-normal hover:bg-accent"
+              />
+            )}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem onClick={actions.togglePin} className="gap-2">

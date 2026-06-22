@@ -11,16 +11,19 @@
  * - **Voice input** — mic toggle with live streaming transcription, audio-level
  *   glow, and a recording-protection modal that warns before unmount while a
  *   recording or transcription is in flight.
- * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and the
- *   AI "Clean up" action (and the natural home for future actions). It floats
- *   over the text (no reserved right gutter) and only appears while the mouse
- *   is over the field; it never shows from focus alone, so it stays out of the
- *   way while typing.
- * - **AI "Clean up"** — ON by default. Sends the full current text to the
- *   shared cleanup agent (the `clean` role on `matrx-user/transcripts-cleanup`,
- *   overridable via `cleanupAgentId`) and streams the result into a popover.
- *   The textarea is never mutated until the user clicks Apply. Pass
- *   `enableCleanup={false}` to exclude it (Copy stays).
+ * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
+ *   agent actions (Clean up, Help with this…, Custom Agent). It floats over the
+ *   text (no reserved right gutter) and only appears while the mouse is over
+ *   the field; it never shows from focus alone, so it stays out of the way
+ *   while typing.
+ * - **Agent actions** — each runs an agent over the current text, streams the
+ *   result into a popover, and replaces the field on Apply (never auto-mutates):
+ *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
+ *     agent from the `clean` role on `matrx-user/transcripts-cleanup`.
+ *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Placeholder
+ *     default: General Chat (`helpAgentId` to override).
+ *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; no
+ *     preset default until `customAgentId` is set (agent filter TBD).
  * - **Submit button** — opt-in via `onSubmit`. Renders a primary-colored Send
  *   button at bottom-right. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit (Shift+Enter still inserts newline).
@@ -78,6 +81,8 @@ import {
   Sparkles,
   RotateCcw,
   X,
+  MessageCircle,
+  Bot,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
@@ -108,7 +113,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useProTextareaCleanup } from "./useProTextareaCleanup";
+import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
+import {
+  isEmbeddedProTextareaAgentAction,
+  isProTextareaAgentActionEnabled,
+  PRO_TEXTAREA_AGENT_ACTIONS,
+  type ProTextareaAgentActionContext,
+  type ProTextareaAgentActionId,
+} from "./proTextareaAgentActions";
+import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 
 /** Real HTMLTextAreaElement with optional expando methods set by ProTextarea. */
 export interface ProTextareaElement extends HTMLTextAreaElement {
@@ -147,6 +162,15 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    * rest ride as ad-hoc context entries (same handling as the cleanup page).
    */
   cleanupContextItems?: SessionContextItem[];
+  /** "Help with this…" agent action in the "…" menu. OFF by default. */
+  enableHelpWithThis?: boolean;
+  /** Override the help default (General Chat until a surface role ships). */
+  helpAgentId?: string | null;
+  helpContextItems?: SessionContextItem[];
+  /** "Custom Agent" action — same flow, separate entry for a future agent filter. */
+  enableCustomAgent?: boolean;
+  customAgentId?: string | null;
+  customAgentContextItems?: SessionContextItem[];
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -204,6 +228,12 @@ export const ProTextarea = React.forwardRef<
       enableCleanup = true,
       cleanupAgentId,
       cleanupContextItems,
+      enableHelpWithThis = false,
+      helpAgentId,
+      helpContextItems,
+      enableCustomAgent = false,
+      customAgentId,
+      customAgentContextItems,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -239,48 +269,75 @@ export const ProTextarea = React.forwardRef<
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the
-    // action menu and the cleanup view. A single dismissable layer avoids the
-    // dropdown-vs-popover focus war that made the cleanup view flash + vanish.
-    const cleanup = useProTextareaCleanup({ agentId: cleanupAgentId });
+    // action menu and an agent-action view. A single dismissable layer avoids
+    // the dropdown-vs-popover focus war that made the view flash + vanish.
+    const agentAction = useProTextareaAgentAction();
+    const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
+    const cleanupSurfaceAgentId =
+      cleanupSurfaceRoles.roles.clean?.effectiveAgentId ?? null;
+    const agentActionContext = useRef<ProTextareaAgentActionContext>({
+      cleanupAgentId,
+      cleanupSurfaceAgentId,
+      helpAgentId,
+      customAgentId,
+    });
+    agentActionContext.current = {
+      cleanupAgentId,
+      cleanupSurfaceAgentId,
+      helpAgentId,
+      customAgentId,
+    };
+    const agentContextByAction = useRef<
+      Record<ProTextareaAgentActionId, SessionContextItem[]>
+    >({
+      cleanup: cleanupContextItems ?? [],
+      help: helpContextItems ?? cleanupContextItems ?? [],
+      customAgent: customAgentContextItems ?? cleanupContextItems ?? [],
+    });
+    agentContextByAction.current = {
+      cleanup: cleanupContextItems ?? [],
+      help: helpContextItems ?? cleanupContextItems ?? [],
+      customAgent: customAgentContextItems ?? cleanupContextItems ?? [],
+    };
+
     const [menuOpen, setMenuOpen] = useState(false);
-    const [menuMode, setMenuMode] = useState<"menu" | "cleanup">("menu");
-    // Latest context items, mirrored so the async run never reads a stale prop.
-    const cleanupContextRef = useRef<SessionContextItem[]>(
-      cleanupContextItems ?? [],
+    const [menuMode, setMenuMode] = useState<"menu" | ProTextareaAgentActionId>(
+      "menu",
     );
-    cleanupContextRef.current = cleanupContextItems ?? [];
-    // The agent the user has chosen for cleanup (seeded from the surface
-    // default). Nothing runs until they click "Clean up".
-    const [cleanupAgent, setCleanupAgent] = useState<string | null>(null);
-    const [cleanupAgentName, setCleanupAgentName] = useState<string | null>(
+    const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+    const [selectedAgentName, setSelectedAgentName] = useState<string | null>(
       null,
     );
 
-    // Seed the selection from the surface "clean" role default once resolved.
-    useEffect(() => {
-      if (cleanup.defaultAgentId && !cleanupAgent) {
-        setCleanupAgent(cleanup.defaultAgentId);
-      }
-    }, [cleanup.defaultAgentId, cleanupAgent]);
+    const enabledAgentActionIds = (
+      Object.keys(PRO_TEXTAREA_AGENT_ACTIONS) as ProTextareaAgentActionId[]
+    ).filter((id) =>
+      isProTextareaAgentActionEnabled(id, {
+        enableCleanup,
+        enableHelpWithThis,
+        enableCustomAgent,
+      }),
+    );
+    const activeAgentAction =
+      menuMode === "menu" ? null : PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
 
     // Resolve the chosen agent's display name for the picker label — only once
-    // the cleanup view is actually open, so we never fire a per-textarea query
-    // just because the component mounted.
+    // an agent-action view is actually open.
     useEffect(() => {
-      if (!cleanupAgent || menuMode !== "cleanup") return;
+      if (menuMode === "menu" || !selectedAgent) return;
       let cancelled = false;
       void (async () => {
         const { data } = await supabase
           .from("agx_agent")
           .select("name")
-          .eq("id", cleanupAgent)
+          .eq("id", selectedAgent)
           .maybeSingle();
-        if (!cancelled) setCleanupAgentName(data?.name ?? null);
+        if (!cancelled) setSelectedAgentName(data?.name ?? null);
       })();
       return () => {
         cancelled = true;
       };
-    }, [cleanupAgent, menuMode]);
+    }, [selectedAgent, menuMode]);
 
     // Check if audio is available
     useEffect(() => {
@@ -471,53 +528,99 @@ export const ProTextarea = React.forwardRef<
       });
     }, [pushToTextarea]);
 
-    // ── Menu + cleanup actions ─────────────────────────────────────────────
+    // ── Menu + agent actions ───────────────────────────────────────────────
     const handleMenuOpenChange = useCallback(
       (open: boolean) => {
         setMenuOpen(open);
         if (!open) {
-          // Closing the popover always returns it to the action menu and drops
-          // any in-flight cleanup state.
           setMenuMode("menu");
-          cleanup.reset();
+          setSelectedAgent(null);
+          setSelectedAgentName(null);
+          agentAction.reset();
         }
       },
-      [cleanup],
+      [agentAction],
     );
 
-    // Open the cleanup view (agent picker + Run). Never auto-runs.
-    const openCleanupView = useCallback(() => {
+    const openAgentActionView = useCallback(
+      (actionId: ProTextareaAgentActionId) => {
+        const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
+        const text = textareaRef.current?.value ?? valueAsString;
+        if (definition.requiresSourceText && !text.trim()) {
+          toast.info(definition.emptyTextToast);
+          return;
+        }
+        if (actionId === "cleanup") {
+          agentAction.reset();
+        }
+        setMenuMode(actionId);
+        setSelectedAgent(
+          definition.resolveDefaultAgentId(agentActionContext.current),
+        );
+        setSelectedAgentName(null);
+      },
+      [agentAction, valueAsString],
+    );
+
+    const applyEmbeddedSourceText = useCallback(
+      (text: string) => {
+        pushToTextarea(text);
+      },
+      [pushToTextarea],
+    );
+
+    const handleEmbeddedAgentChange = useCallback((agentId: string) => {
+      setSelectedAgent(agentId);
+      setSelectedAgentName(null);
+    }, []);
+
+    const exitEmbeddedAgentView = useCallback(() => {
+      setMenuMode("menu");
+      setSelectedAgent(null);
+      setSelectedAgentName(null);
+    }, []);
+
+    const clearEmbeddedAgent = useCallback(() => {
+      setSelectedAgent(null);
+      setSelectedAgentName(null);
+    }, []);
+
+    const runActiveAgentAction = useCallback(() => {
+      if (menuMode === "menu" || isEmbeddedProTextareaAgentAction(menuMode)) {
+        return;
+      }
+      const definition = PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
       const text = textareaRef.current?.value ?? valueAsString;
       if (!text.trim()) {
-        toast.info("Add some text before cleaning it up");
+        toast.info(definition.emptyTextToast);
         return;
       }
-      cleanup.reset();
-      setMenuMode("cleanup");
-    }, [cleanup, valueAsString]);
+      if (!selectedAgent) {
+        toast.info(definition.chooseAgentToast);
+        return;
+      }
+      void agentAction.run(
+        text,
+        selectedAgent,
+        agentContextByAction.current[menuMode],
+      );
+    }, [agentAction, menuMode, selectedAgent, valueAsString]);
 
-    const runCleanup = useCallback(() => {
-      const text = textareaRef.current?.value ?? valueAsString;
-      if (!text.trim()) {
-        toast.info("Add some text before cleaning it up");
+    const applyActiveAgentAction = useCallback(() => {
+      if (menuMode === "menu" || isEmbeddedProTextareaAgentAction(menuMode)) {
         return;
       }
-      if (!cleanupAgent) {
-        toast.info("Choose a cleanup agent first");
-        return;
-      }
-      void cleanup.run(text, cleanupAgent, cleanupContextRef.current);
-    }, [cleanup, cleanupAgent, valueAsString]);
-
-    const applyCleanup = useCallback(() => {
-      const result = cleanup.result.trim();
+      const definition = PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
+      const result = agentAction.result.trim();
       if (!result) return;
-      pushToTextarea(cleanup.result);
+      pushToTextarea(agentAction.result);
       setMenuOpen(false);
       setMenuMode("menu");
-      cleanup.reset();
-      toast.success("Cleaned text applied");
-    }, [cleanup, pushToTextarea]);
+      setSelectedAgent(null);
+      setSelectedAgentName(null);
+      agentAction.reset();
+      toast.success(definition.applySuccessToast);
+    }, [agentAction, menuMode, pushToTextarea]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -584,8 +687,9 @@ export const ProTextarea = React.forwardRef<
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
 
-    // The "…" menu has at least one item when copy or cleanup is enabled.
-    const showMenu = !disabled && (showCopyButton || enableCleanup);
+    // The "…" menu has at least one item when copy or an agent action is enabled.
+    const showMenu =
+      !disabled && (showCopyButton || enabledAgentActionIds.length > 0);
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -740,7 +844,14 @@ export const ProTextarea = React.forwardRef<
                 align="end"
                 side="bottom"
                 sideOffset={6}
-                className={cn("p-0", menuMode === "cleanup" ? "w-80" : "w-48")}
+                className={cn(
+                  "p-0",
+                  menuMode === "menu"
+                    ? "w-48"
+                    : isEmbeddedProTextareaAgentAction(menuMode)
+                      ? "w-auto max-w-none"
+                      : "w-80",
+                )}
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
                 {menuMode === "menu" ? (
@@ -758,36 +869,64 @@ export const ProTextarea = React.forwardRef<
                         Copy
                       </button>
                     )}
-                    {enableCleanup && (
-                      <button
-                        type="button"
-                        onClick={openCleanupView}
-                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        Clean up
-                      </button>
-                    )}
+                    {enabledAgentActionIds.map((actionId) => {
+                      const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
+                      const icon =
+                        actionId === "cleanup" ? (
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        ) : actionId === "help" ? (
+                          <MessageCircle className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Bot className="h-4 w-4 text-primary" />
+                        );
+                      return (
+                        <button
+                          key={actionId}
+                          type="button"
+                          onClick={() => openAgentActionView(actionId)}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          {icon}
+                          {definition.menuLabel}
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <CleanupPopoverBody
-                    phase={cleanup.phase}
-                    isBusy={cleanup.isBusy}
-                    isThinking={cleanup.isThinking}
-                    result={cleanup.result}
-                    error={cleanup.error}
-                    agentName={cleanupAgentName}
-                    onSelectAgent={setCleanupAgent}
-                    onRun={runCleanup}
-                    canRun={Boolean(cleanupAgent) && !cleanup.isBusy}
-                    onApply={applyCleanup}
+                ) : menuMode !== "menu" &&
+                  isEmbeddedProTextareaAgentAction(menuMode) ? (
+                  <ProTextareaAgentPanel
+                    actionId={menuMode}
+                    agentId={selectedAgent}
+                    agentLabel={selectedAgentName}
+                    onAgentIdChange={handleEmbeddedAgentChange}
+                    onAgentClear={clearEmbeddedAgent}
+                    sourceText={valueAsString}
+                    onApplySourceText={applyEmbeddedSourceText}
+                    onBack={exitEmbeddedAgentView}
+                    onCancel={() => setMenuOpen(false)}
+                  />
+                ) : activeAgentAction ? (
+                  <AgentActionPopoverBody
+                    title={activeAgentAction.popoverTitle}
+                    phase={agentAction.phase}
+                    isBusy={agentAction.isBusy}
+                    isThinking={agentAction.isThinking}
+                    result={agentAction.result}
+                    error={agentAction.error}
+                    agentName={selectedAgentName}
+                    onSelectAgent={setSelectedAgent}
+                    onRun={runActiveAgentAction}
+                    canRun={Boolean(selectedAgent) && !agentAction.isBusy}
+                    onApply={applyActiveAgentAction}
                     onBack={() => {
                       setMenuMode("menu");
-                      cleanup.reset();
+                      setSelectedAgent(null);
+                      setSelectedAgentName(null);
+                      agentAction.reset();
                     }}
                     onCancel={() => setMenuOpen(false)}
                   />
-                )}
+                ) : null}
               </PopoverContent>
             </Popover>
           )}
@@ -936,11 +1075,10 @@ export const ProTextarea = React.forwardRef<
 ProTextarea.displayName = "ProTextarea";
 
 /**
- * The cleanup view: an agent picker (same list as the cleanup page) + an
- * explicit Run button (never auto-runs), then the streamed result with
- * Apply / Re-run / Cancel.
+ * Agent action view: picker + Run, streamed result, Apply / Re-run / Cancel.
  */
-function CleanupPopoverBody({
+function AgentActionPopoverBody({
+  title,
   phase,
   isBusy,
   isThinking,
@@ -954,7 +1092,8 @@ function CleanupPopoverBody({
   onBack,
   onCancel,
 }: {
-  phase: ReturnType<typeof useProTextareaCleanup>["phase"];
+  title: string;
+  phase: ReturnType<typeof useProTextareaAgentAction>["phase"];
   isBusy: boolean;
   isThinking: boolean;
   result: string;
@@ -977,7 +1116,7 @@ function CleanupPopoverBody({
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          Clean up
+          {title}
           {isBusy && (
             <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 import type { ProjectWithRole } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -163,6 +164,18 @@ export function ProjectCard({
         </div>
 
         <div className="flex flex-col gap-2 items-end">
+          <div
+            className="flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ProjectCopyForAiButton
+              projectId={project.id}
+              projectName={project.name}
+              location="Projects — project list"
+              size="icon"
+              className="h-8 w-8"
+            />
+          </div>
           {canManage ? (
             <Link
               href={settingsPath}
