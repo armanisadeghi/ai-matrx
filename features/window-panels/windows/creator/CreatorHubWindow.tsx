@@ -219,7 +219,7 @@ export default function CreatorHubWindow({
     );
   } else if (active.id === "memory") {
     body = inputConvId ? (
-      <div className="h-full overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <ObservationalMemoryCore conversationId={inputConvId} layout="split" />
       </div>
     ) : (
@@ -227,7 +227,7 @@ export default function CreatorHubWindow({
     );
   } else if (active.runTabId) {
     body = inputConvId ? (
-      <div className="h-full overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <CreatorRunTabContent
           tabId={active.runTabId}
           conversationId={inputConvId}
@@ -256,11 +256,12 @@ export default function CreatorHubWindow({
         sidebar={sidebar}
         sidebarDefaultSize={190}
         sidebarMinSize={150}
+        bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
         onCollectData={() => ({ activeTab })}
       >
-        <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
           <div
-            className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-border bg-muted/40 px-3 py-1.5 text-[11px]"
+            className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-border bg-muted/40 px-3 py-1.5 text-[11px]"
             title={surfaceKey ? `Surface: ${surfaceKey}` : undefined}
           >
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -295,7 +296,9 @@ export default function CreatorHubWindow({
               {isCreator ? "Creator" : "Not creator"}
             </span>
           </div>
-          {body}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {body}
+          </div>
         </div>
       </WindowPanel>
       {windowPanels}

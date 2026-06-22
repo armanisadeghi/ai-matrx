@@ -44,6 +44,7 @@ Always use the latest stable release of every package — no deprecated APIs.
 ### Core invariants
 
 - Server Components by default; Client Components only when interactive.
+- **Heavy client code is code-split** with `next/dynamic({ ssr: false })` — never in a Server Component, never stacked down one render path, and only behind a condition (else it's pure cost). Use a `*Impl` + wrapper for anything reused; `next/dynamic` always, never `React.lazy`. **Invoke the `code-splitting` skill** before adding a dynamic import, making a component lazy, or fixing bundle/hydration issues.
 - Dynamic rendering by default; opt into caching with `'use cache'` + `cacheTag()` / `revalidateTag()`.
 - React Compiler is on — no manual `useMemo` / `useCallback` / `React.memo`.
 - `proxy.ts` (not `middleware.ts`) — auth, route guards, redirects only.

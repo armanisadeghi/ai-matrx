@@ -66,8 +66,8 @@ function SandboxVerdict({ routing }: { routing: RequestRouting }) {
   return (
     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
       <CheckCircle2 className="h-3.5 w-3.5" />
-      Bound ({routing.sandboxRef.tier ?? "?"} ·{" "}
-      {routing.sandboxRef.source}) — tools route into the box.
+      Bound ({routing.sandboxRef.tier ?? "?"} · {routing.sandboxRef.source}) —
+      tools route into the box.
     </span>
   );
 }
@@ -93,77 +93,83 @@ export function RoutingPanel({ conversationId }: { conversationId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 p-3 overflow-y-auto">
-      {routed.map(({ requestId, routing }, idx) => {
-        const sandboxToolsMissing =
-          routing.sandboxRef &&
-          routing.sandboxAttached &&
-          !routing.toolNames.some((n) => n.startsWith("fs_") || n.startsWith("shell_"));
-        return (
-          <div
-            key={requestId}
-            className="rounded-md border border-border bg-card p-3 text-xs"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-foreground">
-                {idx === 0 ? "Latest turn" : `Turn -${idx}`}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(routing.recordedAt).toLocaleTimeString()}
-              </span>
-            </div>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+        {routed.map(({ requestId, routing }, idx) => {
+          const sandboxToolsMissing =
+            routing.sandboxRef &&
+            routing.sandboxAttached &&
+            !routing.toolNames.some(
+              (n) => n.startsWith("fs_") || n.startsWith("shell_"),
+            );
+          return (
+            <div
+              key={requestId}
+              className="rounded-md border border-border bg-card p-3 text-xs"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-foreground">
+                  {idx === 0 ? "Latest turn" : `Turn -${idx}`}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(routing.recordedAt).toLocaleTimeString()}
+                </span>
+              </div>
 
-            {/* Where it went */}
-            <div className="flex items-start gap-1.5 mb-1.5">
-              <Server className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0">
-                <div className="font-mono text-foreground break-all">
-                  {hostOf(routing.url)}
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {channelLabel(routing.channel)} · server toggle:{" "}
-                  <span className="font-medium">{routing.activeServer}</span>
-                </div>
-                <div className="font-mono text-[10px] text-muted-foreground/70 break-all mt-0.5">
-                  {routing.url}
+              {/* Where it went */}
+              <div className="flex items-start gap-1.5 mb-1.5">
+                <Server className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <div className="font-mono text-foreground break-all">
+                    {hostOf(routing.url)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {channelLabel(routing.channel)} · server toggle:{" "}
+                    <span className="font-medium">{routing.activeServer}</span>
+                  </div>
+                  <div className="font-mono text-[10px] text-muted-foreground/70 break-all mt-0.5">
+                    {routing.url}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sandbox verdict */}
-            <div className="mb-1.5">
-              <SandboxVerdict routing={routing} />
-            </div>
-
-            {/* Capabilities */}
-            <div className="text-[11px] text-muted-foreground mb-1">
-              <span className="font-medium text-foreground">capabilities:</span>{" "}
-              {routing.capabilities.length > 0
-                ? routing.capabilities.join(", ")
-                : "(none)"}
-            </div>
-
-            {/* Tools */}
-            <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
-              <Wrench className="h-3 w-3 mt-0.5 shrink-0" />
-              <span className="break-words">
-                {routing.toolNames.length > 0
-                  ? routing.toolNames.join(", ")
-                  : "(no additive tools sent)"}
-              </span>
-            </div>
-
-            {sandboxToolsMissing && (
-              <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Box is bound but no fs_/shell_ tools were sent — the agent can't
-                act in it. Check that the sandbox-fs capability arms tools (or
-                the client stopgap).
+              {/* Sandbox verdict */}
+              <div className="mb-1.5">
+                <SandboxVerdict routing={routing} />
               </div>
-            )}
-          </div>
-        );
-      })}
+
+              {/* Capabilities */}
+              <div className="text-[11px] text-muted-foreground mb-1">
+                <span className="font-medium text-foreground">
+                  capabilities:
+                </span>{" "}
+                {routing.capabilities.length > 0
+                  ? routing.capabilities.join(", ")
+                  : "(none)"}
+              </div>
+
+              {/* Tools */}
+              <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <Wrench className="h-3 w-3 mt-0.5 shrink-0" />
+                <span className="break-words">
+                  {routing.toolNames.length > 0
+                    ? routing.toolNames.join(", ")
+                    : "(no additive tools sent)"}
+                </span>
+              </div>
+
+              {sandboxToolsMissing && (
+                <div className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  Box is bound but no fs_/shell_ tools were sent — the agent
+                  can't act in it. Check that the sandbox-fs capability arms
+                  tools (or the client stopgap).
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

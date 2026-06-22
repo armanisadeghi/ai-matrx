@@ -14,7 +14,12 @@
  * the tab body — CreatorRunPanel keeps them mounted even while collapsed.
  */
 
-import { useState, useCallback, type ComponentType, type ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { RotateCcw, AppWindow, SlidersHorizontal, Brain } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -345,6 +350,7 @@ export function useCreatorRunWindows({
           onClose={() => setStreamDebugWindowOpen(false)}
           urlSyncKey="debug"
           urlSyncId={displayId}
+          bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
         >
           <StreamDebugPanel conversationId={displayId} />
         </WindowPanel>

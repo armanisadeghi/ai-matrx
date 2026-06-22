@@ -896,8 +896,10 @@ export function WindowPanel({
             <ResizableHandle />
           </>
         )}
-        <ResizablePanel id="body" minSize={200}>
-          {children}
+        <ResizablePanel id="body" minSize={200} className="min-h-0">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            {children}
+          </div>
         </ResizablePanel>
         {hasSecondaryPanel && (
           <>

@@ -54,6 +54,18 @@ import type {
 } from "@/types/python-generated/stream-events";
 import type { InstanceStatus } from "@/features/agents/types/instance.types";
 
+const DEBUG_PANEL_SHELL =
+  "flex flex-col flex-1 min-h-0 h-full w-full bg-background text-foreground";
+
+/** Scrollable tab body — parent must be a bounded flex column. */
+function DebugTabScroll({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <ScrollArea className="flex-1 min-h-0">{children}</ScrollArea>
+    </div>
+  );
+}
+
 // =============================================================================
 // Utilities
 // =============================================================================
@@ -898,7 +910,7 @@ function TimelineFilterBar({
   counts: Record<string, number>;
 }) {
   return (
-    <div className="flex items-center gap-1 flex-wrap px-2 py-1 border-b border-border/50">
+    <div className="flex items-center gap-1 flex-wrap px-2 py-1 border-b border-border/50 shrink-0">
       <Filter className="h-3.5 w-3.5 text-muted-foreground mr-0.5" />
       {ALL_TIMELINE_KINDS.map((kind) => {
         const active = activeFilters.has(kind);
@@ -985,13 +997,13 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
   }, [filtered.length, autoScroll]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
       <TimelineFilterBar
         activeFilters={filters}
         onToggle={toggleFilter}
         counts={counts}
       />
-      <div className="flex items-center gap-1.5 px-2 py-1 border-b border-border/30 text-[10px] text-muted-foreground">
+      <div className="flex shrink-0 items-center gap-1.5 px-2 py-1 border-b border-border/30 text-[10px] text-muted-foreground flex-wrap">
         <span>
           {filtered.length} of {request.timeline.length} entries
         </span>
@@ -1084,7 +1096,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
       </div>
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0"
+        className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 pb-2"
       >
         {filtered.map((entry, idx) => (
           <TimelineRow
@@ -1113,7 +1125,7 @@ function TimelineTab({ request }: { request: ActiveRequest }) {
 function ToolsTab({ request }: { request: ActiveRequest }) {
   const tools = Object.values(request.toolLifecycle);
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       {tools.length === 0 && (
         <div className="text-[10px] text-muted-foreground/60 text-center py-4">
           No tool events
@@ -1155,13 +1167,13 @@ function ToolsTab({ request }: { request: ActiveRequest }) {
           ))}
         </div>
       )}
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
 function StatusTab({ request }: { request: ActiveRequest }) {
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       <div className="px-1.5 py-1 border-b border-border/30">
         <span className="text-[9px] text-muted-foreground font-medium">
           Current Phase
@@ -1194,7 +1206,7 @@ function StatusTab({ request }: { request: ActiveRequest }) {
       {request.phaseHistory.map((phase, idx) => (
         <PhaseHistoryRow key={idx} phase={phase} idx={idx} />
       ))}
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
@@ -1203,7 +1215,7 @@ function BlocksTab({ request }: { request: ActiveRequest }) {
     .map((id) => request.renderBlocks[id])
     .filter(Boolean) as RenderBlockPayload[];
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       {blocks.length === 0 && (
         <div className="text-[10px] text-muted-foreground/60 text-center py-4">
           No content blocks
@@ -1212,7 +1224,7 @@ function BlocksTab({ request }: { request: ActiveRequest }) {
       {blocks.map((block) => (
         <ContentBlockRow key={block.blockId} block={block} />
       ))}
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
@@ -1225,8 +1237,8 @@ function TextTab({ request }: { request: ActiveRequest }) {
       ? request.reasoningChunks.join("")
       : request.accumulatedReasoning;
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-1 px-1.5 py-0.5 border-b border-border/30 text-[9px] text-muted-foreground">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <div className="flex shrink-0 items-center gap-1 px-1.5 py-0.5 border-b border-border/30 text-[9px] text-muted-foreground">
         <span>{request.chunkCount} chunks</span>
         <span className="text-muted-foreground/40">|</span>
         <span>{new TextEncoder().encode(text).length} bytes</span>
@@ -1267,7 +1279,7 @@ function TextTab({ request }: { request: ActiveRequest }) {
 
 function DataTab({ request }: { request: ActiveRequest }) {
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       <div className="px-1.5 py-0.5 border-b border-border/30 text-[9px] text-muted-foreground">
         {request.dataPayloads.length} data payloads
         <CopyBtn
@@ -1295,13 +1307,13 @@ function DataTab({ request }: { request: ActiveRequest }) {
           <JsonView data={payload} id={`data-body-${idx}`} />
         </div>
       ))}
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
 function CompletionTab({ request }: { request: ActiveRequest }) {
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       {request.completion ? (
         <div className="p-1.5">
           <JsonView
@@ -1356,7 +1368,7 @@ function CompletionTab({ request }: { request: ActiveRequest }) {
           <JsonView data={request.completedOperations} id="completed-ops" />
         </div>
       )}
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
@@ -1368,7 +1380,7 @@ function StateSnapshotTab({
   instanceStatus?: InstanceStatus;
 }) {
   return (
-    <ScrollArea className="h-full">
+    <DebugTabScroll>
       <div className="p-1.5 space-y-1">
         <div className="flex items-center gap-1 text-[9px]">
           <span className="text-muted-foreground font-medium w-24 shrink-0">
@@ -1518,7 +1530,7 @@ function StateSnapshotTab({
           />
         </div>
       </div>
-    </ScrollArea>
+    </DebugTabScroll>
   );
 }
 
@@ -1560,8 +1572,8 @@ function RawEventsTab({ request }: { request: ActiveRequest }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-border/30 bg-muted/10 flex-wrap">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <div className="flex shrink-0 items-center gap-1 px-2 py-1 border-b border-border/30 bg-muted/10 flex-wrap">
         <span className="text-[9px] text-muted-foreground font-medium mr-1">
           {rawEvents.length} events
         </span>
@@ -1779,12 +1791,16 @@ function InstanceDebugView({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <StatusBar request={request} instanceStatus={instanceStatus} />
-      {request.clientMetrics && <MetricsBar metrics={request.clientMetrics} />}
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <div className="shrink-0">
+        <StatusBar request={request} instanceStatus={instanceStatus} />
+        {request.clientMetrics && (
+          <MetricsBar metrics={request.clientMetrics} />
+        )}
+      </div>
 
       {requestIds.length > 1 && (
-        <div className="flex items-center gap-1.5 px-2 py-1 border-b border-border/30 text-[10px]">
+        <div className="flex shrink-0 items-center gap-1.5 px-2 py-1 border-b border-border/30 text-[10px]">
           <span className="text-muted-foreground font-medium">Request:</span>
           {requestIds.map((id, idx) => (
             <button
@@ -1807,7 +1823,7 @@ function InstanceDebugView({
         </div>
       )}
 
-      <div className="flex border-b border-border/50 bg-muted/10 overflow-x-auto scrollbar-none">
+      <div className="flex shrink-0 border-b border-border/50 bg-muted/10 overflow-x-auto scrollbar-none">
         {TAB_DEFS.map((tab) => (
           <button
             key={tab.id}
@@ -1826,7 +1842,7 @@ function InstanceDebugView({
         ))}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         {activeTab === "events" && <TimelineTab request={request} />}
         {activeTab === "raw" && <RawEventsTab request={request} />}
         {activeTab === "text" && <TextTab request={request} />}
@@ -1891,12 +1907,7 @@ export function StreamDebugPanel({
   // When hideChrome, just render the focused instance's timeline
   if (hideChrome) {
     return (
-      <div
-        className={cn(
-          "flex flex-col h-full bg-background text-foreground",
-          className,
-        )}
-      >
+      <div className={cn(DEBUG_PANEL_SHELL, className)}>
         <InstanceDebugView
           conversationId={conversationId}
           hideChrome
@@ -1909,12 +1920,7 @@ export function StreamDebugPanel({
   // If there's only one instance (or none), skip the instance tab layer
   if (allInstanceIds.length <= 1) {
     return (
-      <div
-        className={cn(
-          "flex flex-col h-full bg-background text-foreground",
-          className,
-        )}
-      >
+      <div className={cn(DEBUG_PANEL_SHELL, className)}>
         <InstanceDebugView
           conversationId={conversationId}
           hideChrome={false}
@@ -1958,12 +1964,7 @@ function MultiInstanceDebugPanel({
     : (allInstanceIds[allInstanceIds.length - 1] ?? activeInstanceId);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col h-full bg-background text-foreground",
-        className,
-      )}
-    >
+    <div className={cn(DEBUG_PANEL_SHELL, className)}>
       {/* Instance selector strip */}
       <div className="flex items-center gap-0 border-b border-border bg-muted/20 overflow-x-auto scrollbar-none shrink-0">
         <span className="text-[9px] text-muted-foreground font-medium px-2 py-1.5 whitespace-nowrap border-r border-border/50 shrink-0">
@@ -1981,7 +1982,7 @@ function MultiInstanceDebugPanel({
       </div>
 
       {/* Per-instance debug view */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <InstanceDebugView
           conversationId={effectiveInstanceId}
           hideChrome={false}

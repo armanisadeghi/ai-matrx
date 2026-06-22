@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { LibraryCatalogPane } from "@/features/rag/components/data-stores/LibraryCatalogPane";
 
 export function RagHomePage() {
   const { summary, loading, error } = useLibrarySummary();
@@ -179,6 +180,11 @@ export function RagHomePage() {
               retrieve.
             </li>
           </ol>
+        </section>
+
+        {/* Shared knowledge libraries — opt-in catalog (Shared Knowledge Resources) */}
+        <section className="space-y-3">
+          <LibraryCatalogPane />
         </section>
       </div>
     </div>

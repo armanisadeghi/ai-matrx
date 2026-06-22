@@ -10,10 +10,21 @@ import {
   DayPicker,
   getDefaultClassNames,
   type DayButton,
+  type Modifiers,
 } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
+
+function startOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
 
 function Calendar({
   className,
@@ -23,11 +34,81 @@ function Calendar({
   buttonVariant = "ghost",
   formatters,
   components,
+  showTodayButton = true,
+  footer,
+  month: monthProp,
+  defaultMonth,
+  onMonthChange,
+  onSelect,
+  mode,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
+  showTodayButton?: boolean;
 }) {
   const defaultClassNames = getDefaultClassNames();
+  const [internalMonth, setInternalMonth] = React.useState<Date>(
+    () => monthProp ?? defaultMonth ?? new Date(),
+  );
+
+  React.useEffect(() => {
+    if (monthProp) {
+      setInternalMonth(monthProp);
+    }
+  }, [monthProp]);
+
+  const month = monthProp ?? internalMonth;
+
+  const handleMonthChange = (newMonth: Date) => {
+    if (!monthProp) {
+      setInternalMonth(newMonth);
+    }
+    onMonthChange?.(newMonth);
+  };
+
+  const handleTodayClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const today = startOfDay(new Date());
+    handleMonthChange(startOfMonth(today));
+
+    if (!onSelect || mode === "range" || mode === "multiple") {
+      return;
+    }
+
+    const todayModifiers: Modifiers = {
+      selected: true,
+      disabled: false,
+      hidden: false,
+      outside: false,
+      focused: false,
+      today: true,
+    };
+
+    onSelect(today, today, todayModifiers, event);
+  };
+
+  const todayFooter = showTodayButton ? (
+    <div className="px-3 pb-3 pt-0">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 w-full"
+        onClick={handleTodayClick}
+      >
+        Today
+      </Button>
+    </div>
+  ) : null;
+
+  const combinedFooter =
+    todayFooter && footer ? (
+      <>
+        {todayFooter}
+        {footer}
+      </>
+    ) : (
+      (todayFooter ?? footer)
+    );
 
   return (
     <DayPicker
@@ -39,6 +120,11 @@ function Calendar({
         className,
       )}
       captionLayout={captionLayout}
+      month={month}
+      onMonthChange={handleMonthChange}
+      mode={mode}
+      onSelect={onSelect}
+      footer={combinedFooter}
       formatters={{
         formatMonthDropdown: (date) =>
           date.toLocaleString("default", { month: "short" }),
@@ -117,9 +203,10 @@ function Calendar({
         range_middle: cn("rounded-none", defaultClassNames.range_middle),
         range_end: cn("rounded-r-md bg-accent", defaultClassNames.range_end),
         today: cn(
-          "rounded-md bg-accent text-accent-foreground data-[selected=true]:rounded-none",
+          "rounded-md data-[selected=true]:rounded-none",
           defaultClassNames.today,
         ),
+        footer: cn("border-t border-border", defaultClassNames.footer),
         outside: cn(
           "text-muted-foreground aria-selected:text-muted-foreground",
           defaultClassNames.outside,
@@ -208,7 +295,10 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-end=true]:bg-primary data-[range-end=true]:font-semibold data-[range-end=true]:text-primary-foreground data-[range-end=true]:shadow-sm data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md data-[range-start=true]:bg-primary data-[range-start=true]:font-semibold data-[range-start=true]:text-primary-foreground data-[range-start=true]:shadow-sm data-[selected-single=true]:bg-primary data-[selected-single=true]:font-semibold data-[selected-single=true]:text-primary-foreground data-[selected-single=true]:shadow-sm data-[selected-single=true]:hover:bg-primary data-[selected-single=true]:hover:text-primary-foreground dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
+        modifiers.today &&
+          !modifiers.selected &&
+          "font-semibold text-primary ring-1 ring-inset ring-primary/45",
         defaultClassNames.day,
         className,
       )}

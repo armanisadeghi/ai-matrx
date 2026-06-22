@@ -34,7 +34,7 @@ export function StreamDebugFloating({
       initialRect={{ x: defaultPosition.x, y: defaultPosition.y }}
       minWidth={300}
       minHeight={200}
-      bodyClassName="p-0"
+      bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
       urlSyncKey="debug"
       urlSyncId={conversationId}
     >

@@ -303,7 +303,7 @@ function StreamDebugHistoryWindowInner({
       minHeight={360}
       overlayId="streamDebugHistoryWindow"
       onCollectData={collectData}
-      bodyClassName="p-0"
+      bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
       sidebar={
         <StreamDebugSidebar selectedId={activeId} onSelect={setActiveId} />
       }
