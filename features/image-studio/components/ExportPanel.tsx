@@ -491,7 +491,7 @@ export function ExportPanel({
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <Link
-                  href={`/files/${lastSaveResult.folderPath
+                  href={`/files/all/${lastSaveResult.folderPath
                     .split("/")
                     .map(encodeURIComponent)
                     .join("/")}`}

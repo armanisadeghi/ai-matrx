@@ -87,6 +87,7 @@ import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import {
   moveFile as moveFileThunk,
   updateFolder as updateFolderThunk,
+  loadFolderContents,
 } from "@/features/files/redux/thunks";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import {
@@ -122,6 +123,7 @@ import { EmptyState } from "./desktop/EmptyState";
 import { FileGrid } from "./desktop/FileGrid";
 import { FileTable } from "./desktop/FileTable";
 import { FilesUrlSync } from "./FilesUrlSync";
+import { FilesRouteSelectionSync } from "./FilesRouteSelectionSync";
 import { IconRail } from "./desktop/IconRail";
 import { NavSidebar } from "./desktop/NavSidebar";
 import {
@@ -134,6 +136,12 @@ import type { CloudFilesSection } from "./desktop/section";
 export interface PageShellProps {
   /** Initial selection (for deep-linked routes). */
   initialFolderId?: string | null;
+  /**
+   * Logical folder path from the URL (`/files/all/<segments>`), passed
+   * by the server route for client-side resolution when the Supabase
+   * lookup misses or the tree hasn't hydrated yet.
+   */
+  initialFolderPath?: string | null;
   initialFileId?: string | null;
   /**
    * UI state hydrated from the URL `?…` query string by the server
@@ -173,7 +181,7 @@ export function PageShell(props: PageShellProps) {
 /**
  * Sections that own a fixed pathname (`/files/recents`, `/files/photos`, …)
  * and never rewrite it on folder activation. Drilling into a folder while
- * inside one of these jumps the user back to the canonical `/files/<path>`
+ * inside one of these jumps the user back to the canonical `/files/all/<path>`
  * surface so the folder's contents actually drive the page (handled by
  * `NavSidebar`); the sync layer in PageShell only rewrites the path for
  * the sections that own it.
@@ -220,6 +228,7 @@ function writeSidebarCollapsedCookie(collapsed: boolean): void {
 
 function PageShellDesktop({
   initialFolderId,
+  initialFolderPath,
   initialFileId,
   initialUiPatch,
   section = "all",
@@ -251,9 +260,8 @@ function PageShellDesktop({
     [dispatch],
   );
 
-  // One-time apply of initial selection + URL-derived UI state. Both run
-  // BEFORE first paint so the rendered list matches the URL.
-  useOneShotSelection(initialFolderId, initialFileId);
+  // URL-derived UI state — applied once on mount. Folder/file selection
+  // is kept in sync continuously by <FilesRouteSelectionSync /> below.
   useOneShotUiHydration(initialUiPatch);
 
   // Mount one synthetic root folder per registered virtual source. Idempotent
@@ -449,8 +457,9 @@ function PageShellDesktop({
         folder.source.kind === "real" &&
         FOLDER_PATH_SECTIONS.includes(section)
       ) {
+        void dispatch(loadFolderContents({ folderId }));
         const segments = encodeFolderPathSegments(folder.folderPath);
-        const target = segments ? `/files/${segments}` : "/files";
+        const target = segments ? `/files/all/${segments}` : "/files/all";
         // `router.push` so the back button retraces folder history; the
         // sync layer's `router.replace` updates only the query string.
         router.push(target);
@@ -918,6 +927,11 @@ function PageShellDesktop({
          *  and writes it back to `?…` via `router.replace`. The reverse
          *  direction (URL → Redux) happens once on mount via
          *  `useOneShotUiHydration` from the server-parsed `initialUiPatch`. */}
+        <FilesRouteSelectionSync
+          initialFolderId={initialFolderId}
+          initialFolderPath={initialFolderPath}
+          initialFileId={initialFileId}
+        />
         <FilesUrlSync />
       </div>
 
@@ -1028,35 +1042,6 @@ function FolderExplorer({ onSelectFolder, onSelectFile }: FolderExplorerProps) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function useOneShotSelection(
-  initialFolderId: string | null | undefined,
-  initialFileId: string | null | undefined,
-): void {
-  const dispatch = useAppDispatch();
-  const didRunRef = useRef(false);
-
-  useEffect(() => {
-    if (didRunRef.current) return;
-    didRunRef.current = true;
-    if (initialFolderId !== undefined) {
-      dispatch(setActiveFolderId(initialFolderId));
-    }
-    if (initialFileId !== undefined) {
-      dispatch(setActiveFileId(initialFileId));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-}
-
-/**
- * Apply a server-parsed `initialUiPatch` (sort, filters, view, etc.) to
- * Redux exactly once on mount. Mirrors `useOneShotSelection` — the
- * server route is the single source of truth for the URL → state
- * transformation, and FilesUrlSync handles every subsequent change.
- *
- * No-op when `patch` is undefined or empty. Uses `setUiBatch` so all
- * fields land in a single dispatch (one re-render, not N).
- */
 function useOneShotUiHydration(patch: Partial<UiState> | undefined): void {
   const dispatch = useAppDispatch();
   const didRunRef = useRef(false);

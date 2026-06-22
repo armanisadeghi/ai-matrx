@@ -13,6 +13,7 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { ChunkRow } from "@/features/rag/types/documents";
 
 export interface ChunksPaneProps {
@@ -57,7 +58,7 @@ export function ChunksPane({
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       <header className="flex items-center justify-between px-3 py-2 border-b border-border text-xs text-muted-foreground">
-        <span className="font-medium">Chunks</span>
+        <span className="font-medium">{RAG_VOCAB.segmentsShort}</span>
         <span>{chunks.length.toLocaleString()} total</span>
       </header>
       <div ref={parentRef} className="flex-1 overflow-auto">
@@ -69,7 +70,8 @@ export function ChunksPane({
         )}
         {!loading && !error && chunks.length === 0 && (
           <div className="p-3 text-sm text-muted-foreground">
-            No chunks for this document yet — re-process through RAG ingestion.
+            No segments for this document yet — re-process through RAG
+            ingestion.
           </div>
         )}
         {!loading && !error && chunks.length > 0 && (

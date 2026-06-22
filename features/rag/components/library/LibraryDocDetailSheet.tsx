@@ -49,6 +49,7 @@ import { del, getJson, patchJson, postJson } from "@/lib/python-client";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { LibraryChunkPreview } from "@/features/rag/types/library";
 import type { StageName } from "@/features/rag/api/stages";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
@@ -132,8 +133,8 @@ export function LibraryDocDetailSheet({
         }>(`/rag/library/${doc.id}/full`);
         toast.success(
           data?.deleted_cld_file
-            ? `File deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} chunks, source file moved to trash.`
-            : `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} chunks. (Source file was not a cld_files row, so the binary stays.)`,
+            ? `File deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}, source file moved to trash.`
+            : `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. (Source file was not a cld_files row, so the binary stays.)`,
         );
       } else {
         // Processing-only delete — keeps the source binary.
@@ -143,7 +144,7 @@ export function LibraryDocDetailSheet({
           deleted_chunks: number;
         }>(`/rag/library/${doc.id}`);
         toast.success(
-          `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} chunks. Source file intact — re-process to rebuild.`,
+          `Processing deleted: ${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()}. Source file intact — re-process to rebuild.`,
         );
       }
       setConfirmDeleteOpen(false);
@@ -306,7 +307,7 @@ export function LibraryDocDetailSheet({
                     onClick={handleProcess}
                     disabled={reprocessing}
                     className="bg-amber-500 text-white hover:bg-amber-500/90"
-                    title={`${doc.embeddingsOai} of ${doc.chunks} chunks have embeddings — run the pipeline to finish.`}
+                    title={`${doc.embeddingsOai} of ${doc.chunks} ${RAG_VOCAB.segmentsShort.toLowerCase()} have embeddings — run the pipeline to finish.`}
                   >
                     <Wand2
                       className={
@@ -349,7 +350,7 @@ export function LibraryDocDetailSheet({
                   <Button
                     size="sm"
                     variant="outline"
-                    title="Remove processing artifacts (chunks, embeddings) but keep the source file. Re-process to rebuild."
+                    title={`Remove processing artifacts (${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings) but keep the source file. Re-process to rebuild.`}
                     onClick={() => {
                       setConfirmDeleteMode("processing");
                       setConfirmDeleteOpen(true);
@@ -382,7 +383,7 @@ export function LibraryDocDetailSheet({
                 />
                 <CountChip
                   icon={<Layers className="h-3 w-3" />}
-                  label="Chunks"
+                  label={RAG_VOCAB.segmentsShort}
                   value={String(doc.chunks)}
                 />
                 <CountChip
@@ -419,7 +420,9 @@ export function LibraryDocDetailSheet({
                 <TabsTrigger value="pages">
                   Pages ({doc.pagesPersisted})
                 </TabsTrigger>
-                <TabsTrigger value="chunks">Chunks ({doc.chunks})</TabsTrigger>
+                <TabsTrigger value="chunks">
+                  {RAG_VOCAB.segmentsShort} ({doc.chunks})
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent
@@ -506,14 +509,18 @@ export function LibraryDocDetailSheet({
                             <em>Clean</em> action).
                           </li>
                           <li>
-                            <strong className="text-foreground">Chunks</strong>{" "}
+                            <strong className="text-foreground">
+                              {RAG_VOCAB.segmentsShort}
+                            </strong>{" "}
                             — pages are split into retrievable, page-aware
-                            pieces (<em>Chunk</em> action).
+                            knowledge segments (
+                            <em>{RAG_VOCAB.segmentShort}</em> action).
                           </li>
                           <li>
                             <strong className="text-foreground">Vectors</strong>{" "}
-                            — each chunk gets an embedding for similarity search
-                            (<em>Embed</em> action).
+                            — each {RAG_VOCAB.segmentShort.toLowerCase()} gets
+                            an embedding for similarity search (<em>Embed</em>{" "}
+                            action).
                           </li>
                           <li>
                             <strong className="text-foreground">
@@ -691,8 +698,9 @@ export function LibraryDocDetailSheet({
                   <div className="space-y-3 pr-3">
                     {doc.sampleChunks.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        No chunks yet — extraction completed but chunking has
-                        not run, or it failed.
+                        No segments yet — extraction completed but{" "}
+                        {RAG_VOCAB.segmentation.toLowerCase()} has not run, or
+                        it failed.
                       </p>
                     ) : (
                       <SheetChunksPanel
@@ -703,7 +711,7 @@ export function LibraryDocDetailSheet({
                     {doc.chunks > doc.sampleChunks.length && (
                       <p className="text-xs text-muted-foreground italic">
                         Showing first {doc.sampleChunks.length} of {doc.chunks}{" "}
-                        chunks.
+                        {RAG_VOCAB.segmentsShort.toLowerCase()}.
                       </p>
                     )}
                   </div>
@@ -720,7 +728,8 @@ export function LibraryDocDetailSheet({
           <DialogHeader>
             <DialogTitle>Rename document</DialogTitle>
             <DialogDescription>
-              The name is the display label only — chunks, embeddings, and
+              The name is the display label only —{" "}
+              {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
               data-store bindings are unchanged.
             </DialogDescription>
           </DialogHeader>
@@ -763,7 +772,8 @@ export function LibraryDocDetailSheet({
                   <ul className="list-disc ml-5 mt-2 space-y-0.5 text-xs">
                     <li>{doc.pagesPersisted} extracted pages</li>
                     <li>
-                      {doc.chunks} chunks · {doc.embeddingsOai} embeddings
+                      {doc.chunks} {RAG_VOCAB.segmentsShort.toLowerCase()} ·{" "}
+                      {doc.embeddingsOai} embeddings
                     </li>
                     <li>
                       The source file in cloud storage (soft-deleted; the binary
@@ -779,7 +789,8 @@ export function LibraryDocDetailSheet({
               {doc && confirmDeleteMode === "processing" && (
                 <>
                   Removes <strong>{doc.pagesPersisted}</strong> extracted pages
-                  and <strong>{doc.chunks}</strong> chunks for{" "}
+                  and <strong>{doc.chunks}</strong>{" "}
+                  {RAG_VOCAB.segmentsShort.toLowerCase()} for{" "}
                   <strong>{doc.name}</strong>. The original file is{" "}
                   <strong>kept</strong> — re-process anytime to rebuild.
                 </>
@@ -997,7 +1008,9 @@ function SheetChunksPanel({
       .catch((err) => {
         if (!cancelled) {
           setFetchError(
-            err instanceof Error ? err.message : "Failed to load chunks",
+            err instanceof Error
+              ? err.message
+              : `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
           );
         }
       })
@@ -1013,8 +1026,8 @@ function SheetChunksPanel({
   if (fallbackSamples.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No chunks yet — extraction completed but chunking has not run, or it
-        failed.
+        No segments yet — extraction completed but{" "}
+        {RAG_VOCAB.segmentation.toLowerCase()} has not run, or it failed.
       </p>
     );
   }
@@ -1022,7 +1035,7 @@ function SheetChunksPanel({
   if (loading) {
     return (
       <p className="text-sm text-muted-foreground italic">
-        Loading full chunk text…
+        Loading full segment text…
       </p>
     );
   }
@@ -1041,7 +1054,7 @@ function SheetChunksPanel({
       {fetchError && (
         <p className="text-xs text-amber-700 dark:text-amber-400 mb-3">
           {fetchError}. Showing abbreviated previews from document summary —
-          open <span className="font-medium">Preview</span> for full chunks.
+          open <span className="font-medium">Preview</span> for full segments.
         </p>
       )}
       <div className="space-y-3">

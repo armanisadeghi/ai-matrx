@@ -22,10 +22,11 @@ import {
   Zap,
   Eye,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 
 export function RagHomePage() {
@@ -93,7 +94,7 @@ export function RagHomePage() {
               tone="error"
             />
             <StatCard
-              label="Total chunks"
+              label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
               value={summary?.chunks}
               loading={loading}
               icon={<Layers className="h-3.5 w-3.5" />}
@@ -117,7 +118,7 @@ export function RagHomePage() {
               href="/rag/library"
               icon={<FileText className="h-5 w-5" />}
               title="Library"
-              description="Every document you've processed, with status, page counts, chunks, embeddings, and which data stores they're bound to."
+              description={`Every document you've processed, with status, page counts, ${RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and which data stores they're bound to.`}
               cta="Open library"
             />
             <NavCard
@@ -149,8 +150,8 @@ export function RagHomePage() {
               <Link href="/rag/data-stores" className="underline">
                 Data Stores
               </Link>{" "}
-              → drag a PDF onto a store → it uploads, processes, chunks, embeds,
-              and binds in one step.
+              → drag a PDF onto a store → it uploads, processes, segments,
+              embeds, and binds in one step.
             </li>
             <li>
               <strong className="text-foreground">
@@ -165,7 +166,8 @@ export function RagHomePage() {
             </li>
             <li>
               <strong className="text-foreground">Inspect a document:</strong>{" "}
-              click any row in the library — pages, chunks, embeddings, and
+              click any row in the library — pages,{" "}
+              {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
               store-bindings are all there.
             </li>
             <li>

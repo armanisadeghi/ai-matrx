@@ -357,11 +357,11 @@ function ContextPill({
   onRemove: () => void;
 }) {
   return (
-    <div className="group inline-flex h-6 items-center rounded-full border border-primary/30 bg-primary/5 pl-2 pr-1 text-[11px] font-medium text-foreground transition-colors hover:bg-primary/10">
+    <div className="group inline-flex h-6 cursor-pointer items-center rounded-full border border-primary/30 bg-primary/5 pl-2 pr-1 text-[11px] font-medium text-foreground transition-colors hover:bg-primary/10">
       <button
         type="button"
         onClick={onClick}
-        className="inline-flex min-w-0 items-center gap-1"
+        className="inline-flex min-w-0 cursor-pointer items-center gap-1"
       >
         <Icon className="h-3 w-3 shrink-0 text-primary" />
         <span className="max-w-[120px] truncate">{label}</span>
@@ -382,7 +382,7 @@ function ContextPill({
             onRemove();
           }
         }}
-        className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 opacity-0 transition-opacity hover:bg-black/10 hover:text-foreground group-hover:opacity-100 dark:hover:bg-white/10"
+        className="ml-0.5 inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground/70 opacity-0 transition-opacity hover:bg-black/10 hover:text-foreground group-hover:opacity-100 dark:hover:bg-white/10"
       >
         <X className="h-2.5 w-2.5" />
       </span>

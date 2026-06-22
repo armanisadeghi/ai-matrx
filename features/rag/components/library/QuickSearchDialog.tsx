@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Search as SearchIcon, ExternalLink } from "lucide-react";
 import { postJson } from "@/lib/python-client";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 
 interface ApiHit {
   chunk_id: string;
@@ -104,9 +105,12 @@ export function QuickSearchDialog({
             <span className="break-words">{documentName ?? "document"}</span>
           </DialogTitle>
           <DialogDescription>
-            Lexical search over this document's chunks
-            {total > 0 ? ` (${total} chunks)` : ""}. Same scoring an agent would
-            use when retrieving from this doc.
+            Lexical search over this document's{" "}
+            {RAG_VOCAB.segmentsShort.toLowerCase()}
+            {total > 0
+              ? ` (${total} ${RAG_VOCAB.segmentsShort.toLowerCase()})`
+              : ""}
+            . Same scoring an agent would use when retrieving from this doc.
           </DialogDescription>
         </DialogHeader>
 

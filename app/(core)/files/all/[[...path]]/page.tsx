@@ -64,6 +64,7 @@ export default async function CloudFilesDeepLinkPage({
     <PageShell
       section="all"
       initialFolderId={initialFolderId}
+      initialFolderPath={folderPath || null}
       initialFileId={initialFileId}
       initialUiPatch={initialUiPatch}
       initialSidebarMode={sidebarMode}

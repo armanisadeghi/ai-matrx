@@ -25,6 +25,7 @@
  */
 
 import { useMemo } from "react";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
   ReactFlow,
   Background,
@@ -46,7 +47,7 @@ import {
   Upload,
   X as XIcon,
   AlertCircle,
-  RotateCw
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -225,7 +226,7 @@ const NODE_SPECS: PipelineSpec[] = [
     pipeline: {
       variant: "write",
       icon: Layers,
-      title: "Chunks",
+      title: RAG_VOCAB.segmentsShort,
       subtitle: "semantic windows",
     },
   },
@@ -288,7 +289,7 @@ const EDGE_SPECS: EdgeSpec[] = [
     id: "e-chunk",
     source: "clean-text",
     target: "chunks",
-    label: "chunk",
+    label: RAG_VOCAB.segmentStage,
     activeStage: "chunk",
   },
   {
@@ -754,7 +755,7 @@ export function IngestFlowAnimation({
 const STAGE_LABELS: Record<CanonicalStage, string> = {
   extract: "Extract",
   clean: "Clean",
-  chunk: "Chunk",
+  chunk: RAG_VOCAB.segmentShort,
   embed: "Embed",
   store: "Index",
 };
@@ -768,7 +769,7 @@ const STAGE_LABELS: Record<CanonicalStage, string> = {
 const STAGE_UNITS: Record<CanonicalStage, string> = {
   extract: "pages",
   clean: "pages",
-  chunk: "chunks",
+  chunk: RAG_VOCAB.segmentsShort.toLowerCase(),
   embed: "embeddings",
   store: "vectors",
 };
@@ -779,7 +780,7 @@ const STAGE_UNITS: Record<CanonicalStage, string> = {
 const STAGE_GERUND: Record<CanonicalStage, string> = {
   extract: "Extracting",
   clean: "Cleaning",
-  chunk: "Chunking",
+  chunk: RAG_VOCAB.segmenting,
   embed: "Embedding",
   store: "Indexing",
 };
@@ -825,8 +826,9 @@ function formatResultSummary(r: IngestResponse): string {
   const embeds = r.embeddings_written?.toLocaleString();
   const model = r.embedding_model;
   if (chunks && embeds && model) {
-    return `${chunks} chunks · ${embeds} embeddings · ${model}`;
+    return `${chunks} ${RAG_VOCAB.segmentsShort.toLowerCase()} · ${embeds} embeddings · ${model}`;
   }
-  if (chunks) return `${chunks} chunks indexed`;
+  if (chunks)
+    return `${chunks} ${RAG_VOCAB.segmentsShort.toLowerCase()} indexed`;
   return "Document indexed.";
 }

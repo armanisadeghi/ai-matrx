@@ -44,7 +44,7 @@ import {
   RotateCw,
   Rainbow,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { DocumentViewer } from "@/features/rag/components/documents/DocumentViewer";
@@ -185,7 +185,7 @@ export function DocumentTab({
         <span className="text-muted-foreground">
           {state.doc.derivation_kind} · {state.doc.total_pages ?? 0} pages
           {state.doc.chunk_count != null
-            ? ` · ${state.doc.chunk_count} chunks`
+            ? ` · ${state.doc.chunk_count} ${RAG_VOCAB.segmentsShort.toLowerCase()}`
             : ""}
         </span>
         <div className="flex items-center gap-1">
@@ -304,7 +304,7 @@ function NotIngestedCard({
       ? `Ingest failed: ${ingest.error}`
       : ingest.status === "complete"
         ? "Done — refreshing…"
-        : "Run the RAG pipeline (extract → clean → chunk → embed) so this file can be searched, cited, and added to data stores.";
+        : `Run the RAG pipeline (extract → clean → ${RAG_VOCAB.segmentStage} → embed) so this file can be searched, cited, and added to data stores.`;
 
   return (
     <div
@@ -389,8 +389,8 @@ function UnavailableCard({
         </h3>
         <p className="text-xs text-muted-foreground break-words">{reason}</p>
         <p className="text-[10px] text-muted-foreground/70">
-          Couldn't read the document index. Likely a transient network
-          hiccup — try again.
+          Couldn't read the document index. Likely a transient network hiccup —
+          try again.
         </p>
       </div>
       <button

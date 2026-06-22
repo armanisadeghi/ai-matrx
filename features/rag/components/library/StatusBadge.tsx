@@ -6,8 +6,9 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
-  Stars
+  Stars,
 } from "lucide-react";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { DocStatus } from "@/features/rag/types/library";
 
 const STATUS_CONFIG: Record<
@@ -23,26 +24,25 @@ const STATUS_CONFIG: Record<
     label: "Ready",
     variant: "success",
     Icon: CheckCircle2,
-    title: "All chunks have embeddings — fully searchable.",
+    title: `All ${RAG_VOCAB.segmentsShort.toLowerCase()} have embeddings — fully searchable.`,
   },
   embedding: {
     label: "Embedding",
     variant: "info",
     Icon: Stars,
-    title: "Chunks are generated; embeddings are still flowing in.",
+    title: `${RAG_VOCAB.segmentsShort} are generated; embeddings are still flowing in.`,
   },
   chunking: {
-    label: "Chunking",
+    label: RAG_VOCAB.segmenting,
     variant: "info",
     Icon: Loader2,
-    title: "Pages are persisted; chunking is in progress.",
+    title: `Pages are persisted; ${RAG_VOCAB.segmentation.toLowerCase()} is in progress.`,
   },
   extracted: {
     label: "Extracted",
     variant: "warning",
     Icon: FileText,
-    title:
-      "Pages persisted but no chunks yet — extraction succeeded, chunking did not run or was paused.",
+    title: `Pages persisted but no ${RAG_VOCAB.segmentsShort.toLowerCase()} yet — extraction succeeded, ${RAG_VOCAB.segmentation.toLowerCase()} did not run or was paused.`,
   },
   pending: {
     label: "Pending",

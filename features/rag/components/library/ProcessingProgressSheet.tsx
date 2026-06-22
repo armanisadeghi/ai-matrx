@@ -417,7 +417,7 @@ function EmptyState() {
       <h3 className="text-sm font-semibold">Nothing processing yet</h3>
       <p className="text-xs text-muted-foreground mt-1 max-w-xs">
         Upload a file or re-run a stage to watch live extraction, cleaning,
-        chunking, and embedding stream in here.
+        segmentation, and embedding stream in here.
       </p>
     </div>
   );

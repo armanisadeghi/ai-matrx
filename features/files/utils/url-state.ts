@@ -413,18 +413,16 @@ function countParams(p: URLSearchParams): number {
   return n;
 }
 
-// ---------------------------------------------------------------------------
-// Folder path encoding — keep in sync with the catch-all route.
-// ---------------------------------------------------------------------------
+import type { CloudFolderRecord } from "@/features/files/types";
 
 /**
  * Encode a logical folder path (`"Reports/2026 Q1"`) into URL path
- * segments suitable for `router.push("/files/<segments>")`. Each
+ * segments suitable for `router.push("/files/all/<segments>")`. Each
  * segment is `encodeURIComponent`'d so spaces and unicode survive the
  * round-trip; the catch-all route reverses this with `decodeURIComponent`.
  *
  * Returns `""` (empty string) for null / empty paths so callers can
- * concat directly with `/files`.
+ * concat directly with `/files/all`.
  */
 export function encodeFolderPathSegments(folderPath: string | null): string {
   if (!folderPath) return "";
@@ -433,4 +431,44 @@ export function encodeFolderPathSegments(folderPath: string | null): string {
     .filter((s) => s.length > 0)
     .map(encodeURIComponent)
     .join("/");
+}
+
+/** Prefix for the canonical folder-browsing route. */
+export const FILES_ALL_PREFIX = "/files/all";
+
+/**
+ * Parse the logical folder path from a `/files/all/…` pathname.
+ *
+ * Returns:
+ *   `null`  — not a `/files/all` route (e.g. `/files/trash`)
+ *   `""`    — `/files/all` root
+ *   `"a/b"` — nested folder path
+ */
+export function parseFolderPathFromPathname(pathname: string): string | null {
+  if (pathname === FILES_ALL_PREFIX) return "";
+  if (!pathname.startsWith(`${FILES_ALL_PREFIX}/`)) return null;
+  const rest = pathname.slice(FILES_ALL_PREFIX.length + 1);
+  if (!rest) return "";
+  return rest.split("/").map(decodeURIComponent).join("/");
+}
+
+/**
+ * Find a real folder id whose `folderPath` exactly matches `folderPath`.
+ * Used when the server-side Supabase lookup misses but the Redux tree
+ * already has the row (common during soft navigations).
+ */
+export function resolveFolderIdByPath(
+  folderPath: string,
+  foldersById: Record<string, CloudFolderRecord>,
+): string | null {
+  for (const folder of Object.values(foldersById)) {
+    if (
+      folder.source.kind === "real" &&
+      !folder.deletedAt &&
+      folder.folderPath === folderPath
+    ) {
+      return folder.id;
+    }
+  }
+  return null;
 }

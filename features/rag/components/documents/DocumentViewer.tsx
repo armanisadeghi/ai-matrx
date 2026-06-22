@@ -40,6 +40,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { ChunksPane } from "@/features/rag/components/documents/panes/ChunksPane";
 import { CleanedMarkdownPane } from "@/features/rag/components/documents/panes/CleanedMarkdownPane";
 import { PdfPane } from "@/features/rag/components/documents/panes/PdfPane";
@@ -110,7 +111,7 @@ export function DocumentViewer({
           {doc.data && (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {doc.data.derivation_kind} · {totalPages || 0} pages ·{" "}
-              {doc.data.chunk_count} chunks
+              {doc.data.chunk_count} {RAG_VOCAB.segmentsShort.toLowerCase()}
             </span>
           )}
         </div>

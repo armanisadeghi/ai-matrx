@@ -33,6 +33,7 @@ import {
   PanelRightTapButton,
 } from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
 import { renameFile } from "@/features/files/redux/thunks";
@@ -856,7 +857,7 @@ function PaneVisibilityStrip({
     pdf: "Source PDF",
     raw: "Raw text",
     clean: "AI-cleaned",
-    chunks: "Chunks",
+    chunks: RAG_VOCAB.segmentsShort,
     extractions: "Extractions",
   };
   return (

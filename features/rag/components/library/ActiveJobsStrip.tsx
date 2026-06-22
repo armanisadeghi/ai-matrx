@@ -27,9 +27,9 @@ import {
   Stars,
   Zap,
   X as XIcon,
-  XCircle
+  XCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import type { ProcessingStageId } from "./ProcessingProgressDialog";
@@ -56,7 +56,7 @@ const STAGE_META: Record<ProcessingStageId, StageMeta> = {
     text: "text-violet-700 dark:text-violet-300",
   },
   chunk: {
-    label: "Chunk",
+    label: RAG_VOCAB.segmentShort,
     Icon: Layers,
     gradient: "from-amber-500 to-amber-400",
     text: "text-amber-700 dark:text-amber-300",

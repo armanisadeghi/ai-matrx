@@ -119,7 +119,7 @@ export function ContentHeader({
     // also updates browser history. Same rule as PageShell:
     // virtual folders don't have a stable folder_path the catch-all
     // route can resolve, so they only update Redux. Real folders
-    // (including null = root) push the canonical /files/<path> URL.
+    // (including null = root) push the canonical /files/all/<path> URL.
     if (folderId === null) {
       router.push("/files/all");
       return;

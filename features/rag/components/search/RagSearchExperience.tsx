@@ -73,6 +73,7 @@ import {
   type InventoryResponse,
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 
 // ===========================================================================
@@ -1110,7 +1111,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2">
                   <AnimatedKpiCard
                     icon={<Database className="h-3.5 w-3.5" />}
-                    label="Visible chunks"
+                    label={`Visible ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                     value={diag.visible_chunks_total}
                     tone="info"
                   />
@@ -1437,7 +1438,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
                 The agent will call{" "}
                 <code className="font-mono">rag_search</code> one or more times,
                 then answer using only what it retrieved. You'll see every tool
-                call, every retrieved chunk, and the final answer.
+                call, every retrieved segment, and the final answer.
               </p>
             </div>
           )}
@@ -1621,9 +1622,9 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
         <div className="flex-1">
           <div className="text-sm font-semibold">Diagnostics</div>
           <div className="text-[11px] text-muted-foreground">
-            See what chunks are visible to you, and via which ACL route. Toggle
-            "Admin: bypass ACL" in the sidebar to compare against the full
-            database.
+            See what {RAG_VOCAB.segmentsShort.toLowerCase()} are visible to you,
+            and via which ACL route. Toggle "Admin: bypass ACL" in the sidebar
+            to compare against the full database.
           </div>
         </div>
         <Button onClick={refresh} disabled={loading} size="sm">
@@ -1651,8 +1652,9 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 Inventory not loaded yet
               </p>
               <p>
-                Click <strong>Load</strong> to fetch every chunk visible to you,
-                grouped by source kind and visibility route.
+                Click <strong>Load</strong> to fetch every{" "}
+                {RAG_VOCAB.segmentShort.toLowerCase()} visible to you, grouped
+                by source kind and visibility route.
               </p>
               <p className="mt-2 text-xs">
                 If you're not finding your PDFs in search, this is the fastest
@@ -1679,7 +1681,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 </div>
                 <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   <Stat
-                    label="Total chunks"
+                    label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                     value={inv.total_visible_chunks.toLocaleString()}
                   />
                   <Stat
@@ -1705,7 +1707,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                   <div className="divide-y">
                     {inv.by_source_kind.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-muted-foreground">
-                        No chunks visible.
+                        No {RAG_VOCAB.segmentsShort.toLowerCase()} visible.
                       </div>
                     ) : (
                       inv.by_source_kind.map((b) => (
@@ -1717,7 +1719,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                             {b.source_kind}
                           </code>
                           <span className="tabular-nums">
-                            {b.visible_chunks.toLocaleString()} chunks
+                            {b.visible_chunks.toLocaleString()}{" "}
+                            {RAG_VOCAB.segmentsShort.toLowerCase()}
                           </span>
                           <span className="ml-auto tabular-nums text-muted-foreground">
                             {b.distinct_sources.toLocaleString()} sources
@@ -1730,7 +1733,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 
                 <div className="rounded-md border bg-card overflow-hidden">
                   <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
-                    By visibility route (why is each chunk visible?)
+                    By visibility route (why is each{" "}
+                    {RAG_VOCAB.segmentShort.toLowerCase()} visible?)
                   </div>
                   <div className="divide-y">
                     {Object.entries(inv.by_visibility_route).length === 0 ? (
@@ -1756,7 +1760,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 
               <div className="rounded-md border bg-card overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
-                  Top sources by chunk count
+                  Top sources by {RAG_VOCAB.segmentShort.toLowerCase()} count
                 </div>
                 <div className="divide-y">
                   {inv.top_sources.length === 0 ? (
@@ -1776,7 +1780,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                           {t.file_name ?? t.source_id}
                         </span>
                         <span className="tabular-nums text-muted-foreground">
-                          {t.chunk_count} chunks
+                          {t.chunk_count}{" "}
+                          {RAG_VOCAB.segmentsShort.toLowerCase()}
                         </span>
                       </div>
                     ))

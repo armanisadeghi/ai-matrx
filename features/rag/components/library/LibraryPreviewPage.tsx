@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getJson, postJson } from "@/lib/python-client";
 import { StatusBadge } from "./StatusBadge";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
 import type { DocStatus } from "@/features/rag/types/library";
 
@@ -136,8 +137,9 @@ export function LibraryPreviewPage({
                 </h1>
                 <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {doc.pagesPersisted} pages · {doc.chunks} chunks ·{" "}
-                  {doc.embeddingsOai} embeds
+                  {doc.pagesPersisted} pages · {doc.chunks}{" "}
+                  {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
+                  embeds
                 </span>
               </div>
             )}
@@ -466,7 +468,7 @@ function RightRail({
         <div className="border-b px-3 py-2">
           <TabsList className="h-7">
             <TabsTrigger value="chunks" className="h-6 text-xs">
-              Chunks (this page)
+              {RAG_VOCAB.segmentsShort} (this page)
             </TabsTrigger>
             <TabsTrigger value="search" className="h-6 text-xs">
               <SearchIcon className="h-3 w-3 mr-1" />
@@ -514,7 +516,11 @@ function ChunksOnPage({
         setTotal(typeof data.total === "number" ? data.total : 0);
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message ?? "Failed to load chunks");
+        if (!cancelled)
+          setError(
+            err?.message ??
+              `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
+          );
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -530,13 +536,13 @@ function ChunksOnPage({
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Loading chunks…
+            Loading {RAG_VOCAB.segmentsShort.toLowerCase()}…
           </div>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!loading && !error && chunks.length === 0 && (
           <p className="text-sm text-muted-foreground italic">
-            No chunks for page {pageNumber}.
+            No {RAG_VOCAB.segmentsShort.toLowerCase()} for page {pageNumber}.
           </p>
         )}
         {chunks.map((c) => (
@@ -628,8 +634,9 @@ function TestSearchPanel({ documentId }: { documentId: string }) {
     <div className="flex flex-col h-full">
       <div className="border-b p-3 space-y-2">
         <p className="text-xs text-muted-foreground">
-          Lexical search over this document's {total || "—"} chunks. This is
-          what an agent scoped to this doc would retrieve.
+          Lexical search over this document's {total || "—"}{" "}
+          {RAG_VOCAB.segmentsShort.toLowerCase()}. This is what an agent scoped
+          to this doc would retrieve.
         </p>
         <div className="flex gap-2">
           <Input

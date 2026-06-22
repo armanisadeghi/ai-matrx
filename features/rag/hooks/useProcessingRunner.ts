@@ -32,6 +32,7 @@ import {
   ingestFileStream,
   type IngestStreamEvent,
 } from "@/features/rag/api/ingest";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type {
   ProcessingFrame,
   ProcessingResultSummary,
@@ -367,7 +368,7 @@ export function useProcessingRunner(): UseProcessingRunner {
                 result: r.error
                   ? null
                   : {
-                      headline: `Indexed ${r.chunks_written.toLocaleString()} chunks (${r.embeddings_written.toLocaleString()} embeddings) via ${r.embedding_model}.`,
+                      headline: `Indexed ${r.chunks_written.toLocaleString()} ${RAG_VOCAB.segmentsShort.toLowerCase()} (${r.embeddings_written.toLocaleString()} embeddings) via ${r.embedding_model}.`,
                       byStage: {
                         ...j.byStage,
                         embed:
@@ -375,7 +376,7 @@ export function useProcessingRunner(): UseProcessingRunner {
                           `${r.embeddings_written.toLocaleString()} embeddings written`,
                         chunk:
                           j.byStage.chunk ??
-                          `${r.chunks_written.toLocaleString()} chunks written`,
+                          `${r.chunks_written.toLocaleString()} ${RAG_VOCAB.segmentsShort.toLowerCase()} written`,
                       },
                       processedDocumentId: pdid ?? j.processedDocumentId,
                     },
@@ -504,7 +505,7 @@ function summarizeStageResult(d: Record<string, unknown>): string {
     case "clean":
       return `${n("pages_cleaned")} pages cleaned (${n("cleaned_chars")} chars)`;
     case "chunk":
-      return `${n("chunks_written")} chunks (${n("parents")} parents, ${n("children")} children)`;
+      return `${n("chunks_written")} ${RAG_VOCAB.segmentsShort.toLowerCase()} (${n("parents")} parents, ${n("children")} children)`;
     case "embed":
       return `${n("chunks_embedded")} new vectors (${n("chunks_already_embedded")} already done)`;
     default:

@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { QuickSearchDialog } from "@/features/rag/components/library/QuickSearchDialog";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { StatusBadge } from "@/features/rag/components/library/StatusBadge";
 import type { DocStatus } from "@/features/rag/types/library";
 import type { RichMember } from "@/features/rag/hooks/useDataStores";
@@ -134,7 +135,7 @@ export function RichMemberTable({
                 Pages
               </th>
               <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Chunks
+                {RAG_VOCAB.segmentsShort}
               </th>
               <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Size
@@ -264,7 +265,8 @@ export function RichMemberTable({
             <DialogTitle>Remove from store?</DialogTitle>
             <DialogDescription>
               Removes <strong>{confirmRemove?.name}</strong> from this store
-              only. The file itself, its pages, chunks, and embeddings are{" "}
+              only. The file itself, its pages,{" "}
+              {RAG_VOCAB.segmentsShort.toLowerCase()}, and embeddings are{" "}
               <strong>not</strong> deleted.
             </DialogDescription>
           </DialogHeader>

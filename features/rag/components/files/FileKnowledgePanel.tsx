@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { ingestFile } from "@/features/rag/api/ingest";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 
 export interface FileKnowledgePanelProps {
@@ -50,15 +51,13 @@ export function FileKnowledgePanel({
         toast.error(`Knowledge indexing failed: ${result.error}`);
       } else {
         toast.success(
-          `Indexed: ${result.chunks_written} chunks, ${result.embeddings_written} embeddings — NER runs automatically.`,
+          `Indexed: ${result.chunks_written} ${RAG_VOCAB.segmentsShort.toLowerCase()}, ${result.embeddings_written} embeddings — NER runs automatically.`,
         );
         clearFileDocumentCache(fileId);
         refresh();
       }
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Knowledge indexing failed",
-      );
+      toast.error(e instanceof Error ? e.message : "Knowledge indexing failed");
     } finally {
       setRunning(false);
     }
@@ -68,8 +67,7 @@ export function FileKnowledgePanel({
     if (state.status === "idle" || state.status === "loading") {
       return (
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" /> Checking knowledge
-          index…
+          <Loader2 className="h-3 w-3 animate-spin" /> Checking knowledge index…
         </div>
       );
     }
@@ -84,9 +82,9 @@ export function FileKnowledgePanel({
       return (
         <div className="space-y-1.5">
           <p className="text-[11px] text-muted-foreground">
-            Not in the knowledge index yet. Indexing extracts the text,
-            chunks it, embeds it, and runs entity recognition (NER) so
-            agents and search can use this document.
+            Not in the knowledge index yet. Indexing extracts the text, segments
+            it, embeds it, and runs entity recognition (NER) so agents and
+            search can use this document.
           </p>
           <Button
             size="sm"
@@ -113,7 +111,7 @@ export function FileKnowledgePanel({
             Indexed
           </span>
           <span className="rounded bg-muted px-1.5 py-0.5 tabular-nums">
-            {doc.chunk_count} chunks
+            {doc.chunk_count} {RAG_VOCAB.segmentsShort.toLowerCase()}
           </span>
           {doc.has_clean_content ? (
             <span className="rounded bg-muted px-1.5 py-0.5">cleaned</span>
@@ -138,7 +136,9 @@ export function FileKnowledgePanel({
             size="sm"
             variant="outline"
             className="h-7 text-[11px]"
-            onClick={() => window.open("/knowledge-graph", "_blank", "noopener,noreferrer")}
+            onClick={() =>
+              window.open("/knowledge-graph", "_blank", "noopener,noreferrer")
+            }
           >
             <ExternalLink className="h-3 w-3 mr-1.5" />
             Knowledge graph

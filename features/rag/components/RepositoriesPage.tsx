@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -107,7 +108,7 @@ export function RepositoriesPage() {
         );
       } else {
         toast.success(
-          `Indexed ${data?.files_processed ?? 0} files · ${data?.chunks_written ?? 0} chunks · ${data?.embeddings_written ?? 0} embeddings`,
+          `Indexed ${data?.files_processed ?? 0} files · ${data?.chunks_written ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()} · ${data?.embeddings_written ?? 0} embeddings`,
         );
       }
       setRefreshKey((n) => n + 1);

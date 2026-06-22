@@ -17,6 +17,10 @@ import {
 } from "./ProcessingProgressDialog";
 import type { UseFileIngestState } from "@/features/rag/hooks/useFileIngest";
 import type { IngestProgress } from "@/features/rag/api/ingest";
+import {
+  RAG_PIPELINE_SUBTITLE,
+  RAG_VOCAB,
+} from "@/features/rag/constants/vocabulary";
 
 interface IngestHandle extends UseFileIngestState {
   cancel: () => void;
@@ -71,9 +75,9 @@ export function IngestProgressDialog({
     if (ingest.status !== "complete" || !ingest.result) return null;
     const r = ingest.result;
     return {
-      headline: `Indexed ${r.chunks_written.toLocaleString()} chunks · ${r.embeddings_written.toLocaleString()} embeddings via ${r.embedding_model}.`,
+      headline: `Indexed ${r.chunks_written.toLocaleString()} ${RAG_VOCAB.segmentsShort.toLowerCase()} · ${r.embeddings_written.toLocaleString()} embeddings via ${r.embedding_model}.`,
       byStage: {
-        chunk: `${r.chunks_written.toLocaleString()} chunks written`,
+        chunk: `${r.chunks_written.toLocaleString()} ${RAG_VOCAB.segmentsShort.toLowerCase()} written`,
         embed: `${r.embeddings_written.toLocaleString()} embeddings written`,
       },
       // Threaded through so the minimized widget and full success view
@@ -87,7 +91,7 @@ export function IngestProgressDialog({
     <ProcessingProgressDialog
       open={open}
       title={fileName || "Processing"}
-      subtitle="Full pipeline (extract → clean → chunk → embed)"
+      subtitle={RAG_PIPELINE_SUBTITLE}
       frame={frame}
       result={result}
       error={ingest.error}

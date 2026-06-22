@@ -53,7 +53,7 @@ import {
   Upload,
   Search as SearchAction,
   MoreHorizontal,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -80,6 +80,7 @@ import {
 import { del, postJson } from "@/lib/python-client";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type {
   DocStatus,
   LibraryDocSummary,
@@ -167,7 +168,7 @@ export function LibraryPage() {
       const jobId = await runner.runForCldFile(
         normalized.fileId,
         file.name,
-        "Upload + full pipeline (extract → clean → chunk → embed)",
+        `Upload + full pipeline (extract → clean → ${RAG_VOCAB.segmentStage} → embed)`,
       );
       setFocusJobId(jobId);
       setSheetOpen(true);
@@ -192,7 +193,7 @@ export function LibraryPage() {
         { status: string }
       >("/rag/library/bulk-delete", { status });
       toast.success(
-        `Deleted ${data?.deleted_documents ?? 0} ${status} documents (${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} chunks)`,
+        `Deleted ${data?.deleted_documents ?? 0} ${status} documents (${data?.deleted_pages ?? 0} pages, ${data?.deleted_chunks ?? 0} ${RAG_VOCAB.segmentsShort.toLowerCase()})`,
       );
       setBulkConfirmStatus(null);
       setRefreshKey((n) => n + 1);
@@ -303,17 +304,15 @@ export function LibraryPage() {
       title: mode === "file" ? `Delete "${doc.name}"?` : "Delete processing?",
       description:
         mode === "file"
-          ? "Removes the document, all chunks/embeddings, AND the source file from cloud storage. Cannot be undone."
-          : "Removes chunks and embeddings but keeps the source file. You can re-process to rebuild.",
+          ? `Removes the document, all ${RAG_VOCAB.segmentsShort.toLowerCase()}/embeddings, AND the source file from cloud storage. Cannot be undone.`
+          : `Removes ${RAG_VOCAB.segmentsShort.toLowerCase()} and embeddings but keeps the source file. You can re-process to rebuild.`,
       variant: "destructive",
       confirmLabel: mode === "file" ? "Delete file" : "Delete processing",
     });
     if (!proceed) return;
     try {
       if (mode === "file") {
-        await del<{ deleted_documents: number }>(
-          `/rag/library/${doc.id}/full`,
-        );
+        await del<{ deleted_documents: number }>(`/rag/library/${doc.id}/full`);
         toast.success(`Deleted file "${doc.name}"`);
       } else {
         await del<{ deleted_documents: number }>(`/rag/library/${doc.id}`);
@@ -337,9 +336,9 @@ export function LibraryPage() {
         : stage === "clean"
           ? "LLM cleanup + section classification"
           : stage === "chunk"
-            ? "Page-aware hierarchical chunking"
+            ? `Page-aware hierarchical ${RAG_VOCAB.segmentation.toLowerCase()}`
             : stage === "embed"
-              ? "Embed any chunks missing a vector"
+              ? `Embed any ${RAG_VOCAB.segmentsShort.toLowerCase()} missing a vector`
               : "Full pipeline";
     const jobId = await runner.runStage(docId, stage, docName, subtitle);
     setFocusJobId(jobId);
@@ -407,8 +406,9 @@ export function LibraryPage() {
                 )}
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Every document you've processed for RAG. Status, page counts,
-                chunks, embeddings, and data-store bindings — all in one place.
+                Every document you've processed for RAG. Status, page counts, $
+                {RAG_VOCAB.segmentsShort.toLowerCase()}, embeddings, and
+                data-store bindings — all in one place.
               </p>
             </div>
             <div className="flex gap-1.5 shrink-0">
@@ -515,7 +515,7 @@ export function LibraryPage() {
             />
             <AnimatedKpiCard
               icon={<Layers className="h-3.5 w-3.5" />}
-              label="Total chunks"
+              label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
               value={headerStats.chunks}
               loading={summaryLoading}
               tone="neutral"
@@ -622,7 +622,9 @@ export function LibraryPage() {
                 <TableHead>Document</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Pages</TableHead>
-                <TableHead className="text-right">Chunks</TableHead>
+                <TableHead className="text-right">
+                  {RAG_VOCAB.segmentsShort}
+                </TableHead>
                 <TableHead className="text-right">Embeds</TableHead>
                 <TableHead className="text-right">Stores</TableHead>
                 <TableHead>Created</TableHead>
@@ -738,7 +740,8 @@ export function LibraryPage() {
               {bulkConfirmStatus === "extracted" && (
                 <>
                   This will delete every document where pages were extracted but
-                  chunking never ran. Re-process to rebuild.
+                  ${RAG_VOCAB.segmentation.toLowerCase()} never ran. Re-process
+                  to rebuild.
                 </>
               )}
               {bulkConfirmStatus === "embedding" && (
@@ -907,7 +910,7 @@ function DocRow({
             <Button
               size="sm"
               variant="default"
-              title={`Resume the pipeline — ${doc.chunks - doc.embeddingsOai} chunks still need embeddings`}
+              title={`Resume the pipeline — ${doc.chunks - doc.embeddingsOai} ${RAG_VOCAB.segmentsShort.toLowerCase()} still need embeddings`}
               onClick={onRunPipeline}
               className="h-7 px-2 text-[11px] bg-amber-500 hover:bg-amber-500/90 text-white"
             >
@@ -950,10 +953,7 @@ function DocRow({
                 <ExternalLink className="h-3.5 w-3.5 mr-2" />
                 Preview
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={onSearch}
-                disabled={doc.chunks === 0}
-              >
+              <DropdownMenuItem onSelect={onSearch} disabled={doc.chunks === 0}>
                 <SearchAction className="h-3.5 w-3.5 mr-2" />
                 Search inside
               </DropdownMenuItem>

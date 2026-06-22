@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -368,8 +369,7 @@ function StoreDetailPanel({
         `${bound} of ${picks.length} bound · ${reprocessed} queued for RAG`,
         {
           id: tid,
-          description:
-            "Each file streams its ingestion progress in the file viewer. Refresh to see chunk counts.",
+          description: `Each file streams its ingestion progress in the file viewer. Refresh to see ${RAG_VOCAB.segmentShort.toLowerCase()} counts.`,
         },
       );
     },

@@ -27,7 +27,7 @@ import {
   Play,
   Stars,
   Zap,
-  X as XIcon
+  X as XIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useStageAction } from "@/features/rag/hooks/useStageAction";
 import { useStagesStatus } from "@/features/rag/hooks/useStagesStatus";
 import type {
@@ -88,11 +89,11 @@ const PILLS: PillDef[] = [
   },
   {
     pill: "chunks",
-    label: "Chunks",
+    label: RAG_VOCAB.segmentsShort,
     Icon: Layers,
     action: "chunk",
-    actionLabel: "Chunk",
-    unit: "chunk",
+    actionLabel: RAG_VOCAB.segmentShort,
+    unit: RAG_VOCAB.segmentShort.toLowerCase(),
   },
   {
     pill: "vectors",
@@ -459,11 +460,11 @@ function actionDescription(def: PillDef): string {
     case "clean":
       return "LLM cleanup + section classification per page. Replaces existing cleaned text.";
     case "chunk":
-      return "Page-aware hierarchical chunking. Replaces existing chunks (embeddings will be cleared too — re-embed afterwards).";
+      return `Page-aware hierarchical ${RAG_VOCAB.segmentation.toLowerCase()}. Replaces existing ${RAG_VOCAB.segmentsShort.toLowerCase()} (embeddings will be cleared too — re-embed afterwards).`;
     case "embed":
-      return "Embed any chunks missing a vector for the current model. Idempotent — only fills in what's missing.";
+      return `Embed any ${RAG_VOCAB.segmentsShort.toLowerCase()} missing a vector for the current model. Idempotent — only fills in what's missing.`;
     case "run_all":
-      return "Run extract → clean → chunk → embed in sequence.";
+      return `Run extract → clean → ${RAG_VOCAB.segmentStage} → embed in sequence.`;
     default:
       return "";
   }
@@ -476,7 +477,7 @@ function summarizeResult(def: PillDef, r: Record<string, unknown>): string {
     case "clean":
       return `Cleaned ${num(r.pages_cleaned)} pages, ${num(r.cleaned_chars)} chars.`;
     case "chunk":
-      return `Wrote ${num(r.chunks_written)} chunks (${num(r.parents)} parents, ${num(r.children)} children).`;
+      return `Wrote ${num(r.chunks_written)} ${RAG_VOCAB.segmentsShort.toLowerCase()} (${num(r.parents)} parents, ${num(r.children)} children).`;
     case "embed":
       return `Embedded ${num(r.chunks_embedded)} new vectors. ${num(r.chunks_already_embedded)} were already done.`;
     default:

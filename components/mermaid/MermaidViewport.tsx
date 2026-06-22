@@ -95,7 +95,12 @@ export function MermaidViewport({
   const [scale, setScale] = useState(1);
   const [canPan, setCanPan] = useState(false);
 
-  const dragRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    left: number;
+    top: number;
+  } | null>(null);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
 
@@ -166,7 +171,8 @@ export function MermaidViewport({
       // Intrinsic size from the viewBox (mermaid always emits one); fall back
       // to the bounding box if a future grammar omits it.
       const vb = el.viewBox?.baseVal;
-      let nat: NaturalSize | null = vb && vb.width && vb.height ? { w: vb.width, h: vb.height } : null;
+      let nat: NaturalSize | null =
+        vb && vb.width && vb.height ? { w: vb.width, h: vb.height } : null;
       if (!nat) {
         try {
           const bb = el.getBBox();
@@ -206,7 +212,10 @@ export function MermaidViewport({
     const host = hostRef.current;
     if (!frame || !host || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
-      setCanPan(frame.scrollWidth > frame.clientWidth + 1 || frame.scrollHeight > frame.clientHeight + 1);
+      setCanPan(
+        frame.scrollWidth > frame.clientWidth + 1 ||
+          frame.scrollHeight > frame.clientHeight + 1,
+      );
     });
     ro.observe(host);
     return () => ro.disconnect();
@@ -246,7 +255,12 @@ export function MermaidViewport({
     const frame = frameRef.current;
     if (!frame) return;
     // Grab-to-pan the scroll container (only meaningful when content overflows).
-    dragRef.current = { x: e.clientX, y: e.clientY, left: frame.scrollLeft, top: frame.scrollTop };
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      left: frame.scrollLeft,
+      top: frame.scrollTop,
+    };
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -297,7 +311,7 @@ export function MermaidViewport({
       </div>
 
       {!hideControls && (
-        <div className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover/viewport:pointer-events-auto group-hover/viewport:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+        <div className="pointer-events-auto absolute bottom-2 right-2 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-0.5 opacity-70 shadow-sm backdrop-blur-sm transition-opacity group-hover/viewport:opacity-100 focus-within:opacity-100">
           <SimpleTooltip text="Zoom out">
             <button
               type="button"

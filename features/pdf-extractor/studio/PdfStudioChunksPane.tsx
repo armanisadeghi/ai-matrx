@@ -26,6 +26,7 @@ import {
   setPendingScrollPage,
   setScrollSource,
 } from "../state/pdfStudioSlice";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { fetchChunksForPage } from "../state/thunks";
 import type { ApiChunkRow } from "../state/types";
 
@@ -127,7 +128,7 @@ function PaneHeader({
     <div className="shrink-0 px-2.5 py-1.5 border-b border-border flex items-center gap-1.5">
       <Boxes className="w-3 h-3 text-primary" />
       <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
-        Chunks
+        {RAG_VOCAB.segmentsShort}
       </span>
       {activePage != null && (
         <span className="text-[10px] text-muted-foreground">
@@ -141,7 +142,10 @@ function PaneHeader({
       {hasActions && (
         <div className="ml-auto flex items-center gap-0.5">
           {onCopyAll && (
-            <CopyButton getText={onCopyAll} label="Copy all chunks" />
+            <CopyButton
+              getText={onCopyAll}
+              label={`Copy all ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
+            />
           )}
           {onClose && (
             <button
@@ -221,7 +225,9 @@ function ErrorState({
     <div className="p-4 flex flex-col items-start gap-2">
       <div className="flex items-center gap-1.5 text-destructive">
         <AlertCircle className="w-3.5 h-3.5" />
-        <span className="text-xs font-medium">Couldn't load chunks</span>
+        <span className="text-xs font-medium">
+          Couldn't load {RAG_VOCAB.segmentsShort.toLowerCase()}
+        </span>
       </div>
       {error && (
         <p className="text-[11px] text-muted-foreground leading-snug">
@@ -255,12 +261,12 @@ function EmptyState({
       <div>
         <p className="text-xs font-medium text-foreground">
           {activePage != null
-            ? `No chunks for page ${activePage}.`
-            : "No chunks yet."}
+            ? `No ${RAG_VOCAB.segmentsShort.toLowerCase()} for page ${activePage}.`
+            : `No ${RAG_VOCAB.segmentsShort.toLowerCase()} yet.`}
         </p>
         <p className="text-[11px] text-muted-foreground leading-snug mt-1">
           {hasCldFile
-            ? "Create a chunking run to break this document into searchable chunks."
+            ? `Create a chunking run to break this document into searchable ${RAG_VOCAB.segmentsShort.toLowerCase()}.`
             : "Chunking needs a cld_file source — this document doesn't have one linked."}
         </p>
       </div>

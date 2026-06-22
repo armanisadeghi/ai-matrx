@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { KnowledgePipelineDiagram } from "./KnowledgePipelineDiagram";
 
 /**
@@ -52,16 +53,14 @@ const CAPABILITIES: Capability[] = [
   {
     icon: Wand2,
     title: "A real extraction pipeline",
-    description:
-      "Extract → clean → chunk → embed, run per-stage or as one streamed job. Watch the original PDF, raw text, cleaned markdown, and chunks side by side in a 4-pane viewer.",
+    description: `Extract → clean → ${RAG_VOCAB.segmentStage} → embed, run per-stage or as one streamed job. Watch the original PDF, raw text, cleaned markdown, and ${RAG_VOCAB.segmentsShort.toLowerCase()} side by side in a 4-pane viewer.`,
     href: "/rag/library",
     hrefLabel: "Library",
   },
   {
     icon: Layers,
     title: "Many representations, one source",
-    description:
-      "The same document is held as text, chunks, vectors, summaries, schemas, and indices — each scoped to who's allowed to see it, all tracing back to the original.",
+    description: `The same document is held as text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, vectors, summaries, schemas, and indices — each scoped to who's allowed to see it, all tracing back to the original.`,
     href: "/rag/data-stores",
     hrefLabel: "Data stores",
   },
@@ -126,8 +125,7 @@ const WALKTHROUGH: WalkthroughStep[] = [
   {
     n: 2,
     title: "Run extraction",
-    description:
-      "Send the PDF through extract → clean → chunk → embed and watch it in the 4-pane viewer.",
+    description: `Send the PDF through extract → clean → ${RAG_VOCAB.segmentStage} → embed and watch it in the 4-pane viewer.`,
     state: "built",
     href: "/rag/library",
   },

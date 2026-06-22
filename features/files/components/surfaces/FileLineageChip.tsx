@@ -27,7 +27,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 
 export interface FileLineageChipProps {
   fileId: string;
@@ -83,7 +83,7 @@ export function FileLineageChip({ fileId, className }: FileLineageChipProps) {
         <span
           title={
             state.status === "found" && state.doc.chunk_count != null
-              ? `Has a processed_documents row with ${state.doc.chunk_count} chunks`
+              ? `Has a processed_documents row with ${state.doc.chunk_count} ${RAG_VOCAB.segmentsShort.toLowerCase()}`
               : "Has a processed_documents row"
           }
           className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5"

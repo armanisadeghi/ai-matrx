@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, FileText, Layers, Stars, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type {
   ProcessingFrame,
   ProcessingStageId,
@@ -630,9 +630,9 @@ const STAGE_META: Record<
     titleClass: "text-violet-700 dark:text-violet-300",
   },
   chunk: {
-    label: "Chunk",
+    label: RAG_VOCAB.segmentShort,
     Icon: Layers,
-    unit: "Chunk",
+    unit: RAG_VOCAB.segmentShort,
     bgFrom: "from-amber-500/10",
     bgTo: "to-amber-500/0",
     chipBg: "bg-amber-500/15",

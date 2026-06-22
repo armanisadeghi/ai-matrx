@@ -29,7 +29,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import {
@@ -434,13 +434,13 @@ function MobileFileActionSheet({
               <ActionRow
                 icon={<FileSearch className="h-4 w-4" />}
                 label="Open document view"
-                description="Pages, cleaned text, chunks, lineage."
+                description={`Pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage.`}
                 onPress={openDocumentTab}
               />
               <ActionRow
                 icon={<Zap className="h-4 w-4" />}
                 label="Reprocess for RAG"
-                description="Re-run extract / clean / chunk / embed."
+                description={`Re-run extract / clean / ${RAG_VOCAB.segmentStage} / embed.`}
                 onPress={fireReprocess}
               />
               <ActionDivider />

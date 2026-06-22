@@ -23,6 +23,7 @@ import {
   Workflow,
   ChevronDown,
 } from "lucide-react";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 
 /**
@@ -117,7 +118,7 @@ const PHASES: Phase[] = [
       "Admitted knowledge — retained, versioned, traceable. The same source is held in many representations and described by NER, scopes, trust, and lineage. It can reprocess and derive, then return to the hub.",
     chips: [
       "text",
-      "chunks",
+      RAG_VOCAB.segmentsShort.toLowerCase(),
       "vectors",
       "summaries",
       "schemas",

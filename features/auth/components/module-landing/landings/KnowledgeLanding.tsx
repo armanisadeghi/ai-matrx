@@ -57,13 +57,13 @@ const STEPS: ModuleStep[] = [
     number: "02",
     title: "Let agents query it",
     description:
-      "Reference the data store from any agent. The agent picks relevant chunks per question and cites them in its answer.",
+      "Reference the data store from any agent. The agent picks relevant segments per question and cites them in its answer.",
   },
   {
     number: "03",
     title: "Iterate as you learn",
     description:
-      "Add new docs as they come in, retire stale ones, refine chunking. Quality climbs as the store matures.",
+      "Add new docs as they come in, retire stale ones, refine segmentation. Quality climbs as the store matures.",
   },
 ];
 
@@ -72,25 +72,45 @@ const SUB_AREAS: ModuleSubArea[] = [
     title: "Data stores",
     status: "Live",
     href: "/rag/data-stores",
-    items: ["Create + manage", "Cloud + repo sync", "Permission scopes", "Stats + freshness"],
+    items: [
+      "Create + manage",
+      "Cloud + repo sync",
+      "Permission scopes",
+      "Stats + freshness",
+    ],
   },
   {
     title: "Search",
     status: "Live",
     href: "/rag/search",
-    items: ["Hybrid retrieval", "Per-store filtering", "Result citations", "Save as agent context"],
+    items: [
+      "Hybrid retrieval",
+      "Per-store filtering",
+      "Result citations",
+      "Save as agent context",
+    ],
   },
   {
     title: "Document library",
     status: "Live",
     href: "/rag/library",
-    items: ["Every doc you've added", "Filter + sort", "Preview before retrieve", "Version history"],
+    items: [
+      "Every doc you've added",
+      "Filter + sort",
+      "Preview before retrieve",
+      "Version history",
+    ],
   },
   {
     title: "Repositories",
     status: "Live",
     href: "/rag/repositories",
-    items: ["Index your code", "Symbol-aware search", "Diff-aware updates", "PR-ready citations"],
+    items: [
+      "Index your code",
+      "Symbol-aware search",
+      "Diff-aware updates",
+      "PR-ready citations",
+    ],
   },
 ];
 

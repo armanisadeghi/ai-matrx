@@ -33,14 +33,14 @@ import {
   Pause,
   Stars,
   Zap,
-  X as XIcon
+  X as XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 
 // ---------------------------------------------------------------------------
 // Frame type — what the dialog renders. Caller's job is to convert their
@@ -162,9 +162,9 @@ const STAGES: {
   },
   {
     id: "chunk",
-    label: "Chunk",
+    label: RAG_VOCAB.segmentShort,
     Icon: Layers,
-    description: "Splitting into retrievable pieces",
+    description: "Splitting into retrievable knowledge segments",
   },
   {
     id: "embed",

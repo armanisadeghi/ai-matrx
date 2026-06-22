@@ -54,7 +54,12 @@ export default async function AuthedSharePage({ params }: PageProps) {
       .eq("id", data.resource_id)
       .maybeSingle();
     const path = folder?.folder_path ?? "";
-    redirect(`/files/${encodeURIComponent(path)}`);
+    const segments = path
+      .split("/")
+      .filter((s) => s.length > 0)
+      .map(encodeURIComponent)
+      .join("/");
+    redirect(segments ? `/files/all/${segments}` : "/files/all");
   }
 
   notFound();

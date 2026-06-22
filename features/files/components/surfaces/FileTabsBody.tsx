@@ -35,6 +35,7 @@ import {
   Share2,
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -192,7 +193,7 @@ export function FileTabsBody({
           active={activeTab === "document"}
           onClick={() => setActiveTab("document")}
           density={density}
-          title="Knowledge index view (RAG: pages, cleaned text, chunks, lineage)"
+          title={`Knowledge index view (RAG: pages, cleaned text, ${RAG_VOCAB.segmentsShort.toLowerCase()}, lineage)`}
         />
         <TabButton
           icon={<Atom className="h-3.5 w-3.5" />}

@@ -27,7 +27,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { cn } from "@/lib/utils";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectActiveShareLinksForResource,
@@ -305,7 +305,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
                   />
                   {docState.state.doc.chunk_count != null ? (
                     <Row
-                      label="Chunks"
+                      label={RAG_VOCAB.segmentsShort}
                       value={docState.state.doc.chunk_count.toLocaleString()}
                     />
                   ) : null}
@@ -523,17 +523,32 @@ function CopyableShareLink({
  * Reads the canonical per-entity cache; saves write through to the row-scope
  * store so any visible table cell for this file updates instantly.
  */
-function FileContextInfoRow({ fileId, fileName }: { fileId: string; fileName: string }) {
+function FileContextInfoRow({
+  fileId,
+  fileName,
+}: {
+  fileId: string;
+  fileName: string;
+}) {
   const es = useEntityScopes({ entityType: "file", entityId: fileId });
   return (
     <div className="flex items-start gap-2">
       <ContextStatusButton
-        subject={{ entityType: "file", entityId: fileId, title: fileName, icon: FileText }}
+        subject={{
+          entityType: "file",
+          entityId: fileId,
+          title: fileName,
+          icon: FileText,
+        }}
         knownScopeCount={es.scopeIds.length}
         writeMode="live"
         onSaved={(r) => {
           if (!r.ok) return;
-          setRowScopes("file", fileId, r.selection.scopeIds.filter((id) => !id.startsWith("new:")));
+          setRowScopes(
+            "file",
+            fileId,
+            r.selection.scopeIds.filter((id) => !id.startsWith("new:")),
+          );
           void es.refresh();
         }}
       />

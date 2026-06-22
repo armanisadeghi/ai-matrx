@@ -1,4 +1,5 @@
 import type { UseFileDocumentState } from "@/features/files/hooks/useFileDocument";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import type { CloudFile, CloudShareLink } from "@/features/files/types";
 import { formatFileSize } from "@/features/files/utils/format";
 
@@ -119,7 +120,9 @@ export function fileInfoHumanSummary(snapshot: FileInfoSnapshot): string {
     if (ragState.status === "found") {
       lines.push(`Pages: ${(ragState.doc.total_pages ?? 0).toLocaleString()}`);
       if (ragState.doc.chunk_count != null) {
-        lines.push(`Chunks: ${ragState.doc.chunk_count.toLocaleString()}`);
+        lines.push(
+          `${RAG_VOCAB.segmentsShort}: ${ragState.doc.chunk_count.toLocaleString()}`,
+        );
       }
       lines.push(`Last ingested: ${formatTs(ragState.doc.updated_at)}`);
       lines.push(

@@ -59,6 +59,7 @@ import {
   clearUpload,
   detachChildFromFolder,
   markFileSaved,
+  markFolderFullyLoaded,
   removeFile,
   removeFilePendingRequest,
   removeFolder,
@@ -361,6 +362,8 @@ export const loadFolderContents = createAsyncThunk<
       }),
     );
   }
+
+  dispatch(markFolderFullyLoaded({ folderId }));
 });
 
 // Virtual ids look like `vfs:<adapter>:<vid>` and can't be queried against

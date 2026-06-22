@@ -51,9 +51,10 @@ import {
   ScanText,
   Search,
   Stars,
-  Upload
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Pause, Play, RotateCcw, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -353,7 +354,7 @@ const NODE_SPECS: NodeSpec[] = [
     pipeline: {
       variant: "write",
       icon: Layers,
-      title: "Chunks",
+      title: RAG_VOCAB.segmentsShort,
       subtitle: "semantic windows",
     },
   },
@@ -455,7 +456,7 @@ const EDGE_SPECS: EdgeSpec[] = [
     source: "clean-text",
     target: "chunks",
     variant: "write",
-    label: "chunk",
+    label: RAG_VOCAB.segmentStage,
   },
   {
     id: "e-w5",
@@ -480,7 +481,7 @@ const EDGE_SPECS: EdgeSpec[] = [
     source: "data-store",
     target: "output",
     variant: "store",
-    label: "top-K chunks",
+    label: `top-K ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
     particleDuration: 1.6,
   },
 ];
@@ -661,7 +662,9 @@ export function RagFlowVisualization({
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgb(52_211_153)]" />
           <span className="text-muted-foreground">Retrieval</span>
-          <span className="text-foreground/80">— top-K chunks back</span>
+          <span className="text-foreground/80">
+            — top-K {RAG_VOCAB.segmentsShort.toLowerCase()} back
+          </span>
         </div>
       </div>
 
