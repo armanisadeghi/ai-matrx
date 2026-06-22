@@ -3,47 +3,29 @@
 /**
  * useMasterAgent
  *
- * Owns the ONE durable conversation the War Room master agent (`/war-room/all`)
- * chats in, and keeps its READ-ONLY cross-room context fresh.
+ * The War Room TIER-3 MASTER agent (`/war-room/all`): a durable, user-wide
+ * conversation plus its READ-ONLY cross-room context, kept fresh.
  *
- * Durability model (mirrors `ensureAssistantConversationThunk`, but the master
- * has NO DB owner row to hang the id on — it's a standalone, user-wide chat, so
- * the id lives in localStorage keyed by user):
- *   1. On mount, read the stored id for this user from localStorage.
- *      • If present AND already an instance in Redux → reuse it (a remount in
- *        the same tab; skip the load, the ChatRoomClient recipe).
- *      • If present but NOT in memory → recreate the instance keyed by that id
- *        (`createManualInstance({ conversationId })`) and `loadConversation` to
- *        rehydrate prior turns from the DB (it may 404 if no turn was ever sent
- *        — fine, the local instance still works).
- *      • If absent → mint a fresh conversation and persist its id to localStorage
- *        so the next refresh reuses it.
- *   2. Build + push the cross-room context (`buildMasterAgentContext`) with the
- *      SAME no-empty guard `useStudioAssistant` uses: never `setContextEntries`
- *      with []. (The builder always returns `master_role`, so post-resolve it is
- *      never legitimately empty — the guard only fires if the build threw.)
- *   3. Re-push whenever the room set changes (rooms added/removed on `/all`).
- *
- * The user COMPOSES in this conversation (it's a real chat), so the panel
- * includes the SmartAgentInput. We reuse `AUDIO_ASSISTANT_AGENT_ID` for v1; a
- * dedicated master agent/prompt is future polish (the orchestrator behavior
- * comes from `master_role` + `war_room_overview` + the thread tools later).
- *
- * Concurrent dispatches are de-duplicated by a module-level in-flight promise
- * keyed by userId so a double-mount can't create two conversations.
+ * Conversation durability, the agent roster, agent switching, and tool arming
+ * are owned by the shared `useDurableAgentConversation` primitive (keyed per
+ * user — the master has no DB owner row to hang the id on). This hook owns:
+ *   • the default MASTER persona (`WAR_ROOM_MASTER_AGENT_ID`) — which knows it
+ *     can see/act on all of the user's data via the `data` tool;
+ *   • the full MASTER tool set (read/message any thread, rename + create rooms);
+ *   • building + pushing `buildMasterAgentContext()` on resolve and whenever the
+ *     room set changes, with the no-empty guard.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { AUDIO_ASSISTANT_AGENT_ID } from "@/features/transcript-studio/constants";
+import { WAR_ROOM_MASTER_AGENT_ID } from "@/features/war-room/constants";
 import { selectSessionsList } from "@/features/war-room/redux/selectors";
+import { useDurableAgentConversation } from "@/features/war-room/hooks/useDurableAgentConversation";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import {
   buildMasterAgentContext,
   type ThreadStatusResolver,
@@ -52,158 +34,50 @@ import {
 interface UseMasterAgentReturn {
   /** The master conversation id — null until resolved. */
   conversationId: string | null;
+  /** The active agent id (the master persona, or the user's chosen agent). */
+  agentId: string | null;
+  /** Switch the master agent to another agent. */
+  switchAgent: (agentId: string) => void;
   /** Rebuild + push the cross-room read-only context for the current state. */
   refreshContext: () => Promise<void>;
   /** True once the conversation is resolved and ready to chat in. */
   ready: boolean;
 }
 
-/** localStorage key for the user's durable master conversation id. */
-function storageKey(userId: string): string {
-  return `war-room:master-conversation:${userId}`;
-}
-
-function readStoredId(userId: string): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(storageKey(userId));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredId(userId: string, conversationId: string): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(storageKey(userId), conversationId);
-  } catch {
-    /* private-mode / quota — non-fatal; the conversation just won't survive refresh */
-  }
-}
-
-/**
- * In-flight dedupe keyed by userId, so the panel mounting twice (e.g. React
- * strict-mode double effect, or a remount) resolves ONE conversation.
- */
-const inFlight = new Map<string, Promise<string | null>>();
-
 export function useMasterAgent(): UseMasterAgentReturn {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  // Subscribe to the user id (not the synchronous `getUserId()` snapshot) so the
-  // resolve effect RE-RUNS if auth hydrates AFTER first mount. The panel is lazy
-  // + mounts deep in the authed shell, so this is rarely null at mount — but the
-  // dependency makes a late hydrate self-heal instead of leaving the master
-  // conversation permanently unresolved.
+  // Subscribe to the user id so the resolve RE-RUNS if auth hydrates after first
+  // mount (the panel mounts deep in the authed shell).
   const userId = useAppSelector(selectUserId);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+
+  const { conversationId, agentId, ready, switchAgent } =
+    useDurableAgentConversation({
+      storageKey: userId ? `war-room:master-conversation:${userId}` : null,
+      defaultAgentId: WAR_ROOM_MASTER_AGENT_ID,
+      toolNames: WAR_ROOM_MASTER_TOOL_NAMES,
+    });
 
   // Re-push trigger: the room set on `/all`. The builder fetches its own
   // cross-room data fresh on each call, so a coarse "rooms changed" signal is
-  // enough — adding/removing a room re-pushes the roster. (Finer per-thread
-  // changes live in the room view, not here; `refreshContext` covers those.)
+  // enough — adding/removing a room re-pushes the roster.
   const sessions = useAppSelector(selectSessionsList);
-  const roomSignature = sessions
-    .map((s) => `${s.id}:${s.title}`)
-    .join("|");
+  const roomSignature = sessions.map((s) => `${s.id}:${s.title}`).join("|");
 
-  // ── 1. Resolve the durable conversation once per user ────────────────────
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-
-    const existingFlight = inFlight.get(userId);
-    const flight =
-      existingFlight ??
-      (async (): Promise<string | null> => {
-        const storedId = readStoredId(userId);
-        if (storedId) {
-          const inMemory = !!store.getState().conversations.byConversationId[
-            storedId
-          ];
-          // Recreate the instance keyed by the stored id only if it isn't
-          // already in memory (ChatRoomClient recipe — skip load if present).
-          if (!inMemory) {
-            await dispatch(
-              createManualInstance({
-                agentId: AUDIO_ASSISTANT_AGENT_ID,
-                conversationId: storedId,
-                apiEndpointMode: "agent",
-                sourceFeature: "agent-runner",
-                allowChat: true,
-                autoRun: false,
-                displayMode: "chat-assistant",
-              }),
-            ).unwrap();
-            // Rehydrate prior turns. May 404 / return empty if no turn was ever
-            // sent — fine, the local instance still works.
-            try {
-              await dispatch(
-                loadConversation({ conversationId: storedId }),
-              ).unwrap();
-            } catch (err) {
-              console.warn(
-                "[war-room/master] loadConversation skipped:",
-                err,
-              );
-            }
-          }
-          return storedId;
-        }
-
-        // No stored id — mint a fresh conversation, persist for next load.
-        const newId = await dispatch(
-          createManualInstance({
-            agentId: AUDIO_ASSISTANT_AGENT_ID,
-            apiEndpointMode: "agent",
-            sourceFeature: "agent-runner",
-            allowChat: true,
-            autoRun: false,
-            displayMode: "chat-assistant",
-          }),
-        ).unwrap();
-        writeStoredId(userId, newId);
-        return newId;
-      })();
-
-    if (!existingFlight) inFlight.set(userId, flight);
-
-    void flight
-      .then((id) => {
-        if (!cancelled && id) setConversationId(id);
-      })
-      .catch((err) => {
-        console.error(
-          "[war-room/master] failed to resolve master conversation:",
-          err,
-        );
-      })
-      .finally(() => {
-        if (inFlight.get(userId) === flight) inFlight.delete(userId);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, dispatch, store]);
-
-  // ── 2/3. Build + push the cross-room read-only context ───────────────────
+  // ── Build + push the cross-room read-only context ────────────────────────
   const refreshContext = useCallback(async () => {
     if (!conversationId) return;
-    // Resolve live per-thread status from Redux at push time (the builder is a
-    // pure service fn with no store access — we inject the resolver here).
     const resolveStatus: ThreadStatusResolver = (cid) =>
       selectPrimaryRequest(cid)(store.getState())?.status;
     let entries;
     try {
       entries = await buildMasterAgentContext(resolveStatus);
     } catch (err) {
-      console.error("[war-room/master] buildMasterAgentContext failed:", err);
+      reportWarRoomError("master-agent/context", err, { toast: false });
       return;
     }
-    // NEVER clobber good context with an empty set — the same guard
-    // `useStudioAssistant` uses. `master_role` is always present on success, so
-    // this only skips when the build itself failed to produce anything.
+    // NEVER clobber good context with an empty set — `master_role` is always
+    // present on success, so this only skips when the build itself failed.
     if (entries.length > 0) {
       dispatch(setContextEntries({ conversationId, entries }));
     }
@@ -216,29 +90,11 @@ export function useMasterAgent(): UseMasterAgentReturn {
     // roomSignature is the intended re-push trigger; refreshContext is stable.
   }, [conversationId, roomSignature, refreshContext]);
 
-  // ── Arm the MASTER messaging/management tools on this conversation ────────
-  // These inline tools (war_room_read_thread / _message_thread / _create_room /
-  // _rename_room) are NOT in the server registry; arming them here is what makes
-  // build-tool-injection emit them as inline specs on the master's requests, and
-  // routes their delegated calls to dispatchWarRoomMasterTool. Armed ONLY on the
-  // master conversation — never on a tile's agent. Cleared on unmount so a
-  // remount re-arms a clean set (and the names never linger on a stale id).
-  useEffect(() => {
-    if (!conversationId) return;
-    dispatch(
-      setClientTools({
-        conversationId,
-        tools: [...WAR_ROOM_MASTER_TOOL_NAMES],
-      }),
-    );
-    return () => {
-      dispatch(setClientTools({ conversationId, tools: [] }));
-    };
-  }, [conversationId, dispatch]);
-
   return {
     conversationId,
+    agentId,
+    switchAgent,
     refreshContext,
-    ready: Boolean(conversationId),
+    ready,
   };
 }

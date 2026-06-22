@@ -53,6 +53,14 @@ export interface UseStudioAssistantOptions {
   /** Stable (memoized) builder for extra context entries. Keep it referentially
    *  stable — it's a dependency of the context-refresh effect. */
   buildExtraEntries?: (state: RootState) => AssistantContextEntry[];
+  /**
+   * Agent this surface mints a FRESH assistant conversation with when the
+   * session has none yet. Lets a non-Scribe consumer (e.g. a War Room tile)
+   * default to its own persona without affecting the standalone Scribe. Has no
+   * effect once a session already has a conversation — the user switches agents
+   * via the AssistantAgentBar after that.
+   */
+  defaultAgentId?: string;
 }
 
 interface UseStudioAssistantReturn {
@@ -72,6 +80,7 @@ export function useStudioAssistant(
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const buildExtraEntries = options?.buildExtraEntries;
+  const defaultAgentId = options?.defaultAgentId;
 
   const conversationId = useAppSelector(
     selectAssistantConversationId(sessionId),
@@ -100,12 +109,14 @@ export function useStudioAssistant(
         // working_document context object is simply omitted until it lands.
       }
       if (cancelled) return;
-      await dispatch(ensureAssistantConversationThunk({ sessionId }));
+      await dispatch(
+        ensureAssistantConversationThunk({ sessionId, defaultAgentId }),
+      );
     })();
     return () => {
       cancelled = true;
     };
-  }, [sessionId, conversationId, dispatch]);
+  }, [sessionId, conversationId, defaultAgentId, dispatch]);
 
   // Keep the in-Redux named context objects fresh whenever the underlying
   // studio data changes — realtime working-document patches, new recordings,

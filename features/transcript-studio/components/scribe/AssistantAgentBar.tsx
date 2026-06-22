@@ -11,7 +11,7 @@
 // "resume vs start fresh"; a brand-new agent just starts fresh. Each agent's
 // conversation is kept, so the History control flips between them.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Webhook, History, Plus } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -19,6 +19,7 @@ import {
   selectAgentById,
   selectAllAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {
   selectActiveAssistantAgentId,
@@ -54,6 +55,12 @@ export function AssistantAgentBar({
 }: AssistantAgentBarProps) {
   const dispatch = useAppDispatch();
   const agents = useAppSelector(selectAllAgents);
+  // Ensure the full agent list (owned + shared + builtins, incl. the War Room
+  // Thread persona a tile defaults to) is loaded so the active agent's NAME
+  // resolves immediately instead of "Select agent". TTL-guarded, safe per mount.
+  useEffect(() => {
+    void dispatch(initializeChatAgents());
+  }, [dispatch]);
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
   const activeConversationId = useAppSelector(
     selectAssistantConversationId(sessionId),

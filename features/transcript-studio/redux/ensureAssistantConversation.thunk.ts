@@ -71,11 +71,11 @@ async function createInstanceForSession(
 
 export const ensureAssistantConversationThunk = createAsyncThunk<
   string | null,
-  { sessionId: string },
+  { sessionId: string; defaultAgentId?: string },
   ThunkApi
 >(
   "transcriptStudio/ensureAssistantConversation",
-  async ({ sessionId }, { dispatch, getState }) => {
+  async ({ sessionId, defaultAgentId }, { dispatch, getState }) => {
     if (!sessionId) return null;
 
     const existingFlight = inFlight.get(sessionId);
@@ -124,6 +124,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         const roster = session?.assistantConversations ?? [];
         const storedAgentId =
           findRosterByConversation(roster, storedId)?.agentId ??
+          defaultAgentId ??
           AUDIO_ASSISTANT_AGENT_ID;
 
         const instanceExists =
@@ -181,10 +182,13 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
       // the conversation "disappears". `useStudioAssistant` calls
       // `persistAssistantConversationThunk` the instant the server confirms the
       // turn, so only REAL conversations ever hit the session row.
-      const defaultAgentId = resolveDefaultAssistantAgentId(getState());
+      const resolvedAgentId = resolveDefaultAssistantAgentId(
+        getState(),
+        defaultAgentId,
+      );
       const newConversationId = await createInstanceForSession(
         dispatch,
-        defaultAgentId,
+        resolvedAgentId,
         undefined,
       );
       dispatch(
@@ -204,7 +208,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
             assistantConversationId: newConversationId,
             assistantConversations: appendRoster(
               sessionNow.assistantConversations ?? [],
-              makeRosterRef(newConversationId, defaultAgentId),
+              makeRosterRef(newConversationId, resolvedAgentId),
             ),
           }),
         );

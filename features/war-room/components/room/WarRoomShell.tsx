@@ -18,15 +18,15 @@
 // (loadWarRoomSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bot,
-  Gauge,
   LayoutGrid,
   LayoutPanelLeft,
+  Loader2,
   MoreHorizontal,
   Trash2,
   Circle,
@@ -62,8 +62,11 @@ import {
 import { EditableTitle } from "../shared/EditableTitle";
 import { SessionContextButton } from "./SessionContextButton";
 import { RoomProjectButton } from "./RoomProjectButton";
+import { RoomIdentityButton } from "./RoomIdentityButton";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
+import { roomColorOf, roomIconOf } from "./roomIdentity";
+import { useActiveTileRestore } from "./useActiveTileRestore";
 import {
   RoomViewProvider,
   useRoomView,
@@ -72,6 +75,7 @@ import {
 } from "./roomViewContext";
 import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 
 // The TIER-2 ROOM agent panel — its floating WindowPanel wrapper plus the whole
 // agent execution graph (via AgentConversationColumn). Lazy-load it so neither
@@ -115,9 +119,41 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const tilesStatus = useAppSelector(selectTilesStatusForSession(sessionId));
   const { mode } = useRoomView();
 
+  // Seed the staged tile from session.active_tile_id on open + persist the
+  // focused tile back (debounced). The staged tile itself stays ephemeral
+  // view-state — this only mirrors it to/from the row for re-open restore.
+  useActiveTileRestore(sessionId);
+
+  // Room branding (icon + color) — the chosen identity, with safe defaults.
+  const RoomIcon = roomIconOf(session?.icon);
+  const roomColor = roomColorOf(session?.color);
+
   // Room Agent panel — local state owns open/closed. Non-modal so the cockpit
   // stays visible and interactive while the user chats with the room agent.
   const [roomAgentOpen, setRoomAgentOpen] = useState(false);
+
+  // Header delete — guarded against double-click and disabled while the
+  // transition is pending (the control reflects the busy state).
+  const [deletePending, startDeleteTransition] = useTransition();
+
+  async function handleDeleteRoom() {
+    if (deletePending || !session) return; // guard duplicate clicks
+    const ok = await confirm({
+      title: "Delete this War Room?",
+      description: `"${session.title}" and its tile layout will be removed. The tasks, notes, and transcripts inside stay safe.`,
+      variant: "destructive",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
+    startDeleteTransition(async () => {
+      try {
+        await dispatch(deleteSession(sessionId));
+        router.push("/war-room/all");
+      } catch (err) {
+        reportWarRoomError("WarRoomShell.delete", err);
+      }
+    });
+  }
 
   useEffect(() => {
     dispatch(loadWarRoomSession(sessionId));
@@ -160,8 +196,14 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         >
           <ArrowLeft className="size-4.5" />
         </button>
-        <span className="grid place-items-center size-7 shrink-0 text-primary">
-          <Gauge className="size-4" />
+        <span
+          className={cn(
+            "grid place-items-center size-7 shrink-0 rounded-lg",
+            roomColor.tint,
+            roomColor.text,
+          )}
+        >
+          <RoomIcon className="size-4" />
         </span>
 
         {session ? (
@@ -185,6 +227,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
             <ModeSwitch />
             {ready ? <InstrumentProjector /> : null}
             {ready ? <DensityDial /> : null}
+            <RoomIdentityButton sessionId={sessionId} />
             <RoomProjectButton sessionId={sessionId} />
             <SessionContextButton sessionId={sessionId} />
             <button
@@ -216,20 +259,19 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={async () => {
-                    const ok = await confirm({
-                      title: "Delete this War Room?",
-                      description: `"${session.title}" and its tile layout will be removed. The tasks, notes, and transcripts inside stay safe.`,
-                      variant: "destructive",
-                      confirmLabel: "Delete",
-                    });
-                    if (ok) {
-                      await dispatch(deleteSession(sessionId));
-                      router.push("/war-room/all");
-                    }
+                  disabled={deletePending}
+                  onSelect={(e) => {
+                    // Keep the menu's selection from closing before confirm runs;
+                    // the handler owns the async flow + double-click guard.
+                    e.preventDefault();
+                    void handleDeleteRoom();
                   }}
                 >
-                  <Trash2 className="size-3.5" />
+                  {deletePending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-3.5" />
+                  )}
                   Delete War Room
                 </DropdownMenuItem>
               </DropdownMenuContent>

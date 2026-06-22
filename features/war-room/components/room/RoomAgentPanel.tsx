@@ -20,23 +20,26 @@
 import { Bot, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";
+import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
 
 export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
-  const { conversationId, ready } = useRoomAgent(sessionId);
+  const { conversationId, agentId, ready, switchAgent } = useRoomAgent(sessionId);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* Header — identifies the agent + its scope. shrink-0 so the column
-          below owns the remaining height. */}
+      {/* Header — the active agent (visible + swappable) + its scope. shrink-0
+          so the column below owns the remaining height. */}
       <header className="shrink-0 flex items-center gap-2 border-b border-border px-3 py-2">
         <span className="grid place-items-center size-6 shrink-0 text-primary">
           <Bot className="size-3.5" />
         </span>
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground leading-tight truncate">
-            Room Agent
-          </h2>
-          <p className="text-[11px] text-muted-foreground leading-tight truncate">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <WarRoomAgentSelector
+            agentId={agentId}
+            onSwitch={switchAgent}
+            fallbackLabel="Room Agent"
+          />
+          <p className="px-1 text-[11px] text-muted-foreground leading-tight truncate">
             Sees every thread in this room
           </p>
         </div>

@@ -17,6 +17,7 @@ import {
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
 import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
+import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
   selectEffectiveTileProjectId,
   selectTileEffectiveContext,
@@ -28,6 +29,7 @@ import type {
   TileFlavor,
   TileTab,
   WarRoomSession,
+  WarRoomSessionUpdate,
   WarRoomTile,
   WarRoomTileUpdate,
 } from "../types";
@@ -96,17 +98,102 @@ export const renameSession =
     }
   };
 
-export const deleteSession = (id: string) => async (dispatch: AppDispatch) => {
-  // Optimistic removal — revert by reload on failure.
-  dispatch(sessionRemoved(id));
-  try {
-    await service.softDeleteSession(id);
-    toast.success("War Room deleted");
-  } catch {
-    toast.error("Couldn't delete the War Room");
-    dispatch(loadSessionsList());
-  }
-};
+/** A partial room-identity edit: any of title / description / icon / color. */
+export interface RoomIdentityPatch {
+  title?: string;
+  description?: string | null;
+  icon?: string | null;
+  color?: string | null;
+}
+
+/**
+ * Update a room's IDENTITY (title / description / icon / color) in one write.
+ * Optimistic: the slice is patched immediately from the prior row + the edit so
+ * the header + gallery card rebrand without waiting on the round-trip; on failure
+ * the prior row is restored and the error routed through reportWarRoomError.
+ */
+export const updateRoomIdentity =
+  (id: string, patch: RoomIdentityPatch) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const prior = getState().warRoom.sessionsById[id];
+    if (!prior) return false;
+
+    // Normalize: trim title (never blank it out), pass the rest through.
+    const next: WarRoomSessionUpdate = {};
+    if (patch.title !== undefined) {
+      const trimmed = patch.title.trim();
+      if (trimmed) next.title = trimmed;
+    }
+    if (patch.description !== undefined) {
+      const d = patch.description?.trim();
+      next.description = d ? d : null;
+    }
+    if (patch.icon !== undefined) next.icon = patch.icon;
+    if (patch.color !== undefined) next.color = patch.color;
+    if (Object.keys(next).length === 0) return true; // nothing to do
+
+    // Optimistic apply from the live row so the UI rebrands instantly.
+    dispatch(sessionUpserted({ ...prior, ...next }));
+    try {
+      const updated = await service.updateSession(id, next);
+      dispatch(sessionUpserted(updated));
+      return true;
+    } catch (err) {
+      dispatch(sessionUpserted(prior)); // restore the pre-edit row
+      reportWarRoomError("updateRoomIdentity", err, {
+        toast: "Couldn't save the room details",
+      });
+      return false;
+    }
+  };
+
+// ── active_tile_id (focused-thread RESTORE) ─────────────────────────────
+// The staged/focused tile is ephemeral React-context view state (roomViewContext)
+// BY DESIGN — it is NOT moved into Redux/persistence. We only MIRROR the resolved
+// focus to the session row so a room reopens on the thread you last had focused:
+//   • on OPEN  → seed the initial staged tile from session.active_tile_id (UI side)
+//   • on CHANGE → persist the new focus here (debounced, no-op when unchanged).
+
+/**
+ * Persist the room's currently-focused tile to ctx_war_room_sessions.active_tile_id.
+ * Guarded (skips a no-op write when the row already matches) and updates the slice
+ * row so a re-open reads the fresh value. Background work — logs loudly on failure
+ * but never toasts (focus restore is a convenience, not a user action).
+ */
+export const persistActiveTile =
+  (sessionId: string, tileId: string | null) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
+    const session = getState().warRoom.sessionsById[sessionId];
+    if (!session) return;
+    if ((session.active_tile_id ?? null) === (tileId ?? null)) return; // no-op
+    try {
+      const updated = await service.updateSession(sessionId, {
+        active_tile_id: tileId,
+      });
+      dispatch(sessionUpserted(updated));
+    } catch (err) {
+      reportWarRoomError("persistActiveTile", err, { toast: false });
+    }
+  };
+
+export const deleteSession =
+  (id: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    // Optimistic removal — on failure re-add the single removed session
+    // (targeted, no full network reload) so the list self-heals.
+    const prior = getState().warRoom.sessionsById[id];
+    dispatch(sessionRemoved(id));
+    try {
+      await service.softDeleteSession(id);
+      toast.success("War Room deleted");
+    } catch (err) {
+      if (prior) dispatch(sessionUpserted(prior));
+      else dispatch(loadSessionsList());
+      reportWarRoomError("deleteSession", err, {
+        toast: "Couldn't delete the War Room",
+      });
+    }
+  };
 
 /** Load one room fully: session + tiles + audio links, set active, bump opened. */
 export const loadWarRoomSession =
@@ -352,19 +439,41 @@ export const convertRoomToPerThreadThunk =
     const roomProjectId =
       getState().warRoom.sessionsById[sessionId]?.project_id ?? null;
     if (!roomProjectId) return true; // already per-thread / no project
+
+    // The tiles `applyProjectToAllTiles` will stamp are exactly those with a
+    // NULL project_id (it filters .is("project_id", null)). Capture them so a
+    // mid-flight failure clearing the room can be fully rolled back — the room
+    // & its tiles must NEVER be left holding conflicting projects.
+    let stamped: WarRoomTile[] = [];
     try {
-      const stamped = await service.applyProjectToAllTiles(
-        sessionId,
-        roomProjectId,
-      );
+      stamped = await service.applyProjectToAllTiles(sessionId, roomProjectId);
       const updatedSession = await service.updateSession(sessionId, {
         project_id: null,
       });
       for (const t of stamped) dispatch(tileUpserted(t));
       dispatch(sessionUpserted(updatedSession));
       return true;
-    } catch {
-      toast.error("Couldn't switch to per-thread projects");
+    } catch (err) {
+      // Compensating rollback: un-stamp every tile we just stamped so the room
+      // (still holding its project) doesn't end up conflicting with them. Best
+      // effort — any rollback failure is itself reported loudly.
+      await Promise.all(
+        stamped.map((t) =>
+          service
+            .updateTile(t.id, { project_id: null })
+            .then((reverted) => dispatch(tileUpserted(reverted)))
+            .catch((rollbackErr) =>
+              reportWarRoomError(
+                "convertRoomToPerThreadThunk:rollback",
+                rollbackErr,
+                { toast: false },
+              ),
+            ),
+        ),
+      );
+      reportWarRoomError("convertRoomToPerThreadThunk", err, {
+        toast: "Couldn't switch to per-thread projects",
+      });
       return false;
     }
   };
@@ -452,13 +561,19 @@ export const setRoomProjectThunk =
 export const absorbRoomIntoProjectThunk =
   (sessionId: string, projectId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const tileIds = getState().warRoom.tileIdsBySession[sessionId] ?? [];
+    // Remember each tile we clear so a mid-loop / session-update failure can be
+    // rolled back — the room must NOT end up project-less while its tiles have
+    // already been stripped (or vice-versa).
+    const cleared: { id: string; priorProjectId: string }[] = [];
     try {
-      const tileIds = getState().warRoom.tileIdsBySession[sessionId] ?? [];
       for (const id of tileIds) {
         const t = getState().warRoom.tilesById[id];
         if (t?.project_id && t.project_id !== projectId) {
+          const priorProjectId = t.project_id;
           const updated = await service.updateTile(id, { project_id: null });
           dispatch(tileUpserted(updated));
+          cleared.push({ id, priorProjectId });
         }
       }
       const updatedSession = await service.updateSession(sessionId, {
@@ -466,8 +581,24 @@ export const absorbRoomIntoProjectThunk =
       });
       dispatch(sessionUpserted(updatedSession));
       return true;
-    } catch {
-      toast.error("Couldn't set the room project");
+    } catch (err) {
+      // Compensating rollback: restore every per-tile project we cleared so no
+      // inconsistent room/tile project state survives the failure.
+      await Promise.all(
+        cleared.map(({ id, priorProjectId }) =>
+          service
+            .updateTile(id, { project_id: priorProjectId })
+            .then((reverted) => dispatch(tileUpserted(reverted)))
+            .catch((rollbackErr) =>
+              reportWarRoomError("absorbRoomIntoProjectThunk:rollback", rollbackErr, {
+                toast: false,
+              }),
+            ),
+        ),
+      );
+      reportWarRoomError("absorbRoomIntoProjectThunk", err, {
+        toast: "Couldn't set the room project",
+      });
       return false;
     }
   };
@@ -603,12 +734,22 @@ export const createTileTask =
           : tile.note_id
             ? [tile.note_id]
             : [];
-      for (const noteId of noteIds) {
-        updateNoteApi(noteId, { task_id: taskId }).catch(() => {});
-      }
+      await Promise.all(
+        noteIds.map((noteId) =>
+          updateNoteApi(noteId, { task_id: taskId }).catch((err) =>
+            // The task IS created; the note→task link is what failed. Surface it
+            // loudly so a note silently failing to link is no longer invisible.
+            reportWarRoomError("createTileTask", err, {
+              toast: "Created the task, but couldn't link a note to it",
+            }),
+          ),
+        ),
+      );
       return taskId;
-    } catch {
-      toast.error("Couldn't create the task");
+    } catch (err) {
+      reportWarRoomError("createTileTask", err, {
+        toast: "Couldn't create the task",
+      });
       return null;
     } finally {
       inFlightTileOps.delete(key);
@@ -808,9 +949,9 @@ export const toggleTilePin =
     dispatch(setTilePinned({ id, pinned }));
     try {
       await service.updateTile(id, { is_pinned: pinned });
-    } catch {
-      toast.error("Couldn't update pin");
+    } catch (err) {
       dispatch(setTilePinned({ id, pinned: !pinned }));
+      reportWarRoomError("toggleTilePin", err, { toast: "Couldn't update pin" });
     }
   };
 
@@ -819,9 +960,9 @@ export const toggleTileHide =
     dispatch(setTileHidden({ id, hidden }));
     try {
       await service.updateTile(id, { is_hidden: hidden });
-    } catch {
-      toast.error("Couldn't update tile");
+    } catch (err) {
       dispatch(setTileHidden({ id, hidden: !hidden }));
+      reportWarRoomError("toggleTileHide", err, { toast: "Couldn't update tile" });
     }
   };
 
@@ -847,10 +988,26 @@ export const loadTileAttachments =
     try {
       const attachments = await service.listTileAttachments(tileId);
       dispatch(attachmentsLoadedForTile({ tileId, attachments }));
-    } catch {
-      /* non-fatal — the section just shows empty */
+    } catch (err) {
+      // Background load — log loudly (so a failure is no longer invisible) but
+      // don't toast; the section just shows empty.
+      reportWarRoomError("loadTileAttachments", err, { toast: false });
     }
   };
+
+/**
+ * A Postgres unique-violation (PostgREST surfaces code 23505) means the row
+ * already exists — for attachments that's "already attached", a friendly state,
+ * not an error (UNIQUE(tile_id, entity_type, entity_id) on the link table).
+ */
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
 
 /** Link an existing/just-uploaded cloud file (cld_files.id) to a tile. */
 export const attachFileToTile =
@@ -865,8 +1022,15 @@ export const attachFileToTile =
       );
       dispatch(attachmentUpserted({ tileId, attachment }));
       return true;
-    } catch {
-      toast.error("Couldn't attach the file");
+    } catch (err) {
+      // Re-attaching the same file is a no-op, not a failure.
+      if (isUniqueViolation(err)) {
+        toast.info("Already attached");
+        return true;
+      }
+      reportWarRoomError("attachFileToTile", err, {
+        toast: "Couldn't attach the file",
+      });
       return false;
     }
   };
@@ -884,8 +1048,15 @@ export const attachDocumentToTile =
       );
       dispatch(attachmentUpserted({ tileId, attachment }));
       return true;
-    } catch {
-      toast.error("Couldn't attach the document");
+    } catch (err) {
+      // Re-attaching the same document is a no-op, not a failure.
+      if (isUniqueViolation(err)) {
+        toast.info("Already attached");
+        return true;
+      }
+      reportWarRoomError("attachDocumentToTile", err, {
+        toast: "Couldn't attach the document",
+      });
       return false;
     }
   };
@@ -897,8 +1068,10 @@ export const detachTileAttachment =
     dispatch(attachmentRemoved({ tileId, id: attachmentId }));
     try {
       await service.detachFromTile(attachmentId);
-    } catch {
-      toast.error("Couldn't remove the attachment");
+    } catch (err) {
       dispatch(loadTileAttachments(tileId));
+      reportWarRoomError("detachTileAttachment", err, {
+        toast: "Couldn't remove the attachment",
+      });
     }
   };

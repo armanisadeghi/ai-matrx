@@ -56,6 +56,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
@@ -132,9 +133,12 @@ export default function TileAgentPanel({
   // Resolve this tile's assistant conversation (same hook the screens use; it is
   // de-duplicated by sessionId, so mounting it here costs nothing extra). We
   // merge in the tile's read-only context via buildExtraEntries (Scribe omits
-  // this, so its context is untouched).
+  // this, so its context is untouched), and default a FRESH tile conversation to
+  // the dedicated War Room Thread persona (which knows its thread role and can
+  // list/read the user's data) instead of the audio-cleanup scribe.
   const { conversationId } = useStudioAssistant(sessionId, {
     buildExtraEntries,
+    defaultAgentId: WAR_ROOM_THREAD_AGENT_ID,
   });
 
   useEffect(() => {
