@@ -1,12 +1,11 @@
 "use client";
 // features/voice-agent/components/VoiceMicButton.tsx
 //
-// The single primary control. Tap to start a session, tap again to end. The
-// status changes its appearance — there is no separate connect/disconnect
-// button. Disabled only while a request to the OS is pending (mic permission
-// dialog).
+// Session on/off control. Tap to start a voice session, tap again to end.
+// Uses the same AudioLines affordance as SmartInput live audio — not a mic
+// icon, which is reserved for the separate mute control.
 
-import { Loader2, Mic, MicOff } from "lucide-react";
+import { AudioLines, CircleStop, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { VoiceStatus } from "../types";
@@ -55,19 +54,12 @@ export function VoiceMicButton({
       )}
       style={{ width: size, height: size }}
     >
-      {/* Pulsing ring while listening — gentle, never frantic */}
-      {status === "listening" && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 rounded-full border border-primary/50 motion-safe:animate-ping"
-        />
-      )}
       {isBusy ? (
         <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
       ) : isActive ? (
-        <MicOff className="h-7 w-7" aria-hidden="true" />
+        <CircleStop className="h-7 w-7" aria-hidden="true" />
       ) : (
-        <Mic className="h-7 w-7" aria-hidden="true" />
+        <AudioLines className="h-7 w-7" aria-hidden="true" />
       )}
     </motion.button>
   );

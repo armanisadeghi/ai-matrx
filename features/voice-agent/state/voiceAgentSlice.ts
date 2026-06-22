@@ -88,14 +88,8 @@ const voiceAgentSlice = createSlice({
   initialState,
   reducers: {
     initInstance(state, action: PayloadAction<InitInstancePayload>) {
-      const {
-        instanceId,
-        voiceId,
-        instructions,
-        tools,
-        preset,
-        persist,
-      } = action.payload;
+      const { instanceId, voiceId, instructions, tools, preset, persist } =
+        action.payload;
       // Fresh state on every init — a re-entry into the route starts a new session.
       state.instances[instanceId] = {
         voiceId,
@@ -105,6 +99,7 @@ const voiceAgentSlice = createSlice({
         persist,
         status: "idle",
         error: null,
+        micMuted: false,
         conversationId: null,
         persistedTurnIds: [],
         turns: [],
@@ -136,6 +131,15 @@ const voiceAgentSlice = createSlice({
       if (!inst) return;
       inst.error = action.payload.error;
       if (action.payload.error) inst.status = "error";
+    },
+
+    setMicMuted(
+      state,
+      action: PayloadAction<InstanceIdPayload & { muted: boolean }>,
+    ) {
+      const inst = getInstance(state, action.payload.instanceId);
+      if (!inst) return;
+      inst.micMuted = action.payload.muted;
     },
 
     setSessionStartedAt(
@@ -283,7 +287,8 @@ const voiceAgentSlice = createSlice({
       // Arrival log served its purpose; drop it so long sessions don't bloat the store.
       turn.text_delta_arrivals = [];
       if (action.payload.itemId) turn.item_id = action.payload.itemId;
-      if (action.payload.responseId) turn.response_id = action.payload.responseId;
+      if (action.payload.responseId)
+        turn.response_id = action.payload.responseId;
       if (action.payload.audioDurationMs !== undefined) {
         turn.audio_duration_ms = action.payload.audioDurationMs;
       }
@@ -395,6 +400,7 @@ export const {
   initInstance,
   setStatus,
   setError,
+  setMicMuted,
   setSessionStartedAt,
   setConversationId,
   appendUserTurn,

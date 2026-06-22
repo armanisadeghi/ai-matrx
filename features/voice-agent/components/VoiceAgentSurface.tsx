@@ -28,7 +28,7 @@ import {
 } from "../state/selectors";
 import { VoiceOrb } from "./VoiceOrb";
 import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";
-import { VoiceMicButton } from "./VoiceMicButton";
+import { VoiceControlCluster } from "./VoiceControlCluster";
 import { VoiceStatusPill } from "./VoiceStatusPill";
 import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
 import { VoiceErrorBanner } from "./VoiceErrorBanner";
@@ -81,7 +81,7 @@ export function VoiceAgentSurface({
     addedToolIds,
     isVersion,
   });
-  const { status, error, toggle } = useXaiVoiceSession({
+  const { status, error, micMuted, toggle, toggleMute } = useXaiVoiceSession({
     instanceId,
     agentId,
     surface: VOICE_CHAT_SURFACE,
@@ -230,57 +230,61 @@ export function VoiceAgentSurface({
         )}
       </header>
 
-      {/* ─── Transcript (fades older messages to depth) ────────────── */}
-      <section
-        className={cn(
-          "relative z-10 flex-1 min-h-0 overflow-y-auto",
-          // Mask older content so the eye is drawn down toward the controls.
-          "[mask-image:linear-gradient(to_bottom,transparent,#000_15%,#000_85%,transparent)]",
-        )}
-        aria-label="Voice transcript"
-      >
-        {turns.length === 0 ? (
-          <EmptyTranscript preset={preset} />
-        ) : (
-          <VoiceTranscriptStream turns={turns} />
-        )}
-      </section>
+      {/* ─── Main stage: transcript behind, orb anchored mid-page ── */}
+      <main className="relative flex-1 min-h-0">
+        <section
+          className={cn(
+            "absolute inset-0 z-0 overflow-y-auto",
+            // Mask older content so the eye is drawn toward the orb.
+            "[mask-image:linear-gradient(to_bottom,transparent,#000_12%,#000_72%,transparent)]",
+          )}
+          aria-label="Voice transcript"
+        >
+          {turns.length === 0 ? (
+            <EmptyTranscript preset={preset} />
+          ) : (
+            <VoiceTranscriptStream turns={turns} />
+          )}
+        </section>
 
-      {/* ─── Hero: status + orb + mic + error ───────────────────────
-          The orb is the single state-machine-readable focal element.
-          The mic button rides on top of the orb at z=10 — the orb is
-          identity, the button is the tactile control. The two are
-          spatially co-located so the user's eye never has to choose
-          between them. */}
-      <section
-        className={cn(
-          "relative z-10 shrink-0 flex flex-col items-center justify-end gap-5",
-          "pb-10 pb-safe px-4",
-        )}
-      >
-        <VoiceStatusPill status={liveStatus} />
-        <div className="relative inline-flex items-center justify-center">
-          <VoiceOrb status={liveStatus} />
-          <div className="relative z-10">
-            <VoiceMicButton status={liveStatus} onToggle={toggle} />
+        {/* ─── Hero: status + orb + mic + error ─────────────────────
+            Anchored ~54% from the top — below center so the 260 px orb
+            stays fully in view without sitting under the empty hint. */}
+        <section
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-[54%] z-10",
+            "-translate-y-1/2 flex flex-col items-center gap-5 px-4 pb-safe",
+          )}
+        >
+          <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
+          <div className="pointer-events-auto relative size-[260px]">
+            <VoiceOrb status={liveStatus} />
+            <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+              <VoiceControlCluster
+                status={liveStatus}
+                micMuted={micMuted}
+                onToggleSession={toggle}
+                onToggleMute={toggleMute}
+              />
+            </div>
           </div>
-        </div>
-        <VoiceErrorBanner error={liveError} />
-      </section>
+          <div className="pointer-events-auto w-full max-w-md">
+            <VoiceErrorBanner error={liveError} />
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
 
 function EmptyTranscript({ preset }: { preset: VoiceAgentPreset }) {
   return (
-    <div className="h-full flex items-center justify-center px-6">
-      <div className="max-w-md text-center space-y-2">
-        <p className="text-base text-muted-foreground leading-relaxed">
-          {preset === "intro"
-            ? "Tap the mic to begin a conversation about your business and how AI can transform it."
-            : "Voice playground — adjust the voice, tools, and instructions in settings before you start."}
-        </p>
-      </div>
+    <div className="absolute inset-x-0 top-[72%] px-6 flex justify-center">
+      <p className="max-w-md text-center text-base text-muted-foreground leading-relaxed">
+        {preset === "intro"
+          ? "Tap to begin a conversation about your business and how AI can transform it."
+          : "Voice playground — adjust the voice, tools, and instructions in settings before you start."}
+      </p>
     </div>
   );
 }

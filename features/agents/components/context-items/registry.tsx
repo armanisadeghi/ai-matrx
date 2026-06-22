@@ -49,7 +49,7 @@ import { DataBody } from "./bodies/DataBody";
 import { MediaBody, MediaFooter } from "./bodies/MediaBody";
 import {
   WorkingDocumentBody,
-  WorkingDocumentFooter,
+  WorkingDocumentTitleActions,
 } from "./bodies/WorkingDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
@@ -133,7 +133,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_document",
     editable: true,
     Body: WorkingDocumentBody,
-    Footer: WorkingDocumentFooter,
+    TitleActions: WorkingDocumentTitleActions,
   },
   {
     // A reference to a specific rich document by id — distinct from the live
@@ -336,4 +336,11 @@ export function resolveContextItemFooter(
   if (def.Footer) return def.Footer;
   if (def.Body === GenericBody) return GenericFooter;
   return undefined;
+}
+
+/** Inline title-bar actions for a block type, or undefined when none. */
+export function resolveContextItemTitleActions(
+  blockType: string,
+): ComponentType<ContextItemBodyProps> | undefined {
+  return resolveContextItemDef(blockType).TitleActions;
 }

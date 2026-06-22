@@ -26,7 +26,7 @@
 //     4 s breath, scale 0.95↔1.0. Static color. No audio input. Reads
 //     "I'm here, waiting."
 //   • listening                           → reactive to MIC amplitude;
-//     hue shifts toward warm peach as the user gets louder. Scale
+//     hue stays in the primary-blue band as the user gets louder. Scale
 //     0.95→1.08. Reads "I'm hearing you."
 //   • thinking                            → DISCONNECTED from amplitude.
 //     Continuous hue rotation through the purple→blue band on an
@@ -59,16 +59,15 @@ interface VoiceOrbProps {
  * roughly constant (0.78) so the orb never dims into the background.
  *
  * Hue numbers are oklch degrees:
- *   30  — warm peach (listening at high amp)
- *   55  — amber (listening at low amp)
+ *   220 — primary blue (listening — matches the active mic button)
  *   260 — indigo (idle, neutral)
  *   280 — violet (speaking)
- *   25  — destructive red
+ *   25  — destructive red (error only — kept far from listening blue)
  */
 function colorForStatus(status: VoiceStatus): { hue: number; sat: number } {
   switch (status) {
     case "listening":
-      return { hue: 35, sat: 0.16 };
+      return { hue: 220, sat: 0.16 };
     case "thinking":
       // Thinking shifts hue on a clock (see hueOffset below); base sits
       // in the indigo→violet band.
@@ -82,7 +81,7 @@ function colorForStatus(status: VoiceStatus): { hue: number; sat: number } {
     case "requesting-mic":
     case "connecting":
     default:
-      return { hue: 260, sat: 0.10 };
+      return { hue: 260, sat: 0.1 };
   }
 }
 
@@ -96,9 +95,7 @@ export function VoiceOrb({ status, size = 260, className }: VoiceOrbProps) {
   const isThinking = status === "thinking";
   const isError = status === "error";
   const isIdleish =
-    status === "idle" ||
-    status === "requesting-mic" ||
-    status === "connecting";
+    status === "idle" || status === "requesting-mic" || status === "connecting";
 
   // ── Amplitude routing ──────────────────────────────────────────────
   // The orb watches mic OR assistant depending on state — never both.
@@ -123,30 +120,30 @@ export function VoiceOrb({ status, size = 260, className }: VoiceOrbProps) {
   });
   const bloomScale = useTransform(ampStrength, (s) => {
     if (reduced) return 1.05;
-    if (isSpeaking) return 1.05 + s * 0.20;
+    if (isSpeaking) return 1.05 + s * 0.2;
     if (isListening) return 1.05 + s * 0.12;
     return 1.05;
   });
   const bloomOpacity = useTransform(ampStrength, (s) => {
     if (isSpeaking) return 0.45 + s * 0.45;
-    if (isListening) return 0.30 + s * 0.40;
+    if (isListening) return 0.3 + s * 0.4;
     if (isThinking) return 0.45;
     if (isError) return 0.55;
-    return 0.20;
+    return 0.2;
   });
   // The inner core's opacity holds steadier — the bloom carries amplitude.
   const coreOpacity = useTransform(ampStrength, (s) => {
     if (isSpeaking) return 0.85 + s * 0.15;
-    if (isListening) return 0.75 + s * 0.20;
+    if (isListening) return 0.75 + s * 0.2;
     if (isThinking) return 0.85;
     if (isError) return 0.85;
     return 0.55;
   });
 
   const { hue, sat } = colorForStatus(status);
-  // The shimmery hue-shift on listening — slightly warms as user gets louder.
+  // Brighter primary shimmer on listening — amplitude pushes hue toward cyan.
   const hueOffset = useTransform(ampStrength, (s) => {
-    if (isListening) return -s * 12; // shift toward peach
+    if (isListening) return s * 10;
     return 0;
   });
 
@@ -191,9 +188,7 @@ export function VoiceOrb({ status, size = 260, className }: VoiceOrbProps) {
           scale: { type: "spring", stiffness: 200, damping: 24 },
         }}
         animate={
-          isIdleish && !reduced
-            ? { scale: [0.96, 1.02, 0.96] }
-            : undefined
+          isIdleish && !reduced ? { scale: [0.96, 1.02, 0.96] } : undefined
         }
         {...(isIdleish && !reduced
           ? {
@@ -234,7 +229,8 @@ export function VoiceOrb({ status, size = 260, className }: VoiceOrbProps) {
       <motion.div
         className="absolute inset-0 rounded-full mix-blend-soft-light"
         style={{
-          background: "radial-gradient(circle, oklch(0.92 0.16 50 / 0.5) 0%, transparent 60%)",
+          background:
+            "radial-gradient(circle, oklch(0.92 0.14 220 / 0.5) 0%, transparent 60%)",
           opacity: isListening ? 0.6 : 0,
           rotate: hueOffset,
         }}

@@ -14,11 +14,11 @@ import {
   ChevronDown,
   Maximize2,
   Minimize2,
+  GripVertical,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
   ArrowDown,
-  Move,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
@@ -49,44 +49,46 @@ interface PositionControlProps {
   isVertical: boolean;
 }
 
+const POSITION_MENU_ICONS = {
+  left: ArrowLeft,
+  right: ArrowRight,
+  top: ArrowUp,
+  bottom: ArrowDown,
+} as const;
+
 const PositionControl: React.FC<PositionControlProps> = ({
   position,
   onPositionChange,
 }) => {
-  const positionIcons = {
-    left: ArrowLeft,
-    right: ArrowRight,
-    top: ArrowUp,
-    bottom: ArrowDown,
-  };
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-6 px-2">
-              <Move className="h-3 w-3" />
+              <GripVertical className="h-3 w-3 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[200]" sideOffset={8}>
-            {(Object.keys(positionIcons) as PanelPosition[]).map((pos) => {
-              const Icon = positionIcons[pos];
-              return (
-                <DropdownMenuItem
-                  key={pos}
-                  onClick={() => onPositionChange(pos)}
-                  className={cn("gap-2", position === pos && "bg-accent")}
-                >
-                  <Icon className="h-3 w-3" />
-                  <span className="capitalize">{pos}</span>
-                </DropdownMenuItem>
-              );
-            })}
+            {(Object.keys(POSITION_MENU_ICONS) as PanelPosition[]).map(
+              (pos) => {
+                const Icon = POSITION_MENU_ICONS[pos];
+                return (
+                  <DropdownMenuItem
+                    key={pos}
+                    onClick={() => onPositionChange(pos)}
+                    className={cn("gap-2", position === pos && "bg-accent")}
+                  >
+                    <Icon className="h-3 w-3" />
+                    <span className="capitalize">{pos}</span>
+                  </DropdownMenuItem>
+                );
+              },
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </TooltipTrigger>
-      <TooltipContent>Change panel position</TooltipContent>
+      <TooltipContent>Change dock side</TooltipContent>
     </Tooltip>
   );
 };

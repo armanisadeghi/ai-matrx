@@ -34,7 +34,7 @@ import {
 } from "@/features/voice-agent/state/selectors";
 import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
 import { VoiceEdgeRibbon } from "@/features/voice-agent/components/VoiceEdgeRibbon";
-import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton";
+import { VoiceControlCluster } from "@/features/voice-agent/components/VoiceControlCluster";
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { VoiceErrorBanner } from "@/features/voice-agent/components/VoiceErrorBanner";
@@ -93,8 +93,18 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     // is supplied. The seed is `RealtimeToolSet`-shaped: builtins carry empty
     // params and `execution: "builtin"`.
     tools: [
-      { name: "web_search", description: "Search the web.", parameters: {}, execution: "builtin" },
-      { name: "x_search", description: "Search X (Twitter).", parameters: {}, execution: "builtin" },
+      {
+        name: "web_search",
+        description: "Search the web.",
+        parameters: {},
+        execution: "builtin",
+      },
+      {
+        name: "x_search",
+        description: "Search X (Twitter).",
+        parameters: {},
+        execution: "builtin",
+      },
     ],
     persist: false,
   });
@@ -110,7 +120,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     agentId: SCRIBE_LIVE_AGENT_ID,
     surface: SCRIBE_LIVE_SURFACE,
   });
-  const { status, error, toggle } = useXaiVoiceSession({
+  const { status, error, micMuted, toggle, toggleMute } = useXaiVoiceSession({
     instanceId,
     agentId: SCRIBE_LIVE_AGENT_ID,
     surface: SCRIBE_LIVE_SURFACE,
@@ -200,11 +210,16 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
           taller than the tab and the mic/error get clipped off the bottom. A
           smaller orb keeps the whole control cluster on-screen. */}
       <section className="relative z-10 flex shrink-0 flex-col items-center justify-end gap-3 px-4 pb-4 pb-safe">
-        <VoiceStatusPill status={liveStatus} />
+        <VoiceStatusPill status={liveStatus} micMuted={micMuted} />
         <div className="relative inline-flex items-center justify-center">
           <VoiceOrb status={liveStatus} size={188} />
           <div className="relative z-10">
-            <VoiceMicButton status={liveStatus} onToggle={toggle} />
+            <VoiceControlCluster
+              status={liveStatus}
+              micMuted={micMuted}
+              onToggleSession={toggle}
+              onToggleMute={toggleMute}
+            />
           </div>
         </div>
         <VoiceErrorBanner error={liveError} />

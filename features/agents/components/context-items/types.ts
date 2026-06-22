@@ -95,4 +95,9 @@ export interface ContextItemTypeDef {
   Body: ComponentType<ContextItemBodyProps>;
   /** Optional compact footer row (links / meta / icon actions). */
   Footer?: ComponentType<ContextItemBodyProps>;
+  /**
+   * Optional inline actions rendered beside the drawer title (icon toggles,
+   * view modes). Keeps high-frequency controls out of the footer.
+   */
+  TitleActions?: ComponentType<ContextItemBodyProps>;
 }

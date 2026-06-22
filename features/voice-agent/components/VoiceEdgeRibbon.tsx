@@ -35,31 +35,28 @@ interface VoiceEdgeRibbonProps {
 
 /**
  * Gradient stops chosen to match the orb's hue band for the same state.
- * Listening = warm peach/coral. Speaking = cool indigo/violet. The
- * two ends of the gradient share a hue with the orb's center, so a
- * user glancing peripherally sees "the same color as the thing I'm
- * looking at."
+ * Listening = primary blue (aligned with the active mic button — never
+ * warm peach, which reads as warning/error in enterprise UI). Speaking =
+ * cool indigo/violet. The two ends of the gradient share a hue with the
+ * orb's center, so a user glancing peripherally sees "the same color as
+ * the thing I'm looking at."
  */
-const STOPS: Record<"warm" | "cool" | "neutral", string> = {
-  warm:
-    "oklch(0.82 0.16 50), oklch(0.78 0.18 35), oklch(0.74 0.20 18), oklch(0.78 0.18 35), oklch(0.82 0.16 50)",
-  cool:
-    "oklch(0.78 0.18 260), oklch(0.72 0.20 280), oklch(0.68 0.22 300), oklch(0.72 0.20 280), oklch(0.78 0.18 260)",
-  neutral:
-    "oklch(0.80 0.14 280), oklch(0.78 0.16 260), oklch(0.80 0.14 280)",
+const STOPS: Record<"primary" | "cool" | "neutral", string> = {
+  primary:
+    "oklch(0.82 0.14 220), oklch(0.78 0.16 210), oklch(0.74 0.18 235), oklch(0.78 0.16 210), oklch(0.82 0.14 220)",
+  cool: "oklch(0.78 0.18 260), oklch(0.72 0.20 280), oklch(0.68 0.22 300), oklch(0.72 0.20 280), oklch(0.78 0.18 260)",
+  neutral: "oklch(0.80 0.14 280), oklch(0.78 0.16 260), oklch(0.80 0.14 280)",
 };
 
-function paletteForStatus(status: VoiceStatus): "warm" | "cool" | "neutral" {
-  if (status === "listening") return "warm";
+function paletteForStatus(status: VoiceStatus): "primary" | "cool" | "neutral" {
+  if (status === "listening") return "primary";
   if (status === "speaking" || status === "interrupting") return "cool";
   return "neutral";
 }
 
 function isActiveStatus(status: VoiceStatus): boolean {
   return (
-    status === "listening" ||
-    status === "speaking" ||
-    status === "interrupting"
+    status === "listening" || status === "speaking" || status === "interrupting"
   );
 }
 
@@ -85,8 +82,10 @@ export function VoiceEdgeRibbon({ status, className }: VoiceEdgeRibbonProps) {
         style={{
           // 6px stroke that's then blurred to ~16px of soft halo.
           padding: "6px",
-          background: `linear-gradient(110deg, ${stops})`,
+          backgroundImage: `linear-gradient(110deg, ${stops})`,
           backgroundSize: "300% 100%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "0% 50%",
           WebkitMask:
             "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
           WebkitMaskComposite: "xor",
@@ -115,8 +114,10 @@ export function VoiceEdgeRibbon({ status, className }: VoiceEdgeRibbonProps) {
         className="absolute inset-0 rounded-2xl"
         style={{
           padding: "1.5px",
-          background: `linear-gradient(110deg, ${stops})`,
+          backgroundImage: `linear-gradient(110deg, ${stops})`,
           backgroundSize: "300% 100%",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "0% 50%",
           WebkitMask:
             "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
           WebkitMaskComposite: "xor",

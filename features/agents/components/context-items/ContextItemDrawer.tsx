@@ -27,7 +27,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { resolveContextItemBody, resolveContextItemFooter } from "./registry";
+import {
+  resolveContextItemBody,
+  resolveContextItemFooter,
+  resolveContextItemTitleActions,
+} from "./registry";
 import { buildReattachSpec, canReattach } from "./recontext";
 import type { ContextItemDrawerController } from "./useContextItemDrawer";
 
@@ -49,6 +53,7 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
 
   const Body = resolveContextItemBody(activeItem.blockType);
   const Footer = resolveContextItemFooter(activeItem.blockType);
+  const TitleActions = resolveContextItemTitleActions(activeItem.blockType);
   const Icon = activeItem.icon;
   const multi = items.length > 1;
   const showReattach = canReattach(activeItem);
@@ -80,7 +85,8 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       title={
         <span className="inline-flex min-w-0 items-center gap-2">
           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate">{title}</span>
+          <span className="min-w-0 truncate">{title}</span>
+          {TitleActions && <TitleActions item={activeItem} />}
         </span>
       }
       headerActions={

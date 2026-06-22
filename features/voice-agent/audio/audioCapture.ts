@@ -77,6 +77,9 @@ export interface AudioCaptureHandle {
   isActive: () => boolean;
   /** Live diagnostics — frame flow + amplitude. For the debug panel. */
   getStats: () => CaptureStats;
+  /** When true, PCM is not forwarded to the live sink (session stays open). */
+  setMuted: (muted: boolean) => void;
+  isMuted: () => boolean;
 }
 
 export function createAudioCapture(): AudioCaptureHandle {
@@ -103,6 +106,7 @@ export function createAudioCapture(): AudioCaptureHandle {
 
   let liveSink: ((pcm: ArrayBuffer) => void) | null = null;
   let active = false;
+  let muted = false;
   const errorCallbacks = new Set<(err: CaptureError) => void>();
 
   // Live diagnostics.
@@ -261,10 +265,10 @@ export function createAudioCapture(): AudioCaptureHandle {
       if (msg.type === "pcm") {
         framesCaptured += 1;
         lastFrameAt = Date.now();
-        if (liveSink) {
+        if (liveSink && !muted) {
           framesSent += 1;
           liveSink(msg.payload);
-        } else {
+        } else if (!liveSink) {
           // Pre-connect buffering with a safety cap.
           if (prebufferedSamples + FRAME_SAMPLES <= MIC_PREBUFFER_MAX_SAMPLES) {
             prebuffer.push(msg.payload);
@@ -279,8 +283,13 @@ export function createAudioCapture(): AudioCaptureHandle {
           }
         }
       } else if (msg.type === "rms") {
-        lastRms = msg.value;
-        writeAmplitude("mic", msg.value);
+        if (muted) {
+          lastRms = 0;
+          writeAmplitude("mic", 0);
+        } else {
+          lastRms = msg.value;
+          writeAmplitude("mic", msg.value);
+        }
       } else if (msg.type === "diag") {
         processCalls = msg.calls;
         hasInput = msg.hasInput;
@@ -325,6 +334,7 @@ export function createAudioCapture(): AudioCaptureHandle {
 
   async function stop(): Promise<void> {
     active = false;
+    muted = false;
     liveSink = null;
     prebuffer = [];
     prebufferedSamples = 0;
@@ -408,5 +418,27 @@ export function createAudioCapture(): AudioCaptureHandle {
     };
   }
 
-  return { warmupSync, start, setLive, stop, onError, isActive, getStats };
+  function setMuted(next: boolean): void {
+    muted = next;
+    if (next) {
+      lastRms = 0;
+      writeAmplitude("mic", 0);
+    }
+  }
+
+  function isMuted(): boolean {
+    return muted;
+  }
+
+  return {
+    warmupSync,
+    start,
+    setLive,
+    stop,
+    onError,
+    isActive,
+    getStats,
+    setMuted,
+    isMuted,
+  };
 }

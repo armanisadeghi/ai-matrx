@@ -11,6 +11,8 @@ import type { VoiceStatus } from "../types";
 
 interface VoiceStatusPillProps {
   status: VoiceStatus;
+  /** When true during a live session, overrides the listening label. */
+  micMuted?: boolean;
   className?: string;
 }
 
@@ -25,8 +27,19 @@ const LABELS: Record<VoiceStatus, string> = {
   error: "Tap to try again",
 };
 
-export function VoiceStatusPill({ status, className }: VoiceStatusPillProps) {
-  const text = LABELS[status];
+export function VoiceStatusPill({
+  status,
+  micMuted = false,
+  className,
+}: VoiceStatusPillProps) {
+  const text =
+    micMuted &&
+    (status === "listening" ||
+      status === "thinking" ||
+      status === "speaking" ||
+      status === "interrupting")
+      ? "Muted"
+      : LABELS[status];
   return (
     <div
       className={cn(

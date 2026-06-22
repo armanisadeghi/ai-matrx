@@ -107,6 +107,8 @@ export interface VoiceAgentInstance {
   // Connection / UI
   status: VoiceStatus;
   error: { code: string; message: string } | null;
+  /** When true during an active session, mic PCM is not sent to xAI. */
+  micMuted: boolean;
 
   // Persistence
   /** `cx_conversation.id` once the first turn lands. Null before then. */

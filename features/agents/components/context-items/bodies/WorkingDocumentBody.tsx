@@ -3,19 +3,19 @@
 /**
  * Working-document drawer body. The working document is a live, collaborative
  * context item re-sent every turn — editing it here reaches the agent
- * automatically (no re-attach). Three views, toggled from the footer:
+ * automatically (no re-attach). Three views, toggled from title actions:
  *
  *   • Edit     — the native `ProTextarea` editor, full height (same surface as
  *                `WorkingDocumentPanel`, minus its header chrome).
- *   • Preview  — rendered markdown via `MarkdownStream` (click to return to
- *                edit — same contract as agent-builder message preview).
+ *   • Preview  — rendered markdown via `MarkdownStream` (read-only; use the
+ *                title-bar toggle to return to edit).
  *   • Diff     — "what the agent last changed", via the canonical `DiffViewer`
  *                (light engine, highlight view) fed by `useWorkingDocChanges`.
  *
  * Only the Body mounts `useWorkingDocument` (which owns the realtime channel +
- * context-sync effects). It publishes the bits the Footer needs (view toggle,
- * unseen-change flag, saving) to a tiny per-conversation store, so the Footer
- * never double-mounts the hook.
+ * context-sync effects). It publishes view / saving / unseen-change state to a
+ * tiny per-conversation store so TitleActions + Footer never double-mount
+ * the hook.
  */
 
 import dynamic from "next/dynamic";
@@ -126,11 +126,7 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
 
   if (view === "preview") {
     return (
-      <div
-        className="h-full min-h-0 cursor-text overflow-y-auto overscroll-contain p-3"
-        onClick={() => setView(conversationId, "edit")}
-        title="Click to edit"
-      >
+      <div className="h-full min-h-0 overflow-y-auto overscroll-contain p-3">
         {draft.trim() ? (
           <MarkdownStream
             content={draft}
@@ -139,7 +135,7 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
           />
         ) : (
           <span className="text-sm italic text-muted-foreground">
-            Empty. Ask the agent to draft this — or click to type here.
+            Empty. Ask the agent to draft this — or switch to edit to type here.
           </span>
         )}
       </div>
@@ -158,19 +154,21 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
   );
 }
 
-// ── Footer (reads the shared store only — no second hook mount) ──────────────
+// ── Title actions (reads the shared store only — no second hook mount) ───────
 
-export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
+export function WorkingDocumentTitleActions({ item }: ContextItemBodyProps) {
   const conversationId = item.conversationId;
   const { view, hasUnseenChange, saving } = useWorkingDocView(conversationId);
 
   return (
-    <>
+    <span className="inline-flex shrink-0 items-center gap-1">
       {saving && (
         <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
       )}
       {hasUnseenChange && view === "edit" && (
-        <span className="text-[11px] text-primary">Agent edited this</span>
+        <span className="hidden text-[10px] text-primary sm:inline">
+          Agent edited
+        </span>
       )}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -180,7 +178,7 @@ export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
               setView(conversationId, view === "preview" ? "edit" : "preview")
             }
             className={cn(
-              "ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent",
+              "inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent",
               view === "preview"
                 ? "text-purple-500"
                 : "text-muted-foreground hover:text-foreground",
@@ -229,6 +227,6 @@ export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
           {view === "diff" ? "Back to editor" : "View agent's changes"}
         </TooltipContent>
       </Tooltip>
-    </>
+    </span>
   );
 }

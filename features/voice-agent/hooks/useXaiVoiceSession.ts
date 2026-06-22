@@ -33,6 +33,7 @@ import {
   markTurnInterrupted,
   setAssistantTurnAudioStarted,
   setError,
+  setMicMuted,
   setSessionStartedAt,
   setStatus,
   setTextRevealIndexForTurn,
@@ -44,6 +45,7 @@ import {
   selectVoiceConversationId,
   selectVoiceError,
   selectVoiceInstructions,
+  selectVoiceMicMuted,
   selectVoiceStatus,
   selectVoiceTools,
   selectVoiceVoiceId,
@@ -125,7 +127,9 @@ const DEFAULT_VOICE_SURFACE = "matrx-user/chat-voice";
 export interface VoiceSessionApi {
   status: ReturnType<typeof selectVoiceStatus>;
   error: ReturnType<typeof selectVoiceError>;
+  micMuted: boolean;
   toggle: () => void;
+  toggleMute: () => void;
   stop: () => Promise<void>;
 }
 
@@ -160,6 +164,7 @@ export function useXaiVoiceSession(
 
   const status = useAppSelector((s) => selectVoiceStatus(s, instanceId));
   const error = useAppSelector((s) => selectVoiceError(s, instanceId));
+  const micMuted = useAppSelector((s) => selectVoiceMicMuted(s, instanceId));
   // These three are read at click-time via the store; we keep them in refs so
   // the toggle handler doesn't have stale closures.
   const voiceId = useAppSelector((s) => selectVoiceVoiceId(s, instanceId));
@@ -873,6 +878,7 @@ export function useXaiVoiceSession(
     }
 
     dispatch(setStatus({ instanceId, status: "idle" }));
+    dispatch(setMicMuted({ instanceId, muted: false }));
     mirrorFlags();
   }, [dispatch, instanceId, stopRevealLoop, mirrorFlags]);
 
@@ -1033,6 +1039,24 @@ export function useXaiVoiceSession(
       void stop();
     }
   }, [status, start, stop]);
+
+  const toggleMute = useCallback(() => {
+    const active =
+      status === "listening" ||
+      status === "thinking" ||
+      status === "speaking" ||
+      status === "interrupting";
+    if (!active) return;
+    const next = !micMuted;
+    captureRef.current?.setMuted(next);
+    dispatch(setMicMuted({ instanceId, muted: next }));
+    voiceDebugLog(
+      instanceId,
+      "info",
+      next ? "mic.muted" : "mic.unmuted",
+      next ? "mic input paused — session stays open" : "mic input resumed",
+    );
+  }, [dispatch, instanceId, micMuted, status]);
 
   // ─── Re-push session.update when the resolved tool set lands late ──────
   //
@@ -1214,5 +1238,5 @@ export function useXaiVoiceSession(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { status, error, toggle, stop };
+  return { status, error, micMuted, toggle, toggleMute, stop };
 }

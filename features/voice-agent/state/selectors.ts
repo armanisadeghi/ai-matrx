@@ -16,6 +16,7 @@ const EMPTY_INSTANCE: Readonly<VoiceAgentInstance> = Object.freeze({
   persist: false,
   status: "idle",
   error: null,
+  micMuted: false,
   conversationId: null,
   persistedTurnIds: [],
   turns: [],
@@ -29,7 +30,8 @@ const EMPTY_TURNS: ReadonlyArray<VoiceTurn> = Object.freeze([]) as VoiceTurn[];
 const getInstance = (
   state: StateWithVoiceAgent,
   instanceId: string,
-): VoiceAgentInstance => state.voiceAgent.instances[instanceId] ?? EMPTY_INSTANCE;
+): VoiceAgentInstance =>
+  state.voiceAgent.instances[instanceId] ?? EMPTY_INSTANCE;
 
 export const selectVoiceInstanceExists = (
   state: StateWithVoiceAgent,
@@ -45,6 +47,11 @@ export const selectVoiceError = (
   state: StateWithVoiceAgent,
   instanceId: string,
 ) => getInstance(state, instanceId).error;
+
+export const selectVoiceMicMuted = (
+  state: StateWithVoiceAgent,
+  instanceId: string,
+) => getInstance(state, instanceId).micMuted;
 
 export const selectVoiceConversationId = (
   state: StateWithVoiceAgent,
@@ -74,7 +81,8 @@ export const selectVoicePreset = (
 export const selectVoiceTurns = (
   state: StateWithVoiceAgent,
   instanceId: string,
-): ReadonlyArray<VoiceTurn> => getInstance(state, instanceId).turns ?? EMPTY_TURNS;
+): ReadonlyArray<VoiceTurn> =>
+  getInstance(state, instanceId).turns ?? EMPTY_TURNS;
 
 export const selectVoiceTotalInterruptions = (
   state: StateWithVoiceAgent,
@@ -119,38 +127,40 @@ export const selectVoiceLatestUserTurn = perInstance<VoiceTurn | undefined>(
 );
 
 /** The most recent assistant turn, or undefined if none. Memoized per instance. */
-export const selectVoiceLatestAssistantTurn = perInstance<VoiceTurn | undefined>(
-  (instanceId) =>
-    createSelector(
-      [(s: StateWithVoiceAgent) => getInstance(s, instanceId).turns],
-      (turns): VoiceTurn | undefined => {
-        for (let i = turns.length - 1; i >= 0; i--) {
-          if (turns[i].role === "assistant") return turns[i];
-        }
-        return undefined;
-      },
-    ),
+export const selectVoiceLatestAssistantTurn = perInstance<
+  VoiceTurn | undefined
+>((instanceId) =>
+  createSelector(
+    [(s: StateWithVoiceAgent) => getInstance(s, instanceId).turns],
+    (turns): VoiceTurn | undefined => {
+      for (let i = turns.length - 1; i >= 0; i--) {
+        if (turns[i].role === "assistant") return turns[i];
+      }
+      return undefined;
+    },
+  ),
 );
 
 /** Completed turns whose ids are NOT yet in `persistedTurnIds`. Drives the writer. */
-export const selectVoiceUnpersistedTurns = perInstance<ReadonlyArray<VoiceTurn>>(
-  (instanceId) =>
-    createSelector(
-      [
-        (s: StateWithVoiceAgent) => getInstance(s, instanceId).turns,
-        (s: StateWithVoiceAgent) => getInstance(s, instanceId).persistedTurnIds,
-      ],
-      (turns, persistedIds): ReadonlyArray<VoiceTurn> => {
-        if (turns.length === 0) return EMPTY_TURNS;
-        const persistedSet = new Set(persistedIds);
-        const unpersisted = turns.filter(
-          (t) =>
-            !persistedSet.has(t.id) &&
-            (t.status === "completed" || t.status === "interrupted"),
-        );
-        return unpersisted.length === 0 ? EMPTY_TURNS : unpersisted;
-      },
-    ),
+export const selectVoiceUnpersistedTurns = perInstance<
+  ReadonlyArray<VoiceTurn>
+>((instanceId) =>
+  createSelector(
+    [
+      (s: StateWithVoiceAgent) => getInstance(s, instanceId).turns,
+      (s: StateWithVoiceAgent) => getInstance(s, instanceId).persistedTurnIds,
+    ],
+    (turns, persistedIds): ReadonlyArray<VoiceTurn> => {
+      if (turns.length === 0) return EMPTY_TURNS;
+      const persistedSet = new Set(persistedIds);
+      const unpersisted = turns.filter(
+        (t) =>
+          !persistedSet.has(t.id) &&
+          (t.status === "completed" || t.status === "interrupted"),
+      );
+      return unpersisted.length === 0 ? EMPTY_TURNS : unpersisted;
+    },
+  ),
 );
 
 /** p50/p95 latency snapshot for the session metadata rollup. */
