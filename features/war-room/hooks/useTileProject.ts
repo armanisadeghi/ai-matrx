@@ -9,6 +9,7 @@ import {
   selectEffectiveTileProjectId,
   selectTileFlavor,
 } from "@/features/war-room/redux/selectors";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 
 /** Resolved project for a tile — always hydrates full project fields when needed. */
 export function useTileProject(tileId: string) {
@@ -31,11 +32,19 @@ export function useTileProject(tileId: string) {
 
     let cancelled = false;
     setLoading(true);
-    void getProject(projectId).then((row) => {
-      if (cancelled) return;
-      setProject(row);
-      setLoading(false);
-    });
+    void getProject(projectId)
+      .then((row) => {
+        if (cancelled) return;
+        setProject(row);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // Clear loading so a failed fetch can't wedge the tile in a forever
+        // spinner — and surface the failure loudly.
+        setLoading(false);
+        reportWarRoomError("useTileProject", err);
+      });
 
     return () => {
       cancelled = true;

@@ -4,10 +4,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutGrid, Trash2, Loader2, Clock } from "lucide-react";
+import { Trash2, Loader2, Clock } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteSession } from "@/features/war-room/redux/thunks";
+import {
+  roomColorOf,
+  roomIconOf,
+} from "@/features/war-room/components/room/roomIdentity";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import type { WarRoomSession } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
@@ -17,6 +22,11 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
+
+  // Room branding — the chosen icon + color (safe defaults when unset) make
+  // each room visually distinct in the gallery.
+  const RoomIcon = roomIconOf(session.icon);
+  const roomColor = roomColorOf(session.color);
 
   function open() {
     if (pending || deleting) return;
@@ -33,7 +43,15 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
     });
     if (!ok) return;
     setDeleting(true);
-    await dispatch(deleteSession(session.id));
+    try {
+      await dispatch(deleteSession(session.id));
+    } catch (err) {
+      // The thunk handles its own failure toast/recovery; this guards the rare
+      // dispatch-level throw so the spinner/disabled state ALWAYS resets.
+      reportWarRoomError("SessionCard.delete", err);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -49,16 +67,31 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
       }}
       aria-disabled={deleting}
       className={cn(
-        "group relative cursor-pointer text-left rounded-xl border border-border bg-card p-4",
+        "group relative cursor-pointer text-left overflow-hidden rounded-xl border border-border bg-card p-4 pl-5",
         "transition-all hover:border-primary/40 hover:shadow-[var(--elevation-2)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
         deleting && "opacity-50 pointer-events-none",
         "flex flex-col gap-3 min-h-36",
       )}
     >
+      {/* Colored accent spine — the room's identity color, runs the card's height. */}
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-y-0 left-0 w-1.5",
+          roomColor.swatch,
+        )}
+      />
+
       <div className="flex items-start justify-between gap-2">
-        <span className="grid place-items-center size-9 shrink-0 text-primary">
-          <LayoutGrid className="size-4.5" />
+        <span
+          className={cn(
+            "grid place-items-center size-9 shrink-0 rounded-lg",
+            roomColor.tint,
+            roomColor.text,
+          )}
+        >
+          <RoomIcon className="size-4.5" />
         </span>
         <button
           type="button"

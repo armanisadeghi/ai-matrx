@@ -18,12 +18,18 @@ import type { AssistantConversationRef } from "../types";
 import { AUDIO_ASSISTANT_AGENT_ID } from "../constants";
 
 /**
- * The agent the Scribe assistant should use when nothing more specific applies:
- * the user-wide default preference, else the seeded audio-assistant agent.
- * (Per-session choices live on the roster and take precedence over this.)
+ * The agent the assistant should use when nothing more specific applies.
+ * Precedence: an explicit `overrideAgentId` (a surface that brings its own
+ * default agent — e.g. a War Room tile defaulting to the Thread persona) → the
+ * user-wide Scribe preference → the seeded audio-assistant agent. (Per-session
+ * choices live on the roster and take precedence over all of these.)
  */
-export function resolveDefaultAssistantAgentId(state: RootState): string {
+export function resolveDefaultAssistantAgentId(
+  state: RootState,
+  overrideAgentId?: string,
+): string {
   return (
+    overrideAgentId ||
     state.userPreferences?.transcription?.scribeAssistantAgentId ||
     AUDIO_ASSISTANT_AGENT_ID
   );
