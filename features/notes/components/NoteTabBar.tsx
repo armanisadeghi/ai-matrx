@@ -240,7 +240,7 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
 
   return (
     <div
-      className="notes-tab-bar-scroll flex items-stretch h-8 min-h-[2rem] overflow-hidden border-b border-border shrink-0 mt-1"
+      className="notes-tab-bar-scroll flex items-stretch h-8 min-h-[2rem] overflow-hidden border-b border-border shrink-0"
       role="tablist"
       aria-label="Open notes"
       onDragOver={(e) => {
