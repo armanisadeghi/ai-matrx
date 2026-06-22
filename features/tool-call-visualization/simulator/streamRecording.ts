@@ -55,6 +55,39 @@ export interface StreamRecording {
   finalResult: unknown;
 }
 
+/**
+ * Build a realistic recording for ANY tool from its final args + result.
+ *
+ * Most tools don't trickle — they fire, work briefly, and return their result
+ * whole. Timeline: `tool_started` (data: args) → a short `tool_progress` beat
+ * (so the streaming/loading state is observable) → `tool_completed` (the whole
+ * result). Tune `workMs` for tools that feel slower. The result is delivered
+ * whole on completion (never character-streamed) — matching the wire.
+ */
+export function buildSimpleRecording(
+  toolName: string,
+  args: Record<string, unknown>,
+  result: unknown,
+  opts?: { displayName?: string; workMs?: number; progressMessage?: string },
+): StreamRecording {
+  const workMs = opts?.workMs ?? 1100;
+  return {
+    toolName,
+    displayName: opts?.displayName,
+    args,
+    steps: [
+      { afterMs: 0, event: "tool_started", data: { ...args } },
+      {
+        afterMs: Math.round(workMs * 0.5),
+        event: "tool_progress",
+        message: opts?.progressMessage ?? "Working…",
+      },
+      { afterMs: workMs, event: "tool_completed" },
+    ],
+    finalResult: result,
+  };
+}
+
 /** One parsed `## "query" (N results)` block from a research blob. */
 interface ResearchSection {
   /** The query string captured from the section header. */
