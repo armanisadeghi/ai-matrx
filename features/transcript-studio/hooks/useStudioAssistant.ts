@@ -28,6 +28,7 @@ import type { StudioDocument } from "../types";
 import {
   selectAssistantConversationId,
   selectRecordingSegmentCount,
+  selectSessionById,
   selectSessionCleanedText,
   selectWorkingDocument,
 } from "../redux/selectors";
@@ -41,6 +42,15 @@ import {
   buildAssistantContextEntries,
   type AssistantContextEntry,
 } from "../service/assistantContextBuilder";
+import { buildSessionResourceContextEntries } from "../service/sessionResourceContext";
+import {
+  fetchProject,
+  selectProjectById,
+} from "@/features/agent-context/redux/projectsSlice";
+import {
+  loadProjectTasks,
+  selectTopLevelTasksByProjectId,
+} from "@/features/agent-context/redux/tasksSlice";
 
 /**
  * Optional extras for non-Scribe consumers (e.g. the War Room tile Agent+
@@ -89,6 +99,13 @@ export function useStudioAssistant(
   const workingDocIdRef = useRef<string | null>(workingDocument?.id ?? null);
   if (workingDocument?.id) workingDocIdRef.current = workingDocument.id;
 
+  // The project this session is attached to (if any). Drives the inline session
+  // brief + deferred task list so the agent sees its project/tasks up front
+  // instead of blind-querying the DB and guessing the right one.
+  const projectId = useAppSelector((s: RootState) =>
+    sessionId ? (selectSessionById(sessionId)(s)?.projectId ?? null) : null,
+  );
+
   // One-time setup per session: ensure the working document, then resolve the
   // durable assistant conversation (reuse the persisted id + rehydrate history,
   // or mint + persist a new one). The ensure thunk is itself de-duplicated by
@@ -118,6 +135,15 @@ export function useStudioAssistant(
     };
   }, [sessionId, conversationId, defaultAgentId, dispatch]);
 
+  // Hydrate the attached project + its tasks once per project, so the resource
+  // context builder has them in Redux to assemble the brief. Idempotent —
+  // fetchProject no-ops when the project is already fresh.
+  useEffect(() => {
+    if (!projectId) return;
+    void dispatch(fetchProject(projectId));
+    void dispatch(loadProjectTasks({ projectId }));
+  }, [projectId, dispatch]);
+
   // Keep the in-Redux named context objects fresh whenever the underlying
   // studio data changes — realtime working-document patches, new recordings,
   // or a cleanup run. The standard chat input (SmartAgentInput → smartExecute)
@@ -130,6 +156,14 @@ export function useStudioAssistant(
   // steady — still refresh the context.
   const cleanedText = useAppSelector(selectSessionCleanedText(sessionId));
   const workingDocContent = workingDocument?.content ?? "";
+  // Re-run the context rebuild when the attached project or its task set lands /
+  // changes, so the inline brief reflects the latest project + tasks.
+  const projectName = useAppSelector((s: RootState) =>
+    projectId ? (selectProjectById(s, projectId)?.name ?? "") : "",
+  );
+  const projectTaskCount = useAppSelector((s: RootState) =>
+    projectId ? selectTopLevelTasksByProjectId(s, projectId).length : 0,
+  );
 
   useEffect(() => {
     if (!sessionId || !conversationId) return;
@@ -138,7 +172,10 @@ export function useStudioAssistant(
       state,
       sessionId,
       workingDocIdRef.current,
-      buildExtraEntries?.(state) ?? [],
+      [
+        ...buildSessionResourceContextEntries(state, sessionId),
+        ...(buildExtraEntries?.(state) ?? []),
+      ],
     );
     // NEVER clobber good context with an empty set. A transient build (doc not
     // yet loaded, etc.) returning [] would otherwise wipe the conversation's
@@ -155,6 +192,9 @@ export function useStudioAssistant(
     workingDocContent,
     recordingCount,
     cleanedText,
+    projectId,
+    projectName,
+    projectTaskCount,
     buildExtraEntries,
     dispatch,
     store,
@@ -191,7 +231,10 @@ export function useStudioAssistant(
       state,
       sessionId,
       workingDocIdRef.current,
-      buildExtraEntries?.(state) ?? [],
+      [
+        ...buildSessionResourceContextEntries(state, sessionId),
+        ...(buildExtraEntries?.(state) ?? []),
+      ],
     );
     if (entries.length > 0) {
       dispatch(setContextEntries({ conversationId, entries }));

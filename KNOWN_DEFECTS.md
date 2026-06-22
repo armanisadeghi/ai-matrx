@@ -17,6 +17,19 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D12 — `selectContextPayload` drops entry-level `label` / `type`, so compact (string-valued) context objects reach the backend WITHOUT their authored label
+**Severity: low — cosmetic. The model still receives the content; only the manifest label is the humanized key instead of the authored one.**
+
+**What.** [`selectContextPayload`](features/agents/redux/execution-system/instance-context/instance-context.selectors.ts) builds the request `context` dict as `payload[entry.key] = entry.value` — it forwards ONLY the value, dropping the entry's `label` / `type` / `slotMatched`. For entries whose value is a plain string (every `recording_NN_raw` / `session_cleaned` from `assistantContextBuilder`), the backend never sees the authored `label` ("Recording 1 — raw transcript (with [t=…s]…)") and humanizes the key ("Recording 01 Raw") in the `<available_context>` manifest instead.
+
+**Why it happened.** The wire shape predates the backend's rich-form support; the selector was written when context was a flat `key→string` map.
+
+**The workaround in use.** An entry that needs metadata on the wire ships a **rich-form value** — a dict `{ content, type, label, description, max_inline_chars }` (the selector passes the value through untouched, so the dict survives). `working_document` (`buildWorkingDocumentContextValue`) and the `session_brief` / `project_tasks` / `project_overview` entries (`sessionResourceContext`) all do this; it is also how they control inline-vs-deferred.
+
+**The fence (not yet built).** Make `selectContextPayload` wrap a PRIMITIVE value that carries entry metadata into rich form (`{ content: value, type, label }`) so authored labels reach the backend for every entry without each builder hand-rolling a dict. Behavior-preserving — the backend treats `{content,…}` ≤200 chars identically to a bare string. Deferred here because it touches the shared payload for EVERY agent and the only payoff is nicer manifest labels; not worth bundling into a hot fix that ships straight to main.
+
+**What's open.** The wrap above. Until then, only rich-form values carry `label` / `max_inline_chars` to the backend.
+
 ### D11 — Per-turn context snapshot is captured client-side but NOT persisted to `cx_message.metadata` (backend-gated)
 **Severity: medium — was an active "the UI lies" bug; now contained. Live turns are truthful; reloaded historical turns show NO context instead of a fake one (honest but incomplete).**
 
