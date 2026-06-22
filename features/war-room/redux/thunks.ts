@@ -8,7 +8,10 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { create as createNote, update as updateNoteApi } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
 import { createTaskThunk } from "@/features/tasks/redux/thunks";
-import { upsertTaskWithLevel } from "@/features/agent-context/redux/tasksSlice";
+import {
+  upsertTaskWithLevel,
+  selectTaskById,
+} from "@/features/agent-context/redux/tasksSlice";
 import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -645,6 +648,36 @@ export const createRoomFromProject =
 const inFlightTileOps = new Set<string>();
 
 /**
+ * A human, trackable label for a tile's note — derived from the room name + the
+ * thread (its own title, else its task's title, else its ordinal in the room),
+ * disambiguated by note index. Replaces the generic "War Room note" that was the
+ * SAME for every room and thread and littered the user's notes list.
+ */
+function deriveTileNoteLabel(state: RootState, tileId: string): string {
+  const tile = state.warRoom.tilesById[tileId];
+  const sessionId = tile?.session_id ?? null;
+  const roomName =
+    (sessionId && state.warRoom.sessionsById[sessionId]?.title?.trim()) ||
+    "War Room";
+  const taskTitle = tile?.task_id
+    ? selectTaskById(state, tile.task_id)?.title?.trim()
+    : undefined;
+  const ordinal = sessionId
+    ? (state.warRoom.tileIdsBySession[sessionId]?.indexOf(tileId) ?? -1)
+    : -1;
+  const threadLabel =
+    tile?.title?.trim() ||
+    taskTitle ||
+    (ordinal >= 0 ? `Thread ${ordinal + 1}` : "Thread");
+  const base =
+    threadLabel === roomName ? roomName : `${roomName} — ${threadLabel}`;
+  // Index among the tile's existing notes — the 2nd+ note gets a "(N)" suffix.
+  const existing = state.warRoom.noteIdsByTile[tileId]?.length ?? 0;
+  const n = existing + 1;
+  return n > 1 ? `${base} (${n})` : base;
+}
+
+/**
  * Ensure the tile's Notes tab has a backing note. Creates one via the notes
  * programmatic API (no notes-page tab side effects), registers it in the notes
  * slice, links it to the tile, and keeps note.task_id in sync with the tile.
@@ -660,7 +693,7 @@ export const createTileNote =
     try {
       const note = await createNote({
         content: "",
-        label: "War Room note",
+        label: deriveTileNoteLabel(getState(), tileId),
         task_id: tile.task_id ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
@@ -863,7 +896,7 @@ export const addNoteToTile =
       const tile = getState().warRoom.tilesById[tileId];
       const note = await createNote({
         content: "",
-        label: "War Room note",
+        label: deriveTileNoteLabel(getState(), tileId),
         task_id: tile?.task_id ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));

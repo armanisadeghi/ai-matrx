@@ -33,6 +33,7 @@ import {
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
 import {
+  selectNoteById,
   selectNoteContent,
   selectNoteEditorMode,
 } from "@/features/notes/redux/selectors";
@@ -146,11 +147,21 @@ function TileNotesToolbar({
   const dispatch = useAppDispatch();
   const storedMode = useAppSelector(selectNoteEditorMode(noteId ?? ""));
   const mode = ((storedMode as EditorMode) || "plain") as EditorMode;
+  // The active note's real name — shown so the user can SEE and track which note
+  // is open (was hidden entirely, every note read as a generic "Notes").
+  const activeLabel = useAppSelector((s) =>
+    noteId ? (selectNoteById(noteId)(s)?.label?.trim() ?? "") : "",
+  );
 
   return (
     <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
       <StickyNote className="size-3.5 shrink-0 text-yellow-500" aria-hidden />
-      <span className="text-xs font-medium text-yellow-500 pr-2">Notes </span>
+      <span
+        className="max-w-[12rem] truncate pr-1 text-xs font-medium text-foreground"
+        title={activeLabel || "Notes"}
+      >
+        {activeLabel || "Notes"}
+      </span>
 
       {noteId
         ? MODES.map(({ id, label, Icon }) => (
@@ -191,13 +202,13 @@ function TileNotesToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             {noteIds.map((nid, i) => (
-              <DropdownMenuItem
+              <NoteSwitcherItem
                 key={nid}
-                onClick={() => dispatch(setTileActiveNote(tileId, nid))}
-                className={cn("gap-2", nid === noteId && "text-primary")}
-              >
-                Note {i + 1}
-              </DropdownMenuItem>
+                tileId={tileId}
+                nid={nid}
+                index={i}
+                activeNoteId={noteId}
+              />
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -215,6 +226,32 @@ function TileNotesToolbar({
         New
       </button>
     </div>
+  );
+}
+
+/** One row in the note switcher — shows the note's real label (not a positional
+ *  "Note N"), so the user can see and pick the note by name. */
+function NoteSwitcherItem({
+  tileId,
+  nid,
+  index,
+  activeNoteId,
+}: {
+  tileId: string;
+  nid: string;
+  index: number;
+  activeNoteId: string | null;
+}) {
+  const dispatch = useAppDispatch();
+  const note = useAppSelector(selectNoteById(nid));
+  const label = note?.label?.trim() || `Note ${index + 1}`;
+  return (
+    <DropdownMenuItem
+      onClick={() => dispatch(setTileActiveNote(tileId, nid))}
+      className={cn("gap-2", nid === activeNoteId && "text-primary")}
+    >
+      <span className="truncate">{label}</span>
+    </DropdownMenuItem>
   );
 }
 
