@@ -100,7 +100,7 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 - [x] **"Tool Renderer Author" AI Matrx agent** (`agent_id 678eb72e-edad-43bc-91d9-f68759099499`, Opus 4.8, public, `create_structured`) — built via the agent-author MCP. Input: tool name + sample result. Output (schema): `display_name`, `inline_code`, `header_subtitle_code`, `results_label`, `allowed_imports`. **Proven end-to-end:** authored `read_page` → inserted into `tool_ui` → compiles + renders ("Read Page · 159 elements", role-icon element list).
 - [x] **Author → render coherent**: admin builder lives at `/administration/mcp-tools/[toolId]/ui` (Generate/Edit/Preview tabs, `POST /api/admin/tool-ui-components`) — surface bug fixed so authored renderers actually render (`WEB_TOOL_UI_SURFACE`).
 - [ ] **Drift-guard test** (port from matrx-extend).
-- [ ] **`/tool-call-visualization/admin` FeatureAdminMap** (discoverability index — convention; the tooling exists, the index doesn't yet).
+- [x] **`/tool-call-visualization/admin` FeatureAdminMap** — discoverability index of the shell, field library, DB-renderer runtime, authoring kit, demos, API routes (`app/(core)/tool-call-visualization/admin/page.tsx`). Plus `RENDERER_STATUS.md` — per-tool coverage by stage (in-code / DB / generic).
 
 ### Track 7 — Backend (aidream)
 - [ ] **Continuous streaming** through long tool calls (stop going silent).
