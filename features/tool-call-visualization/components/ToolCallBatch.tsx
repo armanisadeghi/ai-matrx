@@ -65,8 +65,11 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   const allTerminal =
     count > 0 &&
     entries.every((e) => e.status === "completed" || e.status === "error");
-  const anyError = entries.some((e) => e.status === "error");
   const streamingNow = !isPersisted && anyActive;
+  // NOTE: the batch header is NEVER colored as an error. A run where one call
+  // failed and a later one succeeded (the agent fixing its own bad arguments)
+  // is a SUCCESS — coloring the group red mislabels it. A genuine turn failure
+  // surfaces at the turn level (the assistant error card), not here.
 
   // When every tool in the run is the same kind, name it ("Updated `tool_def`
   // · 10 calls"); otherwise stay generic ("10 tool calls").
@@ -144,12 +147,7 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
             className="truncate font-sans text-sm leading-relaxed tracking-wide"
           />
         ) : (
-          <span
-            className={cn(
-              "truncate font-sans text-sm leading-relaxed tracking-wide",
-              anyError ? "text-destructive/80" : "text-muted-foreground",
-            )}
-          >
+          <span className="truncate font-sans text-sm leading-relaxed tracking-wide text-muted-foreground">
             {label}
           </span>
         )}

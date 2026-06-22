@@ -25,11 +25,25 @@ export interface ToolErrorCardProps {
     className?: string;
 }
 
-/** A calm one-line label — humanized `errorType` if present, else a soft default. */
-function errorLabel(errorType?: string | null): string {
-    const trimmed = errorType?.trim();
+/**
+ * A calm one-line label. A tool error is almost always the agent passing
+ * arguments the tool rejected — a normal, self-correcting event (it usually
+ * retries and succeeds), NOT an application failure. So we frame it as an
+ * input issue when the signature matches, and stay soft otherwise. The real
+ * detail rides alongside (the message) and in the overlay Raw tab.
+ */
+function errorLabel(entry: ToolLifecycleEntry): string {
+    const hay = `${entry.errorType ?? ""} ${entry.errorMessage ?? ""}`.toLowerCase();
+    if (
+        /valid|argument|param|schema|required|missing|expected|must be|unrecognized|not allowed|format|type error/.test(
+            hay,
+        )
+    ) {
+        return "The agent sent invalid arguments";
+    }
+    const trimmed = entry.errorType?.trim();
     if (trimmed) return humanizeKey(trimmed);
-    return "Couldn't complete this step";
+    return "This step didn't complete";
 }
 
 /** The first non-empty line of a message, trimmed — never a stack trace. */
@@ -49,17 +63,19 @@ export const ToolErrorCard: React.FC<ToolErrorCardProps> = ({
     className,
 }) => {
     const groupId = toolGroupId ?? entry.callId;
-    const label = errorLabel(entry.errorType);
+    const label = errorLabel(entry);
     const detail = firstLine(entry.errorMessage);
 
     return (
         <div
             className={cn(
-                "flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2",
+                // Calm, not alarming: a quiet bordered row, muted icon — NOT red.
+                // A tool error is a routine retry signal, not an app failure.
+                "flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2",
                 className,
             )}
         >
-            <CircleAlert className="h-3.5 w-3.5 flex-shrink-0 text-destructive/70" />
+            <CircleAlert className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
             <div className="flex min-w-0 flex-1 items-baseline gap-2">
                 <span className="flex-shrink-0 text-xs font-medium text-foreground">{label}</span>
                 {detail && (

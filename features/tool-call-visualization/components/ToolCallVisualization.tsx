@@ -39,6 +39,7 @@ import {
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
+import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
@@ -402,8 +403,16 @@ const ToolCallVisualizationInner: React.FC<{
           <div className="overflow-hidden">
             <div className="mt-1 space-y-1.5 rounded-md border border-border bg-transparent p-2">
               {entries.map((entry) => {
-                const InlineRenderer = getInlineRenderer(entry.toolName);
                 const groupDisplayName = getToolDisplayName(entry.toolName);
+                // An errored tool call gets the calm ToolErrorCard for EVERY
+                // tool (not just generic ones) — a tool error is usually the
+                // agent's bad arguments, a routine retry signal, not an app
+                // failure. Short-circuit BEFORE resolving the renderer so an
+                // errored DB tool doesn't fetch/compile a body it won't show.
+                const isErrored = entry.status === "error";
+                const InlineRenderer = isErrored
+                  ? null
+                  : getInlineRenderer(entry.toolName);
                 return (
                   <div key={entry.callId}>
                     {entries.length > 1 && (
@@ -411,15 +420,23 @@ const ToolCallVisualizationInner: React.FC<{
                         {groupDisplayName}
                       </div>
                     )}
-                    <InlineRenderer
-                      entry={entry}
-                      events={entry.events}
-                      onOpenOverlay={handleOpenOverlay}
-                      onOpenWindowPanel={handleOpenWindowPanel}
-                      toolGroupId={entry.callId}
-                      isPersisted={isPersisted}
-                      conversationId={conversationId}
-                    />
+                    {isErrored || !InlineRenderer ? (
+                      <ToolErrorCard
+                        entry={entry}
+                        onOpenOverlay={handleOpenOverlay}
+                        toolGroupId={entry.callId}
+                      />
+                    ) : (
+                      <InlineRenderer
+                        entry={entry}
+                        events={entry.events}
+                        onOpenOverlay={handleOpenOverlay}
+                        onOpenWindowPanel={handleOpenWindowPanel}
+                        toolGroupId={entry.callId}
+                        isPersisted={isPersisted}
+                        conversationId={conversationId}
+                      />
+                    )}
                   </div>
                 );
               })}
