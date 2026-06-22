@@ -6,6 +6,86 @@
 
 ---
 
+## ⚡ CURRENT STATE & THE SEARCH/RESEARCH PLAYBOOK — 2026-06-22 (read this first)
+
+**You're inheriting something that went from the ugliest part of the app to a showcase the company competes on.** The foundation is clean, the patterns are proven, there's a simulator that lets you verify streaming with no backend, and an AI agent that writes renderers for you. Keep the bar: **BUILD IT REAL** (never fake), **ZERO legacy** (delete superseded on cutover), **verify by DOM not vibes**. Make every tool call a first-class product surface.
+
+### What shipped (recent)
+- **Generic floor + field library** (the ~97% path): a shape-detection renderer (markdown / url / media / table / key-value / json-tree / error / empty), the `result-fields/` library, durable media via `InlineMediaRef`, semantic tokens, one canonical header.
+- **Shell** = Claude-Code-style single **verb-phrase line** (no check / spinner / X), 3-layer collapse, **batch-folding** (≥2 back-to-back calls → one `ToolCallBatch` line), **calm errors** (small, not red; errors NEVER default open), **stay-open** for result-is-purpose tools.
+- **Turn grouping fix** — tool/system rows no longer blow giant gaps into the transcript.
+- **DB-loaded renderers work** (the canonical custom path) — runtime-compiled by the agent-apps `compileSlotComponent` sandbox; several seeded; **self-describing** (a row's `display_name` drives its collapsed label via `useDbToolMeta`).
+- **`ctx_patch` human diff** (`renderers/working-document/PatchDiffInline`) — simple human diff (the inserted word tinted, the rest plain), live + persisted, via the canonical `components/diff/` engine.
+- **Search / Research / Scrape epic (the current chapter):**
+  - **Wave 1 — Search: SHIPPED** (`13deef1d9`). Canonical `renderers/search/` — a live **≤4-row deduped conveyor** → a **persistent Google-class results view**, parallel-query lanes, fast-forward when the model moves on. Verified 15 raw → 13 deduped sources, zero duplicate favicons. Deleted **−2937 lines** of weaker/duplicate renderers.
+  - **Waves 2 + 3 — Scrape cards + Research streaming report: built by a background agent** that self-verifies and self-pushes each wave. Look for `feat(tool-viz): …` commits + new sections in the gallery.
+
+### The demo (test everything here)
+- **`/demos/tool-viz/result-fields`** — the gallery: field library, DB renderers, shell behaviors, **Live search (press Play)** + a static mid-stream snapshot, the ctx_patch diff, and the scrape / research sections as they land. *(Dev-profile route — 404s on prod `core`; to test a DB renderer on prod, run the tool in a real chat.)*
+- **`/demos/tool-viz/in-action`** — a paced single-tool agent turn (text → tool → text) + real saved runs.
+- **`/tool-call-visualization/admin`** — the FeatureAdminMap (every URL / panel / slice / renderer).
+- Per-tool stage: **`RENDERER_STATUS.md`**. Living task tracker: **`OVERHAUL_STATUS.md`**.
+
+### Hard-coded vs DB tools — the core mental model
+- **~10% (core / interactive) = in-code:** registered in `registry/registry.tsx`, components in `renderers/`. Use this for the rich, interactive, highest-volume tools (search, the CTX family, the showcase set).
+- **~90% (everything else, eventually) = DB-loaded:** an agent writes the renderer **as code**, stored in a `tool_ui` row, **compiled at runtime** by the agent-apps applet sandbox (`db-renderer/`). This is **CODE-first, NOT "store data and render it"** (see "THE central lesson" below) — do not reinvent a runtime or repair the old `dynamic/` Babel duplicate.
+- **Resolution order:** in-code registry → DB renderer → `GenericRenderer`. A DB renderer is self-describing — its `display_name` controls the collapsed line, not just the body.
+- **Author a DB renderer four ways, all converging on one `tool_ui` row + one runtime:** the `create-tool-renderer` skill, the **"Tool Renderer Author" AI Matrx agent** (via the `agent_author` / `agent_run` MCP), the admin editor, or a seed migration.
+
+### The load-bearing CONSTRAINT (you WILL hit this on any results / report / scrape tool)
+The backend (aidream) delivers tool **results WHOLE at `tool_completed`** — it does NOT token-stream content (search blobs, scraped pages, the research report, ctx_patch `new_str` all arrive whole). Live **activity** (browsing URLs, per-query batches) DOES stream as `tool_step` / `message` events on `entry.events`. So **"live streaming" = client-side PACED reveal of real, already-present data** — exactly what Anthropic / Google / xAI / OpenAI do; the user endorses this as correct, NOT fake. True token-streaming is a noted **aidream follow-up** (emit incremental deltas); every component re-renders on each `entry` change, so it lights up automatically the day the backend streams. The rule is in the simulator header (`simulator/streamRecording.ts`): *stream only what really streams; deliver whole objects whole.*
+
+### Tool-component PATTERNS — search/research are the TEMPLATE for all content-rich tools
+For ANY tool returning a batch of results, a list, or a report (news, RAG, lists, future tools) — reuse, don't reinvent:
+1. **Paced / graduated reveal** — `renderers/search/useGraduatedReveal.ts`. A few at a time, flow through; never a wall.
+2. **Base-URL dedupe** — `parseSearch.ts` (`dedupeByBaseUrl` / `getFaviconUrl` / `getDomain`). Never the same favicon twice.
+3. **Two phases:** LIVE (rolling-window conveyor + real activity events) → PERSISTENT (the "done", user-controllable view). Keyed on **`selectIsLatestToolActivity(requestId, callId)`** (fast-forward when the model emits new text / a new tool).
+4. **Stay-open** for the thing the user came for (`keep_expanded_on_stream`); fold the rest.
+5. **Scrape / read** = a full per-page CARD (favicon / title / meta / image-if-present / AI-review-if-present + a reading-wave), not a row.
+6. **Long content / reports** = a streaming `MarkdownStream` block: distinct narrower card, max-h, auto-scroll + scroll-locked while streaming, collapsible, a normal scrollable result when done (`useAutoScrollOnStream`).
+7. **Three views:** live (something's happening) ≠ done (here's the result) ≠ overlay (raw I/O always + pretty + extras).
+8. **Media via `InlineMediaRef` only** (durable; never raw `<img>`). Semantic tokens only. React Compiler ON (no manual memo).
+
+### The primitives/tools we built (REUSE these)
+- **The stream SIMULATOR** — `simulator/streamRecording.ts` (`buildSimpleRecording` / `buildResearchRecording` / `buildSearchRecording` / `buildScrapeRecording`) + `useSimulatedToolEntry.ts`. Paced replay into an evolving `ToolLifecycleEntry`. **THE way to demo + verify streaming with no backend** — press Play in the gallery, or add a static mid-stream snapshot fixture for flaky-server-proof verification.
+- `renderers/search/` — `parseSearch` (the ONE parser), `useGraduatedReveal`, `SearchInline` / `SearchOverlay`.
+- `selectIsLatestToolActivity` (active-requests.selectors) — the fast-forward signal.
+- `useAutoScrollOnStream` (Wave 3) — scroll-to-bottom on stream.
+- `PatchDiffInline` + the canonical `components/diff/` engine (human diffs).
+- The **DB-renderer runtime** (`db-renderer/`) + `useDbToolMeta`.
+- The **"Tool Renderer Author" agent** — give it a tool + a captured sample; it writes the renderer.
+
+### How to VERIFY (the dev server is FLAKY — this bit us all session)
+The local Next dev server in this env destabilizes after rapid edits / reloads: RSC-payload fetch failures, ChunkLoadErrors, and **clicks / timers stop firing after Fast-Refresh**. So:
+- Prefer **`preview_eval` DOM inspection** over screenshots / clicks. For timer-driven demos, add a **static mid-stream snapshot** fixture to prove the code path without a timer (Wave 1 did this to prove the ≤4 conveyor + dedupe).
+- Restart once (`preview_stop` + `preview_start`); if hydration still won't recover, `rm -rf .next` + restart (nuclear, per memory).
+- Dev-login: `/api/dev-login?token=<DEV_LOGIN_TOKEN from .env.local>&next=<route>`.
+- **Never** claim "verified" off a flawed screenshot — DOM-inspect, name defects, real validation only.
+
+### How to use SUBAGENTS effectively — this is HOW so much shipped in one context
+1. **Parallel exploration up front** — launch 2–3 `Explore` / general agents in ONE message, each a tight, NON-overlapping focus (one maps the renderers, one maps the streaming reality, one queries the DB). Tell them to be CONCISE and quote only critical code. **You keep the conclusion, not the file dumps** — that's what preserves your context.
+2. **Adversarial verification** — when something MUST be right (a bug's root cause, "does this actually stream?"), have an agent investigate, then **cross-check its claim against the live code / DB yourself** before acting. The window-panel root cause and the "data arrives whole" constraint were both nailed this way — an agent's finding, verified against real data, never taken on faith.
+3. **Delegate whole vertical slices** when your context fills — hand a fresh-context agent the **plan-file path** + the key facts + **"reuse X, don't rebuild"** + "verify in the gallery via DOM, **commit + push yourself**, report CONCISELY (files + verification + hash, no dumps)." Wave 1 (a full animated renderer + primitives + a −2937-line cleanup) was ONE such agent that self-verified and self-pushed.
+4. **Have subagents commit + push their own work** and report just the hash + what they confirmed + **what they couldn't verify and why** (honesty over polish). It saves your context relaying diffs.
+5. **Sequence dependent waves** (primitives first, then consumers); use ONE agent for two coupled waves (Wave 2 feeds Wave 3) to avoid same-file conflicts; use **`run_in_background`** for long builds you don't need to babysit (they self-push + notify).
+
+### The git reality (don't panic)
+Parallel sessions aggressively commit + push `main` — sometimes sweeping your uncommitted work into their commits, sometimes rebasing under you. **Content is always safe** (tracked at HEAD); the history is just messy. **Don't do git surgery.** Commit your own work promptly; after pushing, confirm `origin/main == HEAD`.
+
+### What's next
+- **Finish Waves 2 + 3** (scrape cards + research report) landing from the background agent — verify them in the gallery when they push.
+- **`header_subtitle_code`** wiring for DB renderers (display_name is wired; the subtitle isn't yet).
+- **The Track-2 PURGE** — the OLD `dynamic/` Babel duplicate + `prompt_apps` + `contract_version` v1 rows. Destructive + cross-repo (matrx-extend may still read v1 rows) → do this WITH the user.
+- **aidream:** emit incremental `tool_progress` deltas → true token-streaming lights up every component automatically.
+- **Live owner verification in real chats** (the flaky dev server blocked some visual confirms this session).
+
+### Read next
+`OVERHAUL_STATUS.md` (task tracker) · `FEATURE.md` (architecture + change log) · `RENDERER_STATUS.md` (per-tool stage) · the plan `~/.claude/plans/here-is-some-basic-giggly-penguin.md` (⚡ ACTIVE = search / research / scrape) · the `create-tool-renderer` skill · memory `project_tool_viz_overhaul.md` + the `feedback_*` memories (work on main, commit without asking, no fake verification, no AskUserQuestion, give wave routes to test).
+
+**You've got a clean foundation, proven patterns, a simulator, and an agent that writes renderers. Now go make Google nervous.**
+
+---
+
 ## 1. THE central lesson (I got this wrong for several turns)
 
 **I inverted the architecture.** I spent multiple turns proposing a "declarative `ToolDisplayEntry` (data, not code)" model as the *canonical* dynamic path, and even called browser-compiled code unsafe/wrong. **That is backwards.**
