@@ -342,6 +342,18 @@ const STATE_ENTRIES: ToolLifecycleEntry[] = [
         latestMessage: "Reading https://example.com/article",
         result: null,
     }),
+    entry({
+        // A STAY-OPEN tool (news is result-is-purpose) that ERRORED. Must render
+        // COLLAPSED, not the big open error box — an error has no result to keep
+        // open. Regression guard for the "errored stay-open tool defaults open" bug.
+        callId: "c4",
+        toolName: "news_get_headlines",
+        displayName: "News Headlines",
+        status: "error",
+        errorType: "validation",
+        errorMessage: "Provide at least one of: country, sources, or category.",
+        result: null,
+    }),
 ];
 
 // ─── Search/Research fixture (research_web text-blob format) ────────────────

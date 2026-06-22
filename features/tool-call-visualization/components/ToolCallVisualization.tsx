@@ -125,11 +125,16 @@ const ToolCallVisualizationInner: React.FC<{
         : toolMode;
 
   const [isExpanded, setIsExpanded] = useState<boolean>(() =>
-    effectiveMode === "never-open"
+    // An errored tool has NO result to keep open — errors NEVER default to
+    // expanded, even for a stay-open tool (e.g. news that returned an error
+    // instead of headlines). It collapses to one calm line; click to see why.
+    phase === "error"
       ? false
-      : effectiveMode === "stay-open"
-        ? true
-        : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
+      : effectiveMode === "never-open"
+        ? false
+        : effectiveMode === "stay-open"
+          ? true
+          : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
   );
   // Once the user clicks, respect their choice — stop auto-collapse fighting them.
   const [userToggled, setUserToggled] = useState(false);
@@ -156,6 +161,12 @@ const ToolCallVisualizationInner: React.FC<{
   //   auto       → expand while streaming; collapse 3s after it finishes.
   useEffect(() => {
     if (userToggled) return;
+    // Errors never default to open — collapse even a stay-open tool that errored
+    // (covers a live tool that was expanded while streaming, then errors).
+    if (phase === "error") {
+      setIsExpanded(false);
+      return;
+    }
     if (effectiveMode === "stay-open") {
       setIsExpanded(true);
       return;
@@ -169,7 +180,7 @@ const ToolCallVisualizationInner: React.FC<{
       const t = setTimeout(() => setIsExpanded(false), 3000);
       return () => clearTimeout(t);
     }
-  }, [effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
+  }, [phase, effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
 
   // Prefetch any DB-stored renderers so they're ready before the body mounts.
   useEffect(() => {
