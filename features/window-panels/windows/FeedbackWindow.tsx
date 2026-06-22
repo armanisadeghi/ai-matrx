@@ -124,10 +124,23 @@ Note: \`route\` is where the user clicked Submit, not necessarily where the bug 
 }
 
 // ─── FeedbackWindow ───────────────────────────────────────────────────────────
+//
+// Thin COMPOSITION ROOT (mirrors NotesWindow / AgentShortcutQuickCreateWindow):
+// it owns the feedback form state via `useFeedbackForm` and maps the units onto
+// WindowPanel's slots. The body holds ONLY content — the Cancel/Submit bar and
+// the slow-connection hint are footer slots, not hand-rolled chrome inside the
+// body. Because the footer slot is a sibling of the body, the shared state must
+// live here (the root), not inside `FeedbackWindowBody`.
 
 export interface FeedbackWindowProps extends Omit<
   WindowPanelProps,
-  "children" | "title" | "actionsLeft" | "actionsRight"
+  | "children"
+  | "title"
+  | "actionsLeft"
+  | "actionsRight"
+  | "footer"
+  | "footerLeft"
+  | "footerRight"
 > {
   title?: string;
 }
@@ -143,6 +156,8 @@ export function FeedbackWindow({
     dispatch(closeOverlay({ overlayId: "feedbackDialog" }));
   }, [dispatch]);
 
+  const form = useFeedbackForm({ onClose });
+
   return (
     <WindowPanel
       id={id}
@@ -156,16 +171,71 @@ export function FeedbackWindow({
       urlSyncId="default"
       className="feedback-window-panel"
       overlayId="feedbackDialog"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      // Footer only exists for the form view — the success view replaces the
+      // whole body and carries its own action tiles.
+      footerLeft={
+        !form.submitted ? <FeedbackFooterLeft form={form} /> : undefined
+      }
+      footerRight={
+        !form.submitted ? <FeedbackFooterRight form={form} /> : undefined
+      }
       {...windowProps}
     >
-      <FeedbackWindowBody onClose={onClose} />
+      <FeedbackWindowBody form={form} />
     </WindowPanel>
   );
 }
 
-// ─── FeedbackWindowBody ───────────────────────────────────────────────────────
+// ─── Footer slots ─────────────────────────────────────────────────────────────
 
-function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
+function FeedbackFooterLeft({ form }: { form: FeedbackFormState }) {
+  if (!form.isSlowConnection) return null;
+  return (
+    <span className="text-amber-500 leading-snug">
+      Still trying… slow connection. Cancel to keep your text.
+    </span>
+  );
+}
+
+function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
+  const { isSubmitting, description, cancelSubmit, onClose, handleSubmit } =
+    form;
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        className="px-2 text-xs font-medium rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        onClick={isSubmitting ? cancelSubmit : onClose}
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        className={cn(
+          "flex items-center gap-1.5 px-2.5 text-xs font-medium rounded-md transition-colors",
+          "[&_svg]:w-3.5 [&_svg]:h-3.5",
+          description.trim() && !isSubmitting
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "bg-muted text-muted-foreground cursor-not-allowed",
+        )}
+        onClick={handleSubmit}
+        disabled={!description.trim() || isSubmitting}
+      >
+        {isSubmitting ? <Loader2 className="animate-spin" /> : <Send />}
+        {isSubmitting ? "Submitting..." : "Submit"}
+      </button>
+    </div>
+  );
+}
+
+// ─── useFeedbackForm — hoisted shared state ───────────────────────────────────
+// Owns ALL feedback form state + handlers so the WindowPanel root can feed both
+// the body content and the footer slots. Mirrors `useShortcutQuickCreate`.
+
+type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
+
+function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const reduxUser = useAppSelector(selectUser);
@@ -579,6 +649,101 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
     setTimeout(() => textareaRef.current?.focus(), 50);
   }, []);
 
+  return {
+    // routing / identity
+    dispatch,
+    pathname,
+    reduxUser,
+    isAdmin,
+    username,
+    onClose,
+    // core form state
+    feedbackType,
+    setFeedbackType,
+    description,
+    setDescription,
+    attachments,
+    isSubmitting,
+    isSlowConnection,
+    submitted,
+    submittedItem,
+    stats,
+    error,
+    copied,
+    // admin extras
+    adminOptionsOpen,
+    setAdminOptionsOpen,
+    categoryId,
+    setCategoryId,
+    assigneeId,
+    setAssigneeId,
+    categories,
+    assignableAdmins,
+    isLoadingAdminOptions,
+    // derived
+    uploadedImages,
+    textareaRef,
+    isCapturing,
+    // handlers
+    handlePasteButton,
+    handleTabCapture,
+    handleScreenCapture,
+    handleUploadComplete,
+    removeAttachment,
+    cancelSubmit,
+    handleSubmit,
+    handleKeyDown,
+    handleCopyForAgent,
+    handleReset,
+  };
+}
+
+// ─── FeedbackWindowBody — content only ────────────────────────────────────────
+// Renders ONLY the body content (success view OR the form). The Cancel/Submit
+// bar and slow-connection hint live in the WindowPanel footer slots, not here.
+
+function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
+  const {
+    dispatch,
+    pathname,
+    reduxUser,
+    isAdmin,
+    username,
+    onClose,
+    feedbackType,
+    setFeedbackType,
+    description,
+    setDescription,
+    attachments,
+    isSubmitting,
+    submitted,
+    submittedItem,
+    stats,
+    error,
+    copied,
+    adminOptionsOpen,
+    setAdminOptionsOpen,
+    categoryId,
+    setCategoryId,
+    assigneeId,
+    setAssigneeId,
+    categories,
+    assignableAdmins,
+    isLoadingAdminOptions,
+    uploadedImages,
+    textareaRef,
+    isCapturing,
+    handlePasteButton,
+    handleTabCapture,
+    handleScreenCapture,
+    handleUploadComplete,
+    removeAttachment,
+    handleSubmit,
+    handleKeyDown,
+    handleCopyForAgent,
+    handleReset,
+  } = form;
+
   // ── Submitted state ───────────────────────────────────────────────────────
   if (submitted) {
     return (
@@ -670,257 +835,218 @@ function FeedbackWindowBody({ onClose }: { onClose: () => void }) {
   }
 
   // ── Form ──────────────────────────────────────────────────────────────────
+  // Content only — the Cancel/Submit bar and slow-connection hint are footer
+  // slots owned by the WindowPanel root (see FeedbackFooterLeft/Right).
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
-        {/* Type selector */}
-        <div className="flex gap-1.5 flex-wrap">
-          {FEEDBACK_TYPES.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg cursor-pointer transition-colors border",
-                "[&_svg]:w-3.5 [&_svg]:h-3.5",
-                feedbackType === value
-                  ? FEEDBACK_TYPE_ACTIVE_CLASSES[value]
-                  : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-              onClick={() => setFeedbackType(value)}
-            >
-              <Icon />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Route + User info */}
-        <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground font-mono">
-          <span>
-            Route: <span className="text-foreground/70">{pathname}</span>
-          </span>
-          <span>
-            User: <span className="text-foreground/70">{username}</span>
-          </span>
-        </div>
-
-        {/* Description */}
-        <div className="space-y-1">
-          <VoiceTextarea
-            ref={textareaRef}
-            className="w-full h-28 px-3 py-2 text-xs leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-xs placeholder:text-muted-foreground/50 focus:border-ring focus:bg-background"
-            style={{ fontSize: "16px" }}
-            placeholder="Describe the issue, feature request, or suggestion..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isSubmitting}
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Ctrl+Enter to submit · Ctrl+V to paste screenshots
-          </p>
-        </div>
-
-        {/* Admin-only: Category + Assignee */}
-        {isAdmin && (
-          <div className="rounded-lg border border-border bg-muted/30">
-            <button
-              type="button"
-              onClick={() => setAdminOptionsOpen((v) => !v)}
-              className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              aria-expanded={adminOptionsOpen}
-              aria-controls="feedback-admin-options"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span>Admin Options</span>
-              {(categoryId !== "none" || assigneeId !== "none") && (
-                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium">
-                  {(categoryId !== "none" ? 1 : 0) +
-                    (assigneeId !== "none" ? 1 : 0)}{" "}
-                  set
-                </span>
-              )}
-              <span className="ml-auto text-[10px] opacity-60">
-                {adminOptionsOpen ? "Hide" : "Show"}
-              </span>
-            </button>
-            {adminOptionsOpen && (
-              <div
-                id="feedback-admin-options"
-                className="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-border/60"
-              >
-                {/* Category */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                    Category
-                  </label>
-                  <Select
-                    value={categoryId}
-                    onValueChange={setCategoryId}
-                    disabled={isSubmitting || isLoadingAdminOptions}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Assignee */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                    Assign to
-                  </label>
-                  <Select
-                    value={assigneeId}
-                    onValueChange={setAssigneeId}
-                    disabled={isSubmitting || isLoadingAdminOptions}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {assignableAdmins.map((a) => (
-                        <SelectItem key={a.user_id} value={a.user_id}>
-                          {a.display_name || a.email || a.user_id.slice(0, 8)}
-                          {reduxUser?.id === a.user_id ? " (you)" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
-                    <p className="text-[10px] text-muted-foreground leading-snug">
-                      The assignee will get an in-app message and an email.
-                    </p>
-                  )}
-                </div>
-              </div>
+    <div className="flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
+      {/* Type selector */}
+      <div className="flex gap-1.5 flex-wrap">
+        {FEEDBACK_TYPES.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            type="button"
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg cursor-pointer transition-colors border",
+              "[&_svg]:w-3.5 [&_svg]:h-3.5",
+              feedbackType === value
+                ? FEEDBACK_TYPE_ACTIVE_CLASSES[value]
+                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
-          </div>
-        )}
+            onClick={() => setFeedbackType(value)}
+          >
+            <Icon />
+            {label}
+          </button>
+        ))}
+      </div>
 
-        {/* Screenshots */}
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground">
-            Screenshots{" "}
-            <span className="font-normal opacity-60">(optional)</span>
-          </p>
+      {/* Route + User info */}
+      <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground font-mono">
+        <span>
+          Route: <span className="text-foreground/70">{pathname}</span>
+        </span>
+        <span>
+          User: <span className="text-foreground/70">{username}</span>
+        </span>
+      </div>
 
-          <FileUploadWithStorage
-            bucket="userContent"
-            path="feedback-images"
-            saveTo="public"
-            onUploadComplete={handleUploadComplete}
-            multiple
-            useMiniUploader
-            maxHeight="120px"
-          />
+      {/* Description */}
+      <div className="space-y-1">
+        <VoiceTextarea
+          ref={textareaRef}
+          className="w-full h-28 px-3 py-2 text-xs leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-xs placeholder:text-muted-foreground/50 focus:border-ring focus:bg-background"
+          style={{ fontSize: "16px" }}
+          placeholder="Describe the issue, feature request, or suggestion..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={isSubmitting}
+        />
+        <p className="text-[10px] text-muted-foreground">
+          Ctrl+Enter to submit · Ctrl+V to paste screenshots
+        </p>
+      </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={handlePasteButton}
-              disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
+      {/* Admin-only: Category + Assignee */}
+      {isAdmin && (
+        <div className="rounded-lg border border-border bg-muted/30">
+          <button
+            type="button"
+            onClick={() => setAdminOptionsOpen((v) => !v)}
+            className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded={adminOptionsOpen}
+            aria-controls="feedback-admin-options"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            <span>Admin Options</span>
+            {(categoryId !== "none" || assigneeId !== "none") && (
+              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium">
+                {(categoryId !== "none" ? 1 : 0) +
+                  (assigneeId !== "none" ? 1 : 0)}{" "}
+                set
+              </span>
+            )}
+            <span className="ml-auto text-[10px] opacity-60">
+              {adminOptionsOpen ? "Hide" : "Show"}
+            </span>
+          </button>
+          {adminOptionsOpen && (
+            <div
+              id="feedback-admin-options"
+              className="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-border/60"
             >
-              <Clipboard className="w-3 h-3" />
-              Paste Image
-            </button>
-            <button
-              type="button"
-              onClick={handleTabCapture}
-              disabled={isSubmitting || isCapturing}
-              title="Capture this tab's content instantly (no picker)"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
-            >
-              <Camera className="w-3 h-3" />
-              Tab Capture
-            </button>
-            <button
-              type="button"
-              onClick={handleScreenCapture}
-              disabled={isSubmitting || isCapturing}
-              title="Select any window or screen to capture (browser picker)"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
-            >
-              <Monitor className="w-3 h-3" />
-              Screen Capture
-            </button>
-          </div>
+              {/* Category */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Category
+                </label>
+                <Select
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  disabled={isSubmitting || isLoadingAdminOptions}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Attachment thumbnails — pending / error / ready */}
-          {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {attachments.map((slot) => (
-                <AttachmentThumbnail
-                  key={slot.id}
-                  slot={slot}
-                  readyImages={uploadedImages}
-                  onView={(idx) =>
-                    openImageViewer(dispatch, {
-                      images: uploadedImages,
-                      initialIndex: idx,
-                      title: "Feedback Attachments",
-                      instanceId: "feedback",
-                    })
-                  }
-                  onRemove={() => removeAttachment(slot.id)}
-                />
-              ))}
+              {/* Assignee */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Assign to
+                </label>
+                <Select
+                  value={assigneeId}
+                  onValueChange={setAssigneeId}
+                  disabled={isSubmitting || isLoadingAdminOptions}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {assignableAdmins.map((a) => (
+                      <SelectItem key={a.user_id} value={a.user_id}>
+                        {a.display_name || a.email || a.user_id.slice(0, 8)}
+                        {reduxUser?.id === a.user_id ? " (you)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    The assignee will get an in-app message and an email.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
+      )}
 
-        {error && (
-          <p className="text-[11px] text-destructive leading-snug">{error}</p>
-        )}
-      </div>
+      {/* Screenshots */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-medium text-muted-foreground">
+          Screenshots <span className="font-normal opacity-60">(optional)</span>
+        </p>
 
-      {/* Sticky footer */}
-      <div
-        data-feedback-overlay
-        className="shrink-0 flex flex-col gap-1 px-4 py-2.5 border-t border-border bg-muted/20"
-      >
-        {isSlowConnection && (
-          <p className="text-[10px] text-amber-500 text-center">
-            Still trying… slow connection detected. You can cancel and your text
-            will be preserved.
-          </p>
-        )}
-        <div className="flex items-center justify-between">
+        <FileUploadWithStorage
+          bucket="userContent"
+          path="feedback-images"
+          saveTo="public"
+          onUploadComplete={handleUploadComplete}
+          multiple
+          useMiniUploader
+          maxHeight="120px"
+        />
+
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            onClick={isSubmitting ? cancelSubmit : onClose}
+            onClick={handlePasteButton}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
           >
-            Cancel
+            <Clipboard className="w-3 h-3" />
+            Paste Image
           </button>
           <button
             type="button"
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
-              "[&_svg]:w-3.5 [&_svg]:h-3.5",
-              description.trim() && !isSubmitting
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "bg-muted text-muted-foreground cursor-not-allowed",
-            )}
-            onClick={handleSubmit}
-            disabled={!description.trim() || isSubmitting}
+            onClick={handleTabCapture}
+            disabled={isSubmitting || isCapturing}
+            title="Capture this tab's content instantly (no picker)"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
           >
-            {isSubmitting ? <Loader2 className="animate-spin" /> : <Send />}
-            {isSubmitting ? "Submitting..." : "Submit"}
+            <Camera className="w-3 h-3" />
+            Tab Capture
+          </button>
+          <button
+            type="button"
+            onClick={handleScreenCapture}
+            disabled={isSubmitting || isCapturing}
+            title="Select any window or screen to capture (browser picker)"
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-accent text-foreground transition-colors disabled:opacity-50"
+          >
+            <Monitor className="w-3 h-3" />
+            Screen Capture
           </button>
         </div>
+
+        {/* Attachment thumbnails — pending / error / ready */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            {attachments.map((slot) => (
+              <AttachmentThumbnail
+                key={slot.id}
+                slot={slot}
+                readyImages={uploadedImages}
+                onView={(idx) =>
+                  openImageViewer(dispatch, {
+                    images: uploadedImages,
+                    initialIndex: idx,
+                    title: "Feedback Attachments",
+                    instanceId: "feedback",
+                  })
+                }
+                onRemove={() => removeAttachment(slot.id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {error && (
+        <p className="text-[11px] text-destructive leading-snug">{error}</p>
+      )}
     </div>
   );
 }
