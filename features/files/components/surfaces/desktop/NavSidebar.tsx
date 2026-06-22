@@ -23,6 +23,7 @@ import {
   setActiveFolderId,
 } from "@/features/files/redux/slice";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
+import { loadFolderContents } from "@/features/files/redux/thunks";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
@@ -78,6 +79,7 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
       // sections.
       const folder = foldersById[folderId];
       if (folder?.source.kind === "real") {
+        void dispatch(loadFolderContents({ folderId }));
         const segments = encodeFolderPathSegments(folder.folderPath);
         router.push(segments ? `/files/all/${segments}` : "/files/all");
         return;

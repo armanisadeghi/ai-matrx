@@ -126,6 +126,7 @@ export function ContentHeader({
     }
     const folder = foldersById[folderId];
     if (folder?.source.kind === "real") {
+      void dispatch(loadFolderContents({ folderId }));
       const segments = encodeFolderPathSegments(folder.folderPath);
       router.push(segments ? `/files/all/${segments}` : "/files/all");
     }
