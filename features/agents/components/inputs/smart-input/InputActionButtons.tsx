@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
+import { ContextDocsMenu } from "./ContextDocsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
@@ -174,6 +175,10 @@ export function InputActionButtons({
           variant="plus"
           includeAttach={showAttachments}
         />
+
+        {/* Quick toggles + links for the working document / scratchpad and
+            active context — the fast path that complements the `+` menu. */}
+        <ContextDocsMenu conversationId={conversationId} />
 
         {shouldShowVariables && showVariableIcon && (
           <InputButton

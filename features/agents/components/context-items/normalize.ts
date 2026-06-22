@@ -20,6 +20,21 @@ function asStringArray(v: unknown): string[] | undefined {
   return out.length ? out : undefined;
 }
 
+/** Accept plain id strings or `{ id }` ResourceRefInput objects from the wire. */
+function asResourceIdList(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const ids: string[] = [];
+  for (const entry of v) {
+    if (typeof entry === "string" && entry) {
+      ids.push(entry);
+    } else if (entry && typeof entry === "object") {
+      const id = (entry as Record<string, unknown>).id;
+      if (typeof id === "string" && id) ids.push(id);
+    }
+  }
+  return ids.length ? ids : undefined;
+}
+
 function basename(path: string): string {
   const i = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
   return i === -1 ? path : path.slice(i + 1);
@@ -69,11 +84,11 @@ function expand(
   };
 
   // Notes
-  const noteIds = asStringArray(d.note_ids);
+  const noteIds = asResourceIdList(d.note_ids);
   if (noteIds) return noteIds.map((id) => make(id, "Note", { noteIds: [id] }));
 
   // Tasks
-  const taskIds = asStringArray(d.task_ids);
+  const taskIds = asResourceIdList(d.task_ids);
   if (taskIds) return taskIds.map((id) => make(id, "Task", { taskIds: [id] }));
 
   // Webpages

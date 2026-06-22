@@ -844,7 +844,8 @@ function TaskEditorInner({
               autoGrow
               minHeight={compact ? 64 : 88}
               maxHeight={compact ? 160 : 220}
-              showCopyButton={false}
+              enableHelpWithThis
+              enableCustomAgent
               onSubmit={handleAddComment}
               submitDisabled={!newComment.trim()}
               isSubmitting={isAddingComment}

@@ -43,6 +43,8 @@ interface AgentRunnerProps {
   className?: string;
   /** Optional focus surface for auto-clear + new conversation submit (SmartAgentInput). */
   surfaceKey?: string;
+  /** Hide the SmartAgentInput send control (external Run button drives execution). */
+  showSendButton?: boolean;
 }
 
 export function AgentRunner({
@@ -51,6 +53,7 @@ export function AgentRunner({
   showTitle = false,
   className = "",
   surfaceKey,
+  showSendButton = true,
 }: AgentRunnerProps) {
   const dispatch = useAppDispatch();
   const autoRunFiredRef = useRef(false);
@@ -128,6 +131,7 @@ export function AgentRunner({
             conversationId={conversationId}
             surfaceKey={surfaceKey}
             compact={compact}
+            showSendButton={showSendButton}
           />
         </div>
       )}

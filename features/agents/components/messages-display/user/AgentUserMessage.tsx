@@ -11,7 +11,7 @@
  * modal (placeholder JSON viewer until real modals are built).
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -47,59 +47,42 @@ import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
+import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
-import type { ModelContextInputItem } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import type { RootState } from "@/lib/redux/store";
 
 /**
- * Friendly label for a user-attached `input_items[].type`. These types
- * (`input_table`, `input_notes`, …) are NOT part of the `ContextObjectType`
- * union, so they get a hand-rolled humanized name; falls through to the raw
- * type for anything unmapped.
+ * User-attached resource block types (`input_notes`, `input_task`, media, …).
+ * These are ALWAYS rendered as attachment chips from `content[]` — never in the
+ * context-slot strip. Mixing them in was the "note shows twice / id-only
+ * context chip" bug: `model_context.input_items` duplicates what content blocks
+ * already carry, and attachments are auto-included for the model — unlike
+ * ambient context entries the agent may defer-fetch via ctx_get.
  */
-function humanizeType(type: string): string {
-  switch (type) {
-    case "input_table":
-      return "Table";
-    case "input_notes":
-      return "Note";
-    case "input_workbook":
-      return "Workbook";
-    case "input_webpage":
-      return "Webpage";
-    case "input_document":
-    case "document":
-      return "File";
-    case "image":
-      return "Image";
-    case "audio":
-      return "Audio";
-    case "video":
-      return "Video";
-    default:
-      return type;
-  }
-}
+const ATTACHMENT_BLOCK_TYPES = new Set([
+  "input_notes",
+  "input_task",
+  "input_table",
+  "input_list",
+  "input_data",
+  "input_webpage",
+  "input_workbook",
+  "input_document",
+  "input_project",
+  "input_agent",
+  "input_agent_app",
+  "input_transcript",
+  "input_transcript_session",
+  "document",
+  "image",
+  "audio",
+  "video",
+  "youtube_video",
+]);
 
-/**
- * Map a user-attached `input_items` entry to a context-chip entry. The `type`
- * values here are outside the `ContextObjectType` union, so we cast — every
- * downstream consumer (ContextSlotChip) already falls back gracefully on an
- * unknown type, rendering the entry's own `label`.
- */
-function inputItemToEntry(
-  it: ModelContextInputItem,
-  idx: number,
-): InstanceContextEntry {
-  return {
-    key: `${it.type}:${it.id ?? it.ids?.[0] ?? it.file_id ?? idx}`,
-    value: it.label ?? it.type,
-    slotMatched: false,
-    type: it.type as ContextObjectType,
-    label: it.label ?? humanizeType(it.type),
-  };
+function isAmbientContextEntry(entry: InstanceContextEntry): boolean {
+  return !ATTACHMENT_BLOCK_TYPES.has(entry.type);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,10 +419,20 @@ export function AgentUserMessage({
   // Non-text content blocks (images, audio, tables, etc.) render as chips.
   // Filter out plain text blocks since those are already rendered as the
   // main content line.
-  const contentBlocks = extractContentBlocks(record);
-  const renderBlocks = contentBlocks.filter(
-    (b) => b.type !== "text",
-  ) as unknown as ContentBlock[];
+  //
+  // `extractContentBlocks` returns the persisted `MessagePart[]` shape
+  // (`note_ids` on the part root). The drawer + hover previews expect the
+  // canonical `RenderBlockPayload` shape (`note_ids` under `data`) — same
+  // normalization `AgentAssistantMessage` already applies. Without this,
+  // clicking a sent note chip opens an empty drawer because the id was never
+  // lifted into `refs.noteIds`.
+  //
+  // useMemo is intentional: normalizeContentBlocks mints blockIds.
+  const renderBlocks = useMemo(() => {
+    const parts = extractContentBlocks(record).filter((b) => b.type !== "text");
+    if (parts.length === 0) return [] as ContentBlock[];
+    return normalizeContentBlocks(parts) as ContentBlock[];
+  }, [record]);
 
   const normalisedBlocks: NormalisedBlock[] = renderBlocks
     .map((b, i) => normaliseBlock(b, i))
@@ -471,43 +464,45 @@ export function AgentUserMessage({
   // "context indicator is lying" bug.
   //
   // Two sources, in priority order:
-  //   1. `record.modelContext` — the structured context the server persisted on
-  //      the cx_message row. Authoritative; survives reload. Wins when present.
-  //      It carries TWO chip-worthy lists: `items` (ambient / slot context the
-  //      agent pulled in) and `input_items` (the resources the USER attached —
-  //      tables, notes, workbooks, webpages, files). We render ambient items
-  //      first, then attached input items.
-  //   2. `metadata.context_snapshot` — the optimistic snapshot frozen at submit
-  //      by execute-instance.thunk. Covers the live, pre-reload moment before
-  //      the server record lands. Used ONLY when `modelContext` is entirely
+  //   1. `record.modelContext.items` — ambient / slot context the agent may
+  //      defer-fetch (org, working document, declared slots, …). Authoritative
+  //      on reload. Does NOT include user attachments — those live in
+  //      `content[]` + attachment chips only (`input_items` is server metadata,
+  //      not a second UI surface).
+  //   2. `metadata.context_snapshot` — optimistic snapshot frozen at submit
+  //      by execute-instance.thunk. Used ONLY when `modelContext` is entirely
   //      absent (otherwise the authoritative record always wins).
   // Absent both → render no chips (honest).
   const modelContext = record?.modelContext;
-  const ambientEntries: InstanceContextEntry[] = (modelContext?.items ?? []).map(
-    (item) => ({
-      key: item.key,
-      // Inline items carry their literal `value`. DEFERRED items (large /
-      // remote context) have no `value` — only a `size_hint`. Without a
-      // fallback, ContextSlotChipStrip's empty-value filter drops them, so a
-      // turn whose context was entirely deferred would render ZERO chips.
-      // Fall back to the size hint (then label) so deferred context still
-      // shows a chip describing its size.
-      value: item.value ?? item.size_hint ?? item.label,
-      slotMatched: item.slot_matched,
-      type: item.type as InstanceContextEntry["type"],
-      label: item.label,
-    }),
-  );
-  const attachedEntries: InstanceContextEntry[] = (
-    modelContext?.input_items ?? []
-  ).map((it, idx) => inputItemToEntry(it, idx));
+  const ambientEntries: InstanceContextEntry[] = (
+    modelContext?.items ?? []
+  ).map((item) => ({
+    key: item.key,
+    // Inline items carry their literal `value`. DEFERRED items (large /
+    // remote context) have no `value` — only a `size_hint` like "0 chars"
+    // (zero *inlined*, not zero document length). Never surface that string
+    // as `value` — it reads as "empty document" in chip previews. Fall back
+    // to the label so deferred context still renders a chip; previews resolve
+    // the real size from live instance context.
+    value: item.value ?? item.label,
+    slotMatched: item.slot_matched,
+    type: item.type as InstanceContextEntry["type"],
+    label: item.label,
+  }));
+
+  const filteredAmbient = ambientEntries.filter(isAmbientContextEntry);
+  const filteredSnapshot = Array.isArray(metadata?.context_snapshot)
+    ? (metadata.context_snapshot as InstanceContextEntry[]).filter(
+        isAmbientContextEntry,
+      )
+    : null;
 
   const contextSnapshot: InstanceContextEntry[] | null = modelContext
-    ? ambientEntries.length > 0 || attachedEntries.length > 0
-      ? [...ambientEntries, ...attachedEntries]
+    ? filteredAmbient.length > 0
+      ? filteredAmbient
       : null
-    : Array.isArray(metadata?.context_snapshot)
-      ? (metadata?.context_snapshot as InstanceContextEntry[])
+    : filteredSnapshot && filteredSnapshot.length > 0
+      ? filteredSnapshot
       : null;
 
   if (!hasContent) return null;

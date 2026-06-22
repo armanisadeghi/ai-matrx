@@ -11,9 +11,16 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
+import { NoteViewControls } from "@/features/notes/components/NoteViewControls";
 import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteById } from "@/features/notes/redux/selectors";
+import {
+  addInstanceTab,
+  registerInstance,
+  setInstanceActiveTab,
+} from "@/features/notes/redux/slice";
+import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import {
   Tooltip,
   TooltipContent,
@@ -21,11 +28,42 @@ import {
 } from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
 
-export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
+function notesDrawerInstanceId(noteId: string): string {
+  return `ctx-drawer:${noteId}`;
+}
+
+/** Register the drawer-local notes instance so view-mode controls work. */
+function useNotesDrawerInstance(noteId: string | null) {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!noteId) return;
+    const instanceId = notesDrawerInstanceId(noteId);
+    dispatch(registerInstance(instanceId));
+    dispatch(addInstanceTab({ instanceId, noteId }));
+    dispatch(setInstanceActiveTab({ instanceId, noteId }));
+  }, [dispatch, noteId]);
+}
+
+export function NoteTitleActions({ item }: ContextItemBodyProps) {
   const noteId = item.refs.noteIds?.[0] ?? null;
+  useNotesDrawerInstance(noteId);
+  if (!noteId) return null;
+  return <NoteViewControls instanceId={notesDrawerInstanceId(noteId)} />;
+}
+
+export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
+  const dispatch = useAppDispatch();
+  const noteId = item.refs.noteIds?.[0] ?? null;
+  useNotesDrawerInstance(noteId);
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
+
+  useEffect(() => {
+    if (!noteId) return;
+    void dispatch(fetchNoteContent(noteId));
+  }, [dispatch, noteId]);
 
   useEffect(() => {
     if (note?.label?.trim()) setTitle?.(note.label.trim());
@@ -40,7 +78,7 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   }
 
   return (
-    <NotesInstanceProvider value={`ctx-drawer:${noteId}`}>
+    <NotesInstanceProvider value={notesDrawerInstanceId(noteId)}>
       <div className="h-full min-h-0">
         <NoteContentEditor noteId={noteId} />
       </div>

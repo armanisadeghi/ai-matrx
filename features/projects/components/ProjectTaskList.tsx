@@ -53,6 +53,7 @@ import {
 } from "@/features/tasks/components/TaskPriorityPicker";
 import { TaskDueDatePicker } from "@/features/tasks/components/TaskDueDatePicker";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { isDateOnlyOverdue } from "@/utils/dateOnly";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
@@ -417,13 +418,22 @@ function TaskTableRow({
         />
       </TableCell>
       <TableCell className="py-1.5">
-        <button
-          onClick={() => onOpen(task.id)}
-          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
-          title="Open task"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center justify-end gap-0.5">
+          <TaskCopyForAiButton
+            taskId={task.id}
+            taskTitle={task.title}
+            location="Projects — project task list"
+            size="icon"
+            className="h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          />
+          <button
+            onClick={() => onOpen(task.id)}
+            className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all focus-visible:opacity-100"
+            title="Open task"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </TableCell>
     </TableRow>
   );

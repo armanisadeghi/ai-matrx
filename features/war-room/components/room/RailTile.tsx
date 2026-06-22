@@ -99,7 +99,11 @@ export function RailTile({
             : "opacity-0 group-hover/rail:opacity-100 focus-within:opacity-100",
         )}
       >
-        <TileOptionsMenu actions={actions} isStaged={isStaged} />
+        <TileOptionsMenu
+          actions={actions}
+          tileId={tileId}
+          isStaged={isStaged}
+        />
       </div>
     </div>
   );

@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ContextItemBodyProps, ContextItemTypeDef } from "./types";
-import { NoteBody, NoteFooter } from "./bodies/NoteBody";
+import { NoteBody, NoteFooter, NoteTitleActions } from "./bodies/NoteBody";
 import { TaskBody } from "./bodies/TaskBody";
 import { WebpageBody, WebpageFooter } from "./bodies/WebpageBody";
 import { DataBody } from "./bodies/DataBody";
@@ -114,6 +114,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     editable: true,
     Body: NoteBody,
     Footer: NoteFooter,
+    TitleActions: NoteTitleActions,
   },
   {
     blockTypes: ["input_task"],

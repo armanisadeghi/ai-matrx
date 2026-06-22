@@ -61,6 +61,8 @@ import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selector
 import { cn } from "@/lib/utils";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ProInput } from "@/components/official/ProInput";
+import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
 export function TileProjectTaskList({
   tileId,
@@ -201,6 +203,13 @@ function ProjectTaskBody({
                 )}
               </button>
             )}
+            <ProjectCopyForAiButton
+              projectId={projectId}
+              projectName={projectName ?? undefined}
+              location="War Room — project task list"
+              size="icon"
+              className="size-6 shrink-0"
+            />
           </div>
 
           <ProjectTaskCreate projectId={projectId} compact={compact} />
@@ -427,6 +436,19 @@ function TaskRowBody({
           <DropdownMenuItem onClick={onOpen}>
             <ListTodo className="size-3.5" />
             Open task
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="p-0 focus:bg-transparent"
+            onSelect={(e) => e.preventDefault()}
+            asChild
+          >
+            <TaskCopyForAiButton
+              taskId={task.id}
+              taskTitle={task.title}
+              location="War Room — project task list"
+              size="sm"
+              className="h-8 w-full justify-start rounded-none px-2 font-normal hover:bg-accent"
+            />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

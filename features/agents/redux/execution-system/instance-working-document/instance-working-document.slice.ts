@@ -1,20 +1,27 @@
 /**
  * Instance Working Document Slice
  *
- * Per-conversation "working document" — a collaborative, mutable text artifact
- * the user and the agent build together. Generalises Scribe's session-bound
- * working document (`studio_documents`) into a reusable primitive that attaches
- * to ANY agent conversation by `conversationId`.
+ * Per-conversation editable text artifacts. TWO kinds share this slice:
+ *   - "working" — the collaborative doc the user AND agent build together
+ *                 (agent reads + writes via ctx_patch).
+ *   - "scratch" — the user's private scratchpad (agent reads, never writes).
  *
- * - `enabled`  — whether the working document is active for this conversation.
- *                When on, the hook publishes a `working_document` entry into the
- *                `instanceContext` slice (the same mechanism Scribe uses).
- * - `content`  — the canonical document text. Source of truth shared by every
- *                mount (inline panel, settings popup, floating window).
- * - `binding`  — optional durable source. `{ kind: "none" }` = ephemeral
- *                (Redux-only, cleared with the instance). `{ kind: "note", id }`
- *                = two-way synced with a `public.notes` row (debounced push on
- *                user edits; pull on agent writeback).
+ * Entries are keyed by `(conversationId, kind)` via `workingDocKey`. The
+ * "working" kind keys on the bare `conversationId` (backward compatible);
+ * other kinds suffix the key. Everything (selectors, actions) takes an
+ * optional `kind` that defaults to "working", so existing call sites are
+ * unchanged.
+ *
+ * - `enabled`  — whether this document is active for the conversation. OPT-IN:
+ *                defaults OFF; the durable on/off lives in the
+ *                `cx_conversation_documents` junction and is restored on mount
+ *                by `hydrateConversationDocumentsThunk`.
+ * - `content`  — canonical document text shared by every mount.
+ * - `binding`  — durable source. `{ kind: "none" }` = ephemeral;
+ *                `{ kind: "cx_working_document", id }` = a row in
+ *                `cx_working_documents` (the chat default); `{ kind: "note" }`
+ *                = a `public.notes` row (working kind only); `studio_document`
+ *                = Scribe's source (shared context-value builder).
  * - `saving`   — true while a bound-source persist is in flight.
  *
  * Like every `instance-*` slice it never writes back to agent source slices and
@@ -23,24 +30,37 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
+import type { WorkingDocumentKind } from "./cx-working-document.service";
 
 // =============================================================================
 // Types
 // =============================================================================
 
+export type { WorkingDocumentKind };
+
+export const DEFAULT_DOC_KIND: WorkingDocumentKind = "working";
+
 /**
- * Durable source the working document is bound to.
+ * Map a (conversationId, kind) to the slice key. "working" keeps the bare
+ * conversationId (backward compatible with every existing call site); other
+ * kinds suffix it.
+ */
+export function workingDocKey(
+  conversationId: string,
+  kind: WorkingDocumentKind = DEFAULT_DOC_KIND,
+): string {
+  return kind === "working" ? conversationId : `${conversationId}::${kind}`;
+}
+
+/**
+ * Durable source the document is bound to.
  *   - "none"               — ephemeral (Redux only).
- *   - "note"               — a `public.notes` row (a generic binding offered in
- *                            the UI).
+ *   - "note"               — a `public.notes` row (working kind only).
  *   - "cx_working_document"— a `public.cx_working_documents` row: the durable,
- *                            conversation-scoped default backing for chat. The
- *                            agent's ctx_patch edits persist here and round-trip
- *                            back via Supabase realtime (the Scribe pattern,
- *                            applied to chat conversations).
- *   - "studio_document"    — a `studio_documents` row (Scribe's source; consumed
- *                            by the shared context-value builder so there is one
- *                            working_document value shape across the app).
+ *                            conversation-scoped default backing. The agent's
+ *                            ctx_patch edits persist here (working kind) and
+ *                            round-trip back via Supabase realtime.
+ *   - "studio_document"    — a `studio_documents` row (Scribe's source).
  */
 export type WorkingDocumentBindingKind =
   | "none"
@@ -50,7 +70,7 @@ export type WorkingDocumentBindingKind =
 
 export interface WorkingDocumentBinding {
   kind: WorkingDocumentBindingKind;
-  /** Source row id (note / studio_document id). Null when unbound. */
+  /** Source row id (document / note id). Null when unbound. */
   id: string | null;
   /** Display label of the bound source, latched at bind time. */
   label?: string | null;
@@ -60,11 +80,12 @@ export const NO_BINDING: WorkingDocumentBinding = { kind: "none", id: null };
 
 export interface InstanceWorkingDocumentState {
   conversationId: string;
+  kind: WorkingDocumentKind;
   enabled: boolean;
   content: string;
   title: string;
   binding: WorkingDocumentBinding;
-  /** True while a bound-source (note) persist is in flight. */
+  /** True while a bound-source persist is in flight. */
   saving: boolean;
   lastError: string | null;
   /**
@@ -75,28 +96,36 @@ export interface InstanceWorkingDocumentState {
 }
 
 export interface InstanceWorkingDocumentSliceState {
-  byConversationId: Record<string, InstanceWorkingDocumentState>;
+  byKey: Record<string, InstanceWorkingDocumentState>;
 }
 
 const initialState: InstanceWorkingDocumentSliceState = {
-  byConversationId: {},
+  byKey: {},
 };
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
+interface KeyedPayload {
+  conversationId: string;
+  kind?: WorkingDocumentKind;
+}
+
 function ensureEntry(
   state: InstanceWorkingDocumentSliceState,
   conversationId: string,
+  kind: WorkingDocumentKind = DEFAULT_DOC_KIND,
 ): InstanceWorkingDocumentState {
-  let entry = state.byConversationId[conversationId];
+  const key = workingDocKey(conversationId, kind);
+  let entry = state.byKey[key];
   if (!entry) {
     entry = {
       conversationId,
-      // Default ON — the working document is a default surface, opt-out not
-      // opt-in. Mirrors the `selectWorkingDocEnabled` no-entry fallback.
-      enabled: true,
+      kind,
+      // OPT-IN: documents start OFF. The persisted on/off lives in the
+      // cx_conversation_documents junction and is restored on mount.
+      enabled: false,
       content: "",
       // Unnamed by default; the user is encouraged to name it. Never persist a
       // placeholder as the real title.
@@ -106,9 +135,21 @@ function ensureEntry(
       lastError: null,
       agentRevision: 0,
     };
-    state.byConversationId[conversationId] = entry;
+    state.byKey[key] = entry;
   }
   return entry;
+}
+
+/** Delete every entry (all kinds) belonging to a conversation. */
+function deleteConversation(
+  state: InstanceWorkingDocumentSliceState,
+  conversationId: string,
+): void {
+  for (const key of Object.keys(state.byKey)) {
+    if (state.byKey[key]?.conversationId === conversationId) {
+      delete state.byKey[key];
+    }
+  }
 }
 
 // =============================================================================
@@ -121,31 +162,43 @@ const instanceWorkingDocumentSlice = createSlice({
   reducers: {
     setWorkingDocEnabled(
       state,
-      action: PayloadAction<{ conversationId: string; enabled: boolean }>,
+      action: PayloadAction<KeyedPayload & { enabled: boolean }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.enabled = action.payload.enabled;
     },
 
     /** User-driven content edit. */
     setWorkingDocContent(
       state,
-      action: PayloadAction<{ conversationId: string; content: string }>,
+      action: PayloadAction<KeyedPayload & { content: string }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.content = action.payload.content;
     },
 
     /**
      * Agent-driven content update (resolved from a stream `context_changed`
-     * event — typically by re-reading the bound note). Bumps `agentRevision`
+     * event — typically by re-reading the bound source). Bumps `agentRevision`
      * so editors that aren't actively typing can merge it in.
      */
     applyAgentWorkingDocContent(
       state,
-      action: PayloadAction<{ conversationId: string; content: string }>,
+      action: PayloadAction<KeyedPayload & { content: string }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       // LOUD recovery (mirrors Scribe's BUG-B guard): never let a transient
       // EMPTY remote wipe non-empty content. An empty realtime echo on row
       // creation, or a bad agent cycle, would otherwise blank the document and
@@ -153,8 +206,11 @@ const instanceWorkingDocumentSlice = createSlice({
       // empty remote — keep the user's content and scream.
       if (action.payload.content === "" && entry.content !== "") {
         console.warn(
-          "[working-document] blocked an empty remote from wiping a non-empty working document (BUG-B guard fired)",
-          { conversationId: action.payload.conversationId },
+          "[working-document] blocked an empty remote from wiping a non-empty document (BUG-B guard fired)",
+          {
+            conversationId: action.payload.conversationId,
+            kind: entry.kind,
+          },
         );
         return;
       }
@@ -164,50 +220,64 @@ const instanceWorkingDocumentSlice = createSlice({
 
     setWorkingDocTitle(
       state,
-      action: PayloadAction<{ conversationId: string; title: string }>,
+      action: PayloadAction<KeyedPayload & { title: string }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.title = action.payload.title;
     },
 
     setWorkingDocBinding(
       state,
-      action: PayloadAction<{
-        conversationId: string;
-        binding: WorkingDocumentBinding;
-      }>,
+      action: PayloadAction<KeyedPayload & { binding: WorkingDocumentBinding }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.binding = action.payload.binding;
       entry.lastError = null;
     },
 
     markWorkingDocSaving(
       state,
-      action: PayloadAction<{ conversationId: string; saving: boolean }>,
+      action: PayloadAction<KeyedPayload & { saving: boolean }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.saving = action.payload.saving;
       if (action.payload.saving) entry.lastError = null;
     },
 
     markWorkingDocError(
       state,
-      action: PayloadAction<{ conversationId: string; error: string | null }>,
+      action: PayloadAction<KeyedPayload & { error: string | null }>,
     ) {
-      const entry = ensureEntry(state, action.payload.conversationId);
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
       entry.saving = false;
       entry.lastError = action.payload.error;
     },
 
+    /** Remove all documents (every kind) for a conversation. */
     removeInstanceWorkingDocument(state, action: PayloadAction<string>) {
-      delete state.byConversationId[action.payload];
+      deleteConversation(state, action.payload);
     },
   },
 
   extraReducers: (builder) => {
     builder.addCase(destroyInstance, (state, action) => {
-      delete state.byConversationId[action.payload];
+      deleteConversation(state, action.payload);
     });
   },
 });

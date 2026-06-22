@@ -29,6 +29,13 @@ interface OverlayErrorBoundaryProps {
    * it, a cached failed import would replay the same error.
    */
   onRetry?: () => void;
+  /**
+   * Dismiss this overlay instance (the controller's `closeOverlay` dispatch).
+   * When present, the fallback shows a "Close" button so a failed overlay never
+   * traps the user into a full page reload.
+   */
+  onClose?: () => void;
+  /** The lazy overlay subtree this boundary protects. */
   children: React.ReactNode;
 }
 
@@ -81,6 +88,7 @@ export class OverlayErrorBoundary extends React.Component<
           error={this.state.error}
           componentStack={this.state.componentStack}
           onReset={this.handleReset}
+          onClose={this.props.onClose}
         />
       );
     }

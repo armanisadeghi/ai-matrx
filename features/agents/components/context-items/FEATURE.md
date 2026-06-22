@@ -39,6 +39,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 - Never branch on type inside `ContextItemDrawer` — resolve the body via the registry.
 - `input_document` (a reference to a specific rich doc) ≠ `working_document` (the live collaborative doc). Don't merge them.
 - Each chip-host owns ONE local drawer controller (`useContextItemDrawer`); no global state/Redux added.
+- **Attachments ≠ context (load-bearing UI rule).** User-attached resources (`input_notes`, files, tasks, …) render ONLY as attachment chips from `content[]`. Ambient / slot context (`model_context.items`, working document, org, declared slots) renders ONLY in `ContextSlotChipStrip`. Never merge `model_context.input_items` into the context strip — that field mirrors attachments for the server/audit trail; duplicating it in the UI showed notes twice and made attachments look like defer-fetch context.
 
 ## Layout contract (non-negotiable)
 
@@ -56,6 +57,7 @@ Shown as a differentiated **"Context"** chip in the input strip whenever it's en
 
 ## Change log
 
-- `2026-06-20` — claude: **`input_table` / `input_list` get a real body.** New `BookmarkReferenceBody` maps each table/list bookmark to a canonical Matrx reference item (`features/matrx-envelope/bookmarkToReference.ts`) and renders the SAME live `ReferenceRenderer` chips the in-content `matrx` fences use — values resolve from Supabase, click opens the underlying table/list. Replaces `GenericBody` for these two types.
+- `2026-06-22` — claude: **note drawer gets view-mode controls; attachments no longer duplicate in context strip.** `NoteTitleActions` + `NoteViewControls` in the drawer title bar (Edit / Split / Rich / MD Split / Preview + history). `AgentUserMessage` stopped rendering `model_context.input_items` in `ContextSlotChipStrip` — attachments belong exclusively on the attachment chip row.
+- `2026-06-22` — claude: **fixed empty drawer when clicking sent note/task chips.** Post-submit bubbles passed raw `MessagePart[]` straight into the drawer normalizer; `AgentUserMessage` now runs `normalizeContentBlocks` first. `normalize.ts` accepts `{ id }` ResourceRefInput objects; `NoteBody` prefetches on open.
 - `2026-06-19` (2) — claude: **layout overhaul + working-document chip/diffs.** Full-height bodies; single compact icon-only footer (`Footer` added to the type def + `resolveContextItemFooter`); dynamic title via `setTitle`; dropped the bottom thumbnail rail and all descriptions. Documents/webpages/youtube now fill height (iframe via resolved `useFileSrc`). Working document surfaces as a pre-submit "Context" chip and gets an in-drawer edit↔diff toggle.
 - `2026-06-19` — claude: built the registry + shared drawer; wired both chip systems; killed the placeholder JSON modal; made notes/tasks/working-document editable in place; added re-attach-to-next-turn for edited attachments.

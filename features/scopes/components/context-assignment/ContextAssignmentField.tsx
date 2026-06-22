@@ -245,10 +245,17 @@ function CheckRow({
   checkboxVariant?: ContextCheckboxVariant;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="group flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
     >
       {checkboxVariant === "standard" ? (
         <Checkbox
@@ -271,7 +278,7 @@ function CheckRow({
       )}
       <span className={cn("min-w-0 flex-1 truncate", textClass)}>{label}</span>
       {right}
-    </button>
+    </div>
   );
 }
 

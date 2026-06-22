@@ -126,6 +126,16 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
     failed.length > 0
       ? `Failed/pending chunks: ${failed.map((c) => c.name).join(", ")}`
       : null;
+  // The work at risk: any conversation with a typed-but-unsent request.
+  const pending = ctx.isAdmin
+    ? diag.agentExecution.conversations.filter((c) => c.hasPendingInput)
+    : [];
+  const pendingLines = pending.map(
+    (c) =>
+      `In-flight agent request (agent ${String(c.agentName ?? c.agentId ?? "?")}, status ${String(
+        c.status ?? "?",
+      )}): ${JSON.stringify(c.inputText ?? "")}`,
+  );
   const lines = [
     `Overlay failed to render`,
     `Module: ${ctx.modulePath ?? "unknown"}`,
@@ -135,6 +145,7 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
       : null,
     skewLine,
     failedLine,
+    ...pendingLines,
     `Build id: ${diag.deploy.nextBuildId ?? "unknown"}`,
     `Online: ${diag.network.online}, conn: ${diag.network.effectiveType ?? "?"}`,
     live.route ? `Route: ${live.route}` : null,
@@ -148,9 +159,11 @@ export function buildOverlayErrorHuman(ctx: OverlayErrorContext): string {
  * The AI payload. Instead of a full Redux landfill, it embeds TARGETED
  * diagnostics: the error, the failing module + component stack, deploy/skew
  * forensics (`?dpl=` ids, build id), network/chunk forensics (which chunks
- * failed or hung), connection state, and ONLY the overlay-relevant slices
- * (`overlays` / `windowManager` / `appContext` + a redacted user summary). For
- * non-admins the state-bearing sections are omitted.
+ * failed or hung), connection state, the overlay-relevant slices (`overlays` /
+ * `windowManager` / `appContext`), and the IN-FLIGHT AGENT WORK (every live
+ * conversation's typed request + agent + status — the thing a panel crash must
+ * never silently destroy), plus a redacted user summary. For non-admins the
+ * state-bearing sections are omitted.
  */
 export function buildOverlayErrorAgentPayload(
   ctx: OverlayErrorContext,
@@ -176,6 +189,11 @@ export function buildOverlayErrorAgentPayload(
     // State-bearing sections are admin-only.
     overlayState: ctx.isAdmin ? diag.overlayState : "[redacted — admin only]",
     appContext: ctx.isAdmin ? diag.appContext : "[redacted — admin only]",
+    // The user's in-flight agent work (typed request + which agent + status).
+    // Admin-only because it carries user-authored content.
+    agentExecution: ctx.isAdmin
+      ? diag.agentExecution
+      : "[redacted — admin only]",
     user: ctx.isAdmin ? diag.user : "[redacted — admin only]",
   };
 

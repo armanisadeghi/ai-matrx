@@ -8,6 +8,8 @@
  */
 
 import { useMemo, useState } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
   ContextSlot,
@@ -15,7 +17,7 @@ import type {
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextSlotIcons";
 import { CONTEXT_TYPE_TILE_LABEL } from "./contextSlotTile.theme";
-import { contextSlotValuePreview } from "./contextSlotPreview";
+import { contextSlotEntryPreview } from "./contextSlotPreview";
 import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
 import { ContextSlotTile } from "./ContextSlotTile";
 
@@ -42,9 +44,12 @@ export function ContextSlotChip({
   const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
 
   const label = slot?.label?.trim() || entry.label?.trim() || entry.key;
+  const liveEntry = useAppSelector(
+    selectInstanceContextEntry(conversationId, entry.key),
+  );
   const preview = useMemo(
-    () => contextSlotValuePreview(entry.value, type),
-    [entry.value, type],
+    () => contextSlotEntryPreview(entry, type, liveEntry?.value),
+    [entry, type, liveEntry?.value],
   );
   const tooltip = preview ? `${label} — ${preview}` : label;
 
@@ -65,6 +70,7 @@ export function ContextSlotChip({
         conversationId={conversationId}
         agentId={agentId}
         contextKey={entry.key}
+        snapshotValue={entry.value}
       />
     </>
   );

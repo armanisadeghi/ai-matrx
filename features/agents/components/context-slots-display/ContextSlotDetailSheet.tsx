@@ -23,7 +23,6 @@ import type {
   ContextObjectType,
   ContextSlot,
 } from "@/features/agents/types/agent-api-types";
-import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
@@ -31,6 +30,13 @@ import {
 } from "./contextSlotIcons";
 import { WorkingDocumentPanel } from "@/features/agents/components/working-document/WorkingDocumentPanel";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import {
+  KnownContextDetail,
+  getKnownContextDefinition,
+  isKnownContextKey,
+  parseContextRecord,
+  resolveContextEntryValue,
+} from "./knownContextValues";
 import { cn } from "@/lib/utils";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
@@ -43,6 +49,8 @@ interface ContextSlotDetailSheetProps {
   conversationId: string;
   agentId: string | null;
   contextKey: string;
+  /** Frozen value from the message snapshot — required for ambient keys (user, client, …) that never live in `instanceContext`. */
+  snapshotValue?: unknown;
 }
 
 export function ContextSlotDetailSheet({
@@ -51,6 +59,7 @@ export function ContextSlotDetailSheet({
   conversationId,
   agentId,
   contextKey,
+  snapshotValue,
 }: ContextSlotDetailSheetProps) {
   const slot = useAppSelector((state: RootState): ContextSlot | undefined => {
     if (!agentId) return undefined;
@@ -60,6 +69,19 @@ export function ContextSlotDetailSheet({
 
   const entry = useAppSelector(
     selectInstanceContextEntry(conversationId, contextKey),
+  );
+
+  const displayValue = useMemo(
+    () =>
+      resolveContextEntryValue(
+        {
+          key: contextKey,
+          value: snapshotValue,
+          label: entry?.label,
+        },
+        entry?.value,
+      ),
+    [contextKey, snapshotValue, entry?.label, entry?.value],
   );
 
   const type: ContextObjectType = slot?.type ?? entry?.type ?? "text";
@@ -125,7 +147,11 @@ export function ContextSlotDetailSheet({
           )}
 
           <DetailSection title="Value">
-            <ValueRenderer type={type} entry={entry} />
+            <ValueRenderer
+              type={type}
+              contextKey={contextKey}
+              value={displayValue}
+            />
           </DetailSection>
 
           <DetailSection title="Inline policy">
@@ -187,16 +213,14 @@ function DetailSection({
 
 function ValueRenderer({
   type,
-  entry,
+  contextKey,
+  value,
 }: {
   type: ContextObjectType;
-  entry: InstanceContextEntry | undefined;
+  contextKey: string;
+  value: unknown;
 }) {
-  if (
-    entry === undefined ||
-    entry.value === undefined ||
-    entry.value === null
-  ) {
+  if (value === undefined || value === null) {
     return (
       <p className="text-[11px] italic text-muted-foreground/70">
         No value set for this conversation.
@@ -204,7 +228,15 @@ function ValueRenderer({
     );
   }
 
-  const v = entry.value;
+  if (
+    isKnownContextKey(contextKey) &&
+    parseContextRecord(value) &&
+    getKnownContextDefinition(contextKey)
+  ) {
+    return <KnownContextDetail contextKey={contextKey} value={value} />;
+  }
+
+  const v = value;
 
   if (type === "file_url" && typeof v === "string") {
     return (

@@ -146,6 +146,21 @@ function NotePickerBody({
     return withNotes;
   }, [scopedItems, notesByFolder]);
 
+  const filteredFoldersForSearch = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return treeFolders.filter(
+      (folder) =>
+        folder.toLowerCase().includes(q) ||
+        (notesByFolder[folder] ?? []).some(
+          (n) =>
+            n.label.toLowerCase().includes(q) ||
+            n.folder_name?.toLowerCase().includes(q) ||
+            idMatchesQuery(n, q),
+        ),
+    );
+  }, [treeFolders, notesByFolder, search]);
+
   const isSearching = search.trim().length > 0;
 
   const handlePick = useCallback(
@@ -207,31 +222,76 @@ function NotePickerBody({
       <div className="max-h-[300px] overflow-y-auto scrollbar-thin">
         {isSearching ? (
           <div className="py-0.5">
-            {filteredItems.length === 0 ? (
+            {filteredFoldersForSearch.length === 0 &&
+            filteredItems.length === 0 ? (
               <div className="px-3 py-6 text-center text-muted-foreground">
-                No notes found
+                No results found
               </div>
             ) : (
-              filteredItems.map((note) => (
-                <button
-                  key={note.id}
-                  type="button"
-                  onClick={() => {
-                    void handlePick(note.id);
-                  }}
-                  className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
-                >
-                  <FileText className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {note.label || "Untitled"}
-                  </span>
-                  {note.folder_name && (
-                    <span className="shrink-0 truncate text-[0.5625rem] text-muted-foreground/50 max-w-[72px]">
-                      {note.folder_name}
-                    </span>
-                  )}
-                </button>
-              ))
+              <>
+                {filteredFoldersForSearch.length > 0 && (
+                  <div className="pb-0.5">
+                    <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                      Folders
+                    </div>
+                    {filteredFoldersForSearch.map((folder) => {
+                      const { icon: FolderIcon, color: folderColor } =
+                        getFolderIconAndColor(folder);
+                      const folderNotes = notesByFolder[folder] ?? [];
+
+                      return (
+                        <button
+                          key={folder}
+                          type="button"
+                          onClick={() => {
+                            setSearch("");
+                            setExpandedFolder(folder);
+                          }}
+                          className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+                        >
+                          <FolderIcon
+                            className={cn("h-3.5 w-3.5 shrink-0", folderColor)}
+                          />
+                          <span className="min-w-0 flex-1 truncate font-medium">
+                            {folder}
+                          </span>
+                          <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/50">
+                            {folderNotes.length}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {filteredItems.length > 0 && (
+                  <div>
+                    <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                      Notes
+                    </div>
+                    {filteredItems.map((note) => (
+                      <button
+                        key={note.id}
+                        type="button"
+                        onClick={() => {
+                          void handlePick(note.id);
+                        }}
+                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+                      >
+                        <FileText className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {note.label || "Untitled"}
+                        </span>
+                        {note.folder_name && (
+                          <span className="shrink-0 truncate text-[0.5625rem] text-muted-foreground/50 max-w-[72px]">
+                            {note.folder_name}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         ) : (

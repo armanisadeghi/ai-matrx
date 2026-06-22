@@ -1,19 +1,25 @@
 "use client";
 
 /**
- * WorkingDocumentControls — the Smart Input "Document" tab body.
+ * WorkingDocumentControls — the embeddable document control surface (used by the
+ * Smart Input "Document" tab and the compact docs menu).
  *
- * Name field, enable/disable toggle, note binding (pick / change / unbind),
- * open-as-window, and an embedded editor. All driven by
- * `useWorkingDocument(conversationId)`.
+ * Name field, enable/disable toggle, source/link controls, open-as-window, and
+ * an embedded editor. Driven by `useWorkingDocument(conversationId, kind)`.
  *
- * Binding a note while content already exists prompts the user to either
- * append the current document to the note or replace it — we never silently
- * discard their work. Unbinding reverts to the conversation's own document.
+ * Two kinds:
+ *   - "working" — collaborative; can bind to a note, and can link to an
+ *     existing working document from another conversation.
+ *   - "scratch" — the user's private scratchpad; the agent reads it but never
+ *     edits it. No note binding; can link to an existing scratchpad.
+ *
+ * Binding a note while content already exists prompts the user to either append
+ * the current document to the note or replace it — we never silently discard
+ * their work. Unbinding reverts to the conversation's own document.
  */
 
 import { useState } from "react";
-import { Link2, Maximize2, X } from "lucide-react";
+import { Link2, Lock, Maximize2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
@@ -27,14 +33,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
+import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { WorkingDocumentPanel } from "./WorkingDocumentPanel";
+import { DocumentLinkPicker } from "./DocumentLinkPicker";
 
 interface WorkingDocumentControlsProps {
   conversationId: string;
+  /** Which document to control. Default "working". */
+  kind?: WorkingDocumentKind;
 }
 
 export function WorkingDocumentControls({
   conversationId,
+  kind = "working",
 }: WorkingDocumentControlsProps) {
   const {
     enabled,
@@ -45,18 +56,23 @@ export function WorkingDocumentControls({
     setEnabled,
     bindToNote,
     unbind,
+    linkToDocument,
     setTitle,
     openAsWindow,
-  } = useWorkingDocument(conversationId);
+  } = useWorkingDocument(conversationId, kind);
 
   // Note id awaiting a merge decision (set when the user picks a note while the
   // document already has content). Null = no pending decision.
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
+  const isScratch = kind === "scratch";
   const isNoteBound = binding.kind === "note" && !!binding.id;
   // The default chat backing is a durable `cx_working_documents` row — agent
   // edits persist there and round-trip back. Treat it as "saved", not "unbound".
   const isCxBacked = binding.kind === "cx_working_document" && !!binding.id;
+  const namePlaceholder = isScratch
+    ? "Name this scratchpad…"
+    : "Name this document…";
 
   const handleSelectNote = (noteId: string) => {
     // No existing content → adopt the note directly, nothing to lose.
@@ -75,15 +91,17 @@ export function WorkingDocumentControls({
         <Switch
           checked={enabled}
           onCheckedChange={setEnabled}
-          aria-label="Toggle working document"
+          aria-label={
+            isScratch ? "Toggle scratchpad" : "Toggle working document"
+          }
         />
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           disabled={!enabled || isNoteBound}
-          placeholder="Name this document…"
-          aria-label="Document name"
+          placeholder={namePlaceholder}
+          aria-label={isScratch ? "Scratchpad name" : "Document name"}
           className={cn(
             "min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium text-foreground",
             "placeholder:font-normal placeholder:text-muted-foreground",
@@ -103,27 +121,35 @@ export function WorkingDocumentControls({
         </button>
       </div>
 
-      {/* Binding row — source status + bind/change/unbind */}
+      {/* Source/link row — status + bind note (working) + link existing */}
       <div
         className={cn(
           "flex shrink-0 items-center gap-1 border-b border-border px-2 py-1.5",
           !enabled && "pointer-events-none opacity-50",
         )}
       >
-        <Link2
-          className={cn(
-            "h-3.5 w-3.5 shrink-0",
-            isNoteBound ? "text-primary" : "text-muted-foreground",
-          )}
-        />
+        {isScratch ? (
+          <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        ) : (
+          <Link2
+            className={cn(
+              "h-3.5 w-3.5 shrink-0",
+              isNoteBound ? "text-primary" : "text-muted-foreground",
+            )}
+          />
+        )}
         <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          {isNoteBound
-            ? binding.label || "Bound note"
-            : isCxBacked
-              ? saving
-                ? "Saving…"
-                : "Auto-saved"
-              : "Preparing…"}
+          {isScratch
+            ? saving
+              ? "Saving…"
+              : "Private — agent reads, never edits"
+            : isNoteBound
+              ? binding.label || "Bound note"
+              : isCxBacked
+                ? saving
+                  ? "Saving…"
+                  : "Auto-saved"
+                : "Preparing…"}
         </span>
         {isNoteBound && (
           <button
@@ -136,16 +162,33 @@ export function WorkingDocumentControls({
             <X className="h-3.5 w-3.5" />
           </button>
         )}
-        <NotePickerPopover
-          onSelectNote={handleSelectNote}
+        {!isScratch && (
+          <NotePickerPopover
+            onSelectNote={handleSelectNote}
+            align="end"
+            trigger={
+              <button
+                type="button"
+                disabled={!enabled}
+                className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                {isNoteBound ? "Change" : "Bind note"}
+              </button>
+            }
+          />
+        )}
+        <DocumentLinkPicker
+          kind={kind}
           align="end"
+          excludeDocumentId={isCxBacked ? binding.id : null}
+          onSelect={linkToDocument}
           trigger={
             <button
               type="button"
               disabled={!enabled}
               className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
             >
-              {isNoteBound ? "Change" : "Bind note"}
+              Link
             </button>
           }
         />
@@ -155,6 +198,7 @@ export function WorkingDocumentControls({
       <div className="min-h-0 flex-1">
         <WorkingDocumentPanel
           conversationId={conversationId}
+          kind={kind}
           showHeader={false}
           className="bg-transparent"
         />

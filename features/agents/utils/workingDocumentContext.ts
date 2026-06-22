@@ -37,9 +37,21 @@ const WORKING_DOCUMENT_DESCRIPTION =
   "ctx_get(working_document); apply every change with ctx_patch on " +
   "working_document. Never discard the user's content.";
 
+// The user's private scratchpad. The agent may READ it for context but must
+// NEVER write it — the value is published `mutable: false` with no writeback
+// `source`, so the backend exposes `ctx_get` only (no `ctx_patch`).
+export const USER_SCRATCHPAD_CONTEXT_KEY = "user_scratchpad";
+
+export const USER_SCRATCHPAD_LABEL = "My Scratchpad";
+
+const USER_SCRATCHPAD_DESCRIPTION =
+  "The user's private scratchpad. READ-ONLY: you may read it with " +
+  "ctx_get(user_scratchpad) to understand what the user is thinking about, " +
+  "but you must NEVER modify it. It belongs to the user alone.";
+
 export interface WorkingDocumentContextValue {
   content: string;
-  mutable: true;
+  mutable: boolean;
   persist: "auto" | "client";
   type: "text";
   label: string;
@@ -75,6 +87,27 @@ export function buildWorkingDocumentContextValue(
           },
         }
       : {}),
+    max_inline_chars: 0,
+  };
+}
+
+/**
+ * Build the READ-ONLY `user_scratchpad` context value. The agent receives the
+ * content for context but gets no `ctx_patch` (mutable:false) and no writeback
+ * `source` — it can never modify the user's scratchpad. Durability of the
+ * user's own edits is handled client-side (persisted to the backing
+ * `cx_working_documents` row), never by the agent.
+ */
+export function buildUserScratchpadContextValue(
+  content: string,
+): WorkingDocumentContextValue {
+  return {
+    content,
+    mutable: false,
+    persist: "client",
+    type: "text",
+    label: USER_SCRATCHPAD_LABEL,
+    description: USER_SCRATCHPAD_DESCRIPTION,
     max_inline_chars: 0,
   };
 }

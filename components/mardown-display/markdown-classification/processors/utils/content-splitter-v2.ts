@@ -1557,6 +1557,41 @@ function isTreeLine(line: string): boolean {
   return false;
 }
 
+function isMarkdownHeadingLine(line: string): boolean {
+  return /^#{1,6}\s/.test(line.trim());
+}
+
+/** Root label lines sit directly above connector lines and have no tree glyphs. */
+function findTreeBlockStart(lines: string[], firstTreeIndex: number): number {
+  let start = firstTreeIndex;
+  for (let j = firstTreeIndex - 1; j >= 0; j--) {
+    const trimmed = removeMatrxPattern(lines[j]).trim();
+    if (!trimmed) break;
+    if (isTreeLine(trimmed)) break;
+    if (isMarkdownHeadingLine(trimmed)) break;
+    start = j;
+  }
+  return start;
+}
+
+function stripAccumulatedLinesFromText(
+  text: string,
+  rawLines: string[],
+  fromIndex: number,
+  toIndex: number,
+): string {
+  let result = text;
+  for (let j = fromIndex; j < toIndex; j++) {
+    const processed = removeMatrxPattern(rawLines[j]);
+    if (result.endsWith(processed + "\n")) {
+      result = result.slice(0, -(processed.length + 1));
+    } else if (result.endsWith(processed)) {
+      result = result.slice(0, -processed.length);
+    }
+  }
+  return result;
+}
+
 function removeMatrxPattern(text: string): string {
   return text.replace(MATRX_PATTERN, "").trim() === ""
     ? ""
@@ -2072,12 +2107,21 @@ export const splitContentIntoBlocksV2 = (
         .slice(i, treeEnd)
         .filter((l) => isTreeLine(removeMatrxPattern(l).trim())).length;
       if (treeLinesCount >= 3) {
+        const treeStart = findTreeBlockStart(lines, i);
+        if (treeStart < i) {
+          currentText = stripAccumulatedLinesFromText(
+            currentText,
+            lines,
+            treeStart,
+            i,
+          );
+        }
         if (currentText.trim()) {
           blocks.push({ type: "text", content: currentText.trimEnd() });
           currentText = "";
         }
         const treeContent = lines
-          .slice(i, treeEnd)
+          .slice(treeStart, treeEnd)
           .map((l) => removeMatrxPattern(l))
           .join("\n");
         blocks.push({ type: "tree", content: treeContent.trim() });

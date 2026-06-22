@@ -1,14 +1,22 @@
 /**
  * Instance Working Document thunks.
  *
- * Side-effectful operations for the per-conversation working document:
- *   - `bindWorkingDocumentToNoteThunk`  — bind to a `public.notes` row and seed
- *     the document content from it (enables the doc as a convenience).
- *   - `syncWorkingDocumentFromAgentThunk` — resolve an agent writeback signalled
- *     by a stream `context_changed` event. The event carries no content, so for
- *     note-bound docs we re-read the note (the backend's auto-persist wrote it)
- *     and apply it; for unbound docs there is nothing durable to pull, so it is
- *     a no-op (see the backend caveat in workingDocumentContext.ts).
+ * Side-effectful operations for the per-conversation documents (working +
+ * scratch). Every thunk takes an optional `kind` (default "working").
+ *
+ *   - `hydrateConversationDocumentsThunk` — on mount, restore the PERSISTED
+ *     opt-in/link for both kinds from the `cx_conversation_documents` junction,
+ *     so a doc the user turned on (or linked) survives a reload.
+ *   - `setConversationDocumentEnabledThunk` — toggle a doc on/off AND persist
+ *     the flag to the junction.
+ *   - `ensureConversationDocumentThunk` — provision the durable backing row +
+ *     junction link and bind to it (the chat default — the Scribe pattern).
+ *   - `linkConversationDocumentThunk` — point this conversation's (kind) at an
+ *     EXISTING document from another conversation (cross-conversation linking).
+ *   - `bindWorkingDocumentToNoteThunk` / `unbindWorkingDocumentThunk` — bind a
+ *     working doc to / from a `public.notes` row (working kind only).
+ *   - `syncWorkingDocumentFromAgentThunk` — resolve an agent writeback from a
+ *     stream `context_changed` event (re-read the bound document/note).
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -20,22 +28,34 @@ import {
 } from "@/features/notes/redux/thunks";
 import {
   applyAgentWorkingDocContent,
+  DEFAULT_DOC_KIND,
   markWorkingDocError,
   NO_BINDING,
   setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
   setWorkingDocTitle,
+  type WorkingDocumentKind,
 } from "./instance-working-document.slice";
 import {
   selectWorkingDocBinding,
   selectWorkingDocContent,
 } from "./instance-working-document.selectors";
 import {
-  getCxWorkingDocument,
-  getOrCreateCxWorkingDocument,
+  getConversationDocumentLink,
+  getCxWorkingDocumentById,
+  getOrCreateConversationDocument,
+  linkConversationToDocument,
+  setConversationDocumentEnabled,
   updateCxWorkingDocumentContent,
 } from "./cx-working-document.service";
+
+interface ThunkConfig {
+  state: RootState;
+  dispatch: AppDispatch;
+}
+
+const DOC_KINDS: WorkingDocumentKind[] = ["working", "scratch"];
 
 /**
  * How to reconcile the current working-document content when binding to a note
@@ -46,10 +66,277 @@ import {
  */
 export type BindNoteMode = "replace" | "append";
 
-interface ThunkConfig {
-  state: RootState;
-  dispatch: AppDispatch;
-}
+// =============================================================================
+// Hydrate — restore persisted opt-in/link on mount
+// =============================================================================
+
+/**
+ * Restore the conversation's persisted document state for every kind from the
+ * `cx_conversation_documents` junction. Opt-in is durable: a doc the user
+ * turned on (or linked to another conversation's doc) comes back enabled and
+ * bound after a reload. A kind with no junction row stays OFF (the opt-in
+ * default). READ-ONLY — never provisions.
+ */
+export const hydrateConversationDocumentsThunk = createAsyncThunk<
+  void,
+  { conversationId: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/hydrate",
+  async ({ conversationId }, { dispatch }) => {
+    await Promise.all(
+      DOC_KINDS.map(async (kind) => {
+        try {
+          const link = await getConversationDocumentLink(conversationId, kind);
+          if (!link) return; // never used → stays off (opt-in default)
+
+          dispatch(
+            setWorkingDocEnabled({
+              conversationId,
+              kind,
+              enabled: link.enabled,
+            }),
+          );
+          if (!link.enabled) return;
+
+          const doc = await getCxWorkingDocumentById(link.documentId);
+          if (!doc) return;
+
+          dispatch(
+            setWorkingDocBinding({
+              conversationId,
+              kind,
+              binding: {
+                kind: "cx_working_document",
+                id: doc.id,
+                label: doc.title,
+              },
+            }),
+          );
+          if (doc.title) {
+            dispatch(
+              setWorkingDocTitle({ conversationId, kind, title: doc.title }),
+            );
+          }
+          dispatch(
+            applyAgentWorkingDocContent({
+              conversationId,
+              kind,
+              content: doc.content ?? "",
+            }),
+          );
+        } catch (err) {
+          console.error(
+            "[working-document] failed to hydrate conversation document",
+            { conversationId, kind, err },
+          );
+        }
+      }),
+    );
+  },
+);
+
+// =============================================================================
+// Enable / disable (persisted)
+// =============================================================================
+
+/**
+ * Toggle a document on/off for the conversation AND persist the flag to the
+ * junction so it survives reloads. Enabling provisions the durable backing row
+ * (+ junction, enabled=true); disabling persists enabled=false.
+ */
+export const setConversationDocumentEnabledThunk = createAsyncThunk<
+  void,
+  { conversationId: string; kind?: WorkingDocumentKind; enabled: boolean },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/setEnabled",
+  async (
+    { conversationId, kind = DEFAULT_DOC_KIND, enabled },
+    { dispatch },
+  ) => {
+    dispatch(setWorkingDocEnabled({ conversationId, kind, enabled }));
+    try {
+      if (enabled) {
+        await dispatch(
+          ensureConversationDocumentThunk({ conversationId, kind }),
+        ).unwrap();
+      } else {
+        await setConversationDocumentEnabled(conversationId, kind, false);
+      }
+    } catch (err) {
+      console.error("[working-document] failed to persist enabled flag", {
+        conversationId,
+        kind,
+        enabled,
+        err,
+      });
+      dispatch(
+        markWorkingDocError({
+          conversationId,
+          kind,
+          error: "Could not save the document setting.",
+        }),
+      );
+    }
+  },
+);
+
+// =============================================================================
+// Provision durable backing + junction
+// =============================================================================
+
+/**
+ * Ensure the conversation's (kind) document has a durable `cx_working_documents`
+ * backing row and an enabled junction link, and bind to it. Creating the row
+ * (working kind) flips the published context value to `persist: "auto"` +
+ * `source`, so the agent's `ctx_patch` edits persist and round-trip back.
+ *
+ * Idempotent and persistence-guaranteeing: in every branch the junction ends
+ * up enabled=true. A note overlay (working kind) is left intact — we only
+ * ensure the underlying junction exists so reload restores "on".
+ */
+export const ensureConversationDocumentThunk = createAsyncThunk<
+  void,
+  { conversationId: string; kind?: WorkingDocumentKind },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/ensure",
+  async (
+    { conversationId, kind = DEFAULT_DOC_KIND },
+    { dispatch, getState },
+  ) => {
+    const binding = selectWorkingDocBinding(conversationId, kind)(getState());
+
+    // Already bound to the durable cx document — just make sure the persisted
+    // flag is on.
+    if (binding.kind === "cx_working_document" && binding.id) {
+      await setConversationDocumentEnabled(conversationId, kind, true);
+      return;
+    }
+
+    // Session note overlay (working kind): keep it, but ensure a durable
+    // junction exists + enabled so the doc reopens "on" after reload.
+    if (binding.kind === "note" && binding.id) {
+      await getOrCreateConversationDocument(conversationId, kind);
+      return;
+    }
+
+    // Unbound → provision and adopt the cx document.
+    const { document } = await getOrCreateConversationDocument(
+      conversationId,
+      kind,
+    );
+    dispatch(
+      setWorkingDocBinding({
+        conversationId,
+        kind,
+        binding: {
+          kind: "cx_working_document",
+          id: document.id,
+          label: document.title,
+        },
+      }),
+    );
+    if (document.title) {
+      dispatch(
+        setWorkingDocTitle({ conversationId, kind, title: document.title }),
+      );
+    }
+
+    const localContent = selectWorkingDocContent(
+      conversationId,
+      kind,
+    )(getState());
+    if (document.content) {
+      // Row has content (re-opened conversation) — load it as authoritative.
+      dispatch(
+        applyAgentWorkingDocContent({
+          conversationId,
+          kind,
+          content: document.content,
+        }),
+      );
+    } else if (localContent) {
+      // Fresh empty row but the user already typed — push local content up.
+      await updateCxWorkingDocumentContent(document.id, localContent);
+    }
+  },
+);
+
+// =============================================================================
+// Cross-conversation linking
+// =============================================================================
+
+/**
+ * Point this conversation's (kind) document at an EXISTING document (from any
+ * of the user's conversations) and adopt its content. Both conversations now
+ * share the same document — the agent's edits (working kind) and the user's
+ * edits round-trip to every conversation linked to it.
+ */
+export const linkConversationDocumentThunk = createAsyncThunk<
+  void,
+  { conversationId: string; kind?: WorkingDocumentKind; documentId: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/link",
+  async (
+    { conversationId, kind = DEFAULT_DOC_KIND, documentId },
+    { dispatch },
+  ) => {
+    try {
+      const { document } = await linkConversationToDocument(
+        conversationId,
+        kind,
+        documentId,
+      );
+      dispatch(setWorkingDocEnabled({ conversationId, kind, enabled: true }));
+      dispatch(
+        setWorkingDocBinding({
+          conversationId,
+          kind,
+          binding: {
+            kind: "cx_working_document",
+            id: document.id,
+            label: document.title,
+          },
+        }),
+      );
+      dispatch(
+        setWorkingDocTitle({
+          conversationId,
+          kind,
+          title: document.title ?? "",
+        }),
+      );
+      dispatch(
+        applyAgentWorkingDocContent({
+          conversationId,
+          kind,
+          content: document.content ?? "",
+        }),
+      );
+    } catch (err) {
+      console.error("[working-document] failed to link document", {
+        conversationId,
+        kind,
+        documentId,
+        err,
+      });
+      dispatch(
+        markWorkingDocError({
+          conversationId,
+          kind,
+          error: "Could not link the selected document.",
+        }),
+      );
+    }
+  },
+);
+
+// =============================================================================
+// Note binding (working kind)
+// =============================================================================
 
 /**
  * Bind the conversation's working document to an existing note and seed the
@@ -57,12 +344,17 @@ interface ThunkConfig {
  */
 export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
   void,
-  { conversationId: string; noteId: string; mode?: BindNoteMode },
+  {
+    conversationId: string;
+    kind?: WorkingDocumentKind;
+    noteId: string;
+    mode?: BindNoteMode;
+  },
   ThunkConfig
 >(
   "instanceWorkingDocument/bindToNote",
   async (
-    { conversationId, noteId, mode = "replace" },
+    { conversationId, kind = DEFAULT_DOC_KIND, noteId, mode = "replace" },
     { dispatch, getState },
   ) => {
     try {
@@ -71,6 +363,7 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
         dispatch(
           markWorkingDocError({
             conversationId,
+            kind,
             error: "Could not load the selected note.",
           }),
         );
@@ -83,7 +376,10 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
       // the bound source is the single source of truth going forward.
       let nextContent = noteContent;
       if (mode === "append") {
-        const current = selectWorkingDocContent(conversationId)(getState());
+        const current = selectWorkingDocContent(
+          conversationId,
+          kind,
+        )(getState());
         if (current.trim()) {
           nextContent = noteContent.trim()
             ? `${noteContent}\n\n${current}`
@@ -94,14 +390,19 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
       dispatch(
         setWorkingDocBinding({
           conversationId,
+          kind,
           binding: { kind: "note", id: note.id, label: note.label ?? null },
         }),
       );
       if (note.label) {
-        dispatch(setWorkingDocTitle({ conversationId, title: note.label }));
+        dispatch(
+          setWorkingDocTitle({ conversationId, kind, title: note.label }),
+        );
       }
-      dispatch(setWorkingDocContent({ conversationId, content: nextContent }));
-      dispatch(setWorkingDocEnabled({ conversationId, enabled: true }));
+      dispatch(
+        setWorkingDocContent({ conversationId, kind, content: nextContent }),
+      );
+      dispatch(setWorkingDocEnabled({ conversationId, kind, enabled: true }));
 
       // Persist the merged content to the note when we changed it, so the bound
       // source actually holds what the user sees.
@@ -114,6 +415,7 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
       dispatch(
         markWorkingDocError({
           conversationId,
+          kind,
           error: "Could not load the selected note.",
         }),
       );
@@ -123,48 +425,63 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
 
 /**
  * Unbind the working document from a note and revert to the conversation's own
- * durable `cx_working_documents` document. This RESTORES the document's own
- * identity — its content and title — instead of leaving the note's content and
- * title stranded in the editor (the state bug where unbinding kept the note's
- * name + content). The cx row is the document's home; binding a note is only a
- * temporary overlay on top of it.
+ * durable `cx_working_documents` document — restoring its own content/title.
  */
 export const unbindWorkingDocumentThunk = createAsyncThunk<
   void,
-  { conversationId: string },
+  { conversationId: string; kind?: WorkingDocumentKind },
   ThunkConfig
 >(
   "instanceWorkingDocument/unbind",
-  async ({ conversationId }, { dispatch }) => {
+  async ({ conversationId, kind = DEFAULT_DOC_KIND }, { dispatch }) => {
     // Drop the binding first so no in-flight save targets the note.
     dispatch(
-      setWorkingDocBinding({ conversationId, binding: { ...NO_BINDING } }),
+      setWorkingDocBinding({
+        conversationId,
+        kind,
+        binding: { ...NO_BINDING },
+      }),
     );
     try {
-      const doc = await getOrCreateCxWorkingDocument(conversationId);
+      const { document } = await getOrCreateConversationDocument(
+        conversationId,
+        kind,
+      );
       dispatch(
         setWorkingDocBinding({
           conversationId,
+          kind,
           binding: {
             kind: "cx_working_document",
-            id: doc.id,
-            label: doc.title,
+            id: document.id,
+            label: document.title,
           },
         }),
       );
       // Revert the editor to the document's own content + title.
       dispatch(
-        setWorkingDocContent({ conversationId, content: doc.content ?? "" }),
+        setWorkingDocContent({
+          conversationId,
+          kind,
+          content: document.content ?? "",
+        }),
       );
-      dispatch(setWorkingDocTitle({ conversationId, title: doc.title ?? "" }));
+      dispatch(
+        setWorkingDocTitle({
+          conversationId,
+          kind,
+          title: document.title ?? "",
+        }),
+      );
     } catch (err) {
       console.error(
         "[working-document] failed to revert to cx_working_documents row on unbind",
-        { conversationId, err },
+        { conversationId, kind, err },
       );
       dispatch(
         markWorkingDocError({
           conversationId,
+          kind,
           error: "Could not revert the working document.",
         }),
       );
@@ -172,102 +489,40 @@ export const unbindWorkingDocumentThunk = createAsyncThunk<
   },
 );
 
-/**
- * Ensure the conversation's working document has a durable `cx_working_documents`
- * backing row and bind to it (the chat default — the Scribe pattern). Creating
- * the row flips the published context value to `persist: "auto"` +
- * `source: { kind: "cx_working_document", id, field: "content" }`, so the agent's
- * `ctx_patch` edits persist server-side and round-trip back via realtime + the
- * post-turn re-read fallback.
- *
- * Idempotent: a row already exists → we reuse it. Seeds the slice from the row
- * when the row has content (re-opening a conversation); pushes any pre-existing
- * local content up to a freshly-created empty row so nothing is lost.
- */
-export const ensureWorkingDocumentRowThunk = createAsyncThunk<
-  void,
-  { conversationId: string },
-  ThunkConfig
->(
-  "instanceWorkingDocument/ensureRow",
-  async ({ conversationId }, { dispatch, getState }) => {
-    const binding = selectWorkingDocBinding(conversationId)(getState());
-    // Already bound to a durable source (cx row or user-picked note) — nothing
-    // to do. We never override an explicit note binding with the default.
-    if (binding.kind !== "none" && binding.id) return;
-
-    try {
-      const doc = await getOrCreateCxWorkingDocument(conversationId);
-      dispatch(
-        setWorkingDocBinding({
-          conversationId,
-          binding: {
-            kind: "cx_working_document",
-            id: doc.id,
-            label: doc.title,
-          },
-        }),
-      );
-
-      // Reflect the document's saved name when reopening a conversation.
-      if (doc.title) {
-        dispatch(setWorkingDocTitle({ conversationId, title: doc.title }));
-      }
-
-      const localContent = selectWorkingDocContent(conversationId)(getState());
-      if (doc.content) {
-        // Row has content (re-opened conversation) — load it as authoritative.
-        dispatch(
-          applyAgentWorkingDocContent({ conversationId, content: doc.content }),
-        );
-      } else if (localContent) {
-        // Fresh empty row but the user already typed — push local content up.
-        await updateCxWorkingDocumentContent(doc.id, localContent);
-      }
-    } catch (err) {
-      console.error(
-        "[working-document] failed to ensure cx_working_documents row",
-        { conversationId, err },
-      );
-      dispatch(
-        markWorkingDocError({
-          conversationId,
-          error: "Could not prepare the working document.",
-        }),
-      );
-    }
-  },
-);
+// =============================================================================
+// Agent writeback resync
+// =============================================================================
 
 /**
  * Resolve an agent writeback for the working document. Called from the stream
  * processor when a `context_changed` / `context_persisted` event arrives for
  * the `working_document` key. The event carries no content, so we re-read the
- * bound durable source (cx_working_documents row or bound note) and apply it.
- *
- * For `cx_working_document` bindings Supabase realtime usually delivers the
- * edit first; this re-read is the belt-and-suspenders fallback (and the primary
- * path when realtime is unavailable).
+ * bound durable source (the cx document — by its OWN id, so linked
+ * conversations resolve — or the bound note) and apply it.
  *
  * LOUD on failure: a recovery firing means a real change came through that we
  * could not reflect — we log it so the gap is visible rather than silent.
  */
 export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
   void,
-  { conversationId: string },
+  { conversationId: string; kind?: WorkingDocumentKind },
   ThunkConfig
 >(
   "instanceWorkingDocument/syncFromAgent",
-  async ({ conversationId }, { dispatch, getState }) => {
-    const binding = selectWorkingDocBinding(conversationId)(getState());
+  async (
+    { conversationId, kind = DEFAULT_DOC_KIND },
+    { dispatch, getState },
+  ) => {
+    const binding = selectWorkingDocBinding(conversationId, kind)(getState());
 
-    if (binding.kind === "cx_working_document") {
+    if (binding.kind === "cx_working_document" && binding.id) {
       try {
-        const doc = await getCxWorkingDocument(conversationId);
+        const doc = await getCxWorkingDocumentById(binding.id);
         if (doc) {
           dispatch(
             applyAgentWorkingDocContent({
               conversationId,
+              kind,
               content: doc.content ?? "",
             }),
           );
@@ -275,7 +530,7 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
       } catch (err) {
         console.error(
           "[working-document] failed to resync cx_working_documents row after agent writeback",
-          { conversationId, docId: binding.id, err },
+          { conversationId, kind, docId: binding.id, err },
         );
       }
       return;
@@ -288,6 +543,7 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
           dispatch(
             applyAgentWorkingDocContent({
               conversationId,
+              kind,
               content: note.content ?? "",
             }),
           );
@@ -295,7 +551,7 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
       } catch (err) {
         console.error(
           "[working-document] failed to resync bound note after agent writeback",
-          { conversationId, noteId: binding.id, err },
+          { conversationId, kind, noteId: binding.id, err },
         );
       }
       return;

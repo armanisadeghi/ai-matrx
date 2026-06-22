@@ -8,21 +8,34 @@
  * production). It guarantees the overlay area shows a meaningful, actionable
  * error instead of nothing.
  *
- * Two audiences, one component:
- *   - Everyone: a clear message + "Try again" (re-mount the boundary) and
- *     "Reload page" (the real fix for a stale/failed chunk).
- *   - Admins: a deploy-skew banner when detected, plus an expandable view of the
- *     TARGETED diagnostics (error, component stack, failing module, build id,
- *     ?dpl= ids, failed/pending chunks, connection state, and the overlay-
- *     relevant Redux slices) — and a "Copy for AI" button that packages it all
- *     into the standard xml envelope for pasting into an LLM. NOT a full Redux
- *     dump; for a chunk failure that's noise.
+ * Actions (never a dead end — the user is NEVER forced to reload to escape):
+ *   - "Close" — dismisses just this overlay instance (the controller's
+ *     `closeOverlay`) and returns to the app. Shown whenever an `onClose` is
+ *     threaded down from the controller.
+ *   - "Try again" (primary) — re-mounts the boundary with a fresh dynamic
+ *     import. Because the agent runner's typed request lives in Redux keyed by
+ *     conversationId (NOT in the unmounted React tree), a successful retry
+ *     brings the user's message back intact.
+ *   - "Reload page" (last resort) — the hard fix for a genuinely stale chunk.
+ *
+ * Two audiences:
+ *   - Everyone: a clear message + the actions above.
+ *   - Admins: the in-flight agent request (the exact text that was being sent,
+ *     so it's visible/copyable and provably not lost), a deploy-skew banner when
+ *     detected, plus an expandable view of the TARGETED diagnostics (error,
+ *     component stack, failing module, build id, ?dpl= ids, failed/pending
+ *     chunks, connection, overlay-relevant Redux slices, and live agent
+ *     execution state) — and a "Copy for AI" button that packages it all into
+ *     the standard xml envelope. NOT a full Redux dump; for a chunk failure
+ *     that's noise.
  */
 
 import * as React from "react";
 import {
   AlertTriangle,
   RotateCw,
+  RefreshCcw,
+  X,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
@@ -46,6 +59,12 @@ export interface OverlayErrorFallbackProps {
   componentStack: string | null;
   /** Re-mount the boundary's children (retry the dynamic import). */
   onReset: () => void;
+  /**
+   * Dismiss the overlay entirely (the controller's `closeOverlay`). When
+   * provided, a "Close" button is shown so the user is never forced to reload
+   * the whole page just to escape a failed panel.
+   */
+  onClose?: () => void;
 }
 
 export function OverlayErrorFallback({
@@ -53,6 +72,7 @@ export function OverlayErrorFallback({
   error,
   componentStack,
   onReset,
+  onClose,
 }: OverlayErrorFallbackProps) {
   const isAdmin = useAppSelector(selectIsAdmin);
   const store = useAppStore();
@@ -78,6 +98,13 @@ export function OverlayErrorFallback({
   const diag = collectOverlayDiagnostics(isAdmin ? store.getState() : null);
   const skewSuspected = diag.deploy.deploymentSkewSuspected;
 
+  // The user's work at risk: any conversation carrying a typed-but-unsent
+  // request. Surfaced inline (admins) so they can SEE and copy the exact
+  // message that was in flight when the panel crashed — never silently lost.
+  const pendingRequests = isAdmin
+    ? diag.agentExecution.conversations.filter((c) => c.hasPendingInput)
+    : [];
+
   const adminDump =
     isAdmin && expanded
       ? safeStringify({
@@ -88,6 +115,7 @@ export function OverlayErrorFallback({
           network: diag.network,
           overlayState: diag.overlayState,
           appContext: diag.appContext,
+          agentExecution: diag.agentExecution,
           user: diag.user,
         })
       : null;
@@ -123,6 +151,29 @@ export function OverlayErrorFallback({
                 : ""}
               . This tab was likely open across a deploy — reloading pulls a
               fresh, consistent set of chunks.
+            </div>
+          )}
+
+          {pendingRequests.length > 0 && (
+            <div className="mb-3 rounded-lg border border-info/40 bg-info/10 px-3 py-2 text-xs">
+              <p className="font-semibold text-foreground">
+                Your message wasn&apos;t lost.
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                Use{" "}
+                <span className="font-medium text-foreground">Try again</span>{" "}
+                to reopen this panel with your text intact. A copy is preserved
+                below in case you want it.
+              </p>
+              {pendingRequests.map((c) => (
+                <pre
+                  key={c.conversationId}
+                  className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded-md bg-background/70 px-2 py-1.5 text-[11px] leading-relaxed text-foreground"
+                >
+                  {c.inputText}
+                  {c.inputTextTruncated ? "\n… (truncated)" : ""}
+                </pre>
+              ))}
             </div>
           )}
 
@@ -174,14 +225,34 @@ export function OverlayErrorFallback({
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={onReset}>
-              Try again
-            </Button>
+            {onClose && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 text-muted-foreground"
+                onClick={onClose}
+                title="Close this panel and return to the app (no reload)"
+              >
+                <X className="h-3.5 w-3.5" />
+                Close
+              </Button>
+            )}
             <Button
               size="sm"
               variant="default"
               className="gap-1.5"
+              onClick={onReset}
+              title="Reload just this panel — keeps your typed request"
+            >
+              <RefreshCcw className="h-3.5 w-3.5" />
+              Try again
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
               onClick={() => window.location.reload()}
+              title="Last resort — reloads the whole page and loses unsaved work"
             >
               <RotateCw className="h-3.5 w-3.5" />
               Reload page
