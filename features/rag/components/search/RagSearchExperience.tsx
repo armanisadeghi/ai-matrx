@@ -9,9 +9,10 @@
  *   2. Agent Simulation — power-user view: raw request/response JSON, multi-
  *                          query + HyDE preview, per-hit score breakdown,
  *                          assembled-prompt preview as the AI would see it
- *   3. Agent Chat      — chat with Claude that uses rag_search as a tool,
- *                          streaming every tool call and result for full
- *                          transparency
+ *   3. Agent Chat      — the canonical managed-agent system (same stack as
+ *                          /chat) launched on the `matrx-user/rag-search`
+ *                          surface with the RAG tool family armed, so the
+ *                          agent searches the page's retrieval scope
  *   4. Diagnostics     — caller's content inventory, per-route visibility
  *                          breakdown, per-query trace, admin ACL-bypass
  *
@@ -19,14 +20,13 @@
  * feel polished enough for any normal user.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertCircle,
   Beaker,
-  Webhook,
   Brain,
   Copy,
   Database,
@@ -41,12 +41,12 @@ import {
   Settings2,
   Sparkles,
   Stethoscope,
+  Layers,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,19 +62,56 @@ import {
   type RagSearchResponse,
 } from "@/features/rag/api/search";
 import {
-  ragAgentChatStream,
   ragDiagnoseStream,
   ragInventory,
-  type AgentEvent,
-  type AgentToolHit,
   type DiagnoseHit,
   type DiagnoseResponse,
   type ExpandResponse,
   type InventoryResponse,
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
+import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
+import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
+import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
+import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
+
+// ===========================================================================
+// Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
+// (same stack as /chat and the Projects "Use AI" tab), NOT a bespoke chat.
+// ===========================================================================
+
+/** Surface registered in `features/surfaces/manifests/rag-search.manifest.ts`. */
+const RAG_SEARCH_SURFACE = "matrx-user/rag-search";
+const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
+/** General-purpose chat agent; the RAG tools below are armed onto its run. */
+const RAG_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
+
+/**
+ * RAG tool family (registry tool UUIDs from `public.tool_def`). Armed
+ * additively on the conversation via `addedTools` so the agent can actually
+ * search the user's indexed content, list/inspect data stores, fetch chunks,
+ * and verify answers — even when the base chat agent doesn't ship these tools
+ * by default. The conversation also receives the page's retrieval scope via
+ * `runtime.applicationScope` (see `createRagSearchScope`).
+ */
+const RAG_AGENT_TOOL_IDS = [
+  "3921fc69-0763-4538-9e36-5a29a088a5bd", // rag_search
+  "49ebe1b2-62ba-4028-9038-838c12e144ef", // rag_search_data_store
+  "16964a48-af53-423d-a3c4-0ff3a0a061eb", // rag_search_cross_doc
+  "dc3300ad-fbfe-4d32-8970-4666715402f4", // rag_list_data_stores
+  "487322dc-db17-4b13-9186-223c29f29baf", // rag_get_data_store
+  "df009bb5-1b9a-49a4-8db1-90b654f970a2", // rag_list_sources
+  "52f31aa4-2570-477f-ad29-91b00bdcec87", // rag_get_chunk
+  "cb86a0ca-439e-4e63-be45-44c2dcd159f5", // rag_verify_answer
+];
 
 // ===========================================================================
 // Shared
@@ -463,9 +500,23 @@ function ScopeSidebar({
     >
       <div className="px-3 py-2 border-b flex items-center gap-2">
         <Database className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold flex-1">Scope</h2>
+        <h2 className="text-sm font-semibold flex-1">Search scope</h2>
       </div>
-      <ScrollArea className="flex-1">
+
+      <div className="border-b px-2 py-2">
+        <div className="mb-2 flex items-center gap-2 px-1 text-xs">
+          <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="font-semibold">Working context</span>
+        </div>
+        <ActiveContextPanel
+          checkboxVariant="standard"
+          sectionHeight={variant === "drawer" ? 280 : 220}
+          fill={variant === "drawer"}
+          className="rounded-md border bg-card"
+        />
+      </div>
+
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-1">
           <ScopeRow
             label="All accessible content"
@@ -614,6 +665,21 @@ function SearchTab({ scope }: { scope: Scope }) {
   const [response, setResponse] = useState<RagSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const sourceKindFilters = useMemo(
+    () =>
+      scope.sourceKinds
+        ? {
+            source_kinds: scope.sourceKinds as (
+              | "cld_file"
+              | "note"
+              | "code_file"
+            )[],
+          }
+        : undefined,
+    [scope.sourceKinds],
+  );
+  const searchContext = useRagSearchContext(sourceKindFilters);
+
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -627,16 +693,8 @@ function SearchTab({ scope }: { scope: Scope }) {
         rerank: scope.rerank,
         only_children: true,
         data_store_id: scope.storeId ?? undefined,
-        filters: scope.sourceKinds
-          ? {
-              source_kinds: scope.sourceKinds as (
-                | "cld_file"
-                | "note"
-                | "code_file"
-              )[],
-            }
-          : undefined,
         admin_bypass_acl: scope.adminBypass || undefined,
+        ...searchContext,
       });
       setResponse(r);
 
@@ -649,7 +707,7 @@ function SearchTab({ scope }: { scope: Scope }) {
     } finally {
       setRunning(false);
     }
-  }, [query, scope, router]);
+  }, [query, scope, router, searchContext]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -1248,347 +1306,112 @@ function Stat({ label, value }: { label: string; value: number | string }) {
 // Tab 3 — Agent Chat
 // ===========================================================================
 
-interface AgentTurn {
-  turn: number;
-  text: string;
-  toolCalls: {
-    tool_use_id: string;
-    args: Record<string, unknown>;
-    result: {
-      n_hits: number;
-      total_candidates: number;
-      latency_ms: number;
-      hits: AgentToolHit[];
-    } | null;
-    error: string | null;
-  }[];
-}
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  turns?: AgentTurn[];
-  raw_events?: AgentEvent[];
-}
-
+/**
+ * Agent Chat tab — embeds the canonical managed-agent system.
+ *
+ * This is intentionally NOT a bespoke chat. It launches a managed conversation
+ * (same stack as `/chat` and the Projects "Use AI" tab) via `useAgentLauncher`
+ * and renders `AgentConversationColumn`. That column already streams text,
+ * renders tool calls (including a dedicated `rag_search` renderer), exposes the
+ * Smart Input with the full tool/variable affordances, and participates in the
+ * overlay / creator-panel / pending-asks machinery — so users get every
+ * platform capability here for free.
+ *
+ * Two things make it RAG-aware:
+ *   1. `runtime.surfaceName` + `applicationScope` hand the agent the page's
+ *      retrieval scope (selected data store, source-kind filter, pipeline
+ *      flags) via the registered `matrx-user/rag-search` surface, so an agent
+ *      engineer can bind those values into the agent's context / tool args.
+ *   2. The RAG tool family is armed on the conversation via `addedTools`, so
+ *      the agent can search / inspect the user's indexed content regardless of
+ *      whether the base agent ships those tools.
+ */
 function AgentChatTab({ scope }: { scope: Scope }) {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [streaming, setStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const dispatch = useAppDispatch();
+  const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${RAG_AGENT_ID}`;
 
-  const send = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed || streaming) return;
-
-    const history = messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
-    const assistantMsg: ChatMessage = {
-      role: "assistant",
-      content: "",
-      turns: [],
-      raw_events: [],
-    };
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-    setInput("");
-    setStreaming(true);
-    setError(null);
-
-    const ac = new AbortController();
-    abortRef.current = ac;
-
-    try {
-      const stream = ragAgentChatStream(
-        {
-          query: trimmed,
-          history,
-          data_store_id: scope.storeId ?? null,
-          source_kinds: scope.sourceKinds,
-          admin_bypass_acl: scope.adminBypass,
-          rerank: scope.rerank,
-          multi_query: scope.multiQuery,
-          use_hyde: scope.useHyde,
-          max_tool_calls: 6,
-        },
-        { signal: ac.signal },
-      );
-
-      const currentTurns: Map<number, AgentTurn> = new Map();
-
-      for await (const ev of stream) {
-        // Apply event to assistant message
-        setMessages((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          if (!last || last.role !== "assistant") return prev;
-          const turns = last.turns ?? [];
-          const rawEvents = last.raw_events ?? [];
-          rawEvents.push(ev);
-
-          if (ev.kind === "rag.agent.turn.started") {
-            const t: AgentTurn = { turn: ev.turn, text: "", toolCalls: [] };
-            currentTurns.set(ev.turn, t);
-            turns.push(t);
-          } else if (ev.kind === "rag.agent.text") {
-            const t = currentTurns.get(ev.turn) ?? turns[turns.length - 1];
-            if (t) t.text = (t.text || "") + ev.text;
-            // Accumulate the most recent assistant text as the message content
-            const textAcrossTurns = turns
-              .map((tt) => tt.text)
-              .filter(Boolean)
-              .join("\n\n");
-            last.content = textAcrossTurns;
-          } else if (ev.kind === "rag.agent.tool_call") {
-            const t = currentTurns.get(ev.turn);
-            if (t)
-              t.toolCalls.push({
-                tool_use_id: ev.tool_use_id,
-                args: ev.args,
-                result: null,
-                error: null,
-              });
-          } else if (ev.kind === "rag.agent.tool_result") {
-            for (const t of turns) {
-              const c = t.toolCalls.find(
-                (x) => x.tool_use_id === ev.tool_use_id,
-              );
-              if (c) {
-                c.result = {
-                  n_hits: ev.n_hits,
-                  total_candidates: ev.total_candidates,
-                  latency_ms: ev.latency_ms,
-                  hits: ev.hits,
-                };
-                break;
-              }
-            }
-          } else if (ev.kind === "rag.agent.tool_error") {
-            for (const t of turns) {
-              const c = t.toolCalls.find(
-                (x) => x.tool_use_id === ev.tool_use_id,
-              );
-              if (c) c.error = ev.message;
-            }
-          } else if (ev.kind === "rag.agent.error") {
-            setError(ev.message);
-          }
-
-          next[next.length - 1] = {
-            ...last,
-            turns: [...turns],
-            raw_events: [...rawEvents],
-          };
-          return next;
-        });
-      }
-    } catch (e) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        setError(e.message);
-      }
-    } finally {
-      setStreaming(false);
-      abortRef.current = null;
-    }
-  }, [input, messages, scope, streaming]);
-
-  const cancel = useCallback(() => {
-    abortRef.current?.abort();
-    setStreaming(false);
-  }, []);
-
-  const reset = useCallback(() => {
-    if (streaming) cancel();
-    setMessages([]);
-    setError(null);
-  }, [cancel, streaming]);
-
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <header className="border-b p-3 flex items-center gap-2">
-        <Webhook className="h-4 w-4 text-primary" />
-        <div className="flex-1">
-          <div className="text-sm font-semibold">Agent Chat</div>
-          <div className="text-[11px] text-muted-foreground">
-            Claude with rag_search as a tool. Every search the model runs is
-            shown live in the transcript.
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={reset}
-          disabled={messages.length === 0 && !streaming}
-        >
-          Reset
-        </Button>
-      </header>
-
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
-          {messages.length === 0 && (
-            <div className="rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground mb-2">
-                Ask the agent anything
-              </p>
-              <p>
-                The agent will call{" "}
-                <code className="font-mono">rag_search</code> one or more times,
-                then answer using only what it retrieved. You'll see every tool
-                call, every retrieved segment, and the final answer.
-              </p>
-            </div>
-          )}
-
-          {messages.map((m, idx) => (
-            <ChatMessageView key={idx} message={m} />
-          ))}
-
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" /> {error}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-
-      <div className="border-t p-3 pb-safe">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
-          className="flex items-end gap-2"
-        >
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Ask the agent a question…   (⌘/Ctrl+Enter to send)"
-            className="min-h-[60px] resize-y text-base"
-            disabled={streaming}
-          />
-          {streaming ? (
-            <Button type="button" variant="destructive" onClick={cancel}>
-              Cancel
-            </Button>
-          ) : (
-            <Button type="submit" disabled={!input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
-        </form>
-      </div>
-    </div>
+  const storeName = useMemo(
+    () =>
+      scope.storeId
+        ? scope.stores.stores.find((s) => s.id === scope.storeId)?.name
+        : undefined,
+    [scope.storeId, scope.stores.stores],
   );
-}
 
-function ChatMessageView({ message }: { message: ChatMessage }) {
-  if (message.role === "user") {
+  // Captured at launch (the launcher reads `runtime` once when it creates the
+  // conversation). Picking a different store after the conversation exists
+  // doesn't retroactively re-scope an in-flight chat — start a fresh chat to
+  // re-scope, same as every other agent surface.
+  const applicationScope = useMemo(
+    () =>
+      createRagSearchScope({
+        data_store_id: scope.storeId ?? undefined,
+        data_store_name: storeName,
+        source_kinds: scope.sourceKinds,
+        admin_bypass_acl: scope.adminBypass,
+        rerank: scope.rerank,
+        multi_query: scope.multiQuery,
+        use_hyde: scope.useHyde,
+      }),
+    [
+      scope.storeId,
+      storeName,
+      scope.sourceKinds,
+      scope.adminBypass,
+      scope.rerank,
+      scope.multiQuery,
+      scope.useHyde,
+    ],
+  );
+
+  const { conversationId } = useAgentLauncher(RAG_AGENT_ID, {
+    surfaceKey,
+    sourceFeature: RAG_SEARCH_SOURCE_FEATURE,
+    apiEndpointMode: "agent",
+    config: {
+      displayMode: "direct",
+      autoRun: false,
+      allowChat: true,
+    },
+    runtime: {
+      surfaceName: RAG_SEARCH_SURFACE,
+      applicationScope,
+    },
+  });
+
+  // Arm the RAG tool family additively on this conversation as soon as it
+  // exists. The instance UI-state entry is created synchronously inside the
+  // launch thunk, so by the time `conversationId` is set the dispatch lands.
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(
+      setBuilderAdvancedSettings({
+        conversationId,
+        changes: { addedTools: RAG_AGENT_TOOL_IDS },
+      }),
+    );
+  }, [conversationId, dispatch]);
+
+  if (!conversationId) {
     return (
-      <div className="rounded-md border bg-primary/5 px-3 py-2">
-        <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-0.5">
-          You
-        </div>
-        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+      <div
+        className="flex h-full items-center justify-center"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
-  const turns = message.turns ?? [];
+
   return (
-    <div className="rounded-md border bg-card overflow-hidden">
-      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
-        <Webhook className="h-3.5 w-3.5 text-primary" />
-        <span className="font-semibold">Agent</span>
-        <Badge variant="outline" className="text-[10px]">
-          {turns.length} turn{turns.length === 1 ? "" : "s"}
-        </Badge>
-        <Badge variant="outline" className="text-[10px]">
-          {turns.reduce((acc, t) => acc + t.toolCalls.length, 0)} tool calls
-        </Badge>
-      </div>
-      <div className="px-3 py-2 space-y-3">
-        {turns.map((t) => (
-          <div key={t.turn} className="space-y-2">
-            {t.text && (
-              <div className="text-sm whitespace-pre-wrap">{t.text}</div>
-            )}
-            {t.toolCalls.map((c) => (
-              <div
-                key={c.tool_use_id}
-                className="rounded-md border border-primary/30 bg-primary/5 overflow-hidden"
-              >
-                <div className="px-2 py-1 bg-primary/10 flex items-center gap-2 text-[11px]">
-                  <SearchIcon className="h-3 w-3 text-primary" />
-                  <code className="font-mono font-semibold">rag_search</code>
-                  <span className="text-muted-foreground">
-                    query:{" "}
-                    <code className="text-foreground">
-                      "{String(c.args.query ?? "")}"
-                    </code>
-                  </span>
-                  {c.result && (
-                    <Badge variant="secondary" className="text-[10px] ml-auto">
-                      {c.result.n_hits} hits · {c.result.latency_ms}ms
-                    </Badge>
-                  )}
-                </div>
-                {c.error && (
-                  <div className="px-2 py-1 text-xs text-destructive">
-                    {c.error}
-                  </div>
-                )}
-                {c.result && c.result.hits.length > 0 && (
-                  <div className="px-2 py-1 space-y-1">
-                    {c.result.hits.slice(0, 4).map((h) => (
-                      <div
-                        key={h.chunk_id}
-                        className="rounded border bg-card px-2 py-1.5 text-[11px]"
-                      >
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="tabular-nums w-6 text-right text-muted-foreground">
-                            #{h.rank}
-                          </span>
-                          <span className="font-mono uppercase tracking-wide text-muted-foreground">
-                            {h.source_kind}
-                          </span>
-                          <span className="font-medium truncate">
-                            {h.file_name ?? h.source_id}
-                          </span>
-                          {h.page_number != null && (
-                            <span className="text-muted-foreground">
-                              p.{h.page_number}
-                            </span>
-                          )}
-                          <span className="ml-auto tabular-nums text-muted-foreground">
-                            {h.score.toFixed(3)}
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground line-clamp-2 whitespace-pre-wrap">
-                          {h.snippet.slice(0, 300)}
-                        </div>
-                      </div>
-                    ))}
-                    {c.result.hits.length > 4 && (
-                      <div className="text-[10px] text-muted-foreground px-1">
-                        + {c.result.hits.length - 4} more…
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <AgentConversationColumn
+        conversationId={conversationId}
+        surfaceKey={surfaceKey}
+        constrainWidth
+        edgeToEdgeScroll
+      />
     </div>
   );
 }
@@ -1871,6 +1694,9 @@ export function RagSearchExperience() {
                 <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
               </TabsTrigger>
             </TabsList>
+          </div>
+          <div className="hidden lg:flex min-w-0 max-w-[min(42rem,40vw)] items-center overflow-hidden">
+            <ActiveScopeChips className="min-w-0" />
           </div>
           <div className="hidden md:block ml-auto text-[11px] text-muted-foreground shrink-0">
             RAG Search Lab · hybrid retrieval + Claude agent

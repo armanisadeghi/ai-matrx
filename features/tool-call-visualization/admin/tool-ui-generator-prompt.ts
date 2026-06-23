@@ -12,7 +12,8 @@
 // ---------------------------------------------------------------------------
 // The prompt_builtins row ID for the "Tools Result Component Generator" entry
 // ---------------------------------------------------------------------------
-export const COMPONENT_GENERATOR_PROMPT_ID = "51b0c1d5-84b7-46d8-aec6-2b08f9f49fff";
+export const COMPONENT_GENERATOR_PROMPT_ID =
+  "51b0c1d5-84b7-46d8-aec6-2b08f9f49fff";
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -145,7 +146,7 @@ Write imports at the top of each code field as if it were a normal file. The pip
 | Import path | What it provides |
 |---|---|
 | \`react\` | (auto-included) React core hooks |
-| \`lucide-react\` | ALL Lucide icons by name: Globe, Search, CheckCircle, Loader2, ExternalLink, Calendar, Copy, Check, AlertTriangle, FileText, ChevronDown, ChevronUp, etc. If an icon doesn't exist, a placeholder renders instead of crashing. |
+| \`lucide-react\` | Lucide icons as components: \`<Folder className="h-4 w-4" />\`. Prefer \`DynamicIcon\` (always in scope) for any icon by name: \`<DynamicIcon name="Folder" className="h-4 w-4" />\` — resolves the full Lucide set without per-icon imports. Missing names render a placeholder instead of crashing. |
 | \`@/lib/utils\` | \`cn()\` — className merging utility (like clsx + tailwind-merge) |
 | \`@/components/ui/badge\` | \`Badge\` |
 | \`@/components/ui/button\` | \`Button\` |

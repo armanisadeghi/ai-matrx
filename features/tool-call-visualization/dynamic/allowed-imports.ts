@@ -28,6 +28,10 @@
  */
 
 import React from "react";
+import {
+  createFallbackIcon,
+  patchScopeForMissingIdentifiers as patchScopeForMissingIdentifiersImpl,
+} from "@/features/agent-apps/utils/patch-scope-identifiers";
 
 // ---------------------------------------------------------------------------
 // Config type
@@ -95,6 +99,14 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     safeProxy: true,
     core: true,
     description: "All Lucide icons (missing names render a placeholder)",
+  },
+  {
+    path: "@/components/official/icons/IconResolver",
+    loader: () => import("@/components/official/icons/IconResolver"),
+    scopeStrategy: "named",
+    exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
+    core: true,
+    description: "DynamicIcon — resolve any Lucide/custom icon by string name",
   },
 
   // ── Utility ─────────────────────────────────────────────────────────────
@@ -433,43 +445,6 @@ export function getAllAvailableImports(): Array<{
 }
 
 // ---------------------------------------------------------------------------
-// Fallback icon factory (for missing Lucide icons)
-// ---------------------------------------------------------------------------
-
-function createFallbackIcon(iconName: string) {
-  const FallbackIcon = React.forwardRef<
-    SVGSVGElement,
-    React.SVGProps<SVGSVGElement> & { size?: number | string }
-  >(({ size = 24, className, ...props }, ref) => {
-    return React.createElement(
-      "svg",
-      {
-        ref,
-        xmlns: "http://www.w3.org/2000/svg",
-        width: size,
-        height: size,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
-        strokeWidth: 2,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-        className,
-        "data-missing-icon": iconName,
-        ...props,
-      },
-      React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
-      React.createElement("path", {
-        d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
-      }),
-      React.createElement("line", { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
-    );
-  });
-  FallbackIcon.displayName = `MissingIcon(${iconName})`;
-  return FallbackIcon;
-}
-
-// ---------------------------------------------------------------------------
 // Safe proxy for modules (returns fallback for missing icons)
 // ---------------------------------------------------------------------------
 
@@ -574,6 +549,8 @@ export async function buildToolRendererScope(
         for (const key of Object.keys(source)) scope[key] = source[key];
         if (!scope.__safeProxies) scope.__safeProxies = {};
         scope.__safeProxies[config.path] = safeModule;
+        if (!scope.__safeProxyModuleKeys) scope.__safeProxyModuleKeys = {};
+        scope.__safeProxyModuleKeys[config.path] = new Set(Object.keys(source));
       } else {
         Object.assign(scope, source);
       }
@@ -602,100 +579,15 @@ export async function buildToolRendererScope(
 // ---------------------------------------------------------------------------
 
 /**
- * Scans transformed code for PascalCase identifiers not in scope and injects
- * safe fallback components to prevent ReferenceError crashes.
+ * Scans transformed JSX for component references missing from scope.
  */
 export function patchScopeForMissingIdentifiers(
   code: string,
   scope: Record<string, any>,
 ): void {
-  const codeForScanning = code
-    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
-    .replace(/'(?:[^'\\]|\\.)*'/g, "''")
-    .replace(/`(?:[^`\\]|\\.)*`/gs, "``");
-
-  const identifierRegex = /\b([A-Z][a-zA-Z0-9]*)\b/g;
-  const foundIdentifiers = new Set<string>();
-
-  let match;
-  while ((match = identifierRegex.exec(codeForScanning)) !== null) {
-    foundIdentifiers.add(match[1]);
-  }
-
-  const skipList = new Set([
-    "React",
-    "Object",
-    "Array",
-    "String",
-    "Number",
-    "Boolean",
-    "Date",
-    "Math",
-    "JSON",
-    "Promise",
-    "Error",
-    "TypeError",
-    "RangeError",
-    "RegExp",
-    "Map",
-    "Set",
-    "WeakMap",
-    "WeakSet",
-    "Symbol",
-    "Proxy",
-    "Reflect",
-    "Intl",
-    "URL",
-    "FormData",
-    "Headers",
-    "Request",
-    "Response",
-    "AbortController",
-    "HTMLElement",
-    "SVGElement",
-    "Event",
-    "MouseEvent",
-    "KeyboardEvent",
-    "HTMLInputElement",
-    "HTMLTextAreaElement",
-    "HTMLSelectElement",
-    "HTMLButtonElement",
-    "HTMLDivElement",
-    "HTMLFormElement",
-    "Node",
-    "Element",
-    "Document",
-    "Window",
-    "Infinity",
-    "NaN",
-    "Fragment",
-    "Promise",
-    "Boolean",
-  ]);
-
-  const safeProxies = scope.__safeProxies as
-    | Record<string, Record<string, any>>
-    | undefined;
-
-  for (const identifier of foundIdentifiers) {
-    if (skipList.has(identifier)) continue;
-    if (identifier in scope) continue;
-
-    if (safeProxies) {
-      let provided = false;
-      for (const proxy of Object.values(safeProxies)) {
-        const value = proxy[identifier];
-        if (value !== undefined) {
-          scope[identifier] = value;
-          provided = true;
-          break;
-        }
-      }
-      if (provided) continue;
-    }
-
-    scope[identifier] = createFallbackIcon(identifier);
-  }
+  patchScopeForMissingIdentifiersImpl(code, scope, {
+    logPrefix: "[DynamicReact]",
+  });
 }
 
 // ---------------------------------------------------------------------------

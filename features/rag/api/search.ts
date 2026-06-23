@@ -37,6 +37,8 @@ export interface RagSearchResponse {
 
 export interface RagSearchFilters {
   organization_id?: string | null;
+  /** Restrict hits to sources tagged with these scope ids. */
+  scope_ids?: string[] | null;
   source_kinds?: ("cld_file" | "note" | "code_file")[];
 }
 
@@ -50,6 +52,11 @@ export interface RagSearchRequest {
   use_hyde?: boolean;
   use_mmr?: boolean;
   filters?: RagSearchFilters;
+  /**
+   * Restrict hits to sources tagged with these scope ids. Mirrors
+   * `filters.scope_ids` — both are accepted by the backend.
+   */
+  scope_ids?: string[] | null;
   /**
    * Scope the search to one curated data store. When set, only chunks
    * from that store's members are returned.

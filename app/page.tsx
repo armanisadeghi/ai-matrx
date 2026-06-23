@@ -1,29 +1,31 @@
-import React from 'react';
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { Lock, Shield, Zap, Workflow } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { LandingCTAs } from '@/features/landing/components/LandingCTAs';
-import { AuthAwareButton } from '@/features/landing/components/AuthAwareButton';
+import React from "react";
+import { Metadata } from "next";
+import Link from "next/link";
+import { Lock, Shield, Zap, Workflow } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LandingCTAs } from "@/features/landing/components/LandingCTAs";
+import { AuthAwareButton } from "@/features/landing/components/AuthAwareButton";
 
 // Enhanced metadata for SEO
 export const metadata: Metadata = {
-  title: 'AI Matrx - Enterprise AI Platform | By Invitation Only',
-  description: 'Join the future of enterprise AI. AI Matrx is an exclusive, invitation-only platform for building sophisticated AI applications without code. Request your invitation today.',
+  title: "AI Matrx - Enterprise AI Platform | By Invitation Only",
+  description:
+    "Join the future of enterprise AI. AI Matrx is an exclusive, invitation-only platform for building sophisticated AI applications without code. Request your invitation today.",
   keywords: [
-    'AI Matrx',
-    'Enterprise AI',
-    'No-Code AI Platform',
-    'Invitation Only',
-    'Exclusive AI Platform',
-    'Business Automation',
-    'AI Innovation',
-    'Enterprise Software',
+    "AI Matrx",
+    "Enterprise AI",
+    "No-Code AI Platform",
+    "Invitation Only",
+    "Exclusive AI Platform",
+    "Business Automation",
+    "AI Innovation",
+    "Enterprise Software",
   ],
   openGraph: {
-    title: 'AI Matrx - Enterprise AI Platform | By Invitation Only',
-    description: 'Join the future of enterprise AI. Exclusive, invitation-only access to the most advanced no-code AI platform.',
-    type: 'website',
+    title: "AI Matrx - Enterprise AI Platform | By Invitation Only",
+    description:
+      "Join the future of enterprise AI. Exclusive, invitation-only access to the most advanced no-code AI platform.",
+    type: "website",
   },
   robots: {
     index: true,
@@ -40,7 +42,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
         </div>
-        
+
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 lg:py-32">
           {/* Status Badge */}
           <div className="flex justify-center mb-8">
@@ -62,10 +64,11 @@ export default function LandingPage() {
                 </span>
               </span>
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Build sophisticated AI applications without code. Join a select group of innovators 
-              shaping the next generation of business intelligence.
+              Build sophisticated AI applications without code. Join a select
+              group of innovators shaping the next generation of business
+              intelligence.
             </p>
           </div>
 
@@ -117,8 +120,8 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-6 border-t border-zinc-200 dark:border-zinc-800 relative z-10">
         <div className="container mx-auto px-4 text-center">
-          <Link 
-            href="/privacy-policy" 
+          <Link
+            href="/privacy-policy"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Privacy Policy
@@ -130,25 +133,30 @@ export default function LandingPage() {
 }
 
 // Feature Card Component (SSR)
-function FeatureCard({ 
-  icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
+function FeatureCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
   description: string;
 }) {
   return (
-    <div className="group relative p-6 rounded-2xl bg-card border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 hover:shadow-lg">
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+    <div className="@container group relative p-6 rounded-2xl bg-card border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300 hover:shadow-lg">
+      {/* Two-column grid: icon | content. When the card itself gets narrow
+          (cramped 3-col range, not mobile) the description drops to a full
+          row below the icon+title instead of squishing beside the icon. */}
+      <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-2">
+        <div className="flex-shrink-0 p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300 @[19rem]:row-span-2">
           {icon}
         </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-2">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-        </div>
+        <h3 className="text-lg font-semibold self-center @[19rem]:self-auto">
+          {title}
+        </h3>
+        <p className="col-span-2 text-sm text-muted-foreground leading-relaxed @[19rem]:col-span-1 @[19rem]:col-start-2">
+          {description}
+        </p>
       </div>
     </div>
   );

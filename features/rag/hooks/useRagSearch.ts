@@ -10,13 +10,14 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ragSearch,
   type RagSearchFilters,
   type RagSearchHit,
   type RagSearchResponse,
 } from "@/features/rag/api/search";
+import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
 
 export interface UseRagSearchState {
   query: string;
@@ -41,6 +42,8 @@ export interface UseRagSearchOptions {
    * lower precision). Default true.
    */
   rerank?: boolean;
+  /** Merge Surface-A org/scope selections into the request. Default true. */
+  useActiveContext?: boolean;
 }
 
 const INITIAL: UseRagSearchState = {
@@ -60,7 +63,19 @@ export function useRagSearch(opts: UseRagSearchOptions): UseRagSearchState {
     filters,
     limit = 12,
     rerank = true,
+    useActiveContext = true,
   } = opts;
+
+  const activeContextPayload = useRagSearchContext(
+    useActiveContext ? filters : undefined,
+  );
+
+  const requestContext = useMemo(() => {
+    if (!useActiveContext) {
+      return filters ? { filters } : {};
+    }
+    return activeContextPayload;
+  }, [useActiveContext, filters, activeContextPayload]);
 
   const [state, setState] = useState<UseRagSearchState>(INITIAL);
   const reqIdRef = useRef(0);
@@ -68,9 +83,6 @@ export function useRagSearch(opts: UseRagSearchOptions): UseRagSearchState {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < minLength) {
-      // Reset only when the user clears the box; keep the prior result
-      // visible while they're typing toward a new query, so the UI
-      // doesn't flash empty between keystrokes.
       if (trimmed.length === 0 && state.hits.length > 0) {
         setState(INITIAL);
       }
@@ -83,10 +95,9 @@ export function useRagSearch(opts: UseRagSearchOptions): UseRagSearchState {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
         const res: RagSearchResponse = await ragSearch(
-          { query: trimmed, limit, rerank, filters },
+          { query: trimmed, limit, rerank, ...requestContext },
           { signal: ac.signal },
         );
-        // Drop the response if a newer search has been kicked off.
         if (myReqId !== reqIdRef.current) return;
         setState({
           query: res.query,
@@ -113,10 +124,15 @@ export function useRagSearch(opts: UseRagSearchOptions): UseRagSearchState {
       window.clearTimeout(handle);
       ac.abort();
     };
-    // We intentionally exclude `state.hits.length` from the dep array —
-    // it only matters at initial-clear and reading it would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, minLength, debounceMs, limit, rerank, JSON.stringify(filters)]);
+  }, [
+    query,
+    minLength,
+    debounceMs,
+    limit,
+    rerank,
+    JSON.stringify(requestContext),
+  ]);
 
   return state;
 }

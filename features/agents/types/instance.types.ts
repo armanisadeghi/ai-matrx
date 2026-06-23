@@ -102,7 +102,9 @@ export type SourceFeature =
   /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
   | "project-create"
   /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
-  | "task-create";
+  | "task-create"
+  /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
+  | "rag-search";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

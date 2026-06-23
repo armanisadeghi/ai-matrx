@@ -7,6 +7,10 @@
 
 import React from "react";
 import type { Json } from "@/types/database.types";
+import {
+  createFallbackIcon,
+  patchScopeForMissingIdentifiers as patchScopeForMissingIdentifiersImpl,
+} from "@/features/agent-apps/utils/patch-scope-identifiers";
 
 function coerceAllowedImportPaths(
   value: Json | null | undefined | string[],
@@ -55,6 +59,12 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     loader: () => require("lucide-react"),
     scopeStrategy: "spread", // All Lucide icons available directly
     safeProxy: true, // Wrap in proxy to return fallback for non-existent icons
+  },
+  {
+    path: "@/components/official/icons/IconResolver",
+    loader: () => require("@/components/official/icons/IconResolver"),
+    scopeStrategy: "named",
+    exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
   },
   {
     path: "@/components/Markdown",
@@ -170,45 +180,6 @@ export function getDefaultImportsForNewApps(): string[] {
 }
 
 /**
- * Creates a fallback icon component for non-existent Lucide icons.
- * Instead of crashing when AI code references an icon that doesn't exist,
- * this renders a subtle placeholder that indicates something is missing.
- */
-function createFallbackIcon(iconName: string) {
-  const FallbackIcon = React.forwardRef<
-    SVGSVGElement,
-    React.SVGProps<SVGSVGElement> & { size?: number | string }
-  >(({ size = 24, className, ...props }, ref) => {
-    return React.createElement(
-      "svg",
-      {
-        ref,
-        xmlns: "http://www.w3.org/2000/svg",
-        width: size,
-        height: size,
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: "currentColor",
-        strokeWidth: 2,
-        strokeLinecap: "round",
-        strokeLinejoin: "round",
-        className,
-        "data-missing-icon": iconName,
-        ...props,
-      },
-      // Simple "?" circle as fallback
-      React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
-      React.createElement("path", {
-        d: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3",
-      }),
-      React.createElement("line", { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
-    );
-  });
-  FallbackIcon.displayName = `MissingIcon(${iconName})`;
-  return FallbackIcon;
-}
-
-/**
  * Cache for safe proxy modules - avoids re-creating on every scope build
  */
 const safeProxyCache = new Map<string, Record<string, any>>();
@@ -315,6 +286,10 @@ export function buildComponentScope(
           // Store the proxy so patchScopeForMissingIdentifiers can use it
           if (!scope.__safeProxies) scope.__safeProxies = {};
           scope.__safeProxies[config.path] = safeModule;
+          if (!scope.__safeProxyModuleKeys) scope.__safeProxyModuleKeys = {};
+          scope.__safeProxyModuleKeys[config.path] = new Set(
+            Object.keys(module),
+          );
         } else {
           // Add all exports directly to scope
           Object.assign(scope, module);
@@ -351,122 +326,30 @@ export function buildComponentScope(
     scope.Markdown = scope.MarkdownStream;
   }
 
+  // Official DynamicIcon — always available in sandboxed components so authors
+  // can render any icon by name without importing each Lucide export.
+  if (!scope.DynamicIcon) {
+    try {
+      const iconResolver = require("@/components/official/icons/IconResolver");
+      scope.DynamicIcon = iconResolver.DynamicIcon;
+      scope.renderIcon = iconResolver.renderIcon;
+      scope.getIconComponent = iconResolver.getIconComponent;
+    } catch {
+      // Non-fatal — lucide spread + safe proxy still work
+    }
+  }
+
   return scope;
 }
 
 /**
- * Scans transformed code for PascalCase identifiers (potential component/icon references)
- * that are not already in scope, and adds fallback components for them.
- *
- * This prevents ReferenceError crashes when AI-generated code uses icons that don't exist
- * in lucide-react or references components that aren't available.
- *
- * @param code - The Babel-transformed code string
- * @param scope - The current scope object (will be mutated to add fallbacks)
+ * Scans transformed JSX for component references missing from scope.
  */
 export function patchScopeForMissingIdentifiers(
   code: string,
   scope: Record<string, any>,
 ): void {
-  // Strip string literals before scanning so we don't match capitalized words
-  // inside strings (e.g., "State Regulatory Research" would falsely match
-  // "State", "Regulatory", "Research" as potential component identifiers)
-  const codeForScanning = code
-    .replace(/"(?:[^"\\]|\\.)*"/g, '""') // double-quoted strings
-    .replace(/'(?:[^'\\]|\\.)*'/g, "''") // single-quoted strings
-    .replace(/`(?:[^`\\]|\\.)*`/gs, "``"); // template literals
-
-  // Extract all PascalCase identifiers from the code that might be component references
-  // Matches: standalone identifiers like MyIcon, React.createElement(MyIcon, ...), <MyIcon />
-  const identifierRegex = /\b([A-Z][a-zA-Z0-9]*)\b/g;
-  const foundIdentifiers = new Set<string>();
-
-  let match;
-  while ((match = identifierRegex.exec(codeForScanning)) !== null) {
-    foundIdentifiers.add(match[1]);
-  }
-
-  // Known non-component PascalCase identifiers to skip
-  const skipList = new Set([
-    "React",
-    "Object",
-    "Array",
-    "String",
-    "Number",
-    "Boolean",
-    "Date",
-    "Math",
-    "JSON",
-    "Promise",
-    "Error",
-    "TypeError",
-    "RangeError",
-    "RegExp",
-    "Map",
-    "Set",
-    "WeakMap",
-    "WeakSet",
-    "Symbol",
-    "Proxy",
-    "Reflect",
-    "Intl",
-    "URL",
-    "FormData",
-    "Headers",
-    "Request",
-    "Response",
-    "AbortController",
-    "HTMLElement",
-    "SVGElement",
-    "Event",
-    "MouseEvent",
-    "KeyboardEvent",
-    "HTMLInputElement",
-    "HTMLTextAreaElement",
-    "HTMLSelectElement",
-    "HTMLButtonElement",
-    "HTMLDivElement",
-    "HTMLFormElement",
-    "Node",
-    "Element",
-    "Document",
-    "Window",
-    "Infinity",
-    "NaN",
-    "undefined",
-    "null",
-  ]);
-
-  // Check each identifier against the scope
-  const safeProxies = scope.__safeProxies as
-    | Record<string, Record<string, any>>
-    | undefined;
-
-  for (const identifier of foundIdentifiers) {
-    if (skipList.has(identifier)) continue;
-    if (identifier in scope) continue; // Already in scope
-
-    // Check if any safe proxy can provide this identifier
-    if (safeProxies) {
-      let provided = false;
-      for (const proxy of Object.values(safeProxies)) {
-        const value = proxy[identifier];
-        if (value !== undefined) {
-          scope[identifier] = value;
-          provided = true;
-          break;
-        }
-      }
-      if (provided) continue;
-    }
-
-    // If no proxy provided it and it looks like a component name,
-    // create a generic fallback to prevent ReferenceError
-    console.warn(
-      `[AgentApp] Unknown identifier "${identifier}" in component code. Injecting fallback.`,
-    );
-    scope[identifier] = createFallbackIcon(identifier);
-  }
+  patchScopeForMissingIdentifiersImpl(code, scope, { logPrefix: "[AgentApp]" });
 }
 
 /**
@@ -502,7 +385,10 @@ export function isImportAllowed(importPath: string): boolean {
 export function getImportDescription(importPath: string): string {
   const descriptions: Record<string, string> = {
     react: "React core (useState, useEffect, useMemo, useCallback, useRef)",
-    "lucide-react": "Lucide icons (all icons available)",
+    "lucide-react":
+      "Lucide icons (all icons available) + use DynamicIcon for any name",
+    "@/components/official/icons/IconResolver":
+      "DynamicIcon — resolve any Lucide/custom icon by string name without importing each icon",
     "@/components/Markdown":
       "MarkdownStream component for rendering markdown (legacy path)",
     "@/components/markdown":

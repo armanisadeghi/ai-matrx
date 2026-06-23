@@ -30,6 +30,14 @@ export interface UseSimulatedToolEntryOptions {
    * in-flight timers from the previous run.
    */
   playKey: number;
+  /**
+   * Playback rate multiplier. Every step's `afterMs` is divided by this, so
+   * `2` plays the tool stream twice as fast, `0.5` half-speed. Defaults to 1.
+   * Captured at the start of a run (on `playKey` change) — changing it mid-run
+   * does NOT rescale timers already scheduled; bump `playKey` to apply a new
+   * rate. Clamped to a sane floor so it can never divide by zero / go negative.
+   */
+  speed?: number;
 }
 
 /** The pre-stream resting state of the entry, derived from the recording. */
@@ -61,7 +69,10 @@ export function useSimulatedToolEntry(
   recording: StreamRecording | null,
   opts: UseSimulatedToolEntryOptions,
 ): ToolLifecycleEntry {
-  const { playKey } = opts;
+  const { playKey, speed } = opts;
+  // Snapshot the rate for this run. Floor at 0.05 so a stray 0/negative can
+  // never stall or invert playback. Re-read on every `playKey` change.
+  const rate = !speed || speed <= 0 ? 1 : speed;
   const [entry, setEntry] = useState<ToolLifecycleEntry>(() =>
     buildInitialEntry(recording),
   );
@@ -142,7 +153,7 @@ export function useSimulatedToolEntry(
             events,
           };
         });
-      }, step.afterMs);
+      }, step.afterMs / rate);
       timersRef.current.push(handle);
     }
 
@@ -150,8 +161,10 @@ export function useSimulatedToolEntry(
       for (const t of timersRef.current) clearTimeout(t);
       timersRef.current = [];
     };
-    // Re-run whenever the user presses Play/Replay or the recording changes.
-  }, [playKey, recording]);
+    // Re-run whenever the user presses Play/Replay, changes the rate, or the
+    // recording changes. `rate` is in deps so a Play after changing speed picks
+    // up the new multiplier (mid-run changes still require a Play/Replay).
+  }, [playKey, recording, rate]);
 
   return entry;
 }
