@@ -7,9 +7,13 @@
  * This is NOT an editor — opening a file dispatches openCodeEditorWindow so
  * editing happens in the dedicated CodeEditorWindow.
  *
- * Structure:
- *   - Left sidebar: Folder tree with counts + root "Unfiled" bucket.
- *   - Main panel: Toolbar (search, new, sort) + file list for the selected folder.
+ * Structure (thin composition root — chrome lives in WindowPanel slots, not
+ * stacked bars inside the body):
+ *   - sidebar      → Folder tree with counts + root "Unfiled" bucket.
+ *   - actionsRight → Search + sort + New (persistent header controls).
+ *   - footerLeft   → Folder context + file count.
+ *   - footerRight  → Selection actions (Open / Delete / Clear), selection-gated.
+ *   - body         → ONLY the scrollable file list for the selected folder.
  *
  * All state + actions flow through useCodeFileManager. Redux owns persistence.
  */
@@ -204,7 +208,13 @@ export function CodeFileManagerWindow({
     </div>
   );
 
-  // ── Body ──────────────────────────────────────────────────────────────────
+  // ── Header / footer slots ──────────────────────────────────────────────────
+  // Global chrome lives in WindowPanel slots, not stacked bars inside the body:
+  //   - actionsRight → search + sort + New      (persistent window controls)
+  //   - footerLeft   → folder context + count   (status, like NoteMetadataBar)
+  //   - footerRight  → selection actions        (only when files are selected)
+  // The body holds ONLY the scrollable file list. All controls read/write the
+  // `mgr` hook (owned here, the composition root) — no state hoisting needed.
   const selectedFolderName =
     mgr.selectedFolderId === null
       ? mgr.searchQuery
@@ -212,6 +222,77 @@ export function CodeFileManagerWindow({
         : "Unfiled"
       : (mgr.folders.find((f) => f.id === mgr.selectedFolderId)?.name ??
         "Folder");
+
+  const headerActions = (
+    <div className="flex items-center gap-1.5">
+      <div className="relative w-44">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={mgr.searchQuery}
+          onChange={(e) => mgr.setSearchQuery(e.target.value)}
+          placeholder="Search files…"
+          className="w-full pl-7 pr-2 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
+        />
+      </div>
+      <SortButton value={mgr.sortBy} onChange={mgr.setSortBy} />
+      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+      <button
+        type="button"
+        onClick={handleCreateNewFile}
+        className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+        title="New file"
+      >
+        <FilePlus className="h-3.5 w-3.5" />
+        New
+      </button>
+    </div>
+  );
+
+  const folderContext = (
+    <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 min-w-0 truncate">
+      <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">{selectedFolderName}</span>
+      <span className="text-gray-400 dark:text-gray-600">
+        ({mgr.visibleFiles.length})
+      </span>
+    </div>
+  );
+
+  const selectionActions =
+    mgr.selectedFileIds.length > 0 ? (
+      <div className="flex items-center gap-1">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {mgr.selectedFileIds.length} selected
+        </span>
+        <button
+          type="button"
+          onClick={handleOpenSelected}
+          className="px-2 py-0.5 text-[11px] rounded bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          Open
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setConfirmDelete({
+              kind: "selection",
+              label: `${mgr.selectedFileIds.length} file(s)`,
+            })
+          }
+          className="px-2 py-0.5 text-[11px] rounded bg-rose-600 hover:bg-rose-700 text-white"
+        >
+          Delete
+        </button>
+        <button
+          type="button"
+          onClick={mgr.clearFileSelection}
+          className="px-2 py-0.5 text-[11px] rounded border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          Clear
+        </button>
+      </div>
+    ) : undefined;
 
   return (
     <>
@@ -230,120 +311,52 @@ export function CodeFileManagerWindow({
         sidebarMinSize={160}
         sidebarExpandsWindow
         defaultSidebarOpen={true}
-        bodyClassName="p-0 overflow-hidden"
+        actionsRight={headerActions}
+        footerLeft={folderContext}
+        footerRight={selectionActions}
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       >
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Toolbar */}
-          <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0">
-            <div className="flex-1 min-w-0 relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={mgr.searchQuery}
-                onChange={(e) => mgr.setSearchQuery(e.target.value)}
-                placeholder="Search files…"
-                className="w-full pl-7 pr-2 py-1 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 dark:text-gray-100"
-              />
+        {/* Body = content only: the scrollable file list. */}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-950">
+          {mgr.isLoadingList ? (
+            <div className="flex items-center justify-center h-full text-sm text-gray-400 gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading files…
             </div>
-            <SortButton value={mgr.sortBy} onChange={mgr.setSortBy} />
-            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5" />
-            <button
-              type="button"
-              onClick={handleCreateNewFile}
-              className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              title="New file"
-            >
-              <FilePlus className="h-3.5 w-3.5" />
-              New
-            </button>
-          </div>
-
-          {/* Folder title + selection actions */}
-          <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 shrink-0">
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{selectedFolderName}</span>
-              <span className="text-gray-400 dark:text-gray-600">
-                ({mgr.visibleFiles.length})
-              </span>
-            </div>
-            {mgr.selectedFileIds.length > 0 ? (
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {mgr.selectedFileIds.length} selected
-                </span>
-                <button
-                  type="button"
-                  onClick={handleOpenSelected}
-                  className="px-2 py-0.5 text-[11px] rounded bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Open
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
+          ) : mgr.visibleFiles.length === 0 ? (
+            <EmptyFileList
+              searching={!!mgr.searchQuery}
+              folderEmpty={mgr.allFilesCount === 0}
+              onNewFile={handleCreateNewFile}
+            />
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {mgr.visibleFiles.map((file) => (
+                <FileRow
+                  key={file.id}
+                  file={file}
+                  selected={mgr.selectedFileIds.includes(file.id)}
+                  onToggleSelect={() => mgr.toggleFileSelection(file.id)}
+                  onOpen={() => handleOpenFile(file)}
+                  onRename={() => {
+                    setRenameDialog({
+                      kind: "file",
+                      id: file.id,
+                      current: file.name,
+                    });
+                    setRenameValue(file.name);
+                  }}
+                  onDelete={() =>
                     setConfirmDelete({
-                      kind: "selection",
-                      label: `${mgr.selectedFileIds.length} file(s)`,
+                      kind: "file",
+                      id: file.id,
+                      label: file.name,
                     })
                   }
-                  className="px-2 py-0.5 text-[11px] rounded bg-rose-600 hover:bg-rose-700 text-white"
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  onClick={mgr.clearFileSelection}
-                  className="px-2 py-0.5 text-[11px] rounded border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Clear
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          {/* File list */}
-          <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-950">
-            {mgr.isLoadingList ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-400 gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading files…
-              </div>
-            ) : mgr.visibleFiles.length === 0 ? (
-              <EmptyFileList
-                searching={!!mgr.searchQuery}
-                folderEmpty={mgr.allFilesCount === 0}
-                onNewFile={handleCreateNewFile}
-              />
-            ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {mgr.visibleFiles.map((file) => (
-                  <FileRow
-                    key={file.id}
-                    file={file}
-                    selected={mgr.selectedFileIds.includes(file.id)}
-                    onToggleSelect={() => mgr.toggleFileSelection(file.id)}
-                    onOpen={() => handleOpenFile(file)}
-                    onRename={() => {
-                      setRenameDialog({
-                        kind: "file",
-                        id: file.id,
-                        current: file.name,
-                      });
-                      setRenameValue(file.name);
-                    }}
-                    onDelete={() =>
-                      setConfirmDelete({
-                        kind: "file",
-                        id: file.id,
-                        label: file.name,
-                      })
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                />
+              ))}
+            </div>
+          )}
         </div>
       </WindowPanel>
 

@@ -51,6 +51,66 @@ interface DraftRow {
 }
 
 export function SharedContextWindow({ id, onClose }: SharedContextWindowProps) {
+  const composer = useSharedContextComposer();
+  const { previewEntries, previewKeys, handleUpdateValue, handleRemove } =
+    composer;
+
+  return (
+    <WindowPanel
+      id={id}
+      title="Shared context (all columns)"
+      width={460}
+      height={520}
+      onClose={onClose}
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      // Read-only "where does this apply" status — header chrome, not body
+      // content. Self-contained (reads its own selector), the NoteMetadataBar
+      // pattern.
+      actionsRight={<SharedContextScopeStatus />}
+      // The "Add new key" composer is a window-level action bar, not body
+      // content — it lives in the footer slot. Because the footer is a sibling
+      // of the body, its draft/error state is hoisted into useSharedContextComposer
+      // (the window root), mirroring FeedbackWindow's useFeedbackForm.
+      footer={<SharedContextComposerFooter composer={composer} />}
+    >
+      <ActiveScopeReadout />
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {previewKeys.length === 0 ? (
+          <div className="px-3 py-2 text-[11px] text-muted-foreground border border-dashed border-border rounded-md text-center">
+            No shared context yet.
+          </div>
+        ) : (
+          previewKeys.map((key) => {
+            const entry = previewEntries[key];
+            const text =
+              typeof entry.value === "string"
+                ? entry.value
+                : JSON.stringify(entry.value);
+            return (
+              <SharedContextRow
+                key={key}
+                entryKey={key}
+                initialValue={text}
+                onCommit={(v) => handleUpdateValue(key, v)}
+                onRemove={() => handleRemove(key)}
+              />
+            );
+          })
+        )}
+      </div>
+    </WindowPanel>
+  );
+}
+
+// ─── useSharedContextComposer — hoisted shared state ──────────────────────────
+// Owns the broadcast preview + the "Add new key" draft/error state + dispatches
+// so the WindowPanel root can feed both the body (preview rows) and the footer
+// slot (the composer). Mirrors FeedbackWindow's `useFeedbackForm`.
+
+type SharedContextComposerState = ReturnType<typeof useSharedContextComposer>;
+
+function useSharedContextComposer() {
   const dispatch = useAppDispatch();
   const columns = useAppSelector(selectBattleColumns);
 
@@ -73,6 +133,8 @@ export function SharedContextWindow({ id, onClose }: SharedContextWindowProps) {
 
   const [draft, setDraft] = useState<DraftRow>({ key: "", value: "" });
   const [error, setError] = useState<string | null>(null);
+
+  const submittableCount = columns.filter((c) => c.agentId).length;
 
   const handleAdd = () => {
     const trimmedKey = draft.key.trim();
@@ -111,93 +173,113 @@ export function SharedContextWindow({ id, onClose }: SharedContextWindowProps) {
     dispatch(broadcastRemoveContextEntry({ key }));
   };
 
+  return {
+    previewEntries,
+    previewKeys,
+    submittableCount,
+    draft,
+    setDraft,
+    error,
+    setError,
+    handleAdd,
+    handleUpdateValue,
+    handleRemove,
+  };
+}
+
+// ─── SharedContextComposerFooter — footer slot ────────────────────────────────
+// The "Add new key" action bar. Identical behavior to the former in-body
+// composer (key validation, error display, dispatch-on-add, input clearing) —
+// it just lives in the WindowPanel footer slot now.
+
+function SharedContextComposerFooter({
+  composer,
+}: {
+  composer: SharedContextComposerState;
+}) {
+  const { submittableCount, draft, setDraft, error, setError, handleAdd } =
+    composer;
+
+  // The footer slot wrapper forces `select-none` and `[&_button]:h-5` on its
+  // subtree (house style for icon-button footers). This composer has real text
+  // inputs and a normal-height Add button, so re-assert `select-text` and the
+  // button height here to keep behavior + appearance identical to the original.
+  return (
+    <div className="w-full py-1 select-text">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+        Add new key
+      </div>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="text"
+          value={draft.key}
+          onChange={(e) => {
+            setDraft({ ...draft, key: e.target.value });
+            setError(null);
+          }}
+          placeholder="key_name"
+          className="w-[140px] text-[11px] font-mono bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
+        />
+        <input
+          type="text"
+          value={draft.value}
+          onChange={(e) => setDraft({ ...draft, value: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleAdd();
+          }}
+          placeholder="value"
+          className="flex-1 min-w-0 text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
+        />
+        <Button
+          size="sm"
+          variant="default"
+          onClick={handleAdd}
+          disabled={submittableCount === 0}
+          className="!h-7 shrink-0"
+        >
+          <Plus className="w-3 h-3" />
+          Add
+        </Button>
+      </div>
+      {error && (
+        <div className="mt-1 text-[10px] text-destructive">{error}</div>
+      )}
+    </div>
+  );
+}
+
+// ─── SharedContextScopeStatus — header status chip ───────────────────────────
+// Read-only "where do edits apply" indicator. Self-contained (reads its own
+// selector — the NoteMetadataBar pattern), so the header slot owns it without
+// threading the count down from the root. Replaces the in-body info banner;
+// the full sentence is preserved verbatim as the chip's tooltip.
+
+function SharedContextScopeStatus() {
+  const columns = useAppSelector(selectBattleColumns);
   const submittableCount = columns.filter((c) => c.agentId).length;
 
+  const tooltip =
+    submittableCount === 0
+      ? "Add at least one column with an agent selected — context broadcasts to every column at once."
+      : `Edits apply to all ${submittableCount} configured column${
+          submittableCount === 1 ? "" : "s"
+        }.`;
+
   return (
-    <WindowPanel
-      id={id}
-      title="Shared context (all columns)"
-      width={460}
-      height={520}
-      onClose={onClose}
+    <span
+      title={tooltip}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+        submittableCount === 0
+          ? "bg-muted/40 text-muted-foreground"
+          : "bg-primary/10 text-primary",
+      )}
     >
-      <div className="h-full flex flex-col">
-        <div className="px-3 py-2 border-b border-border text-[11px] text-muted-foreground bg-muted/20">
-          {submittableCount === 0
-            ? "Add at least one column with an agent selected — context broadcasts to every column at once."
-            : `Edits apply to all ${submittableCount} configured column${
-                submittableCount === 1 ? "" : "s"
-              }.`}
-        </div>
-
-        <ActiveScopeReadout />
-
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {previewKeys.length === 0 ? (
-            <div className="px-3 py-2 text-[11px] text-muted-foreground border border-dashed border-border rounded-md text-center">
-              No shared context yet.
-            </div>
-          ) : (
-            previewKeys.map((key) => {
-              const entry = previewEntries[key];
-              const text = typeof entry.value === "string"
-                ? entry.value
-                : JSON.stringify(entry.value);
-              return (
-                <SharedContextRow
-                  key={key}
-                  entryKey={key}
-                  initialValue={text}
-                  onCommit={(v) => handleUpdateValue(key, v)}
-                  onRemove={() => handleRemove(key)}
-                />
-              );
-            })
-          )}
-        </div>
-
-        <div className="shrink-0 border-t border-border bg-card/40 p-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
-            Add new key
-          </div>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="text"
-              value={draft.key}
-              onChange={(e) => {
-                setDraft({ ...draft, key: e.target.value });
-                setError(null);
-              }}
-              placeholder="key_name"
-              className="w-[140px] text-[11px] font-mono bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
-            />
-            <input
-              type="text"
-              value={draft.value}
-              onChange={(e) => setDraft({ ...draft, value: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAdd();
-              }}
-              placeholder="value"
-              className="flex-1 min-w-0 text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
-            />
-            <Button
-              size="sm"
-              variant="default"
-              onClick={handleAdd}
-              disabled={submittableCount === 0}
-              className="h-7"
-            >
-              <Plus className="w-3 h-3" />
-              Add
-            </Button>
-          </div>
-          {error && (
-            <div className="mt-1 text-[10px] text-destructive">{error}</div>
-          )}
-        </div>
-      </div>
-    </WindowPanel>
+      <Layers className="w-3 h-3" />
+      {submittableCount === 0
+        ? "No columns"
+        : `${submittableCount} column${submittableCount === 1 ? "" : "s"}`}
+    </span>
   );
 }
 
