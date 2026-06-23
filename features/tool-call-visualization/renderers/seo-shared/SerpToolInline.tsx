@@ -84,7 +84,7 @@ export function SerpToolInline({
               // ONE surface (bg-card) — status is a thin left accent + the
               // footer chips, never a full background tint (that two-toned
               // against the white SERP block).
-              "animate-in fade-in slide-in-from-left rounded-lg border border-border border-l-[3px] bg-card p-3",
+              "animate-in fade-in slide-in-from-left rounded-lg border border-border border-l-[3px] bg-card px-3 py-2",
               entry.overallOk ? "border-l-success" : "border-l-warning",
             )}
             style={{
@@ -101,7 +101,7 @@ export function SerpToolInline({
               placeholderTitle={titlePlaceholder}
               placeholderDescription={descriptionPlaceholder}
             />
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border pt-2">
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border pt-1">
               <div className="flex items-center gap-2">
                 {entry.overallOk ? (
                   <CheckCircle className="h-3.5 w-3.5 shrink-0 text-success" />
