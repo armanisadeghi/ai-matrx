@@ -54,6 +54,7 @@ import type { LibraryChunkPreview } from "@/features/rag/types/library";
 import type { StageName } from "@/features/rag/api/stages";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
+import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 
 export interface LibraryDocDetailSheetProps {
   processedDocumentId: string | null;
@@ -416,6 +417,7 @@ export function LibraryDocDetailSheet({
             >
               <TabsList className="mx-6 mt-3 self-start">
                 <TabsTrigger value="stages">Stages</TabsTrigger>
+                <TabsTrigger value="assets">Knowledge Asset</TabsTrigger>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="pages">
                   Pages ({doc.pagesPersisted})
@@ -534,6 +536,21 @@ export function LibraryDocDetailSheet({
                       </div>
                     )}
                   </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent
+                value="assets"
+                className="flex-1 min-h-0 mt-2 px-2 pb-6"
+              >
+                <ScrollArea className="h-full">
+                  <KnowledgeAssetPanel
+                    doc={{
+                      id: doc.id,
+                      name: doc.name,
+                      totalPages: doc.totalPages,
+                    }}
+                  />
                 </ScrollArea>
               </TabsContent>
 

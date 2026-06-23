@@ -22,12 +22,14 @@ features/rag/
 │   ├── document.ts                    GET  /api/document/*
 │   ├── ingest.ts                      POST /rag/ingest{,/stream}
 │   ├── search.ts                      POST /rag/search
-│   └── stages.ts                      POST /rag/library/{id}/{extract,clean,chunk,embed,run-all}
+│   ├── stages.ts                      POST /rag/library/{id}/{extract,clean,chunk,embed,run-all}
+│   └── derivations.ts                 GET/POST /rag/library/{id}/derivations · derive/{kind} · derive-runs/{id}/cancel
 │
 ├── hooks/                             ← all RAG-related React hooks
 │   ├── useDataStores.ts               data-stores CRUD + member management
 │   ├── useDocument.ts                 single-document fetch (chunks/lineage/pages)
 │   ├── useFileIngest.ts               kick a file through /rag/ingest with live progress
+│   ├── useKnowledgeAssetRunner.ts     per-op derivation runner (rollup + run/runAll/cancel, live counts)
 │   ├── useLibrary.ts                  library list + summary (auto-polling)
 │   ├── useProcessingRunner.ts         multi-job runner for stage + pipeline jobs
 │   ├── useRagSearch.ts                /rag/search with debounce + filters
@@ -61,6 +63,7 @@ features/rag/
     │   ├── IngestProgressDialog.tsx   files-side ingest dialog (uses useFileIngest)
     │   ├── ActiveJobsStrip.tsx        compact in-page strip for concurrent jobs
     │   ├── AnimatedKpiCard.tsx        animated count-up KPI tiles
+    │   ├── KnowledgeAssetPanel.tsx    Knowledge Asset Builder — derivation rollup + per-op build/rebuild/cancel + live activity (mounted in PdfStudioInspector "Assets" + LibraryDocDetailSheet "Knowledge Asset" tab)
     │   ├── StageAnimations.tsx        per-stage hero animations (extract/clean/chunk/embed)
     │   ├── StageStatusPills.tsx       4 stage-state pills (run-all + per-stage actions)
     │   ├── StatusBadge.tsx            doc-status pill
@@ -137,6 +140,7 @@ Curated, system-owned RAG content (canonical example: the **AMA Guides 5th Editi
 
 ## Change log
 
+- **2026-06-23 (knowledge assets)** — **Knowledge Asset Builder** added: an observable, controllable surface that builds the six premium derivations over an extracted doc. New `api/derivations.ts` (`fetchDerivations` / `runDeriveStream` / `cancelDeriveRun` — clones the `stages.ts` NDJSON stream shape; treats the backend's `phase:"error" + extra.cancelled` as a cooperative cancel, not a failure, and captures `run_id` from the `started` event for cancel). New `hooks/useKnowledgeAssetRunner.ts` (per-kind `OpState`, `Map<kind, AbortController>`, sequential `runAll` in canonical order `page_verification → table_row → multigranularity → page_image_caption → section_summary → synthetic_qa`; refreshes the rollup after each result so KPI counts climb live). New `components/library/KnowledgeAssetPanel.tsx` (responsive `AnimatedKpiCard`-style representation rollup + per-card Build/Rebuild/Cancel with inline progress + a rich "Live activity" strip per running op). Cancel aborts the fetch AND POSTs the cancel endpoint. Mounted in `PdfStudioInspector` ("Assets" section) and `LibraryDocDetailSheet` ("Knowledge Asset" tab). Backend live in aidream (`rag.py` derive endpoints + `services/knowledge_derivations.py`).
 - **2026-06-23 (surface wiring)** — `/rag/search` **Search tab** fully agent-wired to the `matrx-user/rag-search` surface. New pure `agent-context/buildRagSearchContextData.ts` maps live search state → `createRagSearchScope` (baselines `selection`/`content`/`context` + every manifest custom value: `query`, `data_store_id`, `data_store_name`, `source_kinds`, `admin_bypass_acl`, `rerank`, `multi_query`, `use_hyde`; plus additive result extras — `search_results`, `source_ids`, `result_scores`, `result_count`). `UnifiedAgentContextMenu` (modern `placementMode`, `content-block` hidden) now mounts on BOTH the editable search box (right-click + `onTextReplace`) and the presentational results panel (`isEditable={false}`). The search `<Input>` became `ProInput` (`startIcon`, `clearable`). No manifest/`ui_surface_value` change — all emitted values were already declared.
 - **2026-06-22 (agent chat)** — `/rag/search` **Agent Chat** tab rebuilt on the canonical managed-agent system. The hand-rolled chat (bespoke message state + custom tool-call rendering streaming from `ragAgentChatStream` / `/rag/search-lab/agent/chat`) was replaced with `useAgentLauncher` + `AgentConversationColumn` (same stack as `/chat` and the Projects "Use AI" tab). New registered surface `matrx-user/rag-search` (`features/surfaces/manifests/rag-search.manifest.ts` + `ui_surface`/`ui_surface_value` rows) hands the agent the page's retrieval scope (`data_store_id`, `data_store_name`, `source_kinds`, `admin_bypass_acl`, `rerank`, `multi_query`, `use_hyde`) via `runtime.surfaceName` + `applicationScope`. The RAG tool family (`rag_search`, `rag_search_data_store`, `rag_search_cross_doc`, `rag_list_data_stores`, `rag_get_data_store`, `rag_list_sources`, `rag_get_chunk`, `rag_verify_answer`) is armed on the conversation via `addedTools`. `SourceFeature` gained `"rag-search"`. `ragAgentChatStream` in `api/search-lab.ts` is now unused by this page.
 - **2026-06-22** — `/rag/search` Search Lab wires Surface-A working context: `ActiveContextPanel` in the scope sidebar (desktop + mobile drawer), `ActiveScopeChips` in the tab header, and `buildRagSearchContext` / `useRagSearchContext` pass `organization_id` + `scope_ids` into `POST /rag/search` (and `useRagSearch`). Project/task selections are shown in the picker but are **not** accepted by the RAG search API today. (see section above): `rag.data_store_grants` audience model (global / industry / opt-in), read-only-by-ownership-asymmetry, NER-off library ingest profile, `DataStorePublishPanel` + read-only treatment in `DataStoresPage`/`RichMemberTable`, `useDataStoreGrants`, grants/catalog endpoints, `data-stores-ext.ts` `"library"` kind. Paired with the new `features/industries/` taxonomy. Backend ACL branch + read-widening + `services/rag/library_grants.py`; DB migrations `0116`–`0119`.
