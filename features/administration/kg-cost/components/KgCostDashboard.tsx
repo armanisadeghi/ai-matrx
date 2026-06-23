@@ -24,6 +24,7 @@ import {
   Sparkles,
   Brain,
   FileText,
+  Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -413,6 +414,19 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
       .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
   };
 
+  const handleToggleSuggestionSweeps = (next: boolean) => {
+    void pref
+      .setSuggestionSweeps(next)
+      .then(() =>
+        toast.success(
+          next
+            ? "Scope-value suggestions enabled"
+            : "Scope-value suggestions disabled",
+        ),
+      )
+      .catch(() => toast.error("Couldn't update scope-value suggestions"));
+  };
+
   return (
     <section>
       <h3 className="mb-2 text-sm font-semibold">Auto-ingest controls</h3>
@@ -461,6 +475,32 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
               id="admin-org-non-pdf"
               checked={pref.indexNonPdf}
               onCheckedChange={handleToggleNonPdf}
+              disabled={!pref.enabled || pref.saving}
+            />
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5 min-w-0">
+              <Label htmlFor="admin-org-suggestion-sweeps" className="text-sm">
+                Suggest scope values from existing content
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                On = when a scope/field is added, suggest values from
+                already-indexed content. Always requires confirmation. Off by
+                default.
+              </p>
+            </div>
+          </div>
+          {pref.loading ? (
+            <Skeleton className="h-6 w-10" />
+          ) : (
+            <Switch
+              id="admin-org-suggestion-sweeps"
+              checked={pref.suggestionSweeps}
+              onCheckedChange={handleToggleSuggestionSweeps}
               disabled={!pref.enabled || pref.saving}
             />
           )}

@@ -26,6 +26,11 @@ export interface UseOrgAutoRagPreferenceResult {
    * transcripts, web scrapes, etc.). NULL/false = OFF (the default); PDFs are
    * always indexed regardless. */
   indexNonPdf: boolean;
+  /** Whether this org opts into suggestion sweeps — when a scope/field is
+   * added, an agent proposes back-filled value suggestions over already-
+   * extracted content. NULL/false = OFF (the default); suggestions always
+   * require confirmation. */
+  suggestionSweeps: boolean;
   /** Daily auto-ingest cap in USD (column default 5.00). */
   budgetUsd: number;
   /** Auto-ingest cost charged in the current 24h window. */
@@ -39,6 +44,7 @@ export interface UseOrgAutoRagPreferenceResult {
   error: string | null;
   setEnabled: (next: boolean) => Promise<void>;
   setIndexNonPdf: (next: boolean) => Promise<void>;
+  setSuggestionSweeps: (next: boolean) => Promise<void>;
   setBudgetUsd: (next: number) => Promise<void>;
 }
 
@@ -49,6 +55,7 @@ export function useOrgAutoRagPreference(
 ): UseOrgAutoRagPreferenceResult {
   const [enabled, setEnabledState] = useState(true); // column default is TRUE
   const [indexNonPdf, setIndexNonPdfState] = useState(false); // NULL/false = OFF default
+  const [suggestionSweeps, setSuggestionSweepsState] = useState(false); // NULL/false = OFF default
   const [budgetUsd, setBudgetState] = useState<number>(DEFAULT_BUDGET_USD);
   const [usedTodayUsd, setUsedTodayState] = useState<number>(0);
   const [windowStart, setWindowStart] = useState<string | null>(null);
@@ -68,7 +75,7 @@ export function useOrgAutoRagPreference(
         const { data, error: qErr } = await supabase
           .from("organization_preferences")
           .select(
-            "auto_rag_enabled, auto_index_non_pdf, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, daily_auto_rag_window_start",
+            "auto_rag_enabled, auto_index_non_pdf, suggestion_sweeps_enabled, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, daily_auto_rag_window_start",
           )
           .eq("organization_id", organizationId)
           .maybeSingle();
@@ -79,6 +86,8 @@ export function useOrgAutoRagPreference(
         setEnabledState(data?.auto_rag_enabled ?? true);
         // NULL/false both mean OFF — the org hasn't opted into non-PDF ingest.
         setIndexNonPdfState(data?.auto_index_non_pdf ?? false);
+        // NULL/false both mean OFF — the org hasn't opted into suggestion sweeps.
+        setSuggestionSweepsState(data?.suggestion_sweeps_enabled ?? false);
         setBudgetState(
           data?.daily_auto_rag_budget_usd ?? DEFAULT_BUDGET_USD,
         );
@@ -154,6 +163,35 @@ export function useOrgAutoRagPreference(
     [organizationId, indexNonPdf],
   );
 
+  const setSuggestionSweeps = useCallback(
+    async (next: boolean) => {
+      if (!organizationId) return;
+      setSaving(true);
+      const prev = suggestionSweeps;
+      setSuggestionSweepsState(next); // optimistic
+      try {
+        const { error: uErr } = await supabase
+          .from("organization_preferences")
+          .upsert(
+            {
+              organization_id: organizationId,
+              suggestion_sweeps_enabled: next,
+            },
+            { onConflict: "organization_id" },
+          );
+        if (uErr) throw uErr;
+        setError(null);
+      } catch (err) {
+        setSuggestionSweepsState(prev); // rollback
+        setError(extractErrorMessage(err));
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [organizationId, suggestionSweeps],
+  );
+
   const setBudgetUsd = useCallback(
     async (next: number) => {
       if (!organizationId) return;
@@ -192,6 +230,7 @@ export function useOrgAutoRagPreference(
   return {
     enabled,
     indexNonPdf,
+    suggestionSweeps,
     budgetUsd,
     usedTodayUsd,
     percentUsed,
@@ -201,6 +240,7 @@ export function useOrgAutoRagPreference(
     error,
     setEnabled,
     setIndexNonPdf,
+    setSuggestionSweeps,
     setBudgetUsd,
   };
 }

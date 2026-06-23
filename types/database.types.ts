@@ -12880,6 +12880,7 @@ export type Database = {
           daily_auto_rag_cost_used_usd: number
           daily_auto_rag_window_start: string
           organization_id: string
+          suggestion_sweeps_enabled: boolean | null
           updated_at: string
         }
         Insert: {
@@ -12890,6 +12891,7 @@ export type Database = {
           daily_auto_rag_cost_used_usd?: number
           daily_auto_rag_window_start?: string
           organization_id: string
+          suggestion_sweeps_enabled?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -12900,6 +12902,7 @@ export type Database = {
           daily_auto_rag_cost_used_usd?: number
           daily_auto_rag_window_start?: string
           organization_id?: string
+          suggestion_sweeps_enabled?: boolean | null
           updated_at?: string
         }
         Relationships: [

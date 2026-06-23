@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Brain,
   FileText,
+  Lightbulb,
   Loader2,
   Pencil,
   Wallet,
@@ -110,6 +111,19 @@ export function OrgPrivacyTab({
         ),
       )
       .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
+  };
+
+  const handleToggleSuggestionSweeps = (next: boolean) => {
+    void pref
+      .setSuggestionSweeps(next)
+      .then(() =>
+        toast.success(
+          next
+            ? "Scope-value suggestions enabled for this org"
+            : "Scope-value suggestions disabled for this org",
+        ),
+      )
+      .catch(() => toast.error("Couldn't update scope-value suggestions"));
   };
 
   const handleStartEditingBudget = () => {
@@ -209,6 +223,33 @@ export function OrgPrivacyTab({
                 id="org-non-pdf-switch"
                 checked={pref.indexNonPdf}
                 onCheckedChange={handleToggleNonPdf}
+                disabled={!canEdit || !pref.enabled || pref.saving}
+              />
+            )}
+          </div>
+
+          {/* ── Suggestion-sweeps toggle ────────────────────────────────── */}
+          <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-card/50 px-4 py-3">
+            <div className="flex items-start gap-2 min-w-0">
+              <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-0.5 min-w-0">
+                <Label htmlFor="org-suggestion-sweeps-switch" className="text-sm">
+                  Suggest scope values from existing content
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  When you add a new scope or field, automatically suggest
+                  values for it from content you&apos;ve already indexed.
+                  Suggestions always require your confirmation. Off by default.
+                </p>
+              </div>
+            </div>
+            {pref.loading ? (
+              <Skeleton className="h-6 w-10" />
+            ) : (
+              <Switch
+                id="org-suggestion-sweeps-switch"
+                checked={pref.suggestionSweeps}
+                onCheckedChange={handleToggleSuggestionSweeps}
                 disabled={!canEdit || !pref.enabled || pref.saving}
               />
             )}
