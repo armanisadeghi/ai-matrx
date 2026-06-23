@@ -132,8 +132,27 @@ Tier 2 items #6, #7, #8 from the original list are now confirmed:
 
 ---
 
+## 2026-06-23 — build-time re-audit (new findings since the 2026-04-28 analyzer run)
+
+Re-ran the static leak hunt (SA + verified by hand). The menu-class static leak
+that ballooned the build 15→24 min was found + fixed + **guarded** (eslint
+`canonicalMenuStaticImportBan` in `eslint.config.mjs`; see the `code-splitting`
+skill's "Build-time bloat" section). No new menu-class leaks; the root
+layout/provider chain is clean. **Two NEW build-time facts that post-date this
+doc — both are owner decisions, not yet acted on:**
+
+| # | Item | What's true (verified) | Recommendation | Status |
+|---|---|---|---|---|
+| 19 | **`reactCompiler: false` ↔ CLAUDE.md says "on"** | `next.config.js:143` sets `reactCompiler: false` with a TEMP comment: *"disabled to measure build-time impact … re-enable once we've baselined compile time with it off."* CLAUDE.md's core invariant still says **"React Compiler is on — no manual useMemo/useCallback."** So right now the codebase writes zero manual memoization AND ships no compiler memoization → unoptimized renders in prod, and the doctrine is contradictory. The compiler's per-component pass also scales super-linearly with the 10.4k-file tree — a plausible multi-minute slice of the build. | **Owner decision:** either (a) re-enable `reactCompiler` (accept the build-time cost for runtime perf + doctrine consistency), or (b) keep it off and reconcile CLAUDE.md + the no-manual-memo rule. A/B it with `pnpm build:profile` (false vs true) to quantify. Don't leave the contradiction standing. | ▢ |
+| 20 | **The `webpack:` block in `next.config.js` is DEAD under Turbopack** | Next 16.2 defaults `next build` to **Turbopack** (`bundler = Bundler.Turbopack`, no `--webpack` flag anywhere). Only `turbopack:{}` + `experimental.optimizePackageImports` apply in prod. The entire `webpack:` block (+ `utils/next-config/webpackConfig.js`) is a no-op for production builds. | If any build tuning was added to the webpack block expecting it to help, it isn't running — port it to `turbopack` or delete it to stop misleading future agents. | ▢ |
+
+**Re-confirmed (do NOT re-suggest):** adding `@tabler/icons-react` / `react-icons` to `optimizePackageImports` is a **no-op for build time** — they're on Next's auto-optimized default list (items #11, #18), and `optimizePackageImports` shrinks the *bundle*, not the per-route module *parse count* that drives build time. The real icon win is **inlining shell-used icons (#12)**, still the single biggest unexecuted lever. `@mynaui/icons-react` (8 importers) is the only icon barrel NOT auto-optimized, but at 8 importers it's negligible.
+
+**The actual roadmap is still items #12-#18 above — all status ▢ (not started).** The "~9-10 min of creep" the owner is chasing is most likely the cumulative un-executed Tier-1 set (lucide parse-cost #12 is ~20% of every route's graph) ± the reactCompiler state (#19), NOT a new static leak. Next step to confirm: `pnpm build:profile` (per-phase timing) with env present, then execute #12 (highest guaranteed impact).
+
 ## Change log
 
+- **2026-06-23** — Build-time re-audit. Static leak hunt re-run + verified clean (the canonical-menu leak is fixed + eslint-guarded; root chain clean). Added items #19 (`reactCompiler: false` vs CLAUDE.md "on" — contradiction + super-linear build cost; owner decision) and #20 (the `webpack:` config block is dead under Turbopack in Next 16). Re-confirmed the icon-barrel `optimizePackageImports` suggestion is a no-op (tracker #11/#18 stands) — the real icon win remains inlining (#12). The data-driven Tier-1 roadmap (#12-#18) is still unexecuted and is the likely source of the build-time creep.
 - **2026-04-28 (am)** — Doc created. Lobehub removal verified done by Arman (inlined SVGs). Corrections recorded for `onnxruntime-web` and the "unused" folder claim.
 - **2026-04-28 (pm)** — Monaco type-imports task closed as a false alarm (already optimal; runtime is CDN-loaded). `pdfjs-dist` removed from `package.json` dependencies; `pnpm install` reconciled to a single `5.4.296` via `react-pdf`. Verified working on PDF routes.
 - **2026-04-28 (late pm)** — Global shell audit, first pass (#9). Refactored `app/DeferredSingletons.tsx`, `app/Providers.tsx`, and `app/(public)/PublicProviders.tsx`: dropped the `@/lib/redux/brokerSlice` barrel import, lazy-loaded `brokerActions` and `fetchFullContext` inside idle callbacks, and wrapped 12 leaf widgets in `next/dynamic({ ssr: false })` from inside the wrappers themselves. **This was wrong** — `Providers.tsx` is a Server Component (where `ssr: false` is invalid) and the dynamic gating belongs at the leaf level, not the wrapper level. Reverted all three wrappers to clean static-import shells.
