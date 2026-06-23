@@ -103,6 +103,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { supabase } from "@/utils/supabase/client";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
@@ -941,6 +942,12 @@ export const ProTextarea = React.forwardRef<
                 }
               />
             </div>
+          )}
+
+          {/* Device-picker caret — choose mic / open audio settings. Hidden
+              while recording so it never crowds the stop affordance. */}
+          {enableVoice && isAudioAvailable && !isRecording && !isTranscribing && (
+            <MicDeviceMenu disabled={isVoiceDisabled} />
           )}
 
           {showMenu && (

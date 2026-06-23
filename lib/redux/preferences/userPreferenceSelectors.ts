@@ -20,6 +20,7 @@ import type {
   SystemPreferences,
   AgentContextPreferences,
   MermaidPreferences,
+  AudioDevicePreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 
 // Base selector
@@ -140,6 +141,34 @@ export const selectDefaultContextPreferences = createSelector(
 export const selectMermaidPreferences = createSelector(
   selectUserPreferences,
   (state): MermaidPreferences => state.mermaid,
+);
+
+export const selectAudioDevicePreferences = createSelector(
+  selectUserPreferences,
+  (state): AudioDevicePreferences => state.audioDevices,
+);
+
+// Per-property selectors so unrelated preference changes don't re-render a
+// component that only reads one device id (every property gets its own
+// selector — house rule).
+export const selectAudioInputDeviceId = createSelector(
+  selectAudioDevicePreferences,
+  (audio): string => audio.audioInputDeviceId,
+);
+
+export const selectAudioInputDeviceLabel = createSelector(
+  selectAudioDevicePreferences,
+  (audio): string => audio.audioInputDeviceLabel,
+);
+
+export const selectAudioOutputDeviceId = createSelector(
+  selectAudioDevicePreferences,
+  (audio): string => audio.audioOutputDeviceId,
+);
+
+export const selectAudioOutputDeviceLabel = createSelector(
+  selectAudioDevicePreferences,
+  (audio): string => audio.audioOutputDeviceLabel,
 );
 
 // Meta selectors for async state management

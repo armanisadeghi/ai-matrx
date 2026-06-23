@@ -73,6 +73,7 @@ import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHos
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 import { AudioOutputHost } from "@/providers/AudioOutputHost";
+import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -117,6 +118,12 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                           <TranscriptsProvider>
                             <AudioRecoveryProvider>
                               <RequestRecoveryProvider>
+                                {/* App-root audio DEVICE manager (mic/speaker
+                                selection + permission). Mounted above the
+                                recording provider so the persisted mic device is
+                                applied to the singleton before the first
+                                recording. Renders nothing; effects only. */}
+                                <AudioDeviceProvider />
                                 <GlobalRecordingProvider>
                                   {children}
                                   <RecordingPill />

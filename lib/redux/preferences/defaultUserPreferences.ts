@@ -191,4 +191,12 @@ export const defaultUserPreferences: UserPreferences = {
   conversationFilters: {
     surfaces: {},
   },
+  // "" everywhere = system default (no explicit audio device chosen yet). Keep
+  // in sync with the in-slice defaults at userPreferencesSlice.ts.
+  audioDevices: {
+    audioInputDeviceId: "",
+    audioInputDeviceLabel: "",
+    audioOutputDeviceId: "",
+    audioOutputDeviceLabel: "",
+  },
 };

@@ -41,6 +41,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import {
   getOrMintSignedUrl,
   invalidateSignedUrl,
@@ -566,6 +567,9 @@ export function InlineMediaRef({
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
   const resolvedUrl = useFileSrc(source);
+  // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
+  // re-applies on device change. No-op on Safari. Forwards to mediaElementRef.
+  const sinkRef = useOutputSinkRef(mediaElementRef);
   const sourceFileId =
     source && source.kind === "file_id" ? source.fileId : null;
 
@@ -723,7 +727,7 @@ export function InlineMediaRef({
   if (elementType === "video") {
     return (
       <video
-        ref={mediaElementRef as React.Ref<HTMLVideoElement> | undefined}
+        ref={sinkRef}
         src={url}
         {...sizeAttrs}
         className={cn(baseCls, objectFitClass)}
@@ -746,7 +750,7 @@ export function InlineMediaRef({
   if (elementType === "audio") {
     return (
       <audio
-        ref={mediaElementRef as React.Ref<HTMLAudioElement> | undefined}
+        ref={sinkRef}
         src={url}
         className={cn(baseCls)}
         controls={controls}

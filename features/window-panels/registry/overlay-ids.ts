@@ -22,6 +22,7 @@ export const OVERLAY_IDS = [
   "imagePeekHost",
   "adminStateAnalyzer",
   "adminStateAnalyzerWindow",
+  "audioDevices",
   "agentAdminFindUsagesWindow",
   "agentAdminShortcutWindow",
   "agentAdvancedEditorWindow",

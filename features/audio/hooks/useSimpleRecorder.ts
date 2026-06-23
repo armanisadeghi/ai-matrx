@@ -9,6 +9,11 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { getErrorSolution } from '../utils/microphone-diagnostics';
+import { acquireMicStream, releaseMicStream } from '@/features/audio/micStream';
+import {
+  getSharedAudioContext,
+  resumeSharedAudioContext,
+} from '@/features/audio/audioContext';
 
 export interface UseSimpleRecorderProps {
   onRecordingComplete?: (blob: Blob) => void;
@@ -27,12 +32,17 @@ export function useSimpleRecorder({
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Whether we hold a ref on the shared mic stream — keeps acquire/release
+  // balanced exactly once across the cleanup / stop / unmount paths.
+  const micHeldRef = useRef(false);
   const chunksRef = useRef<Blob[]>([]);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
   const pausedTimeRef = useRef<number>(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  // The shared AudioContext is never closed (only resumed); we only own the
+  // analyser + the source node we connect into it, and disconnect those.
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const analyserSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   // Cleanup function
@@ -47,18 +57,31 @@ export function useSimpleRecorder({
       animationFrameRef.current = null;
     }
 
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().catch(() => {});
-      audioContextRef.current = null;
+    // Disconnect (don't close — the context is shared) the analyser graph.
+    if (analyserSourceRef.current) {
+      try {
+        analyserSourceRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
+      analyserSourceRef.current = null;
     }
-
     if (analyserRef.current) {
+      try {
+        analyserRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
       analyserRef.current = null;
     }
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    // Release our hold on the shared mic stream — NEVER stop its tracks (that
+    // would defeat the singleton's keepalive and kill other holders). The
+    // singleton clears the mic light on its short keepalive once nobody holds.
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
     }
 
     if (mediaRecorderRef.current) {
@@ -81,27 +104,32 @@ export function useSimpleRecorder({
 
   const startRecording = useCallback(async () => {
     try {
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16000, // Optimal for Whisper (will be downsampled to 16KHz anyway)
-        },
+      // Acquire the SHARED mic stream (applies the user's chosen device + keeps
+      // the OS grant warm — no per-recording re-prompt). Never stop its tracks.
+      const stream = await acquireMicStream({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 16000, // Optimal for Whisper (will be downsampled to 16KHz anyway)
       });
+      micHeldRef.current = true;
 
       streamRef.current = stream;
       chunksRef.current = [];
 
-      // Setup audio analysis for visual feedback
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyserRef.current);
+      // Setup audio analysis for visual feedback on the SHARED context (never
+      // closed — only resumed). iOS caps live AudioContexts; sharing one avoids
+      // exhaustion.
+      await resumeSharedAudioContext();
+      const audioContext = getSharedAudioContext();
+      if (audioContext) {
+        analyserRef.current = audioContext.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        analyserSourceRef.current =
+          audioContext.createMediaStreamSource(stream);
+        analyserSourceRef.current.connect(analyserRef.current);
+      }
 
       // Start audio level monitoring
       const updateAudioLevel = () => {

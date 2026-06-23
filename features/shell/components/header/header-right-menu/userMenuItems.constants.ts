@@ -96,4 +96,5 @@ export const COMMUNICATION_ITEMS: OverlayMenuItemConfig[] = [
 
 export const SETTINGS_ITEMS: OverlayMenuItemConfig[] = [
   { overlayId: "userPreferences", icon: "Settings", label: "Preferences", requiresAuth: false },
+  { overlayId: "audioDevices", icon: "Mic", label: "Audio devices", requiresAuth: false },
 ];
