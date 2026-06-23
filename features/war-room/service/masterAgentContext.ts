@@ -238,8 +238,8 @@ export async function buildMasterAgentContext(
     ];
   }
 
-  // Fetch every room's tiles in parallel, then the link/attachment data for the
-  // full tile set in one batched query each (the service `*ForTiles` helpers).
+  // Fetch every room's tiles in parallel, then the assignment data for the full
+  // tile set in one batched query (listAssignmentsForContainers).
   const tilesByRoom = await Promise.all(
     sessions.map(async (s) => {
       try {

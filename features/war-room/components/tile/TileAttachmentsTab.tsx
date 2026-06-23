@@ -68,7 +68,7 @@ import {
   attachDocumentToTile,
   detachTileAttachment,
 } from "@/features/war-room/redux/thunks";
-import type { WarRoomTileAttachment } from "@/features/war-room/types";
+import type { WarRoomAssignment } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 
 export function TileAttachmentsTab({
@@ -200,7 +200,7 @@ export function TileAttachmentsTab({
     if (ok) toast.success("Document attached");
   };
 
-  const remove = (a: WarRoomTileAttachment) =>
+  const remove = (a: WarRoomAssignment) =>
     dispatch(detachTileAttachment(tileId, a.id));
 
   // ── Compact (combined "All" view): list only, no chrome ─────────────────
@@ -432,8 +432,8 @@ function FileAttachmentRow({
   onRemove,
   compact,
 }: {
-  attachment: WarRoomTileAttachment;
-  onRemove: (a: WarRoomTileAttachment) => void;
+  attachment: WarRoomAssignment;
+  onRemove: (a: WarRoomAssignment) => void;
   compact?: boolean;
 }) {
   const fileId = attachment.entity_id;
@@ -500,8 +500,8 @@ function DocAttachmentRow({
   onRemove,
   compact,
 }: {
-  attachment: WarRoomTileAttachment;
-  onRemove: (a: WarRoomTileAttachment) => void;
+  attachment: WarRoomAssignment;
+  onRemove: (a: WarRoomAssignment) => void;
   compact?: boolean;
 }) {
   const documentId = attachment.entity_id;

@@ -64,6 +64,7 @@ import {
   setTilePinned,
   setTilesStatus,
   tileRemoved,
+  tileSessionChanged,
   tilesLoadedForSession,
   tileUpserted,
 } from "./slice";
@@ -1113,6 +1114,83 @@ export const attachConversationToTile =
       if (isUniqueViolation(err)) return true; // already linked
       reportWarRoomError("attachConversationToTile", err, { toast: false });
       return false;
+    }
+  };
+
+// ── Thread portability (move / import between rooms) ───────────────────
+// A thread (tile) and its resources are a portable unit: its assignments are
+// keyed by the tile id (container_id), so MOVING a thread is just re-pointing
+// its session_id — every resource travels with it. IMPORTING copies the thread
+// + its assignment rows into another room, leaving the original intact. This is
+// how a user spins up a fresh room and pulls a still-relevant thread across as
+// the old room winds down.
+
+/** Move a thread into another room (re-point session_id; resources travel along). */
+export const moveThreadToRoom =
+  (tileId: string, targetSessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return false;
+    const fromSessionId = tile.session_id;
+    if (fromSessionId === targetSessionId) return true; // already there
+    try {
+      const updated = await service.updateTile(tileId, {
+        session_id: targetSessionId,
+      });
+      dispatch(
+        tileSessionChanged({ id: tileId, fromSessionId, toSessionId: targetSessionId }),
+      );
+      dispatch(tileUpserted(updated));
+      toast.success("Thread moved");
+      return true;
+    } catch (err) {
+      reportWarRoomError("moveThreadToRoom", err, {
+        toast: "Couldn't move the thread",
+      });
+      return false;
+    }
+  };
+
+/**
+ * Import a COPY of a thread into another room: duplicate the tile (its identity)
+ * and copy its assignment rows onto the new tile, leaving the source untouched.
+ * Returns the new tile id (null on failure).
+ */
+export const importThreadToRoom =
+  (tileId: string, targetSessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return null;
+    try {
+      const position =
+        getState().warRoom.tileIdsBySession[targetSessionId]?.length ?? 0;
+      const newTile = await service.createTile({
+        sessionId: targetSessionId,
+        title: tile.title,
+        flavor: (tile.flavor as TileFlavor) ?? "thread",
+        projectId: tile.project_id,
+        activeTab: (tile.active_tab as TileTab) ?? "task",
+        position,
+      });
+      dispatch(tileUpserted(newTile));
+      // Copy every resource assignment onto the new thread.
+      const copied = await assoc.copyContainerAssignments(
+        threadRef(tileId),
+        threadRef(newTile.id),
+      );
+      dispatch(
+        assignmentsLoadedForContainer({
+          key: containerKey("thread", newTile.id),
+          assignments: copied,
+        }),
+      );
+      toast.success("Thread imported");
+      return newTile.id;
+    } catch (err) {
+      reportWarRoomError("importThreadToRoom", err, {
+        toast: "Couldn't import the thread",
+      });
+      return null;
     }
   };
 

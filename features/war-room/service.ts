@@ -9,21 +9,14 @@ import { DEFAULT_SESSION_TITLE } from "./constants";
 import type {
   CreateSessionInput,
   CreateTileInput,
-  TileAttachmentEntityType,
   WarRoomSession,
   WarRoomSessionUpdate,
   WarRoomTile,
-  WarRoomTileAttachment,
-  WarRoomTileAudioSession,
-  WarRoomTileNote,
   WarRoomTileUpdate,
 } from "./types";
 
 const SESSIONS = "ctx_war_room_sessions";
 const TILES = "ctx_war_room_tiles";
-const TILE_AUDIO = "ctx_war_room_tile_audio_sessions";
-const TILE_NOTES = "ctx_war_room_tile_notes";
-const TILE_ATTACHMENTS = "ctx_war_room_tile_attachments";
 
 // ── Sessions ──────────────────────────────────────────────────────────
 

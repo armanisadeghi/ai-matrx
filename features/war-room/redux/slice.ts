@@ -102,6 +102,32 @@ const warRoomSlice = createSlice({
         state.tileIdsBySession[t.session_id] = ids;
       }
     },
+    /**
+     * Move a thread (tile) from one room to another — thread PORTABILITY. The
+     * tile's assignment bucket (container_id = tileId) is untouched, so all its
+     * resources travel with it. Only the room membership lists + the tile's
+     * session_id change.
+     */
+    tileSessionChanged(
+      state,
+      action: PayloadAction<{
+        id: string;
+        fromSessionId: string;
+        toSessionId: string;
+      }>,
+    ) {
+      const { id, fromSessionId, toSessionId } = action.payload;
+      const tile = state.tilesById[id];
+      if (tile) tile.session_id = toSessionId;
+      if (state.tileIdsBySession[fromSessionId]) {
+        state.tileIdsBySession[fromSessionId] = removeId(
+          state.tileIdsBySession[fromSessionId],
+          id,
+        );
+      }
+      const toList = state.tileIdsBySession[toSessionId];
+      if (toList && !toList.includes(id)) toList.push(id);
+    },
     tileRemoved(
       state,
       action: PayloadAction<{ id: string; sessionId: string }>,
@@ -275,6 +301,7 @@ export const {
   setTilesStatus,
   tilesLoadedForSession,
   tileUpserted,
+  tileSessionChanged,
   tileRemoved,
   setTileActiveTab,
   setTilePinned,
