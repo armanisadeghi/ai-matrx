@@ -66,10 +66,26 @@ const NoteConflictWindow = dynamic(
   { ssr: false },
 );
 
-// NoteContextMenu is imported statically — it's a small shell that already
-// lazy-loads its heavy content (NoteContextMenuHeavy) internally. Dynamic
-// import here caused a layout-breaking null state during loading.
-import NoteContextMenu from "@/features/notes/components/NoteContextMenu";
+import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
+
+// Canonical agent context menu (the SAME one /chat uses — one menu everywhere).
+// Heavy (MenuBody + modals + hooks + Radix), so code-split via
+// next/dynamic({ ssr: false }) per the surface-pro-rollout skill: it stays out
+// of the /notes route chunk, loads only when this surface mounts, and fetches
+// only when opened. A BARE dynamic() would null-render its children while the
+// chunk loads and collapse the editor's flex layout (the historical
+// "layout-breaking null state"); the `loading` fallback reserves the exact flex
+// box so the body never collapses during the brief client load.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  {
+    ssr: false,
+    loading: () => <div className="flex-1 flex flex-col min-h-0 min-w-0" />,
+  },
+);
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -400,6 +416,49 @@ export function NoteContentEditor({
     dispatch(deleteNote(noteId));
   }, [dispatch, instanceId, noteId]);
 
+  // ── Insert agent output at the cursor (before / after the selection) ──
+  // Fed to the canonical menu's onTextInsertBefore/After so agent results land
+  // in the note. Flushes straight to Redux (no debounce) like the demo.
+  const insertAtCursor = useCallback(
+    (text: string, position: "before" | "after") => {
+      const ta = textareaRef.current;
+      const base = localContent;
+      if (!ta) {
+        handleChangeFlush(
+          position === "before" ? `${text}\n\n${base}` : `${base}\n\n${text}`,
+        );
+        return;
+      }
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      handleChangeFlush(
+        position === "before"
+          ? base.slice(0, start) + text + "\n\n" + base.slice(start)
+          : base.slice(0, end) + "\n\n" + text + base.slice(end),
+      );
+    },
+    [localContent, handleChangeFlush],
+  );
+
+  // Notes-specific menu items wired to the REAL handlers above (no stubs).
+  const notesExtras = createNotesEditorExtraSections({
+    isDirty,
+    allFolders,
+    currentFolder,
+    openTabCount: openTabs?.length ?? 1,
+    onSave: handleSave,
+    onDuplicate: handleDuplicate,
+    onExport: handleExport,
+    onShareLink: handleShareLink,
+    onShareClipboard: handleShareClipboard,
+    onMoveToFolder: handleMoveConfirm,
+    onMoveDialog: handleMove,
+    onCloseTab: handleCloseTab,
+    onCloseOtherTabs: handleCloseOtherTabs,
+    onCloseAllTabs: handleCloseAllTabs,
+    onDelete: handleDelete,
+  });
+
   // ── Conflict resolution handlers ──────────────────────────────────
   const handleKeepMine = useCallback(
     (editedContent: string) => {
@@ -473,25 +532,15 @@ export function NoteContentEditor({
         />
       )}
 
-      <NoteContextMenu
-        noteId={noteId}
-        instanceId={instanceId}
-        editorMode={editorMode}
-        isDirty={isDirty}
-        allFolders={allFolders}
-        currentFolder={currentFolder}
-        noteContent={localContent}
-        textareaRef={textareaRef}
-        onSave={handleSave}
-        onDuplicate={handleDuplicate}
-        onExport={handleExport}
-        onShareLink={handleShareLink}
-        onShareClipboard={handleShareClipboard}
-        onMove={handleMove}
-        onCloseTab={handleCloseTab}
-        onCloseOtherTabs={handleCloseOtherTabs}
-        onCloseAllTabs={handleCloseAllTabs}
-        onDelete={handleDelete}
+      <UnifiedAgentContextMenu
+        {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
+        extraSections={notesExtras}
+        getTextarea={() => textareaRef.current}
+        getApplicationScope={getApplicationScope}
+        onTextReplace={handleChangeFlush}
+        onTextInsertBefore={(t) => insertAtCursor(t, "before")}
+        onTextInsertAfter={(t) => insertAtCursor(t, "after")}
+        onContentInserted={() => {}}
       >
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           {findReplaceState?.isOpen && (
@@ -554,7 +603,7 @@ export function NoteContentEditor({
               />
             )}
         </div>
-      </NoteContextMenu>
+      </UnifiedAgentContextMenu>
 
       <MoveNoteDialog
         open={moveDialogOpen}
