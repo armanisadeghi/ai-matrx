@@ -125,7 +125,8 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 ## Invariants & gotchas
 
 - **Editor output integrates with agents via widget tools — no parallel patch system.** If you need to apply agent output to code, use `widget_text_*`.
-- **The `vsc_*` UI-context key set is a contract.** Extending it means updating Shortcuts that bind to new keys. Renaming is a breaking change.
+- **The right-click menu is [`CodeEditorContextMenu`](./components/CodeEditorContextMenu.tsx) — never hand-roll scope.** It assembles the `matrx-user/code-editor` scope through the SHARED [`buildCodeWorkspaceContextData`](../code/agent-context/buildCodeWorkspaceContextData.ts) (same builder `/code` uses), passes `getApplicationScope` + `surfaceName`, and applies agent output via Monaco `executeEdits`. Adding a value means editing the shared builder + the `code-editor.manifest.ts`, not this wrapper.
+- **The `vsc_*` UI-context key set is a contract.** Extending it means updating Shortcuts that bind to new keys. Renaming is a breaking change. It is emitted alongside (not instead of) the manifest's declared SurfaceValues + the generic baselines — all from the shared builder.
 - **Multi-file-core is foundational**; agent-code-editor is a consumer. Do not branch the core per-feature.
 - **Widget actions do NOT pause the stream** — fire-and-forget. If you need the agent to see the result of an edit, use a durable delegated tool, not a widget tool.
 - **The legacy `features/rich-text-editor/` is deprecated** — do not integrate the code-editor with it.
@@ -143,6 +144,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 
 ## Change log
 
+- `2026-06-23` — claude: rebuilt `CodeEditorContextMenu` onto the shared `buildCodeWorkspaceContextData` (manifest SurfaceValues + baselines + `vsc_*`), added `getApplicationScope` + typed Monaco `executeEdits` apply, removed the hand-rolled `any` scope.
 - `2026-04-22` — claude: initial FEATURE.md; documents current state + flags upcoming file-system / git / agentic-coding upgrade.
 - `2026-04-28` — claude: clarified scope vs the new `features/code/` workspace at `/code`; added cross-reference table for chat-binding split (legacy `cx-conversation` + Shortcuts here vs new agents system + `AgentRunnerPage` there).
 - `2026-06-14` — JSON blocks in streaming markdown: Darcula-inspired token colors via `config/syntax-themes.ts`; Prism view mode uses bare token keys (inline-style compatible); Monaco edit mode uses `matrx-json-dark` / `matrx-json-light` themes.

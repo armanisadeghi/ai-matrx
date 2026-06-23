@@ -39,6 +39,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 - Legacy hook: `useScraperContent` (Redux + socket, wrapping `useScraperSocket`) — still wired; do not extend.
 - Display: `features/scraper/ScraperResultsComponent.tsx`, `parts/ScrapedResultDetailTabs.tsx`, `parts/core/*`, `parts/tabs/*`.
 - Server proxy: `app/api/scraper/content/route.ts` — server-side NDJSON relay for the legacy `scraped_pages` response type.
+- **Agent surface (`matrx-user/scraper`):** `features/scraper/agent-context/buildScraperContextData.ts` (pure map of live workspace state → `createScraperScope`, emitting baselines `content`/`selection`/`context` + the manifest's custom values), `SCRAPER_CONTEXT_MENU_PROPS`, and `agent-context/scraperExtraSections.ts` (page-op menu items). Mounted in `parts/ScraperFloatingWorkspace.tsx`: `UnifiedAgentContextMenu` wraps the editable URL/keyword config region (inputs are `ProInput`) and the read-only `ScrapedResultDetailTabs` results region (`isEditable={false}`). Keyword inputs in `parts/ScraperKeywordSearchPanel.tsx` are `ProInput`. Manifest: `features/surfaces/manifests/scraper.manifest.ts`.
 
 **Endpoints (Python backend, declared in `lib/api/endpoints.ts`)**
 - `POST /scraper/quick-scrape`
@@ -178,6 +179,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- `2026-06-23` — claude: **Scraper wired as agent surface `matrx-user/scraper`.** Added `features/scraper/agent-context/` (`buildScraperContextData.ts` pure mapper + `SCRAPER_CONTEXT_MENU_PROPS` + `scraperExtraSections.ts`). `parts/ScraperFloatingWorkspace.tsx` now mounts `UnifiedAgentContextMenu` on both the editable config region (URL/keyword inputs → `ProInput`) and the read-only results region (`isEditable={false}`); keyword inputs in `parts/ScraperKeywordSearchPanel.tsx` swapped to `ProInput`. No manifest change — emits the 16 declared custom values it can source plus baselines (`scraped_content_html` / `scrape_http_status` not sourceable from the FE `ScraperResult`). `sourceFeature: "research"` (no `scraper` literal in `SourceFeature`).
 - `2026-05-28` — claude: **"Process for RAG" added to the scraper floating workspace toolbar** (`parts/ScraperFloatingWorkspace.tsx`). The `<ProcessForRagButton sourceKind="scraped" sourceId={selectedScraped.url} …>` sits next to Copy and Reset in the rightActions cluster; on success the toast offers a "View in library" action. `source_kind: "scraped"` was added to the FE `IngestRequestBody` union in `features/rag/api/ingest.ts` to keep the new affordance compiling in lock-step with aidream's `IngestRequest` widening.
 - `2026-05-07` — Documented transcript processor public URL `/transcripts` (studio at `/transcription/studio`; legacy `/transcripts` and `/transcript-studio` redirect in `next.config.js`).
 - `2026-04-22` — claude: initial combined doc for scraper + pdf-extractor + research + transcripts.

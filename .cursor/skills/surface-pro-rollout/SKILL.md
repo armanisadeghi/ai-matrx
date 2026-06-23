@@ -66,7 +66,7 @@ It reads the live DOM selection at call time. Never wrap it in `useCallback`/`us
 ### 5. Replace plain inputs with Pro components
 
 - `<textarea>` → `<ProTextarea>` (`@/components/official/ProTextarea`). Pass `surfaceName` + `getApplicationScope` so the "…" menu lists the surface's bound agents (My / System / Shared / org) and runs them with full scope. Voice, copy, clean-up are free.
-- `<input type=text>` → `<ProInput>` (`@/components/official/ProInput`).
+- `<input type=text>` → `<ProInput>` (`@/components/official/ProInput`). **`ProInput` does NOT accept `surfaceName` / `getApplicationScope`** (those are ProTextarea-only) — a single-line input gains agent access only from wrapping it (or its region) in `UnifiedAgentContextMenu`. Passing them to `ProInput` is a type error.
 - Schema-bound fields (Entity/Settings/Applet): build a thin wrapper that renders Pro — never re-implement voice/copy/submit.
 - Leave Tier-1 raw shadcn `Textarea`/`BasicInput` only for true raw cases (admin diff, debug consoles).
 

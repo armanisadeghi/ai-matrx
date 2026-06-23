@@ -15,6 +15,7 @@
  */
 
 import React from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -49,6 +50,12 @@ import {
   InlineProjectDescription,
   ProjectMetaRow,
 } from "@/features/projects/components/ProjectInlineEditors";
+import {
+  buildProjectsContextData,
+  createProjectsExtraSections,
+  PROJECTS_CONTEXT_MENU_PROPS,
+} from "@/features/projects/agent-context/buildProjectsContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
 import {
   CONTENT_ROLES,
@@ -67,6 +74,16 @@ const UUID_RE =
 
 // Tasks + projects have their own surfaces; don't double-count them as "resources".
 const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
+
+// Heavy agent context menu — code-split off the workspace's first paint. It only
+// mounts the agent/shortcut machinery on right-click, so it never needs SSR.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 export function ProjectWorkspace() {
   const params = useParams();
@@ -202,6 +219,32 @@ export function ProjectWorkspace() {
     ? `/knowledge/graph?org=${encodeURIComponent(org.slug)}`
     : "/knowledge/graph";
 
+  // ── Surface agent context (matrx-user/projects) ───────────────────────────
+  // `project` is non-null past the guards above, so these are plain values /
+  // functions — NOT hooks (a useCallback here would sit after an early return
+  // and break rules-of-hooks). React Compiler memoizes the build for free.
+  const contextData = buildProjectsContextData({
+    project,
+    org: org ? { name: org.name, isPersonal: org.isPersonal } : null,
+    memberCount: members.length,
+    taskCounts,
+    viewerRole: role,
+  });
+
+  // Reads the live DOM selection at click time (a Pro field or the hero text)
+  // and folds it into the surface scope — never a stale render snapshot.
+  const getApplicationScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection()?.toString() ?? "",
+      selectionRange: null,
+      contextData,
+    });
+
+  const projectsExtraSections = createProjectsExtraSections({
+    onManageSettings: () => router.push(`/projects/${project.id}/settings`),
+    onOpenKnowledgeGraph: () => router.push(kgHref),
+  });
+
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
@@ -222,7 +265,17 @@ export function ProjectWorkspace() {
             <span className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
               <FolderKanban className="h-6 w-6" />
             </span>
-            <div className="flex-1 min-w-0">
+            {/* Presentational surface region — right-click the project's
+                identity/overview the user reads to run an agent on it. The
+                description editor below mounts its own editable Pro menu. */}
+            <UnifiedAgentContextMenu
+              {...PROJECTS_CONTEXT_MENU_PROPS}
+              isEditable={false}
+              getApplicationScope={getApplicationScope}
+              contextData={contextData}
+              extraSections={projectsExtraSections}
+            >
+              <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <InlineProjectName
                   project={project}
@@ -258,12 +311,16 @@ export function ProjectWorkspace() {
                 />
               </div>
 
-              {/* Description (always available to edit in place) */}
+              {/* Description (always available to edit in place). The editable
+                  ProTextarea inside gets the surface "…" agent menu via
+                  surfaceName + getApplicationScope. */}
               <div className="mt-3">
                 <InlineProjectDescription
                   project={project}
                   canEdit={canManageSettings}
                   onPatch={applyPatch}
+                  surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
+                  getApplicationScope={getApplicationScope}
                 />
               </div>
 
@@ -290,7 +347,8 @@ export function ProjectWorkspace() {
                   label={members.length === 1 ? "member" : "members"}
                 />
               </div>
-            </div>
+              </div>
+            </UnifiedAgentContextMenu>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex items-center gap-2">

@@ -20,8 +20,9 @@
  * feel polished enough for any normal user.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -87,6 +88,23 @@ import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-sy
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
+import {
+  buildRagSearchContextData,
+  RAG_SEARCH_CONTEXT_MENU_PROPS,
+} from "@/features/rag/agent-context/buildRagSearchContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { ProInput } from "@/components/official/ProInput";
+
+// Heavy client-only menu — code-split so it never lands in the SSR/server
+// chunk and only loads when this client surface mounts. Reused on both the
+// editable search box and the presentational results region.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -714,6 +732,59 @@ function SearchTab({ scope }: { scope: Scope }) {
     }
   }, [query, scope, router, searchContext]);
 
+  // Live input ref — `getApplicationScope` reads the selection off it at
+  // click-time so surface scope is never stale React state.
+  const queryInputRef = useRef<HTMLInputElement | null>(null);
+
+  const storeName = useMemo(
+    () =>
+      scope.storeId
+        ? scope.stores.stores.find((s) => s.id === scope.storeId)?.name
+        : undefined,
+    [scope.storeId, scope.stores.stores],
+  );
+
+  // Canonical `contextData` for `matrx-user/rag-search` — pure mapping of live
+  // search state (query, retrieval scope, pipeline flags) + the latest results.
+  const contextData = buildRagSearchContextData({
+    query,
+    dataStoreId: scope.storeId,
+    dataStoreName: storeName,
+    sourceKinds: scope.sourceKinds,
+    adminBypass: scope.adminBypass,
+    rerank: scope.rerank,
+    multiQuery: scope.multiQuery,
+    useHyde: scope.useHyde,
+    response,
+  });
+
+  // Plain function (NOT useCallback) — React Compiler memoizes it, and it must
+  // read the live DOM selection at call time. Used by both the editable search
+  // box (live input value/selection wins) and the presentational results.
+  const getApplicationScope = () => {
+    const el = queryInputRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const selectedText =
+      el && start !== end
+        ? el.value.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData,
+    });
+  };
+
+  // Presentational results read from the live browser selection (the rendered
+  // passages are not an editable element), so no input ref is threaded.
+  const getResultsApplicationScope = () =>
+    buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection()?.toString() ?? "",
+      selectionRange: null,
+      contextData,
+    });
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">
@@ -724,28 +795,29 @@ function SearchTab({ scope }: { scope: Scope }) {
           }}
           className="flex items-center gap-2"
         >
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+          <UnifiedAgentContextMenu
+            {...RAG_SEARCH_CONTEXT_MENU_PROPS}
+            isEditable
+            getApplicationScope={getApplicationScope}
+            onTextReplace={setQuery}
+            contextData={contextData}
+          >
+            <ProInput
+              ref={queryInputRef}
+              wrapperClassName="flex-1"
+              startIcon={<SearchIcon className="h-4 w-4" />}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search indexed content (PDFs, notes, code)…"
-              className="pl-9 h-10 text-base"
+              className="h-10"
+              clearable
+              onClear={() => {
+                setQuery("");
+                setResponse(null);
+              }}
               autoFocus
             />
-            {query && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  setResponse(null);
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
-              >
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
+          </UnifiedAgentContextMenu>
           <Button
             type="submit"
             disabled={!query.trim() || running}
@@ -789,55 +861,70 @@ function SearchTab({ scope }: { scope: Scope }) {
           </div>
         )}
 
-        {/* Results panel. Rendered as a plain conditional (NOT an
-            AnimatePresence `mode="wait"` swap) — `FADE_IN_UP` carries an
-            `exit`, and with React Compiler enabled the exiting child often
-            never completes, which under `mode="wait"` blocks the NEXT query's
-            results from ever mounting. `key={response.query}` still remounts
-            (enter fade) on each new search; removal is immediate. */}
+        {/* Results panel — also the surface's PRESENTATIONAL region: right-
+            click the displayed passages to run an agent over what the user is
+            reading (read-only, no text-replace callbacks; live browser
+            selection + joined results feed scope via
+            `getResultsApplicationScope`).
+
+            Rendered as a plain conditional (NOT an AnimatePresence `mode="wait"`
+            swap) — `FADE_IN_UP` carries an `exit`, and with React Compiler
+            enabled the exiting child often never completes, which under
+            `mode="wait"` blocks the NEXT query's results from ever mounting.
+            `key={response.query}` still remounts (enter fade) on each new
+            search; removal is immediate. */}
         {response && (
-          <motion.div
-            key={response.query}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="p-4 space-y-3"
+          <UnifiedAgentContextMenu
+            {...RAG_SEARCH_CONTEXT_MENU_PROPS}
+            isEditable={false}
+            getApplicationScope={getResultsApplicationScope}
+            contextData={contextData}
           >
-            <div className="text-xs text-muted-foreground tabular-nums">
-              {response.hits.length} hits · {response.total_candidates}{" "}
-              candidates · {response.latency_ms} ms
-              {response.reranker_model &&
-                ` · reranked by ${response.reranker_model}`}
-            </div>
-            {response.hits.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No hits for{" "}
-                <strong className="text-foreground">"{response.query}"</strong>.
-                Try the Diagnostics tab to check whether your content was
-                indexed and is visible to you.
+            <motion.div
+              key={response.query}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="p-4 space-y-3"
+            >
+              <div className="text-xs text-muted-foreground tabular-nums">
+                {response.hits.length} hits · {response.total_candidates}{" "}
+                candidates · {response.latency_ms} ms
+                {response.reranker_model &&
+                  ` · reranked by ${response.reranker_model}`}
               </div>
-            ) : (
-              response.hits.map((h, i) => (
-                <motion.div
-                  key={h.chunk_id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.2,
-                    ease: "easeOut",
-                    delay: Math.min(i * 0.03, 0.3),
-                  }}
-                >
-                  <RichHitCard
-                    rank={i + 1}
-                    hit={h}
-                    showFullText
-                    showBreakdown
-                  />
-                </motion.div>
-              ))
-            )}
-          </motion.div>
+              {response.hits.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No hits for{" "}
+                  <strong className="text-foreground">
+                    "{response.query}"
+                  </strong>
+                  . Try the Diagnostics tab to check whether your content was
+                  indexed and is visible to you.
+                </div>
+              ) : (
+                response.hits.map((h, i) => (
+                  <motion.div
+                    key={h.chunk_id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.2,
+                      ease: "easeOut",
+                      delay: Math.min(i * 0.03, 0.3),
+                    }}
+                  >
+                    <RichHitCard
+                      rank={i + 1}
+                      hit={h}
+                      showFullText
+                      showBreakdown
+                    />
+                  </motion.div>
+                ))
+              )}
+            </motion.div>
+          </UnifiedAgentContextMenu>
         )}
       </ScrollArea>
     </div>

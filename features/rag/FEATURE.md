@@ -82,9 +82,12 @@ features/rag/
     │       ├── ChunksPane.tsx         virtualized chunks list (selectable)
     │       └── RawTextPane.tsx        raw extracted text per page
     │
-    └── search/
-        ├── RagSearchExperience.tsx    /rag/search — four-tab Search Lab (search, agent sim, agent chat, diagnostics)
-        └── RagSearchHits.tsx          embeddable hit list (used by file context menu, omnibox, etc.)
+    ├── search/
+    │   ├── RagSearchExperience.tsx    /rag/search — four-tab Search Lab (search, agent sim, agent chat, diagnostics)
+    │   └── RagSearchHits.tsx          embeddable hit list (used by file context menu, omnibox, etc.)
+    │
+    └── agent-context/
+        └── buildRagSearchContextData.ts  canonical `contextData` + menu props for the `matrx-user/rag-search` surface (Search tab box + results)
 ```
 
 ---
@@ -134,6 +137,7 @@ Curated, system-owned RAG content (canonical example: the **AMA Guides 5th Editi
 
 ## Change log
 
+- **2026-06-23 (surface wiring)** — `/rag/search` **Search tab** fully agent-wired to the `matrx-user/rag-search` surface. New pure `agent-context/buildRagSearchContextData.ts` maps live search state → `createRagSearchScope` (baselines `selection`/`content`/`context` + every manifest custom value: `query`, `data_store_id`, `data_store_name`, `source_kinds`, `admin_bypass_acl`, `rerank`, `multi_query`, `use_hyde`; plus additive result extras — `search_results`, `source_ids`, `result_scores`, `result_count`). `UnifiedAgentContextMenu` (modern `placementMode`, `content-block` hidden) now mounts on BOTH the editable search box (right-click + `onTextReplace`) and the presentational results panel (`isEditable={false}`). The search `<Input>` became `ProInput` (`startIcon`, `clearable`). No manifest/`ui_surface_value` change — all emitted values were already declared.
 - **2026-06-22 (agent chat)** — `/rag/search` **Agent Chat** tab rebuilt on the canonical managed-agent system. The hand-rolled chat (bespoke message state + custom tool-call rendering streaming from `ragAgentChatStream` / `/rag/search-lab/agent/chat`) was replaced with `useAgentLauncher` + `AgentConversationColumn` (same stack as `/chat` and the Projects "Use AI" tab). New registered surface `matrx-user/rag-search` (`features/surfaces/manifests/rag-search.manifest.ts` + `ui_surface`/`ui_surface_value` rows) hands the agent the page's retrieval scope (`data_store_id`, `data_store_name`, `source_kinds`, `admin_bypass_acl`, `rerank`, `multi_query`, `use_hyde`) via `runtime.surfaceName` + `applicationScope`. The RAG tool family (`rag_search`, `rag_search_data_store`, `rag_search_cross_doc`, `rag_list_data_stores`, `rag_get_data_store`, `rag_list_sources`, `rag_get_chunk`, `rag_verify_answer`) is armed on the conversation via `addedTools`. `SourceFeature` gained `"rag-search"`. `ragAgentChatStream` in `api/search-lab.ts` is now unused by this page.
 - **2026-06-22** — `/rag/search` Search Lab wires Surface-A working context: `ActiveContextPanel` in the scope sidebar (desktop + mobile drawer), `ActiveScopeChips` in the tab header, and `buildRagSearchContext` / `useRagSearchContext` pass `organization_id` + `scope_ids` into `POST /rag/search` (and `useRagSearch`). Project/task selections are shown in the picker but are **not** accepted by the RAG search API today. (see section above): `rag.data_store_grants` audience model (global / industry / opt-in), read-only-by-ownership-asymmetry, NER-off library ingest profile, `DataStorePublishPanel` + read-only treatment in `DataStoresPage`/`RichMemberTable`, `useDataStoreGrants`, grants/catalog endpoints, `data-stores-ext.ts` `"library"` kind. Paired with the new `features/industries/` taxonomy. Backend ACL branch + read-widening + `services/rag/library_grants.py`; DB migrations `0116`–`0119`.
 - **2026-06-21** — User-facing RAG vocabulary: "chunks" → **Segments** / **Knowledge Segments**, pipeline **chunk** stage → **segment**, in-progress **Chunking** → **Segmenting**. Canonical labels live in `constants/vocabulary.ts`; DB/API `chunk*` fields unchanged.

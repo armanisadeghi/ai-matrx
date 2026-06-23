@@ -24,6 +24,7 @@ import { useApplyFsChangesToOpenTabs } from "../agent-context/useApplyFsChangesT
 import { useDiagnosticHoverActions } from "../agent-context/useDiagnosticHoverActions";
 import { selectDiagnosticsByTabId } from "../redux/diagnosticsSlice";
 import { CodeWorkspaceContextMenu } from "../agent-context/CodeWorkspaceContextMenu";
+import { CodeReadonlyContextMenu } from "../agent-context/CodeReadonlyContextMenu";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import type { RootState } from "@/lib/redux/store";
 import { useEnvironmentForActiveTab } from "./monaco-environments";
@@ -337,11 +338,17 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           ) : activeTab.kind === "binary-preview" ? (
             <BinaryFileViewer key={activeTab.id} tab={activeTab} />
           ) : activeTab.kind === "history-triple" ? (
-            <TripleDiffView key={activeTab.id} tab={activeTab} />
+            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+              <TripleDiffView tab={activeTab} />
+            </CodeReadonlyContextMenu>
           ) : activeTab.kind === "render-preview" ? (
-            <RenderPreviewView key={activeTab.id} tab={activeTab} />
+            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+              <RenderPreviewView tab={activeTab} />
+            </CodeReadonlyContextMenu>
           ) : activeTabHasPending ? (
-            <TabDiffView key={activeTab.id} tab={activeTab} />
+            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+              <TabDiffView tab={activeTab} />
+            </CodeReadonlyContextMenu>
           ) : (
             <CodeWorkspaceContextMenu
               editorRef={editorRef}

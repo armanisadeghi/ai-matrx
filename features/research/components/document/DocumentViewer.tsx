@@ -31,9 +31,15 @@ import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
+import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import {
+  buildResearchContextData,
+  RESEARCH_CONTEXT_MENU_PROPS,
+} from "../../agent-context/buildResearchContextData";
 
 export default function DocumentViewer() {
-  const { topicId, progress, refresh } = useTopicContext();
+  const { topicId, topic, progress, refresh } = useTopicContext();
   const api = useResearchApi();
   const isMobile = useIsMobile();
   const debug = useStreamDebug();
@@ -275,6 +281,34 @@ export default function DocumentViewer() {
 
   const docTokenUsage = tokenUsageFromJson(document.token_usage);
 
+  // Surface agent context (matrx-user/research) — read-only over the assembled
+  // document so a right-click offers agent actions on what the user is reading.
+  const documentContextData = buildResearchContextData({
+    topic,
+    progress,
+    primaryText: displayContent,
+    displayTitle: document.title,
+    documents: [
+      {
+        id: document.id,
+        title: document.title ?? "Research Document",
+        created_at: document.created_at ?? undefined,
+      },
+    ],
+  });
+  // Plain fn (React Compiler memoizes) — reads the live DOM selection at click.
+  const getDocumentApplicationScope = () => {
+    const selectedText =
+      typeof window !== "undefined"
+        ? (window.getSelection()?.toString() ?? "")
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: null,
+      contextData: documentContextData,
+    });
+  };
+
   return (
     <div className="flex h-full min-h-0">
       {/* TOC Sidebar — Desktop Only */}
@@ -381,46 +415,55 @@ export default function DocumentViewer() {
           />
         )}
 
-        {/* Markdown Content — uses live streaming text while generating, DB content after */}
-        <article className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-4">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h1: ({ children, ...props }) => (
-                <h1
-                  id={String(children)
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")}
-                  {...props}
-                >
-                  {children}
-                </h1>
-              ),
-              h2: ({ children, ...props }) => (
-                <h2
-                  id={String(children)
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")}
-                  {...props}
-                >
-                  {children}
-                </h2>
-              ),
-              h3: ({ children, ...props }) => (
-                <h3
-                  id={String(children)
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")}
-                  {...props}
-                >
-                  {children}
-                </h3>
-              ),
-            }}
-          >
-            {displayContent}
-          </ReactMarkdown>
-        </article>
+        {/* Markdown Content — uses live streaming text while generating, DB
+            content after. Wrapped in the read-only research surface menu so a
+            right-click offers agent actions on the document the user reads. */}
+        <UnifiedAgentContextMenu
+          {...RESEARCH_CONTEXT_MENU_PROPS}
+          isEditable={false}
+          getApplicationScope={getDocumentApplicationScope}
+          contextData={documentContextData}
+        >
+          <article className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-4">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children, ...props }) => (
+                  <h1
+                    id={String(children)
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")}
+                    {...props}
+                  >
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children, ...props }) => (
+                  <h2
+                    id={String(children)
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")}
+                    {...props}
+                  >
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children, ...props }) => (
+                  <h3
+                    id={String(children)
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")}
+                    {...props}
+                  >
+                    {children}
+                  </h3>
+                ),
+              }}
+            >
+              {displayContent}
+            </ReactMarkdown>
+          </article>
+        </UnifiedAgentContextMenu>
 
         {/* Content actions — copy, TTS, full-screen viewer, save to notes/code/tasks, HTML preview, email, print. */}
         {!stream.isStreaming && document.content && (

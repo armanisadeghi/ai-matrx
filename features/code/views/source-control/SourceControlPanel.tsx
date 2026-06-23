@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveSandboxId } from "../../redux/codeWorkspaceSlice";
 import { openTab } from "../../redux/tabsSlice";
@@ -320,19 +321,23 @@ export const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
         }
       />
       <div className="border-b border-neutral-200 p-2 dark:border-neutral-800">
-        <textarea
+        <ProTextarea
           value={commitMessage}
           onChange={(e) => setCommitMessage(e.target.value)}
           placeholder="Commit message (⌘+Enter to commit, ⌘+⇧+Enter to commit & push)"
-          rows={2}
+          autoGrow
+          minHeight={48}
+          maxHeight={160}
           onKeyDown={(e) => {
+            // Keyboard commit shortcuts live here (the panel's own buttons stay
+            // the primary action, so no duplicate ProTextarea submit button).
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
               e.preventDefault();
               if (e.shiftKey) void commitAndPush();
               else void commit();
             }
           }}
-          className="w-full resize-none rounded-sm border border-neutral-300 bg-white p-1.5 text-[12px] outline-none focus:border-blue-500 dark:border-neutral-700 dark:bg-neutral-900"
+          className="p-1.5 text-[12px]"
         />
         <div className="mt-1 flex gap-1">
           <button

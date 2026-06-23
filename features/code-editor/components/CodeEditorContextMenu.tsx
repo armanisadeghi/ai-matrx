@@ -1,20 +1,32 @@
 /**
  * CodeEditorContextMenu
  *
- * Integrates UnifiedAgentContextMenu with Monaco code editor.
- * Provides AI-powered actions specifically for code editing.
+ * Integrates `UnifiedAgentContextMenu` with the EMBEDDED Monaco editor (agent
+ * builder, prompt-app editor, notes, `SmallCodeEditor`). The new `/code`
+ * workspace uses `features/code/agent-context/CodeWorkspaceContextMenu` — both
+ * emit the SAME `matrx-user/code-editor` scope through the shared
+ * `buildCodeWorkspaceContextData`, so a Shortcut or bound agent works
+ * identically in either surface.
  *
- * Features:
- * - Right-click context menu with AI actions
- * - Code-specific categories (Code Operations, Text Operations)
- * - Custom scopes for Monaco (language, errors, diagnostics)
- * - Inline text replacement
+ * Editable region of the surface: passes `isEditable` + wires
+ * `onTextReplace` / `onTextInsertBefore` / `onTextInsertAfter` so agent output
+ * applies in place via Monaco's `executeEdits`.
  */
 
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import type { editor } from 'monaco-editor';
+import {
+  buildCodeWorkspaceContextData,
+  codeEditorLaunchScope,
+  CODE_WORKSPACE_CONTEXT_MENU_PROPS,
+  type CodeSelectionRange,
+} from '@/features/code/agent-context/buildCodeWorkspaceContextData';
+import type { EditorDiagnostic } from '@/features/code/redux/diagnosticsSlice';
+import { formatEditorSurroundContext } from '@/utils/format-editor-surround-context';
+import type { ApplicationScope } from '@/features/agents/utils/scope-mapping';
 
 // Dynamic — keeps UnifiedAgentContextMenu out of the code-editor bundle.
 const UnifiedAgentContextMenu = dynamic(
@@ -24,8 +36,6 @@ const UnifiedAgentContextMenu = dynamic(
     })),
   { ssr: false },
 );
-import { PLACEMENT_TYPES } from '@/features/agent-shortcuts/constants';
-import type { editor } from 'monaco-editor';
 
 interface CodeEditorContextMenuProps {
     children: React.ReactNode;
@@ -41,9 +51,31 @@ interface CodeEditorContextMenuProps {
     className?: string;
 }
 
+/** Monaco marker severities (`monaco.MarkerSeverity`): Error=8, Warning=4, Info=2, Hint=1. */
+function markerToDiagnostic(m: editor.IMarker): EditorDiagnostic {
+    const severity: EditorDiagnostic['severity'] =
+        m.severity === 8
+            ? 'error'
+            : m.severity === 4
+              ? 'warning'
+              : m.severity === 2
+                ? 'info'
+                : 'hint';
+    return {
+        severity,
+        message: m.message,
+        source: m.source,
+        code: typeof m.code === 'object' ? m.code?.value : m.code,
+        startLine: m.startLineNumber,
+        endLine: m.endLineNumber,
+        startColumn: m.startColumn,
+        endColumn: m.endColumn,
+    };
+}
+
 /**
- * Wraps Monaco editor with context menu support.
- * Provides code-specific AI actions via right-click.
+ * Wraps an embedded Monaco editor with the unified agent context menu.
+ * Provides code-specific AI actions via right-click + inline apply.
  */
 export function CodeEditorContextMenu({
     children,
@@ -54,209 +86,166 @@ export function CodeEditorContextMenu({
     className,
 }: CodeEditorContextMenuProps) {
     const [selectedText, setSelectedText] = useState('');
-    const [fullContent, setFullContent] = useState('');
-    const wrapperRef = useRef<HTMLDivElement>(null);
 
-    // Track selection changes
+    // Track selection live so the menu can surface "selection-only" shortcuts.
     useEffect(() => {
-        const editor = editorRef.current;
-        if (!editor) return;
+        const ed = editorRef.current;
+        if (!ed) return;
 
-        const selectionDisposable = editor.onDidChangeCursorSelection((e) => {
-            const selection = editor.getSelection();
-            if (!selection || selection.isEmpty()) {
+        const sync = () => {
+            const selection = ed.getSelection();
+            const model = ed.getModel();
+            if (!selection || selection.isEmpty() || !model) {
                 setSelectedText('');
                 return;
             }
+            setSelectedText(model.getValueInRange(selection));
+        };
 
-            const model = editor.getModel();
-            if (!model) return;
+        sync();
+        const disposable = ed.onDidChangeCursorSelection(sync);
+        return () => disposable.dispose();
+    }, [editorRef]);
 
-            const text = model.getValueInRange(selection);
-            setSelectedText(text);
-        });
+    // Canonical `matrx-user/code-editor` scope — baselines + declared
+    // SurfaceValues + the `vsc_*` contract, re-derived live at call time.
+    const getContextData = (): Record<string, unknown> => {
+        const ed = editorRef.current;
+        const model = ed?.getModel();
+        const position = ed?.getPosition();
+        const selection = ed?.getSelection();
 
-        const contentDisposable = editor.onDidChangeModelContent(() => {
-            const content = editor.getValue();
-            setFullContent(content);
-        });
+        const fullContent = ed?.getValue() ?? '';
+        const resolvedPath = filePath ?? model?.uri.path ?? 'untitled';
+        const resolvedLanguage = language ?? model?.getLanguageId() ?? 'plaintext';
 
-        // Initial values
-        setFullContent(editor.getValue());
-        const selection = editor.getSelection();
-        if (selection && !selection.isEmpty()) {
-            const model = editor.getModel();
-            if (model) {
-                setSelectedText(model.getValueInRange(selection));
+        const monaco = (
+            window as unknown as {
+                monaco?: {
+                    editor: {
+                        getModelMarkers: (filter: {
+                            resource?: editor.IMarker['resource'];
+                        }) => editor.IMarker[];
+                    };
+                };
+            }
+        ).monaco;
+        const markers = model
+            ? (monaco?.editor.getModelMarkers({ resource: model.uri }) ?? [])
+            : [];
+        const diagnostics = markers.map(markerToDiagnostic);
+
+        let textBefore = '';
+        let textAfter = '';
+        let selectionRange: CodeSelectionRange | null = null;
+        let surroundContext: string | undefined;
+        if (model && selection) {
+            const startOffset = model.getOffsetAt({
+                lineNumber: selection.startLineNumber,
+                column: selection.startColumn,
+            });
+            const endOffset = model.getOffsetAt({
+                lineNumber: selection.endLineNumber,
+                column: selection.endColumn,
+            });
+            textBefore = fullContent.slice(Math.max(0, startOffset - 500), startOffset);
+            textAfter = fullContent.slice(endOffset, endOffset + 500);
+            surroundContext = formatEditorSurroundContext(fullContent, {
+                selectionStart: startOffset,
+                selectionEnd: endOffset,
+            });
+            if (!selection.isEmpty()) {
+                selectionRange = {
+                    startLine: selection.startLineNumber,
+                    startColumn: selection.startColumn,
+                    endLine: selection.endLineNumber,
+                    endColumn: selection.endColumn,
+                };
             }
         }
 
-        return () => {
-            selectionDisposable.dispose();
-            contentDisposable.dispose();
-        };
-    }, [editorRef]);
+        return buildCodeWorkspaceContextData({
+            fullContent,
+            selectedText,
+            language: resolvedLanguage,
+            filePath: resolvedPath,
+            currentLine: position?.lineNumber ?? 0,
+            currentColumn: position?.column ?? 0,
+            lineCount: model?.getLineCount() ?? 0,
+            activeTabDiagnostics: diagnostics,
+            allDiagnostics: resolvedPath ? { [resolvedPath]: diagnostics } : {},
+            textBefore,
+            textAfter,
+            selectionRange,
+            surroundContext,
+        });
+    };
 
-    // Build scopes for AI actions
-    const buildScopes = useCallback((): Record<string, any> => {
-        const editor = editorRef.current;
-        if (!editor) {
-            return {
-                selection: '',
-                content: '',
-                context: '',
-            };
-        }
+    // `getContextData()` already produces a complete, live scope (baselines +
+    // declared SurfaceValues + `vsc_*`); `codeEditorLaunchScope` drops the
+    // menu-only `contextFilter` key before it reaches the agent.
+    const getApplicationScope = (): ApplicationScope =>
+        codeEditorLaunchScope(getContextData()) as ApplicationScope;
 
-        const model = editor.getModel();
-        const position = editor.getPosition();
-
-        // Get Monaco diagnostics (errors, warnings)
-        const monaco = (window as any).monaco;
-        const markers = monaco?.editor.getModelMarkers({ resource: model?.uri }) || [];
-
-        // Build context with multiple files support (for future)
-        const contextData = {
-            language,
-            filePath: filePath || model?.uri.path || 'untitled',
-            lineCount: model?.getLineCount() || 0,
-            currentLine: position?.lineNumber || 0,
-            currentColumn: position?.column || 0,
-            hasSelection: !editor.getSelection()?.isEmpty(),
-            // Future: Add other open files here
-        };
-
-        return {
-            // Default scopes
-            selection: selectedText,
-            content: fullContent,
-            context: JSON.stringify(contextData, null, 2),
-
-            // Custom Monaco scopes
-            language,
-            filePath: filePath || 'untitled',
-            errors: JSON.stringify(markers.filter((m: any) => m.severity === 8), null, 2), // Errors
-            warnings: JSON.stringify(markers.filter((m: any) => m.severity === 4), null, 2), // Warnings
-            diagnostics: JSON.stringify(markers, null, 2), // All markers
-            lineCount: model?.getLineCount() || 0,
-            currentLine: position?.lineNumber || 0,
-        };
-    }, [selectedText, fullContent, language, filePath, editorRef]);
-
-    // Handle text replacement
-    const handleTextReplace = useCallback((newText: string) => {
-        const editor = editorRef.current;
-        if (!editor) return;
-
-        const selection = editor.getSelection();
-        if (!selection) return;
-
-        // Execute edit
-        const edits = [{
-            range: selection,
-            text: newText,
-            forceMoveMarkers: true,
-        }];
-
-        editor.executeEdits('ai-replace', edits);
-
-        // Select the new text
-        const monaco = (window as any).monaco;
-        if (monaco) {
-            const startLine = selection.startLineNumber;
-            const startCol = selection.startColumn;
-            const lines = newText.split('\n');
-            const endLine = startLine + lines.length - 1;
-            const endCol = lines.length === 1 ? startCol + newText.length : lines[lines.length - 1].length + 1;
-
-            editor.setSelection(new monaco.Range(
-                startLine,
-                startCol,
-                endLine,
-                endCol
-            ));
-        }
-
-        // Focus editor
-        editor.focus();
-
-        // Callback
+    // Apply an agent's replacement text over the live selection.
+    const handleTextReplace = (newText: string) => {
+        const ed = editorRef.current;
+        const selection = ed?.getSelection();
+        if (!ed || !selection) return;
+        ed.executeEdits('ai-replace', [
+            { range: selection, text: newText, forceMoveMarkers: true },
+        ]);
+        ed.focus();
         onTextReplaced?.(newText);
-    }, [editorRef, onTextReplaced]);
+    };
 
-    // Handle text insert before selection
-    const handleTextInsertBefore = useCallback((text: string) => {
-        const editor = editorRef.current;
-        if (!editor) return;
+    const handleTextInsertBefore = (text: string) => {
+        const ed = editorRef.current;
+        const position = ed?.getPosition();
+        if (!ed || !position) return;
+        ed.executeEdits('ai-insert-before', [
+            {
+                range: {
+                    startLineNumber: position.lineNumber,
+                    startColumn: position.column,
+                    endLineNumber: position.lineNumber,
+                    endColumn: position.column,
+                },
+                text,
+                forceMoveMarkers: true,
+            },
+        ]);
+        ed.focus();
+    };
 
-        const position = editor.getPosition();
-        if (!position) return;
-
-        editor.executeEdits('ai-insert-before', [{
-            range: new (window as any).monaco.Range(
-                position.lineNumber,
-                position.column,
-                position.lineNumber,
-                position.column
-            ),
-            text,
-            forceMoveMarkers: true,
-        }]);
-
-        editor.focus();
-    }, [editorRef]);
-
-    // Handle text insert after selection
-    const handleTextInsertAfter = useCallback((text: string) => {
-        const editor = editorRef.current;
-        if (!editor) return;
-
-        const selection = editor.getSelection();
-        if (!selection) return;
-
-        editor.executeEdits('ai-insert-after', [{
-            range: new (window as any).monaco.Range(
-                selection.endLineNumber,
-                selection.endColumn,
-                selection.endLineNumber,
-                selection.endColumn
-            ),
-            text,
-            forceMoveMarkers: true,
-        }]);
-
-        editor.focus();
-    }, [editorRef]);
-
-    // Get context data dynamically
-    const getContextData = useCallback(() => {
-        const scopes = buildScopes();
-        return {
-            content: scopes.content,
-            context: scopes.context,
-            contextFilter: 'code-editor', // Filter to code-editor enabled contexts
-            // Pass custom scopes through contextData
-            ...scopes,
-        };
-    }, [buildScopes]);
+    const handleTextInsertAfter = (text: string) => {
+        const ed = editorRef.current;
+        const selection = ed?.getSelection();
+        if (!ed || !selection) return;
+        ed.executeEdits('ai-insert-after', [
+            {
+                range: {
+                    startLineNumber: selection.endLineNumber,
+                    startColumn: selection.endColumn,
+                    endLineNumber: selection.endLineNumber,
+                    endColumn: selection.endColumn,
+                },
+                text,
+                forceMoveMarkers: true,
+            },
+        ]);
+        ed.focus();
+    };
 
     return (
-        <div ref={wrapperRef} className={className}>
+        <div className={className}>
             <UnifiedAgentContextMenu
-                sourceFeature="code-editor"
-                surfaceName="matrx-user/code-editor"
-                isEditable={true}
+                {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
+                contextData={getContextData()}
+                getApplicationScope={getApplicationScope}
                 onTextReplace={handleTextReplace}
                 onTextInsertBefore={handleTextInsertBefore}
                 onTextInsertAfter={handleTextInsertAfter}
-                enabledPlacements={[
-                    PLACEMENT_TYPES.AI_ACTION,
-                    PLACEMENT_TYPES.ORGANIZATION_TOOL,
-                    PLACEMENT_TYPES.USER_TOOL,
-                    // Note: We're not including CONTENT_BLOCK for now since code blocks
-                    // are handled differently than regular content blocks
-                ]}
-                contextData={getContextData()}
             >
                 {children}
             </UnifiedAgentContextMenu>

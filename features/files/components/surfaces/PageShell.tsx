@@ -26,6 +26,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   useGroupRef,
@@ -71,6 +72,7 @@ import {
   selectAllFoldersMap,
   selectChipFilter,
   selectSearchQuery,
+  selectSelection,
   selectTreeStatus,
   selectViewMode,
 } from "@/features/files/redux/selectors";
@@ -105,6 +107,12 @@ import { FileUploadDropzone } from "@/features/files/components/core/FileUploadD
 import { OnboardingEmptyState } from "./OnboardingEmptyState";
 import { MobileStack } from "./MobileStack";
 import { PreviewPane } from "./PreviewPane";
+import {
+  buildFilesContextData,
+  FILES_CONTEXT_MENU_PROPS,
+} from "@/features/files/agent-context/buildFilesContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { captureDomSelection } from "@/features/context-menu-v2/utils/selection-tracking";
 import { useFileShortcuts } from "./useFileShortcuts";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
@@ -132,6 +140,17 @@ import {
 } from "./desktop/SidebarModeToggle";
 import { TopBar } from "./desktop/TopBar";
 import type { CloudFilesSection } from "./desktop/section";
+
+// Heavy client component (agent launcher + modals) — code-split, browser-only.
+// Wraps the read-only preview pane so a right-click offers Files-bound agent
+// actions about the active file with the live browser scope.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 export interface PageShellProps {
   /** Initial selection (for deep-linked routes). */
@@ -255,6 +274,7 @@ function PageShellDesktop({
   // to children that previously took `setState` props.
   const searchQuery = useAppSelector(selectSearchQuery);
   const chipFilter = useAppSelector(selectChipFilter);
+  const selection = useAppSelector(selectSelection);
   const handleSearchChange = useCallback(
     (next: string) => dispatch(setSearchQuery(next)),
     [dispatch],
@@ -591,6 +611,34 @@ function PageShellDesktop({
   const activeFile = activeFileId ? filesById[activeFileId] : null;
   const showPreviewPane = !!activeFile;
 
+  // ---- Agent-context surface (matrx-user/files) ----------------------------
+  // Map the live browser state → the surface's contextData. `selectedIds`
+  // mixes files and folders, so we keep only the file records (the surface's
+  // selection values are file-scoped). `getApplicationScope` is a PLAIN
+  // function (React Compiler memoizes; never useCallback) — it reads the live
+  // contextData at click time. The text baselines (selection/content/text_*)
+  // have no meaning here and are left to the platform floor.
+  const activeFolder = activeFolderId ? foldersById[activeFolderId] : null;
+  const selectedFiles = selection.selectedIds
+    .map((id) => filesById[id])
+    .filter((f): f is NonNullable<typeof f> => Boolean(f));
+  const filesContextData = buildFilesContextData({
+    activeFile,
+    activeFolder,
+    selectedFiles,
+  });
+  const getFilesApplicationScope = () => {
+    // Read-only region: capture any text the user highlighted in the preview
+    // (e.g. a passage in a document tab) so a "help with this" agent can act on
+    // it, while the rich Files customs ride along via contextData.
+    const captured = captureDomSelection();
+    return buildApplicationScopeFromMenuContext({
+      selectedText: captured.text,
+      selectionRange: null,
+      contextData: filesContextData,
+    });
+  };
+
   // ---- Preview maximize (full-page-width, in-place, no re-mount) -----------
   // `setLayout` lets us drive the panel sizes imperatively without unmounting
   // the PreviewPane — so long-running tasks inside it (e.g. RAG classification,
@@ -867,12 +915,26 @@ function PageShellDesktop({
                 maxSize={pct(100)}
                 className="border-l border-border/70"
               >
-                <PreviewPane
-                  key={activeFile!.id}
-                  fileId={activeFile!.id}
-                  isMaximized={previewMaximized}
-                  onToggleMaximize={togglePreviewMaximize}
-                />
+                {/* Read-only surface mount: right-clicking the preview offers
+                 * Files-bound agent actions about the active file (describe,
+                 * classify, extract…) with the live browser scope. No text-
+                 * replace callbacks — the preview is presentational. The
+                 * `asChild` trigger clones onto this wrapper div (PreviewPane
+                 * is a plain component, not ref-forwarding). */}
+                <UnifiedAgentContextMenu
+                  {...FILES_CONTEXT_MENU_PROPS}
+                  getApplicationScope={getFilesApplicationScope}
+                  contextData={filesContextData}
+                >
+                  <div className="flex h-full min-h-0 flex-col">
+                    <PreviewPane
+                      key={activeFile!.id}
+                      fileId={activeFile!.id}
+                      isMaximized={previewMaximized}
+                      onToggleMaximize={togglePreviewMaximize}
+                    />
+                  </div>
+                </UnifiedAgentContextMenu>
               </ResizablePanel>
             </>
           )}

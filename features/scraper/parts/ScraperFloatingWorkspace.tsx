@@ -8,7 +8,8 @@
  * file — it's covered by `scraperWindow`.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -27,12 +28,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   useScraperApi,
   type ScraperResult,
 } from "@/features/scraper/hooks/useScraperApi";
+import {
+  buildScraperContextData,
+  SCRAPER_CONTEXT_MENU_PROPS,
+} from "@/features/scraper/agent-context/buildScraperContextData";
+import { createScraperExtraSections } from "@/features/scraper/agent-context/scraperExtraSections";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useScraperKeywordSearchForm } from "@/features/scraper/hooks/useScraperKeywordSearchForm";
 import {
   ScraperKeywordSearchCompactControls,
@@ -53,6 +61,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
+
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 type WorkspaceMode = "web" | "url" | "batch";
 
@@ -102,6 +118,38 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
     keywordForm.selectedHitIndex != null
       ? (keywordForm.flatResults[keywordForm.selectedHitIndex] ?? null)
       : null;
+
+  // ── Agent context wiring (matrx-user/scraper) ───────────────────────────
+  // The editable config inputs (URL / keyword) and the read-only results
+  // region both expose the live scrape state to bound agents. `contextData`
+  // is rebuilt from current state each render (cheap; React Compiler memoizes).
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
+  const keywordInputRef = useRef<HTMLInputElement | null>(null);
+
+  const contextData = buildScraperContextData({
+    mode,
+    selected: selectedScraped,
+    activeTab,
+    failureReason: activeError,
+  });
+
+  // Editable inputs: read the live field value at call time so a bound agent
+  // run carries the URL / keyword the user has typed (no stale snapshot).
+  const getConfigApplicationScope = () => {
+    const el = mode === "batch" ? keywordInputRef.current : urlInputRef.current;
+    return buildApplicationScopeFromMenuContext({
+      selectedText: "",
+      selectionRange: el
+        ? {
+            type: "editable",
+            element: el,
+            start: el.selectionStart ?? 0,
+            end: el.selectionEnd ?? 0,
+          }
+        : null,
+      contextData,
+    });
+  };
 
   const handleQuickScrape = useCallback(async () => {
     const normalized = normalizeUrl(url);
@@ -463,30 +511,39 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
 
       {mode === "url" && (
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
-            <Input
-              type="url"
-              placeholder="https://…"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isAnyLoading}
-              className="h-7 text-xs bg-muted/50 border-border"
-            />
-            <Button
-              size="sm"
-              onClick={() => void handleQuickScrape()}
-              disabled={!url.trim() || isAnyLoading}
-              className="w-full h-7 text-xs gap-1.5"
-            >
-              {quickApi.isLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Zap className="w-3 h-3 text-amber-400" />
-              )}
-              {quickApi.isLoading ? "Scraping…" : "Scrape"}
-            </Button>
-          </div>
+          <UnifiedAgentContextMenu
+            {...SCRAPER_CONTEXT_MENU_PROPS}
+            getTextarea={() => null}
+            getApplicationScope={getConfigApplicationScope}
+            contextData={contextData}
+          >
+            <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
+              <ProInput
+                ref={urlInputRef}
+                type="url"
+                placeholder="https://…"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isAnyLoading}
+                wrapperClassName="w-full"
+                className="h-7 text-xs bg-muted/50 border-border"
+              />
+              <Button
+                size="sm"
+                onClick={() => void handleQuickScrape()}
+                disabled={!url.trim() || isAnyLoading}
+                className="w-full h-7 text-xs gap-1.5"
+              >
+                {quickApi.isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Zap className="w-3 h-3 text-amber-400" />
+                )}
+                {quickApi.isLoading ? "Scraping…" : "Scrape"}
+              </Button>
+            </div>
+          </UnifiedAgentContextMenu>
           <ScrapedSidebarList
             results={scrapedResults}
             scrapeStates={scrapeStates}
@@ -502,39 +559,48 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
 
       {mode === "batch" && (
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
-            <Input
-              placeholder="Keyword…"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isAnyLoading}
-              className="h-7 text-xs bg-muted/50 border-border"
-            />
-            <Input
-              type="number"
-              min={1}
-              max={20}
-              value={maxPages}
-              onChange={(e) => setMaxPages(e.target.value)}
-              disabled={isAnyLoading}
-              className="h-7 text-xs border-border px-2"
-              placeholder="Pages"
-            />
-            <Button
-              size="sm"
-              onClick={() => void handleSearchAndScrape()}
-              disabled={!keyword.trim() || isAnyLoading}
-              className="w-full h-7 text-xs gap-1.5"
-            >
-              {batchApi.isLoading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Search className="w-3 h-3" />
-              )}
-              {batchApi.isLoading ? "Working…" : "Search + scrape"}
-            </Button>
-          </div>
+          <UnifiedAgentContextMenu
+            {...SCRAPER_CONTEXT_MENU_PROPS}
+            getTextarea={() => null}
+            getApplicationScope={getConfigApplicationScope}
+            contextData={contextData}
+          >
+            <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
+              <ProInput
+                ref={keywordInputRef}
+                placeholder="Keyword…"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isAnyLoading}
+                wrapperClassName="w-full"
+                className="h-7 text-xs bg-muted/50 border-border"
+              />
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={maxPages}
+                onChange={(e) => setMaxPages(e.target.value)}
+                disabled={isAnyLoading}
+                className="h-7 text-xs border-border px-2"
+                placeholder="Pages"
+              />
+              <Button
+                size="sm"
+                onClick={() => void handleSearchAndScrape()}
+                disabled={!keyword.trim() || isAnyLoading}
+                className="w-full h-7 text-xs gap-1.5"
+              >
+                {batchApi.isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Search className="w-3 h-3" />
+                )}
+                {batchApi.isLoading ? "Working…" : "Search + scrape"}
+              </Button>
+            </div>
+          </UnifiedAgentContextMenu>
           <ScrapedSidebarList
             results={scrapedResults}
             scrapeStates={scrapeStates}
@@ -550,6 +616,20 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
     </div>
   );
 
+  // Read-only results region: right-click offers agent shortcuts + bound
+  // agents over the displayed scrape. No text-replace callbacks (read-only);
+  // the menu captures the user's live DOM text selection at launch, while
+  // `contextData` carries the scraped body + declared SurfaceValues. Page
+  // operations (open / copy / images) ride along via extraSections.
+  const presentationalExtras = createScraperExtraSections({
+    onOpenInBrowser: selectedScraped
+      ? () =>
+          window.open(selectedScraped.url, "_blank", "noopener,noreferrer")
+      : undefined,
+    onCopyText: selectedScraped ? () => void handleCopy() : undefined,
+    onViewImages: hasImages ? openImages : undefined,
+  });
+
   const mainContent = (
     <>
       {showWebMain && (
@@ -561,20 +641,31 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
         />
       )}
       {showScrapeMain && (
-        <ScrapedResultDetailTabs
-          selected={selectedScraped}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          isBusy={isAnyLoading}
-          statusMessage={activeStatus}
-          errorMessage={
-            quickApi.hasError
-              ? quickApi.error
-              : batchApi.hasError
-                ? batchApi.error
-                : null
-          }
-        />
+        <UnifiedAgentContextMenu
+          {...SCRAPER_CONTEXT_MENU_PROPS}
+          isEditable={false}
+          contextData={contextData}
+          extraSections={presentationalExtras}
+        >
+          {/* DOM wrapper so ContextMenuTrigger (asChild) has a real element to
+              attach to — ScrapedResultDetailTabs is a component, not a ref host. */}
+          <div className="flex flex-col h-full min-h-0">
+            <ScrapedResultDetailTabs
+              selected={selectedScraped}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              isBusy={isAnyLoading}
+              statusMessage={activeStatus}
+              errorMessage={
+                quickApi.hasError
+                  ? quickApi.error
+                  : batchApi.hasError
+                    ? batchApi.error
+                    : null
+              }
+            />
+          </div>
+        </UnifiedAgentContextMenu>
       )}
     </>
   );

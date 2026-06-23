@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { ProInput } from "@/components/official/ProInput";
 import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -313,14 +314,13 @@ export function RenameDialog({
 
         {kind === "file" && originalExt ? (
           <div className="flex items-stretch gap-1.5">
-            <input
+            <ProInput
               ref={inputRef}
               type="text"
               value={base}
               onChange={(e) => setBase(e.target.value)}
               placeholder={originalBase}
-              className="flex-1 min-w-0 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              style={{ fontSize: "16px" }}
+              wrapperClassName="flex-1 min-w-0"
               disabled={busy}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -366,14 +366,12 @@ export function RenameDialog({
             />
           </div>
         ) : (
-          <input
+          <ProInput
             ref={inputRef}
             type="text"
             value={base}
             onChange={(e) => setBase(e.target.value)}
             placeholder={originalBase}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            style={{ fontSize: "16px" }}
             disabled={busy}
             onKeyDown={(e) => {
               if (e.key === "Enter") {

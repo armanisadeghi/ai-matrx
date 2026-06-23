@@ -80,6 +80,8 @@ features/projects/
 ├── service.ts         — CRUD, member management, invitation system
 ├── hooks.ts           — React hooks for components
 ├── index.ts           — Barrel exports
+├── agent-context/     — Surface agent wiring for `matrx-user/projects` (see "Agent surface" below)
+│   └── buildProjectsContextData.ts — pure contextData builder + PROJECTS_CONTEXT_MENU_PROPS + createProjectsExtraSections
 └── components/
     ├── ProjectList.tsx
     ├── ProjectCard.tsx
@@ -94,6 +96,15 @@ features/projects/
     ├── InvitationManager.tsx
     └── DangerZone.tsx
 ```
+
+## Agent surface — `matrx-user/projects`
+
+The project workspace (`ProjectWorkspace.tsx`, route `/projects/[projectId]`) is wired into the agent context system so agents bound to `matrx-user/projects` can act on the open project.
+
+- **Manifest:** `features/surfaces/manifests/projects.manifest.ts` (`createProjectsScope`). Customs: `active_project_id/name/description`, `is_personal_project`, `active_organization_id/name`, plus list-level `selected_project_ids` / `project_count` (owned by a future list-surface mount, **not** the single-project workspace).
+- **Emit contract:** `features/projects/agent-context/buildProjectsContextData.ts` — a PURE builder (live project + org + member/task counts → manifest scope, exact value names). Emits real baselines where the surface has them (`content` = project description, `selection` = browser selection, `context` = a status/priority/counts/role blob) + the customs above. Exports `PROJECTS_CONTEXT_MENU_PROPS` (`sourceFeature: "project-create"` — reused as the closest valid `SourceFeature`; `surfaceName`; `placementMode`) and `createProjectsExtraSections` (Manage settings / knowledge-graph navigation). `isEditable` is NOT baked in — each mount passes its own.
+- **Mounts (in `ProjectWorkspace.tsx`):** the hero identity/overview is wrapped in a **presentational** `UnifiedAgentContextMenu` (`isEditable={false}`) for right-click agent actions on the read view; the in-place **description** editor (`InlineProjectDescription` → `ProTextarea`) receives `surfaceName` + `getApplicationScope` for its built-in surface "…" agent menu. The name editor is `ProInput` (no surface agent menu — covered by the surrounding presentational menu).
+- **Follow-up (out of scope here):** the Manage page (`GeneralSettings.tsx`) reuses the same inline editors and can opt into the surface "…" menu by threading `surfaceName` + a `getApplicationScope`; the list surfaces (`ProjectsHub`/`ProjectList`) are the natural home for `selected_project_ids` / `project_count`.
 
 ## API Routes
 

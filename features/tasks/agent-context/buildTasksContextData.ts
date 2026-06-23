@@ -23,7 +23,7 @@ export const TASKS_CONTEXT_MENU_PLACEMENTS = [
  * file scope). See the Notes precedent (`"notes"`).
  */
 export const TASKS_CONTEXT_MENU_PROPS = {
-  sourceFeature: "task-create" as const,
+  sourceFeature: "tasks" as const,
   surfaceName: "matrx-user/tasks" as const,
   isEditable: true as const,
   enabledPlacements: [...TASKS_CONTEXT_MENU_PLACEMENTS],

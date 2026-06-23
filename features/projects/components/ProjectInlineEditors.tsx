@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { Badge } from "@/components/ui/badge";
 import {
   Popover,
@@ -236,10 +237,21 @@ export function InlineProjectDescription({
   project,
   canEdit,
   onPatch,
+  surfaceName,
+  getApplicationScope,
 }: {
   project: Project;
   canEdit: boolean;
   onPatch: (p: Patch) => void;
+  /**
+   * Surface Registry name (`matrx-user/projects`). When set, the description
+   * ProTextarea's "…" menu lists agents bound to the surface and runs them with
+   * full surface scope. Optional — consumers that don't wire surface agents
+   * (e.g. the Manage page form) simply omit it and behave as before.
+   */
+  surfaceName?: string;
+  /** Live scope builder for surface-bound agent runs (read at click time). */
+  getApplicationScope?: () => ApplicationScope;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(project.description ?? "");
@@ -290,6 +302,8 @@ export function InlineProjectDescription({
           placeholder="What is this project about? Goals, scope, links…"
           className="w-full min-w-0 text-sm break-words"
           wrapperClassName="w-full"
+          surfaceName={surfaceName}
+          getApplicationScope={getApplicationScope}
         />
         <p className="text-[11px] text-muted-foreground">
           {busy ? "Saving…" : "Esc to cancel · saves when you click away"}

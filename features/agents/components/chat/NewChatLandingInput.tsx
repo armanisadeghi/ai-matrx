@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { ArrowUp, CircleStop } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
@@ -19,8 +20,25 @@ import {
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import {
+  buildChatContextData,
+  CHAT_CONTEXT_MENU_PROPS,
+} from "./agent-context/buildChatContextData";
 import { cn } from "@/lib/utils";
+
+// Right-click agent menu over the composer draft. Lazy (ssr:false) — the menu
+// pulls the shortcuts/quick-actions machinery that has no business on the
+// /chat/new first paint, and it only matters once the user interacts.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 interface NewChatLandingInputProps {
   /** Default-agent conversation bound to this input — same Redux state the
@@ -62,6 +80,7 @@ export function NewChatLandingInput({
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
   const resources = useAppSelector(selectInstanceResources(conversationId));
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
   const hasResources = resources.length > 0;
   // Sendable with text OR with attachments/inclusions alone (an attached note
   // with no prose is a valid first turn) — mirrors the standard input.
@@ -134,6 +153,55 @@ export function NewChatLandingInput({
     }
   };
 
+  // Live surface scope for the right-click agent menu. Plain function (NOT
+  // useCallback — React Compiler memoizes it, and the menu reads the live DOM
+  // selection at click time, so a memo would only risk staleness). The draft +
+  // active agent ARE the chat surface state here; there's no conversation/
+  // transcript yet on /chat/new. Reads selection straight off the textarea ref.
+  const getApplicationScope = () => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const contextData = buildChatContextData({
+      inputDraft: el?.value ?? visibleText,
+      selectionStart: start,
+      selectionEnd: end,
+      agentId,
+    });
+    return buildApplicationScopeFromMenuContext({
+      selectedText:
+        start !== end && el
+          ? el.value.slice(Math.min(start, end), Math.max(start, end))
+          : "",
+      selectionRange: el
+        ? { type: "editable", element: el, start, end }
+        : null,
+      contextData,
+    });
+  };
+
+  // Replace / insert handlers route through the SAME Redux slice the textarea
+  // is bound to (single source of truth) — never a parallel local value.
+  const replaceDraft = (next: string) => {
+    dispatch(setUserInputText({ conversationId, text: next }));
+  };
+
+  const insertAtCursor = (insert: string, position: "before" | "after") => {
+    const el = textareaRef.current;
+    const base = el?.value ?? visibleText;
+    if (!el) {
+      replaceDraft(position === "before" ? `${insert}\n\n${base}` : `${base}\n\n${insert}`);
+      return;
+    }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    if (position === "before") {
+      replaceDraft(`${base.slice(0, start)}${insert}\n\n${base.slice(start)}`);
+    } else {
+      replaceDraft(`${base.slice(0, end)}\n\n${insert}${base.slice(end)}`);
+    }
+  };
+
   return (
     <div
       onClick={() => textareaRef.current?.focus()}
@@ -169,24 +237,47 @@ export function NewChatLandingInput({
           <RunControlsMenu conversationId={conversationId} variant="plus" />
         </div>
 
-        {/* Primary — textarea */}
-        <textarea
-          ref={textareaRef}
-          value={visibleText}
-          onChange={(e) =>
-            dispatch(setUserInputText({ conversationId, text: e.target.value }))
-          }
-          onKeyDown={handleKeyDown}
-          rows={1}
-          placeholder="Ask anything"
-          autoFocus
-          className={cn(
-            "[grid-area:primary] w-full min-w-0 resize-none bg-transparent outline-none border-none",
-            "px-2 text-base text-foreground placeholder:text-muted-foreground/60",
-            "scrollbar-thin leading-7",
-          )}
-          style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
-        />
+        {/* Primary — textarea, wrapped in the chat surface's right-click agent
+            menu (matrx-user/chat). `asChild` merges the menu's handlers onto
+            the textarea itself — no wrapping DOM node — so the grid layout,
+            auto-expand, send-on-enter, and controls are all untouched. The
+            floating selection icon is disabled to keep the hero minimal; the
+            right-click menu is the affordance, and voice/copy already live in
+            the controls. This composer stays a bespoke ChatGPT-style pill
+            (NOT ProTextarea) by design — see FEATURE.md. */}
+        <UnifiedAgentContextMenu
+          {...CHAT_CONTEXT_MENU_PROPS}
+          enableFloatingIcon={false}
+          getTextarea={() => textareaRef.current}
+          getApplicationScope={getApplicationScope}
+          onTextReplace={replaceDraft}
+          onTextInsertBefore={(t) => insertAtCursor(t, "before")}
+          onTextInsertAfter={(t) => insertAtCursor(t, "after")}
+          contextData={buildChatContextData({
+            inputDraft: visibleText,
+            agentId,
+          })}
+        >
+          <textarea
+            ref={textareaRef}
+            value={visibleText}
+            onChange={(e) =>
+              dispatch(
+                setUserInputText({ conversationId, text: e.target.value }),
+              )
+            }
+            onKeyDown={handleKeyDown}
+            rows={1}
+            placeholder="Ask anything"
+            autoFocus
+            className={cn(
+              "[grid-area:primary] w-full min-w-0 resize-none bg-transparent outline-none border-none",
+              "px-2 text-base text-foreground placeholder:text-muted-foreground/60",
+              "scrollbar-thin leading-7",
+            )}
+            style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
+          />
+        </UnifiedAgentContextMenu>
 
         {/* Trailing — mic + send */}
         <div

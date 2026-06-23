@@ -33,6 +33,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **State** — feature-local **Zustand** store (`state/topicStore.ts` via `context/ResearchContext.tsx`), server-hydrated; not the global Redux store. Pipeline run state is the `usePipelineProgress` reducer, not persisted.
 
+**Surface agent context** (`matrx-user/research`, manifest `features/surfaces/manifests/research.manifest.ts`) — `agent-context/buildResearchContextData.ts` is the ONE pure state→scope mapper (`createResearchScope`); `RESEARCH_CONTEXT_MENU_PROPS` + optional `createResearchExtraSections(handlers)` live there too. Editable mount: the AI-mode Subject query (`ResearchInitForm`, `ProTextarea` + `UnifiedAgentContextMenu`). Read-only mounts: the assembled document (`DocumentViewer` `<article>`) and each synthesis body (`SynthesisList` `SynthesisCard`).
+
 ---
 
 ## Data model
@@ -82,7 +84,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Doctrine compliance
 
-**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern.
+**Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern; the Surface Values system (`UnifiedAgentContextMenu` + `buildApplicationScopeFromMenuContext` + `createResearchScope`), `ProTextarea`/`ProInput`.
 
 **Primitives introduced**
 - `LivePipelineActivity` + `StageStatSquare` + `stageMeta` (`components/overview/live-pipeline/`) — compact finished-stage stat tile + shared per-stage display data. No existing primitive renders a stage outcome as a docking rail square; `stageMeta` canonicalizes icon/label/route/duration/square-data (replaced `CompletedStageStrip`'s private copies).
@@ -93,6 +95,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-06-23` — **Surface agent wiring (`matrx-user/research`).** New `agent-context/buildResearchContextData.ts` (pure `createResearchScope` mapper — baselines `content`/`selection`/`context` + customs `topic_*`/`autonomy_level`/`keyword_list`/`source_count`/`included_source_count`/`analysis_count`/`current_synthesis_text`/`synthesis_documents`) + `RESEARCH_CONTEXT_MENU_PROPS` + `createResearchExtraSections(handlers)`. `UnifiedAgentContextMenu` mounted on the AI-mode Subject query (editable, `ProTextarea` gains `surfaceName` + `getApplicationScope`), the `DocumentViewer` document, and each `SynthesisList` synthesis body (read-only). `getApplicationScope` is a plain fn reading the live DOM selection. No manifest/DB change (every value pre-declared).
 - `2026-06-21` — **Research header back nav.** `/research/topics/new` and `/research/topics` shell headers now left-align the back control with a visible label ("Back to Topics" / "Research") instead of a lone centered chevron in the glass header center slot.
 - `2026-06-21` — **Topic init wizard — keyword chips.** Manual/template keywords (`TextArrayInput` default) and AI streaming/review keyword pills now use solid `bg-primary text-primary-foreground` instead of the broken `bg-gradient-radial` chip style (light text on no background in light mode). AI review keyword rows use solid `bg-muted` rows instead of translucent violet tints.
 - `2026-06-21` — **Topic init wizard — light/dark contrast.** `/research/topics/new` init form (`ResearchInitForm`, `TemplatePicker`, `AutonomySelector`) now uses explicit `text-foreground` on headings, labels, cards, project rows, keyword editor, and ProInput/ProTextarea fields; accent badges use `dark:` variants; keyword review panel uses solid `bg-card` instead of translucent `bg-card/40`.

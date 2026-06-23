@@ -3,6 +3,7 @@
 import { Search, Loader2, ExternalLink, Globe, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
@@ -47,15 +48,15 @@ export function ScraperKeywordSearchPageBody({
             >
               Search keywords
             </Label>
-            <Input
+            <ProInput
               id="keywords"
               placeholder="Enter keywords..."
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               onKeyDown={handleKeyDown}
               disabled={isLoading}
+              wrapperClassName="flex-1"
               className="h-8 text-sm"
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="w-24">
@@ -227,12 +228,13 @@ export function ScraperKeywordSearchCompactControls({
           <Label className="text-[9px] text-muted-foreground mb-0.5 block">
             Keywords
           </Label>
-          <Input
+          <ProInput
             placeholder="Search…"
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
+            wrapperClassName="w-full"
             className="h-7 text-xs bg-muted/50 border-border"
           />
         </div>

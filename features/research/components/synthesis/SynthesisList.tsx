@@ -26,6 +26,12 @@ import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import {
+  buildResearchContextData,
+  RESEARCH_CONTEXT_MENU_PROPS,
+} from "../../agent-context/buildResearchContextData";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): boolean =>
@@ -55,6 +61,34 @@ function SynthesisCard({
   label: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const { topic, progress } = useTopicContext();
+
+  // Surface agent context (matrx-user/research) — read-only over the displayed
+  // synthesis so a right-click offers agent actions on what the user reads.
+  const synthesisBody = hasText(synthesis.result)
+    ? synthesis.result
+    : synthesis.result_structured
+      ? structuredToMarkdown(synthesis.result_structured)
+      : "";
+  const synthesisContextData = buildResearchContextData({
+    topic,
+    progress,
+    primaryText: synthesisBody,
+    synthesisText: synthesisBody,
+    displayTitle: label,
+  });
+  // Plain fn (React Compiler memoizes) — reads the live DOM selection at click.
+  const getSynthesisApplicationScope = () => {
+    const selectedText =
+      typeof window !== "undefined"
+        ? (window.getSelection()?.toString() ?? "")
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: null,
+      contextData: synthesisContextData,
+    });
+  };
 
   const statusColors: Record<string, string> = {
     complete:
@@ -111,7 +145,16 @@ function SynthesisCard({
                   reason={synthesis.error || "Synthesis stopped early."}
                 />
               )}
-              <MarkdownStream content={synthesis.result!} />
+              <UnifiedAgentContextMenu
+                {...RESEARCH_CONTEXT_MENU_PROPS}
+                isEditable={false}
+                getApplicationScope={getSynthesisApplicationScope}
+                contextData={synthesisContextData}
+              >
+                <div>
+                  <MarkdownStream content={synthesis.result!} />
+                </div>
+              </UnifiedAgentContextMenu>
               <div className="flex justify-end">
                 <ContentActionBar
                   content={synthesis.result!}
@@ -136,9 +179,18 @@ function SynthesisCard({
                   reason={synthesis.error || "Synthesis stopped early."}
                 />
               )}
-              <MarkdownStream
-                content={structuredToMarkdown(synthesis.result_structured)}
-              />
+              <UnifiedAgentContextMenu
+                {...RESEARCH_CONTEXT_MENU_PROPS}
+                isEditable={false}
+                getApplicationScope={getSynthesisApplicationScope}
+                contextData={synthesisContextData}
+              >
+                <div>
+                  <MarkdownStream
+                    content={structuredToMarkdown(synthesis.result_structured)}
+                  />
+                </div>
+              </UnifiedAgentContextMenu>
             </div>
           ) : synthesis.error ? (
             // No content at all + an error → a real failure.

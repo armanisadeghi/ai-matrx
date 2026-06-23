@@ -74,6 +74,12 @@ import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayNa
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 import TextArrayInput from "@/components/official/TextArrayInput";
+import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import {
+  buildResearchContextData,
+  RESEARCH_CONTEXT_MENU_PROPS,
+} from "@/features/research/agent-context/buildResearchContextData";
 
 type Mode = "manual" | "template" | "ai";
 
@@ -1246,6 +1252,36 @@ export default function ResearchInitForm() {
   const [aiPhase, setAiPhase] = useState<AiPhase>({ status: "idle" });
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
+  // ── Surface agent context (matrx-user/research) ───────────────────────────
+  // The AI-mode subject field IS the research query. Right-clicking it (or
+  // using the ProTextarea "…" menu) runs surface-bound agents over the typed
+  // query with the draft topic name / keywords as scope. No topic row exists
+  // yet, so we emit the draft values; `getApplicationScope` reads the live
+  // textarea selection at click time (plain fn — React Compiler memoizes it).
+  const subjectRef = useRef<HTMLTextAreaElement | null>(null);
+  const subjectContextData = buildResearchContextData({
+    primaryText: subjectDescription,
+    draftTopicName: topicName || subjectDescription,
+    draftTopicDescription: additionalInstructions || undefined,
+    keywords: selectedKeywords,
+  });
+  const getSubjectApplicationScope = () => {
+    const el = subjectRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const selectedText =
+      el && start !== end
+        ? el.value.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el
+        ? { type: "editable", element: el, start, end }
+        : null,
+      contextData: subjectContextData,
+    });
+  };
+
   // ── Hierarchy data ────────────────────────────────────────────────────────
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
   const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
@@ -2200,17 +2236,29 @@ export default function ResearchInitForm() {
                   <label className="text-sm font-medium text-foreground">
                     Subject
                   </label>
-                  <ProTextarea
-                    value={subjectDescription}
-                    onChange={(e) => setSubjectDescription(e.target.value)}
-                    placeholder="e.g., How electric vehicle adoption is reshaping the used car market — pricing trends, consumer sentiment, and which brands are winning…"
-                    autoGrow
-                    minHeight={160}
-                    maxHeight={320}
-                    autoFocus
-                    className="text-base text-foreground"
-                    wrapperClassName="w-full"
-                  />
+                  <UnifiedAgentContextMenu
+                    {...RESEARCH_CONTEXT_MENU_PROPS}
+                    isEditable
+                    getTextarea={() => subjectRef.current}
+                    getApplicationScope={getSubjectApplicationScope}
+                    onTextReplace={setSubjectDescription}
+                    contextData={subjectContextData}
+                  >
+                    <ProTextarea
+                      ref={subjectRef}
+                      surfaceName={RESEARCH_CONTEXT_MENU_PROPS.surfaceName}
+                      getApplicationScope={getSubjectApplicationScope}
+                      value={subjectDescription}
+                      onChange={(e) => setSubjectDescription(e.target.value)}
+                      placeholder="e.g., How electric vehicle adoption is reshaping the used car market — pricing trends, consumer sentiment, and which brands are winning…"
+                      autoGrow
+                      minHeight={160}
+                      maxHeight={320}
+                      autoFocus
+                      className="text-base text-foreground"
+                      wrapperClassName="w-full"
+                    />
+                  </UnifiedAgentContextMenu>
                 </div>
 
                 <div className="rounded-xl bg-violet-500/5 border border-violet-500/15 p-4 space-y-2">

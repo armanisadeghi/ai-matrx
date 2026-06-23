@@ -43,6 +43,24 @@ type StandaloneCodeEditor = {
   }) => { dispose: () => void };
   getSelection: () => MonacoSelection | null;
   getModel: () => MonacoModel | null;
+  /**
+   * Apply edits to the buffer (e.g. agent text-replace / insert). `range` is a
+   * plain `IRange` (the four 1-based line/column fields). Mirrors Monaco's
+   * `IStandaloneCodeEditor.executeEdits`.
+   */
+  executeEdits: (
+    source: string,
+    edits: Array<{
+      range: {
+        startLineNumber: number;
+        startColumn: number;
+        endLineNumber: number;
+        endColumn: number;
+      };
+      text: string;
+      forceMoveMarkers?: boolean;
+    }>,
+  ) => boolean;
 };
 
 export type MonacoSelection = {
@@ -63,6 +81,8 @@ export type MonacoModel = {
   getLineCount: () => number;
   getLineContent: (lineNumber: number) => string;
   getLanguageId: () => string;
+  /** Character offset (0-based) of a 1-based line/column position. */
+  getOffsetAt: (position: { lineNumber: number; column: number }) => number;
   uri: { path: string };
 };
 
