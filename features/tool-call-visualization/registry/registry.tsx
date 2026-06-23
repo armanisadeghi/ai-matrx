@@ -30,6 +30,8 @@ import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles/SeoMetaTitlesI
 import { SeoMetaTitlesOverlay } from "../renderers/seo-meta-titles/SeoMetaTitlesOverlay";
 import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsInline";
 import { SeoMetaDescriptionsOverlay } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsOverlay";
+import { PicklistInline } from "../renderers/picklist/PicklistInline";
+import { PicklistOverlay } from "../renderers/picklist/PicklistOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
@@ -369,6 +371,42 @@ export const toolRendererRegistry: ToolRegistry = {
     OverlayComponent: SeoMetaDescriptionsOverlay,
     keepExpandedOnStream: true,
     getHeaderExtras: seoDescriptionsHeaderExtras,
+  },
+
+  picklist: {
+    toolName: "picklist",
+    displayName: "Picklist",
+    phaseLabels: {
+      running: "Building picklist",
+      complete: "Picklist ready",
+      errorPrefix: "Picklist action failed",
+    },
+    resultsLabel: "Picklist",
+    InlineComponent: PicklistInline,
+    OverlayComponent: PicklistOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const name =
+        (typeof result?.list_name === "string" && result.list_name) ||
+        getArg<string>(entry, "picklist_name");
+      return typeof name === "string" && name ? name : null;
+    },
+    getHeaderExtras: (entry) => {
+      const result = resultAsObject(entry);
+      const count =
+        typeof result?.item_count === "number"
+          ? (result.item_count as number)
+          : undefined;
+      if (count == null) return null;
+      return (
+        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+          <span>
+            {count} {count === 1 ? "item" : "items"}
+          </span>
+        </div>
+      );
+    },
   },
 
   web_search_v1: {
@@ -953,6 +991,7 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "seo_check_meta_tags_batch",
   "seo_check_meta_titles",
   "seo_check_meta_descriptions",
+  "picklist", // the created/loaded list is the deliverable
   "random_wheel",
 ]);
 
