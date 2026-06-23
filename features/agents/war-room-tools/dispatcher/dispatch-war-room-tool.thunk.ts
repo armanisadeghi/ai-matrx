@@ -55,7 +55,7 @@ export interface DispatchWarRoomToolPayload {
 export const dispatchWarRoomTool = createAsyncThunk<
   void,
   DispatchWarRoomToolPayload,
-  { state: RootState }
+  { state: RootState; dispatch: AppDispatch }
 >(
   "warRoomTools/dispatch",
   async (

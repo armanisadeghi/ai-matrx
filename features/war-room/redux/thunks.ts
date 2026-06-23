@@ -22,31 +22,37 @@ import {
 import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
 import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
+  selectActiveAudioSessionId,
+  selectActiveNoteId,
   selectEffectiveTileProjectId,
+  selectNoteIdsForTile,
   selectTileEffectiveContext,
+  selectTileTaskId,
 } from "./selectors";
 import * as service from "../service";
-import type {
-  CreateSessionInput,
-  CreateTileInput,
-  TileFlavor,
-  TileTab,
-  WarRoomSession,
-  WarRoomSessionUpdate,
-  WarRoomTile,
-  WarRoomTileUpdate,
+import * as assoc from "../service/associations";
+import {
+  containerKey,
+  roomRef,
+  threadRef,
+  type ContainerRef,
+  type CreateSessionInput,
+  type CreateTileInput,
+  type TileFlavor,
+  type TileTab,
+  type WarRoomAssignment,
+  type WarRoomSession,
+  type WarRoomSessionUpdate,
+  type WarRoomTile,
+  type WarRoomTileUpdate,
 } from "../types";
 import {
-  attachmentRemoved,
-  attachmentsLoadedForTile,
-  attachmentUpserted,
-  audioSessionLinkedToTile,
-  audioSessionsLoadedForTile,
+  assignmentActiveSet,
+  assignmentRemoved,
+  assignmentsLoadedBulk,
+  assignmentsLoadedForContainer,
+  assignmentUpserted,
   clearSessionTiles,
-  noteLinkedToTile,
-  noteSessionsLoadedForTile,
-  setActiveAudioSession,
-  setActiveNote,
   sessionRemoved,
   sessionsLoaded,
   sessionUpserted,
@@ -55,10 +61,10 @@ import {
   setListStatus,
   setTileActiveTab,
   setTileHidden,
-  setTileLink,
   setTilePinned,
   setTilesStatus,
   tileRemoved,
+  tileSessionChanged,
   tilesLoadedForSession,
   tileUpserted,
 } from "./slice";
@@ -219,86 +225,34 @@ export const loadWarRoomSession =
 
       dispatch(sessionUpserted(session));
       dispatch(tilesLoadedForSession({ sessionId: id, tiles }));
-      // Hydrate linked tasks into the agent-context slice (fire-and-forget).
-      void dispatch(hydrateTileTasks(tiles));
 
-      // Audio links keyed off the tiles we just fetched (no extra listTiles).
-      const audioLinks = await service.listAudioLinksForTiles(
-        tiles.map((t) => t.id),
-      );
+      // ONE query for every association across the room + all its threads
+      // (notes, tasks, studio sessions, files, documents, conversations).
+      const refs: ContainerRef[] = [
+        roomRef(id),
+        ...tiles.map((t) => threadRef(t.id)),
+      ];
+      const assignments = await assoc.listAssignmentsForContainers(refs);
 
-      // Group audio links per tile.
-      const byTile = new Map<
-        string,
-        { ids: string[]; activeId: string | null }
-      >();
-      for (const link of audioLinks) {
-        const entry = byTile.get(link.tile_id) ?? { ids: [], activeId: null };
-        entry.ids.push(link.studio_session_id);
-        if (link.is_active) entry.activeId = link.studio_session_id;
-        byTile.set(link.tile_id, entry);
-      }
-      for (const [tileId, { ids, activeId }] of byTile) {
-        dispatch(
-          audioSessionsLoadedForTile({
-            tileId,
-            studioSessionIds: ids,
-            activeId: activeId ?? ids[0] ?? null,
-          }),
+      // Seed an (empty) bucket for every container so a tile that lost its last
+      // assignment doesn't keep showing a stale one, then group rows by key.
+      const byContainer: Record<string, WarRoomAssignment[]> = {};
+      for (const ref of refs) byContainer[containerKey(ref.type, ref.id)] = [];
+      for (const a of assignments) {
+        const key = containerKey(
+          a.container_type as ContainerRef["type"],
+          a.container_id,
         );
+        (byContainer[key] ??= []).push(a);
       }
+      dispatch(assignmentsLoadedBulk({ byContainer }));
 
-      // Note links keyed off the same tiles (mirror of the audio batch).
-      const noteLinks = await service.listNoteLinksForTiles(
-        tiles.map((t) => t.id),
-      );
-
-      const notesByTile = new Map<
-        string,
-        { ids: string[]; activeId: string | null }
-      >();
-      for (const link of noteLinks) {
-        const entry = notesByTile.get(link.tile_id) ?? { ids: [], activeId: null };
-        entry.ids.push(link.note_id);
-        if (link.is_active) entry.activeId = link.note_id;
-        notesByTile.set(link.tile_id, entry);
-      }
-      // A tile may carry a note_id (the backfilled/active pointer) without a
-      // link row yet — resolve it so it still appears as the active note.
-      for (const tile of tiles) {
-        if (tile.note_id && !notesByTile.has(tile.id)) {
-          notesByTile.set(tile.id, {
-            ids: [tile.note_id],
-            activeId: tile.note_id,
-          });
-        }
-      }
-      for (const [tileId, { ids, activeId }] of notesByTile) {
-        dispatch(
-          noteSessionsLoadedForTile({
-            tileId,
-            noteIds: ids,
-            activeId: activeId ?? ids[0] ?? null,
-          }),
-        );
-      }
-
-      // Attachment links (files + documents) keyed off the same tiles. Group
-      // per tile and seed each tile's list — including empty lists so a tile
-      // that lost its only attachment doesn't keep showing a stale one.
-      const attachments = await service.listAttachmentsForTiles(
-        tiles.map((t) => t.id),
-      );
-      const attachmentsByTile = new Map<string, typeof attachments>();
-      for (const tile of tiles) attachmentsByTile.set(tile.id, []);
-      for (const a of attachments) {
-        const list = attachmentsByTile.get(a.tile_id) ?? [];
-        list.push(a);
-        attachmentsByTile.set(a.tile_id, list);
-      }
-      for (const [tileId, list] of attachmentsByTile) {
-        dispatch(attachmentsLoadedForTile({ tileId, attachments: list }));
-      }
+      // Hydrate the threads' linked tasks into the agent-context slice so the
+      // Task tab renders after a fresh load (fire-and-forget).
+      const taskIds = assignments
+        .filter((a) => a.entity_type === "task")
+        .map((a) => a.entity_id);
+      void dispatch(hydrateTileTasks(taskIds));
 
       void service.touchSessionOpened(id);
       return session;
@@ -659,8 +613,9 @@ function deriveTileNoteLabel(state: RootState, tileId: string): string {
   const roomName =
     (sessionId && state.warRoom.sessionsById[sessionId]?.title?.trim()) ||
     "War Room";
-  const taskTitle = tile?.task_id
-    ? selectTaskById(state, tile.task_id)?.title?.trim()
+  const taskId = selectTileTaskId(tileId)(state);
+  const taskTitle = taskId
+    ? selectTaskById(state, taskId)?.title?.trim()
     : undefined;
   const ordinal = sessionId
     ? (state.warRoom.tileIdsBySession[sessionId]?.indexOf(tileId) ?? -1)
@@ -672,7 +627,7 @@ function deriveTileNoteLabel(state: RootState, tileId: string): string {
   const base =
     threadLabel === roomName ? roomName : `${roomName} — ${threadLabel}`;
   // Index among the tile's existing notes — the 2nd+ note gets a "(N)" suffix.
-  const existing = state.warRoom.noteIdsByTile[tileId]?.length ?? 0;
+  const existing = selectNoteIdsForTile(tileId)(state).length;
   const n = existing + 1;
   return n > 1 ? `${base} (${n})` : base;
 }
@@ -687,22 +642,30 @@ export const createTileNote =
   async (dispatch: AppDispatch, getState: () => RootState) => {
     const key = `note:${tileId}`;
     const tile = getState().warRoom.tilesById[tileId];
-    if (!tile || tile.note_id) return tile?.note_id ?? null;
+    const existingNote = selectActiveNoteId(tileId)(getState());
+    if (!tile || existingNote) return existingNote;
     if (inFlightTileOps.has(key)) return null;
     inFlightTileOps.add(key);
     try {
       const note = await createNote({
         content: "",
         label: deriveTileNoteLabel(getState(), tileId),
-        task_id: tile.task_id ?? undefined,
+        task_id: selectTileTaskId(tileId)(getState()) ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
-      await service.createTileNoteLink(tileId, note.id);
-      dispatch(setTileLink({ id: tileId, noteId: note.id }));
-      dispatch(noteLinkedToTile({ tileId, noteId: note.id }));
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "note",
+        entityId: note.id,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+      );
       return note.id;
-    } catch {
-      toast.error("Couldn't create the note");
+    } catch (err) {
+      reportWarRoomError("createTileNote", err, {
+        toast: "Couldn't create the note",
+      });
       return null;
     } finally {
       inFlightTileOps.delete(key);
@@ -737,7 +700,8 @@ export const createTileTask =
   async (dispatch: AppDispatch, getState: () => RootState) => {
     const key = `task:${tileId}`;
     const tile = getState().warRoom.tilesById[tileId];
-    if (!tile || tile.task_id) return tile?.task_id ?? null;
+    const existingTask = selectTileTaskId(tileId)(getState());
+    if (!tile || existingTask) return existingTask;
     if (inFlightTileOps.has(key)) return null;
     inFlightTileOps.add(key);
     try {
@@ -756,17 +720,19 @@ export const createTileTask =
         }),
       ).unwrap();
       if (!taskId) return null;
-      await service.updateTile(tileId, { task_id: taskId });
-      dispatch(setTileLink({ id: tileId, taskId }));
-      // Keep ALL of the tile's linked notes associated with the task (best
-      // effort). Fall back to the tile's note_id pointer if no links loaded.
-      const linkedNoteIds = getState().warRoom.noteIdsByTile[tileId];
-      const noteIds =
-        linkedNoteIds && linkedNoteIds.length > 0
-          ? linkedNoteIds
-          : tile.note_id
-            ? [tile.note_id]
-            : [];
+      const taskAssignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "task",
+        entityId: taskId,
+      });
+      dispatch(
+        assignmentUpserted({
+          key: containerKey("thread", tileId),
+          assignment: taskAssignment,
+        }),
+      );
+      // Keep ALL of the tile's linked notes associated with the task (best effort).
+      const noteIds = selectNoteIdsForTile(tileId)(getState());
       await Promise.all(
         noteIds.map((noteId) =>
           updateNoteApi(noteId, { task_id: taskId }).catch((err) =>
@@ -803,15 +769,13 @@ export const loadTileSubtasks =
     }
   };
 
-/** Pull the tiles' linked tasks into the agent-context slice so the Task tab
+/** Pull the threads' linked tasks into the agent-context slice so the Task tab
  *  can render them after a fresh room load. Fire-and-forget. */
 export const hydrateTileTasks =
-  (tiles: WarRoomTile[]) => async (dispatch: AppDispatch) => {
-    const taskIds = [
-      ...new Set(tiles.map((t) => t.task_id).filter((id): id is string => !!id)),
-    ];
-    if (taskIds.length === 0) return;
-    const tasks = await Promise.all(taskIds.map((id) => taskService.getTaskById(id)));
+  (taskIds: string[]) => async (dispatch: AppDispatch) => {
+    const unique = [...new Set(taskIds.filter((id): id is string => !!id))];
+    if (unique.length === 0) return;
+    const tasks = await Promise.all(unique.map((id) => taskService.getTaskById(id)));
     for (const t of tasks) {
       if (t) dispatch(upsertTaskWithLevel({ record: toTaskRecord(t), level: "full-data" }));
     }
@@ -842,13 +806,19 @@ export const addAudioSessionToTile =
         }),
       ).unwrap();
       if (!session) return null;
-      await service.createTileAudioLink(tileId, session.id);
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "studio_session",
+        entityId: session.id,
+      });
       dispatch(
-        audioSessionLinkedToTile({ tileId, studioSessionId: session.id }),
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
       );
       return session.id;
-    } catch {
-      toast.error("Couldn't start an audio session");
+    } catch (err) {
+      reportWarRoomError("addAudioSessionToTile", err, {
+        toast: "Couldn't start an audio session",
+      });
       return null;
     } finally {
       inFlightTileOps.delete(key);
@@ -859,12 +829,24 @@ export const addAudioSessionToTile =
 export const setTileActiveAudioSession =
   (tileId: string, studioSessionId: string) =>
   async (dispatch: AppDispatch) => {
-    dispatch(setActiveAudioSession({ tileId, studioSessionId }));
+    dispatch(
+      assignmentActiveSet({
+        key: containerKey("thread", tileId),
+        entityType: "studio_session",
+        entityId: studioSessionId,
+      }),
+    );
     dispatch(fetchRawSegmentsThunk({ sessionId: studioSessionId }));
     try {
-      await service.setActiveTileAudioLink(tileId, studioSessionId);
-    } catch {
-      toast.error("Couldn't switch the audio session");
+      await assoc.setActiveAssignment(
+        threadRef(tileId),
+        "studio_session",
+        studioSessionId,
+      );
+    } catch (err) {
+      reportWarRoomError("setTileActiveAudioSession", err, {
+        toast: "Couldn't switch the audio session",
+      });
     }
   };
 
@@ -872,7 +854,7 @@ export const setTileActiveAudioSession =
 export const ensureTileAudioSession =
   (tileId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
-    const active = getState().warRoom.activeAudioSessionByTile[tileId];
+    const active = selectActiveAudioSessionId(tileId)(getState());
     if (active) {
       dispatch(fetchRawSegmentsThunk({ sessionId: active }));
       return active;
@@ -882,8 +864,8 @@ export const ensureTileAudioSession =
 
 // ── Notes (multiple notes per tile) ────────────────────────────────────
 // Mirror of the audio sessions: each tile note is a real `notes` row linked
-// via ctx_war_room_tile_notes. The active note also lives on tile.note_id
-// (the is_active analog) so note↔task sync + tile metrics keep working.
+// via a 'note' assignment row (ctx_war_room_assignments). One assignment per
+// note carries is_active; the active note drives note↔task sync + tile metrics.
 
 /** Create a fresh note for a tile, link it, and make it the active one. */
 export const addNoteToTile =
@@ -893,19 +875,25 @@ export const addNoteToTile =
     if (inFlightTileOps.has(key)) return null;
     inFlightTileOps.add(key);
     try {
-      const tile = getState().warRoom.tilesById[tileId];
       const note = await createNote({
         content: "",
         label: deriveTileNoteLabel(getState(), tileId),
-        task_id: tile?.task_id ?? undefined,
+        task_id: selectTileTaskId(tileId)(getState()) ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
-      await service.createTileNoteLink(tileId, note.id);
-      dispatch(setTileLink({ id: tileId, noteId: note.id }));
-      dispatch(noteLinkedToTile({ tileId, noteId: note.id }));
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "note",
+        entityId: note.id,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+      );
       return note.id;
-    } catch {
-      toast.error("Couldn't create the note");
+    } catch (err) {
+      reportWarRoomError("addNoteToTile", err, {
+        toast: "Couldn't create the note",
+      });
       return null;
     } finally {
       inFlightTileOps.delete(key);
@@ -916,12 +904,19 @@ export const addNoteToTile =
 export const setTileActiveNote =
   (tileId: string, noteId: string) =>
   async (dispatch: AppDispatch) => {
-    dispatch(setActiveNote({ tileId, noteId }));
-    dispatch(setTileLink({ id: tileId, noteId }));
+    dispatch(
+      assignmentActiveSet({
+        key: containerKey("thread", tileId),
+        entityType: "note",
+        entityId: noteId,
+      }),
+    );
     try {
-      await service.setActiveTileNoteLink(tileId, noteId);
-    } catch {
-      toast.error("Couldn't switch the note");
+      await assoc.setActiveAssignment(threadRef(tileId), "note", noteId);
+    } catch (err) {
+      reportWarRoomError("setTileActiveNote", err, {
+        toast: "Couldn't switch the note",
+      });
     }
   };
 
@@ -929,20 +924,9 @@ export const setTileActiveNote =
 export const ensureTileNote =
   (tileId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
-    const active = getState().warRoom.activeNoteByTile[tileId];
+    const active = selectActiveNoteId(tileId)(getState());
     if (active) return active;
-    // A tile may already carry a backfilled note_id without a loaded link.
     const tile = getState().warRoom.tilesById[tileId];
-    if (tile?.note_id) {
-      dispatch(
-        noteSessionsLoadedForTile({
-          tileId,
-          noteIds: [tile.note_id],
-          activeId: tile.note_id,
-        }),
-      );
-      return tile.note_id;
-    }
     return dispatch(addNoteToTile(tileId, tile?.session_id ?? ""));
   };
 
@@ -1015,12 +999,19 @@ export const persistTilePositions =
 // attachment row is just the link. Display details are hydrated client-side in
 // the Files tab (useFile for files, document-service for documents).
 
-/** Load a tile's attachment rows into the slice (Files tab mount). */
+/** Refresh a tile's full assignment bucket (Files tab mount / isolated tile). */
 export const loadTileAttachments =
   (tileId: string) => async (dispatch: AppDispatch) => {
     try {
-      const attachments = await service.listTileAttachments(tileId);
-      dispatch(attachmentsLoadedForTile({ tileId, attachments }));
+      const assignments = await assoc.listAssignmentsForContainer(
+        threadRef(tileId),
+      );
+      dispatch(
+        assignmentsLoadedForContainer({
+          key: containerKey("thread", tileId),
+          assignments,
+        }),
+      );
     } catch (err) {
       // Background load — log loudly (so a failure is no longer invisible) but
       // don't toast; the section just shows empty.
@@ -1047,13 +1038,15 @@ export const attachFileToTile =
   (tileId: string, fileId: string, label?: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const attachment = await service.attachToTile(
-        tileId,
-        "user_file",
-        fileId,
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "user_file",
+        entityId: fileId,
         label,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
       );
-      dispatch(attachmentUpserted({ tileId, attachment }));
       return true;
     } catch (err) {
       // Re-attaching the same file is a no-op, not a failure.
@@ -1073,13 +1066,15 @@ export const attachDocumentToTile =
   (tileId: string, documentId: string, label?: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const attachment = await service.attachToTile(
-        tileId,
-        "document",
-        documentId,
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "document",
+        entityId: documentId,
         label,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
       );
-      dispatch(attachmentUpserted({ tileId, attachment }));
       return true;
     } catch (err) {
       // Re-attaching the same document is a no-op, not a failure.
@@ -1094,13 +1089,120 @@ export const attachDocumentToTile =
     }
   };
 
+/**
+ * Link an agent conversation (cx_conversation.id) to a tile — so a thread "holds"
+ * its agent conversations as first-class associations (the durable thread agent
+ * registers its conversation here). Idempotent: re-linking the same conversation
+ * is a no-op. NEW capability the association model unlocks.
+ */
+export const attachConversationToTile =
+  (tileId: string, conversationId: string, label?: string | null) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "conversation",
+        entityId: conversationId,
+        label,
+        makeActive: true,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+      );
+      return true;
+    } catch (err) {
+      if (isUniqueViolation(err)) return true; // already linked
+      reportWarRoomError("attachConversationToTile", err, { toast: false });
+      return false;
+    }
+  };
+
+// ── Thread portability (move / import between rooms) ───────────────────
+// A thread (tile) and its resources are a portable unit: its assignments are
+// keyed by the tile id (container_id), so MOVING a thread is just re-pointing
+// its session_id — every resource travels with it. IMPORTING copies the thread
+// + its assignment rows into another room, leaving the original intact. This is
+// how a user spins up a fresh room and pulls a still-relevant thread across as
+// the old room winds down.
+
+/** Move a thread into another room (re-point session_id; resources travel along). */
+export const moveThreadToRoom =
+  (tileId: string, targetSessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return false;
+    const fromSessionId = tile.session_id;
+    if (fromSessionId === targetSessionId) return true; // already there
+    try {
+      const updated = await service.updateTile(tileId, {
+        session_id: targetSessionId,
+      });
+      dispatch(
+        tileSessionChanged({ id: tileId, fromSessionId, toSessionId: targetSessionId }),
+      );
+      dispatch(tileUpserted(updated));
+      toast.success("Thread moved");
+      return true;
+    } catch (err) {
+      reportWarRoomError("moveThreadToRoom", err, {
+        toast: "Couldn't move the thread",
+      });
+      return false;
+    }
+  };
+
+/**
+ * Import a COPY of a thread into another room: duplicate the tile (its identity)
+ * and copy its assignment rows onto the new tile, leaving the source untouched.
+ * Returns the new tile id (null on failure).
+ */
+export const importThreadToRoom =
+  (tileId: string, targetSessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return null;
+    try {
+      const position =
+        getState().warRoom.tileIdsBySession[targetSessionId]?.length ?? 0;
+      const newTile = await service.createTile({
+        sessionId: targetSessionId,
+        title: tile.title,
+        flavor: (tile.flavor as TileFlavor) ?? "thread",
+        projectId: tile.project_id,
+        activeTab: (tile.active_tab as TileTab) ?? "task",
+        position,
+      });
+      dispatch(tileUpserted(newTile));
+      // Copy every resource assignment onto the new thread.
+      const copied = await assoc.copyContainerAssignments(
+        threadRef(tileId),
+        threadRef(newTile.id),
+      );
+      dispatch(
+        assignmentsLoadedForContainer({
+          key: containerKey("thread", newTile.id),
+          assignments: copied,
+        }),
+      );
+      toast.success("Thread imported");
+      return newTile.id;
+    } catch (err) {
+      reportWarRoomError("importThreadToRoom", err, {
+        toast: "Couldn't import the thread",
+      });
+      return null;
+    }
+  };
+
 /** Remove a tile's attachment link (the file/document itself is untouched). */
 export const detachTileAttachment =
   (tileId: string, attachmentId: string) => async (dispatch: AppDispatch) => {
     // Optimistic — the link is cheap to re-create.
-    dispatch(attachmentRemoved({ tileId, id: attachmentId }));
+    dispatch(
+      assignmentRemoved({ key: containerKey("thread", tileId), id: attachmentId }),
+    );
     try {
-      await service.detachFromTile(attachmentId);
+      await assoc.removeAssignment(attachmentId);
     } catch (err) {
       dispatch(loadTileAttachments(tileId));
       reportWarRoomError("detachTileAttachment", err, {

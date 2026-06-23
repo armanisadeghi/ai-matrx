@@ -7,12 +7,12 @@
  * master tools (read / message-fork) resolve a thread identically and from a
  * single place.
  *
- * Chain (mirrors masterAgentContext): tile → its ACTIVE audio session link →
- * `studio_sessions.assistant_conversation_id`. We query `studio_sessions`
- * directly (not studioService.getSession — that excludes source='war_room').
- * Everything is owner-scoped: getTile + the audio-link reads + studio_sessions
- * are all RLS-gated to the authenticated user, so a thread the user can't see
- * never resolves.
+ * Chain (mirrors masterAgentContext): tile → its ACTIVE 'studio_session'
+ * assignment → `studio_sessions.assistant_conversation_id`. We query
+ * `studio_sessions` directly (not studioService.getSession — that excludes
+ * source='war_room'). Everything is owner-scoped: getTile + the assignment reads
+ * + studio_sessions are all RLS-gated to the authenticated user, so a thread the
+ * user can't see never resolves.
  *
  * Returns the resolved tile + (possibly null) conversationId. `conversationId`
  * is null when the thread has no audio session yet, or that session never
@@ -22,8 +22,9 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { getTile, listTileAudioSessions } from "@/features/war-room/service";
-import type { WarRoomTile } from "@/features/war-room/types";
+import { getTile } from "@/features/war-room/service";
+import { listAssignmentsForContainer } from "@/features/war-room/service/associations";
+import { threadRef, type WarRoomTile } from "@/features/war-room/types";
 
 export interface ResolvedThread {
   tile: WarRoomTile;
@@ -46,15 +47,17 @@ export async function resolveThread(
   if (!tile) return null;
 
   // Active audio session for the tile (mirror of masterAgentContext: prefer the
-  // flagged-active link, else the first by position).
+  // flagged-active 'studio_session' assignment, else the first by position). The
+  // assignment rows replace the old tile↔audio link table.
   let studioSessionId: string | null = null;
   try {
-    const links = await listTileAudioSessions(threadId);
-    const active = links.find((l) => l.is_active) ?? links[0] ?? null;
-    studioSessionId = active?.studio_session_id ?? null;
+    const rows = await listAssignmentsForContainer(threadRef(threadId));
+    const audio = rows.filter((r) => r.entity_type === "studio_session");
+    const active = audio.find((r) => r.is_active) ?? audio[0] ?? null;
+    studioSessionId = active?.entity_id ?? null;
   } catch (err) {
     console.error(
-      `[war-room/master] resolveThread: audio links failed for ${threadId}:`,
+      `[war-room/master] resolveThread: audio assignments failed for ${threadId}:`,
       err,
     );
   }

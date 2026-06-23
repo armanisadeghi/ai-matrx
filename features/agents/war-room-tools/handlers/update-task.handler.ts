@@ -20,7 +20,7 @@ import type {
 } from "../tools/schemas";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import type { UpdateTaskInput } from "@/features/tasks/services/taskService";
-import { selectTileById } from "@/features/war-room/redux/selectors";
+import { selectTileTaskId } from "@/features/war-room/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 
 export const updateTaskHandler: WarRoomToolHandler<
@@ -31,8 +31,7 @@ export const updateTaskHandler: WarRoomToolHandler<
   async run(args, ctx) {
     const { tileId, dispatch, getState } = ctx;
 
-    const tile = selectTileById(tileId)(getState());
-    const taskId = tile?.task_id ?? null;
+    const taskId = selectTileTaskId(tileId)(getState());
     if (!taskId) {
       return {
         ok: false,

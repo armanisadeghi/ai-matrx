@@ -36,24 +36,89 @@
 import { supabase } from "@/utils/supabase/client";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { getTaskById } from "@/features/tasks/services/taskService";
+import { listSessions, listTiles } from "@/features/war-room/service";
+import { listAssignmentsForContainers } from "@/features/war-room/service/associations";
 import {
-  listSessions,
-  listTiles,
-  listAudioLinksForTiles,
-  listNoteLinksForTiles,
-  listAttachmentsForTiles,
-} from "@/features/war-room/service";
-import type {
-  WarRoomSession,
-  WarRoomTile,
-  WarRoomTileAudioSession,
-  WarRoomTileNote,
-  WarRoomTileAttachment,
+  threadRef,
+  type WarRoomAssignment,
+  type WarRoomSession,
+  type WarRoomTile,
 } from "@/features/war-room/types";
 import {
   buildWarRoomContextEntry,
   type WarRoomRoomModel,
 } from "@/features/war-room/service/warRoomContextXml";
+
+/**
+ * Index a flat list of thread assignment rows into the per-tile signals the
+ * roster needs. Replaces the three deleted `list*ForTiles` link-table readers —
+ * the polymorphic ctx_war_room_assignments table is now the single source. The
+ * tile id is the assignment's `container_id` (container_type='thread').
+ */
+export interface TileAssignmentIndex {
+  /** Active task id per tile (is_active row, else first by position). */
+  taskByTile: Map<string, string>;
+  /** Active note id per tile (is_active row, else first by position). */
+  noteByTile: Map<string, string>;
+  /** Active studio (audio) session id per tile. */
+  activeAudioByTile: Map<string, string>;
+  /** Tiles that have ANY audio session linked. */
+  hasAudioByTile: Set<string>;
+  /** File + document attachment count per tile. */
+  fileCountByTile: Map<string, number>;
+}
+
+export function indexThreadAssignments(
+  rows: WarRoomAssignment[],
+): TileAssignmentIndex {
+  const taskByTile = new Map<string, string>();
+  const noteByTile = new Map<string, string>();
+  const activeAudioByTile = new Map<string, string>();
+  const hasAudioByTile = new Set<string>();
+  const fileCountByTile = new Map<string, number>();
+
+  // Prefer the is_active member of each single-active type; rows arrive ordered
+  // by position so the first seen is the positional fallback.
+  const pickActive = (
+    map: Map<string, string>,
+    row: WarRoomAssignment,
+  ): void => {
+    const tileId = row.container_id;
+    if (row.is_active) map.set(tileId, row.entity_id);
+    else if (!map.has(tileId)) map.set(tileId, row.entity_id);
+  };
+
+  for (const row of rows) {
+    if (row.container_type !== "thread") continue;
+    switch (row.entity_type) {
+      case "task":
+        pickActive(taskByTile, row);
+        break;
+      case "note":
+        pickActive(noteByTile, row);
+        break;
+      case "studio_session":
+        hasAudioByTile.add(row.container_id);
+        pickActive(activeAudioByTile, row);
+        break;
+      case "user_file":
+      case "document":
+        fileCountByTile.set(
+          row.container_id,
+          (fileCountByTile.get(row.container_id) ?? 0) + 1,
+        );
+        break;
+    }
+  }
+
+  return {
+    taskByTile,
+    noteByTile,
+    activeAudioByTile,
+    hasAudioByTile,
+    fileCountByTile,
+  };
+}
 
 // ── Read-only roster value shapes (plain data — no `mutable`/`source` ⇒ ctx_get) ──
 
@@ -173,8 +238,8 @@ export async function buildMasterAgentContext(
     ];
   }
 
-  // Fetch every room's tiles in parallel, then the link/attachment data for the
-  // full tile set in one batched query each (the service `*ForTiles` helpers).
+  // Fetch every room's tiles in parallel, then the assignment data for the full
+  // tile set in one batched query (listAssignmentsForContainers).
   const tilesByRoom = await Promise.all(
     sessions.map(async (s) => {
       try {
@@ -192,56 +257,24 @@ export async function buildMasterAgentContext(
   const allTiles: WarRoomTile[] = tilesByRoom.flatMap((r) => r.tiles);
   const allTileIds = allTiles.map((t) => t.id);
 
-  // Batched cross-tile reads. Each tolerates failure independently — a missing
-  // signal just omits that field from the roster, never blocks it.
-  const [audioLinks, noteLinks, attachments] = await Promise.all([
-    listAudioLinksForTiles(allTileIds).catch((err) => {
-      console.error("[war-room/master] listAudioLinksForTiles failed:", err);
-      return [] as WarRoomTileAudioSession[];
-    }),
-    listNoteLinksForTiles(allTileIds).catch((err) => {
-      console.error("[war-room/master] listNoteLinksForTiles failed:", err);
-      return [] as WarRoomTileNote[];
-    }),
-    listAttachmentsForTiles(allTileIds).catch((err) => {
-      console.error("[war-room/master] listAttachmentsForTiles failed:", err);
-      return [] as WarRoomTileAttachment[];
-    }),
-  ]);
-
-  // ── Index the batched links per tile ──────────────────────────────────
-  // Active audio session per tile (the one whose Agent+ conversation we want).
-  const activeAudioByTile = new Map<string, string>();
-  const hasAudioByTile = new Set<string>();
-  for (const link of audioLinks) {
-    hasAudioByTile.add(link.tile_id);
-    if (link.is_active) activeAudioByTile.set(link.tile_id, link.studio_session_id);
+  // ONE batched read of the polymorphic assignment table for every tile (thread
+  // container), then index per tile. Tolerates failure — a missing signal just
+  // omits that field from the roster, never blocks it.
+  let assignments: WarRoomAssignment[] = [];
+  try {
+    assignments = await listAssignmentsForContainers(
+      allTileIds.map((id) => threadRef(id)),
+    );
+  } catch (err) {
+    console.error("[war-room/master] listAssignmentsForContainers failed:", err);
   }
-  // Fall back to the first linked session when none is flagged active.
-  for (const link of audioLinks) {
-    if (!activeAudioByTile.has(link.tile_id)) {
-      activeAudioByTile.set(link.tile_id, link.studio_session_id);
-    }
-  }
-
-  // Active note id per tile (prefer the flagged-active link; the tile.note_id
-  // pointer is the secondary source, handled below per-tile).
-  const activeNoteByTile = new Map<string, string>();
-  for (const link of noteLinks) {
-    if (link.is_active && !activeNoteByTile.has(link.tile_id)) {
-      activeNoteByTile.set(link.tile_id, link.note_id);
-    }
-  }
-  for (const link of noteLinks) {
-    if (!activeNoteByTile.has(link.tile_id)) {
-      activeNoteByTile.set(link.tile_id, link.note_id);
-    }
-  }
-
-  const fileCountByTile = new Map<string, number>();
-  for (const a of attachments) {
-    fileCountByTile.set(a.tile_id, (fileCountByTile.get(a.tile_id) ?? 0) + 1);
-  }
+  const {
+    taskByTile,
+    noteByTile: activeNoteByTile,
+    activeAudioByTile,
+    hasAudioByTile,
+    fileCountByTile,
+  } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
   // The thread agent's conversation id = studio_sessions.assistant_conversation_id
@@ -274,7 +307,11 @@ export async function buildMasterAgentContext(
   // chokepoint (ESLint enforces). Batched via Promise.all (the rooms-roster is
   // a low-frequency, on-open build, so N small reads are acceptable here).
   const taskIds = [
-    ...new Set(allTiles.map((t) => t.task_id).filter((id): id is string => !!id)),
+    ...new Set(
+      allTiles
+        .map((t) => taskByTile.get(t.id) ?? null)
+        .filter((id): id is string => !!id),
+    ),
   ];
   const taskTitleById = new Map<string, string>();
   if (taskIds.length > 0) {
@@ -294,11 +331,11 @@ export async function buildMasterAgentContext(
     }
   }
 
-  // Note ids: the active link OR the tile's own note_id pointer.
+  // Note ids: the active 'note' assignment per tile.
   const noteIds = [
     ...new Set(
       allTiles
-        .map((t) => activeNoteByTile.get(t.id) ?? t.note_id ?? null)
+        .map((t) => activeNoteByTile.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -325,10 +362,9 @@ export async function buildMasterAgentContext(
   const rooms: MasterRoomEntry[] = sessions.map((session) => {
     const tiles = tilesBySessionId.get(session.id) ?? [];
     const threads: MasterThreadEntry[] = tiles.map((tile, index) => {
-      const taskTitle = tile.task_id
-        ? taskTitleById.get(tile.task_id)
-        : undefined;
-      const noteId = activeNoteByTile.get(tile.id) ?? tile.note_id ?? null;
+      const taskId = taskByTile.get(tile.id) ?? null;
+      const taskTitle = taskId ? taskTitleById.get(taskId) : undefined;
+      const noteId = activeNoteByTile.get(tile.id) ?? null;
       const snippet = noteId
         ? noteSnippet(noteContentById.get(noteId))
         : undefined;

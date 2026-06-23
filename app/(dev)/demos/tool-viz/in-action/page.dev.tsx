@@ -616,7 +616,14 @@ function StreamedTool({
       onDone();
     }
   }, [entry.status, onDone]);
-  return <ToolCallVisualization entries={[entry]} requestId="sim" hasContent />;
+  // NO requestId: this is a simulated stream with no real request in Redux. A
+  // fake `requestId="sim"` made `selectIsLatestToolActivity` return false (no
+  // matching request record) → renderers that gate "live" on it (search) never
+  // showed their live phase and just dumped the final view. Without it,
+  // renderers fall back to `entry.status` and stream correctly while the sim is
+  // non-terminal. The window-panel handoff also runs in snapshot mode, which is
+  // correct here.
+  return <ToolCallVisualization entries={[entry]} hasContent />;
 }
 
 // ─── Progressive markdown reveal ────────────────────────────────────────────

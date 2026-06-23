@@ -36,6 +36,7 @@ import {
   selectSessionById,
   selectTileById,
   selectTileIdsForSession,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import type { WarRoomTile } from "@/features/war-room/types";
 import {
@@ -63,9 +64,9 @@ function tileToThreadModel(
   tile: WarRoomTile,
   index: number,
 ): WarRoomThreadModel {
-  const task = tile.task_id ? selectTaskById(state, tile.task_id) : undefined;
-  const noteId =
-    selectActiveNoteId(tile.id)(state) ?? tile.note_id ?? null;
+  const taskId = selectTileTaskId(tile.id)(state);
+  const task = taskId ? selectTaskById(state, taskId) : undefined;
+  const noteId = selectActiveNoteId(tile.id)(state);
   const note = noteId ? selectNoteById(noteId)(state) : undefined;
   const noteContent = (note?.content ?? "").trim();
   const audioCount = selectAudioSessionIdsForTile(tile.id)(state).length;
@@ -77,7 +78,7 @@ function tileToThreadModel(
     // Tier 1 doesn't resolve sibling conversation ids; the read tool takes the
     // tile id and resolves the chain itself.
     conversationId: null,
-    taskId: tile.task_id ?? null,
+    taskId,
     taskTitle: task?.title,
     taskStatus: task?.status,
     noteId,
@@ -140,11 +141,12 @@ export function buildTileAgentContextEntries(
       "specific body or to act.",
     howTo:
       "Edit THIS thread's task/note with your war_room tools (the user " +
-      "approves each). Read this thread's transcript with " +
-      'context(action="get", key="session_cleaned"). Read ANOTHER thread\'s ' +
-      "chain with war_room_read_thread(thread_id=<its id>). Read or edit any " +
-      "task / note / project / other resource by id with the data / " +
-      "data_action tools.",
+      "approves each). For this thread's transcripts, the ACTIVE recording is " +
+      'in your studio context as `session_cleaned` when one exists; for any/all ' +
+      'recordings use the data tool (resource_type "studio_session"). Read ' +
+      "ANOTHER thread's chain with war_room_read_thread(thread_id=<its id>). " +
+      "Read or edit any task / note / project / other resource by id with the " +
+      "data / data_action tools.",
     room: roomModel,
     currentThreadId: tileId,
   };

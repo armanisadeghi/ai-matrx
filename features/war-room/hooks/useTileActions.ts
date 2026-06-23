@@ -19,9 +19,11 @@ import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindo
 import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/transcriptStudioWindow";
 import {
   selectActiveAudioSessionId,
+  selectActiveNoteId,
   selectEffectiveTileProjectId,
   selectTileById,
   selectTileFlavor,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import {
   deleteTile,
@@ -55,6 +57,8 @@ export function useTileActions(
     selectEffectiveTileProjectId(tileId),
   );
   const audioSessionId = useAppSelector(selectActiveAudioSessionId(tileId));
+  const taskId = useAppSelector(selectTileTaskId(tileId));
+  const noteId = useAppSelector(selectActiveNoteId(tileId));
   const openNoteInWindow = useOpenNoteInWindow();
   const openStudio = useOpenTranscriptStudioWindow();
 
@@ -64,18 +68,18 @@ export function useTileActions(
   const title = tile.title?.trim() || "Untitled thread";
 
   const canExpand =
-    (activeTab === "notes" && !!tile.note_id) ||
+    (activeTab === "notes" && !!noteId) ||
     ((activeTab === "audio" || activeTab === "agent") && !!audioSessionId) ||
     ((activeTab === "task" || activeTab === "combined") &&
       (flavor === "project" && !!effectiveProjectId
         ? true
-        : !!tile.task_id || !!tile.note_id));
+        : !!taskId || !!noteId));
 
   function expand() {
     if (!tile) return;
     switch (activeTab) {
       case "notes":
-        if (tile.note_id) openNoteInWindow({ noteId: tile.note_id });
+        if (noteId) openNoteInWindow({ noteId });
         break;
       case "audio":
       case "agent":
@@ -88,10 +92,10 @@ export function useTileActions(
       case "combined":
         if (flavor === "project" && effectiveProjectId) {
           router.push(`/projects/${effectiveProjectId}`);
-        } else if (tile.task_id) {
-          router.push(`/tasks/${tile.task_id}`);
-        } else if (tile.note_id) {
-          openNoteInWindow({ noteId: tile.note_id });
+        } else if (taskId) {
+          router.push(`/tasks/${taskId}`);
+        } else if (noteId) {
+          openNoteInWindow({ noteId });
         }
         break;
     }

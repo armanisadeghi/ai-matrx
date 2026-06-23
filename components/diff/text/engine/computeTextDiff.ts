@@ -133,15 +133,19 @@ export function computeTextDiff(
       continue;
     }
 
-    // Collect a contiguous change block: all removed then all added.
+    // Collect a contiguous change block: every consecutive non-unchanged op,
+    // in WHATEVER order the LCS emitted them (added-before-removed is common
+    // when a line is edited mid-block — e.g. a phrase inserted into a sentence).
+    // Grouping both sides regardless of order lets the pairing below word-diff
+    // the lines, so an inserted phrase tints only the phrase, not the whole
+    // line. (Collecting only "removed* then added*" left such pairs as
+    // unpaired single-sided lines with no intra-line segments.)
     const removed: number[] = [];
     const added: number[] = [];
-    while (k < ops.length && ops[k].type === "removed") {
-      removed.push((ops[k] as { oldIndex: number }).oldIndex);
-      k++;
-    }
-    while (k < ops.length && ops[k].type === "added") {
-      added.push((ops[k] as { newIndex: number }).newIndex);
+    while (k < ops.length && ops[k].type !== "unchanged") {
+      const cur = ops[k];
+      if (cur.type === "removed") removed.push(cur.oldIndex);
+      else added.push((cur as { newIndex: number }).newIndex);
       k++;
     }
 

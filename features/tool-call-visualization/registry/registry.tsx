@@ -21,12 +21,12 @@ import { ScrapeInline } from "../renderers/scrape/ScrapeInline";
 import { ScrapeOverlay } from "../renderers/scrape/ScrapeOverlay";
 import { parseScrape } from "../renderers/scrape/parseScrape";
 import { NewsInline, NewsOverlay } from "../renderers/news-api";
-import {
-  SeoMetaTagsInline,
-  SeoMetaTagsOverlay,
-} from "../renderers/seo-meta-tags";
-import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles";
-import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions";
+import { SeoMetaTagsInline } from "../renderers/seo-meta-tags/SeoMetaTagsInline";
+import { SeoMetaTagsOverlay } from "../renderers/seo-meta-tags/SeoMetaTagsOverlay";
+import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles/SeoMetaTitlesInline";
+import { SeoMetaTitlesOverlay } from "../renderers/seo-meta-titles/SeoMetaTitlesOverlay";
+import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsInline";
+import { SeoMetaDescriptionsOverlay } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
@@ -298,6 +298,7 @@ export const toolRendererRegistry: ToolRegistry = {
     },
     resultsLabel: "Title Results",
     InlineComponent: SeoMetaTitlesInline,
+    OverlayComponent: SeoMetaTitlesOverlay,
     keepExpandedOnStream: true,
     getHeaderExtras: seoTitlesHeaderExtras,
   },
@@ -312,6 +313,7 @@ export const toolRendererRegistry: ToolRegistry = {
     },
     resultsLabel: "Description Results",
     InlineComponent: SeoMetaDescriptionsInline,
+    OverlayComponent: SeoMetaDescriptionsOverlay,
     keepExpandedOnStream: true,
     getHeaderExtras: seoDescriptionsHeaderExtras,
   },

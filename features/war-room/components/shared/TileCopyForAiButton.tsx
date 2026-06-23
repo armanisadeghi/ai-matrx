@@ -7,8 +7,8 @@ import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCo
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import {
   selectEffectiveTileProjectId,
-  selectTileById,
   selectTileFlavor,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 
 export type TileCopyForAiTarget =
@@ -20,14 +20,13 @@ export function useTileCopyForAiTarget(
   tileId: string,
 ): TileCopyForAiTarget | null {
   const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
-  const tile = useAppSelector((s) => selectTileById(tileId)(s));
   const projectId = useAppSelector((s) =>
     selectEffectiveTileProjectId(tileId)(s),
   );
   const projectName = useAppSelector((s) =>
     projectId ? selectProjectById(s, projectId)?.name : undefined,
   );
-  const taskId = tile?.task_id ?? null;
+  const taskId = useAppSelector((s) => selectTileTaskId(tileId)(s));
   const taskTitle = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId)?.title : undefined,
   );

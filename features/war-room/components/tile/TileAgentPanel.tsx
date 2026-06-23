@@ -52,7 +52,7 @@ import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
   selectActiveNoteId,
   selectAttachmentsForTile,
-  selectTileById,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
@@ -85,16 +85,14 @@ export default function TileAgentPanel({
   // panel re-renders (and rebuilds the extra-context callback) whenever any of
   // them changes. The data itself is already in Redux (hydrated on room load);
   // we only need subtasks pulled in (hydrateTileTasks loads the parent only).
-  const tile = useAppSelector(selectTileById(tileId));
-  const taskId = tile?.task_id ?? null;
+  const taskId = useAppSelector(selectTileTaskId(tileId));
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,
   );
   const subtasks = useAppSelector((s) =>
     taskId ? selectSubtasksByParent(s, taskId) : EMPTY_SUBTASKS,
   );
-  const noteId =
-    useAppSelector(selectActiveNoteId(tileId)) ?? tile?.note_id ?? null;
+  const noteId = useAppSelector(selectActiveNoteId(tileId));
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
