@@ -148,8 +148,15 @@ export function useDiffReveal(
   }, [budgetMs, intervalMs, charsPerTick, region.newMiddle.length]);
 
   // Reset whenever a fresh reveal begins (new texts, replay, or (re)activation).
+  // Mirrors useGraduatedReveal: the single source of the reset. A reveal with
+  // nothing to fill (empty change) resets straight to the settled position, so
+  // the timer effect below never has to touch state for that case.
   useEffect(() => {
-    setStep(active ? -holdTicks * charsPerTick : region.newMiddle.length);
+    setStep(
+      !active || region.newMiddle.length === 0
+        ? region.newMiddle.length
+        : -holdTicks * charsPerTick,
+    );
   }, [active, replayKey, holdTicks, charsPerTick, region.newMiddle.length]);
 
   useEffect(() => {
@@ -157,12 +164,9 @@ export function useDiffReveal(
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (!active) return;
-    // Nothing to fill (identical or empty change) → no timer, settle at done.
-    if (region.newMiddle.length === 0) {
-      setStep(0);
-      return;
-    }
+    // No timer when inactive or there's nothing to fill — the reset effect has
+    // already placed `step` at the settled position.
+    if (!active || region.newMiddle.length === 0) return;
 
     timerRef.current = setInterval(() => {
       setStep((s) => {

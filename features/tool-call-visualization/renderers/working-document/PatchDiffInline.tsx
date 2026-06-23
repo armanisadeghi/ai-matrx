@@ -36,7 +36,7 @@
  *     prepend / insert → the added span against the base.
  */
 
-import React, { useMemo, useRef } from "react";
+import React, { useMemo, useState } from "react";
 import { FileText } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -90,10 +90,11 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   const liveCurrent = useAppSelector(
     selectWorkingDocContent(conversationId ?? ""),
   );
-  // Freeze BEFORE the first time we see content in the live path. The ref keeps
-  // the original even after the post-write re-read mutates `liveCurrent`.
-  const beforeRef = useRef<string | null>(null);
-  if (live && beforeRef.current === null) beforeRef.current = liveCurrent;
+  // Freeze the BEFORE once, at mount — the doc content the moment the patch
+  // begins. A lazy initializer captures it without reading a ref during render,
+  // and it survives the post-write re-read that later mutates `liveCurrent`.
+  // (Only meaningful in the live path; harmless otherwise.)
+  const [frozenBefore] = useState(() => liveCurrent);
 
   // Animate while this is the stream's latest activity OR still running —
   // exactly the canonical search/scrape gating. Persisted snapshots and the
@@ -113,7 +114,7 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   let before: string | null = null;
   let after: string | null = null;
   if (live) {
-    before = beforeRef.current ?? "";
+    before = frozenBefore;
     const applied = applyWorkingDocPatch(before, readPatchArgs(entry.arguments));
     // RECONCILE: once the tool completes and the server re-read has changed the
     // doc, render the server's authoritative content (so a slightly-off
