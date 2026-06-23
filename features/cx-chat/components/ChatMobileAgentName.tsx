@@ -3,7 +3,7 @@
 // ChatMobileAgentName — Mobile header center slot.
 //
 // Reads agent name from URL agentId → agentDefinition slice.
-// Tapping opens AgentPickerSheet — navigates to /ssr/chat/a/{id} on select.
+// Tapping opens AgentPickerSheet — navigates to /demos/chat/a/{id} on select.
 
 import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
@@ -39,7 +39,7 @@ export default function ChatMobileAgentName() {
   const handleAgentSelect = useCallback(
     (agent: { promptId: string }) => {
       setIsPickerOpen(false);
-      router.push(`/ssr/chat/a/${agent.promptId}`);
+      router.push(`/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );

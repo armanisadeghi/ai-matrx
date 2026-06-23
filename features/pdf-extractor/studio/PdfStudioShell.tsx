@@ -142,6 +142,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [pdfPaneEditMode, setPdfPaneEditMode] = useState<PdfPaneEditMode>(null);
   const [cropPagesInput, setCropPagesInput] = useState("");
   const [copyPagesOpen, setCopyPagesOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [inspectorRequestedSection, setInspectorRequestedSection] =
     useState<SectionKey | null>(null);
   // True while a doc fetch is in-flight. Initialized to `true` when an
@@ -411,6 +412,26 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     }
   }, [activeDoc, extractor, docsState, refreshPages, toast]);
 
+  const handleRefresh = useCallback(async () => {
+    if (!activeDoc) return;
+    setRefreshing(true);
+    try {
+      const ok = await extractor.refreshDocument(activeDoc.id);
+      if (!ok) {
+        toast.error("Could not refresh this document");
+        return;
+      }
+      const fresh = await extractor.fetchDocument(activeDoc.id);
+      if (fresh) setActiveDoc(fresh);
+      refreshPages();
+      docsState.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Refresh failed");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeDoc, extractor, refreshPages, docsState, toast]);
+
   // ── PDF pane edit modes (crop / reorder) ─────────────────────────────
 
   const handleStartCrop = useCallback((pagesInput: string) => {
@@ -624,6 +645,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           liveStatus={liveStatus}
           onOpenSource={handleOpenSource}
           onOpenCopyPages={() => setCopyPagesOpen(true)}
+          onRefresh={() => void handleRefresh()}
+          refreshing={refreshing}
           onRename={handleRenameDoc}
           onDeleteDoc={handleDeleteDoc}
         />

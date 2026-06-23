@@ -14,7 +14,7 @@
  *
  *   Execution fetch (Tier 2):
  *     Triggered whenever an agentId appears in the URL — either the
- *     /ssr/chat/a/[agentId] route or the ?agent=[agentId] search param.
+ *     /demos/chat/a/[agentId] route or the ?agent=[agentId] search param.
  *     Dispatches fetchAgentExecutionMinimal (idempotent via the thunk's own
  *     guard), then hydrates activeChatSlice with the full config.
  *
@@ -47,7 +47,7 @@ import type { RootState } from "@/lib/redux/store";
 
 /**
  * Extract agentId from pathname + searchParams.
- * Supports /ssr/chat/a/[agentId] and /ssr/chat/c/[id]?agent=[agentId].
+ * Supports /demos/chat/a/[agentId] and /demos/chat/c/[id]?agent=[agentId].
  */
 function resolveAgentIdFromUrl(
   pathname: string,

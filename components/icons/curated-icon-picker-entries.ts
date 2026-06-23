@@ -31,7 +31,7 @@ export type CuratedPickerAiTapEntry = {
   label: string;
   /** Written to the icon field — must resolve via IconResolver / validation */
   selectValue: string;
-  /** Brand tiles: full color like `/ssr/demos/button-demo` provider row */
+  /** Brand tiles: full color like `/demos/button-demo` provider row */
   colored?: boolean;
   Component: ComponentType<AITapButtonProps>;
 };

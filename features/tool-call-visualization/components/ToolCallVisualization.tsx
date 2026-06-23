@@ -124,17 +124,18 @@ const ToolCallVisualizationInner: React.FC<{
         ? "never-open"
         : toolMode;
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(() =>
-    // An errored tool has NO result to keep open — errors NEVER default to
-    // expanded, even for a stay-open tool (e.g. news that returned an error
-    // instead of headlines). It collapses to one calm line; click to see why.
-    phase === "error"
-      ? false
-      : effectiveMode === "never-open"
+  const [isExpanded, setIsExpanded] = useState<boolean>(
+    () =>
+      // An errored tool has NO result to keep open — errors NEVER default to
+      // expanded, even for a stay-open tool (e.g. news that returned an error
+      // instead of headlines). It collapses to one calm line; click to see why.
+      phase === "error"
         ? false
-        : effectiveMode === "stay-open"
-          ? true
-          : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
+        : effectiveMode === "never-open"
+          ? false
+          : effectiveMode === "stay-open"
+            ? true
+            : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
   );
   // Once the user clicks, respect their choice — stop auto-collapse fighting them.
   const [userToggled, setUserToggled] = useState(false);
@@ -180,7 +181,14 @@ const ToolCallVisualizationInner: React.FC<{
       const t = setTimeout(() => setIsExpanded(false), 3000);
       return () => clearTimeout(t);
     }
-  }, [phase, effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
+  }, [
+    phase,
+    effectiveMode,
+    userToggled,
+    streamingNow,
+    allTerminal,
+    isExpanded,
+  ]);
 
   // Prefetch any DB-stored renderers so they're ready before the body mounts.
   useEffect(() => {
@@ -412,7 +420,7 @@ const ToolCallVisualizationInner: React.FC<{
           )}
         >
           <div className="overflow-hidden">
-            <div className="mt-1 space-y-1.5 rounded-md border border-border bg-transparent p-2">
+            <div className="mt-0.5 space-y-1 rounded-md border border-border bg-transparent px-2 py-1">
               {entries.map((entry) => {
                 const groupDisplayName = getToolDisplayName(entry.toolName);
                 // An errored tool call gets the calm ToolErrorCard for EVERY

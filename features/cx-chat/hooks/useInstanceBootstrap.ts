@@ -36,10 +36,10 @@
  *
  * URL contract:
  *   /ssr/chat                                      → default agent, no conversation
- *   /ssr/chat/a/[agentId]                          → specific agent, no conversation
- *   /ssr/chat/a/[agentId]?instance=uuid            → specific agent, reuse instance
- *   /ssr/chat/c/[conversationId]?agent=uuid        → load conversation + agent
- *   /ssr/chat/c/[conversationId]?agent=uuid&instance=uuid  → full resume
+ *   /demos/chat/a/[agentId]                          → specific agent, no conversation
+ *   /demos/chat/a/[agentId]?instance=uuid            → specific agent, reuse instance
+ *   /demos/chat/c/[conversationId]?agent=uuid        → load conversation + agent
+ *   /demos/chat/c/[conversationId]?agent=uuid&instance=uuid  → full resume
  */
 
 import { useEffect, useRef } from "react";

@@ -1,10 +1,10 @@
 "use client";
 
 import { Panel, type Layout } from "react-resizable-panels";
-import { ClientGroup } from "@/app/(ssr)/demos/ssr/resizables/_lib/ClientGroup";
-import { Handle } from "@/app/(ssr)/demos/ssr/resizables/_lib/Handle";
-import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
-import { RegisteredPanel } from "@/app/(ssr)/demos/ssr/resizables/_lib/RegisteredPanel";
+import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
+import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
+import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -25,7 +25,7 @@ const GROUP_KEY = "surfaces-admin";
  *
  * The center "binding" panel is non-collapsible so it always absorbs
  * delta when other panels collapse. This mirrors the mac-mail reference
- * (`/ssr/demos/resizables/04-mac-mail`).
+ * (`/demos/resizables/04-mac-mail`).
  *
  * Mobile fallback: the resizable layout drops out below the `md` breakpoint
  * and the columns stack vertically.

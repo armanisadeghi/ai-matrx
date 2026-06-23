@@ -1,92 +1,135 @@
-// app/(dev)/layout.dev.tsx
-//
-// Top-level layout for development / demo / test surfaces. Everything under
-// (dev) resolves under /demos/* — the single consolidated URL prefix for all
-// internal demos, tests, and showcase pages.
-//
-// Auth is required at this layout. Public demos that previously lived at
-// /demos/* (under (public)/demos) moved to a sibling (public-demos) group
-// — they share the /demos/* URL space but use PublicProviders, no auth.
-//
-// Build gate: this file and every other route leaf under (dev) is named
-// *.dev.tsx so that, in the production-core build, `pageExtensions` does
-// not match it and Next.js skips the entire (dev) route tree. The internal
-// demos deploy runs with MATRX_PROFILE=full and includes everything here.
-// See next.config.js (top of file) for the MATRX_PROFILE wiring.
-import { redirect } from "next/navigation";
+import "@/styles/shell.css";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
-import {
-  appSidebarLinks,
-  adminSidebarLinks,
-} from "@/features/shell/navigation/navigationLinks";
 import {
   getAdminStatus,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
 import { getEmptyGlobalCache } from "@/utils/schema/schema-processing/emptyGlobalCache";
 import type { InitialReduxState } from "@/types/reduxTypes";
-import NavigationLoader from "@/components/loaders/NavigationLoader";
-import ResponsiveLayout from "@/components/layout/new-layout/ResponsiveLayout";
+// Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
+// is deleted in this PR. The Redux preloaded state below carries the user data;
+// `lib/sync/identity::attachStore` (called from StoreProvider) wires the
+// reactive identity source so non-React consumers see the current state.
+import Sidebar from "@/features/shell/components/sidebar/Sidebar";
+import Header from "@/features/shell/components/header/Header";
+import MobileDock from "@/features/shell/components/dock/MobileDock";
+import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
+import GlassPortal from "@/features/shell/components/GlassPortal";
+import NavActiveSync from "@/features/shell/components/NavActiveSync";
+import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
+import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
+import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import type { UserData } from "@/utils/userDataMapper";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: {
+    default: "AI Matrx",
+    template: "%s — AI Matrx",
+  },
+  description: "AI-powered admin dashboard",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/matrx/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/matrx/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/matrx/apple-touch-icon.png",
+    shortcut: "/favicon.ico",
+  },
+};
 
 const emptyGlobalCache = getEmptyGlobalCache();
 
-export default async function DevLayout({
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
   const headersList = await headers();
-  const viewport = headersList.get("viewport-width") || "0";
-  const isMobile = Number(viewport) < 768;
+  const pathname = headersList.get("x-pathname") || "/";
+  const sidebarExpanded = await readSidebarExpandedCookie();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Request-scoped cached auth lookup — child server layouts/pages that also
+  // call `getServerAuth()` share this validated `getUser()` result, so each
+  // request only pays one JWT-validation round-trip across the whole tree.
+  const { user, isAuthenticated } = await getServerAuth();
+  const supabase = await createClient();
 
-  if (!user) {
-    return redirect("/login");
+  let initialReduxState: InitialReduxState;
+  let userData: UserData;
+
+  if (user) {
+    // Phase 3: admin check is now a narrow single-row lookup on the `admins`
+    // table. Preferences fetch has moved client-side to `userPreferencesPolicy`
+    // warm-cache cold-boot (IDB → LS → remote.fetch). No preloadedState for
+    // userPreferences — the client warms its own cache.
+    const [
+      {
+        data: { session },
+      },
+      adminStatus,
+    ] = await Promise.all([
+      supabase.auth.getSession(),
+      getAdminStatus(supabase, user.id).catch((err) => {
+        console.error("getAdminStatus failed, defaulting to non-admin:", err);
+        return { isAdmin: false, level: null as AdminLevel | null };
+      }),
+    ]);
+
+    const { isAdmin, level: adminLevel } = adminStatus;
+    const accessToken = session?.access_token;
+    userData = mapUserData(user, accessToken, isAdmin, adminLevel);
+
+    initialReduxState = {
+      user: userData,
+      globalCache: emptyGlobalCache,
+    };
+  } else {
+    const guestUserData = mapUserData(null, undefined, false);
+    userData = guestUserData;
+
+    initialReduxState = {
+      user: guestUserData,
+      globalCache: emptyGlobalCache,
+    };
   }
-
-  const [
-    {
-      data: { session },
-    },
-    adminStatus,
-  ] = await Promise.all([
-    supabase.auth.getSession(),
-    getAdminStatus(supabase, user.id).catch((err) => {
-      console.error("getAdminStatus failed, defaulting to non-admin:", err);
-      return { isAdmin: false, level: null as AdminLevel | null };
-    }),
-  ]);
-  const { isAdmin, level: adminLevel } = adminStatus;
-  const accessToken = session?.access_token;
-  const userData = mapUserData(user, accessToken, isAdmin, adminLevel);
-
-  const layoutProps = {
-    primaryLinks: appSidebarLinks,
-    secondaryLinks: isAdmin ? adminSidebarLinks : [],
-    initialOpen: !isMobile ? false : false,
-    uniqueId: "matrix-layout-container",
-    isAdmin,
-    serverIsMobile: isMobile,
-  };
-
-  const initialReduxState: InitialReduxState = {
-    user: userData,
-    globalCache: emptyGlobalCache,
-  };
 
   return (
     <Providers initialReduxState={initialReduxState}>
-      <ResponsiveLayout {...layoutProps}>
-        <NavigationLoader />
-        {children}
-      </ResponsiveLayout>
+      <div className="shell-root" data-pathname={pathname}>
+        <input
+          type="checkbox"
+          id="shell-sidebar-toggle"
+          aria-hidden="true"
+          defaultChecked={sidebarExpanded}
+        />
+        <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
+        <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
+        <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
+        <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
+
+        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
+        <Header userData={userData} isAuthenticated={isAuthenticated} />
+
+        <main className="shell-main">{children}</main>
+
+        <MobileSideSheet isAuthenticated={isAuthenticated} />
+      </div>
+
+      <GlassPortal>
+        <MobileDock isAuthenticated={isAuthenticated} />
+      </GlassPortal>
+
+      <NavActiveSync />
+      <VisualViewportSync />
+      <ShellSidebarCookieSync />
+      <DeferredIslands />
     </Providers>
   );
 }

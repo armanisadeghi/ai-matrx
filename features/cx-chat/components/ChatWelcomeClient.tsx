@@ -72,12 +72,12 @@ export default function ChatWelcomeClient({
   useEffect(() => {
     if (!latestConversationId || hasNavigated.current) return;
     hasNavigated.current = true;
-    router.replace(`/ssr/chat/c/${latestConversationId}?agent=${agentId}`);
+    router.replace(`/demos/chat/c/${latestConversationId}?agent=${agentId}`);
   }, [latestConversationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAgentSelect = useCallback(
     (picked: { promptId: string }) => {
-      router.push(`/ssr/chat/a/${picked.promptId}`);
+      router.push(`/demos/chat/a/${picked.promptId}`);
     },
     [router],
   );

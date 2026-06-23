@@ -30,8 +30,6 @@ function pathnameIsUnderDemoHosts(pathname: string): boolean {
     pathname.startsWith("/demo/") ||
     pathname === "/demos" ||
     pathname.startsWith("/demos/") ||
-    pathname === "/demos/ssr" ||
-    pathname.startsWith("/demos/ssr/") ||
     pathname === "/component-demo" ||
     pathname.startsWith("/component-demo/") ||
     pathname === "/p/demo" ||

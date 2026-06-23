@@ -112,6 +112,8 @@ interface UserTableViewerProps {
    * isn't shown twice.
    */
   hideHeader?: boolean;
+  /** Trailing controls in the data-table toolbar row. */
+  toolbarTrailing?: React.ReactNode;
 }
 
 const UserTableViewer = ({
@@ -119,6 +121,7 @@ const UserTableViewer = ({
   showTableSelector = false,
   renderCellMarkdown = false,
   hideHeader = false,
+  toolbarTrailing,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<any>(null);
@@ -1587,6 +1590,7 @@ const UserTableViewer = ({
           setAllSortedData(null);
           loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
+        toolbarTrailing={toolbarTrailing}
       />
 
       {/* Table */}
@@ -1649,10 +1653,15 @@ const UserTableViewer = ({
                   className={r % 2 === 1 ? "bg-muted/10" : ""}
                 >
                   {fields.map((field, c) => (
-                    <TableCell key={`skeleton-${r}-${field.id}`} className="py-3">
+                    <TableCell
+                      key={`skeleton-${r}-${field.id}`}
+                      className="py-3"
+                    >
                       <div
                         className="h-3.5 rounded bg-muted/40 animate-pulse"
-                        style={{ width: `${[88, 62, 75, 50, 80][(r + c) % 5]}%` }}
+                        style={{
+                          width: `${[88, 62, 75, 50, 80][(r + c) % 5]}%`,
+                        }}
                       />
                     </TableCell>
                   ))}

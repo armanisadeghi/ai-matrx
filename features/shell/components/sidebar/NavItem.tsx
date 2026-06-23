@@ -5,7 +5,7 @@
 // (kept live by NavActiveSync) to maintain correct state after client navigation.
 //
 // Each link gets data-nav-href so CSS can style it:
-//   .shell-root[data-pathname^="/demos/ssr/chat"] [data-nav-href="/demos/ssr/chat"] { ... }
+//   .shell-root[data-pathname^="/demos/chat"] [data-nav-href="/demos/chat"] { ... }
 
 import Link from "next/link";
 import ShellIcon from "../ShellIcon";

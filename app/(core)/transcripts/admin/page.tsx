@@ -354,24 +354,24 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(dev)/demos/tests/audio-recorder-test/",
     },
     {
-      url: "/demos/public/feature-tests/microphone-icon-button",
+      url: "/demos/feature-tests/microphone-icon-button",
       label: "Microphone icon button",
-      description: "Public UI test for the mic button.",
+      description: "UI test for the mic button.",
       filePath:
-        "app/(public-demos)/demos/public/feature-tests/microphone-icon-button/page.tsx",
+        "app/(dev)/demos/feature-tests/microphone-icon-button/page.tsx",
     },
     {
-      url: "/demos/public/feature-tests/speaker-button",
+      url: "/demos/feature-tests/speaker-button",
       label: "Speaker button",
-      description: "Public UI test for the speaker button.",
+      description: "UI test for the speaker button.",
       filePath:
-        "app/(public-demos)/demos/public/feature-tests/speaker-button/page.tsx",
+        "app/(dev)/demos/feature-tests/speaker-button/page.tsx",
     },
     {
-      url: "/demos/ssr/speaker-demo",
+      url: "/demos/speaker-demo",
       label: "SSR speaker demo",
       description: "SSR-shell speaker demo.",
-      filePath: "app/(ssr)/demos/ssr/speaker-demo/page.tsx",
+      filePath: "app/(ssr)/demos/speaker-demo/page.tsx",
     },
   ],
 

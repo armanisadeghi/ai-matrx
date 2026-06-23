@@ -1,6 +1,6 @@
 "use client";
 
-// app/(ssr)/ssr/chat/_components/ChatConversationSkeleton.tsx
+// app/(ssr)/demos/chat/_components/ChatConversationSkeleton.tsx
 //
 // A lightweight skeleton that mimics the ConversationShell layout.
 // Shown instantly when the URL contains a conversation ID, preventing

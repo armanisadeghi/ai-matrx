@@ -23,6 +23,7 @@ import {
   SearchTapButton,
   ExternalLinkTapButton,
   LoadingTapButton,
+  RetryTapButton,
 } from "@/components/icons/tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
@@ -44,6 +45,9 @@ export interface PdfStudioToolbarProps {
   liveStatus?: string | null;
   onOpenSource: () => void;
   onOpenCopyPages: () => void;
+  /** Reload the active document + per-page rows from Supabase. */
+  onRefresh: () => void;
+  refreshing: boolean;
   /** Commit a new document name (renames doc + backing cloud file). */
   onRename: (newName: string) => void | Promise<void>;
   /** Archive (soft-delete) the active doc from the studio. */
@@ -63,6 +67,8 @@ export function PdfStudioToolbar({
   liveStatus,
   onOpenSource,
   onOpenCopyPages,
+  onRefresh,
+  refreshing,
   onRename,
   onDeleteDoc,
 }: PdfStudioToolbarProps) {
@@ -88,7 +94,7 @@ export function PdfStudioToolbar({
     !!doc.source?.startsWith("http://") ||
     !!doc.source?.startsWith("https://");
 
-  const actionsBusy = pipelineRunning || aiCleanRunning;
+  const actionsBusy = pipelineRunning || aiCleanRunning || refreshing;
 
   return (
     <div className="shrink-0 border-b border-border bg-card/40">
@@ -151,6 +157,21 @@ export function PdfStudioToolbar({
               onClick={onOpenFind}
               ariaLabel="Find"
             />
+            {refreshing ? (
+              <LoadingTapButton
+                variant="group"
+                disabled
+                ariaLabel="Refreshing"
+              />
+            ) : (
+              <RetryTapButton
+                variant="group"
+                onClick={onRefresh}
+                disabled={actionsBusy}
+                ariaLabel="Refresh"
+                tooltip="Refresh document"
+              />
+            )}
             {hasSource && (
               <ExternalLinkTapButton
                 variant="group"

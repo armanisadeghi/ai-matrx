@@ -1,6 +1,6 @@
 "use client";
 
-// app/(ssr)/ssr/chat/_components/ChatSidebarClient.tsx
+// app/(ssr)/demos/chat/_components/ChatSidebarClient.tsx
 //
 // ALL client-side chat sidebar logic lives here.
 //
@@ -181,8 +181,8 @@ export function ChatPanelContent() {
     (id: string) => {
       closeMobilePanel();
       const url = agentIdFromUrl
-        ? `/ssr/chat/c/${id}?agent=${agentIdFromUrl}`
-        : `/ssr/chat/c/${id}`;
+        ? `/demos/chat/c/${id}?agent=${agentIdFromUrl}`
+        : `/demos/chat/c/${id}`;
       router.push(url);
     },
     [router, agentIdFromUrl],
@@ -190,14 +190,14 @@ export function ChatPanelContent() {
 
   const handleNewChat = useCallback(() => {
     closeMobilePanel();
-    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/demos/ssr/chat");
+    router.push(agentIdFromUrl ? `/demos/chat/a/${agentIdFromUrl}` : "/demos/chat");
   }, [router, agentIdFromUrl]);
 
   const handleAgentSelect = useCallback(
     (agent: { promptId: string }) => {
       closeMobilePanel();
       // Navigation triggers ChatInstanceManager on the new page to handle instance lifecycle.
-      router.push(`/ssr/chat/a/${agent.promptId}`);
+      router.push(`/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );
@@ -298,13 +298,13 @@ export function ChatDesktopHeader() {
   const displayName = activeAgentRecord?.name ?? "Matrx Chat";
 
   const handleNewChat = useCallback(() => {
-    router.push(agentIdFromUrl ? `/ssr/chat/a/${agentIdFromUrl}` : "/demos/ssr/chat");
+    router.push(agentIdFromUrl ? `/demos/chat/a/${agentIdFromUrl}` : "/demos/chat");
   }, [router, agentIdFromUrl]);
 
   const handleAgentSelect = useCallback(
     (agent: { promptId: string }) => {
       setIsPickerOpen(false);
-      router.push(`/ssr/chat/a/${agent.promptId}`);
+      router.push(`/demos/chat/a/${agent.promptId}`);
     },
     [router],
   );

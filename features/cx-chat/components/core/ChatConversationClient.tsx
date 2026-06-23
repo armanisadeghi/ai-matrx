@@ -128,7 +128,7 @@ export default function ChatConversationClient({
     ) {
       lastSyncedConvId.current = latestConversationId;
 
-      const newUrl = `/ssr/chat/c/${latestConversationId}?agent=${agentId}`;
+      const newUrl = `/demos/chat/c/${latestConversationId}?agent=${agentId}`;
       window.history.replaceState(window.history.state, "", newUrl);
 
       window.dispatchEvent(
@@ -151,7 +151,7 @@ export default function ChatConversationClient({
   }, [requestStatus, latestConversationId, turnCount]);
 
   const handleNewChat = useCallback(() => {
-    router.push(`/ssr/chat/a/${agentId}`);
+    router.push(`/demos/chat/a/${agentId}`);
   }, [router, agentId]);
 
   return (
@@ -160,7 +160,7 @@ export default function ChatConversationClient({
         open={isPickerOpen}
         onOpenChange={setIsPickerOpen}
         selectedAgent={null}
-        onSelect={(agent) => router.push(`/ssr/chat/a/${agent.promptId}`)}
+        onSelect={(agent) => router.push(`/demos/chat/a/${agent.promptId}`)}
       />
 
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

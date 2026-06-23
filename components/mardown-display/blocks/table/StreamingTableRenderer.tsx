@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Database,
   ExternalLink,
+  Table2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -86,6 +87,15 @@ interface StreamingTableRendererProps {
   theme?: string;
   onSave?: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
+  /**
+   * One-click convert for materialized chat artifacts — renders in the
+   * action toolbar instead of the modal "Save" path.
+   */
+  convertToTable?: {
+    onClick: () => void | Promise<void>;
+    busy?: boolean;
+    disabled?: boolean;
+  };
 }
 
 // ============================================================================
@@ -240,6 +250,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   theme = "professional",
   onSave = () => {},
   onContentChange,
+  convertToTable,
 }) => {
   const toast = useToastManager();
   const isMobile = useIsMobile();
@@ -614,6 +625,20 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
 
   const renderTableActionButton = () => {
     if (!tableData.normalizedData) return null;
+    if (convertToTable) {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={convertToTable.onClick}
+          disabled={convertToTable.disabled || convertToTable.busy}
+          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+        >
+          <Table2 className="h-4 w-4" />
+          {convertToTable.busy ? "Converting…" : "Convert to table"}
+        </Button>
+      );
+    }
     if (savedTableInfo) {
       return (
         <Button

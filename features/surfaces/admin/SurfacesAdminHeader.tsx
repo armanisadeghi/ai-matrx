@@ -7,7 +7,7 @@ import {
   ViewTapButton,
   TestTubeTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
+import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 
 /**
  * Header controls for the surfaces admin shell. Lives inside `<PageHeader>`
@@ -66,13 +66,19 @@ export function SurfacesAdminHeader({
         <ViewTapButton
           onClick={() => toggle("surface-details")}
           variant={detailsCollapsed ? "transparent" : "glass"}
-          ariaLabel={detailsCollapsed ? "Show surface details" : "Hide surface details"}
-          tooltip={detailsCollapsed ? "Show surface details" : "Hide surface details"}
+          ariaLabel={
+            detailsCollapsed ? "Show surface details" : "Hide surface details"
+          }
+          tooltip={
+            detailsCollapsed ? "Show surface details" : "Hide surface details"
+          }
         />
         <TestTubeTapButton
           onClick={() => toggle("playground")}
           variant={playgroundCollapsed ? "transparent" : "glass"}
-          ariaLabel={playgroundCollapsed ? "Show playground" : "Hide playground"}
+          ariaLabel={
+            playgroundCollapsed ? "Show playground" : "Hide playground"
+          }
           tooltip={playgroundCollapsed ? "Show playground" : "Hide playground"}
         />
       </div>

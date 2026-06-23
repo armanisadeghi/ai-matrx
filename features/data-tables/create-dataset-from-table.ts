@@ -20,6 +20,7 @@ import {
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { bulkWrite } from "./service";
 import { isBulkOpError, isServiceFailure, type BulkOp } from "./types";
+import { resolveUniqueDatasetName } from "./resolve-unique-dataset-name";
 
 export interface CreateDatasetFromTableArgs {
   /** Display name for the new dataset (e.g. the artifact / conversation title). */
@@ -68,8 +69,12 @@ export async function createDatasetFromTable(
     };
   });
 
+  const uniqueName = await resolveUniqueDatasetName(
+    name.trim() || "Untitled table",
+  );
+
   const created = await createTable(supabase, {
-    tableName: name.trim() || "Untitled table",
+    tableName: uniqueName,
     description: description ?? "",
     isPublic,
     authenticatedRead: false,

@@ -74,7 +74,7 @@ Each row is a confirmed call site. "Stream" = the frontend reads NDJSON
 ### 2a. Text / table extraction
 | Endpoint | Method / body | Call site |
 |---|---|---|
-| `/utilities/pdf/extract-text` | multipart `file` | `app/(public-demos)/demos/public/api-tests/pdf-extract/PdfExtractClient.tsx:69` |
+| `/utilities/pdf/extract-text` | multipart `file` | `app/(dev)/demos/api-tests/pdf-extract/PdfExtractClient.tsx:69` |
 | `/utilities/pdf/extract-text-remote` | JSON `{ ...source(media.file_id\|url), force_ocr, use_ocr_threshold, include_page_metadata, include_block_metadata, include_word_metadata }` | `app/(ssr)/demos/ssr/pdf-processing/extract-text/page.tsx:30` |
 | `/utilities/pdf/extract-tables` | JSON source + flags | `app/(ssr)/demos/ssr/pdf-processing/extract-tables/page.tsx:27` |
 | `/utilities/pdf/batch-extract` | (Path B upload, §1) | `features/pdf-extractor/hooks/usePdfExtractor.ts:413` |

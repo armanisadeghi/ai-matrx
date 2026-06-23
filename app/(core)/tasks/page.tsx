@@ -6,8 +6,8 @@
 // authed users get the workspace shell with zero marketing code shipped.
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
-import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
+import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
 import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell";
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";

@@ -52,7 +52,7 @@ function AgentListItem({
   description,
   isSelected,
   onClick,
-  newTabHref = "/demos/ssr/chat",
+  newTabHref = "/demos/chat",
 }: {
   name: string;
   description?: string | null;
@@ -207,7 +207,7 @@ function AgentSubsection({
             description={agent.description}
             isSelected={selectedAgentId === agent.id}
             onClick={() => onSelect(agent)}
-            newTabHref={`/ssr/chat/a/${agent.id}`}
+            newTabHref={`/demos/chat/a/${agent.id}`}
           />
         ))}
         {filtered.length === 0 && agents.length > 0 && localSearch && (

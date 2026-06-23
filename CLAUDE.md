@@ -91,7 +91,7 @@ The app code has **no DDL path** (Supabase JS / PostgREST only). Agents apply DD
 
 ### Route groups (2026-05-26 reorg)
 
-The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)`, `(public-demos)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
+The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
 
 | Group | Purpose | URL | Build |
 |---|---|---|---|
@@ -101,16 +101,15 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 | `(legacy)` | **Entity-bound legacy.** Own `EntityProviders` store (full entity system). | `/legacy/*` | always |
 | `(ssr)` | **SSR shell.** Own `LiteStoreProvider` + glass shell; demos needing it. | `/demos/ssr/*` | always |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` only |
-| `(public-demos)` | **Public showcase demos.** No auth. | `/demos/public/*` | always |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
 | `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
 
 **"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store. `(ssr)` is no longer transitional (it serves `/demos/ssr/*`).
 
-**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers every demo across `(dev)`, `(ssr)`, `(public-demos)` + links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<cat>/<name>/page.dev.tsx`; SSR+glass → `(ssr)/demos/ssr/<name>/page.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
+**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers every demo across `(dev)` + links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<cat>/<name>/page.dev.tsx`; SSR+glass → `(ssr)/demos/ssr/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
 
-**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`. `(public-demos)` use plain `*.tsx`, ship everywhere.
+**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`.
 
 **Adding a `(dev)` route:** name leaves `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts`. Helpers imported by prod code still compile into core ("fake demos" tech debt — relocate to `components/` over time). `/demos/*` redirects live in `next.config.js`.
 

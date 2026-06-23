@@ -1,10 +1,9 @@
 import { getAgent } from "@/lib/agents/data";
-import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
 import {
   SurfacesAdminShell,
   SURFACES_ADMIN_COOKIE,
 } from "@/features/surfaces/admin/SurfacesAdminShell";
-
 
 export default async function AgentSurfacesRoute({
   params,

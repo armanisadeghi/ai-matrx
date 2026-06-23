@@ -4,7 +4,7 @@ import {
   PanelLeftTapButton,
   MenuTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
+import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header

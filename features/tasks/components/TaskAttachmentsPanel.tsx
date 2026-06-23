@@ -263,7 +263,7 @@ export default function TaskAttachmentsPanel({
               key: m.id,
               primary: m.preview || "AI message",
               secondary: `${m.role ?? "message"} · ${new Date(m.created_at).toLocaleString()}`,
-              href: `/ssr/chat/c/${m.conversation_id}#m-${m.id}`,
+              href: `/demos/chat/c/${m.conversation_id}#m-${m.id}`,
               onRemove: () => handleRemove("cx_message", m.id),
             }))}
           />
@@ -275,7 +275,7 @@ export default function TaskAttachmentsPanel({
             items={bundle.cx_conversations.map((c) => ({
               key: c.id,
               primary: c.title,
-              href: `/ssr/chat/c/${c.id}`,
+              href: `/demos/chat/c/${c.id}`,
               onRemove: () => handleRemove("cx_conversation", c.id),
             }))}
           />

@@ -13,7 +13,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 // MATRX_PROFILE controls which routes are compiled into the build:
 //   core (default in production) — main app: (core), (admin), (transitional),
-//                    (legacy), (ssr), (public), (public-demos), (auth-pages),
+//                    (legacy), (ssr), (public), (auth-pages),
 //                    (popup). Internal dev/test surfaces under app/(dev)/ —
 //                    whose route leaves are renamed *.dev.tsx — are NOT
 //                    compiled because `dev.tsx` is not in pageExtensions.
@@ -192,17 +192,18 @@ const nextConfig = {
             { source: '/transcription', destination: '/transcripts', permanent: true },
             { source: '/transcription/processor', destination: '/transcripts/processor', permanent: true },
             { source: '/transcription/:path*', destination: '/transcripts/:path*', permanent: true },
-            // 2026-05-28: SSR experiment consolidation. The (ssr) route group
-            // moved from URL /ssr/* to /demos/ssr/* so every demo/test surface
-            // shares the unified /demos/* prefix. The (ssr) layout (LiteStoreProvider
-            // + glass shell) stays intact — only the inner folder was restructured.
-            { source: '/ssr/demos/:path*', destination: '/demos/ssr/:path*', permanent: false },
-            { source: '/ssr/demos', destination: '/demos/ssr', permanent: false },
-            { source: '/ssr/chat/:path*', destination: '/demos/ssr/chat/:path*', permanent: false },
-            { source: '/ssr/chat', destination: '/demos/ssr/chat', permanent: false },
-            { source: '/ssr/dashboard/:path*', destination: '/demos/ssr/dashboard/:path*', permanent: false },
-            { source: '/ssr/dashboard', destination: '/demos/ssr/dashboard', permanent: false },
-            { source: '/ssr', destination: '/demos/ssr', permanent: false },
+            // 2026-06-22: (ssr) route group deleted — demos consolidated under
+            // app/(dev)/demos at /demos/*. Legacy /ssr/* and /demos/ssr/* URLs
+            // redirect to the canonical /demos/* paths.
+            { source: '/demos/ssr/:path*', destination: '/demos/:path*', permanent: false },
+            { source: '/demos/ssr', destination: '/demos', permanent: false },
+            { source: '/ssr/demos/:path*', destination: '/demos/:path*', permanent: false },
+            { source: '/ssr/demos', destination: '/demos', permanent: false },
+            { source: '/ssr/chat/:path*', destination: '/demos/chat/:path*', permanent: false },
+            { source: '/ssr/chat', destination: '/demos/chat', permanent: false },
+            { source: '/ssr/dashboard/:path*', destination: '/demos/dashboard/:path*', permanent: false },
+            { source: '/ssr/dashboard', destination: '/demos/dashboard', permanent: false },
+            { source: '/ssr', destination: '/demos', permanent: false },
             // /cloud-files was renamed to /files (2026-04-27). Permanent redirects
             // so old bookmarks, share links, and external references keep working.
             { source: '/cloud-files/:path*', destination: '/files/:path*', permanent: true },
@@ -278,7 +279,7 @@ const nextConfig = {
             { source: '/administration/schema-manager', destination: '/legacy/administration/schema-manager', permanent: false },
             // 2026-05-26: Route-group reorganization. All internal demo / test /
             // experimental surfaces consolidated under a single /demos/* URL
-            // prefix served from (dev) (auth-required) and (public-demos)
+            // prefix served from (dev) (auth-required).
             // (no auth). Originals lived in (authenticated)/tests, (authenticated)/demo,
             // (authenticated)/settings-*-demo, (authenticated)/layout-tests,
             // (authenticated)/dynamic-imports, (authenticated)/lists-junk,
@@ -310,24 +311,9 @@ const nextConfig = {
                 { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
                 { source: '/preview', destination: '/demos/preview', permanent: false },
             ] : []),
-            // Public demos that used to live at /demos/* (under (public)/demos)
-            // shifted one segment deeper to /demos/public/* so the internal
-            // (dev) demos and external public showcase share the prefix without
-            // colliding. Each enumerated by old sub-path; redirects are
-            // intentionally ordered AFTER the /demos/api-tests-style explicit
-            // sub-path redirects above so the more specific entries win.
-            { source: '/demos/api-tests/:path*', destination: '/demos/public/api-tests/:path*', permanent: false },
-            { source: '/demos/api-tests', destination: '/demos/public/api-tests', permanent: false },
-            { source: '/demos/color-test/:path*', destination: '/demos/public/color-test/:path*', permanent: false },
-            { source: '/demos/color-test', destination: '/demos/public/color-test', permanent: false },
-            { source: '/demos/feature-tests/:path*', destination: '/demos/public/feature-tests/:path*', permanent: false },
-            { source: '/demos/feature-tests', destination: '/demos/public/feature-tests', permanent: false },
-            { source: '/demos/local-tools/:path*', destination: '/demos/public/local-tools/:path*', permanent: false },
-            { source: '/demos/local-tools', destination: '/demos/public/local-tools', permanent: false },
-            { source: '/demos/overlay-instances/:path*', destination: '/demos/public/overlay-instances/:path*', permanent: false },
-            { source: '/demos/overlay-instances', destination: '/demos/public/overlay-instances', permanent: false },
-            { source: '/demos/scraper/:path*', destination: '/demos/public/scraper/:path*', permanent: false },
-            { source: '/demos/scraper', destination: '/demos/public/scraper', permanent: false },
+            // Former public-demos lived at /demos/public/*; consolidated under (dev)/demos/*.
+            { source: '/demos/public/:path*', destination: '/demos/:path*', permanent: false },
+            { source: '/demos/public', destination: '/demos', permanent: false },
         ];
     },
     async rewrites() {

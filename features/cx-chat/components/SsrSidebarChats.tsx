@@ -292,8 +292,8 @@ function ConversationItem({
     if (e.metaKey || e.ctrlKey) {
       const agentId = new URLSearchParams(window.location.search).get("agent");
       const url = agentId
-        ? `/ssr/chat/c/${item.id}?agent=${agentId}`
-        : `/ssr/chat/c/${item.id}`;
+        ? `/demos/chat/c/${item.id}?agent=${agentId}`
+        : `/demos/chat/c/${item.id}`;
       window.open(url, "_blank");
       return;
     }
@@ -406,8 +406,8 @@ function SharedConversationItem({
     if (e.metaKey || e.ctrlKey) {
       const agentId = new URLSearchParams(window.location.search).get("agent");
       const url = agentId
-        ? `/ssr/chat/c/${item.id}?agent=${agentId}`
-        : `/ssr/chat/c/${item.id}`;
+        ? `/demos/chat/c/${item.id}?agent=${agentId}`
+        : `/demos/chat/c/${item.id}`;
       window.open(url, "_blank");
       return;
     }

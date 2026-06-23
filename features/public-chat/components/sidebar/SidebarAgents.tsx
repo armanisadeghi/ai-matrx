@@ -32,7 +32,7 @@ function AgentListItem({
   description,
   isSelected,
   onClick,
-  newTabHref = "/demos/ssr/chat",
+  newTabHref = "/demos/chat",
 }: {
   name: string;
   description?: string;

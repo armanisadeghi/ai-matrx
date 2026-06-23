@@ -235,7 +235,7 @@
 
    Route table (add new routes here — ONE place, all components update):
      • /dashboard + /ssr/dashboard + bare /ssr  → nav href /dashboard
-     • /chat + /ssr/chat       prefix → nav href /chat
+     • /chat + /demos/chat     prefix → nav href /chat
      • /ssr/notes      prefix
      • /tasks          prefix
      • /projects       prefix
@@ -253,7 +253,7 @@
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/demos/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
@@ -276,7 +276,7 @@
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/demos/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
@@ -294,7 +294,7 @@
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/demos/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
@@ -312,7 +312,7 @@
   .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/demos/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
@@ -1294,7 +1294,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   body:has(.shell-root[data-pathname="/ssr/dashboard"]) .shell-dock-item[data-nav-href="/dashboard"],
   body:has(.shell-root[data-pathname="/dashboard"])     .shell-dock-item[data-nav-href="/dashboard"],
   body:has(.shell-root[data-pathname="/ssr"])           .shell-dock-item[data-nav-href="/dashboard"],
-  body:has(.shell-root[data-pathname^="/ssr/chat"])     .shell-dock-item[data-nav-href^="/chat"],
+  body:has(.shell-root[data-pathname^="/demos/chat"])     .shell-dock-item[data-nav-href^="/chat"],
   body:has(.shell-root[data-pathname^="/chat"])         .shell-dock-item[data-nav-href^="/chat"],
   body:has(.shell-root[data-pathname^="/organizations"]) .shell-dock-item[data-nav-href="/organizations"],
   body:has(.shell-root[data-pathname^="/ssr/notes"])    .shell-dock-item[data-nav-href="/notes"],
@@ -1418,7 +1418,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   .shell-root[data-pathname="/ssr/dashboard"] .shell-mobile-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-mobile-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-mobile-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-mobile-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/demos/chat"]     .shell-mobile-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-mobile-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/organizations"] .shell-mobile-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-mobile-nav-item[data-nav-href="/notes"],

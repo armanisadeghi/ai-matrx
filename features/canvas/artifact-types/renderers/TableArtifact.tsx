@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, lazy, useCallback, useMemo, useState } from "react";
-import { Table2, Undo2 } from "lucide-react";
+import { Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { canvasArtifactService } from "@/features/canvas/services/canvasArtifact
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
 import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
 import { createDatasetFromTable } from "@/features/data-tables/create-dataset-from-table";
+import { deriveDatasetNameForChatTable } from "@/features/data-tables/derive-dataset-name";
 
 const StreamingTableRenderer = lazy(() =>
   import("@/components/mardown-display/blocks/table/StreamingTableRenderer").then(
@@ -144,7 +145,13 @@ function TableArtifactMaterialized({
     }
     setConverting(true);
     try {
-      const name = row?.title?.trim() || "Table from chat";
+      const name = await deriveDatasetNameForChatTable({
+        sourceMessageId: row?.source_message_id,
+        canvasItemId,
+        artifactTitle: row?.title,
+        tableMarkdown: content,
+        headers: parsed.headers,
+      });
       const result = await createDatasetFromTable({
         name,
         headers: parsed.headers,
@@ -163,7 +170,7 @@ function TableArtifactMaterialized({
     } finally {
       setConverting(false);
     }
-  }, [content, row?.title, canvasItemId, refetch]);
+  }, [content, row, canvasItemId, refetch]);
 
   // Revert a converted table back to the editable text table — unlink the UDT
   // dataset (it is kept, not deleted; the original markdown lives in
@@ -189,53 +196,40 @@ function TableArtifactMaterialized({
   // (no double title). A quiet Revert action unlinks it back to the text table.
   if (linkedTableId) {
     return (
-      <div className="space-y-1">
-        <Suspense fallback={<MatrxMiniLoader />}>
-          <UserTableViewer
-            tableId={linkedTableId}
-            renderCellMarkdown
-            hideHeader
-          />
-        </Suspense>
-        <div className="flex items-center justify-end">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 gap-1 text-xs text-muted-foreground hover:text-foreground"
-            onClick={handleRevert}
-            disabled={reverting}
-          >
-            <Undo2 className="h-3 w-3" />
-            {reverting ? "Reverting…" : "Revert to text"}
-          </Button>
-        </div>
-      </div>
+      <Suspense fallback={<MatrxMiniLoader />}>
+        <UserTableViewer
+          tableId={linkedTableId}
+          renderCellMarkdown
+          hideHeader
+          toolbarTrailing={
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+              onClick={handleRevert}
+              disabled={reverting}
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              {reverting ? "Reverting…" : "Revert to text"}
+            </Button>
+          }
+        />
+      </Suspense>
     );
   }
 
-  // Non-linked → the full table (identical to normal view) + one Convert button.
-  // The table is persisted, so it's complete → toolbar shows.
+  // Non-linked → full markdown table toolbar, including one-click convert.
   return (
-    <div className="space-y-2">
-      <Suspense fallback={<MatrxMiniLoader />}>
-        <StreamingTableRenderer
-          content={content}
-          metadata={{ isComplete: true }}
-          onContentChange={persistEdit}
-        />
-      </Suspense>
-      <div className="flex items-center justify-end px-1">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 text-xs"
-          onClick={handleConvert}
-          disabled={converting}
-        >
-          <Table2 className="h-3.5 w-3.5" />
-          {converting ? "Converting…" : "Convert to table"}
-        </Button>
-      </div>
-    </div>
+    <Suspense fallback={<MatrxMiniLoader />}>
+      <StreamingTableRenderer
+        content={content}
+        metadata={{ isComplete: true }}
+        onContentChange={persistEdit}
+        convertToTable={{
+          onClick: handleConvert,
+          busy: converting,
+        }}
+      />
+    </Suspense>
   );
 }

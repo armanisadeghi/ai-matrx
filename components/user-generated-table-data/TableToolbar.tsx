@@ -1,17 +1,31 @@
-'use client'
+"use client";
 
-import AddColumnModal from './AddColumnModal';
-import AddRowModal from './AddRowModal';
-import EditRowModal from './EditRowModal';
-import DeleteRowModal from './DeleteRowModal';
-import TableConfigModal from './TableConfigModal';
-import ExportTableModal from './ExportTableModal';
-import TableReferenceOverlay from './TableReferenceOverlay';
-import RowOrderingModal from './RowOrderingModal';
-import PasteRowsDialog from './PasteRowsDialog';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, X, Download, Pencil, Trash, Settings, Plus, Link, Zap, ArrowUpDown, GripVertical, Eye, Clipboard } from 'lucide-react';
+import AddColumnModal from "./AddColumnModal";
+import AddRowModal from "./AddRowModal";
+import EditRowModal from "./EditRowModal";
+import DeleteRowModal from "./DeleteRowModal";
+import TableConfigModal from "./TableConfigModal";
+import ExportTableModal from "./ExportTableModal";
+import TableReferenceOverlay from "./TableReferenceOverlay";
+import RowOrderingModal from "./RowOrderingModal";
+import PasteRowsDialog from "./PasteRowsDialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Search,
+  X,
+  Download,
+  Pencil,
+  Trash,
+  Settings,
+  Plus,
+  Link,
+  Zap,
+  ArrowUpDown,
+  GripVertical,
+  Eye,
+  Clipboard,
+} from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 interface TableToolbarProps {
@@ -22,13 +36,13 @@ interface TableToolbarProps {
   selectedRowId: string | null;
   selectedRowData: Record<string, any> | null;
   isReadOnly?: boolean;
-  
+
   // Search props
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   handleSearch: (e: React.FormEvent) => void;
   clearSearch: () => void;
-  
+
   // Modal visibility state
   showEditModal: boolean;
   showDeleteModal: boolean;
@@ -50,29 +64,32 @@ interface TableToolbarProps {
   setShowReferenceOverlay: (show: boolean) => void;
   setShowRowOrderingModal: (show: boolean) => void;
   setShowPasteRowsDialog: (show: boolean) => void;
-  
+
   // Success callbacks
   onEditSuccess?: () => void;
   onDeleteSuccess?: () => void;
-  
+
   // HTML cleanup functions
   cleanupHtmlText?: (text: string) => string;
   containsCleanableHtml?: (text: string) => boolean;
   hasCleanableHtmlInTable?: boolean;
   handleBulkHtmlCleanup?: () => Promise<void>;
-  
+
   // Sort state for export
   sortField?: string | null;
-  sortDirection?: 'asc' | 'desc';
-  
+  sortDirection?: "asc" | "desc";
+
   // Row ordering functions
   rowOrderingEnabled?: boolean;
   enableRowOrdering?: () => Promise<void>;
   disableRowOrdering?: () => Promise<void>;
   onRowOrderingSuccess?: () => void;
+
+  /** Optional trailing controls in the toolbar row (e.g. chat artifact revert). */
+  toolbarTrailing?: React.ReactNode;
 }
 
-export default function TableToolbar({ 
+export default function TableToolbar({
   tableId,
   tableInfo,
   fields,
@@ -80,13 +97,13 @@ export default function TableToolbar({
   selectedRowId,
   selectedRowData,
   isReadOnly = false,
-  
+
   // Search props
   searchTerm,
   setSearchTerm,
   handleSearch,
   clearSearch,
-  
+
   // Modal visibility state
   showEditModal,
   showDeleteModal,
@@ -108,32 +125,34 @@ export default function TableToolbar({
   setShowReferenceOverlay,
   setShowRowOrderingModal,
   setShowPasteRowsDialog,
-  
+
   // Success callbacks
   onEditSuccess = () => loadTableData(),
   onDeleteSuccess = () => loadTableData(),
-  
+
   // HTML cleanup functions
   cleanupHtmlText,
   containsCleanableHtml,
   hasCleanableHtmlInTable,
   handleBulkHtmlCleanup,
-  
+
   // Sort state for export
   sortField,
-  sortDirection = 'asc',
-  
+  sortDirection = "asc",
+
   // Row ordering functions
   rowOrderingEnabled,
   enableRowOrdering,
   disableRowOrdering,
-  onRowOrderingSuccess
+  onRowOrderingSuccess,
+  toolbarTrailing,
 }: TableToolbarProps) {
   // Show toast when trying to use edit features in read-only mode
   const showReadOnlyToast = () => {
     toast({
       title: "View Only",
-      description: "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
+      description:
+        "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
       variant: "default",
     });
   };
@@ -202,7 +221,12 @@ export default function TableToolbar({
                 </button>
               )}
             </div>
-            <Button size="sm" type="submit" className="h-7 w-7 p-0" title="Search">
+            <Button
+              size="sm"
+              type="submit"
+              className="h-7 w-7 p-0"
+              title="Search"
+            >
               <Search className="h-3.5 w-3.5" />
             </Button>
           </form>
@@ -226,7 +250,11 @@ export default function TableToolbar({
                 }
               }}
               className="whitespace-nowrap text-green-600 dark:text-green-400 border-green-300 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-              title={!rowOrderingEnabled ? "Enable row ordering and open reorder modal" : "Open row reordering modal"}
+              title={
+                !rowOrderingEnabled
+                  ? "Enable row ordering and open reorder modal"
+                  : "Open row reordering modal"
+              }
             >
               <GripVertical className="h-3.5 w-3.5 md:mr-1.5" />
               <span className="hidden md:inline">Reorder</span>
@@ -281,6 +309,8 @@ export default function TableToolbar({
               <Settings className="h-3.5 w-3.5" />
             </Button>
           )}
+
+          {toolbarTrailing}
         </div>
       </div>
 
@@ -340,11 +370,11 @@ export default function TableToolbar({
           />
         </>
       )}
-      
+
       {/* Read-only modals - Export and Reference are always available */}
       <ExportTableModal
         tableId={tableId}
-        tableName={tableInfo?.table_name || 'table'}
+        tableName={tableInfo?.table_name || "table"}
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
         sortField={sortField}

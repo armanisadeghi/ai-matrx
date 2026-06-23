@@ -1,4 +1,4 @@
-import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/app/(dev)/demos/resizables/_lib/readLayoutCookie";
 import { SettingsRouteShell } from "@/features/settings/route-shell/SettingsRouteShell";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -27,10 +27,7 @@ export default async function SettingsLayout({
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <SettingsRouteShell
-      defaultLayout={defaultLayout}
-      cookieName={COOKIE_NAME}
-    >
+    <SettingsRouteShell defaultLayout={defaultLayout} cookieName={COOKIE_NAME}>
       {children}
     </SettingsRouteShell>
   );

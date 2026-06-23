@@ -162,7 +162,7 @@ export interface FeatureAdminMap {
   /**
    * Demo / test / playground routes related to this feature, no matter
    * where they live in `app/`. The audit catches these scattered under
-   * `(dev)`, `(public-demos)`, `(ssr)`, etc.
+   * `(dev)`, `(ssr)`, etc.
    */
   demoRoutes?: FeatureAdminRoute[];
 

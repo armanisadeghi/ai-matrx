@@ -29,7 +29,7 @@ export interface SSRAgentShellData {
  * Replaces separate calls to get_user_session_data(), ai_model query,
  * context_menu_unified_view query, and sms unread count.
  *
- * Called server-side in app/(ssr)/layout.tsx immediately after auth.getUser().
+ * Called client-side from `DeferredShellData` after auth resolves.
  */
 export async function getSSRShellData(
   supabase: SupabaseClient,

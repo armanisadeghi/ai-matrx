@@ -1,12 +1,6 @@
 import { join } from "path";
 import Link from "next/link";
-import {
-  LayoutGrid,
-  MonitorPlay,
-  Globe,
-  FlaskConical,
-  ArrowRight,
-} from "lucide-react";
+import { LayoutGrid, FlaskConical, ArrowRight } from "lucide-react";
 import { scanRoutesShallow } from "@/utils/route-discovery";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -21,14 +15,8 @@ export const metadata = createRouteMetadata("/demos", {
 // (top-level subroutes only) so adding a new demo automatically shows up
 // here without code changes.
 //
-// Sections — and why each has its own route group:
-//   (dev)/demos/*              — auth-required, slim Providers shell
-//   (ssr)/demos/ssr/*          — auth-required, LiteStoreProvider + glass shell
-//                                (different Redux store, can't nest into (dev))
-//   (public-demos)/demos/public/* — no auth, PublicProviders shell
-//
-// Plus the entity-bound demos that live under (legacy) — those keep that
-// group because they need the entity slice; surfaced here as a single link.
+// Primary section: (dev)/demos/* — auth-required, slim Providers shell.
+// Plus entity-bound demos under (legacy) — surfaced here as a single link.
 type DemoSection = {
   title: string;
   description: string;
@@ -47,30 +35,6 @@ const SECTIONS: DemoSection[] = [
     basePath: "/demos",
     directory: join(process.cwd(), "app", "(dev)", "demos"),
     accent: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    title: "SSR-shell demos",
-    description:
-      "Server-rendered demos using the lightweight LiteStore + glass shell. Different Redux store from the rest of the app.",
-    icon: MonitorPlay,
-    basePath: "/demos/ssr",
-    directory: join(process.cwd(), "app", "(ssr)", "demos", "ssr"),
-    accent: "text-purple-600 dark:text-purple-400",
-  },
-  {
-    title: "Public showcase demos",
-    description:
-      "Externally linkable demos served without authentication. Use the public providers shell.",
-    icon: Globe,
-    basePath: "/demos/public",
-    directory: join(
-      process.cwd(),
-      "app",
-      "(public-demos)",
-      "demos",
-      "public",
-    ),
-    accent: "text-emerald-600 dark:text-emerald-400",
   },
 ];
 

@@ -10,8 +10,8 @@ interface WhatsAppShellProps {
 
 /**
  * Standalone WhatsApp shell — used by the modal-style demo at
- * /ssr/demos/whatsapp-demo. Renders a custom traffic-light TitleBar above the
- * shell body. The windowed demo at /ssr/demos/whatsapp-window-demo wraps
+ * /demos/whatsapp-demo. Renders a custom traffic-light TitleBar above the
+ * shell body. The windowed demo at /demos/whatsapp-window-demo wraps
  * WhatsAppShellInner in a WindowPanel instead, which provides its own chrome.
  *
  * Settings and Media open via the global overlay system — no internal modal

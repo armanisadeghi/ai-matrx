@@ -74,7 +74,7 @@ export function SidebarActions({
   onNewChat,
   searchQuery,
   onSearchChange,
-  newChatHref = "/demos/ssr/chat",
+  newChatHref = "/demos/chat",
 }: SidebarActionsProps) {
   return (
     <div className="px-1.5 py-1">

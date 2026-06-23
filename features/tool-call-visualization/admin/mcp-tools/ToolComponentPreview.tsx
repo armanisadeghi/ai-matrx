@@ -500,7 +500,7 @@ export function ToolComponentPreview({
             <AlertTriangle className="h-3.5 w-3.5" />
             No test samples — run the tool on the{" "}
             <a
-              href="/demos/public/api-tests/tool-testing"
+              href="/demos/api-tests/tool-testing"
               target="_blank"
               className="underline text-primary"
             >

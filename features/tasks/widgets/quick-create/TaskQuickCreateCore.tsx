@@ -912,10 +912,10 @@ function openEntity(
 ) {
   if (!entityId) return;
   if (entityType === "cx_conversation") {
-    window.open(`/ssr/chat/c/${entityId}`, "_blank", "noopener,noreferrer");
+    window.open(`/demos/chat/c/${entityId}`, "_blank", "noopener,noreferrer");
   } else if (entityType === "cx_message" && parentConversationId) {
     window.open(
-      `/ssr/chat/c/${parentConversationId}#m-${entityId}`,
+      `/demos/chat/c/${parentConversationId}#m-${entityId}`,
       "_blank",
       "noopener,noreferrer",
     );

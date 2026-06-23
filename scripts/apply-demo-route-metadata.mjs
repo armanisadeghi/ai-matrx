@@ -9,8 +9,7 @@ const ROOT = process.cwd();
 
 const TREES = [
   { relDir: "app/(dev)/demos/general", baseUrl: "/demos/general" },
-  { relDir: "app/(public-demos)/demos/public", baseUrl: "/demos/public" },
-  { relDir: "app/(ssr)/ssr/demos", baseUrl: "/ssr/demos" },
+  { relDir: "app/(dev)/demos", baseUrl: "/demos" },
 ];
 
 const META_IMPORT = `import { createRouteMetadata } from "@/utils/route-metadata";`;
@@ -37,7 +36,6 @@ function humanTitle(urlPath, baseUrl) {
   if (!rest) {
     if (baseUrl === "/demo") return "Demo";
     if (baseUrl === "/demos") return "Demos";
-    if (baseUrl === "/ssr/demos") return "SSR Demos";
     return "Demo";
   }
   return rest
