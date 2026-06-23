@@ -30,6 +30,7 @@ import { createWarRoomSession } from "@/features/war-room/redux/thunks";
 import { createNewNote } from "@/features/notes/redux/thunks";
 import { createDocument } from "@/features/data-tables/document-service";
 import { createWorkbook } from "@/features/data-tables/workbook-service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import type { ShellNavActionId } from "../constants/nav-data";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
@@ -73,11 +74,11 @@ export function useNavActions(): ShellNavActionHandlers {
       // then open it.
       void (async () => {
         const res = await createDocument({ name: "Untitled document" });
-        if (res.success && res.data) {
-          router.push(`/documents/${res.data.id}`);
-        } else {
+        if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the document");
+          return;
         }
+        router.push(`/documents/${res.data.id}`);
       })();
     },
     "create-workbook": () => {
@@ -85,11 +86,11 @@ export function useNavActions(): ShellNavActionHandlers {
       // then open it.
       void (async () => {
         const res = await createWorkbook({ name: "Untitled workbook" });
-        if (res.success && res.data) {
-          router.push(`/workbooks/${res.data.id}`);
-        } else {
+        if (isServiceFailure(res)) {
           toast.error(res.error ?? "Couldn't create the workbook");
+          return;
         }
+        router.push(`/workbooks/${res.data.id}`);
       })();
     },
     "create-picklist": () => {

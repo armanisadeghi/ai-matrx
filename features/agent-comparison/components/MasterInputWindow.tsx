@@ -66,46 +66,45 @@ export function MasterInputWindow({ id, onClose }: Props) {
       width={760}
       height={620}
       onClose={onClose}
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      actionsLeft={
+        <span className="text-[11px] text-muted-foreground leading-snug max-w-[360px] select-text">
+          Enter values once and route them into the right slot of each agent.
+          Auto-applies on Submit all.
+        </span>
+      }
+      actionsRight={
+        <Button
+          size="sm"
+          variant="default"
+          className="h-7 shrink-0"
+          onClick={handleApply}
+          disabled={columns.filter((c) => c.agentId).length === 0}
+        >
+          <Send className="w-3.5 h-3.5" />
+          Apply now
+        </Button>
+      }
+      footerRight={
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleAddField}
+          className="!h-7"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add field
+        </Button>
+      }
     >
-      <div className="h-full flex flex-col">
-        <div className="px-3 py-2 border-b border-border text-[11px] text-muted-foreground bg-muted/20 flex items-center justify-between gap-2">
-          <span>
-            Enter values once and route them into the right slot of each agent.
-            Auto-applies on Submit all.
-          </span>
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 shrink-0"
-            onClick={handleApply}
-            disabled={columns.filter((c) => c.agentId).length === 0}
-          >
-            <Send className="w-3.5 h-3.5" />
-            Apply now
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          {fields.map((field) => (
-            <MasterFieldRow
-              key={field.fieldId}
-              field={field}
-              columns={columns}
-            />
-          ))}
-        </div>
-
-        <div className="shrink-0 border-t border-border bg-card/40 p-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAddField}
-            className="h-7"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add field
-          </Button>
-        </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {fields.map((field) => (
+          <MasterFieldRow
+            key={field.fieldId}
+            field={field}
+            columns={columns}
+          />
+        ))}
       </div>
     </WindowPanel>
   );

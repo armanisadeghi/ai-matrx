@@ -49,6 +49,8 @@ export default function StateViewerWindow({
 
   const activeTabContent = tabs.find((t) => t.id === activeTabId)?.content;
   const isOnIndex = activeTabId === TAB_INDEX_ID;
+  const activeTabLabel =
+    tabs.find((t) => t.id === activeTabId)?.label || "Slice Viewer";
 
   const sidebarContent = (
     <>
@@ -87,7 +89,15 @@ export default function StateViewerWindow({
   return (
     <TabNavigationContext.Provider value={setActiveTabId}>
       <WindowPanel
-        title="State Analyzer"
+        titleNode={
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="shrink-0">State Analyzer</span>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="font-normal text-muted-foreground truncate">
+              {activeTabLabel}
+            </span>
+          </span>
+        }
         minWidth={800}
         minHeight={600}
         width={800}
@@ -98,22 +108,20 @@ export default function StateViewerWindow({
         sidebarDefaultSize={200}
         sidebarMinSize={150}
         sidebarClassName="bg-muted/10"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        actionsLeft={
+          !isOnIndex ? (
+            <button
+              onClick={() => setActiveTabId(TAB_INDEX_ID)}
+              className="shrink-0 h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Back to Tab Index"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          ) : undefined
+        }
       >
         <div className="flex flex-col h-full min-w-0 overflow-hidden">
-          <div className="flex items-center px-3 py-1.5 border-b border-border bg-muted/40 shrink-0">
-            {!isOnIndex && (
-              <button
-                onClick={() => setActiveTabId(TAB_INDEX_ID)}
-                className="shrink-0 h-5 w-5 flex items-center justify-center rounded mr-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Back to Tab Index"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-            )}
-            <span className="font-medium text-sm truncate">
-              {tabs.find((t) => t.id === activeTabId)?.label || "Slice Viewer"}
-            </span>
-          </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             {activeTabContent}
           </div>

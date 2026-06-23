@@ -14,6 +14,7 @@ import {
   Plus,
   X,
   Braces,
+  Loader2,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -51,7 +52,14 @@ import {
   setAgentField,
   setAgentTools,
 } from "@/features/agents/redux/agent-definition/slice";
-import { selectAllModels } from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  fetchModelById,
+  fetchModelOptions,
+  selectAllModels,
+  selectModelFullyLoaded,
+  selectModelRegistryError,
+  selectModelRegistryLoading,
+} from "@/features/ai-models/redux/modelRegistrySlice";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import type {
   LLMParams,
@@ -974,6 +982,24 @@ export function AgentSettingsCore({
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
   );
+  const isModelFull = useAppSelector((state) =>
+    selectModelFullyLoaded(state, modelId),
+  );
+  const registryLoading = useAppSelector(selectModelRegistryLoading);
+  const registryError = useAppSelector(selectModelRegistryError);
+
+  // Settings need the model's full controls blob. The registry may only hold
+  // lightweight options (or nothing) until explicitly fetched — same pattern as
+  // RunConfigOverrides and SmartModelSelect in the builder.
+  useEffect(() => {
+    dispatch(fetchModelOptions());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (modelId && !isModelFull && !registryLoading) {
+      dispatch(fetchModelById(modelId));
+    }
+  }, [dispatch, modelId, isModelFull, registryLoading]);
 
   const { normalizedControls, error } = useModelControls(models, modelId ?? "");
 
@@ -1609,7 +1635,11 @@ export function AgentSettingsCore({
   const renderVoiceRow = (row: SettingsRow) => {
     const voiceControl = getControl("tts_voice");
     if (!voiceControl || !voiceControl.enum?.length) {
-      return renderControl("tts_voice", row.label, getControl("tts_voice") ?? null);
+      return renderControl(
+        "tts_voice",
+        row.label,
+        getControl("tts_voice") ?? null,
+      );
     }
     const voiceEnum = voiceControl.enum ?? [];
     const ttsEnabled = enabledSettings.has("tts_voice");
@@ -1707,6 +1737,22 @@ export function AgentSettingsCore({
   const showSchemaReminder = wantsJsonSchema && !outputSchemaUsable;
 
   // ── Early returns ─────────────────────────────────────────────────────────
+  if (modelId && !isModelFull) {
+    if (registryError && !registryLoading) {
+      return (
+        <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">
+          Error loading model controls: {registryError}
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground px-1 py-2">
+        <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+        Loading model settings…
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="text-xs text-red-600 dark:text-red-400 px-1 py-2">

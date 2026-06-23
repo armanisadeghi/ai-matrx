@@ -36,7 +36,6 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import type { Scope } from "@/features/agents/redux/shared/scope";
-import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import type {
   ResultDisplayMode,
   SourceFeature,
@@ -64,6 +63,7 @@ import {
   type SelectionRange,
 } from "./utils/selection-tracking";
 import { buildApplicationScopeFromMenuContext } from "./utils/build-application-scope";
+import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 
 export type PlacementVisibility = "show" | "hide" | "disable";
 
@@ -141,6 +141,13 @@ export interface UnifiedAgentContextMenuProps {
     [key: string]: unknown;
   };
   /**
+   * Live scope builder — preferred over `contextData` at launch time. Mirrors
+   * ProTextarea's `getApplicationScope`: read refs/DOM at click time so surface
+   * values are not stale React state. When omitted, scope is assembled from
+   * `contextData` + the menu's captured selection.
+   */
+  getApplicationScope?: () => ApplicationScope;
+  /**
    * Delegation hook for SINGLE-INSTANCE menus that serve many targets (e.g.
    * one menu for a whole conversation of assistant messages). Called with the
    * right-clicked element the instant the context menu is summoned; return the
@@ -203,7 +210,9 @@ function resolvePlacementMode(
     const enabledSet = new Set(enabledPlacements);
     return {
       "ai-action": enabledSet.has("ai-action") ? "show" : "hide",
-      "bound-agent": enabledSet.has("bound-agent") ? "show" : "hide",
+      // Bound agents is synthetic (not a DB placement) — always on when
+      // surfaceName is set unless the caller explicitly hides via placementMode.
+      "bound-agent": placementMode?.["bound-agent"] ?? "show",
       "content-block": enabledSet.has("content-block") ? "show" : "hide",
       "organization-tool": enabledSet.has("organization-tool")
         ? "show"
@@ -231,6 +240,7 @@ export function UniversalContextMenuV2({
   addedContexts,
   excludedContexts,
   contextData = {},
+  getApplicationScope,
   className,
   enableFloatingIcon = true,
   onUndo,
@@ -357,6 +367,25 @@ export function UniversalContextMenuV2({
     const resolved = resolvedContextRef.current;
     return resolved ? { ...base, ...resolved } : base;
   }, [contextData]);
+
+  const resolveLaunchApplicationScope = useCallback((): ApplicationScope => {
+    if (getApplicationScope) {
+      return getApplicationScope();
+    }
+
+    const selectionText = capturedSelection.current?.text || selectedText || "";
+
+    return buildApplicationScopeFromMenuContext({
+      selectedText: selectionText,
+      selectionRange,
+      contextData: getEffectiveContextData(),
+    });
+  }, [
+    getApplicationScope,
+    getEffectiveContextData,
+    selectedText,
+    selectionRange,
+  ]);
 
   // The content a Compare action operates on: the current selection if there
   // is one, otherwise the whole field/content passed via contextData.content.
@@ -724,11 +753,7 @@ export function UniversalContextMenuV2({
       const selectionText =
         capturedSelection.current?.text || selectedText || "";
 
-      const applicationScope = buildApplicationScopeFromMenuContext({
-        selectedText: selectionText,
-        selectionRange,
-        contextData: getEffectiveContextData(),
-      });
+      const applicationScope = resolveLaunchApplicationScope();
 
       const resultDisplay = (entry.displayMode ??
         "modal-full") as ResultDisplayMode;
@@ -770,10 +795,9 @@ export function UniversalContextMenuV2({
       }
     },
     [
-      getEffectiveContextData,
       launchShortcut,
+      resolveLaunchApplicationScope,
       selectedText,
-      selectionRange,
       sourceFeature,
       surfaceName,
     ],
@@ -784,11 +808,7 @@ export function UniversalContextMenuV2({
       const selectionText =
         capturedSelection.current?.text || selectedText || "";
 
-      const applicationScope = buildApplicationScopeFromMenuContext({
-        selectedText: selectionText,
-        selectionRange,
-        contextData: getEffectiveContextData(),
-      });
+      const applicationScope = resolveLaunchApplicationScope();
 
       try {
         await launchAgent(entry.agentId, {
@@ -821,10 +841,9 @@ export function UniversalContextMenuV2({
       }
     },
     [
-      getEffectiveContextData,
       launchAgent,
+      resolveLaunchApplicationScope,
       selectedText,
-      selectionRange,
       sourceFeature,
       surfaceName,
     ],
@@ -899,7 +918,8 @@ export function UniversalContextMenuV2({
     categoryGroups,
     boundAgentSections,
     boundAgentsLoading,
-    showBoundAgents: Boolean(surfaceName) && resolvedPlacementMode["bound-agent"] !== "hide",
+    showBoundAgents:
+      Boolean(surfaceName) && resolvedPlacementMode["bound-agent"] !== "hide",
     onBoundAgentSelect: (entry) => void handleBoundAgentExecute(entry),
     onEntrySelect: handleEntrySelect,
     onCopy: handleCopy,

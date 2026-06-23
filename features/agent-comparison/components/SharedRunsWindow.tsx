@@ -30,14 +30,17 @@ export function SharedRunsWindow({ id, onClose }: SharedRunsWindowProps) {
       width={920}
       height={680}
       onClose={onClose}
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      actionsRight={
+        <span
+          title="Every per-run metric, side-by-side. Values stream live from each column — nothing is duplicated. The Model Context section populates after the first turn of a conversation."
+          className="max-w-[280px] truncate text-[11px] text-muted-foreground"
+        >
+          Every per-run metric, side-by-side — streaming live.
+        </span>
+      }
     >
       <div className="h-full flex flex-col">
-        <div className="px-3 py-2 border-b border-border text-[11px] text-muted-foreground bg-muted/20">
-          Every per-run metric, side-by-side. Values stream live from each
-          column — nothing is duplicated. The Model Context section populates
-          after the first turn of a conversation.
-        </div>
-
         {columns.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground">
             No columns yet.

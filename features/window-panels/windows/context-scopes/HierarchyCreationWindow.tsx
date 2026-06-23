@@ -106,8 +106,30 @@ export default function HierarchyCreationWindow({
       minWidth={300}
       maxWidth={600}
       overlayId="hierarchyCreationWindow"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      footerRight={
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="!h-7"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="!h-7"
+            onClick={handleCreate}
+            disabled={!name.trim() || isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create"}
+          </Button>
+        </div>
+      }
     >
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4">
         <div className="text-sm text-muted-foreground mb-2">
           {entityType === "project" &&
             presetContext?.organization_id &&
@@ -141,18 +163,6 @@ export default function HierarchyCreationWindow({
               />
             </div>
           )}
-        </div>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreate}
-            disabled={!name.trim() || isSubmitting}
-          >
-            {isSubmitting ? "Creating..." : "Create"}
-          </Button>
         </div>
       </div>
     </WindowPanel>

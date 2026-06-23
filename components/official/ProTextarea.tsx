@@ -20,6 +20,9 @@
  *   result into a popover, and replaces the field on Apply (never auto-mutates):
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
  *     agent from the `clean` role on `matrx-user/transcripts-cleanup`.
+ *   - **Bound agents** — when `surfaceName` is set, lists agents from
+ *     `agx_agent_surface` (My agents / System / Shared / org), same as the
+ *     context menu. Pass `getApplicationScope` for full surface scope at run.
  *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Placeholder
  *     default: General Chat (`helpAgentId` to override).
  *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; no
@@ -116,12 +119,18 @@ import { toast } from "sonner";
 import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
+import { ProTextareaBoundAgentsMenuItems } from "./ProTextareaBoundAgentsMenuItems";
+import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 import {
   isEmbeddedProTextareaAgentAction,
   isProTextareaAgentActionEnabled,
+  isProTextareaAgentActionId,
   PRO_TEXTAREA_AGENT_ACTIONS,
   type ProTextareaAgentActionContext,
   type ProTextareaAgentActionId,
+  type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 
@@ -171,6 +180,20 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   enableCustomAgent?: boolean;
   customAgentId?: string | null;
   customAgentContextItems?: SessionContextItem[];
+  /**
+   * Surface registry name (`matrx-user/notes`, etc.). When set, the "…" menu
+   * lists agents from `agx_agent_surface` (My agents / System / Shared / org).
+   */
+  surfaceName?: string;
+  /**
+   * Live scope for surface binding resolution at run time. When omitted,
+   * falls back to `{ content, selection }` from the field text.
+   */
+  getApplicationScope?: () => ApplicationScope;
+  /** Context items merged into bound-agent runs (slot fill + ad-hoc). */
+  surfaceContextItems?: SessionContextItem[];
+  /** Show bound agents in the "…" menu when `surfaceName` is set. Default: true. */
+  enableBoundAgents?: boolean;
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -234,6 +257,10 @@ export const ProTextarea = React.forwardRef<
       enableCustomAgent = false,
       customAgentId,
       customAgentContextItems,
+      surfaceName,
+      getApplicationScope,
+      surfaceContextItems,
+      enableBoundAgents = true,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -272,6 +299,12 @@ export const ProTextarea = React.forwardRef<
     // action menu and an agent-action view. A single dismissable layer avoids
     // the dropdown-vs-popover focus war that made the view flash + vanish.
     const agentAction = useProTextareaAgentAction();
+    const boundAgentsEnabled = Boolean(surfaceName) && enableBoundAgents;
+    const {
+      sections: boundAgentSections,
+      loading: boundAgentsLoading,
+      refresh: refreshBoundAgents,
+    } = useSurfaceBoundAgents(boundAgentsEnabled ? surfaceName : null);
     const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
     const cleanupSurfaceAgentId =
       cleanupSurfaceRoles.roles.clean?.effectiveAgentId ?? null;
@@ -301,9 +334,7 @@ export const ProTextarea = React.forwardRef<
     };
 
     const [menuOpen, setMenuOpen] = useState(false);
-    const [menuMode, setMenuMode] = useState<"menu" | ProTextareaAgentActionId>(
-      "menu",
-    );
+    const [menuMode, setMenuMode] = useState<ProTextareaMenuMode>("menu");
     const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
     const [selectedAgentName, setSelectedAgentName] = useState<string | null>(
       null,
@@ -318,8 +349,9 @@ export const ProTextarea = React.forwardRef<
         enableCustomAgent,
       }),
     );
-    const activeAgentAction =
-      menuMode === "menu" ? null : PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
+    const activeAgentAction = isProTextareaAgentActionId(menuMode)
+      ? PRO_TEXTAREA_AGENT_ACTIONS[menuMode]
+      : null;
 
     // Resolve the chosen agent's display name for the picker label — only once
     // an agent-action view is actually open.
@@ -532,6 +564,9 @@ export const ProTextarea = React.forwardRef<
     const handleMenuOpenChange = useCallback(
       (open: boolean) => {
         setMenuOpen(open);
+        if (open && boundAgentsEnabled) {
+          void refreshBoundAgents();
+        }
         if (!open) {
           setMenuMode("menu");
           setSelectedAgent(null);
@@ -539,7 +574,55 @@ export const ProTextarea = React.forwardRef<
           agentAction.reset();
         }
       },
-      [agentAction],
+      [agentAction, boundAgentsEnabled, refreshBoundAgents],
+    );
+
+    const resolveApplicationScope = useCallback(
+      (text: string): ApplicationScope => {
+        if (getApplicationScope) return getApplicationScope();
+        const el = textareaRef.current;
+        const start = el?.selectionStart ?? 0;
+        const end = el?.selectionEnd ?? 0;
+        const selection =
+          start !== end && el
+            ? el.value.slice(Math.min(start, end), Math.max(start, end))
+            : "";
+        return {
+          content: text,
+          selection,
+          text_before: el ? el.value.slice(0, start) : "",
+          text_after: el ? el.value.slice(end) : "",
+        };
+      },
+      [getApplicationScope],
+    );
+
+    const resolveAgentContextItems = useCallback(
+      (actionId: ProTextareaAgentActionId | "boundAgent") => {
+        if (actionId === "boundAgent") {
+          return surfaceContextItems ?? [];
+        }
+        return (
+          agentContextByAction.current[actionId as ProTextareaAgentActionId] ??
+          []
+        );
+      },
+      [surfaceContextItems],
+    );
+
+    const openBoundAgentView = useCallback(
+      (entry: SurfaceBoundAgentEntry) => {
+        const text = textareaRef.current?.value ?? valueAsString;
+        if (!text.trim()) {
+          toast.info("Add some text before running an agent");
+          return;
+        }
+        agentAction.reset();
+        setMenuMode("boundAgent");
+        setSelectedAgent(entry.agentId);
+        setSelectedAgentName(entry.name);
+      },
+      [agentAction, valueAsString],
     );
 
     const openAgentActionView = useCallback(
@@ -586,31 +669,57 @@ export const ProTextarea = React.forwardRef<
     }, []);
 
     const runActiveAgentAction = useCallback(() => {
-      if (menuMode === "menu" || isEmbeddedProTextareaAgentAction(menuMode)) {
+      if (
+        menuMode === "menu" ||
+        (isProTextareaAgentActionId(menuMode) &&
+          isEmbeddedProTextareaAgentAction(menuMode))
+      ) {
         return;
       }
-      const definition = PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
       const text = textareaRef.current?.value ?? valueAsString;
       if (!text.trim()) {
-        toast.info(definition.emptyTextToast);
+        toast.info(
+          menuMode === "boundAgent"
+            ? "Add some text before running an agent"
+            : PRO_TEXTAREA_AGENT_ACTIONS[menuMode].emptyTextToast,
+        );
         return;
       }
       if (!selectedAgent) {
-        toast.info(definition.chooseAgentToast);
+        toast.info(
+          menuMode === "boundAgent"
+            ? "Choose an agent first"
+            : PRO_TEXTAREA_AGENT_ACTIONS[menuMode].chooseAgentToast,
+        );
         return;
       }
       void agentAction.run(
         text,
         selectedAgent,
-        agentContextByAction.current[menuMode],
+        resolveAgentContextItems(menuMode),
+        {
+          surfaceName: menuMode === "boundAgent" ? surfaceName : undefined,
+          applicationScope: resolveApplicationScope(text),
+        },
       );
-    }, [agentAction, menuMode, selectedAgent, valueAsString]);
+    }, [
+      agentAction,
+      menuMode,
+      resolveAgentContextItems,
+      resolveApplicationScope,
+      selectedAgent,
+      surfaceName,
+      valueAsString,
+    ]);
 
     const applyActiveAgentAction = useCallback(() => {
-      if (menuMode === "menu" || isEmbeddedProTextareaAgentAction(menuMode)) {
+      if (
+        menuMode === "menu" ||
+        (isProTextareaAgentActionId(menuMode) &&
+          isEmbeddedProTextareaAgentAction(menuMode))
+      ) {
         return;
       }
-      const definition = PRO_TEXTAREA_AGENT_ACTIONS[menuMode];
       const result = agentAction.result.trim();
       if (!result) return;
       pushToTextarea(agentAction.result);
@@ -619,7 +728,11 @@ export const ProTextarea = React.forwardRef<
       setSelectedAgent(null);
       setSelectedAgentName(null);
       agentAction.reset();
-      toast.success(definition.applySuccessToast);
+      toast.success(
+        menuMode === "boundAgent"
+          ? "Agent response applied"
+          : PRO_TEXTAREA_AGENT_ACTIONS[menuMode].applySuccessToast,
+      );
     }, [agentAction, menuMode, pushToTextarea]);
 
     const handleKeyDown = useCallback(
@@ -687,9 +800,12 @@ export const ProTextarea = React.forwardRef<
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
 
-    // The "…" menu has at least one item when copy or an agent action is enabled.
+    const showBoundAgentsMenu = boundAgentsEnabled;
     const showMenu =
-      !disabled && (showCopyButton || enabledAgentActionIds.length > 0);
+      !disabled &&
+      (showCopyButton ||
+        enabledAgentActionIds.length > 0 ||
+        showBoundAgentsMenu);
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -847,8 +963,11 @@ export const ProTextarea = React.forwardRef<
                 className={cn(
                   "p-0",
                   menuMode === "menu"
-                    ? "w-48"
-                    : isEmbeddedProTextareaAgentAction(menuMode)
+                    ? showBoundAgentsMenu
+                      ? "w-56 max-h-[70dvh] overflow-y-auto"
+                      : "w-48"
+                    : isProTextareaAgentActionId(menuMode) &&
+                        isEmbeddedProTextareaAgentAction(menuMode)
                       ? "w-auto max-w-none"
                       : "w-80",
                 )}
@@ -891,8 +1010,16 @@ export const ProTextarea = React.forwardRef<
                         </button>
                       );
                     })}
+                    {showBoundAgentsMenu && (
+                      <ProTextareaBoundAgentsMenuItems
+                        loading={boundAgentsLoading}
+                        sections={boundAgentSections}
+                        onSelect={openBoundAgentView}
+                      />
+                    )}
                   </div>
-                ) : isEmbeddedProTextareaAgentAction(menuMode) ? (
+                ) : isProTextareaAgentActionId(menuMode) &&
+                  isEmbeddedProTextareaAgentAction(menuMode) ? (
                   <ProTextareaAgentPanel
                     actionId={menuMode}
                     agentId={selectedAgent}
@@ -904,9 +1031,13 @@ export const ProTextarea = React.forwardRef<
                     onBack={exitEmbeddedAgentView}
                     onCancel={() => setMenuOpen(false)}
                   />
-                ) : activeAgentAction ? (
+                ) : activeAgentAction || menuMode === "boundAgent" ? (
                   <AgentActionPopoverBody
-                    title={activeAgentAction.popoverTitle}
+                    title={
+                      menuMode === "boundAgent"
+                        ? (selectedAgentName ?? "Bound agent")
+                        : activeAgentAction!.popoverTitle
+                    }
                     phase={agentAction.phase}
                     isBusy={agentAction.isBusy}
                     isThinking={agentAction.isThinking}

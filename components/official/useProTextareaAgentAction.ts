@@ -17,6 +17,7 @@ import {
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 export interface UseProTextareaAgentActionResult {
   phase: AiProcessPhase;
@@ -35,6 +36,10 @@ export interface UseProTextareaAgentActionResult {
     text: string,
     agentId: string,
     contextItems?: SessionContextItem[],
+    options?: {
+      surfaceName?: string;
+      applicationScope?: ApplicationScope;
+    },
   ) => Promise<boolean>;
   /** Clear all streaming state (call on cancel / before a fresh run). */
   reset: () => void;
@@ -53,6 +58,10 @@ export function useProTextareaAgentAction(): UseProTextareaAgentActionResult {
       text: string,
       agentId: string,
       contextItems: SessionContextItem[] = [],
+      options?: {
+        surfaceName?: string;
+        applicationScope?: ApplicationScope;
+      },
     ): Promise<boolean> => {
       if (!agentId) return false;
       if (!text.trim()) return false;
@@ -61,7 +70,11 @@ export function useProTextareaAgentAction(): UseProTextareaAgentActionResult {
         agentId,
         text,
         contextItems,
-        scope: { content: text, raw_transcript_text: text },
+        scope: options?.applicationScope ?? {
+          content: text,
+          raw_transcript_text: text,
+        },
+        surfaceName: options?.surfaceName,
       });
       return launched !== null;
     },

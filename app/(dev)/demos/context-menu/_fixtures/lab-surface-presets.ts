@@ -27,9 +27,10 @@ import {
   DEMO_NOTE_RECORD,
   DEMO_NOTES_MAP,
 } from "./notes-demo";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 export interface LabSurfacePreset {
-  sourceFeature: string;
+  sourceFeature: SourceFeature;
   /** When set, applied as enabledPlacements (overrides lab placement toggles for known surfaces). */
   enabledPlacements?: string[];
   sampleContextData: Record<string, unknown>;

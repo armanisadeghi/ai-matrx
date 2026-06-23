@@ -7925,6 +7925,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/search-lab/tool/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Tool Search Endpoint */
+        post: operations["agent_tool_search_endpoint_rag_search_lab_tool_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/tool/get-chunk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Tool Get Chunk Endpoint */
+        post: operations["agent_tool_get_chunk_endpoint_rag_search_lab_tool_get_chunk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/search-lab/agent/chat": {
         parameters: {
             query?: never;
@@ -8618,6 +8652,51 @@ export interface paths {
          *     ``_stream_recovery_resume`` then claims the run and streams the resume.
          */
         post: operations["rerun_from_node_runs__run_id__nodes__node_id__rerun_from_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/fork-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fork From Node
+         * @description Iterate on a FINISHED run by forking a NEW run from one of its steps.
+         *
+         *     The terminal twin of ``rerun-from``. ``rerun-from`` mutates a PARKED run
+         *     in place (cheap, same run_id) but refuses a finished run, because
+         *     overwriting a completed run's status would corrupt its cost / summary
+         *     records. The dominant real case — "my workflow finished, I want to re-run
+         *     from step 3 to tweak something" — is served HERE: we create a brand-new
+         *     run seeded from the checkpoint that scheduled ``node_id``, so the source
+         *     run stays immutable and the new run re-runs the chosen step + everything
+         *     downstream.
+         *
+         *     Money-safety (the invariant this whole endpoint exists to protect):
+         *       * The source (terminal) run is never written — we only READ its
+         *         checkpoints.
+         *       * The seed checkpoint copies the source checkpoint's ``channel_values``,
+         *         which already bake in every upstream node's output. Its
+         *         ``next_invocations`` is ONLY the target node.
+         *       * On resume the scheduler builds its pending set EXCLUSIVELY from
+         *         ``next_invocations`` (``Scheduler.resume``); upstream nodes are never
+         *         invoked, so the expensive upstream LLM steps are NOT re-charged.
+         *       * The new run has zero ``wf_node_outcome`` rows, so the idempotency
+         *         lookup misses for the target and every downstream node — they execute
+         *         FRESH (the intended re-charge), never replay.
+         *
+         *     Returns the streamed NEW run; the frontend adopts the new run_id from the
+         *     ``workflow_run_resumed`` event and the canvas animates the fork.
+         */
+        post: operations["fork_from_node_runs__run_id__nodes__node_id__fork_from_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13709,6 +13788,199 @@ export interface components {
             /** Max Concurrent */
             max_concurrent: number;
         };
+        /** AgentToolEntityMapEntry */
+        AgentToolEntityMapEntry: {
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Mention Count */
+            mention_count?: number | null;
+            /** Artifact Count */
+            artifact_count?: number | null;
+            /** Source Kind Counts */
+            source_kind_counts?: {
+                [key: string]: number;
+            };
+            /** Top Chunk Id */
+            top_chunk_id?: string | null;
+            /** Importance */
+            importance?: number | null;
+            /**
+             * Is Concept
+             * @default false
+             */
+            is_concept: boolean;
+            /** Linked */
+            linked?: components["schemas"]["AgentToolEntityMapLink"][];
+        };
+        /** AgentToolEntityMapLink */
+        AgentToolEntityMapLink: {
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Weight */
+            weight?: number | null;
+        };
+        /** AgentToolGetChunkRequest */
+        AgentToolGetChunkRequest: {
+            /** Chunk Id */
+            chunk_id: string;
+            /**
+             * Include Parent
+             * @default true
+             */
+            include_parent: boolean;
+            /**
+             * Organization Id
+             * @description Admin-only org override — should match the org used for the search.
+             */
+            organization_id?: string | null;
+        };
+        /** AgentToolGetChunkResponse */
+        AgentToolGetChunkResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "not_found" | "forbidden";
+            scope: components["schemas"]["ScopeContext"];
+            /** Chunk */
+            chunk: {
+                [key: string]: unknown;
+            } | null;
+            /** Tool Result Text */
+            tool_result_text: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** AgentToolHit */
+        AgentToolHit: {
+            /** Chunk Id */
+            chunk_id?: string | null;
+            /** Source Kind */
+            source_kind?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /**
+             * Snippet
+             * @default
+             */
+            snippet: string;
+            /** Score */
+            score?: number | null;
+            /** Vector Rank */
+            vector_rank?: number | null;
+            /** Lexical Rank */
+            lexical_rank?: number | null;
+            /** Rerank Score */
+            rerank_score?: number | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Entities */
+            entities?: string[];
+            /** Entity Rank */
+            entity_rank?: number | null;
+            /** File Name */
+            file_name?: string | null;
+            /** Page Number */
+            page_number?: number | null;
+        };
+        /** AgentToolSearchOne */
+        AgentToolSearchOne: {
+            /** Query */
+            query: string;
+            /** Hits */
+            hits: components["schemas"]["AgentToolHit"][];
+            /** Total Candidates */
+            total_candidates: number;
+            /** Embedding Model */
+            embedding_model: string;
+            /** Reranker Model */
+            reranker_model: string | null;
+            /** Latency Ms */
+            latency_ms: number;
+            /** Matched Entities */
+            matched_entities: string[];
+            /** Entity Map */
+            entity_map: components["schemas"]["AgentToolEntityMapEntry"][];
+            /** Tool Result Text */
+            tool_result_text: string;
+            /** Error */
+            error?: string | null;
+        };
+        /** AgentToolSearchRequest */
+        AgentToolSearchRequest: {
+            /**
+             * Queries
+             * @description One or more search strings. A real agent fires several; each runs independently.
+             */
+            queries: string[];
+            /**
+             * Limit
+             * @default 10
+             */
+            limit: number;
+            /** Source Kinds */
+            source_kinds?: string[] | null;
+            /** Data Store Id */
+            data_store_id?: string | null;
+            /**
+             * Multi Query
+             * @default 1
+             */
+            multi_query: number;
+            /**
+             * Use Hyde
+             * @default false
+             */
+            use_hyde: boolean;
+            /**
+             * Rerank
+             * @default true
+             */
+            rerank: boolean;
+            /**
+             * Use Mmr
+             * @default true
+             */
+            use_mmr: boolean;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            /**
+             * Organization Id
+             * @description Admin-only org override (mirrors /rag/search). The working-context selector sends it.
+             */
+            organization_id?: string | null;
+            /** Include Sources */
+            include_sources?: {
+                [key: string]: string;
+            }[] | null;
+        };
+        /** AgentToolSearchResponse */
+        AgentToolSearchResponse: {
+            scope: components["schemas"]["ScopeContext"];
+            /**
+             * Tool Name
+             * @default rag_search
+             */
+            tool_name: string;
+            /** Args */
+            args: {
+                [key: string]: unknown;
+            };
+            /** Results */
+            results: components["schemas"]["AgentToolSearchOne"][];
+            /** Notes */
+            notes: string[];
+        };
         /** AgentToolSpec */
         AgentToolSpec: {
             /**
@@ -18155,6 +18427,16 @@ export interface components {
             include_sources?: {
                 [key: string]: string;
             }[] | null;
+            /**
+             * Organization Id
+             * @description Admin-only org override — mirrors /rag/search filters.organization_id. The working-context selector sends it so the simulation retrieves in the SAME org the Search tab does. Ignored for non-admins.
+             */
+            organization_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Structural scope filter (ctx_scope ids), same as /rag/search.
+             */
+            scope_ids?: string[] | null;
         };
         /** DiagnoseResponse */
         DiagnoseResponse: {
@@ -18177,6 +18459,8 @@ export interface components {
             candidates_vector: number;
             /** Candidates Lexical */
             candidates_lexical: number;
+            /** Candidates Entity */
+            candidates_entity: number;
             /** Candidates After Fusion */
             candidates_after_fusion: number;
             /** Candidates After Mmr */
@@ -20199,6 +20483,21 @@ export interface components {
             forked_at_position?: number | null;
             /** Message Count */
             message_count: number;
+        };
+        /** ForkFromRequest */
+        ForkFromRequest: {
+            /**
+             * Config Override
+             * @description Optional one-shot config tweak applied ONLY to the forked re-run of this node; neither the source run nor the saved workflow draft is touched. Same shape as the node's config_schema. Use to test a change (swap a model, raise max_tokens) before committing it.
+             */
+            config_override?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps: number;
         };
         /**
          * ForkRequest
@@ -44699,6 +44998,72 @@ export interface operations {
             };
         };
     };
+    agent_tool_search_endpoint_rag_search_lab_tool_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentToolSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentToolSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_tool_get_chunk_endpoint_rag_search_lab_tool_get_chunk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentToolGetChunkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentToolGetChunkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     agent_chat_stream_rag_search_lab_agent_chat_post: {
         parameters: {
             query?: never;
@@ -45743,6 +46108,42 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["RerunFromRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fork_from_node_runs__run_id__nodes__node_id__fork_from_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ForkFromRequest"] | null;
             };
         };
         responses: {

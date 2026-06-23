@@ -31,6 +31,7 @@ import {
   buildCodeWorkspaceContextData,
   CODE_WORKSPACE_CONTEXT_MENU_PROPS,
 } from "./buildCodeWorkspaceContextData";
+import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 
 const UnifiedAgentContextMenu = dynamic(
   () =>
@@ -132,6 +133,7 @@ export function CodeWorkspaceContextMenu({
       <UnifiedAgentContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         contextData={getContextData()}
+        getApplicationScope={() => getContextData() as ApplicationScope}
       >
         {children}
       </UnifiedAgentContextMenu>

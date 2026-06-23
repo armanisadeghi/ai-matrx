@@ -12,6 +12,7 @@ import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
 } from "@/features/agents/agent-context/buildAgentBuilderContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import {
   DEMO_AGENT_BUILDER_SCOPE,
@@ -66,6 +67,21 @@ export function AgentBuilderDemoPanel({
     focusedField,
   });
 
+  const getApplicationScope = useCallback(() => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const selectedText =
+      start !== end && el
+        ? el.value.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData,
+    });
+  }, [content, contextData]);
+
   const replaceContent = (next: string) => {
     setContent(next);
     pushHistory(next);
@@ -94,6 +110,7 @@ export function AgentBuilderDemoPanel({
       <UnifiedAgentContextMenu
         {...AGENT_BUILDER_CONTEXT_MENU_PROPS}
         getTextarea={() => textareaRef.current}
+        getApplicationScope={getApplicationScope}
         onTextReplace={replaceContent}
         onTextInsertBefore={(t) => replaceContent(t + content)}
         onTextInsertAfter={(t) => replaceContent(content + t)}
@@ -109,6 +126,8 @@ export function AgentBuilderDemoPanel({
       >
         <DemoProTextarea
           ref={textareaRef}
+          surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
+          getApplicationScope={getApplicationScope}
           value={content}
           onChange={(e) => {
             setContent(e.target.value);

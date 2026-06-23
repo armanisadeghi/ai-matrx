@@ -100,6 +100,7 @@ import { selectAllContentBlocksArray } from "@/features/agents/redux/agent-conte
 import { fetchUnifiedMenu } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { resolveRowScope } from "@/features/agents/redux/shared/scope";
 import type { Scope, ScopeRef } from "@/features/agents/redux/shared/scope";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { useUnifiedAgentContextMenu } from "@/features/context-menu-v2/hooks/useUnifiedAgentContextMenu";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import type { SurfaceManifest } from "@/features/surfaces/types";
@@ -120,6 +121,7 @@ import {
   formatLabContextJson,
   getLabSurfacePreset,
 } from "../_fixtures/lab-surface-presets";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import { DemoProTextarea } from "../_components/DemoProTextarea";
 
@@ -408,7 +410,8 @@ export default function ContextMenuDemoPage() {
     () => (surfaceName ? getLabSurfacePreset(surfaceName) : null),
     [surfaceName],
   );
-  const [labSourceFeature, setLabSourceFeature] = useState("demo");
+  const [labSourceFeature, setLabSourceFeature] =
+    useState<SourceFeature>("demo");
 
   // -- contextData editor ------------------------------------------------
   const [contextDataText, setContextDataText] = useState(DEFAULT_CONTEXT_DATA);
@@ -521,6 +524,29 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
     selectionText,
     textareaValue,
   ]);
+
+  const getLabApplicationScope = useCallback(
+    () =>
+      buildApplicationScopeFromMenuContext({
+        selectedText: selectionText,
+        selectionRange:
+          textareaRef.current &&
+          selectionStart !== null &&
+          selectionEnd !== null
+            ? {
+                type: "editable",
+                element: textareaRef.current,
+                start: selectionStart,
+                end: selectionEnd,
+              }
+            : null,
+        contextData: (parsedContextData.parsed ?? {}) as Record<
+          string,
+          unknown
+        >,
+      }),
+    [parsedContextData.parsed, selectionEnd, selectionStart, selectionText],
+  );
 
   // -- Menu hook (for the JSON inspectors — the menu component itself
   //    runs its own copy of this hook internally; we don't pass groups in).
@@ -969,11 +995,14 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                     : undefined
                 }
                 contextData={parsedContextData.parsed ?? undefined}
+                getApplicationScope={getLabApplicationScope}
                 scope={scope}
                 scopeId={resolvedScopeId}
               >
                 <DemoProTextarea
                   ref={textareaRef}
+                  surfaceName={surfaceName || undefined}
+                  getApplicationScope={getLabApplicationScope}
                   value={textareaValue}
                   onChange={(e) => setTextareaValue(e.target.value)}
                   onSelect={refreshSelection}

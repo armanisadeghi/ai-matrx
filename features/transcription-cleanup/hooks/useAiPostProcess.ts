@@ -101,6 +101,11 @@ interface ProcessArgs {
   contextItems: SessionContextItem[];
   /** Live surface scope (session ids, all three container texts). */
   scope: ApplicationScope;
+  /**
+   * Surface registry name for binding lookup. Defaults to the cleanup page
+   * surface when omitted (backward compatible).
+   */
+  surfaceName?: string;
 }
 
 export interface ProcessLaunchResult {
@@ -144,7 +149,9 @@ export function useAiPostProcess() {
       text,
       contextItems,
       scope,
+      surfaceName: surfaceNameArg,
     }: ProcessArgs): Promise<ProcessLaunchResult | null> => {
+      const bindingSurface = surfaceNameArg ?? CLEANUP_SURFACE_NAME;
       setError(null);
       setLaunching(true);
       try {
@@ -163,7 +170,7 @@ export function useAiPostProcess() {
         try {
           const layers = await fetchSurfaceBindingLayers(
             agentId,
-            CLEANUP_SURFACE_NAME,
+            bindingSurface,
           );
           if (layers.length > 0) {
             const mergedResult = mergeValueMappingLayers(layers);
@@ -185,7 +192,12 @@ export function useAiPostProcess() {
             err,
           );
         }
-        const resolved = resolveValueMappings(scope, bindingMappings, defs, slots);
+        const resolved = resolveValueMappings(
+          scope,
+          bindingMappings,
+          defs,
+          slots,
+        );
         if (resolved.errors.length > 0) {
           // Required surface values missing — the page IS the surface, so
           // this is a real configuration/state problem. Abort loudly.
@@ -230,17 +242,13 @@ export function useAiPostProcess() {
         const useUserInputFallback = !landedVar;
 
         // 4. Context items → proper context entries.
-        const entries: InstanceContextEntry[] = [
-          ...resolved.contextEntries,
-        ];
+        const entries: InstanceContextEntry[] = [...resolved.contextEntries];
         const taken = new Set(entries.map((e) => e.key));
         const activeItems = contextItems.filter((i) => i.value.trim());
         const slotMatchedItems = activeItems.filter(
           (i) => slotKeys.has(i.key) && !taken.has(i.key),
         );
-        const unmatchedItems = activeItems.filter(
-          (i) => !slotKeys.has(i.key),
-        );
+        const unmatchedItems = activeItems.filter((i) => !slotKeys.has(i.key));
         for (const item of slotMatchedItems) {
           entries.push({
             key: item.key,
@@ -253,7 +261,9 @@ export function useAiPostProcess() {
         }
         if (unmatchedItems.length > 0) {
           const combined = unmatchedItems
-            .map((i) => (i.label.trim() ? `[${i.label.trim()}]\n${i.value}` : i.value))
+            .map((i) =>
+              i.label.trim() ? `[${i.label.trim()}]\n${i.value}` : i.value,
+            )
             .join("\n\n");
           const firstOpenSlot = slots.find((s) => !taken.has(s.key));
           if (slotMatchedItems.length === 0 && firstOpenSlot) {
@@ -294,7 +304,10 @@ export function useAiPostProcess() {
 
         if (Object.keys(variableValues).length > 0) {
           dispatch(
-            setUserVariableValues({ conversationId: cid, values: variableValues }),
+            setUserVariableValues({
+              conversationId: cid,
+              values: variableValues,
+            }),
           );
         }
         if (entries.length > 0) {

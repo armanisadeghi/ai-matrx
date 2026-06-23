@@ -11,6 +11,15 @@ export const PRO_TEXTAREA_HELP_DEFAULT_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
 
 export type ProTextareaAgentActionId = "cleanup" | "help" | "customAgent";
 
+/** Popover view state for ProTextarea's "…" menu. */
+export type ProTextareaMenuMode = "menu" | ProTextareaAgentActionId | "boundAgent";
+
+export function isProTextareaAgentActionId(
+  mode: ProTextareaMenuMode,
+): mode is ProTextareaAgentActionId {
+  return mode !== "menu" && mode !== "boundAgent";
+}
+
 export interface ProTextareaAgentActionDefinition {
   id: ProTextareaAgentActionId;
   menuLabel: string;

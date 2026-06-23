@@ -56,6 +56,27 @@ export default function AgentCreateAppWindow({
 }: AgentCreateAppWindowProps) {
   if (!isOpen) return null;
 
+  return <AgentCreateAppWindowInner onClose={onClose} agentId={agentId ?? null} />;
+}
+
+function AgentCreateAppWindowInner({
+  onClose,
+  agentId,
+}: {
+  onClose: () => void;
+  agentId: string | null;
+}) {
+  // When an admin creates an app for a builtin/system agent, the app belongs
+  // to the system (scope="global"), not to the admin personally. Surface that
+  // context as a header chip (read-only) instead of a banner in the body.
+  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const presetAgent = useAppSelector((state) =>
+    agentId ? selectAgentById(state, agentId) : null,
+  );
+  const publishAsGlobal = Boolean(
+    isAdmin && presetAgent?.agentType === "builtin",
+  );
+
   return (
     <WindowPanel
       id={WINDOW_ID}
@@ -67,8 +88,18 @@ export default function AgentCreateAppWindow({
       minHeight={520}
       overlayId={OVERLAY_ID}
       bodyClassName="p-0"
+      actionsLeft={
+        publishAsGlobal ? (
+          <span
+            title="Publishing as a system app — visible to every user on the platform."
+            className="rounded-sm border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-200"
+          >
+            System app
+          </span>
+        ) : undefined
+      }
     >
-      <CreateAppWindowBody agentId={agentId ?? null} onClose={onClose} />
+      <CreateAppWindowBody agentId={agentId} onClose={onClose} />
     </WindowPanel>
   );
 }
@@ -239,12 +270,6 @@ function CreateAppWindowBody({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {publishAsGlobal && (
-        <div className="flex-shrink-0 px-4 py-2 text-xs border-b border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200">
-          Publishing as a <strong>system app</strong> — visible to every user
-          on the platform.
-        </div>
-      )}
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         <CreateAgentAppForm
           agents={agentOptions}

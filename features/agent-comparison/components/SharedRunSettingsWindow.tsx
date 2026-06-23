@@ -46,6 +46,12 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
 
   const isReady = sampleConversationId != null;
 
+  const statusText = isReady
+    ? `Edits broadcast to all ${configured.length} configured column${
+        configured.length === 1 ? "" : "s"
+      }. Identical run caps + flags = fair comparison.`
+    : "Configure at least one column with an agent to enable shared settings.";
+
   return (
     <WindowPanel
       id={id}
@@ -53,16 +59,21 @@ export function SharedRunSettingsWindow({ id, onClose }: Props) {
       width={460}
       height={420}
       onClose={onClose}
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      actionsRight={
+        <span
+          title={statusText}
+          className="max-w-[220px] truncate text-[11px] text-muted-foreground"
+        >
+          {isReady
+            ? `Broadcasts to ${configured.length} column${
+                configured.length === 1 ? "" : "s"
+              }`
+            : "No columns configured"}
+        </span>
+      }
     >
       <div className="h-full flex flex-col">
-        <div className="px-3 py-2 border-b border-border text-[11px] text-muted-foreground bg-muted/20">
-          {isReady
-            ? `Edits broadcast to all ${configured.length} configured column${
-                configured.length === 1 ? "" : "s"
-              }. Identical run caps + flags = fair comparison.`
-            : "Configure at least one column with an agent to enable shared settings."}
-        </div>
-
         <div
           className="flex-1 overflow-y-auto p-3 space-y-1"
           style={{ opacity: isReady ? 1 : 0.6, pointerEvents: isReady ? "auto" : "none" }}

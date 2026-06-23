@@ -14,6 +14,7 @@ import {
   buildCodeWorkspaceContextData,
   CODE_WORKSPACE_CONTEXT_MENU_PROPS,
 } from "@/features/code/agent-context/buildCodeWorkspaceContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { textareaCursorMeta } from "@/features/code/agent-context/textareaCursorMeta";
 import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import {
@@ -103,6 +104,21 @@ export function CodeEditorDemoPanel({
         }
       : {};
 
+  const getApplicationScope = useCallback(() => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? caretIndex;
+    const end = el?.selectionEnd ?? caretIndex;
+    const liveSelected =
+      start !== end
+        ? content.slice(Math.min(start, end), Math.max(start, end))
+        : selectedText;
+    return buildApplicationScopeFromMenuContext({
+      selectedText: liveSelected,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData,
+    });
+  }, [caretIndex, content, contextData, selectedText]);
+
   return (
     <section className="flex flex-col gap-2">
       <header>
@@ -113,10 +129,13 @@ export function CodeEditorDemoPanel({
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         {...explicitContextProps}
         contextData={contextData}
+        getApplicationScope={getApplicationScope}
         {...menuOverrides}
       >
         <DemoProTextarea
           ref={textareaRef}
+          surfaceName={CODE_WORKSPACE_CONTEXT_MENU_PROPS.surfaceName}
+          getApplicationScope={getApplicationScope}
           value={content}
           onChange={(e) => {
             setContent(e.target.value);

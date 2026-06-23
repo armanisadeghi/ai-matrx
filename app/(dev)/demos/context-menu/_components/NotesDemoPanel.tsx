@@ -12,6 +12,7 @@ import {
   buildNotesEditorContextData,
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import {
@@ -77,6 +78,21 @@ export function NotesDemoPanel({
     notesMap: DEMO_NOTES_MAP,
   });
 
+  const getApplicationScope = useCallback(() => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? selectionStart;
+    const end = el?.selectionEnd ?? selectionEnd;
+    const selectedText =
+      start !== end
+        ? content.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData,
+    });
+  }, [content, contextData, selectionEnd, selectionStart]);
+
   const replaceContent = (next: string) => {
     setContent(next);
     setIsDirty(true);
@@ -108,6 +124,7 @@ export function NotesDemoPanel({
         {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
         extraSections={notesExtras}
         getTextarea={() => textareaRef.current}
+        getApplicationScope={getApplicationScope}
         onTextReplace={replaceContent}
         onTextInsertBefore={(t) => insertAtCursor(t, "before")}
         onTextInsertAfter={(t) => insertAtCursor(t, "after")}
@@ -117,6 +134,8 @@ export function NotesDemoPanel({
       >
         <DemoProTextarea
           ref={textareaRef}
+          surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+          getApplicationScope={getApplicationScope}
           value={content}
           onChange={(e) => {
             setContent(e.target.value);

@@ -21606,6 +21606,88 @@
         }
       }
     },
+    "/rag/search-lab/tool/search": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Agent Tool Search Endpoint",
+        "operationId": "agent_tool_search_endpoint_rag_search_lab_tool_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentToolSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentToolSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/tool/get-chunk": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Agent Tool Get Chunk Endpoint",
+        "operationId": "agent_tool_get_chunk_endpoint_rag_search_lab_tool_get_chunk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentToolGetChunkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentToolGetChunkResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/search-lab/agent/chat": {
       "post": {
         "tags": [
@@ -23277,6 +23359,73 @@
                 "anyOf": [
                   {
                     "$ref": "#/components/schemas/RerunFromRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/fork-from": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Fork From Node",
+        "description": "Iterate on a FINISHED run by forking a NEW run from one of its steps.\n\nThe terminal twin of ``rerun-from``. ``rerun-from`` mutates a PARKED run\nin place (cheap, same run_id) but refuses a finished run, because\noverwriting a completed run's status would corrupt its cost / summary\nrecords. The dominant real case — \"my workflow finished, I want to re-run\nfrom step 3 to tweak something\" — is served HERE: we create a brand-new\nrun seeded from the checkpoint that scheduled ``node_id``, so the source\nrun stays immutable and the new run re-runs the chosen step + everything\ndownstream.\n\nMoney-safety (the invariant this whole endpoint exists to protect):\n  * The source (terminal) run is never written — we only READ its\n    checkpoints.\n  * The seed checkpoint copies the source checkpoint's ``channel_values``,\n    which already bake in every upstream node's output. Its\n    ``next_invocations`` is ONLY the target node.\n  * On resume the scheduler builds its pending set EXCLUSIVELY from\n    ``next_invocations`` (``Scheduler.resume``); upstream nodes are never\n    invoked, so the expensive upstream LLM steps are NOT re-charged.\n  * The new run has zero ``wf_node_outcome`` rows, so the idempotency\n    lookup misses for the target and every downstream node — they execute\n    FRESH (the intended re-charge), never replay.\n\nReturns the streamed NEW run; the frontend adopts the new run_id from the\n``workflow_run_resumed`` event and the canvas animates the fork.",
+        "operationId": "fork_from_node_runs__run_id__nodes__node_id__fork_from_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ForkFromRequest"
                   },
                   {
                     "type": "null"
@@ -38345,6 +38494,618 @@
         ],
         "title": "AgentTaskResponse"
       },
+      "AgentToolEntityMapEntry": {
+        "properties": {
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "mention_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mention Count"
+          },
+          "artifact_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Count"
+          },
+          "source_kind_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Source Kind Counts"
+          },
+          "top_chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Chunk Id"
+          },
+          "importance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importance"
+          },
+          "is_concept": {
+            "type": "boolean",
+            "title": "Is Concept",
+            "default": false
+          },
+          "linked": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolEntityMapLink"
+            },
+            "type": "array",
+            "title": "Linked"
+          }
+        },
+        "type": "object",
+        "title": "AgentToolEntityMapEntry"
+      },
+      "AgentToolEntityMapLink": {
+        "properties": {
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          }
+        },
+        "type": "object",
+        "title": "AgentToolEntityMapLink"
+      },
+      "AgentToolGetChunkRequest": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Chunk Id"
+          },
+          "include_parent": {
+            "type": "boolean",
+            "title": "Include Parent",
+            "default": true
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Admin-only org override — should match the org used for the search."
+          }
+        },
+        "type": "object",
+        "required": [
+          "chunk_id"
+        ],
+        "title": "AgentToolGetChunkRequest"
+      },
+      "AgentToolGetChunkResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_found",
+              "forbidden"
+            ],
+            "title": "Status"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ScopeContext"
+          },
+          "chunk": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk"
+          },
+          "tool_result_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Result Text"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "scope",
+          "chunk",
+          "tool_result_text"
+        ],
+        "title": "AgentToolGetChunkResponse"
+      },
+      "AgentToolHit": {
+        "properties": {
+          "chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet",
+            "default": ""
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "vector_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Rank"
+          },
+          "lexical_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lexical Rank"
+          },
+          "rerank_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank Score"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entities"
+          },
+          "entity_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Rank"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Number"
+          }
+        },
+        "type": "object",
+        "title": "AgentToolHit"
+      },
+      "AgentToolSearchOne": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolHit"
+            },
+            "type": "array",
+            "title": "Hits"
+          },
+          "total_candidates": {
+            "type": "integer",
+            "title": "Total Candidates"
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model"
+          },
+          "reranker_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker Model"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "title": "Latency Ms"
+          },
+          "matched_entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Entities"
+          },
+          "entity_map": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolEntityMapEntry"
+            },
+            "type": "array",
+            "title": "Entity Map"
+          },
+          "tool_result_text": {
+            "type": "string",
+            "title": "Tool Result Text"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "hits",
+          "total_candidates",
+          "embedding_model",
+          "reranker_model",
+          "latency_ms",
+          "matched_entities",
+          "entity_map",
+          "tool_result_text"
+        ],
+        "title": "AgentToolSearchOne"
+      },
+      "AgentToolSearchRequest": {
+        "properties": {
+          "queries": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Queries",
+            "description": "One or more search strings. A real agent fires several; each runs independently."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 10
+          },
+          "source_kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kinds"
+          },
+          "data_store_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Store Id"
+          },
+          "multi_query": {
+            "type": "integer",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Multi Query",
+            "default": 1
+          },
+          "use_hyde": {
+            "type": "boolean",
+            "title": "Use Hyde",
+            "default": false
+          },
+          "rerank": {
+            "type": "boolean",
+            "title": "Rerank",
+            "default": true
+          },
+          "use_mmr": {
+            "type": "boolean",
+            "title": "Use Mmr",
+            "default": true
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Admin-only org override (mirrors /rag/search). The working-context selector sends it."
+          },
+          "include_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "title": "AgentToolSearchRequest"
+      },
+      "AgentToolSearchResponse": {
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/ScopeContext"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "rag_search"
+          },
+          "args": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Args"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/AgentToolSearchOne"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope",
+          "args",
+          "results",
+          "notes"
+        ],
+        "title": "AgentToolSearchResponse"
+      },
       "AgentToolSpec": {
         "properties": {
           "kind": {
@@ -50712,6 +51473,33 @@
               }
             ],
             "title": "Include Sources"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Admin-only org override — mirrors /rag/search filters.organization_id. The working-context selector sends it so the simulation retrieves in the SAME org the Search tab does. Ignored for non-admins."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Structural scope filter (ctx_scope ids), same as /rag/search."
           }
         },
         "type": "object",
@@ -50774,6 +51562,10 @@
             "type": "integer",
             "title": "Candidates Lexical"
           },
+          "candidates_entity": {
+            "type": "integer",
+            "title": "Candidates Entity"
+          },
           "candidates_after_fusion": {
             "type": "integer",
             "title": "Candidates After Fusion"
@@ -50826,6 +51618,7 @@
           "visible_chunks_total",
           "candidates_vector",
           "candidates_lexical",
+          "candidates_entity",
           "candidates_after_fusion",
           "candidates_after_mmr",
           "hits",
@@ -56396,6 +57189,32 @@
           "message_count"
         ],
         "title": "ForkConversationResponse"
+      },
+      "ForkFromRequest": {
+        "properties": {
+          "config_override": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Override",
+            "description": "Optional one-shot config tweak applied ONLY to the forked re-run of this node; neither the source run nor the saved workflow draft is touched. Same shape as the node's config_schema. Use to test a change (swap a model, raise max_tokens) before committing it."
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Max Steps",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "ForkFromRequest"
       },
       "ForkRequest": {
         "properties": {
