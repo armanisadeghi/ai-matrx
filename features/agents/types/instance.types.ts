@@ -87,6 +87,22 @@ export type SourceFeature =
   | "agent-run-window"
   | "agent-run-history-window"
   | "agent-runs-sidebar"
+  // Surface mounts (UnifiedAgentContextMenu / ProTextarea / ProInput): one
+  // attribution literal per ui_surface so traces identify the real caller
+  // instead of borrowing a "closest" feature name.
+  | "tasks"
+  | "scraper"
+  | "files"
+  | "projects"
+  | "rag-search"
+  | "documents"
+  | "data-tables"
+  | "lists"
+  | "messages"
+  | "canvas"
+  | "ai-results"
+  | "content-extractor"
+  | "pdf-widgets"
   /** Demo / test harness (routes under /demos, example pages). */
   | "demo"
   /** Triggered directly from application code (hook / helper / automation). */
