@@ -95,6 +95,10 @@ export type SourceFeature =
   | "files"
   | "projects"
   | "documents"
+  /** The per-conversation collaborative working document (agent reads + writes). */
+  | "working-document"
+  /** The user's private scratchpad (a local/menu agent edits it; the cloud agent only reads). */
+  | "scratchpad"
   | "data-tables"
   | "lists"
   | "messages"
