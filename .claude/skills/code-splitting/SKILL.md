@@ -93,6 +93,24 @@ Real exemplars:
 | **`dynamic({ssr:false})` in a Server Component** | guarded against in [app/Providers.tsx](app/Providers.tsx) | Build error. Push the dynamic import into a `"use client"` child. |
 | **Bare `dynamic()` for an overlay/window** | — | Bypasses `loading`/error/timeout. Use `lazyOverlay`. |
 
+## Build-time bloat — the recurring leak: hunt it, then guard it
+
+> **Unexplained build-time growth is almost always THIS, not "big packages."** A heavy client module imported **statically** into a path that lands in many chunks — a Server Component, a root layout/provider, a widely-imported shared client component, or a barrel — forces that weight into every one of those chunks, and Turbopack pays to compile it everywhere. Canonical incident: `UnifiedAgentContextMenu` reverted from `dynamic({ssr:false})` to a static `import { … }` on 5 surfaces and ballooned the prod build **15 → 24 min**. Agents keep misdiagnosing this as package size; it is not. When the build grows for no obvious reason, hunt the leak FIRST.
+
+**The leak signature** — a STATIC value import (`import { X } from "…"` / `import X from "…"`; NOT `import type`, NOT `dynamic(() => import(…))`) of a heavy client-only module, in a high-blast-radius file. Strongest tell: **a `dynamic()` import of the same module already exists elsewhere** — someone bypassed the established split.
+
+**Rank a find by blast radius:** (1) a **Server Component** (no top `"use client"`) importing client-heavy code — worst, pulls it into the RSC/server graph; (2) a **root/shared shell** imported by many routes (`app/**/layout.tsx`, `app/Providers*.tsx`, `providers/**`, shell components); (3) a route `page.tsx` importing a heavy widget statically; (4) a **barrel** (`index.ts`) re-exporting a heavy module — every importer drags it.
+
+**Hunt method (offload the sweep, verify the gold yourself):** list heavy deps (editors/monaco/codemirror/tiptap, reactflow/xyflow, recharts/d3, pdfjs, three, mermaid, syntax highlighters, livekit, emoji/color pickers) + heavy internal components (the context menu, code workspace, workbook, canvas/artifacts) → ripgrep their static import sites → classify each by the blast-radius list → flag any whose module is dynamically imported elsewhere. Give an `Explore` subagent that spec and ask for a ranked `file:line` treasure map; then verify the top finds yourself before fixing.
+
+**Guard it so it can't silently come back (the platform move).** Patching the 5 sites is the artifact; making the class extinct is the platform. For each heavy client component, add an eslint `no-restricted-syntax` ban on its STATIC value import that still allows `import type` + dynamic `import()`. Reference implementation: `canonicalMenuStaticImportBan` in [eslint.config.mjs](eslint.config.mjs):
+
+```
+"ImportDeclaration[importKind!='type'][source.value='@/…/Heavy'] > ImportSpecifier[importKind!='type'][imported.name='Heavy']"
+```
+
+Now there are two loud layers — the lint guard (fails at commit/CI) and this doctrine — so the day someone re-adds a static import, lint screams instead of the build silently growing 10 minutes over a month.
+
 ## Before you ship — checklist
 
 - [ ] **Which benefit am I buying?** `ssr:false` (off the server) and/or a real **condition** (deferred fetch). If neither, delete the `dynamic()` and import statically.

@@ -44,7 +44,7 @@ Always use the latest stable release of every package — no deprecated APIs.
 ### Core invariants
 
 - Server Components by default; Client Components only when interactive.
-- **Heavy client code is code-split** with `next/dynamic({ ssr: false })` — never in a Server Component, never stacked down one render path, and only behind a condition (else it's pure cost). Use a `*Impl` + wrapper for anything reused; `next/dynamic` always, never `React.lazy`. **Invoke the `code-splitting` skill** before adding a dynamic import, making a component lazy, or fixing bundle/hydration issues.
+- **Heavy client code is code-split** with `next/dynamic({ ssr: false })` — never in a Server Component, never stacked down one render path, and only behind a condition (else it's pure cost). Use a `*Impl` + wrapper for anything reused; `next/dynamic` always, never `React.lazy`. **Unexplained build-time bloat is almost always a heavy client component statically imported into a route/server chunk — NOT "big packages"** (one such leak ballooned the build 15→24 min; weeks of creeping bloat trace to this class). Guard each heavy component with an eslint static-import ban (reference: `canonicalMenuStaticImportBan` in `eslint.config.mjs`). **Invoke the `code-splitting` skill** before adding a dynamic import, making a component lazy, hunting build-time bloat, or fixing bundle/hydration issues.
 - Dynamic rendering by default; opt into caching with `'use cache'` + `cacheTag()` / `revalidateTag()`.
 - React Compiler is on — no manual `useMemo` / `useCallback` / `React.memo`.
 - `proxy.ts` (not `middleware.ts`) — auth, route guards, redirects only.
