@@ -90,3 +90,35 @@ export function mergeBaselineValues(
     (a, b) => (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000),
   );
 }
+
+/**
+ * Canonical ordered list of the generic baseline value names.
+ *
+ * EVERY surface guarantees these are (a) bindable — declared, via the
+ * injection in `registry.ts` — and (b) present at runtime — emitted and
+ * empty-floored, via `withBaselineScope` in
+ * `features/surfaces/utils/baseline-scope.ts`. An agent author can therefore
+ * ALWAYS map a variable to one of these on any surface and get at least an
+ * empty value. That uniformity is what makes generic, surface-agnostic agents
+ * (clean-up, "help with this", summarize) work everywhere without per-surface
+ * remapping — the whole reason the baseline set exists.
+ */
+export const BASELINE_VALUE_NAMES = Object.keys(BASELINE_VALUES) as BaselineKey[];
+
+/** Every baseline value, in sort order. */
+export function allBaseline(): SurfaceValue[] {
+  return Object.values(BASELINE_VALUES);
+}
+
+/**
+ * Declare the full generic baseline set beneath a surface's specific values.
+ * The canonical way to author a content/editor surface — equivalent to
+ * `mergeBaselineValues(allBaseline(), surfaceSpecific)`. Note `registry.ts`
+ * also injects the full set into every manifest, so this is belt-and-suspenders
+ * for authors who prefer to be explicit; a same-named surface value still wins.
+ */
+export function withAllBaselines(
+  surfaceSpecific: readonly SurfaceValue[],
+): SurfaceValue[] {
+  return mergeBaselineValues(Object.values(BASELINE_VALUES), surfaceSpecific);
+}

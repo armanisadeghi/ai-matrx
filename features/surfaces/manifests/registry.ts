@@ -18,6 +18,7 @@
  */
 
 import type { SurfaceManifest } from "@/features/surfaces/types";
+import { BASELINE_VALUES, mergeBaselineValues } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
 import { pdfWidgetsManifest } from "./pdf-widgets.manifest";
@@ -42,8 +43,11 @@ import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
 import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 import { ragSearchManifest } from "./rag-search.manifest";
 
-/** All registered surface manifests. Import order does not matter. */
-export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
+/**
+ * Manifests exactly as authored. Do NOT consume directly — generic baselines
+ * are injected below. Use `ALL_MANIFESTS`.
+ */
+const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   notesEditorManifest,
   codeEditorManifest,
   pdfWidgetsManifest,
@@ -68,6 +72,32 @@ export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   mermaidEditorManifest,
   ragSearchManifest,
 ];
+
+/**
+ * Guarantee EVERY surface declares the full generic baseline set (`selection`,
+ * `text_before`, `text_after`, `content`, `context`). This is the platform
+ * half of the "generic values are always available" contract: an agent author
+ * can bind a variable to a generic value on ANY surface, even one whose
+ * manifest forgot to spread the baselines — the regression that dropped
+ * `text_before`/`text_after` from ~14 surfaces during the v2 transition, and
+ * that this injection makes structurally impossible going forward.
+ *
+ * Idempotent and non-destructive: `mergeBaselineValues` lets a surface's own
+ * same-named value win, so a manifest that already declares (or customizes) a
+ * baseline keeps its version; only the missing baselines are added. A surface
+ * with genuinely no text/content concept opts out via `skipBaselineValues`.
+ */
+function withInjectedBaselines(m: SurfaceManifest): SurfaceManifest {
+  if (m.skipBaselineValues) return m;
+  return {
+    ...m,
+    values: mergeBaselineValues(Object.values(BASELINE_VALUES), m.values),
+  };
+}
+
+/** All registered surface manifests, with generic baselines guaranteed. */
+export const ALL_MANIFESTS: readonly SurfaceManifest[] =
+  RAW_MANIFESTS.map(withInjectedBaselines);
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */
 const MANIFEST_INDEX: ReadonlyMap<string, SurfaceManifest> = new Map(

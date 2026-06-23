@@ -37,6 +37,7 @@ import {
   type MergedValueMappings,
 } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
+import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import {
   promptForValues,
   type ValuePromptField,
@@ -291,12 +292,22 @@ export const launchAgentExecution = createAsyncThunk<
   // not specify" with a concrete `false`, and `false ?? shortcut.autoRun`
   // resolves to `false` (?? only falls through on null/undefined). Leave
   // these undefined on purpose so the shortcut's own value survives.
-  const applicationScope = runtime?.applicationScope;
+  // Surface launches ALWAYS carry the generic baseline values (selection,
+  // text_before, text_after, content, context), empty-floored when the surface
+  // didn't emit them, so an agent variable bound to a generic value never
+  // silently resolves to nothing (the v2 regression that left ~14 surfaces
+  // without text_before/text_after). A context-free launch — no scope AND no
+  // surface — is left untouched so we don't fabricate a surface where there is
+  // none. See features/surfaces/utils/baseline-scope.ts.
+  const surfaceName = runtime?.surfaceName;
+  const applicationScope =
+    runtime?.applicationScope !== undefined || surfaceName
+      ? withBaselineScope(runtime?.applicationScope)
+      : undefined;
   const userInput = runtime?.userInput;
   const originalText = runtime?.originalText;
   const widgetHandleId = runtime?.widgetHandleId;
   const variables = runtime?.variables;
-  const surfaceName = runtime?.surfaceName;
 
   const displayModeOverride = config?.displayMode;
   const autoRun = config?.autoRun;

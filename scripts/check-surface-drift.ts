@@ -62,6 +62,7 @@ async function main() {
   );
   const ALL_MANIFESTS: ReadonlyArray<{
     surfaceName: string;
+    skipBaselineValues?: boolean;
     values: ReadonlyArray<{
       name: string;
       label: string;
@@ -207,6 +208,28 @@ async function main() {
       ) {
         errors.push(
           `Surface "${m.surfaceName}" value "${v.name}" has invalid sortOrder.`,
+        );
+      }
+    }
+
+    // 10. Generic baseline coverage (the loud second layer).
+    // `registry.ts` injects the baselines into every manifest; this canary
+    // screams if that injection ever breaks or a hand-built manifest list
+    // bypasses it. Every surface must expose the universal generic values so
+    // an agent author can bind to selection/content/context/text_before/
+    // text_after on ANY surface. Opt out only via `skipBaselineValues`.
+    if (!m.skipBaselineValues) {
+      const BASELINE_NAMES = [
+        "selection",
+        "text_before",
+        "text_after",
+        "content",
+        "context",
+      ];
+      const missingBaselines = BASELINE_NAMES.filter((n) => !seenValues.has(n));
+      if (missingBaselines.length > 0) {
+        errors.push(
+          `Surface "${m.surfaceName}" is missing baseline value(s): ${missingBaselines.join(", ")}. Every surface must declare the generic baselines (registry.ts injects them automatically) unless skipBaselineValues is set.`,
         );
       }
     }

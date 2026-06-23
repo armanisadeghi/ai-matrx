@@ -120,6 +120,16 @@ export interface SurfaceManifest {
   agentRoles?: readonly SurfaceAgentRole[];
   /** Config namespaces this surface consumes (code-only declaration). */
   configNamespaces?: readonly SurfaceConfigNamespaceDecl[];
+  /**
+   * Opt out of the automatic generic-baseline injection (`selection`,
+   * `text_before`, `text_after`, `content`, `context`) performed in
+   * `registry.ts`. Set ONLY for a surface that genuinely has no
+   * text/content/selection concept (a metadata-only widget). Almost never
+   * used — the generic baselines are what let an agent author bind to a
+   * universal value on any surface, so dropping them makes a surface invisible
+   * to every generic agent.
+   */
+  skipBaselineValues?: boolean;
 }
 
 // ---------------------------------------------------------------------------
