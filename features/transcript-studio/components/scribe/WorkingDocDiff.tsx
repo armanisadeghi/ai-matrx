@@ -17,7 +17,8 @@
  * after exist (see useWorkingDocChanges).
  */
 
-import { Check, GitCompare, X } from "lucide-react";
+import { Check, GitCompare, Loader2, SendHorizontal, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import {
   computeTextDiff,
@@ -39,6 +40,14 @@ interface WorkingDocDiffProps {
    * just clears the "unseen" marker (it does not write or revert anything).
    */
   onAccept?: () => void;
+  /**
+   * Publish the current draft to a durable note and clear the working document
+   * for the next draft. When omitted, the action is hidden. The host owns the
+   * publish flow (see useWorkingDocPublish) and closes the diff on success.
+   */
+  onPublishAndClear?: () => void | Promise<void>;
+  /** True while the publish + clear is in flight (drives the button spinner). */
+  publishing?: boolean;
 }
 
 export function WorkingDocDiff({
@@ -47,6 +56,8 @@ export function WorkingDocDiff({
   title,
   onClose,
   onAccept,
+  onPublishAndClear,
+  publishing = false,
 }: WorkingDocDiffProps) {
   const summary = summarizeTextDiff(computeTextDiff(before, after).stats);
 
@@ -67,6 +78,27 @@ export function WorkingDocDiff({
           <span className="hidden shrink-0 font-mono text-xs text-muted-foreground sm:inline">
             {summary}
           </span>
+          {onPublishAndClear && (
+            <button
+              type="button"
+              onClick={() => void onPublishAndClear()}
+              disabled={publishing || !after.trim()}
+              aria-label="Publish to a note and clear the working document"
+              title="Publish to a note and clear for the next draft"
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground active:bg-accent",
+                (publishing || !after.trim()) &&
+                  "cursor-not-allowed opacity-50",
+              )}
+            >
+              {publishing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizontal className="h-4 w-4" />
+              )}
+              Publish &amp; clear
+            </button>
+          )}
           {onAccept && (
             <button
               type="button"

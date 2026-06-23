@@ -23,6 +23,9 @@ import { WarRoomTile } from "../tile/WarRoomTile";
 import { NewTile } from "../tile/NewTile";
 import { HiddenTilesTray } from "./HiddenTilesTray";
 import { useRoomView, DENSITY_LAYOUT } from "./roomViewContext";
+import { ThreadSortable, SortableThread } from "./threadDrag";
+import { useThreadReorder } from "@/features/war-room/hooks/useThreadReorder";
+import { useThreadSearch } from "@/features/war-room/hooks/useThreadSearch";
 
 function cellStyle(p: GalleryPlacement | undefined): React.CSSProperties {
   if (!p) return {};
@@ -36,14 +39,71 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
   const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
   const hidden = useAppSelector(selectHiddenTiles(sessionId));
   const allIds = useAppSelector(selectTileIdsForSession(sessionId));
-  const { density, stageTile } = useRoomView();
+  const { density, stageTile, threadQuery } = useRoomView();
+  const { commitOrder } = useThreadReorder(sessionId);
   const floors = DENSITY_LAYOUT[density];
 
-  // +1 for the always-present "new" tile.
-  const count = visibleIds.length + 1;
+  // While searching, the grid shows only matches (ranked), reordering is off,
+  // and the "+new" cell is hidden (it's not a thread to filter against).
+  const matchedIds = useThreadSearch(sessionId, visibleIds, threadQuery);
+  const searching = threadQuery.trim().length > 0;
+  const gridIds = searching ? matchedIds : visibleIds;
+
+  // +1 for the always-present "new" tile (only when not searching).
+  const count = gridIds.length + (searching ? 0 : 1);
   const { ref, layout } = useGalleryLayout(count, floors);
 
-  const newTilePlacement = layout.placements[visibleIds.length];
+  const newTilePlacement = layout.placements[gridIds.length];
+
+  // Searching with zero matches → a clean message instead of an empty grid.
+  if (searching && gridIds.length === 0) {
+    return (
+      <div className="h-full flex flex-col min-h-0">
+        <div className="flex-1 min-h-0 grid place-items-center px-4">
+          <p className="text-sm text-muted-foreground">
+            No threads match “{threadQuery.trim()}”.
+          </p>
+        </div>
+        <HiddenTilesTray sessionId={sessionId} tiles={hidden} />
+      </div>
+    );
+  }
+
+  const tileCells = gridIds.map((id, i) => {
+    const p = layout.placements[i];
+    return searching ? (
+      // Filtered: flat cells (no reorder grip — reordering a subset is ambiguous).
+      <div
+        key={id}
+        style={cellStyle(p)}
+        className="min-h-0 transition-[grid-column,grid-row] duration-200"
+      >
+        <WarRoomTile
+          tileId={id}
+          sessionId={sessionId}
+          featured={p?.featured}
+          onStage={() => stageTile(id)}
+        />
+      </div>
+    ) : (
+      <SortableThread
+        key={id}
+        id={id}
+        style={cellStyle(p)}
+        className="min-h-0 transition-[grid-column,grid-row] duration-200"
+      >
+        {(dragHandle) => (
+          <WarRoomTile
+            tileId={id}
+            sessionId={sessionId}
+            featured={p?.featured}
+            onStage={() => stageTile(id)}
+            dragHandle={dragHandle}
+          />
+        )}
+      </SortableThread>
+    );
+  });
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -60,31 +120,31 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
           gap: floors.gap,
         }}
       >
-        {visibleIds.map((id, i) => {
-          const p = layout.placements[i];
-          return (
-            <div
-              key={id}
-              style={cellStyle(p)}
-              className="min-h-0 transition-[grid-column,grid-row] duration-200"
-            >
-              <WarRoomTile
-                tileId={id}
-                sessionId={sessionId}
-                featured={p?.featured}
-                onStage={() => stageTile(id)}
-              />
-            </div>
-          );
-        })}
+        {searching ? (
+          tileCells
+        ) : (
+          <ThreadSortable
+            ids={visibleIds}
+            strategy="grid"
+            onReorder={commitOrder}
+          >
+            {tileCells}
+          </ThreadSortable>
+        )}
 
-        <div key="__new_tile__" style={cellStyle(newTilePlacement)} className="min-h-0">
-          <NewTile
-            sessionId={sessionId}
-            nextPosition={allIds.length}
-            onCreated={(tileId) => stageTile(tileId)}
-          />
-        </div>
+        {!searching ? (
+          <div
+            key="__new_tile__"
+            style={cellStyle(newTilePlacement)}
+            className="min-h-0"
+          >
+            <NewTile
+              sessionId={sessionId}
+              nextPosition={allIds.length}
+              onCreated={(tileId) => stageTile(tileId)}
+            />
+          </div>
+        ) : null}
       </div>
 
       <HiddenTilesTray sessionId={sessionId} tiles={hidden} />

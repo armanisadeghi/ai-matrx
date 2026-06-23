@@ -48,6 +48,16 @@ export interface RoomViewState {
   setDensity: (d: Density) => void;
   toggleDensity: () => void;
 
+  /** Free-text thread filter (Feature ba9f72e4). Empty string ⇒ no filter.
+   *  Filters the rail + gallery in place by NAME → DESCRIPTION → CONTENTS. */
+  threadQuery: string;
+  setThreadQuery: (q: string) => void;
+
+  /** Tiles whose "anchor this thread" prompt the user dismissed this session
+   *  (Feature 2fe48c5c) — a warning, never a block, so it's silenceable. */
+  dismissedAnchorPrompts: ReadonlySet<string>;
+  dismissAnchorPrompt: (tileId: string) => void;
+
   /** The user's explicit Stage choice (may be stale — resolve against visible). */
   chosenStageId: string | null;
   setChosenStageId: (id: string) => void;
@@ -61,6 +71,10 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<RoomMode>("stage");
   const [projectedTab, setProjectedTab] = useState<TileTab | null>(null);
   const [density, setDensity] = useState<Density>("comfortable");
+  const [threadQuery, setThreadQuery] = useState("");
+  const [dismissedAnchorPrompts, setDismissedAnchorPrompts] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [chosenStageId, setChosenStageId] = useState<string | null>(null);
 
   const value = useMemo<RoomViewState>(
@@ -73,6 +87,16 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
       setDensity,
       toggleDensity: () =>
         setDensity((d) => (d === "compact" ? "comfortable" : "compact")),
+      threadQuery,
+      setThreadQuery,
+      dismissedAnchorPrompts,
+      dismissAnchorPrompt: (tileId: string) =>
+        setDismissedAnchorPrompts((prev) => {
+          if (prev.has(tileId)) return prev;
+          const next = new Set(prev);
+          next.add(tileId);
+          return next;
+        }),
       chosenStageId,
       setChosenStageId,
       stageTile: (id: string) => {
@@ -80,7 +104,7 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
         setMode("stage");
       },
     }),
-    [mode, projectedTab, density, chosenStageId],
+    [mode, projectedTab, density, threadQuery, dismissedAnchorPrompts, chosenStageId],
   );
 
   return (
