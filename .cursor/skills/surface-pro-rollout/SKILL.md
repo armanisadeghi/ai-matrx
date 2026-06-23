@@ -64,6 +64,22 @@ Mirror `features/notes/agent-context/`:
 
 ### 4. Mount the menu on EVERY region — two variations
 
+**Import the menu via `next/dynamic({ ssr: false })` — NEVER a static `import { UnifiedAgentContextMenu }`.** The menu is heavy (MenuBody + the fetch hook + Radix + every icon); a static value import drags all of it into the surface's route/server chunk. That is precisely what ballooned the production build from ~15 → 24 min during the v2 rollout (5 surfaces had crept back to static imports). One **single-tier** dynamic per file (never nested in another dynamic), declared once at module scope:
+
+```ts
+import dynamic from "next/dynamic";
+
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
+```
+
+`import type { PlacementMode }` / `import type { UnifiedAgentContextMenuProps }` from that module are fine — types erase at build. The menu stays an empty shell until a user right-clicks; its (expensive) fetch fires only on menu render via `ensureMenuLoaded()`, so this costs nothing for the ~99% who never open it. Do NOT prefetch it, and do NOT "optimize" by nesting dynamics — `next/dynamic` is client-only by design (unlike `React.lazy`); one layer is the whole answer.
+
 A surface has two kinds of region; wire both:
 
 - **Editable region** (textarea/input/editor): wrap in `<UnifiedAgentContextMenu {...PROPS} getTextarea getApplicationScope contextData onTextReplace onTextInsertBefore onTextInsertAfter extraSections>` and put a **`ProTextarea` / `ProInput`** inside.
@@ -104,6 +120,7 @@ Update the feature's `FEATURE.md` (entry points + a one-line Change Log entry). 
 - [ ] Manifest: every custom value present + honest; `createXxxScope` signature matches; `pnpm check:surface-drift` passes.
 - [ ] `buildXxxContextData` emits real baselines + customs; demo and runtime share it.
 - [ ] Menu is the **canonical** `UnifiedAgentContextMenu` (footer shows `C·V`), NOT a bespoke fork. Mounted on BOTH editable and presentational regions; `surfaceName` correct.
+- [ ] Menu imported via `next/dynamic({ ssr: false })` (single-tier, module scope) — NEVER a static value import (a static import balloons the build chunk). `import type` from the module is fine.
 - [ ] EVERY surface action is in `extraSections` wired to a REAL handler (no toast stubs); all live state is in `contextData`.
 - [ ] Every `<textarea>`/`<input>` on the surface is now `ProTextarea`/`ProInput` with `surfaceName` + `getApplicationScope` on the editable ones.
 - [ ] No new refetch paths; scope read live at call time.

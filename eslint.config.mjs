@@ -448,6 +448,25 @@ const legacySupabaseKeyBan = [
     },
 ];
 
+// Bundle-splitting fence for the canonical agent context menu. The menu
+// (UnifiedAgentContextMenu) is heavy — MenuBody + the fetch hook + Radix +
+// every icon — and by design its data fetch is deferred to menu-open. A
+// STATIC value import drags the whole component into the importing route's
+// server/client chunk, defeating that design: it ballooned the production
+// build ~15 → 24 min when 5 surfaces regressed to static imports during the
+// v2 rollout. Import it via `next/dynamic({ ssr: false })` (single-tier, never
+// nested) instead. The selector matches ONLY a static value ImportSpecifier —
+// `import type {...}` and dynamic `import()` are intentionally unaffected.
+// See .cursor/skills/surface-pro-rollout/SKILL.md.
+const canonicalMenuStaticImportBan = [
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v2/UnifiedAgentContextMenu'] > ImportSpecifier[importKind!='type'][imported.name='UnifiedAgentContextMenu']",
+        message:
+            "Do not statically import UnifiedAgentContextMenu — it balloons the route chunk (a static import ballooned the prod build 15→24min). Use next/dynamic({ ssr: false }): const UnifiedAgentContextMenu = dynamic(() => import('@/features/context-menu-v2/UnifiedAgentContextMenu').then((m) => ({ default: m.UnifiedAgentContextMenu })), { ssr: false }). `import type {...}` is fine. See .cursor/skills/surface-pro-rollout/SKILL.md.",
+    },
+];
+
 export default [
     ...nextCoreWebVitals,
     {
@@ -535,6 +554,9 @@ export default [
                 ...scopesChokepointSyntaxRestrictions,
                 // features/agents tool-results chokepoint — only submit-tool-results.ts may POST /tool_results.
                 ...toolResultsChokepointSyntaxRestrictions,
+                // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
+                // never a static value import (it balloons the route chunk).
+                ...canonicalMenuStaticImportBan,
             ],
         },
     },

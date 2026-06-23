@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PromoteToStudioButton } from "@/features/transcript-studio/components/conversion/PromoteToStudioButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useTranscriptsSurfaceScope } from "@/features/transcripts/hooks/useTranscriptsSurfaceScope";
 import {
@@ -49,6 +49,17 @@ import {
   buildTranscriptsContextData,
 } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
 import { createTranscriptsExtraSections } from "@/features/transcripts/agent-context/transcriptsExtraSections";
+
+// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
+// never lands in the SSR/server chunk; loads only when this client surface
+// mounts. Single-tier dynamic — never nest.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 export function TranscriptViewer() {
   const { activeTranscript, updateTranscript } = useTranscriptsContext();

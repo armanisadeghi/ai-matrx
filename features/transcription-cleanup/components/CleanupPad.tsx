@@ -53,7 +53,7 @@ import {
   Plus,
   SlidersHorizontal,
   Stars,
-  Wand2,
+  Blocks,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -83,7 +83,7 @@ import {
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
@@ -128,6 +128,17 @@ import {
   CLEANUP_DOC_KIND,
   makeSlotDocKind,
 } from "../hooks/useCleanupSession";
+
+// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
+// never lands in the SSR/server chunk; loads only when this client surface
+// mounts. Single-tier dynamic — never nest.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 const OVERLAY_ID = "transcriptionCleanupPage" as const;
 
@@ -2037,7 +2048,7 @@ export default function CleanupPad({
   const customTopBand = (
     <div className={SIDE_COLUMN_TOP_BAND}>
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading icon={Wand2} label="Custom" accent="primary">
+        <SectionHeading icon={Blocks} label="Custom" accent="primary">
           {activeThinking && <StatusPill tone="primary">Thinking</StatusPill>}
           {activeAi.phase === "complete" && activeSlotValue.trim() && (
             <StatusPill tone="success">Ready</StatusPill>

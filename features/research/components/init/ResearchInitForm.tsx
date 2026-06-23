@@ -74,12 +74,23 @@ import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayNa
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 import TextArrayInput from "@/components/official/TextArrayInput";
-import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/research/agent-context/buildResearchContextData";
+
+// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
+// never lands in the SSR/server chunk; loads only when this client surface
+// mounts. Single-tier dynamic — never nest.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 type Mode = "manual" | "template" | "ai";
 

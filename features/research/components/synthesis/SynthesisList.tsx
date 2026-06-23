@@ -26,7 +26,7 @@ import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import {
   buildResearchContextData,
@@ -34,6 +34,17 @@ import {
 } from "../../agent-context/buildResearchContextData";
 
 /** A string with real (non-whitespace) content. */
+// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
+// never lands in the SSR/server chunk; loads only when this client surface
+// mounts. Single-tier dynamic — never nest.
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
+
 const hasText = (s: string | null | undefined): boolean =>
   !!s && s.trim().length > 0;
 
