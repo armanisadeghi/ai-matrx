@@ -17,6 +17,30 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D14 — War Room: live audio-session recording does NOT survive a tab-switch; agent sees only the active session's transcript
+**Severity: medium — recording data persists (no data loss), but the live capture/UI drops when the user switches a tile's tab, and the thread agent can't read a tile's non-active recordings.**
+
+**What.**
+1. (`db72068b`) Recording an audio *session* (`CleanupPad` → `useChunkedRecordAndTranscribe`) is owned by the tile's Audio tab; switching the tile to another tab unmounts `CleanupPad` and tears the recording engine down (the app-root mic singleton survives, but the per-session chunking/transcription lifecycle does not). The mic *capture* now survives navigation (app-root `GlobalRecordingProvider` + `micStream`), and the false "Recording" badge is fixed (`useTilePulse` reads the live `recordings` slice), but the recording *session* should be owned above the tab (a room-level media controller) so the engine isn't unmounted.
+2. (`00e37f34`) A tile's transcript context (`session_cleaned`) is built by `assistantContextBuilder` for the **active** studio session only; a tile with multiple audio sessions exposes just one → the thread agent gets `[not_found]` for the rest. The `war_room` manifest no longer over-promises `session_cleaned` (points to the data tool), but the durable fix is to hydrate ALL of the tile's audio sessions and emit a per-session transcript key.
+
+**Why.** War Room reused the studio recorder by embedding it in the tab; the recording lifecycle + the studio context builder are both single-active-session by construction.
+
+**The fence (not yet built).** A room-level media slice/controller that owns the active recording across tab switches; `assistantContextBuilder` (or a war-room hydration thunk) binds every `studio_session` assignment of the tile and emits per-session transcript context.
+
+**What's open.** Both fences. Touch points: `features/transcription-cleanup/components/CleanupPad.tsx`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/transcript-studio/service/assistantContextBuilder.ts`, `features/war-room/components/tile/TileAgentPanel.tsx`, `features/war-room/service/warRoomAgentContext.ts`, `features/war-room/redux/thunks.ts`.
+
+### D13 — Audio: TTS speaker routing relies on a global `AudioContext` constructor monkeypatch (Chromium-only, next-utterance granularity)
+**Severity: low — speaker selection works for media elements everywhere it's supported; only the Cartesia TTS path uses the patch, and it's a no-op unless a non-default speaker is chosen.**
+
+**What.** `<audio>`/`<video>` output routes cleanly via `HTMLMediaElement.setSinkId` (`InlineMediaRef`, Chrome/FF). The Cartesia `WebPlayer` builds a private per-utterance `AudioContext` with no handle, so [`installAudioContextSinkRouting`](features/audio/audioOutputSink.ts) patches the global `AudioContext` constructor to apply the chosen sink to every new context (opt-out via `NO_SINK_ROUTING` for the mic meter + capture). A device change applies to the *next* utterance, not mid-playback; Firefox/Safari have no `AudioContext.setSinkId` so TTS stays on the system default there.
+
+**Why.** Cartesia's SDK exposes no sink handle and we chose not to fork it.
+
+**The fence / cleaner path.** A small forked sink-aware player (the SDK's `WebPlayer` is ~140 lines) routed through a media element we control — removes the global monkeypatch and gives mid-utterance re-routing. Decision deferred to the owner (the patch is guarded: installs once, Chromium-only, no-op on default, preserves prototype/`instanceof`, screams on `setSinkId` failure).
+
+**What's open.** (a) The owner's call on patch-vs-fork; (b) the `MicDeviceMenu` caret is on `ProInput`/`ProTextarea` only — wire it onto the dedicated scribe record button if wanted; (c) `videoConference.defaultMicrophone/defaultSpeaker` are superseded by `userPreferences.audioDevices` but not yet folded in (unify when convenient); (d) real-browser sanity check that Cartesia playback + voice-agent capture behave with a non-default speaker selected.
+
 ### D12 — `selectContextPayload` drops entry-level `label` / `type`, so compact (string-valued) context objects reach the backend WITHOUT their authored label
 **Severity: low — cosmetic. The model still receives the content; only the manifest label is the humanized key instead of the authored one.**
 
