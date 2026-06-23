@@ -9313,6 +9313,51 @@ export type Database = {
         }
         Relationships: []
       }
+      derive_runs: {
+        Row: {
+          chunks_written: number | null
+          cost_usd: number | null
+          current: number | null
+          derivation_kind: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          processed_document_id: string
+          started_at: string | null
+          status: string
+          total: number | null
+        }
+        Insert: {
+          chunks_written?: number | null
+          cost_usd?: number | null
+          current?: number | null
+          derivation_kind: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          processed_document_id: string
+          started_at?: string | null
+          status?: string
+          total?: number | null
+        }
+        Update: {
+          chunks_written?: number | null
+          cost_usd?: number | null
+          current?: number | null
+          derivation_kind?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          processed_document_id?: string
+          started_at?: string | null
+          status?: string
+          total?: number | null
+        }
+        Relationships: []
+      }
       dev_login_audit: {
         Row: {
           id: string
@@ -12828,6 +12873,7 @@ export type Database = {
       }
       organization_preferences: {
         Row: {
+          auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
           created_at: string
           daily_auto_rag_budget_usd: number
@@ -12837,6 +12883,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           daily_auto_rag_budget_usd?: number
@@ -12846,6 +12893,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           daily_auto_rag_budget_usd?: number
@@ -23598,6 +23646,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
           created_at: string
           preferences: Json
@@ -23605,6 +23654,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           preferences: Json
@@ -23612,6 +23662,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
           preferences?: Json
@@ -32824,6 +32875,10 @@ export type Database = {
           is_format_valid: boolean
           slug: string
         }[]
+      }
+      wr_assignment_session_id: {
+        Args: { p_container_id: string; p_container_type: string }
+        Returns: string
       }
     }
     Enums: {

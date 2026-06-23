@@ -19,6 +19,7 @@ import { useState } from "react";
 import {
   AlertTriangle,
   Brain,
+  FileText,
   Loader2,
   Pencil,
   Wallet,
@@ -98,6 +99,19 @@ export function OrgPrivacyTab({
       .catch(() => toast.error("Couldn't update auto knowledge-graph"));
   };
 
+  const handleToggleNonPdf = (next: boolean) => {
+    void pref
+      .setIndexNonPdf(next)
+      .then(() =>
+        toast.success(
+          next
+            ? "Non-PDF auto-indexing enabled for this org"
+            : "Non-PDF auto-indexing disabled for this org",
+        ),
+      )
+      .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
+  };
+
   const handleStartEditingBudget = () => {
     setBudgetDraft(pref.budgetUsd.toFixed(2));
     setEditingBudget(true);
@@ -169,6 +183,33 @@ export function OrgPrivacyTab({
                 checked={pref.enabled}
                 onCheckedChange={handleToggle}
                 disabled={!canEdit || pref.saving}
+              />
+            )}
+          </div>
+
+          {/* ── Non-PDF auto-index toggle ───────────────────────────────── */}
+          <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-card/50 px-4 py-3">
+            <div className="flex items-start gap-2 min-w-0">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-0.5 min-w-0">
+                <Label htmlFor="org-non-pdf-switch" className="text-sm">
+                  Auto-index notes, transcripts &amp; web content
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  PDFs are always indexed. Turn this on to also automatically
+                  index non-PDF content (notes, transcripts, web scrapes, and
+                  more) for this organization. Off by default.
+                </p>
+              </div>
+            </div>
+            {pref.loading ? (
+              <Skeleton className="h-6 w-10" />
+            ) : (
+              <Switch
+                id="org-non-pdf-switch"
+                checked={pref.indexNonPdf}
+                onCheckedChange={handleToggleNonPdf}
+                disabled={!canEdit || !pref.enabled || pref.saving}
               />
             )}
           </div>

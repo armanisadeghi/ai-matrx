@@ -22,7 +22,10 @@ import {
   ChevronRight,
   ExternalLink,
   Sparkles,
+  Brain,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Table,
@@ -35,7 +38,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useOrgAutoRagPreference } from "@/features/organizations/hooks/useOrgAutoRagPreference";
 import {
   Dialog,
   DialogContent,
@@ -373,6 +379,102 @@ function PendingBatchesTable({
 }
 
 // ---------------------------------------------------------------------------
+// Org auto-ingest controls (admin-editable)
+// ---------------------------------------------------------------------------
+
+/**
+ * Admin-editable auto-ingest switches for one org, embedded in the org-detail
+ * dialog. Reuses `useOrgAutoRagPreference` — the SAME React → Supabase write
+ * path the org owners' settings panel uses — so an operator can flip the
+ * master auto-RAG switch and the non-PDF opt-in for any org. Cost figures
+ * (used / budget / window) keep coming from the read-only Python `kgCostService`
+ * shown above; these switches just edit the two booleans on the row.
+ */
+function OrgAutoIngestControls({ orgId }: { orgId: string }) {
+  const pref = useOrgAutoRagPreference(orgId);
+
+  const handleToggleEnabled = (next: boolean) => {
+    void pref
+      .setEnabled(next)
+      .then(() =>
+        toast.success(next ? "Auto-RAG enabled" : "Auto-RAG disabled"),
+      )
+      .catch(() => toast.error("Couldn't update auto-RAG"));
+  };
+
+  const handleToggleNonPdf = (next: boolean) => {
+    void pref
+      .setIndexNonPdf(next)
+      .then(() =>
+        toast.success(
+          next ? "Non-PDF auto-indexing enabled" : "Non-PDF auto-indexing disabled",
+        ),
+      )
+      .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
+  };
+
+  return (
+    <section>
+      <h3 className="mb-2 text-sm font-semibold">Auto-ingest controls</h3>
+      <div className="space-y-2 rounded-md border border-border bg-card p-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-2 min-w-0">
+            <Brain className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5 min-w-0">
+              <Label htmlFor="admin-org-auto-rag" className="text-sm">
+                Auto knowledge-graph (master)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Org-wide on/off for auto-ingest into the knowledge graph.
+              </p>
+            </div>
+          </div>
+          {pref.loading ? (
+            <Skeleton className="h-6 w-10" />
+          ) : (
+            <Switch
+              id="admin-org-auto-rag"
+              checked={pref.enabled}
+              onCheckedChange={handleToggleEnabled}
+              disabled={pref.saving}
+            />
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-t border-border pt-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5 min-w-0">
+              <Label htmlFor="admin-org-non-pdf" className="text-sm">
+                Auto-index notes, transcripts &amp; web content
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                PDFs are always indexed. On = also auto-index non-PDF content.
+                Off by default.
+              </p>
+            </div>
+          </div>
+          {pref.loading ? (
+            <Skeleton className="h-6 w-10" />
+          ) : (
+            <Switch
+              id="admin-org-non-pdf"
+              checked={pref.indexNonPdf}
+              onCheckedChange={handleToggleNonPdf}
+              disabled={!pref.enabled || pref.saving}
+            />
+          )}
+        </div>
+
+        {pref.error && (
+          <p className="text-xs text-destructive">{pref.error}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Org detail dialog
 // ---------------------------------------------------------------------------
 
@@ -453,6 +555,9 @@ function OrgDetailDialog({
                   </div>
                 </div>
               </div>
+
+              {/* Admin-editable auto-ingest switches for this org */}
+              <OrgAutoIngestControls orgId={detail.organization_id} />
 
               {/* 30-day daily series */}
               <section>
