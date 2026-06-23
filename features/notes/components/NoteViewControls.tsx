@@ -31,6 +31,7 @@ import {
   selectNoteEditorMode,
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
+import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 
 export const NOTE_VIEW_MODES = [
   { mode: "plain", label: "Edit", icon: FileText },
@@ -109,6 +110,8 @@ export function NoteViewControls({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <NoteCleanupButton noteId={activeTabId} />
 
       <button
         type="button"

@@ -75,6 +75,7 @@ import { RichDocumentActionSurface } from "@/features/rich-document/RichDocument
 import { NoteReferenceCopyButton } from "./NoteReferenceCopyButton";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "./NoteContentEditor";
+import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { NoteMetadataBar } from "./NoteMetadataBar";
 import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
@@ -454,6 +455,13 @@ export function NotesView({ config, className }: NotesViewProps) {
                   >
                     <History /> History
                   </button>
+                  <NoteCleanupButton
+                    noteId={activeTabId}
+                    showLabel
+                    label="Clean up"
+                    triggerClassName="flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5 text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]"
+                    triggerActiveClassName="bg-[var(--matrx-glass-bg-active)] text-[var(--shell-nav-text-hover)]"
+                  />
                   <div className="w-px h-4 bg-border/30 mx-0.5" />
                 </>
               )}
