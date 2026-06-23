@@ -166,7 +166,10 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
   const [sortBy, setSortBy] = useState<SortKey>("recent");
   const [filterKind, setFilterKind] = useState<string | null>(null);
   // 'all' | 'roots' | 'derivatives' — based on whether parent_processed_id is set.
-  const [tier, setTier] = useState<"all" | "roots" | "derivatives">("all");
+  // Default to 'roots' so the studio sidebar never lists derivation children
+  // (table-row / caption / summary sets are processed_documents too). The
+  // backend list is already filtered; this is the client-side safety net.
+  const [tier, setTier] = useState<"all" | "roots" | "derivatives">("roots");
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();

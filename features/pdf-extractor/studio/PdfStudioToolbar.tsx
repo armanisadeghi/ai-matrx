@@ -25,6 +25,7 @@ import {
   LoadingTapButton,
   RetryTapButton,
 } from "@/components/icons/tap-buttons";
+import { WandSparklesTapButton } from "@/components/icons/ai-tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -52,6 +53,8 @@ export interface PdfStudioToolbarProps {
   onRename: (newName: string) => void | Promise<void>;
   /** Archive (soft-delete) the active doc from the studio. */
   onDeleteDoc: (id: string) => Promise<void>;
+  /** Open the Knowledge Asset Builder drawer (doc stays visible behind it). */
+  onOpenKnowledgeAssets: () => void;
 }
 
 export function PdfStudioToolbar({
@@ -71,6 +74,7 @@ export function PdfStudioToolbar({
   refreshing,
   onRename,
   onDeleteDoc,
+  onOpenKnowledgeAssets,
 }: PdfStudioToolbarProps) {
   if (!doc) {
     return (
@@ -147,6 +151,12 @@ export function PdfStudioToolbar({
                 ariaLabel="AI Clean"
               />
             )}
+            <WandSparklesTapButton
+              variant="group"
+              onClick={onOpenKnowledgeAssets}
+              ariaLabel="Knowledge Assets"
+              tooltip="Knowledge Assets — build table rows, captions, summaries & Q&A"
+            />
             <ClipboardListTapButton
               variant="group"
               onClick={onOpenCopyPages}

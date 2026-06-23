@@ -31,6 +31,7 @@ import {
   Loader2,
   Search as SearchIcon,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,9 @@ import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
 import type { DocStatus } from "@/features/rag/types/library";
+import { ChunksOnPage } from "./ChunkList";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 
 interface ApiFullPage {
   page_index: number;
@@ -59,26 +63,6 @@ interface ApiFullPage {
   section_title: string | null;
   is_continuation: boolean;
   has_image: boolean;
-}
-
-interface ApiChunkRow {
-  id: string;
-  chunk_index: number | null;
-  chunk_kind: string | null;
-  parent_chunk_id: string | null;
-  page_numbers: number[] | null;
-  token_count: number | null;
-  content_text: string;
-  has_oai_embedding: boolean;
-  has_voyage_embedding: boolean;
-  section_kind: string | null;
-}
-
-interface ApiChunksResponse {
-  chunks: ApiChunkRow[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 interface ApiTestSearchHit {
@@ -117,6 +101,9 @@ export function LibraryPreviewPage({
   const [activePageIndex, setActivePageIndex] = useState(0);
   const router = useRouter();
   const [forking, setForking] = useState(false);
+  // Knowledge Assets drawer — opens the builder alongside (not over) the doc,
+  // so pages + text stay visible behind the resizable panel.
+  const [assetsOpen, setAssetsOpen] = useState(false);
 
   // "Make my copy" — fork this (read-only) shared document into a user-owned
   // copy and open it in the studio, where the user can run their own agents /
@@ -137,7 +124,7 @@ export function LibraryPreviewPage({
   return (
     <div
       className={
-        "flex flex-col bg-background " +
+        "relative flex flex-col bg-background " +
         (embedded ? "h-full" : "h-[calc(100dvh-3rem)]")
       }
     >
@@ -167,22 +154,49 @@ export function LibraryPreviewPage({
             )}
           </div>
           {doc && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleFork}
-              disabled={forking}
-              title="Fork this shared document into your own editable copy you can re-process with your own agents"
-            >
-              {forking ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <GitFork className="h-4 w-4 mr-1" />
-              )}
-              Make my copy
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAssetsOpen(true)}
+                title="Build premium knowledge representations (table rows, figure captions, summaries, Q&A) from this document"
+              >
+                <Sparkles className="h-4 w-4 mr-1 text-primary" />
+                Knowledge Assets
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleFork}
+                disabled={forking}
+                title="Fork this shared document into your own editable copy you can re-process with your own agents"
+              >
+                {forking ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <GitFork className="h-4 w-4 mr-1" />
+                )}
+                Make my copy
+              </Button>
+            </>
           )}
         </header>
+      )}
+
+      {/* Embedded surfaces (the /files Knowledge tab) drop the header, so the
+          Knowledge Assets entry rides as a compact floating button that
+          doesn't steal vertical space from the doc. */}
+      {embedded && doc && !docError && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setAssetsOpen(true)}
+          className="absolute right-3 top-2 z-10 h-7 px-2 text-xs shadow-sm"
+          title="Build premium knowledge representations from this document"
+        >
+          <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
+          Knowledge Assets
+        </Button>
       )}
 
       {docError && (
@@ -225,6 +239,31 @@ export function LibraryPreviewPage({
             onPageChange={setActivePageIndex}
           />
         </div>
+      )}
+
+      {/* Knowledge Asset Builder — resizable right drawer. The doc stays fully
+          visible behind it (the panel sits alongside, not over), so the user
+          reads the source while building / inspecting representations. */}
+      {doc && (
+        <MatrxDynamicPanelHost
+          open={assetsOpen}
+          onOpenChange={setAssetsOpen}
+          title="Knowledge Assets"
+          description={doc.name}
+          position="right"
+          defaultSize={46}
+          minSize={28}
+          maxSize={80}
+          contentClassName="p-0"
+        >
+          <KnowledgeAssetPanel
+            doc={{
+              id: documentId,
+              name: doc.name,
+              totalPages: doc.pagesPersisted ?? null,
+            }}
+          />
+        </MatrxDynamicPanelHost>
       )}
     </div>
   );
@@ -522,115 +561,6 @@ function RightRail({
           <TestSearchPanel documentId={documentId} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function ChunksOnPage({
-  documentId,
-  pageNumber,
-}: {
-  documentId: string;
-  pageNumber: number;
-}) {
-  const [chunks, setChunks] = useState<ApiChunkRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("page_number", String(pageNumber));
-    getJson<ApiChunksResponse>(
-      `/rag/library/${documentId}/chunks?${params.toString()}`,
-    )
-      .then(({ data }) => {
-        if (cancelled || !data) return;
-        setChunks(Array.isArray(data.chunks) ? data.chunks : []);
-        setTotal(typeof data.total === "number" ? data.total : 0);
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setError(
-            err?.message ??
-              `Failed to load ${RAG_VOCAB.segmentsShort.toLowerCase()}`,
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [documentId, pageNumber]);
-
-  return (
-    <ScrollArea className="h-full">
-      <div className="p-3 space-y-2">
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading {RAG_VOCAB.segmentsShort.toLowerCase()}…
-          </div>
-        )}
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {!loading && !error && chunks.length === 0 && (
-          <p className="text-sm text-muted-foreground italic">
-            No {RAG_VOCAB.segmentsShort.toLowerCase()} for page {pageNumber}.
-          </p>
-        )}
-        {chunks.map((c) => (
-          <ChunkCard key={c.id} chunk={c} />
-        ))}
-        {total > chunks.length && (
-          <p className="text-xs text-muted-foreground italic">
-            Showing first {chunks.length} of {total}.
-          </p>
-        )}
-      </div>
-    </ScrollArea>
-  );
-}
-
-function ChunkCard({ chunk }: { chunk: ApiChunkRow }) {
-  return (
-    <div className="border rounded-md p-2 space-y-1 bg-card">
-      <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-        <Badge variant="outline" className="text-[10px] px-1 py-0">
-          #{chunk.chunk_index ?? "?"}
-        </Badge>
-        {chunk.chunk_kind && (
-          <Badge variant="outline" className="text-[10px] px-1 py-0">
-            {chunk.chunk_kind}
-          </Badge>
-        )}
-        {chunk.token_count != null && (
-          <Badge variant="outline" className="text-[10px] px-1 py-0">
-            {chunk.token_count} tok
-          </Badge>
-        )}
-        {chunk.section_kind && (
-          <Badge variant="info" className="text-[10px] px-1 py-0">
-            {chunk.section_kind}
-          </Badge>
-        )}
-        {chunk.has_oai_embedding ? (
-          <Badge variant="success" className="text-[10px] px-1 py-0">
-            embed ✓
-          </Badge>
-        ) : (
-          <Badge variant="error" className="text-[10px] px-1 py-0">
-            no embed
-          </Badge>
-        )}
-      </div>
-      <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans overflow-x-auto">
-        {chunk.content_text}
-      </pre>
     </div>
   );
 }

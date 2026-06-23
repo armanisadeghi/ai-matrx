@@ -10,9 +10,16 @@
  * rich live-activity strip per running op (label, {current}/{total} unit,
  * latest message, animated progress, elapsed, cancel).
  *
- * Mounted in two places (same component, both consume only {id, name}):
- *   - PdfStudioInspector — the "knowledge_assets" section
- *   - LibraryDocDetailSheet — the "Knowledge Asset" tab
+ * Mounted as a drawer / tab everywhere PDFs live (all consume only {id, name,
+ * totalPages?}):
+ *   - LibraryPreviewPage — "Knowledge Assets" drawer (also lights up the
+ *     /files Knowledge tab, which embeds LibraryPreviewPage)
+ *   - PdfStudioShell — toolbar-opened drawer (doc stays visible behind it)
+ *   - LibraryDocDetailSheet — the "Knowledge Asset" tab (wide sheet)
+ *
+ * Reality: on open it fetches /rag/library/{id}/estimate so each card shows how
+ * many runs + the cost BEFORE the user spends. Results: each built card expands
+ * to the actual chunks (DerivativeChunkList) with page-number provenance.
  *
  * Backend contract: features/rag/api/derivations.ts. State: useKnowledgeAssetRunner.
  */
@@ -33,6 +40,8 @@ import {
   X as XIcon,
   Loader2,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,10 +51,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
+import { DerivativeChunkList } from "./ChunkList";
 import {
   DERIVE_KINDS,
+  fetchEstimate,
   type DeriveKind,
   type DerivationRollup,
+  type DerivationsEstimate,
+  type DeriveEstimate,
 } from "@/features/rag/api/derivations";
 import {
   useKnowledgeAssetRunner,
@@ -133,6 +146,13 @@ export interface KnowledgeAssetDoc {
   totalPages?: number | null;
 }
 
+/** "$0.05", "<$0.01", or "free". Coarse on purpose — order-of-magnitude. */
+function formatCost(usd: number): string {
+  if (!Number.isFinite(usd) || usd <= 0) return "free";
+  if (usd < 0.01) return "<$0.01";
+  return `~$${usd.toFixed(2)}`;
+}
+
 export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   const runner = useKnowledgeAssetRunner(doc.id);
   const {
@@ -146,6 +166,10 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
     runAll,
     cancel,
   } = runner;
+
+  // Reality estimate — how many runs + what it costs, scanned live from the
+  // doc on open (a few seconds: it does a PDF scan for tables/figures).
+  const estimate = useDerivationsEstimate(doc.id);
 
   // Map rollup rows by kind for quick lookup of live chunk counts.
   const countByKind = useMemo(() => {
@@ -198,6 +222,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
               </>
             )}
           </p>
+          {/* Doc reality summary — "137 pages · 25 sections · 12 tables · 8
+              figure pages" — so the user grasps the scope before building. */}
+          <DocSummaryLine estimate={estimate} fallbackPages={doc.totalPages} />
         </div>
         <Button
           size="sm"
@@ -234,7 +261,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
         {loading ? (
           <RollupSkeleton />
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {/* Cleaned base — read-only */}
             <BaseRepresentationCard
               count={countByKind.get(BASE_KIND)?.chunk_count}
@@ -246,6 +273,8 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
                 kind={kind}
                 rollup={countByKind.get(kind)}
                 op={operations[kind]}
+                estimate={estimate.data?.estimates?.[kind]}
+                estimating={estimate.loading}
                 onRun={() => void run(kind)}
                 onRebuild={() => void handleRebuild(kind, run)}
                 onCancel={() => cancel(kind)}
@@ -304,6 +333,8 @@ function RepresentationCard({
   kind,
   rollup,
   op,
+  estimate,
+  estimating,
   onRun,
   onRebuild,
   onCancel,
@@ -311,15 +342,22 @@ function RepresentationCard({
   kind: DeriveKind;
   rollup: DerivationRollup | undefined;
   op: OpState;
+  estimate: DeriveEstimate | undefined;
+  estimating: boolean;
   onRun: () => void;
   onRebuild: () => void;
   onCancel: () => void;
 }) {
   const meta = KIND_META[kind];
   const Icon = meta.icon;
-  const built = (rollup?.chunk_count ?? 0) > 0;
+  const chunkCount = rollup?.chunk_count ?? 0;
+  const built = chunkCount > 0;
   const running = op.status === "running";
   const failed = op.status === "failed";
+  const derivativeId = rollup?.derivative_id ?? null;
+
+  // Results expander — only meaningful once content exists.
+  const [expanded, setExpanded] = useState(false);
 
   const pct =
     op.total > 0 ? Math.min(100, Math.round((op.current / op.total) * 100)) : 0;
@@ -362,7 +400,7 @@ function RepresentationCard({
             </span>
           </div>
         </div>
-        <CountUpInline value={rollup?.chunk_count ?? 0} muted={!built} />
+        <CountUpInline value={chunkCount} muted={!built} />
       </div>
 
       {/* Blurb / status line */}
@@ -373,6 +411,13 @@ function RepresentationCard({
             ? op.error || "Failed — try again."
             : meta.blurb}
       </p>
+
+      {/* Reality line — the live "how many runs + cost" from /estimate, so the
+          user sees what Build will actually do BEFORE clicking. Hidden while
+          running (the live progress takes over). */}
+      {!running && (
+        <RealityLine estimate={estimate} loading={estimating} unit={meta.unit} />
+      )}
 
       {/* Live progress (only while running) */}
       {running && (
@@ -412,16 +457,42 @@ function RepresentationCard({
             Rebuild
           </Button>
         ) : (
-          <Button
-            size="sm"
-            onClick={onRun}
-            className="h-7 flex-1 text-[10px]"
-          >
+          <Button size="sm" onClick={onRun} className="h-7 flex-1 text-[10px]">
             <Play className="h-3 w-3 mr-1" />
             Build
           </Button>
         )}
       </div>
+
+      {/* Results expander — the KEY fix. "Table rows: 62" → click to SEE the 62
+          rows and WHERE they came from (page numbers on each ChunkCard). */}
+      {built && derivativeId && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+            aria-expanded={expanded}
+          >
+            {expanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            {expanded
+              ? "Hide results"
+              : `View ${chunkCount.toLocaleString()} ${meta.unit}`}
+          </button>
+          {expanded && (
+            <div className="mt-2 max-h-72 overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-1.5">
+              <DerivativeChunkList
+                derivativeId={derivativeId}
+                expectedTotal={chunkCount}
+              />
+            </div>
+          )}
+        </>
+      )}
 
       {/* Failed badge */}
       {failed && !running && (
@@ -432,6 +503,47 @@ function RepresentationCard({
           failed
         </Badge>
       )}
+    </div>
+  );
+}
+
+/** The "25 sections → 25 Gemini runs · ~$0.05" reality line. Uses the
+ *  estimate's own `note` verbatim plus a runs/cost tail. */
+function RealityLine({
+  estimate,
+  loading,
+  unit,
+}: {
+  estimate: DeriveEstimate | undefined;
+  loading: boolean;
+  unit: string;
+}) {
+  if (loading && !estimate) {
+    return <Skeleton className="mt-1.5 h-3 w-3/4" />;
+  }
+  if (!estimate) return null;
+
+  const runsLabel =
+    estimate.runs > 0
+      ? `${estimate.runs.toLocaleString()} run${estimate.runs === 1 ? "" : "s"}`
+      : "deterministic";
+  const cost = formatCost(estimate.cost_usd);
+
+  return (
+    <div className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
+      <Sparkles className="mt-[1px] h-2.5 w-2.5 shrink-0 text-primary/70" />
+      <span className="min-w-0">
+        <span className="font-medium text-foreground/80">
+          {estimate.items.toLocaleString()} {estimate.unit || unit}
+        </span>{" "}
+        → {runsLabel}
+        {cost !== "free" && <> · {cost}</>}
+        {estimate.note && (
+          <span className="block text-muted-foreground/80">
+            {estimate.note}
+          </span>
+        )}
+      </span>
     </div>
   );
 }
@@ -584,6 +696,97 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Reality estimate — fetched once on open (PDF scan, a few seconds)
+// ---------------------------------------------------------------------------
+
+interface EstimateState {
+  data: DerivationsEstimate | null;
+  loading: boolean;
+  error: string | null;
+}
+
+function useDerivationsEstimate(docId: string | null): EstimateState {
+  const [state, setState] = useState<EstimateState>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!docId) {
+      setState({ data: null, loading: false, error: null });
+      return;
+    }
+    let cancelled = false;
+    const ac = new AbortController();
+    setState({ data: null, loading: true, error: null });
+    fetchEstimate(docId, ac.signal)
+      .then((data) => {
+        if (!cancelled) setState({ data, loading: false, error: null });
+      })
+      .catch((err) => {
+        if (cancelled || ac.signal.aborted) return;
+        setState({
+          data: null,
+          loading: false,
+          error: err instanceof Error ? err.message : "Failed to estimate",
+        });
+      });
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [docId]);
+
+  return state;
+}
+
+/** "137 pages · 25 sections · 12 tables · 8 figure pages" — the doc's reality
+ *  scope, so the per-card run/cost numbers have context. */
+function DocSummaryLine({
+  estimate,
+  fallbackPages,
+}: {
+  estimate: EstimateState;
+  fallbackPages?: number | null;
+}) {
+  if (estimate.loading && !estimate.data) {
+    return <Skeleton className="mt-1 h-3 w-56" />;
+  }
+  const d = estimate.data?.doc;
+  if (!d) {
+    // Estimate failed — still show what we know (pages) so the line isn't blank.
+    if (fallbackPages && fallbackPages > 0) {
+      return (
+        <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+          {fallbackPages.toLocaleString()} pages
+          {estimate.error && (
+            <span className="text-amber-600 dark:text-amber-400">
+              {" "}
+              · scope estimate unavailable
+            </span>
+          )}
+        </p>
+      );
+    }
+    return null;
+  }
+
+  const parts: string[] = [`${d.pages.toLocaleString()} pages`];
+  if (d.sections > 0) parts.push(`${d.sections.toLocaleString()} sections`);
+  if (d.tables > 0) parts.push(`${d.tables.toLocaleString()} tables`);
+  if (d.rows > 0) parts.push(`${d.rows.toLocaleString()} rows`);
+  if (d.figure_pages > 0)
+    parts.push(`${d.figure_pages.toLocaleString()} figure pages`);
+
+  return (
+    <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+      {parts.join(" · ")}
+    </p>
+  );
+}
+
 /** Compact count display with a green flash on increase — same idea as
  *  AnimatedKpiCard's CountUp but inline + smaller for the card corner. */
 function CountUpInline({ value, muted }: { value: number; muted?: boolean }) {
@@ -616,7 +819,7 @@ function CountUpInline({ value, muted }: { value: number; muted?: boolean }) {
 
 function RollupSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 7 }).map((_, i) => (
         <div key={i} className="rounded-xl border border-border p-3">
           <div className="flex items-center justify-between">

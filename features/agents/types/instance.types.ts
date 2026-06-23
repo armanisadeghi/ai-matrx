@@ -392,9 +392,16 @@ export interface InstanceUserInputState {
 
   /**
    * Phase of the most recent submission lifecycle.
-   *   idle      — not submitting
+   *   idle      — not submitting (also: the user has typed a NEW draft — the
+   *               instant they hit a key, setUserInputText resets phase to idle)
    *   pending   — submit dispatched, server has not yet confirmed persistence
    *   persisted — server confirmed cx_user_request record reserved; text visually cleared
+   *
+   * SACRED: clearing `text` (markInputPersisted / clearUserInput) is gated on
+   * `isInputDraftProtected` — see instance-user-input/input-draft-protection.ts.
+   * The composer holds the user's NEXT message after a submit and must never be
+   * wiped by stream/conversation events. Phase=idle + text≠lastSubmittedText
+   * means a live draft is present and is untouchable.
    */
   submissionPhase: InputSubmissionPhase;
 

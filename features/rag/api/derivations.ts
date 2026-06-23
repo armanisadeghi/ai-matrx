@@ -102,6 +102,124 @@ export async function fetchDerivations(
 }
 
 // ---------------------------------------------------------------------------
+// Reality estimate (GET /estimate)
+//
+// Tells the UI, BEFORE the user spends, exactly how many runs each derivation
+// will do, the scope (rows/pages/sections), and a rough cost — so a card can
+// show "25 sections → 25 Gemini runs · ~$0.05" instead of a blind Build button.
+// One DB read + one PDF scan on the backend (a few seconds on a large doc).
+// Backend: aidream rag.py::estimate_derivations_endpoint → knowledge_derivations.estimate_derivations.
+// ---------------------------------------------------------------------------
+
+export interface DeriveEstimate {
+  /** How many model/vision calls this derivation will make. 0 for
+   *  deterministic kinds (table_row, multigranularity) and read-only ones. */
+  runs: number;
+  /** Unit noun for `items` (rows, sections, figure pages, …). */
+  unit: string;
+  /** How many `unit`s exist in the doc (e.g. 62 rows). */
+  items: number;
+  /** Human one-liner the card surfaces verbatim, e.g.
+   *  "1 Gemini run / section · 25 runs". */
+  note: string;
+  /** Rough USD cost (order-of-magnitude; shown as "~$X"). */
+  cost_usd: number;
+}
+
+export interface DocEstimateShape {
+  pages: number;
+  sections: number;
+  tables: number;
+  rows: number;
+  figure_pages: number;
+}
+
+export interface DerivationsEstimate {
+  name: string;
+  doc: DocEstimateShape;
+  /** Keyed by DeriveKind. Backend may omit kinds it can't estimate; callers
+   *  must treat a missing key as "unknown", not "zero". */
+  estimates: Partial<Record<DeriveKind, DeriveEstimate>>;
+}
+
+function isDocEstimate(v: unknown): v is DocEstimateShape {
+  if (!v || typeof v !== "object") return false;
+  const d = v as Record<string, unknown>;
+  return ["pages", "sections", "tables", "rows", "figure_pages"].every(
+    (k) => typeof d[k] === "number",
+  );
+}
+
+export async function fetchEstimate(
+  processedDocumentId: string,
+  signal?: AbortSignal,
+): Promise<DerivationsEstimate> {
+  const { data } = await getJson<DerivationsEstimate>(
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/estimate`,
+    { signal },
+  );
+  return {
+    name: typeof data?.name === "string" ? data.name : "",
+    doc: isDocEstimate(data?.doc)
+      ? data.doc
+      : { pages: 0, sections: 0, tables: 0, rows: 0, figure_pages: 0 },
+    estimates:
+      data?.estimates && typeof data.estimates === "object"
+        ? data.estimates
+        : {},
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Derivative chunks read (GET /chunks on the derivative's own id)
+//
+// A derivation set IS a processed_document (a child of the source doc), so the
+// existing chunks endpoint serves its rows directly — this is how the UI makes
+// "Table rows: 62" actually SHOWable: fetch the derivative's chunks and render
+// each one with page provenance. The endpoint owner-checks via the parent doc's
+// ownership, which derivatives inherit.
+// ---------------------------------------------------------------------------
+
+export interface DerivativeChunkRow {
+  id: string;
+  chunk_index: number | null;
+  chunk_kind: string | null;
+  parent_chunk_id: string | null;
+  page_numbers: number[] | null;
+  token_count: number | null;
+  content_text: string;
+  has_oai_embedding: boolean;
+  has_voyage_embedding: boolean;
+  section_kind: string | null;
+}
+
+export interface DerivativeChunksResponse {
+  chunks: DerivativeChunkRow[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export async function fetchDerivativeChunks(
+  derivativeId: string,
+  opts: { limit?: number; offset?: number; signal?: AbortSignal } = {},
+): Promise<DerivativeChunksResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(opts.limit ?? 50));
+  if (opts.offset) params.set("offset", String(opts.offset));
+  const { data } = await getJson<DerivativeChunksResponse>(
+    `/rag/library/${encodeURIComponent(derivativeId)}/chunks?${params.toString()}`,
+    { signal: opts.signal },
+  );
+  return {
+    chunks: Array.isArray(data?.chunks) ? data.chunks : [],
+    total: typeof data?.total === "number" ? data.total : 0,
+    limit: typeof data?.limit === "number" ? data.limit : opts.limit ?? 50,
+    offset: typeof data?.offset === "number" ? data.offset : opts.offset ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Streaming runner (POST /derive/{kind})
 // ---------------------------------------------------------------------------
 

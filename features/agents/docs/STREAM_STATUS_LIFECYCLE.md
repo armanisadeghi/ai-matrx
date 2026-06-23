@@ -1,5 +1,22 @@
 # Stream Status Lifecycle — V2 Event System
 
+> ## ⛔ SACRED INVARIANT — the smart-input draft is untouchable
+>
+> The composer (smart input) and the conversation area are **often not on the
+> same message turn**. The moment the user submits, the composer flips to the
+> **next** message and holds whatever they type next — for potentially **many
+> minutes** while the current response streams. **No stream/conversation event
+> may ever clear that draft.**
+>
+> Two stream-driven clears below run on the **same conversationId** the user
+> types into (chat & agents/run): `markInputPersisted` (on `cx_user_request`
+> reservation, ~1s after submit) and `clearUserInput` (post-stream success
+> finalization). Both now route through **`isInputDraftProtected`** in
+> `instance-user-input/input-draft-protection.ts` — they clear **only** the
+> exact just-submitted message, never a new draft. A clear hitting a live draft
+> is a **bug**: it is refused (draft preserved) and screams via
+> `reportInputDraftViolation`. **Do not "simplify" these guards away.**
+
 ## Event Types
 
 | Event | Wire name | Purpose |
@@ -127,6 +144,9 @@ Post-stream finalization:
   3. finalizeAccumulatedReasoning
   4. commitAssistantTurn (writes to conversation history)
   5. clearUserInput, clearAllResources
+     ⚠ clearUserInput is GUARDED — it clears the just-submitted message only.
+       If the user has started their next message it is PRESERVED (loud).
+       See input-draft-protection.ts.
   6. Compute & dispatch ClientMetrics
 ```
 

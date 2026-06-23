@@ -19,6 +19,10 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import { destroyInstance } from "../conversations/conversations.slice";
+import {
+  isInputDraftProtected,
+  reportInputDraftViolation,
+} from "./input-draft-protection";
 
 // =============================================================================
 // Undo types
@@ -231,16 +235,32 @@ const instanceUserInputSlice = createSlice({
 
     clearUserInput(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
-      if (entry) {
-        entry.text = "";
-        entry.messageParts = null;
+      if (!entry) return;
+
+      // SACRED INVARIANT — never wipe a live next-message draft. If the user has
+      // started composing a new message (text diverged from what was submitted),
+      // the conversation/stream MUST NOT clear it. See input-draft-protection.ts.
+      // We still reset submissionPhase/messageParts so downstream UI state is
+      // consistent, but the text itself is preserved. This is a LOUD recovery:
+      // a clear reaching protected content means a real bug slipped through.
+      if (isInputDraftProtected(entry)) {
+        reportInputDraftViolation(
+          "clearUserInput",
+          entry.conversationId,
+          entry.text.length,
+        );
         entry.submissionPhase = "idle";
-        // Intentionally KEEP lastSubmittedText/lastSubmittedUserValues so the
-        // /build "Re-apply last input" affordance survives stream completion.
-        // They are overwritten on the next submit and fully dropped when the
-        // instance is destroyed.
-        entry._undoFuture = [];
+        return;
       }
+
+      entry.text = "";
+      entry.messageParts = null;
+      entry.submissionPhase = "idle";
+      // Intentionally KEEP lastSubmittedText/lastSubmittedUserValues so the
+      // /build "Re-apply last input" affordance survives stream completion.
+      // They are overwritten on the next submit and fully dropped when the
+      // instance is destroyed.
+      entry._undoFuture = [];
     },
 
     /**
@@ -277,10 +297,29 @@ const instanceUserInputSlice = createSlice({
      * safe to clear the textarea. lastSubmittedText is intentionally preserved
      * so a "re-apply" action can restore it if the user (or an auto-clear
      * reset) wants to resubmit the same content.
+     *
+     * CRITICAL: this fires ~1s after submit, on a stream event, on the SAME
+     * conversationId the user types into (chat/run). By then the user may have
+     * already started their next message. We clear ONLY if `text` is still the
+     * just-submitted message; if a new draft is present it is SACRED and
+     * preserved (loud recovery). See input-draft-protection.ts.
      */
     markInputPersisted(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
       if (!entry) return;
+
+      if (isInputDraftProtected(entry)) {
+        reportInputDraftViolation(
+          "markInputPersisted",
+          entry.conversationId,
+          entry.text.length,
+        );
+        // Do NOT mark "persisted" or touch the text — the user has moved on to a
+        // new message and `submissionPhase` is already "idle" (set when they
+        // typed). Leave the draft completely untouched.
+        return;
+      }
+
       entry.submissionPhase = "persisted";
       entry.text = "";
       entry.messageParts = null;

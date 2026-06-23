@@ -24,7 +24,6 @@ import {
   MousePointerClick,
   Repeat,
   Plus,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
@@ -36,12 +35,14 @@ import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
-import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
 import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets.manifest";
 
+// NOTE: Knowledge Assets is NOT a tab here. A sixth flex-1 tab overflowed this
+// narrow right rail (no horizontal scroll). The Knowledge Asset Builder now
+// opens as a resizable drawer from the studio toolbar (PdfStudioShell), so the
+// doc stays visible while building. See KnowledgeAssetPanel mount sites.
 export type SectionKey =
   | "widgets"
-  | "assets"
   | "chunked"
   | "stores"
   | "manipulate"
@@ -53,7 +54,6 @@ const SECTIONS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { key: "widgets", label: "Widgets", icon: Zap },
-  { key: "assets", label: "Assets", icon: Sparkles },
   { key: "chunked", label: "Chunker", icon: Repeat },
   { key: "stores", label: "Stores", icon: Database },
   { key: "manipulate", label: "Manipulate", icon: Wrench },
@@ -160,11 +160,6 @@ export function PdfStudioInspector({
               </p>
             )}
           </div>
-        )}
-        {section === "assets" && (
-          <KnowledgeAssetPanel
-            doc={{ id: doc.id, name: doc.name, totalPages: doc.totalPages }}
-          />
         )}
         {section === "stores" && (
           <DataStoreBindPanel

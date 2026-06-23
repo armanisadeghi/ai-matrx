@@ -50,6 +50,8 @@ import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
 import { CopyPagesOverlay } from "../components/CopyPagesOverlay";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { KnowledgeAssetPanel } from "@/features/rag/components/library/KnowledgeAssetPanel";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useRouter } from "next/navigation";
@@ -143,6 +145,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const [cropPagesInput, setCropPagesInput] = useState("");
   const [copyPagesOpen, setCopyPagesOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Knowledge Asset Builder drawer — opens alongside (not over) the reader, so
+  // the doc stays fully visible while building / inspecting representations.
+  // The Knowledge Assets inspector TAB was removed (it overflowed the narrow
+  // right rail); this resizable drawer replaces it.
+  const [knowledgeAssetsOpen, setKnowledgeAssetsOpen] = useState(false);
   const [inspectorRequestedSection, setInspectorRequestedSection] =
     useState<SectionKey | null>(null);
   // True while a doc fetch is in-flight. Initialized to `true` when an
@@ -630,6 +637,30 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         />
       )}
 
+      {/* Knowledge Asset Builder — resizable right drawer. Replaces the removed
+          inspector tab; the reader stays visible behind it. */}
+      {activeDoc && (
+        <MatrxDynamicPanelHost
+          open={knowledgeAssetsOpen}
+          onOpenChange={setKnowledgeAssetsOpen}
+          title="Knowledge Assets"
+          description={activeDoc.name}
+          position="right"
+          defaultSize={46}
+          minSize={28}
+          maxSize={80}
+          contentClassName="p-0"
+        >
+          <KnowledgeAssetPanel
+            doc={{
+              id: activeDoc.id,
+              name: activeDoc.name,
+              totalPages: activeDoc.totalPages,
+            }}
+          />
+        </MatrxDynamicPanelHost>
+      )}
+
       {/* CENTER */}
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
         <PdfStudioToolbar
@@ -649,6 +680,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           refreshing={refreshing}
           onRename={handleRenameDoc}
           onDeleteDoc={handleDeleteDoc}
+          onOpenKnowledgeAssets={() => setKnowledgeAssetsOpen(true)}
         />
 
         {/* Hidden-panes restore strip */}

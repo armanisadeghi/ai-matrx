@@ -87,21 +87,34 @@ function isSafari(): boolean {
   const ua = navigator.userAgent;
   // Real Safari includes "Safari" but not "Chrome"/"Chromium"/"Android".
   return (
-    /Safari/.test(ua) &&
-    !/Chrome|Chromium|Android|CriOS|FxiOS|EdgiOS/.test(ua)
+    /Safari/.test(ua) && !/Chrome|Chromium|Android|CriOS|FxiOS|EdgiOS/.test(ua)
   );
 }
 
+// Cached, referentially-stable snapshot. `useSyncExternalStore` calls
+// getSnapshot on every render and bails out only when it returns the SAME
+// reference — so we must NOT mint a fresh object each call. We recompute the
+// cached object only when the manager actually mutates state (every mutation
+// path goes through `emit()`), keeping the reference stable in between. Without
+// this, getSnapshot returns a new object every render → React re-renders →
+// getSnapshot again → infinite "Maximum update depth exceeded" loop.
+let cachedSnapshot: AudioDevicesSnapshot = {
+  permissionState: m.permissionState,
+  inputs: m.inputs,
+  outputs: m.outputs,
+};
+
 function snapshot(): AudioDevicesSnapshot {
-  return {
+  return cachedSnapshot;
+}
+
+function emit(): void {
+  cachedSnapshot = {
     permissionState: m.permissionState,
     inputs: m.inputs,
     outputs: m.outputs,
   };
-}
-
-function emit(): void {
-  const snap = snapshot();
+  const snap = cachedSnapshot;
   for (const l of m.listeners) {
     try {
       l(snap);
@@ -158,7 +171,6 @@ export async function listDevices(): Promise<AudioDevicesSnapshot> {
       m.outputs = outputs;
       emit();
     } catch (err) {
-       
       console.error("[audioDevices] enumerateDevices failed:", err);
     } finally {
       m.enumerating = null;
@@ -261,10 +273,12 @@ export async function ensurePermission(): Promise<AudioPermissionState> {
           setPermissionState("denied");
           return "denied";
         }
-         
+
         console.error("[audioDevices] mic permission request failed:", err);
         // A device may simply be missing; treat as prompt-able again.
-        setPermissionState(m.permissionState === "granted" ? "granted" : "prompt");
+        setPermissionState(
+          m.permissionState === "granted" ? "granted" : "prompt",
+        );
         return m.permissionState;
       } finally {
         releaseMicStream();
