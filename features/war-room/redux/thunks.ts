@@ -864,8 +864,8 @@ export const ensureTileAudioSession =
 
 // ── Notes (multiple notes per tile) ────────────────────────────────────
 // Mirror of the audio sessions: each tile note is a real `notes` row linked
-// via ctx_war_room_tile_notes. The active note also lives on tile.note_id
-// (the is_active analog) so note↔task sync + tile metrics keep working.
+// via a 'note' assignment row (ctx_war_room_assignments). One assignment per
+// note carries is_active; the active note drives note↔task sync + tile metrics.
 
 /** Create a fresh note for a tile, link it, and make it the active one. */
 export const addNoteToTile =
