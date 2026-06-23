@@ -391,135 +391,198 @@ export function MultiFileSmartCodeEditorWindow({
       sidebarMinSize={140}
       sidebarExpandsWindow
       defaultSidebarOpen
-      bodyClassName="p-0 overflow-hidden"
-    >
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* ── Tab bar ─────────────────────────────────────────────────── */}
-        <CodeEditorTabBar
-          openTabs={openTabs}
-          activeTab={activeTab}
-          files={files}
-          onTabClick={selectTab}
-          onTabClose={handleCloseTab}
-        />
-
-        {currentFile ? (
-          <>
-            {/* ── Action strip ──────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 shrink-0 gap-2">
-              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                <span className="shrink-0">
-                  {getLanguageIconNode(
-                    currentFile.language,
-                    false,
-                    currentFile.icon,
-                  )}
-                </span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate font-mono">
-                  {currentFile.path}
-                </span>
-                {!conversationId && (
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-2 shrink-0">
-                    <CircleDot className="w-3 h-3" /> Launching agent…
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-0.5 shrink-0">
-                <ActionBtn
-                  onClick={() => setIsEditing(!isEditing)}
-                  active={isEditing}
-                  title={isEditing ? "Switch to read-only" : "Edit file"}
-                >
-                  {isEditing ? (
-                    <Eye className="w-3.5 h-3.5" />
-                  ) : (
-                    <Pencil className="w-3.5 h-3.5" />
-                  )}
-                </ActionBtn>
-
-                <ActionBtn
-                  onClick={handleFormat}
-                  disabled={!isEditing}
-                  title="Format document"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
-
-                <ActionBtn
-                  onClick={() => setShowWrapLines(!showWrapLines)}
-                  active={showWrapLines}
-                  title={
-                    showWrapLines ? "Disable word wrap" : "Enable word wrap"
-                  }
-                >
-                  <WrapText className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                <ActionBtn
-                  onClick={() => setMinimapEnabled(!minimapEnabled)}
-                  active={minimapEnabled}
-                  title={minimapEnabled ? "Hide minimap" : "Show minimap"}
-                >
-                  <MapIcon className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
-
-                <ActionBtn onClick={handleCopy} title="Copy file contents">
-                  {isCopied ? (
-                    <Check className="w-3.5 h-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </ActionBtn>
-              </div>
-            </div>
-
-            {/* ── Monaco editor ─────────────────────────────────────── */}
-            <div ref={editorWrapperRef} className="flex-1 min-h-0">
-              <SmallCodeEditor
-                key={editorKey}
-                path={editorPath}
-                language={monacoLanguage}
-                initialCode={currentFile.content}
-                onChange={handleUserContentChange}
-                mode={mode}
-                autoFormat={autoFormatOnOpen}
-                defaultWordWrap={defaultWordWrap}
-                height={editorHeight}
-                readOnly={!isEditing || currentFile.readOnly}
-                formatTrigger={formatTrigger}
-                controlledWordWrap={showWrapLines ? "on" : "off"}
-                controlledMinimap={minimapEnabled}
-                showFormatButton={false}
-                showCopyButton={false}
-                showResetButton={false}
-                showWordWrapToggle={false}
-                showMinimapToggle={false}
-              />
-            </div>
-          </>
-        ) : (
-          <EmptyState files={files} onOpenFile={handleOpenFile} />
-        )}
-
-        {/* ── Agent input footer ────────────────────────────────────── */}
-        <div className="px-2 py-2 border-t shrink-0 bg-background">
-          <SmartAgentInput
+      // ── Header chrome ──────────────────────────────────────────────────
+      // Left: active-file identity + "launching agent" indicator.
+      // Right: the editor action strip (edit/format/wrap/minimap/copy).
+      // Both read the already-hoisted `useCodeEditorWindowState` state, so the
+      // body stays content-only.
+      actionsLeft={
+        currentFile ? (
+          <ActiveFileIndicator
+            currentFile={currentFile}
             conversationId={conversationId}
-            sendButtonVariant="default"
-            uploadBucket="userContent"
-            uploadPath="code-editor-attachments"
-            enablePasteImages={true}
-            surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}
-            disableSend={!currentFile}
+          />
+        ) : undefined
+      }
+      actionsRight={
+        currentFile ? (
+          <EditorActionStrip
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            handleFormat={handleFormat}
+            showWrapLines={showWrapLines}
+            setShowWrapLines={setShowWrapLines}
+            minimapEnabled={minimapEnabled}
+            setMinimapEnabled={setMinimapEnabled}
+            handleCopy={handleCopy}
+            isCopied={isCopied}
+          />
+        ) : undefined
+      }
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+    >
+      {/* ── Body ──────────────────────────────────────────────────────────
+          Content only: the tab bar, the active file's editor, and the agent
+          composer the user types into. The editor toolbar + active-file
+          identity now live in the header slots (above).
+
+          The agent composer stays in the body (NOT the `footer` slot): the
+          WindowPanel footer bar hardcodes compact metadata-bar styling
+          (`text-xs`, `[&_button]:h-5`, `[&_svg]:h-3`) that would crush the
+          multi-row `SmartAgentInput` composer (36px send button, 14px icons,
+          textarea). A rich-footer escape hatch on WindowPanel is the missing
+          primitive — see FEATURE.md follow-up. The composer is the user's
+          input surface (like a chat composer), so it reads as content. */}
+      <CodeEditorTabBar
+        openTabs={openTabs}
+        activeTab={activeTab}
+        files={files}
+        onTabClick={selectTab}
+        onTabClose={handleCloseTab}
+      />
+
+      {currentFile ? (
+        <div ref={editorWrapperRef} className="flex-1 min-h-0">
+          <SmallCodeEditor
+            key={editorKey}
+            path={editorPath}
+            language={monacoLanguage}
+            initialCode={currentFile.content}
+            onChange={handleUserContentChange}
+            mode={mode}
+            autoFormat={autoFormatOnOpen}
+            defaultWordWrap={defaultWordWrap}
+            height={editorHeight}
+            readOnly={!isEditing || currentFile.readOnly}
+            formatTrigger={formatTrigger}
+            controlledWordWrap={showWrapLines ? "on" : "off"}
+            controlledMinimap={minimapEnabled}
+            showFormatButton={false}
+            showCopyButton={false}
+            showResetButton={false}
+            showWordWrapToggle={false}
+            showMinimapToggle={false}
           />
         </div>
+      ) : (
+        <EmptyState files={files} onOpenFile={handleOpenFile} />
+      )}
+
+      {/* Agent composer — the user's input surface for the embedded agent. */}
+      <div className="px-2 py-2 border-t shrink-0 bg-background">
+        <SmartAgentInput
+          conversationId={conversationId}
+          sendButtonVariant="default"
+          uploadBucket="userContent"
+          uploadPath="code-editor-attachments"
+          enablePasteImages={true}
+          surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}
+          disableSend={!currentFile}
+        />
       </div>
     </WindowPanel>
+  );
+}
+
+// ─── Header units (slot content) ──────────────────────────────────────────────
+
+/** `actionsLeft` slot — active-file identity + agent-launch indicator. */
+function ActiveFileIndicator({
+  currentFile,
+  conversationId,
+}: {
+  currentFile: CodeFile;
+  conversationId: string | null;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+      <span className="shrink-0">
+        {getLanguageIconNode(currentFile.language, false, currentFile.icon)}
+      </span>
+      <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate font-mono">
+        {currentFile.path}
+      </span>
+      {!conversationId && (
+        <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-2 shrink-0">
+          <CircleDot className="w-3 h-3" /> Launching agent…
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** `actionsRight` slot — the editor action strip. */
+function EditorActionStrip({
+  isEditing,
+  setIsEditing,
+  handleFormat,
+  showWrapLines,
+  setShowWrapLines,
+  minimapEnabled,
+  setMinimapEnabled,
+  handleCopy,
+  isCopied,
+}: {
+  isEditing: boolean;
+  setIsEditing: (next: boolean) => void;
+  handleFormat: () => void;
+  showWrapLines: boolean;
+  setShowWrapLines: (next: boolean) => void;
+  minimapEnabled: boolean;
+  setMinimapEnabled: (next: boolean) => void;
+  handleCopy: () => void;
+  isCopied: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 shrink-0">
+      <ActionBtn
+        onClick={() => setIsEditing(!isEditing)}
+        active={isEditing}
+        title={isEditing ? "Switch to read-only" : "Edit file"}
+      >
+        {isEditing ? (
+          <Eye className="w-3.5 h-3.5" />
+        ) : (
+          <Pencil className="w-3.5 h-3.5" />
+        )}
+      </ActionBtn>
+
+      <ActionBtn
+        onClick={handleFormat}
+        disabled={!isEditing}
+        title="Format document"
+      >
+        <Zap className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
+
+      <ActionBtn
+        onClick={() => setShowWrapLines(!showWrapLines)}
+        active={showWrapLines}
+        title={showWrapLines ? "Disable word wrap" : "Enable word wrap"}
+      >
+        <WrapText className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      <ActionBtn
+        onClick={() => setMinimapEnabled(!minimapEnabled)}
+        active={minimapEnabled}
+        title={minimapEnabled ? "Hide minimap" : "Show minimap"}
+      >
+        <MapIcon className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
+
+      <ActionBtn onClick={handleCopy} title="Copy file contents">
+        {isCopied ? (
+          <Check className="w-3.5 h-3.5 text-green-500" />
+        ) : (
+          <Copy className="w-3.5 h-3.5" />
+        )}
+      </ActionBtn>
+    </div>
   );
 }
 

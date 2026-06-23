@@ -5,13 +5,17 @@
  *
  * Floating multi-file code editor window built on WindowPanel.
  *
- * Architecture:
+ * Architecture (thin composition root — mirrors NotesWindow / FeedbackWindow):
  *  - WindowPanel provides: title bar, drag/resize, maximize/minimize, native
  *    resizable sidebar (file explorer), persistence to window_sessions.
- *  - CodeEditorTabBar: VS Code-style tab strip showing open files.
+ *  - useCodeEditorWindowState: all tab + editor state, owned HERE at the root so
+ *    both the header toolbar and the body editor read/write the same state — no
+ *    dependency on the standalone MultiFileCodeEditor's hook.
+ *  - Slots map onto WindowPanel: the active file's icon + path → `titleNode`,
+ *    the edit/format/wrap/minimap/copy/save toolbar → `actionsRight`
+ *    (CodeEditorActions). The body holds ONLY content: the tab strip + editor.
+ *  - CodeEditorTabBar: VS Code-style tab strip showing open files (body content).
  *  - SmallCodeEditor: Monaco editor using multi-model paths (no remount on tab switch).
- *  - useCodeEditorWindowState: all tab + editor state — no dependency on
- *    the standalone MultiFileCodeEditor's hook.
  *
  * Opening the window:
  *   dispatch(openOverlay({
@@ -32,7 +36,6 @@ import {
   Check,
   WrapText,
   Map,
-  AlignLeft,
   Zap,
   FolderOpen,
   Save,
@@ -148,6 +151,13 @@ export function CodeEditorWindow({
     <WindowPanel
       id={`code-editor-window-${windowInstanceId}`}
       title={title ?? "Code Editor"}
+      // Title area shows the active file's language icon + path (was an in-body
+      // strip). Falls back to the plain title string when no file is open.
+      titleNode={
+        currentFile ? (
+          <CodeEditorTitle file={currentFile} fallbackTitle={title} />
+        ) : undefined
+      }
       overlayId="codeEditorWindow"
       minWidth={560}
       minHeight={360}
@@ -169,136 +179,197 @@ export function CodeEditorWindow({
       sidebarMinSize={140}
       sidebarExpandsWindow
       defaultSidebarOpen={true}
-      bodyClassName="p-0 overflow-hidden"
+      // Editor toolbar (toggles + save status) lives in the header, not the body.
+      // All state it reads/writes is owned by the root via useCodeEditorWindowState.
+      actionsRight={
+        currentFile ? (
+          <CodeEditorActions
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            showWrapLines={showWrapLines}
+            setShowWrapLines={setShowWrapLines}
+            minimapEnabled={minimapEnabled}
+            setMinimapEnabled={setMinimapEnabled}
+            isCopied={isCopied}
+            handleCopy={handleCopy}
+            handleFormat={handleFormat}
+            isPersisted={isPersisted}
+            isDirty={isDirty}
+            isSaving={isSaving}
+            saveError={saveError}
+            handleSaveNow={handleSaveNow}
+          />
+        ) : undefined
+      }
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* ── Tab bar ─────────────────────────────────────────────────── */}
-        <CodeEditorTabBar
-          openTabs={openTabs}
-          activeTab={activeTab}
-          files={files}
-          onTabClick={selectTab}
-          onTabClose={closeTab}
-        />
+      {/* Body = content only: the tab strip + the editor (or empty state). */}
+      <CodeEditorTabBar
+        openTabs={openTabs}
+        activeTab={activeTab}
+        files={files}
+        onTabClick={selectTab}
+        onTabClose={closeTab}
+      />
 
-        {currentFile ? (
-          <>
-            {/* ── Action strip ──────────────────────────────────────── */}
-            <div className="flex items-center justify-between px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border-b border-gray-300 dark:border-gray-700 shrink-0 gap-2">
-              {/* Left: language icon + file path */}
-              <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                <span className="shrink-0">
-                  {getLanguageIconNode(
-                    currentFile.language,
-                    false,
-                    currentFile.icon,
-                  )}
-                </span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate font-mono">
-                  {currentFile.path}
-                </span>
-              </div>
-
-              {/* Right: action buttons */}
-              <div className="flex items-center gap-0.5 shrink-0">
-                {/* Save status (persisted mode only) */}
-                {isPersisted ? (
-                  <SaveStatusIndicator
-                    dirty={isDirty}
-                    saving={isSaving}
-                    error={saveError}
-                    onSave={handleSaveNow}
-                  />
-                ) : null}
-
-                {/* Edit / View toggle */}
-                <ActionBtn
-                  onClick={() => setIsEditing(!isEditing)}
-                  active={isEditing}
-                  title={isEditing ? "Switch to read-only" : "Edit file"}
-                >
-                  {isEditing ? (
-                    <Eye className="w-3.5 h-3.5" />
-                  ) : (
-                    <Pencil className="w-3.5 h-3.5" />
-                  )}
-                </ActionBtn>
-
-                {/* Format (only useful when editing) */}
-                <ActionBtn
-                  onClick={handleFormat}
-                  disabled={!isEditing}
-                  title="Format document"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                {/* Divider */}
-                <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
-
-                {/* Word wrap */}
-                <ActionBtn
-                  onClick={() => setShowWrapLines(!showWrapLines)}
-                  active={showWrapLines}
-                  title={
-                    showWrapLines ? "Disable word wrap" : "Enable word wrap"
-                  }
-                >
-                  <WrapText className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                {/* Minimap */}
-                <ActionBtn
-                  onClick={() => setMinimapEnabled(!minimapEnabled)}
-                  active={minimapEnabled}
-                  title={minimapEnabled ? "Hide minimap" : "Show minimap"}
-                >
-                  <Map className="w-3.5 h-3.5" />
-                </ActionBtn>
-
-                {/* Divider */}
-                <span className="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-0.5" />
-
-                {/* Copy */}
-                <ActionBtn onClick={handleCopy} title="Copy file contents">
-                  {isCopied ? (
-                    <Check className="w-3.5 h-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </ActionBtn>
-              </div>
-            </div>
-
-            {/* ── Monaco editor ─────────────────────────────────────── */}
-            <div ref={editorWrapperRef} className="flex-1 min-h-0">
-              <SmallCodeEditor
-                path={editorPath}
-                language={monacoLanguage}
-                initialCode={currentFile.content}
-                onChange={handleContentChange}
-                mode={mode}
-                autoFormat={autoFormatOnOpen}
-                defaultWordWrap={defaultWordWrap}
-                height={editorHeight}
-                readOnly={!isEditing || currentFile.readOnly}
-                formatTrigger={formatTrigger}
-                controlledWordWrap={showWrapLines ? "on" : "off"}
-                controlledMinimap={minimapEnabled}
-                showFormatButton={false}
-                showCopyButton={false}
-                showResetButton={false}
-                showWordWrapToggle={false}
-                showMinimapToggle={false}
-              />
-            </div>
-          </>
-        ) : (
-          /* ── Empty state ────────────────────────────────────────────── */
-          <EmptyState files={files} onOpenFile={openFile} />
-        )}
-      </div>
+      {currentFile ? (
+        <div ref={editorWrapperRef} className="flex-1 min-h-0">
+          <SmallCodeEditor
+            path={editorPath}
+            language={monacoLanguage}
+            initialCode={currentFile.content}
+            onChange={handleContentChange}
+            mode={mode}
+            autoFormat={autoFormatOnOpen}
+            defaultWordWrap={defaultWordWrap}
+            height={editorHeight}
+            readOnly={!isEditing || currentFile.readOnly}
+            formatTrigger={formatTrigger}
+            controlledWordWrap={showWrapLines ? "on" : "off"}
+            controlledMinimap={minimapEnabled}
+            showFormatButton={false}
+            showCopyButton={false}
+            showResetButton={false}
+            showWordWrapToggle={false}
+            showMinimapToggle={false}
+          />
+        </div>
+      ) : (
+        <EmptyState files={files} onOpenFile={openFile} />
+      )}
     </WindowPanel>
+  );
+}
+
+// ─── Title node — language icon + file path (header titleNode slot) ────────────
+// Reads only the active file. Compact + truncating so it sits inside the
+// absolute-centered title zone without crowding the header actions.
+
+function CodeEditorTitle({
+  file,
+  fallbackTitle,
+}: {
+  file: CodeFile;
+  fallbackTitle?: string | null;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+      <span className="shrink-0">
+        {getLanguageIconNode(file.language, false, file.icon)}
+      </span>
+      <span
+        className="text-[11px] text-muted-foreground truncate font-mono"
+        title={file.path || fallbackTitle || undefined}
+      >
+        {file.path}
+      </span>
+    </div>
+  );
+}
+
+// ─── Editor actions — toolbar unit (header actionsRight slot) ──────────────────
+// Every control is fed the already-hoisted state from useCodeEditorWindowState
+// (owned by the window root), so the header toolbar and the body editor stay in
+// lock-step. Behavior is identical to the former in-body action strip.
+
+function CodeEditorActions({
+  isEditing,
+  setIsEditing,
+  showWrapLines,
+  setShowWrapLines,
+  minimapEnabled,
+  setMinimapEnabled,
+  isCopied,
+  handleCopy,
+  handleFormat,
+  isPersisted,
+  isDirty,
+  isSaving,
+  saveError,
+  handleSaveNow,
+}: {
+  isEditing: boolean;
+  setIsEditing: (v: boolean) => void;
+  showWrapLines: boolean;
+  setShowWrapLines: (v: boolean) => void;
+  minimapEnabled: boolean;
+  setMinimapEnabled: (v: boolean) => void;
+  isCopied: boolean;
+  handleCopy: () => void;
+  handleFormat: () => void;
+  isPersisted: boolean;
+  isDirty: boolean;
+  isSaving: boolean;
+  saveError: string | null;
+  handleSaveNow: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {/* Save status (persisted mode only) */}
+      {isPersisted ? (
+        <SaveStatusIndicator
+          dirty={isDirty}
+          saving={isSaving}
+          error={saveError}
+          onSave={handleSaveNow}
+        />
+      ) : null}
+
+      {/* Edit / View toggle */}
+      <ActionBtn
+        onClick={() => setIsEditing(!isEditing)}
+        active={isEditing}
+        title={isEditing ? "Switch to read-only" : "Edit file"}
+      >
+        {isEditing ? (
+          <Eye className="w-3.5 h-3.5" />
+        ) : (
+          <Pencil className="w-3.5 h-3.5" />
+        )}
+      </ActionBtn>
+
+      {/* Format (only useful when editing) */}
+      <ActionBtn
+        onClick={handleFormat}
+        disabled={!isEditing}
+        title="Format document"
+      >
+        <Zap className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      {/* Divider */}
+      <span className="w-px h-4 bg-border mx-0.5" />
+
+      {/* Word wrap */}
+      <ActionBtn
+        onClick={() => setShowWrapLines(!showWrapLines)}
+        active={showWrapLines}
+        title={showWrapLines ? "Disable word wrap" : "Enable word wrap"}
+      >
+        <WrapText className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      {/* Minimap */}
+      <ActionBtn
+        onClick={() => setMinimapEnabled(!minimapEnabled)}
+        active={minimapEnabled}
+        title={minimapEnabled ? "Hide minimap" : "Show minimap"}
+      >
+        <Map className="w-3.5 h-3.5" />
+      </ActionBtn>
+
+      {/* Divider */}
+      <span className="w-px h-4 bg-border mx-0.5" />
+
+      {/* Copy */}
+      <ActionBtn onClick={handleCopy} title="Copy file contents">
+        {isCopied ? (
+          <Check className="w-3.5 h-3.5 text-green-500" />
+        ) : (
+          <Copy className="w-3.5 h-3.5" />
+        )}
+      </ActionBtn>
+    </div>
   );
 }
 
