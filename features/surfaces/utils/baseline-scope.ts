@@ -20,6 +20,16 @@
  * The floor is non-destructive: a key the surface DID emit (even an empty
  * string it deliberately set) is left exactly as-is — only missing keys are
  * filled.
+ *
+ * Consequence — `required` is a no-op for baseline values, by design. Because
+ * the 5 baseline keys are ALWAYS floored to a value at launch, a mapping of
+ * `mapType: "surface_value", required: true` that targets a baseline key is
+ * effectively always satisfied: the empty floor (`""` / `{}`) counts as a
+ * present value, so the "required" check never fails even on a surface that
+ * emitted nothing for it. This is intentional — the "generic values are always
+ * available" guarantee deliberately wins over per-mapping `required`. Do NOT
+ * "fix" this by skipping the floor for required mappings; that would
+ * reintroduce the blind-binding regression this floor exists to kill.
  */
 
 import type { ApplicationScope } from "@/features/agents/types/scope.types";

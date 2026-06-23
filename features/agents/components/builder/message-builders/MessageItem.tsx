@@ -757,6 +757,10 @@ export function MessageItem({
               ref={textareaRef}
               surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
               getApplicationScope={getApplicationScope}
+              // The right-click UnifiedAgentContextMenu already provides
+              // bound-agent launches; the ProTextarea hover "…" menu would blur
+              // the textarea on open → handleBlur unmounts the editor mid-click.
+              enableBoundAgents={false}
               value={currentText}
               onChange={handleChange}
               onKeyDown={handleKeyDown}

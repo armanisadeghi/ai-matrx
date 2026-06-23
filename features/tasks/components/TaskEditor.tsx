@@ -957,13 +957,20 @@ function TaskEditorInner({
               </div>
             ) : comments.length > 0 ? (
               // Presentational region — right-click the read-only comment
-              // thread to run an agent over the displayed text (no text-replace
-              // callbacks; this view is not editable).
+              // thread to run an agent over the COMMENTS (no text-replace
+              // callbacks; this view is not editable). It must NOT reuse the
+              // description-based `getApplicationScope` (that would launch the
+              // agent over the description textarea's content/selection, not
+              // the comments). Instead the surface scope's `content` is the
+              // joined comment thread; the menu captures any live DOM text
+              // selection itself at launch.
               <UnifiedAgentContextMenu
                 {...TASKS_CONTEXT_MENU_PROPS}
                 isEditable={false}
-                getApplicationScope={getApplicationScope}
-                contextData={contextData}
+                contextData={{
+                  ...contextData,
+                  content: comments.map((c) => c.content).join("\n\n"),
+                }}
               >
                 <div className="mb-2 space-y-1.5 pl-1.5">
                   {comments.map((c) => (

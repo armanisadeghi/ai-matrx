@@ -772,6 +772,11 @@ export function SystemMessage({
                 ref={systemTextareaRef}
                 surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
                 getApplicationScope={getApplicationScope}
+                // Click-to-edit field: opening the hover "…" bound-agents menu
+                // blurs the textarea → handleBlur collapses edit mode mid-click.
+                // The right-click UnifiedAgentContextMenu already offers bound
+                // agents, so nothing is lost.
+                enableBoundAgents={false}
                 value={developerMessage}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}

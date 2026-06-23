@@ -384,6 +384,9 @@ export function TranscriptViewer() {
               placeholder="Description"
               rows={2}
               className="text-sm"
+              // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
+              // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
+              style={{ fontSize: "16px" }}
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleUpdateMetadata}>
@@ -613,6 +616,9 @@ export function TranscriptViewer() {
                 rows={16}
                 className="text-sm leading-relaxed min-h-[40dvh] resize-y"
                 disabled={contentSaveBusy}
+                // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS
+                // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
+                style={{ fontSize: "16px" }}
               />
             </UnifiedAgentContextMenu>
             <div className="flex gap-2">

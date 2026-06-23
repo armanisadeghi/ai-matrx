@@ -43,7 +43,6 @@ import {
   buildNotesEditorContextData,
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 
 // Dynamic imports for heavy components (only load when needed)
@@ -71,10 +70,6 @@ const UnifiedAgentContextMenu = dynamic(
 );
 
 type EditorMode = "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
-
-// Note-specific menu items (Save / Export / Move / Delete) injected via
-// `extraSections` — built once at module scope, exactly as NotesDemoPanel does.
-const notesExtras = createNotesEditorExtraSections();
 
 // This editor's local mode names predate the canonical `matrx-user/notes`
 // surface vocabulary (`SurfaceEditorMode`). Map local → surface so the emitted
@@ -700,7 +695,6 @@ export function NoteEditor({
             getTextarea={() => textareaRef.current}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
-            extraSections={notesExtras}
             onTextReplace={(newText) => {
               const textarea = textareaRef.current;
               if (textarea) {
@@ -783,7 +777,6 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
-            extraSections={notesExtras}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
                 const editor = tuiEditorRef.current.getInstance();
@@ -827,7 +820,6 @@ export function NoteEditor({
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
-            extraSections={notesExtras}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
                 const editor = tuiEditorRef.current.getInstance();

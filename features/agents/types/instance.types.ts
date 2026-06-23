@@ -94,7 +94,6 @@ export type SourceFeature =
   | "scraper"
   | "files"
   | "projects"
-  | "rag-search"
   | "documents"
   | "data-tables"
   | "lists"

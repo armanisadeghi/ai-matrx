@@ -5,23 +5,26 @@ import type { ScrapedDetailTabId } from "@/features/scraper/parts/ScrapedResultD
 
 /**
  * Placements offered by the scraper context menu (target wiring with
- * surfaceName). Mirrors the notes editor set — agent actions, content-block
- * inserts (for the editable config region), and quick actions.
+ * surfaceName) — agent actions and quick actions.
+ *
+ * `content-block` (insert a template at the cursor) is intentionally excluded:
+ * the config-region menus pass `getTextarea={() => null}` (the URL / keyword
+ * fields are single-line ProInputs, not an editable textarea) and the results
+ * region is read-only, so a content-block row would have nowhere to insert and
+ * silently no-op.
  */
 export const SCRAPER_CONTEXT_MENU_PLACEMENTS = [
   PLACEMENT_TYPES.AI_ACTION,
-  PLACEMENT_TYPES.CONTENT_BLOCK,
   PLACEMENT_TYPES.QUICK_ACTION,
 ] as const;
 
 /**
  * Shared menu props for `matrx-user/scraper`.
  *
- * `sourceFeature` — no `scraper` literal exists in `SourceFeature`
- * (`features/agents/types/instance.types.ts`); `"research"` is the closest
- * valid one (Research is the umbrella web pipeline that consumes the scraper).
- * Flagged to the orchestrator — add a `"scraper"` literal if traces should
- * attribute the scraper distinctly.
+ * `sourceFeature` is trace-attribution only; `surfaceName` is what drives
+ * surface-binding resolution. `"scraper"` is the surface's own attribution
+ * literal in the `SourceFeature` union
+ * (`features/agents/types/instance.types.ts`).
  *
  * `isEditable` defaults to `true` here (the editable URL / keyword config
  * region); the presentational results region passes `isEditable={false}`.

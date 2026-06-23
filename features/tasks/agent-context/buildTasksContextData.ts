@@ -16,11 +16,8 @@ export const TASKS_CONTEXT_MENU_PLACEMENTS = [
  * Shared menu props — target state for `/tasks` (the `matrx-user/tasks` surface).
  *
  * `sourceFeature` is trace-attribution only; `surfaceName` is what drives
- * surface-binding resolution. The `SourceFeature` union (in `features/agents/`)
- * has no dedicated `"tasks"` member yet — only `"task-create"` (the create
- * panel). We reuse `"task-create"` so traces stay in the task domain; adding a
- * dedicated `"tasks"` member is a tracked follow-up (out of this surface's
- * file scope). See the Notes precedent (`"notes"`).
+ * surface-binding resolution. `"tasks"` is the surface's own attribution
+ * literal in the `SourceFeature` union (`features/agents/`).
  */
 export const TASKS_CONTEXT_MENU_PROPS = {
   sourceFeature: "tasks" as const,

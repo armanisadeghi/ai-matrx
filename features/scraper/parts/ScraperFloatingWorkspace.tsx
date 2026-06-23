@@ -515,6 +515,7 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
             {...SCRAPER_CONTEXT_MENU_PROPS}
             getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
+            onTextReplace={setUrl}
             contextData={contextData}
           >
             <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
@@ -563,6 +564,7 @@ export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
             {...SCRAPER_CONTEXT_MENU_PROPS}
             getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
+            onTextReplace={setKeyword}
             contextData={contextData}
           >
             <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">

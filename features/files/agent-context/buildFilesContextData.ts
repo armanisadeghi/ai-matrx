@@ -18,11 +18,10 @@ export const FILES_CONTEXT_MENU_PLACEMENTS = [
 /**
  * Shared menu props for `matrx-user/files`.
  *
- * `sourceFeature` has no dedicated `"files"` literal in `SourceFeature`
- * (`features/agents/types/instance.types.ts`), so we use the closest valid
- * one — `"programmatic"` (triggered directly from application code). See the
- * Andon-cord note in the task report: the union should gain a `"files"`
- * literal, but that file is out of scope for this surface-wiring change.
+ * `sourceFeature` is trace-attribution only; `surfaceName` is what drives
+ * surface-binding resolution. `"files"` is the surface's own attribution
+ * literal in the `SourceFeature` union
+ * (`features/agents/types/instance.types.ts`).
  */
 export const FILES_CONTEXT_MENU_PROPS = {
   sourceFeature: "files" as const,

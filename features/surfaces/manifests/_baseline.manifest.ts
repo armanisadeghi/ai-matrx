@@ -102,6 +102,11 @@ export function mergeBaselineValues(
  * empty value. That uniformity is what makes generic, surface-agnostic agents
  * (clean-up, "help with this", summarize) work everywhere without per-surface
  * remapping — the whole reason the baseline set exists.
+ *
+ * Because of that always-present floor, `mapType: "surface_value",
+ * required: true` is a no-op against any of these keys — the empty floor counts
+ * as satisfied, so `required` never fails for a baseline value (by design). See
+ * `withBaselineScope` for the full rationale.
  */
 export const BASELINE_VALUE_NAMES = Object.keys(BASELINE_VALUES) as BaselineKey[];
 

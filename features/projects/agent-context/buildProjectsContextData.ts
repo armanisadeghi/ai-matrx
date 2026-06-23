@@ -29,12 +29,8 @@ export const PROJECTS_CONTEXT_MENU_PLACEMENT_MODE: PlacementMode = {
  * Shared menu props for `matrx-user/projects` (editable + presentational).
  *
  * `sourceFeature` is trace-attribution only; `surfaceName` is what drives
- * surface-binding resolution. The `SourceFeature` union (in `features/agents/`)
- * has no dedicated `"projects"` member yet — the closest valid one is
- * `"project-create"` (the "Use AI" tab of the create-project panel). We reuse
- * it so traces stay in the project domain; adding a dedicated `"projects"`
- * member is a tracked follow-up (out of this surface's file scope). This
- * mirrors the Tasks precedent, which reuses `"task-create"`.
+ * surface-binding resolution. `"projects"` is the surface's own attribution
+ * literal in the `SourceFeature` union (`features/agents/`).
  *
  * `isEditable` is intentionally NOT baked in here — each mount passes its own
  * (`true` on the editable region, `false` on the presentational one).

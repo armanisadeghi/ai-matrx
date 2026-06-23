@@ -10,7 +10,10 @@
  *
  * - **Voice input** — mic toggle with live streaming transcription, audio-level
  *   glow, and a recording-protection modal that warns before unmount while a
- *   recording or transcription is in flight.
+ *   recording or transcription is in flight. ON by default; pass
+ *   `enableVoice={false}` to hide the mic + all recording/transcribing
+ *   indicators when the host owns recording itself (e.g. a pad whose own
+ *   toolbar mic streams into this same controlled value).
  * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
  *   agent actions (Clean up, Help with this…, Custom Agent). It floats over the
  *   text (no reserved right gutter) and only appears while the mouse is over
@@ -145,6 +148,13 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   onTranscriptionError?: (error: string) => void;
   /** If true, appends to existing text; if false, replaces. Default: true. */
   appendTranscript?: boolean;
+  /**
+   * Voice input (mic control + recording/transcribing indicators). ON by
+   * default. Pass `false` when the host owns recording itself (e.g. a pad with
+   * its own toolbar mic streaming into this same controlled value) — a second
+   * mic would clobber the text. Default true = zero behavior change.
+   */
+  enableVoice?: boolean;
   autoGrow?: boolean;
   minHeight?: number;
   maxHeight?: number;
@@ -238,6 +248,7 @@ export const ProTextarea = React.forwardRef<
       onTranscriptionComplete,
       onTranscriptionError,
       appendTranscript = true,
+      enableVoice = true,
       autoGrow = false,
       minHeight,
       maxHeight,
@@ -888,7 +899,7 @@ export const ProTextarea = React.forwardRef<
               : "opacity-0 pointer-events-none",
           )}
         >
-          {isAudioAvailable && (
+          {enableVoice && isAudioAvailable && (
             <div className="relative">
               {/* Recording pulse + audio-level glow, sized to match the visible
                   pill (h-8 w-8) and centered inside the 44×44 tap area via
@@ -1081,7 +1092,7 @@ export const ProTextarea = React.forwardRef<
           </div>
         )}
 
-        {isRecording && (
+        {enableVoice && isRecording && (
           <div
             className={cn(
               "absolute left-2 bottom-2 flex items-center gap-1.5 px-2 py-1 bg-primary/10 dark:bg-primary/15 rounded-md",
@@ -1102,7 +1113,7 @@ export const ProTextarea = React.forwardRef<
         )}
 
         {/* Transcribing Indicator (finalizing after recording stops) */}
-        {isTranscribing && !isRecording && (
+        {enableVoice && isTranscribing && !isRecording && (
           <div className="absolute left-2 bottom-2 flex items-center gap-1.5 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-md">
             <Loader2 className="w-3 h-3 animate-spin text-blue-600 dark:text-blue-400" />
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
