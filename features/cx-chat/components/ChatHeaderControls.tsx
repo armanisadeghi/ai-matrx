@@ -48,7 +48,7 @@ export default function ChatHeaderControls() {
 
   // Derive conversationId from URL — header only needs it for the share button.
   const conversationId = (() => {
-    const pathMatch = pathname.match(/\/ssr\/chat\/c\/([^/?]+)/);
+    const pathMatch = pathname.match(/\/demos\/chat\/c\/([^/?]+)/);
     return pathMatch?.[1] ?? searchParams.get("conversation") ?? null;
   })();
 

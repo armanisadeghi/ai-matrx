@@ -27,7 +27,7 @@ export default function ChatMobileAgentName() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const agentIdFromUrl = (() => {
-    const pathMatch = pathname.match(/\/ssr\/chat\/a\/([^/?]+)/);
+    const pathMatch = pathname.match(/\/demos\/chat\/a\/([^/?]+)/);
     return pathMatch?.[1] ?? searchParams.get("agent") ?? undefined;
   })();
 

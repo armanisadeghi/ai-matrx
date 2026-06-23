@@ -2,7 +2,7 @@
 -- get_ssr_shell_data(p_user_id uuid)
 -- ============================================================
 -- Single RPC that replaces 4–5 separate DB fetches at SSR time.
--- Called once in app/(ssr)/layout.tsx after auth.getUser().
+-- Called client-side from DeferredShellData after auth resolves.
 -- Returns everything needed to fully hydrate the lite Redux store
 -- before the first HTML byte is sent to the client.
 --
@@ -84,4 +84,4 @@ GRANT EXECUTE ON FUNCTION public.get_ssr_shell_data(uuid) TO authenticated;
 COMMENT ON FUNCTION public.get_ssr_shell_data(uuid) IS
 'Single RPC for SSR shell hydration. Fetches user session (admin + preferences),
 AI models, context menu rows, and SMS unread count in one DB round-trip.
-Called server-side in app/(ssr)/layout.tsx to pre-populate the lite Redux store.';
+Called client-side from DeferredShellData to warm the lite Redux store context-menu cache.';

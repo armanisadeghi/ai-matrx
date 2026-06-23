@@ -151,7 +151,7 @@ One-time SQL: [migrations/migrate_prompt_apps_to_aga_apps.sql](../../migrations/
 ## 1.12 Block 6 — Convenience polish
 
 - **QuickHtmlShareModal** — copied verbatim to [features/agent-apps/components/QuickHtmlShareModal.tsx](components/QuickHtmlShareModal.tsx). No prompt-specific logic; pure markdown→standalone-HTML utility. Ready to wire into the runtime menu when the consumer surface is ready.
-- **Warm callsite migration** — every hand-rolled `fetch(${BACKEND_URLS.production}${ENDPOINTS.ai.{agent,conversation}Warm(...)})` in `app/(public)/p/chat/{a,c}/[id]/page.tsx` and `app/(ssr)/ssr/chat/**/page.tsx` now goes through [lib/api/warm-helpers.ts](../../lib/api/warm-helpers.ts) (`warmAgent` / `warmConversation`). The two demo-page references (api-tests/agent, matrx-ai/agent-demo) were intentionally left as-is — they're test surfaces, not production paths.
+- **Warm callsite migration** — every hand-rolled `fetch(${BACKEND_URLS.production}${ENDPOINTS.ai.{agent,conversation}Warm(...)})` in `app/(public)/p/chat/{a,c}/[id]/page.tsx` and `app/(dev)/demos/chat/**/page.tsx` now goes through [lib/api/warm-helpers.ts](../../lib/api/warm-helpers.ts) (`warmAgent` / `warmConversation`). The two demo-page references (api-tests/agent, matrx-ai/agent-demo) were intentionally left as-is — they're test surfaces, not production paths.
 - **The legacy `appWarm(promptId)` call in `app/(public)/p/[slug]/page.tsx`** stays put. It only fires on the prompt-app fallback path, and that path itself is going away with the prompt-apps deletion (Phases 16–18). No work to do.
 
 ## 1.13 Block 7 — The 7 skipped apps
@@ -274,7 +274,7 @@ those two thunks can stay stubbed until then.
 | # | Gap | Source | Target |
 |---|---|---|---|
 | N1 | HTML embed export modal — generates standalone HTML for sharing app responses on external sites. | [QuickHtmlShareModal.tsx](../prompt-apps/components/QuickHtmlShareModal.tsx) | `features/agent-apps/components/QuickHtmlShareModal.tsx` |
-| N2 | Migrate the 5 remaining hand-rolled warm-fetch callsites to use [lib/api/warm-helpers.ts](../../lib/api/warm-helpers.ts) so the in-header server picker is honored everywhere. | `app/(public)/p/chat/{a,c}/[id]/page.tsx`, `app/(ssr)/ssr/chat/**/page.tsx` | replace with `warmAgent` / `warmConversation` |
+| N2 | Migrate the 5 remaining hand-rolled warm-fetch callsites to use [lib/api/warm-helpers.ts](../../lib/api/warm-helpers.ts) so the in-header server picker is honored everywhere. | `app/(public)/p/chat/{a,c}/[id]/page.tsx`, `app/(dev)/demos/chat/**/page.tsx` | replace with `warmAgent` / `warmConversation` |
 | N3 | Patch the 7 skipped apps' `variable_schema` field names so they match the agent's `variable_definitions`, then re-run the migration script (idempotent). | per audit table above | manual SQL or admin UI |
 | N4 | Tag management UI in the admin apps list. | (no prompt-apps equivalent; small future polish) | — |
 

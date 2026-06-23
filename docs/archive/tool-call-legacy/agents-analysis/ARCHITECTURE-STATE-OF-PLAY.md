@@ -261,7 +261,7 @@ They do NOT dual-load the same conversation — each route/surface picks one sys
 
 ### System A: Agent Execution System (the active, primary system)
 
-**Route**: `/ssr/chat/c/[conversationId]`
+**Route**: `/demos/chat/c/[conversationId]`
 **Orchestrator**: `ChatInstanceManager`
 **Slices**: `instanceConversationHistory` + `activeRequests` + `instanceUIState` + `instanceUserInput` + `conversationFocus`
 **DB Query**: Direct Supabase client → `cx_message` only
@@ -374,7 +374,7 @@ instanceConversationHistory.turns.push({
 ## 7. Data Flow: DB Load (History)
 
 ```
-User navigates to /ssr/chat/c/[conversationId]
+User navigates to /demos/chat/c/[conversationId]
   ↓
 Server Component renders <ChatInstanceManager conversationId={id}>
   ↓

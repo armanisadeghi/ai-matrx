@@ -91,7 +91,7 @@ The app code has **no DDL path** (Supabase JS / PostgREST only). Agents apply DD
 
 ### Route groups (2026-05-26 reorg)
 
-The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
+The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
 
 | Group | Purpose | URL | Build |
 |---|---|---|---|
@@ -99,15 +99,15 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 | `(admin)` | **Production admin.** Super-admin gated at layout level. | `/administration/*` | always |
 | `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
 | `(legacy)` | **Entity-bound legacy.** Own `EntityProviders` store (full entity system). | `/legacy/*` | always |
-| `(ssr)` | **SSR shell.** Own `LiteStoreProvider` + glass shell; demos needing it. | `/demos/ssr/*` | always |
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` only |
+| `(public-demos)` | **Public showcase demos.** No auth. | `/demos/public/*` | always |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
 | `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
 
-**"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store. `(ssr)` is no longer transitional (it serves `/demos/ssr/*`).
+**"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store.
 
-**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers every demo across `(dev)` + links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<cat>/<name>/page.dev.tsx`; SSR+glass → `(ssr)/demos/ssr/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
+**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
 
 **Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`.
 

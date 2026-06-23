@@ -6,7 +6,7 @@ Create a brand-new, fully isolated route group `(ssr)` with a 100% server-render
 
 **Route structure:** `app/(ssr)/dashboard` → accessible at `/dashboard` path (we'll use a different path to avoid collision - see below)
 
-**Collision avoidance:** Since `/dashboard` already exists under `(authenticated)`, we'll use the route prefix `ssr` as a segment: `app/(ssr)/ssr/dashboard/page.tsx` → accessible at `/ssr/dashboard`. This keeps it fully isolated.
+**Collision avoidance:** Since `/dashboard` already exists under `(authenticated)`, we'll use the route prefix `ssr` as a segment: `app/(dev)/demos/dashboard/page.tsx` → accessible at `/ssr/dashboard`. This keeps it fully isolated.
 
 ---
 

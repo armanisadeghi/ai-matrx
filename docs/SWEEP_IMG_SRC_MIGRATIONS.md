@@ -144,7 +144,7 @@ Grouped by reason. None of these belong in the migration sweep — listed so we 
 - `features/rag/components/documents/panes/PdfPane.tsx:55` — page-render data URL (check)
 - `features/window-panels/WindowTray/TrayChipPreview.tsx:149` — data URL snapshot
 - `features/image-studio/components/StudioFileCard.tsx:128`, `StudioVariantTile.tsx:188`, `EmbeddedImageStudio.tsx:640, 860, 971, 1220`, `CropPreview.tsx:283`, `CropStudioWindow.tsx:249`, `InitialCropPanel.tsx:629`, `Base64DecoderShell.tsx:359`, `modes/annotate/AnnotateModeShell.tsx:220` — in-progress edits, blob/dataURL
-- `app/(ssr)/ssr/demos/screen-capture/_components/FloatingCaptureDemo.tsx:118`, `ScreenCaptureDemo.tsx:27` — screenshot data URLs
+- `app/(dev)/demos/screen-capture/_components/FloatingCaptureDemo.tsx:118`, `ScreenCaptureDemo.tsx:27` — screenshot data URLs
 - `app/(public)/demos/local-tools/_lib/ResultPanel.tsx:51`, `system/page.tsx:369, 396`, `files/page.tsx:270` — local-tools demo data
 - `app/(authenticated)/(admin-auth)/administration/official-components/need-wrappers/screenshot-with-context.tsx:60`, `screenshot-demo.tsx:90, 100, 110` — screenshot demos
 - `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/paste-image-handler.tsx:170` — paste-handler demo

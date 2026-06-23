@@ -1,4 +1,4 @@
-// app/(ssr)/demos/chat/_lib/agents.ts
+// app/(dev)/demos/chat/_lib/agents.ts
 //
 // Hardcoded agent data for server-side rendering.
 // This avoids any DB call for the initial render. The client will

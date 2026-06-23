@@ -57,7 +57,7 @@ Each site replaced a hand-rolled `<img src=...>` with `<InlineMediaRef ref={...}
 | 10 | `features/prompt-apps/components/PromptAppEditor.tsx` (line 1023) | App favicon preview in the editor. Prompt-apps is legacy (being replaced by agent-apps), but the bypass is still customer-visible until that migration ships. |
 | 11 | `features/image-manager/components/ProfilePhotoTab.tsx` (line 73) | Current-avatar preview. Source is a `currentAvatar` URL string from Redux user metadata. |
 
-**Typecheck result after migrations:** 4 pre-existing errors (the canonical baseline at `app/(ssr)/ssr/context-menu/lab/page.tsx:513`, `features/files/upload/cloudUpload.ts:540`, `features/page-extraction/services/run-from-draft.ts:116`, `features/pdf-extractor/studio/PdfStudioMobile.tsx:336`). **Zero new errors introduced.**
+**Typecheck result after migrations:** 4 pre-existing errors (the canonical baseline at `app/(dev)/demos/context-menu/lab/page.tsx:513`, `features/files/upload/cloudUpload.ts:540`, `features/page-extraction/services/run-from-draft.ts:116`, `features/pdf-extractor/studio/PdfStudioMobile.tsx:336`). **Zero new errors introduced.**
 
 ---
 
@@ -92,8 +92,8 @@ These render content that is **not** a file in the `cld_files` sense — transie
 | File | Reason |
 |---|---|
 | `app/(a)/podcast/PodcastGrid.tsx:31` | Blurred backdrop layer behind an `<InlineMediaRef>` sibling — comment explicitly notes "stays as plain img so it stays layout-agnostic". |
-| `app/(ssr)/ssr/demos/screen-capture/_components/FloatingCaptureDemo.tsx:117` | `result.dataUrl` — in-memory screen-capture blob URL. |
-| `app/(ssr)/ssr/demos/screen-capture/_components/ScreenCaptureDemo.tsx:26` | Same pattern. |
+| `app/(dev)/demos/screen-capture/_components/FloatingCaptureDemo.tsx:117` | `result.dataUrl` — in-memory screen-capture blob URL. |
+| `app/(dev)/demos/screen-capture/_components/ScreenCaptureDemo.tsx:26` | Same pattern. |
 | `app/(public)/demos/local-tools/files/page.tsx:269`, `system/page.tsx:368,395`, `_lib/ResultPanel.tsx:50` | `data:${mediaType};base64,${base64}` from on-device tool results. |
 | `components/ssr/RouteIndexPage.tsx:79`, `components/ssr/route-display/GroupedCardsDisplay.tsx:40,90` | Favicon `data:` URIs synthesized at build time. |
 | `components/official/icons/IconResolver.tsx:530` | Static public SVG asset — design-system primitive. |

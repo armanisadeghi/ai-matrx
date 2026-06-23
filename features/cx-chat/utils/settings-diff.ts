@@ -1,4 +1,4 @@
-// app/(ssr)/demos/chat/_lib/settings-diff.ts
+// app/(dev)/demos/chat/_lib/settings-diff.ts
 //
 // Settings override diffing — computes the minimal set of overrides
 // to send to the API. Only settings that differ from the agent's

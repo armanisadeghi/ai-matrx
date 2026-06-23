@@ -32,7 +32,7 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 
 ## Surfaces (consumers of this feature)
 
-`/tools/pdf-extractor[/[id]]` (extractor studio + window-panel) · `/files/f/[id]` (viewer tabs) · `/files/f/[id]/studio` (Analysis Studio; mobile = stacked layout) · `/demos/ssr/pdf-processing/*` (27 live API test pages) · RAG `PdfPane` · code-editor preview · public-chat optimize prompt. All reachable from each other via `PdfSurfaceSwitcher`.
+`/tools/pdf-extractor[/[id]]` (extractor studio + window-panel) · `/files/f/[id]` (viewer tabs) · `/files/f/[id]/studio` (Analysis Studio; mobile = stacked layout) · `/demos/pdf-processing/*` (27 live API test pages) · RAG `PdfPane` · code-editor preview · public-chat optimize prompt. All reachable from each other via `PdfSurfaceSwitcher`.
 
 ## Invariants
 

@@ -46,9 +46,9 @@ Counts are **distinct files** that reference the symbol or mount the component (
 | **QuickNotesButton** | 0 | — |
 | **QuickNotesSheet** | 1 | `components/overlays/OverlayController.tsx` (dynamic import + `NotesProvider` wrapper) |
 | **CategoryNotesModal** | 2 | `app/(authenticated)/(admin-auth)/administration/official-components/component-displays/category-notes-modal.tsx`, `app/(authenticated)/(admin-auth)/administration/database/components/enhanced-sql-editor.tsx` |
-| **WindowNotesBody** | 1 | `app/(ssr)/ssr/demos/window-demo/window-bodies/NotesWindowBody.tsx` |
+| **WindowNotesBody** | 1 | `app/(dev)/demos/window-demo/window-bodies/NotesWindowBody.tsx` |
 | **NotesTreeView** | 2 | `features/notes/actions/WindowNotesBody.tsx`, `features/notes/actions/NotesWindow.tsx` |
-| **NotesWindow** | 2 | `app/(ssr)/ssr/demos/window-demo/page.tsx`, `features/notes/actions/SidebarNotesToggle.tsx` |
+| **NotesWindow** | 2 | `app/(dev)/demos/window-demo/page.tsx`, `features/notes/actions/SidebarNotesToggle.tsx` |
 | **SidebarNotesToggle** | 1 | `features/ssr-trials/components/Sidebar.tsx` |
 
 ### `openSaveToNotes` (same UX as QuickCaptureButton)

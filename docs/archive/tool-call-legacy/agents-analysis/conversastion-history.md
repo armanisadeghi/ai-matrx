@@ -90,10 +90,10 @@ Key facts:
 
 ## 2. How the SSR Chat Route Loads a Conversation
 
-### Route: `app/(ssr)/ssr/chat/c/[conversationId]/page.tsx`
+### Route: `app/(dev)/demos/chat/c/[conversationId]/page.tsx`
 
-```1:37:app/(ssr)/ssr/chat/c/[conversationId]/page.tsx
-// app/(ssr)/ssr/chat/c/[conversationId]/page.tsx — Active conversation view.
+```1:37:app/(dev)/demos/chat/c/[conversationId]/page.tsx
+// app/(dev)/demos/chat/c/[conversationId]/page.tsx — Active conversation view.
 
 import ChatHeaderControls from "@/features/cx-chat/components/ChatHeaderControls";
 import { ChatInstanceManager } from "@/features/cx-chat/components/ChatInstanceManager";
@@ -204,7 +204,7 @@ The flow is:
 
 **No, they are NOT — in the SSR chat route.** The two systems are completely separate:
 
-### SSR Chat Route (`/ssr/chat/c/[conversationId]`)
+### SSR Chat Route (`/demos/chat/c/[conversationId]`)
 - Uses `ChatInstanceManager` -> `fetchConversationHistory` 
 - Dispatches **only** to `instanceConversationHistory` slice
 - **Never touches** the `chatConversations` slice
@@ -403,15 +403,15 @@ When you click a conversation in the sidebar:
     (id: string) => {
       closeMobilePanel();
       const url = agentIdFromUrl
-        ? `/ssr/chat/c/${id}?agent=${agentIdFromUrl}`
-        : `/ssr/chat/c/${id}`;
+        ? `/demos/chat/c/${id}?agent=${agentIdFromUrl}`
+        : `/demos/chat/c/${id}`;
       router.push(url);
     },
     [router, agentIdFromUrl],
   );
 ```
 
-This triggers a **Next.js router navigation** to `/ssr/chat/c/[conversationId]`. The orchestration flow is:
+This triggers a **Next.js router navigation** to `/demos/chat/c/[conversationId]`. The orchestration flow is:
 
 1. **`router.push`** navigates to the conversation page
 2. **Server component** `ConversationPage` renders `<ChatInstanceManager mode="conversation" conversationId={...} />`
@@ -423,7 +423,7 @@ This triggers a **Next.js router navigation** to `/ssr/chat/c/[conversationId]`.
 4. **`fetchConversationHistory`** queries `cx_message` via Supabase client and dispatches `loadConversationHistory` into `instanceConversationHistory`
 5. **`ChatConversationClient`** renders `AgentConversationDisplay` which reads from `instanceConversationHistory` via selectors
 
-There is also a **parallel path** via `useInstanceBootstrap` (used by the older layout), which does essentially the same thing but parses the URL directly via regex matching on `/ssr/chat/c/[conversationId]` and dispatches the same `fetchConversationHistory` thunk.
+There is also a **parallel path** via `useInstanceBootstrap` (used by the older layout), which does essentially the same thing but parses the URL directly via regex matching on `/demos/chat/c/[conversationId]` and dispatches the same `fetchConversationHistory` thunk.
 
 ---
 
@@ -435,4 +435,4 @@ The conversation loading architecture has **two completely separate systems** th
 
 2. **cx-conversation System (public chat / legacy)**: `loadConversationHistory` -> `/api/cx-chat/request` API route -> server-side `loadFullConversation` (3 tables) -> `chatConversations` slice -> renders via `ConversationShell`
 
-There is no dual-loading of the same data into both slices. The orchestrator for the SSR route is `ChatInstanceManager`, which is mounted by the server component page at `app/(ssr)/ssr/chat/c/[conversationId]/page.tsx`.
+There is no dual-loading of the same data into both slices. The orchestrator for the SSR route is `ChatInstanceManager`, which is mounted by the server component page at `app/(dev)/demos/chat/c/[conversationId]/page.tsx`.

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * useInstanceBootstrap — Execution-system bootstrap for the ssr/chat layout.
+ * useInstanceBootstrap — Execution-system bootstrap for the /demos/chat layout.
  *
  * Called ONCE from ChatPanelContent. Responsibilities:
  *
@@ -35,7 +35,7 @@
  *   useSearchParams(). There is no "active" concept.
  *
  * URL contract:
- *   /ssr/chat                                      → default agent, no conversation
+ *   /demos/chat                                      → default agent, no conversation
  *   /demos/chat/a/[agentId]                          → specific agent, no conversation
  *   /demos/chat/a/[agentId]?instance=uuid            → specific agent, reuse instance
  *   /demos/chat/c/[conversationId]?agent=uuid        → load conversation + agent
@@ -67,8 +67,8 @@ function parseChatUrl(
   pathname: string,
   searchParams: URLSearchParams,
 ): ParsedChatUrl {
-  const agentPathMatch = pathname.match(/\/ssr\/chat\/a\/([^/?]+)/);
-  const convPathMatch = pathname.match(/\/ssr\/chat\/c\/([^/?]+)/);
+  const agentPathMatch = pathname.match(/\/demos\/chat\/a\/([^/?]+)/);
+  const convPathMatch = pathname.match(/\/demos\/chat\/c\/([^/?]+)/);
 
   const agentId =
     agentPathMatch?.[1] ?? searchParams.get("agent") ?? DEFAULT_AGENT_ID;

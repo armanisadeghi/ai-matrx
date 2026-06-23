@@ -13,7 +13,7 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 
 // MATRX_PROFILE controls which routes are compiled into the build:
 //   core (default in production) — main app: (core), (admin), (transitional),
-//                    (legacy), (ssr), (public), (auth-pages),
+//                    (legacy), (public), (public-demos), (auth-pages),
 //                    (popup). Internal dev/test surfaces under app/(dev)/ —
 //                    whose route leaves are renamed *.dev.tsx — are NOT
 //                    compiled because `dev.tsx` is not in pageExtensions.

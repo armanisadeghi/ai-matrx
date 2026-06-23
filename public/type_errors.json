@@ -84,14 +84,14 @@
     "code": 2322
   },
   {
-    "file": "app/(ssr)/ssr/demos/selection-demo/page.tsx",
+    "file": "app/(dev)/demos/selection-demo/page.tsx",
     "line": 208,
     "column": 17,
     "message": "Type '{ levels: (\"scope\" | \"project\" | \"organization\")[]; value: HierarchySelection; onChange: Dispatch<SetStateAction<HierarchySelection>>; viewMode: \"flat\"; showOrgs: true; placeholder: string; }' is not assignable to type 'IntrinsicAttributes & HierarchyHoverMenuProps'.\n  Property 'showOrgs' does not exist on type 'IntrinsicAttributes & HierarchyHoverMenuProps'.",
     "code": 2322
   },
   {
-    "file": "app/(ssr)/ssr/normal-notes/experimental/diff/page.tsx",
+    "file": "app/(dev)/demos/normal-notes/experimental/diff/page.tsx",
     "line": 180,
     "column": 13,
     "message": "Spread types may only be created from object types.",

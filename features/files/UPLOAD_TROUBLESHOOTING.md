@@ -103,7 +103,7 @@ These need the Python team or admin involvement:
 - **Realtime publication** must include `cld_share_links` (see
   `HANDOFF.md` for the SQL).
 
-The cloud-files diagnostic page (`/ssr/demos/cloud-files-debug`) shows
+The cloud-files diagnostic page (`/demos/cloud-files-debug`) shows
 the active URL + JWT and fires raw fetches against the backend — use
 that to confirm the server is up and reachable BEFORE blaming the
 upload code.

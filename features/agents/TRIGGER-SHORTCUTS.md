@@ -18,10 +18,10 @@ Mount points for `UnifiedAgentContextMenu`:
 | Monaco code editor | `features/code-editor/components/CodeEditorContextMenu.tsx` |
 | Agent builder — system instructions | `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx` |
 | Agent builder — message item | `features/agents/components/builder/message-builders/MessageItem.tsx` |
-| **Demo / hub** | `app/(ssr)/ssr/context-menu/page.tsx` → route `/ssr/context-menu` |
-| **Demo / diagnostic lab** | `app/(ssr)/ssr/context-menu/lab/page.tsx` → route `/ssr/context-menu/lab` |
-| **Demo / scenario matrix** | `app/(ssr)/ssr/context-menu/scenarios/page.tsx` → route `/ssr/context-menu/scenarios` |
-| **Demo / page registry (edit to add new test pages)** | `app/(ssr)/ssr/context-menu/_registry.ts` |
+| **Demo / hub** | `app/(dev)/demos/context-menu/page.tsx` → route `/ssr/context-menu` |
+| **Demo / diagnostic lab** | `app/(dev)/demos/context-menu/lab/page.tsx` → route `/ssr/context-menu/lab` |
+| **Demo / scenario matrix** | `app/(dev)/demos/context-menu/scenarios/page.tsx` → route `/ssr/context-menu/scenarios` |
+| **Demo / page registry (edit to add new test pages)** | `app/(dev)/demos/context-menu/_registry.ts` |
 
 Right-click anywhere inside the bordered panels on the demo page and the menu
 should render. The debug page prints the live shortcut / category / content-block

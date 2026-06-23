@@ -1,6 +1,6 @@
 "use client";
 
-// app/(ssr)/demos/chat/_components/ChatSidebarClient.tsx
+// app/(dev)/demos/chat/_components/ChatSidebarClient.tsx
 //
 // ALL client-side chat sidebar logic lives here.
 //
@@ -158,12 +158,12 @@ export function ChatPanelContent() {
   // Derive agentId and conversationId directly from the URL.
   // The sidebar and header only need these two values — nothing else.
   const agentIdFromUrl = (() => {
-    const pathMatch = pathname.match(/\/ssr\/chat\/a\/([^/?]+)/);
+    const pathMatch = pathname.match(/\/demos\/chat\/a\/([^/?]+)/);
     return pathMatch?.[1] ?? searchParams.get("agent") ?? undefined;
   })();
 
   const conversationIdFromUrl = (() => {
-    const pathMatch = pathname.match(/\/ssr\/chat\/c\/([^/?]+)/);
+    const pathMatch = pathname.match(/\/demos\/chat\/c\/([^/?]+)/);
     return pathMatch?.[1] ?? undefined;
   })();
 
@@ -288,7 +288,7 @@ export function ChatDesktopHeader() {
 
   // agentId is in the URL — read the name directly from agentDefinition.
   const agentIdFromUrl = (() => {
-    const pathMatch = pathname.match(/\/ssr\/chat\/a\/([^/?]+)/);
+    const pathMatch = pathname.match(/\/demos\/chat\/a\/([^/?]+)/);
     return pathMatch?.[1] ?? searchParams.get("agent") ?? undefined;
   })();
 

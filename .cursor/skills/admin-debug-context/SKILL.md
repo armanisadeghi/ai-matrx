@@ -146,7 +146,7 @@ Generated: 2026-03-27T10:42:00.000Z
 Admin: admin@example.com
 
 ## Route
-- **Path:** /ssr/chat/c/abc-123
+- **Path:** /demos/chat/c/abc-123
 - **Viewport:** 1440×900
 - **Render Count:** 3
 

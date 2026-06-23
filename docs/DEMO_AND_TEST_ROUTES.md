@@ -72,72 +72,72 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 *66 routes*
 
-- `/ssr/demos` — `app/(ssr)/ssr/demos/page.tsx`
-- `/ssr/demos/agent-selector-demo` — `app/(ssr)/ssr/demos/agent-selector-demo/page.tsx`
-- `/ssr/demos/button-demo` — `app/(ssr)/ssr/demos/button-demo/page.tsx`
-- `/ssr/demos/ca-pd-calculator` — `app/(ssr)/ssr/demos/ca-pd-calculator/page.tsx`
-- `/ssr/demos/cloud-files-debug` — `app/(ssr)/ssr/demos/cloud-files-debug/page.tsx`
-- `/ssr/demos/container-drop` — `app/(ssr)/ssr/demos/container-drop/page.tsx`
-- `/ssr/demos/context-menu` — `app/(ssr)/ssr/demos/context-menu/page.tsx`
-- `/ssr/demos/context-menu/lab` — `app/(ssr)/ssr/demos/context-menu/lab/page.tsx`
-- `/ssr/demos/context-menu/scenarios` — `app/(ssr)/ssr/demos/context-menu/scenarios/page.tsx`
-- `/ssr/demos/date-pickers` — `app/(ssr)/ssr/demos/date-pickers/page.tsx`
-- `/ssr/demos/glass-lab` — `app/(ssr)/ssr/demos/glass-lab/page.tsx`
-- `/ssr/demos/header-demo` — `app/(ssr)/ssr/demos/header-demo/page.tsx`
-- `/ssr/demos/icon-finder-demo` — `app/(ssr)/ssr/demos/icon-finder-demo/page.tsx`
-- `/ssr/demos/model-activity-indicators` — `app/(ssr)/ssr/demos/model-activity-indicators/page.tsx`
-- `/ssr/demos/pdf-processing` — `app/(ssr)/ssr/demos/pdf-processing/page.tsx`
-- `/ssr/demos/pdf-processing/classify-pages` — `app/(ssr)/ssr/demos/pdf-processing/classify-pages/page.tsx`
-- `/ssr/demos/pdf-processing/compress` — `app/(ssr)/ssr/demos/pdf-processing/compress/page.tsx`
-- `/ssr/demos/pdf-processing/crop-pages` — `app/(ssr)/ssr/demos/pdf-processing/crop-pages/page.tsx`
-- `/ssr/demos/pdf-processing/delete-pages` — `app/(ssr)/ssr/demos/pdf-processing/delete-pages/page.tsx`
-- `/ssr/demos/pdf-processing/detect-repeated-regions` — `app/(ssr)/ssr/demos/pdf-processing/detect-repeated-regions/page.tsx`
-- `/ssr/demos/pdf-processing/duplicate-pages` — `app/(ssr)/ssr/demos/pdf-processing/duplicate-pages/page.tsx`
-- `/ssr/demos/pdf-processing/extract-pages` — `app/(ssr)/ssr/demos/pdf-processing/extract-pages/page.tsx`
-- `/ssr/demos/pdf-processing/extract-reading-order` — `app/(ssr)/ssr/demos/pdf-processing/extract-reading-order/page.tsx`
-- `/ssr/demos/pdf-processing/extract-tables` — `app/(ssr)/ssr/demos/pdf-processing/extract-tables/page.tsx`
-- `/ssr/demos/pdf-processing/extract-text` — `app/(ssr)/ssr/demos/pdf-processing/extract-text/page.tsx`
-- `/ssr/demos/pdf-processing/flatten-annotations` — `app/(ssr)/ssr/demos/pdf-processing/flatten-annotations/page.tsx`
-- `/ssr/demos/pdf-processing/insert-pages` — `app/(ssr)/ssr/demos/pdf-processing/insert-pages/page.tsx`
-- `/ssr/demos/pdf-processing/merge` — `app/(ssr)/ssr/demos/pdf-processing/merge/page.tsx`
-- `/ssr/demos/pdf-processing/redact-pattern` — `app/(ssr)/ssr/demos/pdf-processing/redact-pattern/page.tsx`
-- `/ssr/demos/pdf-processing/redact-regions` — `app/(ssr)/ssr/demos/pdf-processing/redact-regions/page.tsx`
-- `/ssr/demos/pdf-processing/redact-repeated-regions` — `app/(ssr)/ssr/demos/pdf-processing/redact-repeated-regions/page.tsx`
-- `/ssr/demos/pdf-processing/render-all` — `app/(ssr)/ssr/demos/pdf-processing/render-all/page.tsx`
-- `/ssr/demos/pdf-processing/render-page` — `app/(ssr)/ssr/demos/pdf-processing/render-page/page.tsx`
-- `/ssr/demos/pdf-processing/render-thumbnail` — `app/(ssr)/ssr/demos/pdf-processing/render-thumbnail/page.tsx`
-- `/ssr/demos/pdf-processing/reorder-pages` — `app/(ssr)/ssr/demos/pdf-processing/reorder-pages/page.tsx`
-- `/ssr/demos/pdf-processing/rotate-pages` — `app/(ssr)/ssr/demos/pdf-processing/rotate-pages/page.tsx`
-- `/ssr/demos/pdf-processing/scrub` — `app/(ssr)/ssr/demos/pdf-processing/scrub/page.tsx`
-- `/ssr/demos/pdf-processing/split` — `app/(ssr)/ssr/demos/pdf-processing/split/page.tsx`
-- `/ssr/demos/pdf-processing/strip-metadata` — `app/(ssr)/ssr/demos/pdf-processing/strip-metadata/page.tsx`
-- `/ssr/demos/pdf-processing/strip-repeated-regions` — `app/(ssr)/ssr/demos/pdf-processing/strip-repeated-regions/page.tsx`
-- `/ssr/demos/pdf-processing/studio` — `app/(ssr)/ssr/demos/pdf-processing/studio/page.tsx`
-- `/ssr/demos/popup-demo` — `app/(ssr)/ssr/demos/popup-demo/page.tsx`
-- `/ssr/demos/resizables` — `app/(ssr)/ssr/demos/resizables/page.tsx`
-- `/ssr/demos/resizables/00-baseline` — `app/(ssr)/ssr/demos/resizables/00-baseline/page.tsx`
-- `/ssr/demos/resizables/01-cookie-ssr` — `app/(ssr)/ssr/demos/resizables/01-cookie-ssr/page.tsx`
-- `/ssr/demos/resizables/02-workbench` — `app/(ssr)/ssr/demos/resizables/02-workbench/page.tsx`
-- `/ssr/demos/resizables/03-vscode-shell` — `app/(ssr)/ssr/demos/resizables/03-vscode-shell/page.tsx`
-- `/ssr/demos/resizables/04-mac-mail` — `app/(ssr)/ssr/demos/resizables/04-mac-mail/page.tsx`
-- `/ssr/demos/resizables/05-conditional-panels` — `app/(ssr)/ssr/demos/resizables/05-conditional-panels/page.tsx`
-- `/ssr/demos/run-settings` — `app/(ssr)/ssr/demos/run-settings/page.tsx`
-- `/ssr/demos/run-settings/advanced-run-settings-demo` — `app/(ssr)/ssr/demos/run-settings/advanced-run-settings-demo/page.tsx`
-- `/ssr/demos/run-settings/run-settings-demo` — `app/(ssr)/ssr/demos/run-settings/run-settings-demo/page.tsx`
-- `/ssr/demos/screen-capture` — `app/(ssr)/ssr/demos/screen-capture/page.tsx`
-- `/ssr/demos/selection-demo` — `app/(ssr)/ssr/demos/selection-demo/page.tsx`
-- `/ssr/demos/smart-code-editor` — `app/(ssr)/ssr/demos/smart-code-editor/page.tsx`
-- `/ssr/demos/speaker-demo` — `app/(ssr)/ssr/demos/speaker-demo/page.tsx`
-- `/ssr/demos/sync-demo/preferences` — `app/(ssr)/ssr/demos/sync-demo/preferences/page.tsx`
-- `/ssr/demos/sync-demo/theme` — `app/(ssr)/ssr/demos/sync-demo/theme/page.tsx`
-- `/ssr/demos/tasks-widgets` — `app/(ssr)/ssr/demos/tasks-widgets/page.tsx`
-- `/ssr/demos/textarea-tiers` — `app/(ssr)/ssr/demos/textarea-tiers/page.tsx`
-- `/ssr/demos/upgrade` — `app/(ssr)/ssr/demos/upgrade/page.tsx`
-- `/ssr/demos/upgrade/industry/[id]` — `app/(ssr)/ssr/demos/upgrade/industry/[id]/page.tsx`
-- `/ssr/demos/upgrade/landing` — `app/(ssr)/ssr/demos/upgrade/landing/page.tsx`
-- `/ssr/demos/whatsapp-demo` — `app/(ssr)/ssr/demos/whatsapp-demo/page.tsx`
-- `/ssr/demos/whatsapp-window-demo` — `app/(ssr)/ssr/demos/whatsapp-window-demo/page.tsx`
-- `/ssr/demos/window-demo` — `app/(ssr)/ssr/demos/window-demo/page.tsx`
+- `/ssr/demos` — `app/(dev)/demos/page.tsx`
+- `/demos/agent-selector-demo` — `app/(dev)/demos/agent-selector-demo/page.tsx`
+- `/demos/button-demo` — `app/(dev)/demos/button-demo/page.tsx`
+- `/demos/ca-pd-calculator` — `app/(dev)/demos/ca-pd-calculator/page.tsx`
+- `/demos/cloud-files-debug` — `app/(dev)/demos/cloud-files-debug/page.tsx`
+- `/demos/container-drop` — `app/(dev)/demos/container-drop/page.tsx`
+- `/demos/context-menu` — `app/(dev)/demos/context-menu/page.tsx`
+- `/demos/context-menu/lab` — `app/(dev)/demos/context-menu/lab/page.tsx`
+- `/demos/context-menu/scenarios` — `app/(dev)/demos/context-menu/scenarios/page.tsx`
+- `/demos/date-pickers` — `app/(dev)/demos/date-pickers/page.tsx`
+- `/demos/glass-lab` — `app/(dev)/demos/glass-lab/page.tsx`
+- `/demos/header-demo` — `app/(dev)/demos/header-demo/page.tsx`
+- `/demos/icon-finder-demo` — `app/(dev)/demos/icon-finder-demo/page.tsx`
+- `/demos/model-activity-indicators` — `app/(dev)/demos/model-activity-indicators/page.tsx`
+- `/demos/pdf-processing` — `app/(dev)/demos/pdf-processing/page.tsx`
+- `/demos/pdf-processing/classify-pages` — `app/(dev)/demos/pdf-processing/classify-pages/page.tsx`
+- `/demos/pdf-processing/compress` — `app/(dev)/demos/pdf-processing/compress/page.tsx`
+- `/demos/pdf-processing/crop-pages` — `app/(dev)/demos/pdf-processing/crop-pages/page.tsx`
+- `/demos/pdf-processing/delete-pages` — `app/(dev)/demos/pdf-processing/delete-pages/page.tsx`
+- `/demos/pdf-processing/detect-repeated-regions` — `app/(dev)/demos/pdf-processing/detect-repeated-regions/page.tsx`
+- `/demos/pdf-processing/duplicate-pages` — `app/(dev)/demos/pdf-processing/duplicate-pages/page.tsx`
+- `/demos/pdf-processing/extract-pages` — `app/(dev)/demos/pdf-processing/extract-pages/page.tsx`
+- `/demos/pdf-processing/extract-reading-order` — `app/(dev)/demos/pdf-processing/extract-reading-order/page.tsx`
+- `/demos/pdf-processing/extract-tables` — `app/(dev)/demos/pdf-processing/extract-tables/page.tsx`
+- `/demos/pdf-processing/extract-text` — `app/(dev)/demos/pdf-processing/extract-text/page.tsx`
+- `/demos/pdf-processing/flatten-annotations` — `app/(dev)/demos/pdf-processing/flatten-annotations/page.tsx`
+- `/demos/pdf-processing/insert-pages` — `app/(dev)/demos/pdf-processing/insert-pages/page.tsx`
+- `/demos/pdf-processing/merge` — `app/(dev)/demos/pdf-processing/merge/page.tsx`
+- `/demos/pdf-processing/redact-pattern` — `app/(dev)/demos/pdf-processing/redact-pattern/page.tsx`
+- `/demos/pdf-processing/redact-regions` — `app/(dev)/demos/pdf-processing/redact-regions/page.tsx`
+- `/demos/pdf-processing/redact-repeated-regions` — `app/(dev)/demos/pdf-processing/redact-repeated-regions/page.tsx`
+- `/demos/pdf-processing/render-all` — `app/(dev)/demos/pdf-processing/render-all/page.tsx`
+- `/demos/pdf-processing/render-page` — `app/(dev)/demos/pdf-processing/render-page/page.tsx`
+- `/demos/pdf-processing/render-thumbnail` — `app/(dev)/demos/pdf-processing/render-thumbnail/page.tsx`
+- `/demos/pdf-processing/reorder-pages` — `app/(dev)/demos/pdf-processing/reorder-pages/page.tsx`
+- `/demos/pdf-processing/rotate-pages` — `app/(dev)/demos/pdf-processing/rotate-pages/page.tsx`
+- `/demos/pdf-processing/scrub` — `app/(dev)/demos/pdf-processing/scrub/page.tsx`
+- `/demos/pdf-processing/split` — `app/(dev)/demos/pdf-processing/split/page.tsx`
+- `/demos/pdf-processing/strip-metadata` — `app/(dev)/demos/pdf-processing/strip-metadata/page.tsx`
+- `/demos/pdf-processing/strip-repeated-regions` — `app/(dev)/demos/pdf-processing/strip-repeated-regions/page.tsx`
+- `/demos/pdf-processing/studio` — `app/(dev)/demos/pdf-processing/studio/page.tsx`
+- `/demos/popup-demo` — `app/(dev)/demos/popup-demo/page.tsx`
+- `/demos/resizables` — `app/(dev)/demos/resizables/page.tsx`
+- `/demos/resizables/00-baseline` — `app/(dev)/demos/resizables/00-baseline/page.tsx`
+- `/demos/resizables/01-cookie-ssr` — `app/(dev)/demos/resizables/01-cookie-ssr/page.tsx`
+- `/demos/resizables/02-workbench` — `app/(dev)/demos/resizables/02-workbench/page.tsx`
+- `/demos/resizables/03-vscode-shell` — `app/(dev)/demos/resizables/03-vscode-shell/page.tsx`
+- `/demos/resizables/04-mac-mail` — `app/(dev)/demos/resizables/04-mac-mail/page.tsx`
+- `/demos/resizables/05-conditional-panels` — `app/(dev)/demos/resizables/05-conditional-panels/page.tsx`
+- `/demos/run-settings` — `app/(dev)/demos/run-settings/page.tsx`
+- `/demos/run-settings/advanced-run-settings-demo` — `app/(dev)/demos/run-settings/advanced-run-settings-demo/page.tsx`
+- `/demos/run-settings/run-settings-demo` — `app/(dev)/demos/run-settings/run-settings-demo/page.tsx`
+- `/demos/screen-capture` — `app/(dev)/demos/screen-capture/page.tsx`
+- `/demos/selection-demo` — `app/(dev)/demos/selection-demo/page.tsx`
+- `/demos/smart-code-editor` — `app/(dev)/demos/smart-code-editor/page.tsx`
+- `/demos/speaker-demo` — `app/(dev)/demos/speaker-demo/page.tsx`
+- `/demos/sync-demo/preferences` — `app/(dev)/demos/sync-demo/preferences/page.tsx`
+- `/demos/sync-demo/theme` — `app/(dev)/demos/sync-demo/theme/page.tsx`
+- `/demos/tasks-widgets` — `app/(dev)/demos/tasks-widgets/page.tsx`
+- `/demos/textarea-tiers` — `app/(dev)/demos/textarea-tiers/page.tsx`
+- `/demos/upgrade` — `app/(dev)/demos/upgrade/page.tsx`
+- `/demos/upgrade/industry/[id]` — `app/(dev)/demos/upgrade/industry/[id]/page.tsx`
+- `/demos/upgrade/landing` — `app/(dev)/demos/upgrade/landing/page.tsx`
+- `/demos/whatsapp-demo` — `app/(dev)/demos/whatsapp-demo/page.tsx`
+- `/demos/whatsapp-window-demo` — `app/(dev)/demos/whatsapp-window-demo/page.tsx`
+- `/demos/window-demo` — `app/(dev)/demos/window-demo/page.tsx`
 
 ### Authenticated — `/demo`
 
@@ -703,71 +703,71 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/settings-shell-demo`
 - `/settings-tree-demo`
 - `/ssr/demos`
-- `/ssr/demos/agent-selector-demo`
-- `/ssr/demos/button-demo`
-- `/ssr/demos/ca-pd-calculator`
-- `/ssr/demos/cloud-files-debug`
-- `/ssr/demos/container-drop`
-- `/ssr/demos/context-menu`
-- `/ssr/demos/context-menu/lab`
-- `/ssr/demos/context-menu/scenarios`
-- `/ssr/demos/date-pickers`
-- `/ssr/demos/glass-lab`
-- `/ssr/demos/header-demo`
-- `/ssr/demos/icon-finder-demo`
-- `/ssr/demos/model-activity-indicators`
-- `/ssr/demos/pdf-processing`
-- `/ssr/demos/pdf-processing/classify-pages`
-- `/ssr/demos/pdf-processing/compress`
-- `/ssr/demos/pdf-processing/crop-pages`
-- `/ssr/demos/pdf-processing/delete-pages`
-- `/ssr/demos/pdf-processing/detect-repeated-regions`
-- `/ssr/demos/pdf-processing/duplicate-pages`
-- `/ssr/demos/pdf-processing/extract-pages`
-- `/ssr/demos/pdf-processing/extract-reading-order`
-- `/ssr/demos/pdf-processing/extract-tables`
-- `/ssr/demos/pdf-processing/extract-text`
-- `/ssr/demos/pdf-processing/flatten-annotations`
-- `/ssr/demos/pdf-processing/insert-pages`
-- `/ssr/demos/pdf-processing/merge`
-- `/ssr/demos/pdf-processing/redact-pattern`
-- `/ssr/demos/pdf-processing/redact-regions`
-- `/ssr/demos/pdf-processing/redact-repeated-regions`
-- `/ssr/demos/pdf-processing/render-all`
-- `/ssr/demos/pdf-processing/render-page`
-- `/ssr/demos/pdf-processing/render-thumbnail`
-- `/ssr/demos/pdf-processing/reorder-pages`
-- `/ssr/demos/pdf-processing/rotate-pages`
-- `/ssr/demos/pdf-processing/scrub`
-- `/ssr/demos/pdf-processing/split`
-- `/ssr/demos/pdf-processing/strip-metadata`
-- `/ssr/demos/pdf-processing/strip-repeated-regions`
-- `/ssr/demos/pdf-processing/studio`
-- `/ssr/demos/popup-demo`
-- `/ssr/demos/resizables`
-- `/ssr/demos/resizables/00-baseline`
-- `/ssr/demos/resizables/01-cookie-ssr`
-- `/ssr/demos/resizables/02-workbench`
-- `/ssr/demos/resizables/03-vscode-shell`
-- `/ssr/demos/resizables/04-mac-mail`
-- `/ssr/demos/resizables/05-conditional-panels`
-- `/ssr/demos/run-settings`
-- `/ssr/demos/run-settings/advanced-run-settings-demo`
-- `/ssr/demos/run-settings/run-settings-demo`
-- `/ssr/demos/screen-capture`
-- `/ssr/demos/selection-demo`
-- `/ssr/demos/smart-code-editor`
-- `/ssr/demos/speaker-demo`
-- `/ssr/demos/sync-demo/preferences`
-- `/ssr/demos/sync-demo/theme`
-- `/ssr/demos/tasks-widgets`
-- `/ssr/demos/textarea-tiers`
-- `/ssr/demos/upgrade`
-- `/ssr/demos/upgrade/industry/[id]`
-- `/ssr/demos/upgrade/landing`
-- `/ssr/demos/whatsapp-demo`
-- `/ssr/demos/whatsapp-window-demo`
-- `/ssr/demos/window-demo`
+- `/demos/agent-selector-demo`
+- `/demos/button-demo`
+- `/demos/ca-pd-calculator`
+- `/demos/cloud-files-debug`
+- `/demos/container-drop`
+- `/demos/context-menu`
+- `/demos/context-menu/lab`
+- `/demos/context-menu/scenarios`
+- `/demos/date-pickers`
+- `/demos/glass-lab`
+- `/demos/header-demo`
+- `/demos/icon-finder-demo`
+- `/demos/model-activity-indicators`
+- `/demos/pdf-processing`
+- `/demos/pdf-processing/classify-pages`
+- `/demos/pdf-processing/compress`
+- `/demos/pdf-processing/crop-pages`
+- `/demos/pdf-processing/delete-pages`
+- `/demos/pdf-processing/detect-repeated-regions`
+- `/demos/pdf-processing/duplicate-pages`
+- `/demos/pdf-processing/extract-pages`
+- `/demos/pdf-processing/extract-reading-order`
+- `/demos/pdf-processing/extract-tables`
+- `/demos/pdf-processing/extract-text`
+- `/demos/pdf-processing/flatten-annotations`
+- `/demos/pdf-processing/insert-pages`
+- `/demos/pdf-processing/merge`
+- `/demos/pdf-processing/redact-pattern`
+- `/demos/pdf-processing/redact-regions`
+- `/demos/pdf-processing/redact-repeated-regions`
+- `/demos/pdf-processing/render-all`
+- `/demos/pdf-processing/render-page`
+- `/demos/pdf-processing/render-thumbnail`
+- `/demos/pdf-processing/reorder-pages`
+- `/demos/pdf-processing/rotate-pages`
+- `/demos/pdf-processing/scrub`
+- `/demos/pdf-processing/split`
+- `/demos/pdf-processing/strip-metadata`
+- `/demos/pdf-processing/strip-repeated-regions`
+- `/demos/pdf-processing/studio`
+- `/demos/popup-demo`
+- `/demos/resizables`
+- `/demos/resizables/00-baseline`
+- `/demos/resizables/01-cookie-ssr`
+- `/demos/resizables/02-workbench`
+- `/demos/resizables/03-vscode-shell`
+- `/demos/resizables/04-mac-mail`
+- `/demos/resizables/05-conditional-panels`
+- `/demos/run-settings`
+- `/demos/run-settings/advanced-run-settings-demo`
+- `/demos/run-settings/run-settings-demo`
+- `/demos/screen-capture`
+- `/demos/selection-demo`
+- `/demos/smart-code-editor`
+- `/demos/speaker-demo`
+- `/demos/sync-demo/preferences`
+- `/demos/sync-demo/theme`
+- `/demos/tasks-widgets`
+- `/demos/textarea-tiers`
+- `/demos/upgrade`
+- `/demos/upgrade/industry/[id]`
+- `/demos/upgrade/landing`
+- `/demos/whatsapp-demo`
+- `/demos/whatsapp-window-demo`
+- `/demos/window-demo`
 - `/tests`
 - `/tests/_maps`
 - `/tests/animation-tests`

@@ -29,7 +29,7 @@
 - `lib/redux/prompt-execution/thunks/executeMessageFastAPIThunk.ts`
 - `features/prompt-apps/components/PromptAppRenderer.tsx`, `PromptAppPublicRendererFastAPI.tsx`
 - `features/public-chat/components/ChatContainer.tsx`
-- `app/(ssr)/ssr/chat/_components/ChatWorkspace.tsx`
+- `app/(dev)/demos/chat/_components/ChatWorkspace.tsx`
 - `features/scraper/hooks/usePublicScraperStream.ts`
 - `features/prompts/hooks/usePromptCategorizer.ts`
 - `components/admin/hooks/useToolComponentAgent.ts`

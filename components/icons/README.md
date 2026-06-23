@@ -246,8 +246,8 @@ import { FilterSearchGroup, ToolsSearchGroup } from "@/components/icons/search-t
 
 ## Live demos
 
-- **General buttons + SearchToolbar/Group:** `app/(ssr)/ssr/demos/` — `AllButtonsShowcase` component
-- **AI provider + action buttons:** `app/(ssr)/ssr/demos/button-demo/page.tsx`
+- **General buttons + SearchToolbar/Group:** `app/(dev)/demos/` — `AllButtonsShowcase` component
+- **AI provider + action buttons:** `app/(dev)/demos/button-demo/page.tsx`
 
 ---
 

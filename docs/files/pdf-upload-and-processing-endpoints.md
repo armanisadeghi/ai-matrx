@@ -75,8 +75,8 @@ Each row is a confirmed call site. "Stream" = the frontend reads NDJSON
 | Endpoint | Method / body | Call site |
 |---|---|---|
 | `/utilities/pdf/extract-text` | multipart `file` | `app/(dev)/demos/api-tests/pdf-extract/PdfExtractClient.tsx:69` |
-| `/utilities/pdf/extract-text-remote` | JSON `{ ...source(media.file_id\|url), force_ocr, use_ocr_threshold, include_page_metadata, include_block_metadata, include_word_metadata }` | `app/(ssr)/demos/ssr/pdf-processing/extract-text/page.tsx:30` |
-| `/utilities/pdf/extract-tables` | JSON source + flags | `app/(ssr)/demos/ssr/pdf-processing/extract-tables/page.tsx:27` |
+| `/utilities/pdf/extract-text-remote` | JSON `{ ...source(media.file_id\|url), force_ocr, use_ocr_threshold, include_page_metadata, include_block_metadata, include_word_metadata }` | `app/(dev)/demos/pdf-processing/extract-text/page.tsx:30` |
+| `/utilities/pdf/extract-tables` | JSON source + flags | `app/(dev)/demos/pdf-processing/extract-tables/page.tsx:27` |
 | `/utilities/pdf/batch-extract` | (Path B upload, §1) | `features/pdf-extractor/hooks/usePdfExtractor.ts:413` |
 
 ### 2b. AI processing (all NDJSON streams)
@@ -91,9 +91,9 @@ Each row is a confirmed call site. "Stream" = the frontend reads NDJSON
 ### 2c. Layout analysis
 | Endpoint | Method / body | Call site |
 |---|---|---|
-| `/utilities/pdf/classify-pages` | JSON source | `app/(ssr)/demos/ssr/pdf-processing/classify-pages/page.tsx:25` |
-| `/utilities/pdf/detect-repeated-regions` | JSON source | `app/(ssr)/demos/ssr/pdf-processing/detect-repeated-regions/page.tsx:35`, `features/file-analysis/studio/panels/RedactPanel.tsx:140` |
-| `/utilities/pdf/extract-reading-order` | JSON source | `app/(ssr)/demos/ssr/pdf-processing/extract-reading-order/page.tsx:25` |
+| `/utilities/pdf/classify-pages` | JSON source | `app/(dev)/demos/pdf-processing/classify-pages/page.tsx:25` |
+| `/utilities/pdf/detect-repeated-regions` | JSON source | `app/(dev)/demos/pdf-processing/detect-repeated-regions/page.tsx:35`, `features/file-analysis/studio/panels/RedactPanel.tsx:140` |
+| `/utilities/pdf/extract-reading-order` | JSON source | `app/(dev)/demos/pdf-processing/extract-reading-order/page.tsx:25` |
 
 ### 2d. File-analysis / entities (PDF studio at `/files/f/{id}/studio`)
 | Endpoint | Method / body | Call site |

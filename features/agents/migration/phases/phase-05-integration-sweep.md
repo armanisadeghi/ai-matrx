@@ -25,7 +25,7 @@ Swap every consumer of the old `UnifiedContextMenu` to the new agent-native menu
 
 ## Non-consumers flagged during the sweep
 - **`components/file-system/context-menu.tsx`** — a distinct component that happens to be named `UnifiedContextMenu`. Pure file/folder/bucket operations (download, move, rename, etc.), zero coupling to prompts or agents. Left as-is.
-- **`app/(ssr)/ssr/notes/_components/NoteContextMenuContent.tsx`** (+ `useNoteContextMenuGroups.ts`) — a hand-rolled SSR parity menu, not a wrapper over `UnifiedContextMenu`. It still imports `features/prompt-builtins/{types,utils,constants}` and `usePromptRunner`. Porting the SSR notes menu to agent hooks is a separate surface — tracked in `INVENTORY.md` as a later phase (Phase 7 or Phase 18).
+- **`app/(dev)/demos/notes/_components/NoteContextMenuContent.tsx`** (+ `useNoteContextMenuGroups.ts`) — a hand-rolled SSR parity menu, not a wrapper over `UnifiedContextMenu`. It still imports `features/prompt-builtins/{types,utils,constants}` and `usePromptRunner`. Porting the SSR notes menu to agent hooks is a separate surface — tracked in `INVENTORY.md` as a later phase (Phase 7 or Phase 18).
 
 ## Change log
 | Date | Who | Change |

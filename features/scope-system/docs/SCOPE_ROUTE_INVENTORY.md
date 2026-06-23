@@ -48,7 +48,7 @@
 ## DELETE — junk/dead
 
 - `/scopes/manage` → hard redirect to `/scopes`; no value (keep only if external bookmarks rely on it).
-- SSR demo routes `/(ssr)/demos/ssr/context-menu*` → dev-only; not prod nav.
+- SSR demo routes `/(ssr)/demos/context-menu*` → dev-only; not prod nav.
 
 ## Recommended order
 1. **Now (safe):** link `/context-items` from ScopesHub; surface `/scopes/templates` FYI.

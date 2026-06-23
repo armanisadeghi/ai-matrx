@@ -9,7 +9,7 @@ Every file that imports from the TTS/audio system, organized by which hook/compo
 | File | Component | Text Source |
 |------|-----------|-------------|
 | `features/cx-conversation/AssistantActionBar.tsx` | `SpeakerButton` | Raw assistant message content |
-| `app/(ssr)/ssr/demos/speaker-demo/page.tsx` | All three variants | Static test strings |
+| `app/(dev)/demos/speaker-demo/page.tsx` | All three variants | Static test strings |
 | `app/(public)/demos/feature-tests/speaker-button/page.tsx` | All three variants | Static test strings |
 | `components/admin/MarkdownTester.tsx` | `SpeakerGroup` | Dynamic rendered content |
 

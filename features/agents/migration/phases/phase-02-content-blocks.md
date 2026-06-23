@@ -25,7 +25,7 @@ Phase 1 absorbed most of the original Phase 2 scope:
 - [ ] Change log entry here, `MASTER-PLAN.md` status updated.
 
 ## Tasks
-- [x] **2.1** Port insertion utils. New: `utils/text-insertion.ts`. Re-export shim kept at `features/prompts/utils/textareaInsertUtils.ts` (deleted in Phase 18). One non-prompts caller (`app/(ssr)/ssr/notes/_components/NoteContextMenuContent.tsx`) switched.
+- [x] **2.1** Port insertion utils. New: `utils/text-insertion.ts`. Re-export shim kept at `features/prompts/utils/textareaInsertUtils.ts` (deleted in Phase 18). One non-prompts caller (`app/(dev)/demos/notes/_components/NoteContextMenuContent.tsx`) switched.
 - [ ] **2.2** View performance smoke test. Run `EXPLAIN ANALYZE` against `agent_context_menu_view` with a meaningful data set. Add partial indexes if the scan-rate is unacceptable. *(Requires DB apply of Phase 1 migrations.)*
 - [ ] **2.3** Write short dev-doc paragraph in `features/agent-shortcuts/` describing what content blocks are and how they differ from shortcuts (for Phase 3 consumers).
 

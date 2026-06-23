@@ -52,7 +52,7 @@ Several implementations exist; **prefer the Redux-driven menus** for new work.
 | Item | Location | What it is |
 |------|----------|------------|
 | **System admin** | `app/(authenticated)/(admin-auth)/administration/` | Admin-only tools, CX dashboard, DB, MCP tools, schema, feedback, etc. |
-| **SSR route group** | `app/(ssr)/ssr/` | SSR-first area: notes, prompts, chat, context, content sites, dashboards, demos. |
+| **SSR route group** | `app/(dev)/demos/` | SSR-first area: notes, prompts, chat, context, content sites, dashboards, demos. |
 | **Public route group** | `app/(public)/` | Unauthenticated or lightweight bundles. **`p/`** — prompt apps (`p/[slug]/`), public chat/research. **Also:** `demos/`, `free/`, `education/`, `canvas/`, etc. at the same `(public)` level — not only `p/`. |
 
 ---

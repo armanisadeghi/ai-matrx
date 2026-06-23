@@ -42,7 +42,7 @@ todos:
     content: "Create /agents/[id]/[version]/page.tsx — SSR parallel getAgent + getAgentSnapshot, VersionHydrator, AgentComparisonView (3 vertical synchronized-scroll panels: CURRENT | VERSION | DIFF) + loading.tsx"
     status: pending
   - id: cleanup
-    content: Delete app/(ssr)/ssr/agents/, AgentPageContext.tsx, AgentBuilderWrapper.tsx, AgentRunWrapper.tsx. Remove or simplify useAgentsBasePath (routes are always /agents now).
+    content: Delete app/(dev)/demos/agents/, AgentPageContext.tsx, AgentBuilderWrapper.tsx, AgentRunWrapper.tsx. Remove or simplify useAgentsBasePath (routes are always /agents now).
     status: pending
   - id: update-architecture-doc
     content: Rewrite app/(a)/agents/agents-route-architecture.md to reflect final implemented architecture
@@ -457,7 +457,7 @@ All skeletons use `<Skeleton>` component (Server Component, no `'use client'`).
 
 ## Cleanup
 
-- Delete `app/(ssr)/ssr/agents/` (all files) after new routes verified
+- Delete `app/(dev)/demos/agents/` (all files) after new routes verified
 - Delete `features/agents/components/shared/AgentPageContext.tsx`
 - Delete `features/agents/components/shared/AgentBuilderWrapper.tsx`
 - Delete `features/agents/components/shared/AgentRunWrapper.tsx`

@@ -32,9 +32,9 @@
 
 **The rule:** one purpose → one implementation. The component listed here is the *same* one mounted in production AND on the demo bench. There is no second version anywhere.
 
-**Demo bench (test everything from one place):** `/demos/ssr/pdf-processing/components`
+**Demo bench (test everything from one place):** `/demos/pdf-processing/components`
 — pick a PDF once at the top; every canonical surface mounts against it.
-**Endpoint tests (per-API):** `/demos/ssr/pdf-processing` (27 routes).
+**Endpoint tests (per-API):** `/demos/pdf-processing` (27 routes).
 
 Legend: 🟢 fully functional · 🟡 functional, known weakness · 🔴 known broken / gap.
 
@@ -91,5 +91,5 @@ Legend: 🟢 fully functional · 🟡 functional, known weakness · 🔴 known b
 1. **Pre-warm** the backend ~5 min before: load the app, open one PDF Preview, let it finish. (Kills the cold-first-load.)
 2. From `/files`, right-click a PDF → confirm **Open in PDF Extractor / Analysis Studio / File viewer** all show.
 3. Open a PDF → confirm the **loading state fills the pane** (no tiny box).
-4. Open the **bench** `/demos/ssr/pdf-processing/components`, pick your demo file, and click through Preview / Edit (all 6 panels) / Knowledge / Analysis / Share / Info — this is the same code production runs.
+4. Open the **bench** `/demos/pdf-processing/components`, pick your demo file, and click through Preview / Edit (all 6 panels) / Knowledge / Analysis / Share / Info — this is the same code production runs.
 5. In **Analysis**, click **Index for knowledge (runs NER)** to confirm the pipeline fires; then open the Knowledge graph link.

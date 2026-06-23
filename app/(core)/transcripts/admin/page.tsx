@@ -20,8 +20,14 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
   description:
     "Everything that turns audio into text and back: the canonical transcripts workspace (record / upload / browse / edit), the live 4-column Studio workspace, mobile Scribe capture, transcription cleanup, voice pads, and the audio pipeline behind them. Sister features (TTS, Voice Agent) live under the audio umbrella — see Related Features. Podcasts deliberately excluded — different concept.",
   docs: [
-    { label: "Transcripts FEATURE.md", href: "/features/transcripts/FEATURE.md" },
-    { label: "Transcript Studio FEATURE.md", href: "/features/transcript-studio/FEATURE.md" },
+    {
+      label: "Transcripts FEATURE.md",
+      href: "/features/transcripts/FEATURE.md",
+    },
+    {
+      label: "Transcript Studio FEATURE.md",
+      href: "/features/transcript-studio/FEATURE.md",
+    },
     { label: "Audio FEATURE.md", href: "/features/audio/FEATURE.md" },
   ],
   routeScanPath: "app/(core)/transcripts",
@@ -75,7 +81,8 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/transcripts/scribe/unsorted",
       label: "Scribe — Unsorted archive",
-      description: "Catch-all session bucket for captures the user hasn't filed yet.",
+      description:
+        "Catch-all session bucket for captures the user hasn't filed yet.",
       filePath: "app/(core)/transcripts/scribe/unsorted/page.tsx",
       status: "Live",
     },
@@ -103,7 +110,8 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/transcripts/admin",
       label: "Admin map (this page)",
-      description: "The page you're reading — admin index of every transcripts resource.",
+      description:
+        "The page you're reading — admin index of every transcripts resource.",
       filePath: "app/(core)/transcripts/admin/page.tsx",
       status: "Live",
     },
@@ -141,21 +149,24 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "TranscriptsLayout",
       filePath: "features/transcripts/components/TranscriptsLayout.tsx",
-      description: "Portal-header layout that hosts the processor + sidebar + viewer.",
+      description:
+        "Portal-header layout that hosts the processor + sidebar + viewer.",
       status: "Live",
       tier: "internal",
     },
     {
       name: "TranscriptViewer",
       filePath: "features/transcripts/components/TranscriptViewer.tsx",
-      description: "Read / edit a saved transcript. Used by the processor workspace.",
+      description:
+        "Read / edit a saved transcript. Used by the processor workspace.",
       status: "Live",
       tier: "internal",
     },
     {
       name: "CreateTranscriptModal",
       filePath: "features/transcripts/components/CreateTranscriptModal.tsx",
-      description: "Upload audio + run Whisper. Saves to the simple transcripts table.",
+      description:
+        "Upload audio + run Whisper. Saves to the simple transcripts table.",
       status: "Live",
       tier: "internal",
     },
@@ -199,7 +210,8 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "ScribeScreen",
       filePath: "features/transcript-studio/components/scribe/ScribeScreen.tsx",
-      description: "Mobile Scribe controller — switches between capture + assistant modes.",
+      description:
+        "Mobile Scribe controller — switches between capture + assistant modes.",
       status: "Live",
       tier: "internal",
     },
@@ -207,7 +219,8 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       name: "ScribeCaptureScreen",
       filePath:
         "features/transcript-studio/components/scribe/ScribeCaptureScreen.tsx",
-      description: "Mobile capture UI: big record button, live transcript strip.",
+      description:
+        "Mobile capture UI: big record button, live transcript strip.",
       status: "Live",
       tier: "internal",
     },
@@ -240,7 +253,8 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "MicrophoneRecordingModal",
       filePath: "features/audio/components/MicrophoneRecordingModal.tsx",
-      description: "Modal overlay for one-shot recording with live transcription progress.",
+      description:
+        "Modal overlay for one-shot recording with live transcription progress.",
       status: "Live",
       tier: "internal",
     },
@@ -309,13 +323,15 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       url: "/demos/general/voice/voice-assistant-two",
       label: "Voice Assistant (alt)",
       description: "Second voice-assistant variant.",
-      filePath: "app/(dev)/demos/general/voice/voice-assistant-two/page.dev.tsx",
+      filePath:
+        "app/(dev)/demos/general/voice/voice-assistant-two/page.dev.tsx",
     },
     {
       url: "/demos/general/voice/voice-assistant-cdn",
       label: "Voice Assistant — CDN build",
       description: "CDN-based voice-assistant variant.",
-      filePath: "app/(dev)/demos/general/voice/voice-assistant-cdn/page.dev.tsx",
+      filePath:
+        "app/(dev)/demos/general/voice/voice-assistant-cdn/page.dev.tsx",
     },
     {
       url: "/demos/general/voice/voice-manager",
@@ -350,28 +366,27 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/demos/tests/audio-recorder-test",
       label: "Audio recorder test suite",
-      description: "Multiple recording test routes under audio-recorder-test/*.",
+      description:
+        "Multiple recording test routes under audio-recorder-test/*.",
       filePath: "app/(dev)/demos/tests/audio-recorder-test/",
     },
     {
       url: "/demos/feature-tests/microphone-icon-button",
       label: "Microphone icon button",
       description: "UI test for the mic button.",
-      filePath:
-        "app/(dev)/demos/feature-tests/microphone-icon-button/page.tsx",
+      filePath: "app/(dev)/demos/feature-tests/microphone-icon-button/page.tsx",
     },
     {
       url: "/demos/feature-tests/speaker-button",
       label: "Speaker button",
       description: "UI test for the speaker button.",
-      filePath:
-        "app/(dev)/demos/feature-tests/speaker-button/page.tsx",
+      filePath: "app/(dev)/demos/feature-tests/speaker-button/page.tsx",
     },
     {
       url: "/demos/speaker-demo",
-      label: "SSR speaker demo",
-      description: "SSR-shell speaker demo.",
-      filePath: "app/(ssr)/demos/speaker-demo/page.tsx",
+      label: "Speaker demo",
+      description: "TTS speaker demo route.",
+      filePath: "app/(dev)/demos/speaker-demo/page.tsx",
     },
   ],
 

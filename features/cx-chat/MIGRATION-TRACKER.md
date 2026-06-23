@@ -363,8 +363,8 @@ The **new agent system does NOT write to cx tables** — Python backend writes t
 
 **[KNOWN] Route structure and instance mapping:**
 - `/ssr/chat` → create instance from hardcoded default agent
-- `/ssr/chat/a/[agentId]` → create instance from `agentId` param
-- `/ssr/chat/c/[conversationId]` → agentId required as `?agent=uuid`, create instance + load history
+- `/demos/chat/a/[agentId]` → create instance from `agentId` param
+- `/demos/chat/c/[conversationId]` → agentId required as `?agent=uuid`, create instance + load history
 
 **[KNOWN] Instance lifecycle:**
 - `instanceId` in URL as `?instance=uuid`

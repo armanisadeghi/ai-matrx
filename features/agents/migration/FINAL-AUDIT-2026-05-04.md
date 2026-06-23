@@ -75,7 +75,7 @@ Owner unclear — check whether content-templates should live alongside `feature
 
 ### 2.7 `features/cx-chat/` and `features/public-chat/` (already known, severity confirmed)
 
-- **`features/cx-chat/`**: 10 prompt imports, used by **all `(ssr)/ssr/chat/*` routes**. Per `cx-chat/MIGRATION-TRACKER.md` Phase 6 (2026-03-28) the SSR runtime is on the agent execution system internally — the imports are presentation-layer types/components only. Remap → delete in 18.
+- **`features/cx-chat/`**: 10 prompt imports, used by **all `(ssr)/demos/chat/*` routes**. Per `cx-chat/MIGRATION-TRACKER.md` Phase 6 (2026-03-28) the SSR runtime is on the agent execution system internally — the imports are presentation-layer types/components only. Remap → delete in 18.
 - **`features/public-chat/`**: 14 prompt imports (4 × `useAgentConsumer` from prompts/hooks, 4 type imports, 6 component imports). Used by `/p/chat/*` and `/api/cx-chat/*`. **`useAgentConsumer` must be ported** into `features/agents/hooks/` (the new system has no equivalent yet) before this can be unwired. `DEPRECATED-useAgentChat.ts` is still wired into `ChatContainer`.
 
 ---
@@ -112,7 +112,7 @@ Owner unclear — check whether content-templates should live alongside `feature
 |---|---|---|
 | `lib/redux/prompt-execution/*` | Delete in Phase 18 | Prompt-only; `selectors.ts` reads from socket-response-selectors but exports nothing reused. |
 | `promptEditorSlice` | Delete in Phase 18 | Internal bridge to `features/agents/components/builder/AgentSettings*` — bridge can be removed. |
-| `promptRunnerSlice` | Delete in Phase 18 | Still referenced by SSR notes parallel menu (`app/(ssr)/ssr/notes/_components/NoteContextMenuContent.tsx` + `useNoteContextMenuGroups.ts`) — port that consumer first. |
+| `promptRunnerSlice` | Delete in Phase 18 | Still referenced by SSR notes parallel menu (`app/(dev)/demos/notes/_components/NoteContextMenuContent.tsx` + `useNoteContextMenuGroups.ts`) — port that consumer first. |
 | `promptConsumersSlice` | **Keep, rename, or fold into agent slice** | Reused by `features/cx-chat/hooks/useAgentConsumer.ts` for filter/sort state. The slice is genuinely agnostic — call it out as shared infrastructure. |
 | `promptCacheSlice` | Delete in Phase 18 | Consumed only by `lib/redux/thunks/promptSystemThunks.ts`, `promptCrudThunks.ts`. |
 | `contextMenuCacheSlice` | Delete in Phase 18 | Phase 5 added `agentContextMenuCacheSlice`; remove the legacy fallback path from the v2 hook in the same change. |
@@ -131,7 +131,7 @@ Routes whose page.tsx currently imports a legacy feature and **has no agent-syst
 | `/apps/custom/[slug]`, `/apps/custom/[slug]/[appletSlug]` | `features/applet/` | ❌ — Phase 10 blocked |
 | `/prompt-apps`, `/prompt-apps/[id]`, `/prompt-apps/new`, `/prompt-apps/templates`, `/prompt-apps/templates/[mode]` | `features/prompt-apps/` | Partial — `/agent-apps` admin exists but the public `/p/[slug]` resolves agent-apps first; `/prompt-apps/[id]` editor still uses `AICodeEditor` (Phase 6 blocker) |
 | `/ai/prompts*` (list, new, edit, run, view, templates, compare, edit-redux, experimental/*) | `features/prompts/` | `/agents` covers list/new/edit/run; experimental routes have no equivalent |
-| `/ssr/prompts/*` | SSR mirror of `/ai/prompts/` | `/ssr/chat/a/[agentId]` only covers chat |
+| `/ssr/prompts/*` | SSR mirror of `/ai/prompts/` | `/demos/chat/a/[agentId]` only covers chat |
 | `/administration/prompt-builtins/*`, `/administration/shortcut-categories/`, `/administration/prompt-apps/` | `features/prompt-builtins/` | `/administration/system-agents/shortcuts` covers shortcut admin; builtins admin has no agent equivalent |
 | `/layout-tests/prompt-input` | `features/prompts/` | None — test route |
 

@@ -422,7 +422,7 @@ Routes that stay direct-to-Python and are NOT cloud-files writes (keep as-is):
 
 | File | Lines | Current behavior | Action | What changes |
 |---|---|---|---|---|
-| app/(ssr)/ssr/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | manual `fetch('/files/upload')` + `/files/{id}` PATCH/DELETE etc. for debug | MODIFY | rewire to new combined-op contract; useful as a sanity surface for partial-success `errors[]` |
+| app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | manual `fetch('/files/upload')` + `/files/{id}` PATCH/DELETE etc. for debug | MODIFY | rewire to new combined-op contract; useful as a sanity surface for partial-success `errors[]` |
 | app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-asset-uploader.tsx | n/a | demo for `<ImageAssetUploader>` | MODIFY | reflects unified API |
 | app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-cropper.tsx | n/a | demo for `<ImageCropper>` | MODIFY | reflects unified API |
 | app/(authenticated)/(admin-auth)/administration/official-components/component-displays/file-upload-with-storage.tsx | n/a | demo for the deprecated shim | DELETE | shim is deleted |
@@ -440,7 +440,7 @@ Test pages confirmed read-only or out-of-scope:
 | components/user-generated-table-data/ImportTableModal.tsx | local CSV/XLSX parse only, no cloud-files write |
 | app/(public)/demos/api-tests/pdf-extract/PdfExtractClient.tsx | direct PDF extract via Python, no cld_files write |
 | app/(authenticated)/tests/qr-labels/* | local QR generation only |
-| app/(ssr)/ssr/demos/pdf-processing/compress/page.tsx | wraps `usePdfOptimize` — covered by the hook migration above |
+| app/(dev)/demos/pdf-processing/compress/page.tsx | wraps `usePdfOptimize` — covered by the hook migration above |
 
 ---
 

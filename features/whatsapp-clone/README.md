@@ -2,7 +2,7 @@
 
 Pixel-faithful WhatsApp desktop UI built fresh for AI Matrx.
 
-**Demo:** [/ssr/demos/whatsapp-demo](http://localhost:3000/ssr/demos/whatsapp-demo)
+**Demo:** [/demos/whatsapp-demo](http://localhost:3000/demos/whatsapp-demo)
 
 ## Layout
 

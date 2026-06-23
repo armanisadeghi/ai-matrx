@@ -88,7 +88,7 @@ export default function ChatConversationClient({
 
   useEffect(() => {
     publishDebug({
-      Route: "ssr/chat",
+      Route: "demos/chat",
       "Instance ID": conversationId,
       "Conversation ID": latestConversationId ?? conversationId,
       "Agent ID": agentId,

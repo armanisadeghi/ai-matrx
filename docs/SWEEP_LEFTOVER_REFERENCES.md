@@ -289,7 +289,7 @@ to delete the block entirely.
   `features/code-editor/components/CodeEditorContextMenu.tsx`,
   `features/prompt-builtins/utils/menuHierarchy.ts`,
   `features/context-menu-v2/UnifiedAgentContextMenu.tsx`,
-  `app/(ssr)/ssr/demos/context-menu-v2/page.tsx` — this is the shortcut-system
+  `app/(dev)/demos/context-menu-v2/page.tsx` — this is the shortcut-system
   context filter, not the deleted Supabase bucket.
 - `'attachments'` as a **toggle option id** in
   `app/(authenticated)/(admin-auth)/administration/official-components/to-be-added/toggle-menu-demo/page.tsx`

@@ -138,7 +138,7 @@ The Agent Runner's `AgentAssistantMessage` transitively imports these four from 
 1. **Week 1 — Protect.** Copy the 4 Runner-critical files into the new chat location (or shared folder). Verify Runner still builds.
 2. **Week 1–2 — Rewrite `useConversationSession`** on `@matrx/agents` thunks + selectors.
 3. **Week 3 — MessageList / AssistantMessage / UserMessage** on narrow selectors + DB-faithful `byId`.
-4. **Week 4 — Route-level at `app/(a)/chat/**`**. Replace `app/(ssr)/ssr/chat/**` routes.
+4. **Week 4 — Route-level at `app/(a)/chat/**`**. Replace `app/(dev)/demos/chat/**` routes.
 5. **Week 5 — Delete cx-chat / cx-conversation / conversation / chat legacy.** Unblocks legacy-shims deletion (Wave 4 in audit 04).
 
 #### 1.7 Dependencies + open questions

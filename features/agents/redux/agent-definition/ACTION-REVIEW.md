@@ -52,7 +52,7 @@ Field names are camelCase `AgentDefinition` / record keys (see [`agent-definitio
 
 Shortcut thunks:
 
-- [`app/(ssr)/ssr/notes/_components/SidebarClient.tsx`](../../../../app/(ssr)/ssr/notes/_components/SidebarClient.tsx) — `dispatch(buildAgentShortcutMenu())`, `dispatch(fetchShortcutsForContext({ ... }))`.
+- [`app/(dev)/demos/notes/_components/SidebarClient.tsx`](../../../../app/(dev)/demos/notes/_components/SidebarClient.tsx) — `dispatch(buildAgentShortcutMenu())`, `dispatch(fetchShortcutsForContext({ ... }))`.
 
 Autosave hook:
 
@@ -62,7 +62,7 @@ Builder / editor surfaces:
 
 - [`app/(authenticated)/ai/agents/[id]/edit/page.tsx`](../../../../app/(authenticated)/ai/agents/[id]/edit/page.tsx) — renders `AgentBuilder`.
 - [`features/agents/components/shared/AgentBuilderWrapper.tsx`](../../components/shared/AgentBuilderWrapper.tsx) — SSR wrapper → `AgentBuilder`.
-- [`app/(ssr)/ssr/agents/[id]/edit/page.tsx`](../../../../app/(ssr)/ssr/agents/[id]/edit/page.tsx) — uses `AgentBuilderWrapper`.
+- [`app/(dev)/demos/agents/[id]/edit/page.tsx`](../../../../app/(dev)/demos/agents/[id]/edit/page.tsx) — uses `AgentBuilderWrapper`.
 - [`features/agents/components/builder/AgentBuilderDesktop.tsx`](../../components/builder/AgentBuilderDesktop.tsx), [`AgentBuilderMobile.tsx`](../../components/builder/AgentBuilderMobile.tsx).
 - [`features/agents/components/builder/AgentBuilderLeftPanel.tsx`](../../components/builder/AgentBuilderLeftPanel.tsx).
 - [`features/agents/components/builder/message-builders/MessageItem.tsx`](../../components/builder/message-builders/MessageItem.tsx), [`system-instructions/SystemMessage.tsx`](../../components/builder/message-builders/system-instructions/SystemMessage.tsx) — `useAgentUndoRedo`.

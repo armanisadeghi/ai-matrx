@@ -274,7 +274,7 @@ Read these before applying the pattern to a new component:
 - `components/icons/tap-buttons.tsx` — owner of `TapButtonProps`. Pre-composed buttons (`BugTapButton`, `PlusTapButton`, etc.) and the `Wrap` variant resolver.
 - `components/icons/TapTargetButton.tsx` — primitive (`TapTargetButton`, `TapTargetButtonTransparent`, `TapTargetButtonSolid`, `TapTargetButtonForGroup`, `TapTargetButtonGroup`). Don't import directly unless a pre-composed version doesn't exist; add a new pre-composed export instead.
 - `components/icons/README.md` — definitive doc on the spacing rule and the `Wrap` helper for adding new pre-composed buttons.
-- `app/(ssr)/ssr/demos/button-demo/page.tsx` — live demo of every variant, group, and AI brand button.
+- `app/(dev)/demos/button-demo/page.tsx` — live demo of every variant, group, and AI brand button.
 - `lib/redux/slices/overlaySlice.ts` — `openOverlay` (canonical reducer) and the typed convenience wrappers.
 
 The migration of `FeedbackButton`'s consumers (`components/layout/new-layout/DesktopLayout.tsx`, `features/public-chat/components/ChatMobileHeader.tsx`, `components/matrx/PublicHeaderFeedback.tsx`) is the canonical example of consumer-side rules in action — read those diffs to see how `className=...` becomes `variant=...` and how Suspense fallbacks are resized.

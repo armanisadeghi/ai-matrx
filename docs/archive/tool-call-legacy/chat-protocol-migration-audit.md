@@ -27,7 +27,7 @@ streams live responses.
 
 | Route                                        | Status | Current Format                                           | Notes                                                                 |
 | -------------------------------------------- | ------ | -------------------------------------------------------- | --------------------------------------------------------------------- |
-| `app/(ssr)/ssr/chat/`                        | ✅      | Uses `buildCanonicalMessages` + `canonicalArrayToLegacy` | Converted in Phase 1. Still uses legacy adapter.                      |
+| `app/(dev)/demos/chat/`                        | ✅      | Uses `buildCanonicalMessages` + `canonicalArrayToLegacy` | Converted in Phase 1. Still uses legacy adapter.                      |
 | `app/(public)/p/chat/`                       | 🔴     | `processDbMessagesForDisplay`                            | `ChatLayoutShell.tsx` imports directly from `cx-content-converter.ts` |
 | `app/(authenticated)/chat/`                  | 🔴     | `ChatContext.ChatMessage`                                | Uses `ChatLayoutClient.tsx` → `ChatContext` → `useAgentChat`          |
 | `app/(public)/demos/api-tests/chat/`         | ⚠️     | `ChatDemoClient.tsx` — raw stream parsing                | Demo/test route, lower priority                                       |
@@ -47,9 +47,9 @@ These routes run prompts (AI execution + streaming) and display the results.
 | Route                                       | Status | Current Format                                                 | Notes                                                   |
 | ------------------------------------------- | ------ | -------------------------------------------------------------- | ------------------------------------------------------- |
 | `app/(authenticated)/ai/prompts/run/[id]/`  | 🔴     | Redux `submitChatFastAPI` → `socketResponseSlice.toolUpdates`  | Uses Redux pipeline, renders via `EnhancedChatMarkdown` |
-| `app/(ssr)/ssr/prompts/run/[id]/`           | 🔴     | Same Redux pipeline                                            | SSR variant of the run route                            |
+| `app/(dev)/demos/prompts/run/[id]/`           | 🔴     | Same Redux pipeline                                            | SSR variant of the run route                            |
 | `app/(authenticated)/ai/prompts/edit/[id]/` | 🔴     | `PromptTestPanel` → `usePromptExecution` → `submitChatFastAPI` | The "test" panel inside the editor                      |
-| `app/(ssr)/ssr/prompts/edit/[id]/`          | 🔴     | Same as above                                                  | SSR variant                                             |
+| `app/(dev)/demos/prompts/edit/[id]/`          | 🔴     | Same as above                                                  | SSR variant                                             |
 
 
 ---

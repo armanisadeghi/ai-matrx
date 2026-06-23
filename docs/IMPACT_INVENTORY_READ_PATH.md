@@ -52,7 +52,7 @@ Action vocabulary:
 - **`features/window-panels/windows/cloud-files/`** — FilePreviewWindow MODIFIED.
 - **`features/window-panels/windows/`** — FeedbackWindow display portion MODIFIED.
 - **`app/(public)/share/[token]/`** — MODIFIED (use `useFile` with share-token ref).
-- **`app/(ssr)/ssr/demos/`** — debug + render-thumbnail demos MODIFIED.
+- **`app/(dev)/demos/`** — debug + render-thumbnail demos MODIFIED.
 
 ---
 
@@ -475,8 +475,8 @@ NEW hooks in `features/files/hooks/` introduced by PR3: `useFile.ts`, `useFileSr
 | app/(public)/share/[token]/page.tsx | 205 | share-link viewer; embeds FilePreview | MODIFY | pass `{ kind: "share_link", token }` ref; otherwise unchanged |
 | app/(authenticated)/(admin-auth)/administration/feedback/components/FeedbackDetailDialog.tsx | — | renders feedback images; imports from file-handler | MODIFY | retarget import + `<InlineMediaRef>` |
 | app/(authenticated)/(admin-auth)/administration/official-components/component-displays/image-upload-field.tsx | 103 | demo of upload field | MODIFY | follows ImageUploadField change |
-| app/(ssr)/ssr/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | debug page; references `publicUrl`/`signedUrl`/raw fetches | MODIFY | switch displays to `<InlineMediaRef>` + show `assetsByMasterId` cache state |
-| app/(ssr)/ssr/demos/pdf-processing/render-thumbnail/page.tsx | 103 | render-thumb demo | MODIFY | use new previewer pipeline |
+| app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx | 1027 | debug page; references `publicUrl`/`signedUrl`/raw fetches | MODIFY | switch displays to `<InlineMediaRef>` + show `assetsByMasterId` cache state |
+| app/(dev)/demos/pdf-processing/render-thumbnail/page.tsx | 103 | render-thumb demo | MODIFY | use new previewer pipeline |
 | app/Providers.tsx | — | mounts `<CloudFilesRealtimeProvider>` once | MODIFY | structural mount move (plan §6.6) |
 
 ### features/audio/ (display-side only)

@@ -53,7 +53,7 @@ function resolveAgentIdFromUrl(
   pathname: string,
   searchParams: URLSearchParams,
 ): string | null {
-  const agentRouteMatch = pathname.match(/\/ssr\/chat\/a\/([^/]+)/);
+  const agentRouteMatch = pathname.match(/\/demos\/chat\/a\/([^/]+)/);
   if (agentRouteMatch?.[1]) return agentRouteMatch[1];
 
   const agentParam = searchParams.get("agent");

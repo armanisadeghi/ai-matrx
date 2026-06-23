@@ -25,7 +25,7 @@ Agent Connections is the engineer-facing registry surface that governs **which t
 **Components (in `features/agent-connections/components/`)**
 - `AgentConnectionsSidebar` — left-rail section picker. **Dual-mode**: when given `basePath`, it renders Next `<Link>`s and derives `activeSection` from `usePathname()`; when given `activeSection + onSelect`, it falls back to button + callback (legacy overlay mode).
 - `AgentConnectionsBody` — Redux switch-based router for section content (used by the overlay window only — routes mount the section components directly through their `page.tsx`).
-- `AgentConnectionsRouteShell` — client shell using `react-resizable-panels` v4 (`<ClientGroup>` + `<RegisteredPanel>` + `<Handle>` from `app/(ssr)/ssr/demos/resizables/_lib/`). Cookie-persisted sidebar width.
+- `AgentConnectionsRouteShell` — client shell using `react-resizable-panels` v4 (`<ClientGroup>` + `<RegisteredPanel>` + `<Handle>` from `app/(dev)/demos/resizables/_lib/`). Cookie-persisted sidebar width.
 - `AgentConnectionsNavContext` — provider exposing `navigate(section)`. `mode="route"` pushes a route; `mode="overlay"` dispatches `setActiveSection`. Used by `OverviewSection`'s card grid so the same component works in both surfaces.
 - Per-section components in `components/sections/`: `OverviewSection`, `AgentsSection`, `SubAgentsSection`, `SkillsSection`, `RenderBlocksSection`, `ResourcesSection`, `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `McpServersSection`, `PluginsSection`, `RegistriesSection`, `PreferencesSection`.
 - Shared primitives: `SectionToolbar`, `GroupSection`, `ListRow`, `SectionFooter`, `ScopePicker`.

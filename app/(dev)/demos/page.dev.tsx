@@ -45,7 +45,10 @@ async function loadSection(section: DemoSection) {
 
 export default async function DemosLandingPage() {
   const loaded = await Promise.all(SECTIONS.map(loadSection));
-  const totalCount = loaded.reduce((n, { subroutes }) => n + subroutes.length, 0);
+  const totalCount = loaded.reduce(
+    (n, { subroutes }) => n + subroutes.length,
+    0,
+  );
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
@@ -56,10 +59,10 @@ export default async function DemosLandingPage() {
             <h1 className="text-3xl font-bold">Demos & tests</h1>
           </div>
           <p className="text-sm text-muted-foreground max-w-2xl">
-            Unified index of every demo, test, and experimental route across
-            the codebase ({totalCount} top-level surfaces across{" "}
-            {loaded.filter((l) => l.subroutes.length > 0).length} sections).
-            Add a new route under any section's directory and it appears here
+            Unified index of every demo, test, and experimental route across the
+            codebase ({totalCount} top-level surfaces across{" "}
+            {loaded.filter((l) => l.subroutes.length > 0).length} sections). Add
+            a new route under any section's directory and it appears here
             automatically on the next request.
           </p>
         </header>
@@ -117,9 +120,9 @@ export default async function DemosLandingPage() {
             </div>
             <p className="text-sm text-muted-foreground mb-4 max-w-3xl">
               Demos and tests that depend on the entity slice live under{" "}
-              <code className="font-mono">/legacy/*</code> because they need
-              the full entity store. These are listed separately because they
-              boot a different Redux tree.
+              <code className="font-mono">/legacy/*</code> because they need the
+              full entity store. These are listed separately because they boot a
+              different Redux tree.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {[
