@@ -91,7 +91,7 @@ Providers preloadedState                           ↓
 |---|---|
 | `app/(a)/layout.tsx` | Strip preferences init (~35 lines removed). Replace bundled RPC with `checkIsUserAdmin()`. Add `cookies().get('theme')` + pass to `<html>` parent (see §5). |
 | `app/(authenticated)/layout.tsx` | Same as above (~45 lines removed — this layout has the most preference-init code). |
-| `app/(ssr)/layout.tsx` | Same as above (~30 lines removed). |
+| `app/(dev)/layout.dev.tsx` | Same as above (~30 lines removed). |
 | `app/layout.tsx` | Read `theme` cookie, set `<html class={...}>`. Currently `SyncBootScript` is the only theme-class authority; after Phase 3 the server is primary and the script is fallback. |
 | `styles/themes/themeSlice.ts` | Add a thin side-effect: on theme mutation (or slice reducer case), POST to `/api/set-theme` with the new theme. Implementation lives in the policy's `onCommit` / middleware hook (Phase 3 adds this as a per-policy callback if not already present — verify in §5.3). |
 | `lib/sync/components/SyncBootScript.tsx` | No structural change — continues to read localStorage; only priority changes (server-cookie runs first). |
@@ -225,7 +225,7 @@ Lines counted from current HEAD (`4abb47663`):
 |---|---|---|
 | `app/(a)/layout.tsx` | Lines 6–14 (imports), 59, 63–96 (preference-init block), 101, 117 (Redux wire-up for userPreferences field) | ~40 |
 | `app/(authenticated)/layout.tsx` | Lines 10, 17–18, 50–57 (RPC try/catch), 73–101 (prefs init + row insert), 106 | ~40 |
-| `app/(ssr)/layout.tsx` | Mirror of `(a)` — confirm exact offsets in implementation PR | ~35 |
+| `app/(dev)/layout.dev.tsx` | Mirror of `(a)` — confirm exact offsets in implementation PR | ~35 |
 | `types/reduxTypes.ts` | Narrowing `userPreferences` from required → optional | ~0–2 |
 | **Total deletion** | | **~115 lines** |
 

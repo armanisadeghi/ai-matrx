@@ -1,7 +1,7 @@
 // BUILD-TIME OPTIMIZATION CONTRACT
 // --------------------------------
 // `getEmptyGlobalCache` is statically imported by `(authenticated)/layout.tsx`,
-// `(a)/layout.tsx`, and `(ssr)/layout.tsx` — every slim-path route. The
+// `(core)/layout.tsx` and `(dev)/layout.dev.tsx` — every slim-path route. The
 // entity type chain it touches (`entityTypes` → `initialSchemas` 115k LOC,
 // `fullRelationships` 2.2k LOC) is purely type-level here, so all imports
 // MUST be `import type` to keep the slim path's static graph free of the

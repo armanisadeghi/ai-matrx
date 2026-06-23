@@ -12,7 +12,7 @@ Date: 2026-04-22.
 
 | PR | Scope | Status |
 |---|---|---|
-| 3.A | `app/(a)/layout.tsx`, `app/(authenticated)/layout.tsx`, `app/(ssr)/layout.tsx` — strip `getUserSessionData` (bundled RPC) + `supabase.from('user_preferences').insert(…)` backfill + `userPreferences` preloadedState. Swap in `checkIsUserAdmin` (narrow single-row lookup). Server-read `theme` cookie in `app/layout.tsx` to set `<html class="dark">` before first paint. `types/reduxTypes.ts` narrows `InitialReduxState.userPreferences` to optional. | ✅ Merged (`8bc4fd03a`) — −63 net lines |
+| 3.A | `app/(a)/layout.tsx`, `app/(authenticated)/layout.tsx`, `app/(dev)/layout.dev.tsx` — strip `getUserSessionData` (bundled RPC) + `supabase.from('user_preferences').insert(…)` backfill + `userPreferences` preloadedState. Swap in `checkIsUserAdmin` (narrow single-row lookup). Server-read `theme` cookie in `app/layout.tsx` to set `<html class="dark">` before first paint. `types/reduxTypes.ts` narrows `InitialReduxState.userPreferences` to optional. | ✅ Merged (`8bc4fd03a`) — −63 net lines |
 | 3.B | `styles/themes/themeSlice.ts` → `writeThemeCookie(mode)` fire-and-forget helper. `providers/StoreProvider.tsx` installs a narrow `store.subscribe` watcher that fires `writeThemeCookie` only on genuine `theme.mode` *changes* (seeded `lastMode` prevents redundant POSTs on REHYDRATE-to-same-value). 9 new Jest tests (`styles/themes/__tests__/themeSlice.cookieMirror.test.ts`) covering both paths + the negative-case invariants. | ✅ Merged (`655c47853`) — +279 lines (mostly tests) |
 | 3.C | This verification doc + browser checklist + TTFB measurement template. | ⏳ This PR |
 

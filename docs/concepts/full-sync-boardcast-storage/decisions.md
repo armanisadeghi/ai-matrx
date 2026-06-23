@@ -128,7 +128,7 @@ Every overlapping system and ad-hoc cache, with the phase that deletes it. No it
 | 18 | Local file system | `utils/file-operations/LocalFileSystem.ts` | 6 | Sync engine slice |
 | 19 | React Query provider + deps | `providers/ReactQueryProvider.tsx`, `@tanstack/react-query` package | 7 | Sync engine or plain thunks |
 | 20 | Ad-hoc `localStorage.*` calls | ~40 files (audit in Phase 8) | 8 | Sync engine API |
-| 21 | Route group `(ssr)` | `app/(ssr)/**` | 9 | `app/(a)/**` |
+| 21 | Route group `(ssr)` | `removed (ssr) route group — **` | 9 | `app/(a)/**` |
 | 22 | Route group `(authenticated)` | `app/(authenticated)/**` | 9 | `app/(a)/**` |
 | 23 | Route group `(public)` | `app/(public)/**` | 9 | `app/(a)/**` or static routes |
 | 24 | `ThemeProvider` context + `useTheme` context hook | `styles/themes/ThemeProvider.tsx` | 1 | `useAppSelector((s) => s.theme.mode)`; sync engine owns theme lifecycle |

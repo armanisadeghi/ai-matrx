@@ -68,11 +68,11 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 
 - `/google-auth-demo` — `app/(public)/google-auth-demo/page.tsx`
 
-### SSR — `/ssr/demos`
+### Dev demos — `/demos`
 
 *66 routes*
 
-- `/ssr/demos` — `app/(dev)/demos/page.tsx`
+- `/demos` — `app/(dev)/demos/page.dev.tsx`
 - `/demos/agent-selector-demo` — `app/(dev)/demos/agent-selector-demo/page.tsx`
 - `/demos/button-demo` — `app/(dev)/demos/button-demo/page.tsx`
 - `/demos/ca-pd-calculator` — `app/(dev)/demos/ca-pd-calculator/page.tsx`
@@ -702,7 +702,7 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/settings-hooks-demo`
 - `/settings-shell-demo`
 - `/settings-tree-demo`
-- `/ssr/demos`
+- `/demos`
 - `/demos/agent-selector-demo`
 - `/demos/button-demo`
 - `/demos/ca-pd-calculator`

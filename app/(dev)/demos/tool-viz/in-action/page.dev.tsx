@@ -29,6 +29,9 @@ import {
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { formatRelativeTime } from "@/utils/datetime";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
 // ─── Scenario data (Simulated mode) ─────────────────────────────────────────
@@ -153,6 +156,30 @@ const SCENARIOS: Scenario[] = [
       },
     ],
     outro: "Done — the docs search box is focused and ready. What would you like me to search for?",
+  },
+  {
+    id: "note",
+    label: "Save a note (single call)",
+    intro: "Good — I'll capture that as a note so we can build on it later.",
+    calls: [
+      {
+        toolName: "note",
+        args: {
+          action: "update",
+          label: "CX Table Relationships",
+          note_id: "898a62fa-5ae6-4146-af3c-65f3f8ee312e",
+        },
+        // The `note` tool returns only identifiers — the renderer hydrates the
+        // live note (a real note id, so its content/stats load for its owner).
+        result: {
+          id: "898a62fa-5ae6-4146-af3c-65f3f8ee312e",
+          label: "CX Table Relationships",
+          updated_at: "2026-06-22 19:46:27.435041+00:00",
+        },
+      },
+    ],
+    outro:
+      "Saved to **CX Table Relationships**. You can open it in Notes or keep editing inline.",
   },
   {
     id: "data-record",
@@ -376,6 +403,8 @@ interface CxToolCallRow {
   completed_at: string | null;
   execution_events: unknown;
   created_at: string;
+  user_id?: string | null;
+  conversation_id?: string | null;
 }
 
 function rowToEntry(row: CxToolCallRow): ToolLifecycleEntry {
@@ -400,8 +429,10 @@ function rowToEntry(row: CxToolCallRow): ToolLifecycleEntry {
   };
 }
 
-// Tools worth offering for real runs (those with renderers + real history).
-const REAL_RUN_TOOLS = [
+// Fallback tool list for NON-super-admins (per-user search). Super-admins get a
+// live list discovered from the DB (every tool that has real usage).
+const FALLBACK_REAL_RUN_TOOLS = [
+  "note",
   "memory",
   "fs_list",
   "fs_read",
@@ -415,56 +446,180 @@ const REAL_RUN_TOOLS = [
   "sql",
 ];
 
-function RealRuns() {
-  const [tool, setTool] = useState(REAL_RUN_TOOLS[0]);
+interface ToolUsage {
+  tool_name: string;
+  count: number;
+  errors: number;
+  last_used: string;
+}
+
+// Most informative arg/output value to label a usage row in the picker.
+const INFORMATIVE_KEYS = [
+  "label",
+  "path",
+  "command",
+  "city",
+  "key",
+  "query",
+  "url",
+  "action",
+  "resource",
+  "ref",
+];
+
+function summarizeRow(row: CxToolCallRow): string {
+  const args = (row.arguments ?? {}) as Record<string, unknown>;
+  for (const k of INFORMATIVE_KEYS) {
+    const v = args[k];
+    if (typeof v === "string" && v.trim()) return `${k}: ${v.slice(0, 90)}`;
+  }
+  try {
+    const out =
+      typeof row.output === "string" ? JSON.parse(row.output) : row.output;
+    if (out && typeof out === "object") {
+      const label = (out as Record<string, unknown>).label;
+      if (typeof label === "string" && label) return label;
+    }
+  } catch {
+    /* ignore */
+  }
+  return row.tool_name_as_called || row.tool_name;
+}
+
+/**
+ * Real saved runs. Super-admins search ACROSS ALL users via the admin route
+ * (`/api/admin/tool-call-samples`, RLS-bypassing but hard super-admin gated);
+ * everyone else searches their own calls directly. Either way: pick a tool →
+ * see the most recent usages → select one → render it exactly as on reload.
+ */
+function RealRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const [tool, setTool] = useState("note");
+  const [tools, setTools] = useState<ToolUsage[] | null>(null);
   const [rows, setRows] = useState<CxToolCallRow[] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Super-admin: discover every tool that has real usage (recency-ranked).
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    let cancelled = false;
+    fetch("/api/admin/tool-call-samples?mode=tools")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled && Array.isArray(j.tools)) setTools(j.tools as ToolUsage[]);
+      })
+      .catch(() => {
+        /* discovery is best-effort; the input still accepts free text */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperAdmin]);
+
   const load = async () => {
+    const name = tool.trim();
+    if (!name) return;
     setLoading(true);
     setError(null);
     setRows(null);
-    const { data, error: err } = await supabase
-      .from("cx_tool_call")
-      .select(
-        "id, call_id, tool_name, tool_name_as_called, arguments, output, is_error, error_type, error_message, started_at, completed_at, execution_events, created_at",
-      )
-      .eq("tool_name", tool)
-      .not("output", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setLoading(false);
-    if (err) {
-      setError(err.message);
-      return;
+    setSelectedId(null);
+    try {
+      let data: CxToolCallRow[] = [];
+      if (isSuperAdmin) {
+        const res = await fetch(
+          `/api/admin/tool-call-samples?tool=${encodeURIComponent(name)}&limit=10`,
+        );
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.details || j.error || "Request failed");
+        data = (j.rows as CxToolCallRow[]) ?? [];
+      } else {
+        const { data: d, error: err } = await supabase
+          .from("cx_tool_call")
+          .select(
+            "id, call_id, tool_name, tool_name_as_called, arguments, output, is_error, error_type, error_message, started_at, completed_at, execution_events, created_at",
+          )
+          .eq("tool_name", name)
+          .not("output", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (err) throw err;
+        data = (d as CxToolCallRow[]) ?? [];
+      }
+      setRows(data);
+      setSelectedId(data[0]?.id ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
     }
-    setRows((data as CxToolCallRow[]) ?? []);
   };
+
+  const selected = rows?.find((r) => r.id === selectedId) ?? null;
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={tool}
-          onChange={(e) => {
-            setTool(e.target.value);
-            setRows(null);
-          }}
-          className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-        >
-          {REAL_RUN_TOOLS.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        <Badge variant={isSuperAdmin ? "default" : "secondary"} className="gap-1">
+          <Database className="h-3 w-3" />
+          {isSuperAdmin ? "All users · super admin" : "Your runs"}
+        </Badge>
+
+        {isSuperAdmin ? (
+          <>
+            <input
+              list="tool-usage-options"
+              value={tool}
+              onChange={(e) => {
+                setTool(e.target.value);
+                setRows(null);
+              }}
+              placeholder="tool name (e.g. note)"
+              className="w-56 rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+            />
+            <datalist id="tool-usage-options">
+              {(tools ?? []).map((t) => (
+                <option key={t.tool_name} value={t.tool_name}>
+                  {t.count} use{t.count === 1 ? "" : "s"} · last{" "}
+                  {formatRelativeTime(t.last_used)}
+                </option>
+              ))}
+            </datalist>
+          </>
+        ) : (
+          <select
+            value={tool}
+            onChange={(e) => {
+              setTool(e.target.value);
+              setRows(null);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+          >
+            {FALLBACK_REAL_RUN_TOOLS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        )}
+
         <Button size="sm" onClick={load} className="gap-1.5" disabled={loading}>
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Database className="h-3.5 w-3.5" />}
-          Load real runs
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Database className="h-3.5 w-3.5" />
+          )}
+          Find usages
         </Button>
         {rows ? <Badge variant="outline">{rows.length} found</Badge> : null}
       </div>
+
+      {isSuperAdmin && tools ? (
+        <p className="text-xs text-muted-foreground">
+          {tools.length} tools with recent usage. Type or pick one above, then
+          Find usages.
+        </p>
+      ) : null}
 
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
@@ -474,21 +629,62 @@ function RealRuns() {
 
       {rows && rows.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-          No saved runs for <span className="font-mono">{tool}</span> on your account. Run this tool in a chat, then come back.
+          No saved runs for <span className="font-mono">{tool}</span>
+          {isSuperAdmin ? "" : " on your account"}. Run this tool in a chat, then
+          come back.
         </div>
       ) : null}
 
       {rows && rows.length > 0 ? (
-        <div className="mx-auto w-full max-w-3xl space-y-3">
-          {rows.map((row) => (
-            <div key={row.id} className="rounded-lg border border-border bg-card p-3">
-              <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-mono">{new Date(row.created_at).toLocaleString()}</span>
-                {row.is_error ? <Badge variant="destructive">error</Badge> : null}
+        <div className="mx-auto grid w-full max-w-3xl gap-3 md:grid-cols-[260px_1fr]">
+          {/* Usage picker — most recent N */}
+          <ul className="space-y-1">
+            {rows.map((row) => {
+              const active = row.id === selectedId;
+              return (
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(row.id)}
+                    className={
+                      "w-full rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors " +
+                      (active
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50")
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-foreground truncate">
+                        {summarizeRow(row)}
+                      </span>
+                      {row.is_error ? (
+                        <Badge variant="destructive" className="ml-auto shrink-0">
+                          error
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">
+                      {formatRelativeTime(row.created_at)}
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Selected render */}
+          <div className="min-w-0">
+            {selected ? (
+              <div className="rounded-lg border border-border bg-card p-3">
+                <ToolCallVisualization
+                  key={selected.id}
+                  entries={[rowToEntry(selected)]}
+                  isPersisted
+                  hasContent
+                />
               </div>
-              <ToolCallVisualization entries={[rowToEntry(row)]} isPersisted hasContent />
-            </div>
-          ))}
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
@@ -501,6 +697,7 @@ export default function ToolInActionPage() {
   const [mode, setMode] = useState<"sim" | "real">("sim");
   const [scenarioId, setScenarioId] = useState(SCENARIOS[0].id);
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4">
@@ -508,7 +705,8 @@ export default function ToolInActionPage() {
         <h1 className="text-lg font-semibold text-foreground">Tool renderer — in action</h1>
         <p className="text-sm text-muted-foreground">
           See a single tool render inside a realistic assistant turn (the agent writes, calls the tool, then continues),
-          or load a tool's REAL saved runs with actual args + output.
+          or load a tool's REAL saved runs with actual args + output
+          {isSuperAdmin ? " (across all users)" : ""}.
         </p>
       </header>
 
@@ -547,7 +745,7 @@ export default function ToolInActionPage() {
         </section>
       ) : (
         <section className="space-y-3">
-          <RealRuns />
+          <RealRuns isSuperAdmin={isSuperAdmin} />
         </section>
       )}
     </div>

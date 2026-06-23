@@ -362,7 +362,7 @@ The **new agent system does NOT write to cx tables** — Python backend writes t
 ### Status: ✅ Done (Phase 3)
 
 **[KNOWN] Route structure and instance mapping:**
-- `/ssr/chat` → create instance from hardcoded default agent
+- `/demos/chat` → create instance from hardcoded default agent
 - `/demos/chat/a/[agentId]` → create instance from `agentId` param
 - `/demos/chat/c/[conversationId]` → agentId required as `?agent=uuid`, create instance + load history
 
@@ -554,7 +554,7 @@ OR: Adapt `ConversationInput` to dispatch to new slices while keeping same UI.
 
 **[KNOWN]** The new system has `createManualInstanceNoAgent({ label?, variableDefinitions?, baseSettings? })` — creates an instance with empty `agentId: ""`. This enables pure chat without an agent.
 
-**[THINK]** The current default chat route (`/ssr/chat`) shows the default agent. With the new system, this could create a `NoAgent` instance and use the `chat` API mode (`POST /api/ai/chat`).
+**[THINK]** The current default chat route (`/demos/chat`) shows the default agent. With the new system, this could create a `NoAgent` instance and use the `chat` API mode (`POST /api/ai/chat`).
 
 **Tasks:**
 - [ ] Decide: keep default agent on welcome screen (recommended) or switch to no-agent mode

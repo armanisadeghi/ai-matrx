@@ -101,7 +101,7 @@ The bug introduced in `b03391324`: when `matrx-shell-glass` was merged into `she
 
 `styles/shell.css` was loaded **only** by:
 - `app/(a)/layout.tsx`
-- `app/(ssr)/layout.tsx`
+- `app/(dev)/layout.dev.tsx`
 
 `app/globals.css` is loaded by the root `app/layout.tsx` — it applies everywhere.
 

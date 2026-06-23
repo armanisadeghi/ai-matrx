@@ -255,7 +255,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | Route | Messages | Input | State | Top Container |
 |-------|----------|-------|-------|---------------|
 | `/p/chat` | `MessageList` in `features/public-chat/components/MessageDisplay.tsx` | `ChatInputWithControls` | `ChatContext` (useReducer) | `ChatLayoutShell` → `ChatContainer` |
-| `/ssr/chat` | Same `MessageList` | Same `ChatInputWithControls` | `ChatContext` + `SsrAgentContext` | `ChatLayout` → `ChatWorkspace` |
+| `/demos/chat` | Same `MessageList` | Same `ChatInputWithControls` | `ChatContext` + `SsrAgentContext` | `ChatLayout` → `ChatWorkspace` |
 | `/chat` | `ResponseColumn` → `MessageItem` list | `PromptInputContainer` | Redux `chatConversations` (old entity slice) + socket-io | `ChatLayoutClient` |
 | `/ai/prompts/run` | `SmartMessageList` | `SmartPromptInput` | Redux `promptExecution` slice | `PromptRunPage` → `PromptRunner` |
 | `/ai/prompts/edit` | `PromptUserMessage`/`PromptAssistantMessage` | `PromptInput` | Local component state + Redux socket-io | `PromptBuilder` → `PromptBuilderRightPanel` |
@@ -266,7 +266,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | Route | Features that must be preserved |
 |-------|--------------------------------|
 | `/p/chat` | `AgentPickerSheet`, `ChatSidebar` with conversation history, `ChatMobileHeader`, URL `/p/chat/c/[id]` + `/p/chat/a/[agentId]`, guided/classic variable mode on welcome screen |
-| `/ssr/chat` | CSS-grid shell layout, `SsrAgentContext`, `ShareModal`, `ChatHeaderControls`, URL via `window.history.pushState`, sidebar sync via `CustomEvent` |
+| `/demos/chat` | CSS-grid shell layout, `SsrAgentContext`, `ShareModal`, `ChatHeaderControls`, URL via `window.history.pushState`, sidebar sync via `CustomEvent` |
 | `/chat` | Full socket-io pipeline, `InputBottomControls` (broker/tools/search toggles), `BrokerSheet`, `AIToolsSheet`, file upload with chips, model picker, debug overlay, TTS |
 | `/ai/prompts/run` | `PromptRunsSidebar` (run history), `ResizableCanvas` side panel, `PromptModeNavigation` header (Edit/Run toggle), `SharedPromptBanner`, run ID in URL |
 | `/ai/prompts/edit` | Entire left panel: system message editor, variable defaults editor, tool selector, model config, `FullScreenEditor`, `ModelSettingsDialog`, `SystemPromptOptimizer`. Right panel is ephemeral test preview — must NOT persist to DB. |
@@ -423,7 +423,7 @@ Each step is independent of the next **except ordering**. A step must pass tsc +
 
 ---
 
-### 🔲 Step 6: Migrate `/ssr/chat`
+### 🔲 Step 6: Migrate `/demos/chat`
 
 **Status:** Not started  
 **Risk:** High  
@@ -442,7 +442,7 @@ Same components as `/p/chat` (`ChatContext`, `ChatInputWithControls`, `MessageDi
 - [ ] Verify URL sync (`window.history.pushState`) still works correctly
 - [ ] Verify `ShareModal` still launches from `ChatHeaderControls`
 - [ ] Run tsc — zero new errors
-- [ ] Commit: `feat: migrate /ssr/chat to ConversationShell`
+- [ ] Commit: `feat: migrate /demos/chat to ConversationShell`
 
 ---
 
@@ -540,9 +540,9 @@ These are new files with zero production consumers. Changes will not break any w
 | `features/prompts/components/smart/SmartPromptInput.tsx` | same |
 | `features/chat/components/response/user-message/UserMessage.tsx` | `/chat` |
 | `features/chat/components/response/assistant-message/stream/ChatStreamDisplay.tsx` | `/chat` |
-| `features/public-chat/components/MessageDisplay.tsx` | `/p/chat`, `/ssr/chat` |
-| `features/public-chat/components/ChatInputWithControls.tsx` | `/p/chat`, `/ssr/chat` |
-| `features/public-chat/context/ChatContext.tsx` | `/p/chat`, `/ssr/chat` |
+| `features/public-chat/components/MessageDisplay.tsx` | `/p/chat`, `/demos/chat` |
+| `features/public-chat/components/ChatInputWithControls.tsx` | `/p/chat`, `/demos/chat` |
+| `features/public-chat/context/ChatContext.tsx` | `/p/chat`, `/demos/chat` |
 | `lib/redux/rootReducer.ts` | entire app |
 | `lib/chat-protocol/` | `StreamingContentBlocks`, `sendMessage` thunk |
 | `lib/api/stream-parser.ts` | `sendMessage` thunk |

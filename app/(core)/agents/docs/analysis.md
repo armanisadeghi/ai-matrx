@@ -1,5 +1,5 @@
 
-## 1. Route structure: `app/(a)/agents/` and `app/(ssr)/ssr/agents/`
+## 1. Route structure: `app/(a)/agents/` and `app/(dev)/demos/agents/`
 
 **`app/(a)/agents/`** (`/Users/armanisadeghi/code/matrx-admin/app/(a)/agents/`)
 
@@ -9,12 +9,12 @@ Only one file (documentation, no App Router pages):
 
 There is **no** `page.tsx` or other route files under `(a)/agents/` in this repo. `useAgentsBasePath` still assumes an authenticated base of `/ai/agents`, but **`app/**/ai/agents/**` was not found** — the live agents UI in `app/` is under the SSR segment below.
 
-**`app/(ssr)/ssr/agents/`**
+**`app/(dev)/demos/agents/`**
 
-- `/Users/armanisadeghi/code/matrx-admin/app/(ssr)/ssr/agents/page.tsx` — list (`AgentsGrid`)
-- `/Users/armanisadeghi/code/matrx-admin/app/(ssr)/ssr/agents/[id]/layout.tsx` — loads agent header context, `AgentPageProvider`
-- `/Users/armanisadeghi/code/matrx-admin/app/(ssr)/ssr/agents/[id]/edit/page.tsx` — builder (`AgentBuilderWrapper`)
-- `/Users/armanisadeghi/code/matrx-admin/app/(ssr)/ssr/agents/[id]/run/page.tsx` — run (`AgentRunWrapper`)
+- `/Users/armanisadeghi/code/matrx-admin/app/(dev)/demos/agents/page.tsx` — list (`AgentsGrid`)
+- `/Users/armanisadeghi/code/matrx-admin/app/(dev)/demos/agents/[id]/layout.tsx` — loads agent header context, `AgentPageProvider`
+- `/Users/armanisadeghi/code/matrx-admin/app/(dev)/demos/agents/[id]/edit/page.tsx` — builder (`AgentBuilderWrapper`)
+- `/Users/armanisadeghi/code/matrx-admin/app/(dev)/demos/agents/[id]/run/page.tsx` — run (`AgentRunWrapper`)
 
 **Related (not under those two roots)**
 

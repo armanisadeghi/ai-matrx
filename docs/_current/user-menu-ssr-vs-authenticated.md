@@ -2,22 +2,22 @@
 
 This document compares the **user avatar / profile menus** in:
 
-1. **`app/(ssr)/`** — the SSR-first “shell” experience (guests allowed; optional auth).
+1. **`removed (ssr) route group — `** — the SSR-first “shell” experience (guests allowed; optional auth).
 2. **`app/(authenticated)/`** — the main authenticated dashboard (server redirect if no session).
 
 Goal: support a future **single configurable menu system** where routes can opt into subsets of options without duplicating logic.
 
 ---
 
-## 1. SSR route (`app/(ssr)/`)
+## 1. SSR route (`removed (ssr) route group — `)
 
 ### 1.1 Entry points and files
 
 | Piece | File |
 |-------|------|
-| Server layout (Redux seed, guest vs auth, global checkbox controls) | `app/(ssr)/layout.tsx` |
-| Checkbox that toggles menu open state | `app/(ssr)/layout.tsx` — `<input type="checkbox" id="shell-user-menu" />` |
-| Panel visibility (CSS `:has(#shell-user-menu:checked)`) | `app/(ssr)/shell.css` — selectors `.shell-user-menu-panel`, `.shell-user-menu-backdrop`, etc. |
+| Server layout (Redux seed, guest vs auth, global checkbox controls) | `app/(dev)/layout.dev.tsx` |
+| Checkbox that toggles menu open state | `app/(dev)/layout.dev.tsx` — `<input type="checkbox" id="shell-user-menu" />` |
+| Panel visibility (CSS `:has(#shell-user-menu:checked)`) | `removed (ssr) route group — shell.css` — selectors `.shell-user-menu-panel`, `.shell-user-menu-backdrop`, etc. |
 | Header shell | `features/ssr-trials/components/Header.tsx` |
 | Avatar trigger (label → checkbox) | `features/ssr-trials/components/UserMenuTrigger.tsx` |
 | Menu content | `features/ssr-trials/components/UserMenuPanel.tsx` |
@@ -32,7 +32,7 @@ Goal: support a future **single configurable menu system** where routes can opt 
 
 ### 1.3 Data sources
 
-- **User display:** Redux `selectUser` — hydrated from `Providers` `initialReduxState` in `app/(ssr)/layout.tsx` (guest gets empty mapped user).
+- **User display:** Redux `selectUser` — hydrated from `Providers` `initialReduxState` in `app/(dev)/layout.dev.tsx` (guest gets empty mapped user).
 - **Admin block:** Redux `selectIsAdmin` from `@/lib/redux/slices/userSlice` → `user.isAdmin` set at layout init from `getUserSessionData` / `mapUserData` when a session exists.
 - **Profile image field:** `user.userMetadata.avatarUrl` (not `picture`).
 
@@ -237,8 +237,8 @@ Creator tools (`CreatorMenu`, layout submenu) | No | Yes (broker-gated) | No |
 
 **SSR**
 
-- `app/(ssr)/layout.tsx`
-- `app/(ssr)/shell.css`
+- `app/(dev)/layout.dev.tsx`
+- `removed (ssr) route group — shell.css`
 - `features/ssr-trials/components/Header.tsx`
 - `features/ssr-trials/components/UserMenuTrigger.tsx`
 - `features/ssr-trials/components/UserMenuPanel.tsx`

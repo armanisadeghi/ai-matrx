@@ -172,7 +172,7 @@ No prop drilling. No duplicate renders. No conditional availability per route.
 |-----------|--------------|
 | Authenticated routes | `app/Providers.tsx` |
 | Public routes (`/p/...`) | `app/(public)/PublicProviders.tsx` |
-| SSR routes (`/ssr/...`) | `app/(ssr)/layout.tsx` (via `app/Providers.tsx`) |
+| SSR routes (`/ssr/...`) | `app/(dev)/layout.dev.tsx` (via `app/Providers.tsx`) |
 
 ---
 

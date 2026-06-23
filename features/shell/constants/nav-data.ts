@@ -138,7 +138,7 @@ export interface ShellNavItem {
   external?: boolean;
 }
 
-// Primary navigation items — canonical app URLs shared by (a), (ssr), and (authenticated).
+// Primary navigation items — canonical app URLs shared by (core), (dev), and (transitional).
 export const primaryNavItems: ShellNavItem[] = [
   {
     // Authed users get their personalized hub; guests get the public

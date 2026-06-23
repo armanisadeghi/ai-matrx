@@ -138,7 +138,7 @@ Speaker buttons use raw SVG icons from `components/icons/tap-buttons.tsx`, NOT L
 
 ### Styling
 
-Uses `TapTargetButton` / `TapTargetButtonGroup` from `app/(ssr)/_components/core/TapTargetButton.tsx`. Glass styling via `matrx-glass` CSS classes (globally available in `app/globals.css`).
+Uses `TapTargetButton` / `TapTargetButtonGroup` from `removed (ssr) route group — _components/core/TapTargetButton.tsx`. Glass styling via `matrx-glass` CSS classes (globally available in `app/globals.css`).
 
 ---
 

@@ -590,7 +590,7 @@ Server request for /agents/{uuid}/3/edit
 The `cache()` wrapper ensures that even though `getAgent()` is called in `generateMetadata`, layout, and page, it executes exactly once.
 
 **Everything else is client-side on demand:**
-- Agent list after navigation → usually `dispatch(fetchAgentsList)` (same RPC as SSR list if you choose client-only list like `app/(ssr)/ssr/agents/page.tsx`)
+- Agent list after navigation → usually `dispatch(fetchAgentsList)` (same RPC as SSR list if you choose client-only list like `app/(dev)/demos/agents/page.tsx`)
 - Version list for dropdown → `fetchAgentVersionHistory` when the panel opens (or `useIdleTask` at p5)
 - Execution payload → `fetchAgentExecutionMinimal` / `fetchAgentExecutionFull` when Run/builder needs it
 - Access metadata on a stale record → `fetchAgentAccessLevel`

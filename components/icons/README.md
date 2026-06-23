@@ -264,6 +264,6 @@ import { FilterSearchGroup, ToolsSearchGroup } from "@/components/icons/search-t
 | Supporting file | Purpose |
 |---|---|
 | `components/icons/TapTargetButton.tsx` | Core primitive — all variants and group container |
-| `app/(ssr)/_components/button-demo/AllButtonsShowcase.tsx` | Full showcase of all general buttons and toolbars |
-| `app/(ssr)/_components/button-demo/AddFilterSearchRow.tsx` | Usage example: filter + search row |
-| `app/(ssr)/_components/button-demo/ButtonRow.tsx` | Usage example: mixed standalone + grouped row |
+| `removed (ssr) route group — _components/button-demo/AllButtonsShowcase.tsx` | Full showcase of all general buttons and toolbars |
+| `removed (ssr) route group — _components/button-demo/AddFilterSearchRow.tsx` | Usage example: filter + search row |
+| `removed (ssr) route group — _components/button-demo/ButtonRow.tsx` | Usage example: mixed standalone + grouped row |

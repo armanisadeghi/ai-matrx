@@ -40,7 +40,7 @@ Three route trees have a **fixed color** in `utils/favicon-utils.ts`. The color 
 
 | Route tree | Color | Fallback letter | Rule |
 |------------|-------|-----------------|------|
-| `/demo`, `/demos`, `/component-demo`, `/ssr/demos`, `/p/demo` | `#ca8a04` warm yellow | path-derived | Every demo route MUST pass its own unique `letter` |
+| `/demo`, `/demos`, `/component-demo`, `/p/demo` | `#ca8a04` warm yellow | path-derived | Every demo route MUST pass its own unique `letter` |
 | `/tests`, `/beta`, `/experimental` | `#65a30d` lime green | path-derived | Every test route MUST pass its own unique `letter` |
 | `/administration`, `/admin` | `#4338ca` deep indigo | path-derived | Every admin route MUST pass its own unique `letter` |
 

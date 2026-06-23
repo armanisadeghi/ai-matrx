@@ -4,7 +4,7 @@
 
 Create a brand-new, fully isolated route group `(ssr)` with a 100% server-rendered shell layout following the "Static-First Shell" architecture. This replaces all client-side layout logic with CSS-only state management, glassmorphic design tokens, and atomic Suspense boundaries.
 
-**Route structure:** `app/(ssr)/dashboard` → accessible at `/dashboard` path (we'll use a different path to avoid collision - see below)
+**Route structure:** `removed (ssr) route group — dashboard` → accessible at `/dashboard` path (we'll use a different path to avoid collision - see below)
 
 **Collision avoidance:** Since `/dashboard` already exists under `(authenticated)`, we'll use the route prefix `ssr` as a segment: `app/(dev)/demos/dashboard/page.tsx` → accessible at `/ssr/dashboard`. This keeps it fully isolated.
 
@@ -13,7 +13,7 @@ Create a brand-new, fully isolated route group `(ssr)` with a 100% server-render
 ## File Structure
 
 ```
-app/(ssr)/
+removed (ssr) route group — 
 ├── layout.tsx                    # Root SSR layout - server component, auth + shell
 ├── ssr/
 │   └── dashboard/

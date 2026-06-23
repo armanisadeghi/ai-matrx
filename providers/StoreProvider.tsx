@@ -12,7 +12,7 @@
 //
 // During the entity-isolation migration this provider became factory-agnostic:
 // it accepts an optional `makeStore` prop so that the `(authenticated)` /
-// `(a)` / `(ssr)` route groups (slim) and `(legacy)` (entity-aware) can each
+// `(core)` / `(dev)` route groups (slim) and `(legacy)` (entity-aware) can each
 // pass their own factory. The module-level singleton is keyed by factory
 // reference so navigating between groups produces the correct store. Default
 // remains `makeStore` from `@/lib/redux/store` for back-compat.

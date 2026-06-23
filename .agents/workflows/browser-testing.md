@@ -23,5 +23,5 @@ Use these credentials to log into the application at `http://localhost:3000/logi
 
 - The dev server runs on `http://localhost:3000` by default
 - After login, the session persists across page navigations
-- The SSR chat route is at `/ssr/chat`
+- The SSR chat route is at `/demos/chat`
 - Mobile testing can be done by resizing the browser to 390x844 (iPhone 14) or similar
