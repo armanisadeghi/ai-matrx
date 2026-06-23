@@ -121,6 +121,72 @@ function HubEmptyConversation() {
   );
 }
 
+// ─── Footer status zone — read-only "you're working on X" context ─────────────
+// Self-contained status units (mirror NoteMetadataBar): each reads its own Redux
+// state by id, so they live in the WindowPanel footer with zero prop drilling.
+// The detected active context lets the user see which agent/conversation the hub
+// is referencing — and spot a wrong guess.
+
+/** Footer-left: detected active agent + conversation. */
+function CreatorHubContextStatus() {
+  const inputConvId = useAppSelector(selectLastFocusedInputConversation);
+  const surfaceKey = useAppSelector(selectLastFocusedSurfaceKey);
+  // Run / chat surface keys embed the agentId after the ":".
+  const activeAgentId =
+    surfaceKey && surfaceKey.includes(":")
+      ? surfaceKey.slice(surfaceKey.indexOf(":") + 1)
+      : null;
+  const activeAgentName = useAppSelector((state) =>
+    activeAgentId ? selectAgentName(state, activeAgentId) : null,
+  );
+
+  return (
+    <div
+      className="flex items-center gap-x-3 text-[11px]"
+      title={surfaceKey ? `Surface: ${surfaceKey}` : undefined}
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Active
+      </span>
+      <span className="text-foreground">
+        Agent:{" "}
+        <span className="font-medium">
+          {activeAgentName ??
+            (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
+        </span>
+      </span>
+      <span className="text-muted-foreground">
+        Conversation:{" "}
+        <span className="font-mono">
+          {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** Footer-right: creator/owner detection chip. */
+function CreatorHubCreatorChip() {
+  const isCreator = useAppSelector(selectIsCreator);
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-[10px] font-medium",
+        isCreator
+          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+          : "bg-muted text-muted-foreground",
+      )}
+      title={
+        isCreator
+          ? "You are detected as the creator/owner of this agent"
+          : "You are not detected as the creator of this agent"
+      }
+    >
+      {isCreator ? "Creator" : "Not creator"}
+    </span>
+  );
+}
+
 export interface CreatorHubWindowProps {
   isOpen: boolean;
   onClose: () => void;
@@ -139,20 +205,12 @@ export default function CreatorHubWindow({
   const displayConvId = useAppSelector(selectLastFocusedDisplayConversation);
   const surfaceKey = useAppSelector(selectLastFocusedSurfaceKey);
 
-  // Detected active context — shown in a banner so the user can see which
-  // agent/conversation the hub is referencing (and spot a wrong guess). Run /
-  // chat surface keys embed the agentId after the ":".
-  const isCreator = useAppSelector(selectIsCreator);
+  // The detected active context (agent / conversation / creator chip) is read-only
+  // status, so it lives in the WindowPanel footer status zone, not the body —
+  // see CreatorHubContextStatus / CreatorHubCreatorChip, which read their own state.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const visibleTabs = CREATOR_HUB_TABS.filter(
     (t) => !t.adminOnly || isSuperAdmin,
-  );
-  const activeAgentId =
-    surfaceKey && surfaceKey.includes(":")
-      ? surfaceKey.slice(surfaceKey.indexOf(":") + 1)
-      : null;
-  const activeAgentName = useAppSelector((state) =>
-    activeAgentId ? selectAgentName(state, activeAgentId) : null,
   );
 
   // Shared embedded windows (Stream Debug, Run Settings) for the Actions tab.
@@ -256,49 +314,13 @@ export default function CreatorHubWindow({
         sidebar={sidebar}
         sidebarDefaultSize={190}
         sidebarMinSize={150}
-        bodyClassName="flex min-h-0 flex-col overflow-hidden p-0"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        footerLeft={<CreatorHubContextStatus />}
+        footerRight={<CreatorHubCreatorChip />}
         onCollectData={() => ({ activeTab })}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-          <div
-            className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 border-b border-border bg-muted/40 px-3 py-1.5 text-[11px]"
-            title={surfaceKey ? `Surface: ${surfaceKey}` : undefined}
-          >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Active
-            </span>
-            <span className="text-foreground">
-              Agent:{" "}
-              <span className="font-medium">
-                {activeAgentName ??
-                  (activeAgentId ? `${activeAgentId.slice(0, 8)}…` : "none")}
-              </span>
-            </span>
-            <span className="text-muted-foreground">
-              Conversation:{" "}
-              <span className="font-mono">
-                {inputConvId ? `${inputConvId.slice(0, 8)}…` : "none"}
-              </span>
-            </span>
-            <span
-              className={cn(
-                "ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium",
-                isCreator
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                  : "bg-muted text-muted-foreground",
-              )}
-              title={
-                isCreator
-                  ? "You are detected as the creator/owner of this agent"
-                  : "You are not detected as the creator of this agent"
-              }
-            >
-              {isCreator ? "Creator" : "Not creator"}
-            </span>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {body}
-          </div>
+          {body}
         </div>
       </WindowPanel>
       {windowPanels}
