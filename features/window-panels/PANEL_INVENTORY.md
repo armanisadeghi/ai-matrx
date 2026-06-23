@@ -113,5 +113,46 @@ Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Action `Priority` 
 
 ---
 
+## 9. Cross-cutting synthesis & prioritized backlog — FILL-IN COMPLETE (all 8 chunks, 2026-06-22)
+
+Per-panel rows live in [`docs/inventory/`](./docs/inventory/) (code · notes-tasks · agents-core · agents-debug · files-media · content-data · context-scopes · comms-studio · admin-utility). Every item below is sized to become a discrete subagent task.
+
+### Systemic platform gaps (build once, roll out — biggest leverage)
+- **[S1/S2/S3 · P1] Surfaces + Agents/Help header controls + help-context = 0% across the ENTIRE fleet.** Build the two standard header controls (Agents list / Help side-panel) into `WindowPanel`, register every panel as a surface, wire KV-context + page-awareness. First adopters (already agent-bound): agent panels, scraperWindow (the only existing surface), workingDocumentWindow, notesWindow.
+
+### Orphans / unreachable — delete or wire (`remove-window-panel`)
+resourcePickerWindow (DELETE — latent-crash open path) · codeWorkspaceWindow window-form (wire/retire) · quickNoteSaveWindow (retire — opener 0 consumers) · **projectsWindow (P1 — unreachable: no tile + no callers + read-only body)** · agentOptimizerWindow + agentDataStorageWindow (DELETE — empty stubs) · adminStateAnalyzer (retire — twin, 0 callers).
+
+### Stale/incorrect registry — P0 (user-visible)
+- **agentFindUsagesWindow + agentAdminFindUsagesWindow** carry a stale `deprecated` block → SHIPPED features show a red "deprecated" ring/banner + destructive tile. Delete the 2 blocks. **(P0·S)**
+- WhatsApp demo windows are in the prod `STATIC_REGISTRY`/`OVERLAY_IDS` (compile into core) → gate out. (P1·S) · StateViewerWindow passes no `overlayId` (unbound from manager). (P1·S) · emailDialogWindow submit is a STUB; the legacy modal sends. (P1·M)
+
+### Canonical-core consolidations (merge-to-modes / kill duplicate cores)
+| Family | Verdict | Pri |
+|---|---|---|
+| **Picklists V1/V2/V3 + ListManager** | **P0 4-way duplicate over the same tables** — owner picks the canonical core; delete the others + `/lists/v*` + windows; re-point ListManager | P0·L |
+| **Agent panels** (Content/Settings/RunHistory/Run) | agentContentWindow is the head → fold Settings+RunHistory into tab presets; extract ONE shared conversation-history sidebar (3-4 forks) | P1·L |
+| **Code editors** | merge CodeEditor↔MultiFile (same Monaco; `agentId?` flips agent); reconcile SmartCodeEditor + CodeWorkspace (2 competing IDE shells) | P1·L |
+| **Content-editor windows** (editor/list/workspace) | already one opener+core → one mode-driven window | P1·M |
+| **voicePad / voicePadAdvanced** | merge (Advanced's deltas are WindowPanel slots) → makes the FULL pad ubiquitous | P1·M |
+| **Crop windows** (studio/preview/initialCrop) | merge to one mode-driven crop | P2·M |
+| **Inspectors** (agentDebug/executionInspector/streamDebugHistory/messageAnalysis/instanceUIState) | one mode-driven inspector keyed by {agentId, conversationId, requestId} | P2·L |
+| **Chrome-only pairs** (quickData win/sheet; markdown win/widget; email & share win/modal) | collapse each to one + presentation prop | P2·S |
+
+### End-to-end-state violations (lift to DB→Redux→selectors→core)
+quickData, listManager, all picklists (useState + direct Supabase; ListManager polls 5s), gallery favorites (localStorage), pdfExtractor history (local), hierarchyCreation (react-query, no slice), itemDetail (direct Supabase), newsWindow (local).
+
+### fileHandler violations
+pdfExtractorWindow (forks upload — raw FormData/fetch) · imageViewer (raw `<img>` — durability defect, chip filed).
+
+### Surfacing gaps — grid-only, ~0 bespoke call sites
+PDF Extractor · Cloud Files · Scraper · Crop · Gallery · QuickTasks · taskQuickCreate · agentConnections. Replicate the distribution **gold standards**: agentRunWindow (5+), taskEditor (7), notes (6), imageUploader/imageViewer/filePreview (5-6), voicePad (7), createProject (3). Highest value: fire PDF Extractor + Scraper from the agent builder / RAG.
+
+### Tools-Grid hygiene
+"(new)" tiles → empty stubs · ~10 agent interface-variation DEMOS parked in `admin` as first-class · missing tiles: projectsWindow, quickChatWindow, picklist V1/V2 (gated on the canonical decision).
+
+### Naming/identity drift
+agentContentSidebarWindow (not a window — `AgentContentHistoryPanel`) · quickTasksWindow (mislocated under `windows/context-scopes/`) · markdownEditorWindow (misnamed debug harness) · several file↔overlayId↔tile↔title drifts.
+
 ## Change Log
-- 2026-06-22 — Created. Structure agreed (3 linked tables); columns extended with Help-Assistant/surface/std-controls, canonical-core, end-to-end-state (Table B) and domain-family/consolidation (Table A). System build list + cross-cutting findings recorded. Fill-in pending.
+- 2026-06-22 — Created + FILLED IN. Structure agreed (3 linked tables); columns extended with Help-Assistant/surface/std-controls, canonical-core, end-to-end-state (Table B) and domain-family/consolidation (Table A). All ~120 registered overlayIds inventoried across 8 chunk files; cross-cutting synthesis + prioritized backlog added (§9).
