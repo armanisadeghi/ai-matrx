@@ -311,10 +311,11 @@ const ToolCallVisualizationInner: React.FC<{
   return (
     <div
       className={cn(
-        // No background, no border — collapsed OR on hover. A done/collapsed
-        // tool call reads as part of the response, and its vertical spacing
-        // matches the gap between markdown paragraphs (`mb-2`) so it sits in the
-        // normal text rhythm. The border only appears on the expanded box below.
+        // No background, no border — collapsed, expanded, OR on hover. A tool
+        // call reads as part of the response, and its vertical spacing matches
+        // the gap between markdown paragraphs (`mb-2`) so it sits in the normal
+        // text rhythm. The expanded body is borderless/paddingless too —
+        // renderers bring their own cards.
         "group/toolcard relative w-full mb-2",
         className,
       )}
@@ -406,10 +407,11 @@ const ToolCallVisualizationInner: React.FC<{
         </span>
       </button>
 
-      {/* Expanded body: a box that drops BELOW the chevron line — thin border,
-          TRANSPARENT background. Animates open/closed via the grid-rows trick.
-          Mounted once it has ever been opened so the close can animate (and live
-          renderers keep their state). */}
+      {/* Expanded body: drops BELOW the chevron line — NO border, NO padding,
+          TRANSPARENT background, so the renderer reads as part of the response
+          (renderers bring their own cards). Animates open/closed via the
+          grid-rows trick. Mounted once it has ever been opened so the close can
+          animate (and live renderers keep their state). */}
       {hasEverExpanded && (
         <div
           className={cn(
@@ -420,7 +422,7 @@ const ToolCallVisualizationInner: React.FC<{
           )}
         >
           <div className="overflow-hidden">
-            <div className="mt-0.5 space-y-1 rounded-md border border-border bg-transparent px-2 py-1">
+            <div className="mt-0.5 space-y-1 bg-transparent">
               {entries.map((entry) => {
                 const groupDisplayName = getToolDisplayName(entry.toolName);
                 // An errored tool call gets the calm ToolErrorCard for EVERY
