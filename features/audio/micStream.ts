@@ -93,6 +93,9 @@ interface ManagerInternal {
   releaseTimer: ReturnType<typeof setTimeout> | null;
   state: MicStreamState;
   keepAliveMs: number;
+  /** The user's chosen input device (from the audio-devices manager), applied as
+   *  an `{ideal}` constraint on the NEXT acquire. null = system default. */
+  preferredInputDeviceId: string | null;
 }
 
 const m: ManagerInternal = {
@@ -102,6 +105,7 @@ const m: ManagerInternal = {
   releaseTimer: null,
   state: "idle",
   keepAliveMs: DEFAULT_KEEPALIVE_MS,
+  preferredInputDeviceId: null,
 };
 
 const listeners = new Set<Listener>();
@@ -185,6 +189,46 @@ function watchPermission(): void {
     });
 }
 
+// Page-lifecycle backstop — set up once. The browser's "in use" mic indicator
+// must NEVER survive the page. `pagehide` (the modern replacement for the
+// deprecated `beforeunload`) fires on tab close / navigation / bfcache evict, so
+// we hard-stop the warm stream there even if a holder leaked its release. This
+// is a SECOND layer under the per-holder release/keepalive — it firing means a
+// release was missed (a real bug), so it screams.
+let pageLifecycleWatched = false;
+function watchPageLifecycle(): void {
+  if (pageLifecycleWatched) return;
+  if (typeof window === "undefined") return;
+  pageLifecycleWatched = true;
+  window.addEventListener("pagehide", () => {
+    if (m.stream || m.refCount > 0) {
+      if (m.refCount > 0) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[micStream] page hiding with ${m.refCount} unreleased mic holder(s) — ` +
+            "forcing release. A recording surface leaked acquireMicStream without " +
+            "a matching releaseMicStream on unmount.",
+        );
+      }
+      hardStop();
+    }
+  });
+}
+
+/**
+ * Set the user's preferred microphone (from the audio-devices manager). Applied
+ * as an `{ideal}` deviceId constraint on the NEXT acquire — it does NOT switch a
+ * live stream (call `hardStop()` then re-acquire to switch mid-session). Pass
+ * null to fall back to the system default.
+ */
+export function setPreferredInputDeviceId(id: string | null): void {
+  m.preferredInputDeviceId = id;
+}
+
+export function getPreferredInputDeviceId(): string | null {
+  return m.preferredInputDeviceId;
+}
+
 /** True if the warm stream still has at least one live, unmuted-able audio track. */
 function streamIsLive(stream: MediaStream | null): stream is MediaStream {
   if (!stream) return false;
@@ -224,6 +268,13 @@ export async function acquireMicStream(
     noiseSuppression: true,
     autoGainControl: true,
   };
+  // Apply the user's chosen mic as an `{ideal}` constraint (graceful — the
+  // browser falls back to default if the device is gone; no NotFoundError to
+  // handle, per the Chrome/Safari lifecycle homework). An explicit per-call
+  // `constraints.deviceId` always wins.
+  if (m.preferredInputDeviceId && audio.deviceId == null) {
+    audio.deviceId = { ideal: m.preferredInputDeviceId };
+  }
 
   m.inFlight = (async () => {
     try {
@@ -231,6 +282,7 @@ export async function acquireMicStream(
       m.stream = stream;
       attachTrackHealth(stream);
       watchPermission();
+      watchPageLifecycle();
       setState("active");
       return stream;
     } catch (err) {
