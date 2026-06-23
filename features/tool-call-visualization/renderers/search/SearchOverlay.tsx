@@ -1,23 +1,26 @@
 "use client";
 
 /**
- * SearchOverlay — the full "hide nothing" Results view for the web-search family
+ * SearchOverlay — the full "hide nothing" Results page for the web-search family
  * (`web_search`, `core_web_search`, `web_search_v1`), rendered in the fullscreen
- * overlay and the floating window panel.
+ * overlay and the floating window panel. The bar is "Google done right": a real
+ * search-results page, better than Google / Bing / Perplexity.
  *
- * Grafted from Research-Modern's overlay. Layout:
- *   • The AI answer / summary on top WHEN present (research report) — else the
- *     view leads with results.
- *   • A header stat rail (queries / sources / reads / domains) + a domain-
- *     coverage chip row.
- *   • A query filter + a free-text filter <input> (16px → no iOS zoom) + sort
- *     (relevance / domain / date) over the COMPLETE base-URL-deduped source
- *     list, as a dense ranked list.
+ * Layout:
+ *   • The AI answer / summary leads WHEN present (research report) — else the
+ *     page leads with results.
+ *   • Parallel search → SEPARATE result blocks, one per query, each headed by
+ *     its query and reading like its own results page. A query filter + a free-
+ *     text filter + sort drill into the COMPLETE base-URL-deduped list as one
+ *     ranked page.
+ *   • Every result row is Google-class: favicon + breadcrumb (domain › path,
+ *     domain in success-green) + a prominent title link + an ALWAYS-visible
+ *     2-line description snippet. Nothing is hidden behind hover.
  *   • A "Reading" pane (sources left, content right) when the tool deep-read
- *     pages — best-effort; most plain searches have none.
+ *     pages.
  *
  * Same canonical contract + `parseSearch` as the inline renderer. Semantic
- * tokens only; favicons via the Google favicon service.
+ * tokens only; favicons via the Google favicon service. React Compiler is on.
  */
 
 import React, { useMemo, useState } from "react";
@@ -25,15 +28,12 @@ import {
     Search,
     Globe,
     ExternalLink,
-    Layers,
     BookOpenText,
-    Calendar,
     ArrowUpDown,
     FileText,
-    Sparkles,
+    Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
 import { resultAsString } from "../_shared";
@@ -42,6 +42,7 @@ import {
     getFaviconUrl,
     getDomain,
     formatDate,
+    type SearchGroup,
     type SearchRead,
     type SearchSource,
 } from "./parseSearch";
@@ -57,22 +58,32 @@ const Favicon: React.FC<{ url: string; className?: string }> = ({ url, className
     const src = getFaviconUrl(url);
     if (failed || !src) return <Globe className={cn("text-muted-foreground", className)} />;
     return (
-        // eslint-disable-next-line @next/next/no-img-element -- favicon service, not owned media
         <img src={src} alt="" className={cn("rounded-sm", className)} onError={() => setFailed(true)} />
     );
 };
 
-const StatChip: React.FC<{ icon: React.ReactNode; value: number | string; label: string }> = ({
-    icon,
-    value,
-    label,
-}) => (
-    <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5">
-        <span className="text-muted-foreground">{icon}</span>
-        <span className="text-base font-semibold tabular-nums text-foreground">{value}</span>
-        <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
-);
+/** Google-style breadcrumb: `domain › path › segments`. Domain in success-green. */
+const Breadcrumb: React.FC<{ url: string; domain: string }> = ({ url, domain }) => {
+    const segments = useMemo(() => {
+        try {
+            const p = new URL(url).pathname.replace(/\/+$/, "");
+            return p.split("/").filter(Boolean).slice(0, 3);
+        } catch {
+            return [];
+        }
+    }, [url]);
+    return (
+        <span className="flex min-w-0 items-center gap-1 truncate">
+            <span className="truncate font-medium text-success">{domain}</span>
+            {segments.map((seg, i) => (
+                <span key={i} className="flex items-center gap-1 truncate text-muted-foreground">
+                    <span className="text-muted-foreground/50">›</span>
+                    <span className="truncate">{decodeURIComponent(seg)}</span>
+                </span>
+            ))}
+        </span>
+    );
+};
 
 const FilterPill: React.FC<{
     active: boolean;
@@ -95,39 +106,58 @@ const FilterPill: React.FC<{
     </button>
 );
 
-const SourceRow: React.FC<{ source: SearchSource; rank: number }> = ({ source, rank }) => {
+/**
+ * One Google-class result row — ALWAYS shows favicon, breadcrumb, prominent
+ * title link, and a 2-line description snippet (nothing behind hover).
+ */
+const ResultRow: React.FC<{ source: SearchSource; rank?: number }> = ({ source, rank }) => {
     const date = formatDate(source.date);
     return (
-        <a
-            href={source.url || undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-start gap-3 px-3 py-2 transition-colors hover:bg-muted/40"
-        >
-            <span className="mt-0.5 w-6 flex-shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                {rank}
-            </span>
-            <Favicon url={source.url} className="mt-0.5 h-4 w-4 flex-shrink-0" />
+        <div className="group/result flex gap-3">
+            {rank !== undefined && (
+                <span className="w-6 flex-shrink-0 pt-0.5 text-right text-xs tabular-nums text-muted-foreground/70">
+                    {rank}
+                </span>
+            )}
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground group-hover:text-primary">
+                <div className="flex items-center gap-2 text-xs">
+                    <Favicon url={source.url} className="h-4 w-4 flex-shrink-0" />
+                    <Breadcrumb url={source.url} domain={source.domain} />
+                </div>
+                <a
+                    href={source.url || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/link mt-0.5 flex items-start gap-1.5"
+                >
+                    <span className="text-[15px] font-medium leading-snug text-primary underline-offset-2 group-hover/link:underline">
                         {source.title}
                     </span>
-                    <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="truncate text-primary/80">{source.domain}</span>
-                    {date && <span className="opacity-70">· {date}</span>}
-                </div>
+                    <ExternalLink className="mt-1 h-3 w-3 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/result:opacity-100" />
+                </a>
                 {source.snippet && (
-                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                    <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                         {source.snippet}
                     </p>
                 )}
+                {date && <div className="mt-1 text-xs text-muted-foreground opacity-80">{date}</div>}
             </div>
-        </a>
+        </div>
     );
 };
+
+/** Map a parsed group's results to display sources (domain-stamped). */
+function groupToSources(group: SearchGroup): SearchSource[] {
+    return group.results
+        .filter((r) => r.url)
+        .map((r) => ({
+            title: r.title,
+            url: r.url,
+            domain: getDomain(r.url),
+            date: r.date,
+            snippet: r.snippet,
+        }));
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reading pane (deep reads) — sources list left, content right
@@ -167,7 +197,7 @@ const ReadingPane: React.FC<{ reads: SearchRead[] }> = ({ reads }) => {
                                 >
                                     {r.title ?? getDomain(r.url)}
                                 </div>
-                                <div className="truncate text-xs text-muted-foreground">{getDomain(r.url)}</div>
+                                <div className="truncate text-xs text-success">{getDomain(r.url)}</div>
                             </div>
                         </button>
                     ))}
@@ -217,26 +247,20 @@ const ReadingPane: React.FC<{ reads: SearchRead[] }> = ({ reads }) => {
 
 export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
     const parsed = useMemo(() => parseSearch(resultAsString(entry)), [entry]);
-    const { queries, groups, reads, sources, domains, totalReported, report } = parsed;
+    const { queries, groups, reads, sources, report } = parsed;
 
     const [activeQuery, setActiveQuery] = useState<string | null>(null);
     const [filter, setFilter] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("relevance");
 
-    // Base list: scoped to active query group or the full deduped list.
+    const multiQuery = groups.length > 1;
+
+    // Base list for the unified ranked page: scoped to the active query group or
+    // the full deduped list.
     const base: SearchSource[] = useMemo(() => {
         if (!activeQuery) return sources;
         const g = groups.find((x) => x.query === activeQuery);
-        if (!g) return sources;
-        return g.results
-            .filter((r) => r.url)
-            .map((r) => ({
-                title: r.title,
-                url: r.url,
-                domain: getDomain(r.url),
-                date: r.date,
-                snippet: r.snippet,
-            }));
+        return g ? groupToSources(g) : sources;
     }, [activeQuery, sources, groups]);
 
     const visible: SearchSource[] = useMemo(() => {
@@ -261,6 +285,12 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
         return list;
     }, [base, filter, sortKey]);
 
+    // The default view leads with per-query result blocks (parallel) — Google's
+    // tabbed multi-search done right. A drill-in (filter / sort / single-query
+    // pick) collapses to the unified ranked list.
+    const drilling = filter.trim().length > 0 || sortKey !== "relevance" || activeQuery !== null;
+    const showGroupedBlocks = multiQuery && !drilling;
+
     if (sources.length === 0 && reads.length === 0 && !report) {
         return (
             <div className="flex h-64 items-center justify-center text-muted-foreground">
@@ -274,12 +304,12 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
 
     return (
         <div className="h-full w-full overflow-y-auto bg-background">
-            <div className="space-y-4 p-4">
-                {/* AI answer / summary on top WHEN present. */}
+            <div className="mx-auto max-w-3xl space-y-5 p-4">
+                {/* AI answer / summary leads WHEN present. */}
                 {report && (
                     <div className="rounded-lg border border-primary/15 bg-primary/5 p-4">
                         <div className="mb-2 flex items-center gap-1.5">
-                            <Sparkles className="h-4 w-4 text-primary" />
+                            <Lightbulb className="h-4 w-4 text-primary" />
                             <span className="text-sm font-semibold text-foreground">AI Matrx answer</span>
                         </div>
                         <div className="text-sm leading-relaxed text-foreground/90">
@@ -288,41 +318,34 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                     </div>
                 )}
 
-                {/* Stat rail */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <StatChip icon={<Search className="h-4 w-4" />} value={queries.length} label={queries.length === 1 ? "query" : "queries"} />
-                    <StatChip icon={<Globe className="h-4 w-4" />} value={sources.length} label="sources" />
-                    {totalReported > sources.length && (
-                        <StatChip icon={<Globe className="h-4 w-4" />} value={totalReported} label="reported" />
+                {/* Result count summary line. */}
+                <p className="text-xs text-muted-foreground">
+                    About <span className="font-medium text-foreground tabular-nums">{sources.length}</span>{" "}
+                    {sources.length === 1 ? "result" : "results"}
+                    {queries.length > 1 && (
+                        <>
+                            {" "}across{" "}
+                            <span className="font-medium text-foreground tabular-nums">{queries.length}</span>{" "}
+                            queries
+                        </>
                     )}
                     {reads.length > 0 && (
-                        <StatChip icon={<BookOpenText className="h-4 w-4" />} value={reads.length} label={reads.length === 1 ? "read" : "reads"} />
+                        <>
+                            {" "}·{" "}
+                            <span className="font-medium text-foreground tabular-nums">{reads.length}</span> read
+                        </>
                     )}
-                    <StatChip icon={<Layers className="h-4 w-4" />} value={domains.length} label="domains" />
-                </div>
+                </p>
 
-                {/* Domain coverage */}
-                {domains.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                        {domains.map((d) => (
-                            <Badge key={d.domain} variant="secondary" className="gap-1.5 font-normal">
-                                <Favicon url={`https://${d.domain}`} className="h-3 w-3" />
-                                <span className="max-w-[180px] truncate">{d.domain}</span>
-                                <span className="tabular-nums text-muted-foreground">{d.count}</span>
-                            </Badge>
-                        ))}
-                    </div>
-                )}
-
-                {/* Reading pane (deep reads) */}
+                {/* Reading pane (deep reads). */}
                 {reads.length > 0 && <ReadingPane reads={reads} />}
 
-                {/* Controls: query filter + text filter + sort */}
+                {/* Controls: query filter + text filter + sort. */}
                 <div className="space-y-2">
-                    {queries.length > 1 && (
+                    {multiQuery && (
                         <div className="flex flex-wrap gap-1.5">
                             <FilterPill active={activeQuery === null} onClick={() => setActiveQuery(null)}>
-                                All sources ({sources.length})
+                                All queries ({sources.length})
                             </FilterPill>
                             {groups.map((g) => (
                                 <FilterPill
@@ -343,7 +366,7 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                                 type="text"
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
-                                placeholder={`Filter ${base.length} sources…`}
+                                placeholder={`Filter ${base.length} results…`}
                                 className="h-9 w-full max-w-md rounded-md border border-border bg-background pl-9 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:text-sm"
                             />
                         </div>
@@ -368,26 +391,55 @@ export const SearchOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                     </div>
                 </div>
 
-                {/* Full source list — dense */}
-                <div className="overflow-hidden rounded-md border border-border">
-                    <div className="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-2">
-                        <span className="text-sm font-medium text-foreground">
-                            {activeQuery ? "Sources for query" : "All sources"}
-                        </span>
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                            {visible.length} {visible.length === 1 ? "source" : "sources"}
-                        </span>
+                {/* Results: per-query blocks (default, parallel) or the unified ranked page. */}
+                {showGroupedBlocks ? (
+                    <div className="space-y-6">
+                        {groups.map((g) => {
+                            const blockSources = groupToSources(g);
+                            if (blockSources.length === 0) return null;
+                            return (
+                                <div key={g.query} className="space-y-3">
+                                    <div className="flex items-center gap-2 border-b border-border pb-1.5">
+                                        <Search className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
+                                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground" title={g.query}>
+                                            {g.query}
+                                        </span>
+                                        <span className="flex-shrink-0 text-xs tabular-nums text-muted-foreground">
+                                            {blockSources.length} {blockSources.length === 1 ? "result" : "results"}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {blockSources.map((s, i) => (
+                                            <ResultRow key={`${s.url}-${i}`} source={s} />
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                    <div className="divide-y divide-border/60">
+                ) : (
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-foreground">
+                                {activeQuery ? "Results for query" : "All results"}
+                            </span>
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                                {visible.length} {visible.length === 1 ? "result" : "results"}
+                            </span>
+                        </div>
                         {visible.length === 0 ? (
-                            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-                                No sources match the filter
+                            <div className="rounded-md border border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                                No results match the filter
                             </div>
                         ) : (
-                            visible.map((s, i) => <SourceRow key={`${s.url}-${i}`} rank={i + 1} source={s} />)
+                            <div className="space-y-4 pt-1">
+                                {visible.map((s, i) => (
+                                    <ResultRow key={`${s.url}-${i}`} rank={i + 1} source={s} />
+                                ))}
+                            </div>
                         )}
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
