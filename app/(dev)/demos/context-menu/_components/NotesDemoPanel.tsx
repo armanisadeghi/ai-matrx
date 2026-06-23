@@ -14,6 +14,7 @@ import {
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
+import { toast } from "sonner";
 import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import {
   DEMO_NOTE_FOLDERS,
@@ -32,8 +33,6 @@ const UnifiedAgentContextMenu = dynamic(
     })),
   { ssr: false },
 );
-
-const notesExtras = createNotesEditorExtraSections();
 
 export interface NotesDemoPanelProps {
   title: string;
@@ -92,6 +91,28 @@ export function NotesDemoPanel({
       contextData,
     });
   }, [content, contextData, selectionEnd, selectionStart]);
+
+  // Demo handlers — illustrative only (this panel has no real persistence).
+  const notesExtras = createNotesEditorExtraSections({
+    isDirty,
+    allFolders: DEMO_NOTE_FOLDERS,
+    currentFolder: DEMO_NOTE_FOLDERS[0],
+    openTabCount: DEMO_NOTE_OPEN_TABS.length,
+    onSave: () => {
+      setIsDirty(false);
+      toast.success("Saved (demo)");
+    },
+    onDuplicate: () => toast.success("Duplicated (demo)"),
+    onExport: () => toast.success("Exported (demo)"),
+    onShareLink: () => toast.success("Share link (demo)"),
+    onShareClipboard: () => toast.success("Copied to clipboard (demo)"),
+    onMoveToFolder: (folder) => toast.success(`Moved to ${folder} (demo)`),
+    onMoveDialog: () => toast.success("Move dialog (demo)"),
+    onCloseTab: () => toast.success("Close tab (demo)"),
+    onCloseOtherTabs: () => toast.success("Close other tabs (demo)"),
+    onCloseAllTabs: () => toast.success("Close all tabs (demo)"),
+    onDelete: () => toast.error("Delete note (demo)"),
+  });
 
   const replaceContent = (next: string) => {
     setContent(next);

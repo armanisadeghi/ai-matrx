@@ -357,7 +357,25 @@ const DEFAULT_CONTEXT_DATA = `{
   "context": "context-menu-lab"
 }`;
 
-const LAB_NOTES_EXTRAS = createNotesEditorExtraSections();
+// Lab fixture — visualizes the notes menu structure; handlers are no-ops
+// (this lab has no real note to act on).
+const LAB_NOTES_EXTRAS = createNotesEditorExtraSections({
+  isDirty: true,
+  allFolders: ["Inbox", "Archive"],
+  currentFolder: "Inbox",
+  openTabCount: 2,
+  onSave: () => {},
+  onDuplicate: () => {},
+  onExport: () => {},
+  onShareLink: () => {},
+  onShareClipboard: () => {},
+  onMoveToFolder: () => {},
+  onMoveDialog: () => {},
+  onCloseTab: () => {},
+  onCloseOtherTabs: () => {},
+  onCloseAllTabs: () => {},
+  onDelete: () => {},
+});
 
 export default function ContextMenuDemoPage() {
   const dispatch = useAppDispatch();
