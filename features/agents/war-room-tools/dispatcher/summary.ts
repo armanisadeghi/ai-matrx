@@ -24,6 +24,7 @@ import type { WarRoomToolName } from "../tools/names";
 import {
   selectActiveNoteId,
   selectTileById,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectNoteById } from "@/features/notes/redux/selectors";
@@ -55,7 +56,7 @@ export function buildApprovalChange(
 
   switch (toolName) {
     case "war_room_update_task": {
-      const taskId = tile?.task_id ?? null;
+      const taskId = selectTileTaskId(ctx.tileId)(state);
       const task = taskId ? selectTaskById(state, taskId) : null;
       const fields: ApprovalFieldDiff[] = [];
       if (str(args.title) !== undefined)
@@ -127,8 +128,7 @@ export function buildApprovalChange(
     }
 
     case "war_room_update_note": {
-      const noteId =
-        selectActiveNoteId(ctx.tileId)(state) ?? tile?.note_id ?? null;
+      const noteId = selectActiveNoteId(ctx.tileId)(state);
       const note = noteId ? selectNoteById(noteId)(state) : null;
       const append = args.mode === "append";
       const fields: ApprovalFieldDiff[] = [];

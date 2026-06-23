@@ -27,8 +27,8 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import {
-  selectTileById,
   selectTileFlavor,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import { createTileTask } from "@/features/war-room/redux/thunks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
@@ -64,8 +64,7 @@ function TileTaskTabAnchored({
   tileId: string;
   compact?: boolean;
 }) {
-  const tile = useAppSelector((s) => selectTileById(tileId)(s));
-  const taskId = tile?.task_id ?? null;
+  const taskId = useAppSelector((s) => selectTileTaskId(tileId)(s));
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,
   );

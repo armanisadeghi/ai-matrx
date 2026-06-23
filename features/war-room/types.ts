@@ -42,6 +42,55 @@ export type WarRoomTileAttachmentInsert =
 /** The two entity kinds an attachment row can point at. */
 export type TileAttachmentEntityType = "user_file" | "document";
 
+// ── Associations (the polymorphic M2M model) ──────────────────────────
+// One table — ctx_war_room_assignments — replaces the tile FK columns
+// (task_id/note_id/project_id) AND the three link tables. A container (a room =
+// session, or a thread = tile) holds ANY resource type, M2M. Shaped like
+// ctx_scope_assignments so the platform-wide relationship refactor absorbs it.
+// See features/war-room/service/associations.ts + migrations/ctx_war_room_assignments.sql.
+export type WarRoomAssignment =
+  Database["public"]["Tables"]["ctx_war_room_assignments"]["Row"];
+export type WarRoomAssignmentInsert =
+  Database["public"]["Tables"]["ctx_war_room_assignments"]["Insert"];
+
+/** A container that can hold resources: a whole room, or one thread (tile). */
+export type WarRoomContainerType = "room" | "thread";
+
+/** Every resource type a War Room container can hold. */
+export type WarRoomAssignmentEntityType =
+  | "project"
+  | "task"
+  | "note"
+  | "conversation"
+  | "studio_session"
+  | "user_file"
+  | "document";
+
+/** A typed reference to a container (room or thread). */
+export interface ContainerRef {
+  type: WarRoomContainerType;
+  id: string;
+}
+
+/** Stable Redux key for a container's assignment bucket. */
+export function containerKey(type: WarRoomContainerType, id: string): string {
+  return `${type}:${id}`;
+}
+export function threadRef(tileId: string): ContainerRef {
+  return { type: "thread", id: tileId };
+}
+export function roomRef(sessionId: string): ContainerRef {
+  return { type: "room", id: sessionId };
+}
+
+/**
+ * Entity types that have a single "active/focused" member per container (setting
+ * one demotes the others of the same type). The rest (files, documents,
+ * conversations) coexist with no focus. Attachments are always is_active=true.
+ */
+export const SINGLE_ACTIVE_ENTITY_TYPES: ReadonlySet<WarRoomAssignmentEntityType> =
+  new Set(["task", "project", "note", "studio_session"]);
+
 // ── Tile tabs ─────────────────────────────────────────────────────────
 export type TileTab =
   | "task"

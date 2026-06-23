@@ -83,12 +83,14 @@ export function TileAgentTab({
 
   // Pass the tileId through so the panel can expose the tile's task / notes /
   // files to the assistant as read-only context (TileAgentPanel builds those).
+  //
+  // NO `key={sessionId}` here: a key would force a full remount on every session
+  // switch, which unmounts ExperimentalAgentScreen and KILLS in-flight read-aloud
+  // (the speaker now lives at app-root, but the screen still publishes/clears its
+  // request on mount/unmount). TileAgentPanel + ExperimentalAgentScreen re-bind
+  // to a changed `sessionId` prop via their own effects, so a remount is both
+  // unnecessary and harmful. See providers/AudioOutputHost.
   return (
-    <TileAgentPanel
-      key={sessionId}
-      sessionId={sessionId}
-      tileId={tileId}
-      compact={compact}
-    />
+    <TileAgentPanel sessionId={sessionId} tileId={tileId} compact={compact} />
   );
 }

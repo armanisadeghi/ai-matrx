@@ -6817,6 +6817,51 @@ export type Database = {
           },
         ]
       }
+      ctx_war_room_assignments: {
+        Row: {
+          container_id: string
+          container_type: string
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          is_active: boolean
+          label: string | null
+          metadata: Json | null
+          position: number
+          user_id: string
+        }
+        Insert: {
+          container_id: string
+          container_type: string
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          metadata?: Json | null
+          position?: number
+          user_id: string
+        }
+        Update: {
+          container_id?: string
+          container_type?: string
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          metadata?: Json | null
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ctx_war_room_sessions: {
         Row: {
           active_tile_id: string | null

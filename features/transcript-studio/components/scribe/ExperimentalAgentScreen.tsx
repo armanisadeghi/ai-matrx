@@ -14,7 +14,13 @@
 // studio recording segment; this tab is about conversing, not archiving.
 // It shares the same conversation as the Agent tab via useStudioAssistant.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -23,7 +29,13 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
-import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
+import {
+  clearVoicePlaybackRequestFor,
+  getVoicePlayback,
+  requestVoicePlayback,
+  stopVoicePlayback,
+  subscribeVoicePlayback,
+} from "../../state/voicePlaybackBus";
 import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
@@ -74,11 +86,33 @@ export function ExperimentalAgentScreen({
   const [inputOpen, setInputOpen] = useState(false);
   const [autoVoice, setAutoVoice] = useState(true);
 
-  const speaker = useAutoVoiceResponse({
-    conversationId,
-    enabled: autoVoice,
-  });
-  const speaking = speaker.isPlaying || speaker.isLoading;
+  // Read-aloud is owned at app-root (AudioOutputHost → useAutoVoiceResponse) so
+  // playback SURVIVES this tab unmounting on a War Room tab switch. We don't
+  // mount the speaker here anymore — we publish our (conversation, on/off) to
+  // the bus, and read the live playback state back from it for the indicator.
+  useEffect(() => {
+    requestVoicePlayback({ conversationId, enabled: autoVoice });
+  }, [conversationId, autoVoice]);
+  // On unmount, stand the owner down for OUR conversation — but do NOT cut audio
+  // already in flight (that's the whole reason it lives at app-root), and do NOT
+  // stomp a sibling tile that became the active requester (Grid view shares this
+  // one bus across tiles): `clearVoicePlaybackRequestFor` no-ops unless we're
+  // still the active requester. A ref (kept current in an effect) lets the
+  // empty-dep cleanup read the latest conversationId, not a mount-time stale one.
+  const conversationIdRef = useRef(conversationId);
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
+  useEffect(
+    () => () => clearVoicePlaybackRequestFor(conversationIdRef.current),
+    [],
+  );
+  const playback = useSyncExternalStore(
+    subscribeVoicePlayback,
+    getVoicePlayback,
+    getVoicePlayback,
+  );
+  const speaking = playback.active;
 
   // Recording state from the global mirror — this screen only "owns" the
   // session when the active context is our ephemeral standalone capture.
@@ -212,9 +246,44 @@ export function ExperimentalAgentScreen({
       wasRecordingRef.current = true;
     } else if (wasRecordingRef.current) {
       wasRecordingRef.current = false;
+      // Legitimate external-system sync: surface the chooser when our owned
+      // recording stops via ANY route (e.g. the global RecordingPill). This
+      // reacts to the Redux `isRecording` flag flipping — the exact "subscribe
+      // to an external system, call setState" case the rule blesses.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSheetOpen(true);
     }
   }, [isRecording]);
+
+  // Re-bind to a CHANGED session WITHOUT a remount. The War Room tile used to
+  // pass `key={sessionId}` to force a full remount on session switch; that is
+  // what killed read-aloud (it unmounted the speaker). Now the tile keeps this
+  // component mounted and just changes the `sessionId` prop, so we must clear
+  // the ephemeral per-session chooser/recording UI ourselves — otherwise a
+  // pending sheet, a queued choice, or a stale "we own the mic" flag from the
+  // previous session would leak into the new one. `useStudioAssistant`,
+  // `requestVoicePlayback`, and the `owned` selector already track the new
+  // sessionId via their own deps; this only resets local UI state.
+  //
+  // State reset uses React's official "adjust state while rendering" pattern
+  // (comparing the previous `sessionId` held in `useState`, then calling the
+  // set functions during render) — a single synchronous re-render, no
+  // cascading-render or setState-in-effect lint hit, no refs touched in render.
+  const [prevSession, setPrevSession] = useState(sessionId);
+  if (prevSession !== sessionId) {
+    setPrevSession(sessionId);
+    setSheetOpen(false);
+    setPendingResult(null);
+    setInputOpen(false);
+  }
+  // The chooser/recording bookkeeping REFS are reset in an effect (refs must not
+  // be written during render). Keyed on `sessionId` so it fires exactly on a
+  // switch; harmless on first mount (refs already hold these defaults).
+  useEffect(() => {
+    chosenKeyRef.current = null;
+    ownedRef.current = false;
+    wasRecordingRef.current = false;
+  }, [sessionId]);
 
   const surfaceKey = `studio-assistant-experimental:${sessionId}`;
 
@@ -299,7 +368,7 @@ export function ExperimentalAgentScreen({
           <button
             type="button"
             onClick={() => {
-              if (speaking) void speaker.stop();
+              if (speaking) stopVoicePlayback();
               setAutoVoice((v) => !v);
             }}
             aria-pressed={autoVoice}
