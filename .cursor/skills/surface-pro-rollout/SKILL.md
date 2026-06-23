@@ -17,6 +17,19 @@ Turn a surface that already exists (has a `ui_surface` row + a manifest) into a 
 
 ---
 
+## Two hard rules (this is the whole point — read before anything else)
+
+**1. ONE canonical menu everywhere — never a bespoke fork.** Every surface mounts the SAME `UnifiedAgentContextMenu` (`features/context-menu-v2/`). Do NOT build, keep, or wire a surface-specific menu component or a parallel data hook. The live `/notes` route is the cautionary tale: it still renders a bespoke `NoteContextMenuContent` ("parity with the legacy `UnifiedContextMenu`") fed by its own `useNoteContextMenuGroups` Supabase fetch + the legacy `contextMenuCache` slice — so its core, dynamically-built items behave DIFFERENTLY from chat's canonical menu (different fetch, different cache, different category logic). Migrating a surface = ripping out its bespoke menu and mounting the canonical one. Two menus that "should be the same" but aren't is the #1 defect this rollout exists to kill.
+
+**2. The menu is the surface's command center — pass it EVERYTHING.** Every action the surface can perform (save, export, share, move, delete, rename, duplicate, toggle-complete, version-history, …) AND every piece of live state must reach the menu. Wire actions via `extraSections` bound to the surface's REAL handlers (NEVER toast stubs — a stub that fakes "Delete" is worse than nothing), and state via `contextData`. If a surface has a method, the menu gets it. The goal: a user right-clicks anywhere on a surface and can do anything that surface supports, plus run any agent — from one menu that looks and behaves identically everywhere.
+
+## Version tag (how to see which menu a surface runs)
+
+The canonical menu renders a footer: `<surfaceName> · C<canonical>V<surface>`.
+- **C** = `CANONICAL_MENU_VERSION` (exported from `features/context-menu-v2/UnifiedAgentContextMenu.tsx`) — bump when the canonical menu component itself changes.
+- **V** = the surface's `menuVersion` prop (default `1`) — bump when a surface customizes its wiring beyond the standard.
+- A surface still on a BESPOKE menu shows **no `C·V` tag** — that absence means "not migrated." After migration it shows `C1V1` like everything else.
+
 ## The platform guarantees you can rely on (do NOT re-implement)
 
 1. **Generic baselines are always BINDABLE.** `features/surfaces/manifests/registry.ts` injects the full baseline set (`selection`, `text_before`, `text_after`, `content`, `context`) into every manifest. You never have to add them by hand — but a manifest may still declare/customize any of them, and a same-named declaration wins.
@@ -43,7 +56,7 @@ Mirror `features/notes/agent-context/`:
 
 - **`build<Xxx>ContextData(args): Record<string, unknown>`** — a PURE function that maps live UI state → `createXxxScope(...)`. Emit real baselines from the surface: `selection`/`text_before`/`text_after` from the editor selection, `content` from the primary body, `context` from `formatEditorSurroundContext(...)` (`@/utils/format-editor-surround-context`) or a small surface blob. Plus every custom value. Pure so demo + production share one shape.
 - **`<XXX>_CONTEXT_MENU_PROPS`** — `{ sourceFeature, surfaceName: "<client>/<local>", isEditable, enabledPlacements }`. `surfaceName` MUST equal `ui_surface.name`.
-- **`create<Xxx>ExtraSections()`** (optional) — surface-specific non-agent menu items (Save, Export, Move…) as `ContextMenuExtraSection[]` (`features/context-menu-v2/extraSections`). See `features/notes/agent-context/notesEditorExtraSections`.
+- **`create<Xxx>ExtraSections(handlers)`** — NOT optional when the surface has actions (rule 2). Every surface action (Save, Export, Share, Move, Delete, Rename, version-history, …) as `ContextMenuExtraSection[]` (`features/context-menu-v2/extraSections`), each `onSelect` bound to the surface's REAL handler passed in by the host — never a toast stub. The host (the component that owns the handlers + state) builds the sections with its live callbacks and passes them to the menu via `extraSections`. See `features/notes/agent-context/notesEditorExtraSections`.
 
 ### 3. Runtime scope hook (surfaces with a live editor)
 
@@ -90,7 +103,8 @@ Update the feature's `FEATURE.md` (entry points + a one-line Change Log entry). 
 
 - [ ] Manifest: every custom value present + honest; `createXxxScope` signature matches; `pnpm check:surface-drift` passes.
 - [ ] `buildXxxContextData` emits real baselines + customs; demo and runtime share it.
-- [ ] Menu mounted on BOTH editable and presentational regions; `surfaceName` correct.
+- [ ] Menu is the **canonical** `UnifiedAgentContextMenu` (footer shows `C·V`), NOT a bespoke fork. Mounted on BOTH editable and presentational regions; `surfaceName` correct.
+- [ ] EVERY surface action is in `extraSections` wired to a REAL handler (no toast stubs); all live state is in `contextData`.
 - [ ] Every `<textarea>`/`<input>` on the surface is now `ProTextarea`/`ProInput` with `surfaceName` + `getApplicationScope` on the editable ones.
 - [ ] No new refetch paths; scope read live at call time.
 - [ ] `tsc` clean on touched files; eslint clean.

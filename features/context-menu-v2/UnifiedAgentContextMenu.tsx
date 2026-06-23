@@ -77,6 +77,17 @@ export type PlacementKey =
 
 export type PlacementMode = Partial<Record<PlacementKey, PlacementVisibility>>;
 
+/**
+ * Canonical context-menu version. Bump when the `UnifiedAgentContextMenu`
+ * component's structure/behavior changes. Rendered as `C<n>` in the menu's
+ * version footer, so any surface using the canonical menu shows e.g. `C1V1`.
+ * A surface that wires the menu the way the demo shows is `V1`; a surface that
+ * customizes its wiring passes a higher `menuVersion` (→ `V2`, …). A surface
+ * still on a BESPOKE (non-canonical) menu shows no `C·V` tag at all — that
+ * absence is the signal it hasn't been migrated yet.
+ */
+export const CANONICAL_MENU_VERSION = 1;
+
 export interface UnifiedAgentContextMenuProps {
   children: React.ReactNode;
   /**
@@ -106,6 +117,12 @@ export interface UnifiedAgentContextMenuProps {
    * surfaces/SKILL.md` for the full contract.
    */
   surfaceName?: string;
+  /**
+   * Per-surface menu-wiring version, shown as `V<n>` in the version footer.
+   * `1` = standard (demo-equivalent) wiring; bump when this surface customizes
+   * how it wires the canonical menu so the drift is visible at a glance.
+   */
+  menuVersion?: number;
   editorId?: string;
   getTextarea?: () => HTMLTextAreaElement | null;
   onContentInserted?: () => void;
@@ -228,6 +245,7 @@ export function UniversalContextMenuV2({
   children,
   sourceFeature,
   surfaceName,
+  menuVersion = 1,
   editorId,
   getTextarea,
   onContentInserted,
@@ -975,6 +993,9 @@ export function UniversalContextMenuV2({
         </ContextMenuTrigger>
         <ContextMenuContent className={`w-64 ${className ?? ""}`}>
           <MenuBody variant="context" {...menuBodyProps} />
+          <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
+            {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V{menuVersion}
+          </div>
         </ContextMenuContent>
       </ContextMenu>
 
@@ -1013,6 +1034,9 @@ export function UniversalContextMenuV2({
             sideOffset={5}
           >
             <MenuBody variant="dropdown" {...menuBodyProps} />
+            <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
+              {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V{menuVersion}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       )}
