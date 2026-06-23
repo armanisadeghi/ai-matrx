@@ -42,6 +42,8 @@ import { aiResultsManifest } from "./ai-results.manifest";
 import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
 import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 import { ragSearchManifest } from "./rag-search.manifest";
+import { workingDocumentManifest } from "./working-document.manifest";
+import { scratchpadManifest } from "./scratchpad.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -71,6 +73,8 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentAdvancedEditorManifest,
   mermaidEditorManifest,
   ragSearchManifest,
+  workingDocumentManifest,
+  scratchpadManifest,
 ];
 
 /**

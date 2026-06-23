@@ -52,6 +52,20 @@ This feature exists because:
   diff body, and one action row (Approve · Decline · Respond) plus an opt-in
   "always approve {noun}". States the change **once** — no chip+context+question
   triple. Producers emit `ApprovalChange`; the card is feature-agnostic.
+
+**Shared card primitives (one look across every inline agent card)**
+- `<AgentCardShell>` (`ui/AgentCardShell.tsx`) — the chrome both `<AskCard>` and
+  `<ApprovalCard>` render through: rounded-2xl elevated card, tone-tinted accent +
+  icon chip, eyebrow→title→subtitle header, dismiss ×, body slot, optional footer
+  band, bottom countdown slot. `AccentTone` drives the color. **New inline agent
+  cards must use this shell — never hand-roll the chrome.**
+- `<ChangeDiff>` (`@/components/ui/change-diff`) — the app-wide before→after diff
+  list (`ChangeFieldDiff[]`; `ApprovalFieldDiff` is an alias). Tone-neutral, no
+  feature coupling — reusable by any "here's what changed" surface (project /
+  settings updates, version history), not just agents.
+- **Gallery:** `/demos/agent-cards` (`app/(dev)/demos/agent-cards/page.dev.tsx`)
+  previews every card kind live (clicks resolve + log the envelope) — the design
+  reference for this family.
 - `<TaskPanel ...>` — drawer panel opened by the chip.
 
 **Services**
@@ -227,6 +241,19 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-06-23` — **Shared card design language + AskCard redesign.** Extracted
+  the quality of `<ApprovalCard>` into two reusable primitives: `<AgentCardShell>`
+  (`ui/AgentCardShell.tsx` — the rounded-2xl, tone-tinted, elevated chrome with a
+  consistent icon-chip + header hierarchy + optional footer band + countdown slot)
+  and `<ChangeDiff>` (`@/components/ui/change-diff` — the app-wide before→after diff
+  list, tone-neutral so project/settings/version surfaces can reuse it; `ApprovalFieldDiff`
+  is now an alias of `ChangeFieldDiff`). Refactored `<ApprovalCard>` onto both (no
+  behavior change) and **redesigned the dated `<AskCard>`** (all 8 kinds: confirm /
+  choice / choice_many / text / secret / notify / plan_approval / takeover) onto the
+  shell — per-kind icon + tone, the question promoted to the prominent title,
+  modernized option rows; batching / timeout / write-instead / additional-instructions
+  all preserved. New live gallery at `/demos/agent-cards`. Typecheck + lint clean;
+  rendered + verified on the running dev server.
 - `2026-06-23` — Added the `approval` `PendingAsk` kind + `<ApprovalCard>`
   (`ui/ApprovalCard.tsx`) and the generic `ApprovalChange` descriptor
   (`ui/approval-types.ts`). Replaces the old reuse-the-confirm-AskCard approach

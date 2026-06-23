@@ -7,6 +7,22 @@ description: Authoritative workflow for adding a new UI surface to the matrx-adm
 
 Adding a surface to the matrx Surface Values system is **code-first, DB-mirror**. Code is the single source of truth — the DB is a synced reflection. Get the manifest right and everything downstream (binding UIs, drift report, RLS-gated agent + tool bindings, the runtime resolver) just works.
 
+## What a surface is — and the recursion that trips people up
+
+A **surface** exists to bind **highly custom agents to a specific place** and hand them **highly specific context**. That's the whole job. So the test for "should this be its own surface?" is never "does it render its own UI" — it's **"would different custom agents, with different context, act here?"** If yes, it's a surface.
+
+**A context item in one surface can itself BE a surface — and then its context is its own parts, not itself.** This is the model that confuses people:
+
+- In the **chat** surface, the working document and the scratchpad are **context items** — whole values handed to the conversation's agent.
+- **Step inside** one and it stops being a context item. It becomes its **own surface**, and its context items are its **parts**: the body text, the selection, the id, the title. You would never attach the whole document as its own surface's context — that's circular. The parts are the context.
+- **Zoom back out from inside:** the conversation the document hangs off is **not** its context either — it's a **reference** (`conversation_id`) plus whatever the host chooses to pass through the link (`conversation_context`). A reference, not an embed.
+
+**Purpose flips when you step inside.** Outside, the scratchpad is "the user's private notes the cloud agent only reads." Inside, it is **just text** — a context-menu agent there can absolutely edit it (bullet it, tabulate it, clean it up). The read-only-ness was a fact of the *outer* surface, not an intrinsic property of the text.
+
+**Boundaries are a perspective you choose, then commit to.** The chat sidebar (list of chats + agents) and the open chat (one `conversation_id`) can be modeled as **two surfaces** (a list surface + a single-conversation surface) **or one** (a chat surface with an active conversation *and* a list of the others). Both are valid. Pick the framing that matches how agents will be bound, then design to it.
+
+**Same shape ≠ same surface.** Two surfaces can share an identical value set and still be two surfaces when the *purpose* — and therefore the bound agents — differ. `matrx-user/working-document` and `matrx-user/scratchpad` share one value set (`_conversation-document.manifest.ts`) but stay separate because a co-author agent belongs on one and not the other. Conversely, only merge kinds into one surface when the values AND the relevant agents are ~identical.
+
 ## The 4-step add (canonical)
 
 ```

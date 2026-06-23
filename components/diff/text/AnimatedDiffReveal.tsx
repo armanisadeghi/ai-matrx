@@ -47,7 +47,7 @@ export interface AnimatedDiffRevealProps {
 }
 
 const ADDED_RUN =
-  "rounded-[2px] bg-success/15 text-success-foreground/90 dark:bg-success/25";
+  "rounded-[2px] bg-success/15 text-success dark:bg-success/25";
 const REMOVED_RUN =
   "rounded-[2px] bg-destructive/12 text-destructive line-through decoration-destructive/50 dark:bg-destructive/25";
 

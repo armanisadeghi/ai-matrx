@@ -25,7 +25,10 @@ import type {
   ValueMapping,
   ValueMappingMap,
 } from "@/features/surfaces/types";
-import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
+import {
+  formatVariableDisplayName,
+  variableValueToDisplay,
+} from "@/features/agents/utils/variable-utils";
 
 /**
  * One row in the binding form. Drives a single agent variable / context
@@ -52,6 +55,8 @@ export interface BindingTarget {
   description?: string;
   /** Whether the agent has the target marked as required. */
   required?: boolean;
+  /** Agent-authored default for variables; omitted for context slots. */
+  defaultValue?: unknown;
 }
 
 type FourWayMode =
@@ -74,6 +79,26 @@ function modeFromMapping(
   if (mapping.mapType === "direct_value") return "direct_value";
   if (mapping.mapType === "prompt_user") return "prompt_user";
   return "agent_default"; // covers "unmapped"
+}
+
+function hasAgentDefault(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string" && value.trim() === "") return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+}
+
+/** Seed for `direct_value` mappings — preserves structured defaults as JSON. */
+function agentDefaultForDirectValue(value: unknown): unknown {
+  if (!hasAgentDefault(value)) return "";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  }
+  return value;
 }
 
 export function SurfaceVariableBinding({
@@ -121,7 +146,10 @@ export function SurfaceVariableBinding({
     if (next === "direct_value") {
       onChange({
         mapType: "direct_value",
-        target: mapping?.mapType === "direct_value" ? mapping.target : "",
+        target:
+          mapping?.mapType === "direct_value"
+            ? mapping.target
+            : agentDefaultForDirectValue(target.defaultValue),
       });
       return;
     }
@@ -129,7 +157,11 @@ export function SurfaceVariableBinding({
       mapType: "prompt_user",
       prompt: mapping?.mapType === "prompt_user" ? mapping.prompt : "",
       defaultValue:
-        mapping?.mapType === "prompt_user" ? mapping.defaultValue : undefined,
+        mapping?.mapType === "prompt_user"
+          ? mapping.defaultValue
+          : hasAgentDefault(target.defaultValue)
+            ? target.defaultValue
+            : undefined,
       required: mapping?.mapType === "prompt_user" ? mapping.required : false,
     });
   };
@@ -182,7 +214,10 @@ export function SurfaceVariableBinding({
         {/* Detail panel — fixed height, no UI shift between modes */}
         <div className="px-4 pt-3 pb-4 min-h-[120px]">
           {mode === "agent_default" && (
-            <AgentDefaultDetail autoBindCandidate={autoBindCandidate} />
+            <AgentDefaultDetail
+              autoBindCandidate={autoBindCandidate}
+              defaultValue={target.defaultValue}
+            />
           )}
           {mode === "surface_value" && mapping?.mapType === "surface_value" && (
             <SurfaceValueDetail
@@ -209,6 +244,7 @@ export function SurfaceVariableBinding({
           {mode === "direct_value" && mapping?.mapType === "direct_value" && (
             <DirectValueDetail
               mapping={mapping}
+              agentDefault={target.defaultValue}
               disabled={disabled}
               onChange={onChange}
             />
@@ -216,6 +252,7 @@ export function SurfaceVariableBinding({
           {mode === "prompt_user" && mapping?.mapType === "prompt_user" && (
             <PromptUserDetail
               mapping={mapping}
+              agentDefault={target.defaultValue}
               disabled={disabled}
               onChange={onChange}
             />
@@ -290,15 +327,35 @@ function ModeButtons({
 
 function AgentDefaultDetail({
   autoBindCandidate,
+  defaultValue,
 }: {
   autoBindCandidate: SurfaceValue | null;
+  defaultValue: unknown;
 }) {
+  const defaultPreview = hasAgentDefault(defaultValue)
+    ? variableValueToDisplay(defaultValue)
+    : null;
+
   return (
-    <div className="text-xs text-muted-foreground leading-relaxed">
+    <div className="text-xs text-muted-foreground leading-relaxed space-y-2">
       <p>
         The agent will use its built-in default value for this variable at run
         time.
       </p>
+      <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+          Current agent default
+        </div>
+        {defaultPreview ? (
+          <pre className="mt-1 text-sm text-foreground whitespace-pre-wrap break-words font-mono leading-snug">
+            {defaultPreview}
+          </pre>
+        ) : (
+          <p className="mt-1 text-sm italic text-muted-foreground/80">
+            Not set on the agent
+          </p>
+        )}
+      </div>
       {autoBindCandidate && (
         <p className="mt-2 text-amber-600 dark:text-amber-400">
           Note: the surface declares a value named{" "}
@@ -385,10 +442,12 @@ function SurfaceValueDetail({
 
 function DirectValueDetail({
   mapping,
+  agentDefault,
   disabled,
   onChange,
 }: {
   mapping: Extract<ValueMapping, { mapType: "direct_value" }>;
+  agentDefault: unknown;
   disabled: boolean;
   onChange: (next: ValueMapping) => void;
 }) {
@@ -398,6 +457,9 @@ function DirectValueDetail({
       : mapping.target == null
         ? ""
         : String(mapping.target);
+  const agentDefaultPreview = hasAgentDefault(agentDefault)
+    ? variableValueToDisplay(agentDefault)
+    : null;
 
   return (
     <div className="space-y-1.5">
@@ -408,7 +470,11 @@ function DirectValueDetail({
         value={stringValue}
         onChange={(e) => onChange({ ...mapping, target: e.target.value })}
         rows={3}
-        placeholder="Enter the literal value this binding should send."
+        placeholder={
+          agentDefaultPreview
+            ? `Agent default: ${agentDefaultPreview}`
+            : "Enter the literal value this binding should send."
+        }
         disabled={disabled}
         className="text-sm resize-none"
         style={{ fontSize: "14px" }}
@@ -419,13 +485,19 @@ function DirectValueDetail({
 
 function PromptUserDetail({
   mapping,
+  agentDefault,
   disabled,
   onChange,
 }: {
   mapping: Extract<ValueMapping, { mapType: "prompt_user" }>;
+  agentDefault: unknown;
   disabled: boolean;
   onChange: (next: ValueMapping) => void;
 }) {
+  const agentDefaultPreview = hasAgentDefault(agentDefault)
+    ? variableValueToDisplay(agentDefault)
+    : null;
+
   return (
     <div className="space-y-2.5">
       <div className="space-y-1.5">
@@ -454,7 +526,11 @@ function PromptUserDetail({
                 defaultValue: e.target.value || undefined,
               })
             }
-            placeholder="Pre-filled value"
+            placeholder={
+              agentDefaultPreview
+                ? `Agent default: ${agentDefaultPreview}`
+                : "Pre-filled value"
+            }
             disabled={disabled}
             className="h-9 text-sm"
             style={{ fontSize: "14px" }}

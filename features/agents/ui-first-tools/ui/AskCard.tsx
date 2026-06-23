@@ -13,6 +13,11 @@
  *   5. Timeout: a thin bar at the bottom counts down. On expiry the card
  *      resolves with `{timed_out: true}`.
  *
+ * Every card wears the shared `<AgentCardShell>` chrome (rounded, elevated,
+ * tone-tinted icon + accent, header hierarchy), so asks and approvals look like
+ * one family. The kind only supplies the icon/tone + the body controls; the
+ * question is the shell's prominent title.
+ *
  * Kinds:
  *   confirm        — Yes / No
  *   choice         — radio list (single); side-by-side preview when any
@@ -39,28 +44,31 @@
  *   When `batchTotal > 1`, the card shows an "N of M" pill.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
-  CheckCircle2,
   Info,
   AlertTriangle,
   AlertCircle,
+  CheckCircle2,
   CheckCheck,
-  X,
   Send,
   ShieldCheck,
-  HelpCircle,
+  ListChecks,
+  MessageSquare,
+  KeyRound,
+  Hand,
+  ClipboardCheck,
   Eye,
   EyeOff,
   Circle,
+  type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { PendingAsk } from "../redux/pending-asks.slice";
+import type { PendingAsk, PendingAskLevel } from "../redux/pending-asks.slice";
 import {
   resolvePendingAsk,
   cancelPendingAsk,
@@ -72,6 +80,7 @@ import {
 import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 import { EMPTY_ASK_RESPONSE } from "../tools/schemas";
 import { AskCardCountdown } from "./AskCardCountdown";
+import { AgentCardShell, type AccentTone } from "./AgentCardShell";
 
 const OTHER_SENTINEL = "__matrx_other__";
 
@@ -79,26 +88,86 @@ interface AskCardProps {
   ask: PendingAsk;
 }
 
-const LEVEL_ICONS = {
+const LEVEL_ICONS: Record<PendingAskLevel, LucideIcon> = {
   info: Info,
   success: CheckCircle2,
   warning: AlertTriangle,
   error: AlertCircle,
-} as const;
+};
 
-const KIND_ICONS = {
-  confirm: ShieldCheck,
-  choice: HelpCircle,
-  choice_many: HelpCircle,
-  text: HelpCircle,
-  secret: ShieldCheck,
-  notify: Info,
-  plan_approval: CheckCheck,
-  takeover: HelpCircle,
-  // "approval" cards are rendered by <ApprovalCard> via PendingAsksZone, never
-  // here — this entry only keeps the icon lookup total over PendingAskKind.
-  approval: ShieldCheck,
-} as const;
+const NOTIFY_TONE: Record<PendingAskLevel, AccentTone> = {
+  info: "info",
+  success: "success",
+  warning: "warning",
+  error: "danger",
+};
+
+const NOTIFY_WORD: Record<PendingAskLevel, string> = {
+  info: "Notice",
+  success: "Done",
+  warning: "Heads up",
+  error: "Error",
+};
+
+interface AskPresentation {
+  tone: AccentTone;
+  Icon: LucideIcon;
+  eyebrow?: ReactNode;
+  subtitle?: ReactNode;
+  title?: ReactNode;
+}
+
+/** Map an ask to its shared-shell header (icon, tone, eyebrow, title). */
+function presentation(ask: PendingAsk): AskPresentation {
+  const eyebrow = ask.header ?? ask.context ?? undefined;
+  const subtitle = ask.header && ask.context ? ask.context : undefined;
+  switch (ask.kind) {
+    case "confirm":
+      return { tone: "primary", Icon: ShieldCheck, eyebrow, subtitle, title: ask.question };
+    case "choice":
+    case "choice_many":
+      return { tone: "info", Icon: ListChecks, eyebrow, subtitle, title: ask.question };
+    case "text":
+      return { tone: "info", Icon: MessageSquare, eyebrow, subtitle, title: ask.question };
+    case "secret":
+      return {
+        tone: "warning",
+        Icon: KeyRound,
+        eyebrow: eyebrow ?? "Secret",
+        subtitle,
+        title: ask.question,
+      };
+    case "takeover":
+      return {
+        tone: "primary",
+        Icon: Hand,
+        eyebrow: eyebrow ?? "Take over",
+        subtitle,
+        title: ask.question,
+      };
+    case "notify": {
+      const level = ask.level ?? "info";
+      return {
+        tone: NOTIFY_TONE[level],
+        Icon: LEVEL_ICONS[level],
+        eyebrow: ask.header ?? NOTIFY_WORD[level],
+        title: undefined,
+      };
+    }
+    case "plan_approval":
+      return {
+        tone: "violet",
+        Icon: ClipboardCheck,
+        eyebrow: ask.header ?? "Proposed plan",
+        subtitle,
+        title: ask.plan?.title,
+      };
+    case "approval":
+      // Rendered by <ApprovalCard> (PendingAsksZone routes it there) — never
+      // reaches <AskCard>. Present only to keep the switch exhaustive.
+      return { tone: "neutral", Icon: ShieldCheck };
+  }
+}
 
 export function AskCard({ ask }: AskCardProps) {
   const dispatch = useAppDispatch();
@@ -139,7 +208,7 @@ export function AskCard({ ask }: AskCardProps) {
     resolve({ ...EMPTY_ASK_RESPONSE, wrote_instead: true, freeform: text });
   }
 
-  const KindIcon = KIND_ICONS[ask.kind] ?? HelpCircle;
+  const p = presentation(ask);
   const showBatch =
     typeof ask.batchTotal === "number" &&
     ask.batchTotal > 1 &&
@@ -156,99 +225,67 @@ export function AskCard({ ask }: AskCardProps) {
   const showNote = showExtras && isLast;
 
   return (
-    <div
-      className={cn(
-        "rounded-md border border-border bg-card text-card-foreground shadow-sm",
-        "px-3 py-2.5 text-sm flex flex-col gap-2 relative overflow-hidden",
-        "animate-in fade-in slide-in-from-bottom-1 duration-200",
-        ask.status !== "pending" && "opacity-50 pointer-events-none",
-      )}
-      role="region"
+    <AgentCardShell
+      tone={p.tone}
+      icon={p.Icon}
+      eyebrow={p.eyebrow}
+      subtitle={p.subtitle}
+      title={p.title}
+      badge={showBatch ? `${ask.batchIndex! + 1} of ${ask.batchTotal}` : undefined}
+      onDismiss={skip}
+      dismissLabel="Skip this question"
+      pending={ask.status !== "pending"}
+      bottomSlot={
+        typeof ask.expiresAtMs === "number" ? (
+          <AskCardCountdown
+            expiresAtMs={ask.expiresAtMs}
+            className="absolute bottom-0 left-0 right-0 rounded-none"
+          />
+        ) : null
+      }
       aria-label={`Question from agent: ${ask.question ?? ask.message ?? ""}`}
     >
-      <div className="flex items-start gap-2">
-        <KindIcon className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-        <div className="flex-1 min-w-0">
-          {(ask.header || ask.context || showBatch) && (
-            <div className="flex items-center gap-2 mb-1">
-              {ask.header && (
-                <Badge
-                  variant="outline"
-                  className="h-4 px-1.5 text-[10px] uppercase tracking-wide"
-                >
-                  {ask.header}
-                </Badge>
-              )}
-              {ask.context && (
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
-                  {ask.context}
-                </div>
-              )}
-              {showBatch && (
-                <span className="text-[10px] text-muted-foreground tabular-nums ml-auto">
-                  {ask.batchIndex! + 1} of {ask.batchTotal}
-                </span>
-              )}
+      {writeMode ? (
+        <WriteInsteadBody
+          value={writeText}
+          onChange={setWriteText}
+          onSend={sendWriteInstead}
+          onBack={() => {
+            setWriteMode(false);
+            setWriteText("");
+          }}
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          <AskBody ask={ask} onAnswer={answer} isLast={isLast} />
+          {showNote && (
+            <div className="mt-1 flex flex-col gap-1.5 border-t border-border/60 pt-2.5">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Anything else? (optional)
+              </div>
+              <Textarea
+                value={additionalInstructions}
+                onChange={(e) => setAdditionalInstructions(e.target.value)}
+                placeholder="Add a note for the agent…"
+                rows={2}
+                className="text-base"
+              />
             </div>
           )}
-          {writeMode ? (
-            <WriteInsteadBody
-              value={writeText}
-              onChange={setWriteText}
-              onSend={sendWriteInstead}
-              onBack={() => {
-                setWriteMode(false);
-                setWriteText("");
-              }}
-            />
-          ) : (
-            <>
-              <AskBody ask={ask} onAnswer={answer} isLast={isLast} />
-              {showNote && (
-                <div className="mt-2 flex flex-col gap-1.5 border-t border-border pt-2">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Anything else? (optional)
-                  </div>
-                  <Textarea
-                    value={additionalInstructions}
-                    onChange={(e) => setAdditionalInstructions(e.target.value)}
-                    placeholder="Add a note for the agent…"
-                    rows={2}
-                    className="text-base"
-                  />
-                </div>
-              )}
-              {showExtras && (
-                <div className="mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setWriteMode(true)}
-                    className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                  >
-                    Write message instead
-                  </button>
-                </div>
-              )}
-            </>
+          {showExtras && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setWriteMode(true)}
+                className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Write message instead
+              </button>
+            </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={skip}
-          className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          title="Skip / cancel"
-          aria-label="Skip this question"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      {typeof ask.expiresAtMs === "number" && (
-        <AskCardCountdown
-          expiresAtMs={ask.expiresAtMs}
-          className="absolute bottom-0 left-0 right-0 rounded-none"
-        />
       )}
-    </div>
+    </AgentCardShell>
   );
 }
 
@@ -280,8 +317,8 @@ function WriteInsteadBody({
         }}
       />
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={onSend} disabled={!value.trim()}>
-          <Send className="w-3.5 h-3.5 mr-1" />
+        <Button size="sm" onClick={onSend} disabled={!value.trim()} className="gap-1.5">
+          <Send className="size-3.5" />
           Send
         </Button>
         <Button size="sm" variant="ghost" onClick={onBack}>
@@ -328,19 +365,8 @@ function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
         <TextBody ask={ask} secret={false} onAnswer={onAnswer} isLast={isLast} />
       );
     case "approval":
-      // Rendered by <ApprovalCard> (PendingAsksZone routes it there) — never
-      // reaches <AskCard>. Present only to keep the switch exhaustive.
       return null;
   }
-}
-
-function QuestionLine({ ask }: { ask: PendingAsk }) {
-  if (!ask.question) return null;
-  return (
-    <div className="font-medium text-foreground leading-snug whitespace-pre-wrap">
-      {ask.question}
-    </div>
-  );
 }
 
 function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
@@ -353,58 +379,62 @@ function ConfirmBody({ ask, onAnswer, isLast }: AskBodyProps) {
     onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: null, freeform: text });
   }
 
-  return (
-    <div className="flex flex-col gap-2">
-      <QuestionLine ask={ask} />
-      {!otherMode ? (
+  if (otherMode) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Textarea
+          value={otherText}
+          onChange={(e) => setOtherText(e.target.value)}
+          placeholder="Type your answer…"
+          rows={2}
+          autoFocus
+          className="text-base"
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendOther();
+          }}
+        />
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })}
-          >
-            Yes
+          <Button size="sm" onClick={sendOther} disabled={!otherText.trim()}>
+            {isLast === false ? "Next" : "Send"}
           </Button>
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: false })}
-          >
-            No
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setOtherMode(true)}>
-            Other…
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            value={otherText}
-            onChange={(e) => setOtherText(e.target.value)}
-            placeholder="Type your answer…"
-            rows={2}
-            autoFocus
-            className="text-base"
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendOther();
+            variant="ghost"
+            onClick={() => {
+              setOtherMode(false);
+              setOtherText("");
             }}
-          />
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={sendOther} disabled={!otherText.trim()}>
-              {isLast === false ? "Next" : "Send"}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setOtherMode(false);
-                setOtherText("");
-              }}
-            >
-              Back
-            </Button>
-          </div>
+          >
+            Back
+          </Button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: true })}
+      >
+        Yes
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => onAnswer({ ...EMPTY_ASK_RESPONSE, confirmed: false })}
+      >
+        No
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setOtherMode(true)}
+        className="ml-auto text-muted-foreground hover:text-foreground"
+      >
+        Other…
+      </Button>
     </div>
   );
 }
@@ -444,11 +474,7 @@ function ChoiceBody({
     if (hasOther) {
       if (!otherText.trim()) return;
       labels.push("Other");
-      onAnswer({
-        ...EMPTY_ASK_RESPONSE,
-        selected: labels,
-        freeform: otherText,
-      });
+      onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels, freeform: otherText });
       return;
     }
     onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels });
@@ -459,13 +485,12 @@ function ChoiceBody({
 
   return (
     <div className="flex flex-col gap-2">
-      <QuestionLine ask={ask} />
       <div className={sideBySide ? "grid grid-cols-[1fr_1.2fr] gap-3" : ""}>
         <div className="flex flex-col gap-1.5">
           {options.map((opt, i) => (
             <label
               key={opt.label}
-              className="flex cursor-pointer items-start gap-2 rounded-md border border-border bg-background/60 px-2 py-1.5 text-sm hover:bg-accent"
+              className="flex cursor-pointer items-start gap-2 rounded-lg border border-border/70 bg-background/60 px-3 py-2 text-sm transition-colors hover:bg-accent/60"
               onMouseEnter={() => setFocusedIdx(i)}
             >
               <input
@@ -479,7 +504,7 @@ function ChoiceBody({
                 }}
                 className="mt-0.5 size-3.5"
               />
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div>{opt.label}</div>
                 {opt.description && (
                   <div className="mt-0.5 text-xs text-muted-foreground">
@@ -490,7 +515,7 @@ function ChoiceBody({
             </label>
           ))}
           {ask.allowOther && (
-            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-dashed border-border bg-background/40 px-2 py-1.5 text-sm hover:bg-accent">
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-dashed border-border bg-background/40 px-3 py-2 text-sm transition-colors hover:bg-accent/60">
               <input
                 type={multi ? "checkbox" : "radio"}
                 name={`ask-${ask.callId}`}
@@ -499,7 +524,7 @@ function ChoiceBody({
                 onChange={() => toggle(OTHER_SENTINEL)}
                 className="mt-0.5 size-3.5"
               />
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div>Other</div>
                 {otherSelected ? (
                   <Textarea
@@ -520,7 +545,7 @@ function ChoiceBody({
           )}
         </div>
         {sideBySide && focusedOption?.preview && (
-          <pre className="overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+          <pre className="overflow-auto rounded-lg border border-border bg-muted/40 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
             {focusedOption.preview}
           </pre>
         )}
@@ -551,7 +576,6 @@ function TextBody({
 
   return (
     <div className="flex flex-col gap-2">
-      <QuestionLine ask={ask} />
       {secret ? (
         <div className="relative">
           <Input
@@ -570,11 +594,7 @@ function TextBody({
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
             aria-label={show ? "Hide value" : "Show value"}
           >
-            {show ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
+            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         </div>
       ) : (
@@ -589,9 +609,9 @@ function TextBody({
           }}
         />
       )}
-      <div className="flex gap-2 items-center">
-        <Button size="sm" onClick={submit} disabled={!value.trim()}>
-          <Send className="w-3.5 h-3.5 mr-1" />
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={submit} disabled={!value.trim()} className="gap-1.5">
+          <Send className="size-3.5" />
           {isLast === false ? "Next" : "Send"}
         </Button>
         <span className="text-[11px] text-muted-foreground">
@@ -605,7 +625,6 @@ function TextBody({
 function NotifyBody({ ask, onAnswer }: AskBodyProps) {
   const [freeform, setFreeform] = useState("");
   const [showOther, setShowOther] = useState(false);
-  const LevelIcon = LEVEL_ICONS[ask.level ?? "info"];
 
   function sendOther() {
     if (!freeform.trim()) return;
@@ -614,20 +633,13 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-start gap-2">
-        <LevelIcon
-          className={cn(
-            "w-4 h-4 mt-0.5 shrink-0",
-            ask.level === "error" && "text-destructive",
-            ask.level === "warning" && "text-amber-500",
-            ask.level === "success" && "text-emerald-500",
-            (!ask.level || ask.level === "info") && "text-muted-foreground",
-          )}
-        />
-        <div className="flex-1 text-sm whitespace-pre-wrap">{ask.message}</div>
-      </div>
+      {ask.message && (
+        <div className="whitespace-pre-wrap text-sm text-foreground">
+          {ask.message}
+        </div>
+      )}
       {!showOther && (
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap items-center gap-2">
           {(ask.actions ?? []).map((a) => (
             <Button
               key={a}
@@ -640,23 +652,16 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
               {a}
             </Button>
           ))}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowOther(true)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setShowOther(true)}>
             Other…
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() =>
-              onAnswer({
-                ...EMPTY_ASK_RESPONSE,
-                action: "dismiss",
-                freeform: null,
-              })
+              onAnswer({ ...EMPTY_ASK_RESPONSE, action: "dismiss", freeform: null })
             }
+            className="ml-auto text-muted-foreground hover:text-foreground"
           >
             Dismiss
           </Button>
@@ -675,7 +680,7 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendOther();
             }}
           />
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <Button size="sm" onClick={sendOther} disabled={!freeform.trim()}>
               Send
             </Button>
@@ -700,16 +705,13 @@ function PlanApprovalBody({ ask, onAnswer }: AskBodyProps) {
   const plan = ask.plan;
   return (
     <div className="flex flex-col gap-2">
-      <div className="font-medium text-foreground leading-snug">
-        {plan?.title ?? "Proposed plan"}
-      </div>
       {plan?.reasoning && (
-        <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+        <div className="whitespace-pre-wrap text-xs text-muted-foreground">
           {plan.reasoning}
         </div>
       )}
       {plan?.steps && plan.steps.length > 0 && (
-        <ol className="list-decimal pl-5 space-y-0.5 text-sm">
+        <ol className="list-decimal space-y-0.5 pl-5 text-sm">
           {plan.steps.map((s, i) => (
             <li key={i} className="text-foreground">
               {s}
@@ -732,8 +734,9 @@ function PlanApprovalBody({ ask, onAnswer }: AskBodyProps) {
               confirmed: true,
             })
           }
+          className="gap-1.5"
         >
-          <CheckCheck className="w-3.5 h-3.5 mr-1" />
+          <CheckCheck className="size-3.5" />
           Approve
         </Button>
         <Button
@@ -746,8 +749,9 @@ function PlanApprovalBody({ ask, onAnswer }: AskBodyProps) {
               confirmed: false,
             })
           }
+          className="gap-1.5"
         >
-          <Circle className="w-3.5 h-3.5 mr-1" />
+          <Circle className="size-3.5" />
           Reject
         </Button>
       </div>

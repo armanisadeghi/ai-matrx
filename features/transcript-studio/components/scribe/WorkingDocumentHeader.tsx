@@ -8,10 +8,12 @@ import {
   GitCompare,
   Loader2,
   Maximize2,
+  SendHorizontal,
   Volume2,
   VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
@@ -19,6 +21,7 @@ import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import { useWorkingDocChanges } from "../../hooks/useWorkingDocChanges";
+import { useWorkingDocPublish } from "../../hooks/useWorkingDocPublish";
 import { FocusedDocumentEditor } from "./FocusedDocumentEditor";
 import { WorkingDocDiff } from "./WorkingDocDiff";
 
@@ -68,6 +71,34 @@ export function WorkingDocumentHeader({
   const [diffOpen, setDiffOpen] = useState(false);
 
   const copyText = draft.trim() || docContent.trim();
+
+  // "Publish & clear" — persist the finished draft to a durable note the user
+  // owns, then reset the working document to empty for the next draft. Clearing
+  // goes through the SAME draft writer the editor uses (onChange("") + flush), so
+  // the empty state is persisted on the one autosave path.
+  const { publishing, publishAndClear } = useWorkingDocPublish({
+    content: copyText,
+    title: workingDoc?.title,
+    clearDraft: () => {
+      onChange("");
+      flush();
+    },
+  });
+
+  const handlePublishAndClear = async () => {
+    if (!copyText) {
+      toast.info("Nothing to publish yet — the working document is empty");
+      return;
+    }
+    const ok = await confirm({
+      title: "Publish & clear?",
+      description:
+        "Saves the working document to a new note, then clears it so the next draft starts empty. Your content is kept in the note — nothing is lost.",
+      confirmLabel: "Publish & clear",
+    });
+    if (!ok) return;
+    await publishAndClear();
+  };
 
   const handleReadAloud = async () => {
     if (!docContent.trim()) return;
@@ -142,6 +173,26 @@ export function WorkingDocumentHeader({
             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => void handlePublishAndClear()}
+          disabled={!copyText || publishing}
+          aria-label="Publish to a note and clear the working document"
+          title="Publish to a note and clear for the next draft"
+          className={cn(
+            "flex items-center justify-center rounded-full",
+            iconBtn,
+            copyText && !publishing
+              ? "text-foreground active:bg-accent"
+              : "text-muted-foreground/50",
+          )}
+        >
+          {publishing ? (
+            <Loader2 className={cn(iconSize, "animate-spin")} />
+          ) : (
+            <SendHorizontal className={iconSize} />
+          )}
+        </button>
         <button
           type="button"
           onClick={handleReadAloud}
@@ -263,6 +314,21 @@ export function WorkingDocumentHeader({
           onAccept={() => {
             changes.markSeen();
             setDiffOpen(false);
+          }}
+          publishing={publishing}
+          onPublishAndClear={async () => {
+            const ok = await confirm({
+              title: "Publish & clear?",
+              description:
+                "Saves the working document to a new note, then clears it so the next draft starts empty. Your content is kept in the note — nothing is lost.",
+              confirmLabel: "Publish & clear",
+            });
+            if (!ok) return;
+            const done = await publishAndClear();
+            if (done) {
+              changes.markSeen();
+              setDiffOpen(false);
+            }
           }}
         />
       )}

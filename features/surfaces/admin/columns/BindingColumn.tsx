@@ -164,6 +164,7 @@ function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
       name: v.name,
       description: v.helpText,
       required: v.required ?? false,
+      defaultValue: v.defaultValue,
     });
   }
   for (const slot of agent.contextSlots ?? []) {

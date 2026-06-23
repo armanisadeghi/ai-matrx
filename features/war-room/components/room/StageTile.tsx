@@ -23,6 +23,7 @@ import { TileProjectMarker } from "../tile/TileProjectMarker";
 import { TileTabContent } from "../tile/TileTabContent";
 import { TileMetricChips } from "../tile/TileMetricChips";
 import { TileOptionsMenu } from "../tile/TileOptionsMenu";
+import { ThreadAnchorBanner } from "../tile/ThreadAnchorBanner";
 import { TileCopyForAiButton } from "../shared/TileCopyForAiButton";
 import { PulseGlyph } from "../tile/PulseGlyph";
 import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
@@ -134,6 +135,10 @@ export function StageTile({
           size="md"
         />
       </div>
+
+      {/* Anchor guard (Feature 2fe48c5c): a generic, unanchored thread gets a
+          quiet, dismissable nudge to give it a task or a project. */}
+      <ThreadAnchorBanner tileId={tileId} sessionId={sessionId} />
 
       {/* Body */}
       <div className="flex-1 min-h-0 border-t border-border/60 bg-card">

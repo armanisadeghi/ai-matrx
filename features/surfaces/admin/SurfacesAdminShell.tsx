@@ -5,7 +5,7 @@ import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
 import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { SurfacesAdminHeader } from "./SurfacesAdminHeader";
@@ -43,9 +43,9 @@ export function SurfacesAdminShell({
 
   return (
     <PanelControlProvider>
-      <PageHeader>
+      <PageSpecificHeader>
         <SurfacesAdminHeader agentName={agent.name} backHref={backHref} />
-      </PageHeader>
+      </PageSpecificHeader>
 
       {isMobile ? (
         <MobileStack agent={agent} />

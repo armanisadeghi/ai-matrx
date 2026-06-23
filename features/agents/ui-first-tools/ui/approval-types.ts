@@ -14,6 +14,8 @@
  * the same shape and get the same card + auto-approve affordance for free.
  */
 
+import type { ChangeFieldDiff } from "@/components/ui/change-diff";
+
 export type ApprovalVerb =
   | "add"
   | "update"
@@ -22,19 +24,8 @@ export type ApprovalVerb =
   | "reopen"
   | "append";
 
-export interface ApprovalFieldDiff {
-  /** Field name, Sentence case: "Title", "Status", "Due date", "Description". */
-  label: string;
-  /**
-   * Current value. `undefined` ⇒ this is a brand-new value (an add), so the card
-   * renders only `after`. `null` / "" ⇒ the field is currently empty/unset.
-   */
-  before?: string | null;
-  /** Proposed value. `null` ⇒ the change clears the field. */
-  after: string | null;
-  /** Render as a multi-line block (description / note body) instead of inline. */
-  block?: boolean;
-}
+/** A field-level change is the shared, app-wide {@link ChangeFieldDiff}. */
+export type ApprovalFieldDiff = ChangeFieldDiff;
 
 export interface ApprovalAutoApprove {
   /** Grouping key the producer remembers (e.g. "task" | "note" | "tile"). */

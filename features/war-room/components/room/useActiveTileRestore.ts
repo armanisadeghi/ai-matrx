@@ -50,6 +50,9 @@ export function useActiveTileRestore(sessionId: string) {
     if (!session) return;
     if (visibleIds.length === 0) return; // wait for tiles
     seededRef.current = true;
+    // A `thread` URL param (useRoomUrlSync) is the authoritative open target —
+    // a shared/refreshed link wins over the session-row mirror. Defer to it.
+    if (new URLSearchParams(window.location.search).get("thread")) return;
     const persisted = session.active_tile_id;
     if (chosenStageId) return; // user already chose this mount
     if (persisted && visibleIds.includes(persisted)) {

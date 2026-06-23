@@ -102,9 +102,14 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
         ) : (
           <WorkingDocumentEditor
             conversationId={conversationId}
+            kind="working"
             draft={draft}
             onChange={onChange}
             onFlush={flush}
+            surfaceContext={{
+              conversationId,
+              sourceFeature: "working-document",
+            }}
           />
         )}
       </div>

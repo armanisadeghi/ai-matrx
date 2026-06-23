@@ -77,7 +77,16 @@ function parseKey(key: string): { kind: "create" | "update"; id: string } {
   return { kind: key.slice(0, i) as "create" | "update", id: key.slice(i + 1) };
 }
 
-export function BatchShortcutsEditor({ agent }: { agent: AgentDefinition }) {
+export function BatchShortcutsEditor({
+  agent,
+  basePath = "/agents",
+}: {
+  agent: AgentDefinition;
+  /** Base path for nested agent routes. Defaults to `/agents`; admin surfaces
+   *  pass `/administration/system-agents/agents` so navigation stays in the
+   *  admin shell. */
+  basePath?: string;
+}) {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -741,7 +750,9 @@ export function BatchShortcutsEditor({ agent }: { agent: AgentDefinition }) {
                   variant="link"
                   size="sm"
                   className="h-auto p-0 mt-1 text-xs"
-                  onClick={() => router.push(`/agents/${agent.id}/shortcuts`)}
+                  onClick={() =>
+                    router.push(`${basePath}/${agent.id}/shortcuts`)
+                  }
                 >
                   View all shortcuts →
                 </Button>

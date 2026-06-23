@@ -20,6 +20,10 @@ import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumen
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
 import type { ContentSource } from "@/features/rich-document/types";
 import { WorkingDocumentEditor } from "./WorkingDocumentEditor";
+import {
+  sourceFeatureForKind,
+  type WorkingDocumentSurfaceContext,
+} from "./workingDocumentSurface";
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
 import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
 import { DiffViewer } from "@/components/diff/DiffViewer";
@@ -51,6 +55,13 @@ interface WorkingDocumentPanelProps {
   showOpenInWindow?: boolean;
   showEnableToggle?: boolean;
   showHeader?: boolean;
+  /**
+   * Host page context carried into the document SURFACE — the conversation's
+   * context + scope selections — so agents launched from the highlight→agent
+   * menu see what the chat agent sees. The host (chat, war-room, the window)
+   * supplies it; defaults to deriving from `conversationId`.
+   */
+  surfaceContext?: WorkingDocumentSurfaceContext;
 }
 
 export function WorkingDocumentPanel({
@@ -60,6 +71,7 @@ export function WorkingDocumentPanel({
   showOpenInWindow = true,
   showEnableToggle = true,
   showHeader = true,
+  surfaceContext,
 }: WorkingDocumentPanelProps) {
   const {
     enabled,
@@ -109,6 +121,14 @@ export function WorkingDocumentPanel({
     conversationId,
     kind,
     documentId: binding.kind === "cx_working_document" ? binding.id : null,
+  };
+
+  // Surface context handed to the highlight→agent menu. Host-supplied wins;
+  // otherwise a minimal one keyed on the conversation (the scope hook derives
+  // the conversation's context from Redux).
+  const resolvedSurfaceContext: WorkingDocumentSurfaceContext = surfaceContext ?? {
+    conversationId,
+    sourceFeature: sourceFeatureForKind(kind),
   };
 
   return (
@@ -216,10 +236,12 @@ export function WorkingDocumentPanel({
             ) : (
               <WorkingDocumentEditor
                 conversationId={conversationId}
+                kind={kind}
                 draft={draft}
                 onChange={onChange}
                 onFlush={flush}
                 actionsSource={wdSource}
+                surfaceContext={resolvedSurfaceContext}
                 placeholder={
                   isScratch
                     ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."
