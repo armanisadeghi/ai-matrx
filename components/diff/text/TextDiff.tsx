@@ -97,7 +97,7 @@ function renderHighlightLine(
   }
   if (!segments || segments.length === 0) {
     return (
-      <span className="rounded-[2px] bg-green-200/60 dark:bg-green-500/30">
+      <span className="rounded-[2px] bg-success/15 dark:bg-success/25">
         {content === "" ? " " : content}
       </span>
     );
@@ -108,7 +108,7 @@ function renderHighlightLine(
     return (
       <span
         key={i}
-        className="rounded-[2px] bg-green-200/70 dark:bg-green-500/35"
+        className="rounded-[2px] bg-success/20 dark:bg-success/30"
       >
         {seg.value}
       </span>

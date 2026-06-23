@@ -33,6 +33,7 @@ import {
     buildResearchRecording,
     buildScrapeRecording,
     buildSearchRecording,
+    buildSimpleRecording,
 } from "@/features/tool-call-visualization/simulator/streamRecording";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
@@ -233,6 +234,50 @@ const CTX_ENTRIES: ToolLifecycleEntry[] = [
         result: { key: "working_document", command: "overwrite", new_size_chars: 230, persist: "auto" },
     }),
 ];
+
+// ─── ctx_patch LIVE animation fixtures ──────────────────────────────────────
+//
+// The patch arrives WHOLE at tool_started (old_str → new_str), so "streaming" is
+// a CLIENT-SIDE paced reveal: the removed span tints destructive, the new text
+// fills into its place tinted success, surrounding text stays plain. These two
+// fixtures drive that LIVE path — one via the simulator Play timer, one as a
+// static progress snapshot (timer-independent, provable even when HMR thrashes).
+
+const PATCH_STR_REPLACE_ARGS = {
+    key: "patient_summary",
+    command: "str_replace",
+    old_str:
+        "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. No prior cardiac history.\n\n- BP 148/92\n- HR 104",
+    new_str:
+        "## History\n\nPatient presents with **acute** chest pain, onset 2 hours ago. Aspirin 325mg administered en route. No prior cardiac history.\n\n- BP 148/92\n- HR 96 (down from 104)",
+};
+
+const PATCH_RECORDING = buildSimpleRecording(
+    "ctx_patch",
+    PATCH_STR_REPLACE_ARGS,
+    {
+        key: "patient_summary",
+        command: "str_replace",
+        matched_at_pass: "exact",
+        new_size_chars: 180,
+        persist: "auto",
+    },
+    { displayName: "Context", workMs: 1600, progressMessage: "Updating patient_summary" },
+);
+
+// STATIC mid-stream snapshot — status "progress" with the patch args already
+// present. Rendered directly through PatchDiffInline (no requestId → it animates
+// off the running status), so the removal-highlight → fill-in reveal is provable
+// without the Play timer.
+const PATCH_LIVE_SNAPSHOT: ToolLifecycleEntry = entry({
+    callId: "ctx-patch-live-snapshot",
+    toolName: "ctx_patch",
+    displayName: "Context",
+    status: "progress",
+    completedAt: null,
+    arguments: PATCH_STR_REPLACE_ARGS,
+    result: null,
+});
 
 // ─── Database / SQL renderer fixtures (sql / db_query / db_schema) ──────────
 
@@ -1032,6 +1077,56 @@ function FixtureCard({ label, children }: { label: string; children: React.React
 }
 
 /**
+ * Live ctx_patch (press Play) — the patch diff in its LIVE phase. The whole
+ * patch (old_str → new_str) arrives at tool_started, so the renderer shows the
+ * diff INSTANTLY and animates the replacement filling in: the removed span tints
+ * destructive, the new text reveals into its place tinted success (a snappy
+ * paced reveal), surrounding text plain. On completion it settles on the final
+ * diff. Persisted (reload) renders the final diff at once, no animation.
+ */
+function LivePatchSection() {
+    const [playKey, setPlayKey] = useState(0);
+    const hasPlayed = playKey > 0;
+    const simEntry = useSimulatedToolEntry(hasPlayed ? PATCH_RECORDING : null, { playKey });
+
+    const statusVariant =
+        simEntry.status === "completed"
+            ? "default"
+            : simEntry.status === "error"
+              ? "destructive"
+              : "secondary";
+    const statusLabel = !hasPlayed ? "idle" : simEntry.status;
+
+    return (
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Live ctx_patch — instant render + animated fill (press Play)
+                </h2>
+                <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
+                    {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
+                    {hasPlayed ? "Replay" : "Play"}
+                </Button>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                {simEntry.latestMessage ? (
+                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
+                ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+                The patch is known the instant the tool starts (old_str → new_str), so the diff renders with
+                NO wait. While live, the removed span tints destructive and the replacement fills into place
+                (success), surrounding text untouched. Settles on the final diff on completion. Press Play.
+            </p>
+            <div className="space-y-3">
+                <FixtureCard label="PatchDiffInline — LIVE reveal (simulated stream)">
+                    <PatchDiffInline entry={simEntry} events={simEntry.events} toolGroupId={simEntry.callId} />
+                </FixtureCard>
+            </div>
+        </section>
+    );
+}
+
+/**
  * Live search (press Play) — the Wave-1 canonical SEARCH renderer in its LIVE
  * rolling-window phase. One simulated entry drives both the raw inline renderer
  * and the full shell (NOT isPersisted, so it streams). The 3 parallel query
@@ -1240,6 +1335,22 @@ export default function ResultFieldsGalleryPage() {
                     tool renderer overhaul.
                 </p>
             </header>
+
+            <LivePatchSection />
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    ctx_patch — LIVE animation STATIC mid-stream snapshot (timer-independent)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A <code className="text-xs">status: &quot;progress&quot;</code> entry whose args already carry the
+                    whole patch — rendered straight through <code className="text-xs">PatchDiffInline</code>, so the
+                    removal-highlight → fill-in reveal runs without the Play timer (provable even when HMR is unstable).
+                </p>
+                <FixtureCard label="PatchDiffInline — LIVE reveal (static progress entry)">
+                    <PatchDiffInline entry={PATCH_LIVE_SNAPSHOT} events={[]} toolGroupId={PATCH_LIVE_SNAPSHOT.callId} />
+                </FixtureCard>
+            </section>
 
             <LiveSearchSection />
 
@@ -1456,12 +1567,12 @@ export default function ResultFieldsGalleryPage() {
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    ctx_patch — human diff + new content (PatchDiffInline, rendered directly)
+                    ctx_patch — PERSISTED human diff (PatchDiffInline, no animation)
                 </h2>
                 <p className="-mt-2 text-xs text-muted-foreground">
-                    str_replace shows the highlight diff (inserted text tinted, unchanged plain — an insert doesn't mark
-                    everything changed); overwrite renders the new content as markdown. Works the SAME on reload, since the
-                    diff is reconstructed from the persisted args. Toggle Changes / Result.
+                    The reloaded / persisted case: the final diff renders at once (no animation). str_replace tints the
+                    inserted text success, unchanged plain — an insert doesn&apos;t mark everything changed; overwrite shows
+                    the whole new body as one big insert. Reconstructed from the persisted args, so it&apos;s correct on reload.
                 </p>
                 <div className="space-y-3">
                     {CTX_ENTRIES.filter((e) => e.toolName === "ctx_patch").map((e) => (
