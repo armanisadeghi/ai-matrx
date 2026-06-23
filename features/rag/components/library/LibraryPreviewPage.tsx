@@ -21,15 +21,18 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  GitFork,
   Loader2,
   Search as SearchIcon,
   AlertCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -37,6 +40,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getJson, postJson } from "@/lib/python-client";
+import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
@@ -111,6 +115,24 @@ export function LibraryPreviewPage({
     error: docError,
   } = useLibraryDoc(documentId);
   const [activePageIndex, setActivePageIndex] = useState(0);
+  const router = useRouter();
+  const [forking, setForking] = useState(false);
+
+  // "Make my copy" — fork this (read-only) shared document into a user-owned
+  // copy and open it in the studio, where the user can run their own agents /
+  // segmentation. Get-or-create on the server, so re-clicking is safe.
+  const handleFork = async () => {
+    if (forking) return;
+    setForking(true);
+    try {
+      const newId = await forkProcessedDocument(documentId);
+      toast.success("Created your editable copy");
+      router.push(`/tools/pdf-extractor/${newId}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create your copy");
+      setForking(false);
+    }
+  };
 
   return (
     <div
@@ -144,6 +166,22 @@ export function LibraryPreviewPage({
               </div>
             )}
           </div>
+          {doc && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFork}
+              disabled={forking}
+              title="Fork this shared document into your own editable copy you can re-process with your own agents"
+            >
+              {forking ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <GitFork className="h-4 w-4 mr-1" />
+              )}
+              Make my copy
+            </Button>
+          )}
         </header>
       )}
 

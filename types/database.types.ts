@@ -28058,6 +28058,10 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      can_read_processed_document: {
+        Args: { p_doc: string; p_user: string }
+        Returns: boolean
+      }
       check_builtin_drift: {
         Args: { p_builtin_id?: string }
         Returns: {
@@ -30116,6 +30120,10 @@ export type Database = {
           window_6h_starts_at: string
           window_blocked: boolean
         }[]
+      }
+      fork_processed_document: {
+        Args: { p_source_id: string }
+        Returns: string
       }
       generate_canvas_content_hash: {
         Args: { content_data: Json }
