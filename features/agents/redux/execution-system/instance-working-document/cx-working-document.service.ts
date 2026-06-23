@@ -183,6 +183,51 @@ export async function listUserDocuments(
   return (data as CxWorkingDocumentRow[]).map(rowToCxWorkingDocument);
 }
 
+/** Lightweight rail row — enough to list + preview a document without its full body. */
+export interface CxWorkingDocumentSummary {
+  id: string;
+  conversationId: string | null;
+  kind: WorkingDocumentKind;
+  title: string;
+  /** First ~200 chars of the body, for the rail preview. */
+  preview: string;
+  updatedAt: string;
+}
+
+/**
+ * List the current user's recent documents across BOTH kinds, newest-edited
+ * first — the data behind the DocumentsWorkspace rail. Returns a lightweight
+ * summary (id, kind, title, a short preview, updatedAt); the full body loads
+ * only when a document is opened. RLS scopes to the owner.
+ */
+export async function listRecentUserDocuments(
+  limit = 100,
+): Promise<CxWorkingDocumentSummary[]> {
+  const { data, error } = await supabase
+    .from("cx_working_documents")
+    .select("id, conversation_id, kind, title, content, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`[cx-working-document] list recent failed: ${error.message}`);
+  }
+  return (
+    data as Array<
+      Pick<
+        CxWorkingDocumentRow,
+        "id" | "conversation_id" | "kind" | "title" | "content" | "updated_at"
+      >
+    >
+  ).map((row) => ({
+    id: row.id,
+    conversationId: row.conversation_id,
+    kind: (row.kind as WorkingDocumentKind) ?? "working",
+    title: row.title,
+    preview: (row.content ?? "").trim().slice(0, 200),
+    updatedAt: row.updated_at,
+  }));
+}
+
 // =============================================================================
 // Junction (cx_conversation_documents) — the per-(conversation, kind) pointer
 // =============================================================================

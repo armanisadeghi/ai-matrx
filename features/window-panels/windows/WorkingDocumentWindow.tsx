@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * WorkingDocumentWindow — the floating-window wrapper around the reusable
- * `WorkingDocumentPanel`. Renders the working document for a single
- * conversation inside a draggable/resizable `WindowPanel`.
+ * WorkingDocumentWindow — the floating-window wrapper around the unified
+ * `DocumentsWorkspace`. Renders the conversation's working document AND
+ * scratchpad as tabs, with a collapsible recent-docs rail, inside a
+ * draggable/resizable `WindowPanel`.
  *
  * Multi-instance, keyed by conversationId (see the `workingDocumentWindow`
  * opener). Ephemeral: unbound document content lives in Redux only, so the
@@ -12,7 +13,7 @@
 
 import { useCallback } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { WorkingDocumentPanel } from "@/features/agents/components/working-document/WorkingDocumentPanel";
+import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
 
 interface WorkingDocumentWindowProps {
   isOpen: boolean;
@@ -37,18 +38,18 @@ export default function WorkingDocumentWindow({
   return (
     <WindowPanel
       id={instanceId}
-      title="Working document"
-      width={560}
+      title="Documents"
+      width={720}
       height={640}
-      minWidth={360}
+      minWidth={420}
       minHeight={320}
       onClose={onClose}
       overlayId="workingDocumentWindow"
       onCollectData={collectData}
     >
-      <WorkingDocumentPanel
+      <DocumentsWorkspace
         conversationId={conversationId}
-        showOpenInWindow={false}
+        defaultRailOpen
         className="h-full"
       />
     </WindowPanel>
