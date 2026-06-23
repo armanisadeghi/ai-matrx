@@ -1,159 +1,36 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { CheckCircle, AlertTriangle, FileText, Copy, Check } from "lucide-react";
+import { useMemo } from "react";
 import type { ToolRendererProps } from "../../types";
 import { resultAsObject } from "../_shared";
-
-interface TitleAnalysis {
-    title: string;
-    pixel_width: number;
-    character_count: number;
-    desktop_ok: boolean;
-    mobile_ok: boolean;
-    seo_length_ok: boolean;
-    title_ok: boolean;
-}
-
-interface SeoTitlesResult {
-    title_analysis: TitleAnalysis[];
-    count: number;
-}
+import { SerpToolInline } from "../seo-shared/SerpToolInline";
+import { titleItemToEntry, type SeoTitlesResult } from "@/features/seo/serp/types";
 
 /**
- * Compact inline renderer for SEO Meta Titles checker
- * Shows title validation with clear pass/fail indicators and copy buttons
+ * Inline renderer for `seo_check_meta_titles`. Renders each title as a real
+ * simulated Google result (title + URL line, description omitted) via the
+ * shared `SerpToolInline`.
  */
-export const SeoMetaTitlesInline: React.FC<ToolRendererProps> = ({
-    entry,
-    onOpenOverlay,
-    toolGroupId = "default",
-}) => {
-    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+export function SeoMetaTitlesInline({
+  entry,
+  onOpenOverlay,
+  toolGroupId,
+}: ToolRendererProps) {
+  const entries = useMemo(() => {
+    const obj = resultAsObject(entry) as unknown as SeoTitlesResult | null;
+    if (!obj?.title_analysis?.length) return [];
+    return obj.title_analysis.map(titleItemToEntry);
+  }, [entry]);
 
-    const result = useMemo(() => resultAsObject(entry) as unknown as SeoTitlesResult | null, [entry]);
+  if (!entries.length) return null;
 
-    const copyToClipboard = async (text: string, index: number) => {
-        await navigator.clipboard.writeText(text);
-        setCopiedIndex(index);
-        setTimeout(() => setCopiedIndex(null), 2000);
-    };
-
-    if (!result || !result.title_analysis || result.title_analysis.length === 0) {
-        return null;
-    }
-
-    const analysis = result.title_analysis;
-    const displayItems = analysis.slice(0, 10);
-    const hasMore = analysis.length > displayItems.length;
-    const passedCount = analysis.filter((a) => a.title_ok).length;
-    const failedCount = analysis.length - passedCount;
-
-    return (
-        <div className="space-y-5">
-            <div className="space-y-2">
-                            {/* Header */}
-                            <div className="flex items-center gap-2 text-sm font-medium text-foreground/90">
-                                <FileText className="w-4 h-4 text-primary" />
-                                <span>{analysis.length} Meta Title{analysis.length !== 1 ? 's' : ''} Analyzed</span>
-                            </div>
-                            
-                            {/* Summary Stats */}
-                            <div className="flex items-center gap-3 text-xs">
-                                <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
-                                    <CheckCircle className="w-4 h-4" />
-                                    <span className="font-medium">{passedCount} passed</span>
-                                </div>
-                                {failedCount > 0 && (
-                                    <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400">
-                                        <AlertTriangle className="w-4 h-4" />
-                                        <span className="font-medium">{failedCount} need attention</span>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* Title Results - Compact Layout */}
-                            <div className="space-y-1.5">
-                                {displayItems.map((item, itemIndex) => (
-                                    <div
-                                        key={itemIndex}
-                                        className={`
-                                            flex items-center gap-2 py-2 px-3 rounded-lg border animate-in fade-in slide-in-from-left
-                                            ${item.title_ok 
-                                                ? 'bg-green-50/50 dark:bg-green-950/10 border-green-300 dark:border-green-800' 
-                                                : 'bg-orange-50/50 dark:bg-orange-950/10 border-orange-300 dark:border-orange-800'
-                                            }
-                                        `}
-                                        style={{ 
-                                            animationDelay: `${itemIndex * 50}ms`,
-                                            animationDuration: '200ms',
-                                            animationFillMode: 'backwards'
-                                        }}
-                                    >
-                                        {/* Status Icon */}
-                                        {item.title_ok ? (
-                                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                                        ) : (
-                                            <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
-                                        )}
-                                        
-                                        {/* Index */}
-                                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 w-6 flex-shrink-0">
-                                            #{itemIndex + 1}
-                                        </span>
-                                        
-                                        {/* Title Text */}
-                                        <p className="flex-1 text-xs font-medium text-slate-800 dark:text-slate-200 line-clamp-1 min-w-0">
-                                            {item.title}
-                                        </p>
-                                        
-                                        {/* Metrics */}
-                                        <div className="flex items-center gap-2 text-xs font-mono flex-shrink-0">
-                                            <span className={item.title_ok ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400'}>
-                                                {item.character_count}c
-                                            </span>
-                                            <span className="text-slate-400">|</span>
-                                            <span className={item.title_ok ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400'}>
-                                                {item.pixel_width}px
-                                            </span>
-                                        </div>
-                                        
-                                        {/* Copy Button */}
-                                        <button
-                                            onClick={() => copyToClipboard(item.title, itemIndex)}
-                                            className="flex-shrink-0 p-1 hover:bg-white dark:hover:bg-slate-700 rounded transition-colors"
-                                            title="Copy title"
-                                        >
-                                            {copiedIndex === itemIndex ? (
-                                                <Check className="w-3.5 h-3.5 text-green-600" />
-                                            ) : (
-                                                <Copy className="w-3.5 h-3.5 text-slate-500" />
-                                            )}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* View all button — always show when overlay is available */}
-                            {onOpenOverlay && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onOpenOverlay(`tool-group-${toolGroupId}`);
-                                    }}
-                                    className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-700 dark:text-blue-300 text-sm font-medium hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-200 flex items-center justify-center gap-2 border border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer animate-in fade-in slide-in-from-bottom"
-                                    style={{ 
-                                        animationDelay: `${displayItems.length * 50}ms`,
-                                        animationDuration: '200ms',
-                                        animationFillMode: 'backwards'
-                                    }}
-                                >
-                    <FileText className="w-4 h-4" />
-                    <span>{hasMore ? `View all ${analysis.length} titles` : `View ${analysis.length} ${analysis.length === 1 ? 'title' : 'titles'}`}</span>
-                </button>
-            )}
-            </div>
-        </div>
-    );
-};
-
+  return (
+    <SerpToolInline
+      entries={entries}
+      noun="title"
+      descriptionPlaceholder={null}
+      onOpenOverlay={onOpenOverlay}
+      toolGroupId={toolGroupId}
+    />
+  );
+}

@@ -10,11 +10,14 @@ import { Copy, CheckCircle2 } from 'lucide-react';
 interface CopyButtonProps {
     content: string;
     label?: string;
+    /** Hover/title text. Defaults to `label`; set this for an icon-only button
+     *  that still needs a specific tooltip (no visible label text). */
+    tooltip?: string;
     className?: string;
     size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "icon" | "roundIcon";
 }
 
-export const CopyButton = ({ content, label, className, size="sm" }: CopyButtonProps) => {
+export const CopyButton = ({ content, label, tooltip, className, size="sm" }: CopyButtonProps) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -33,7 +36,7 @@ export const CopyButton = ({ content, label, className, size="sm" }: CopyButtonP
             size={size} 
             className={`px-2 h-7 flex items-center gap-1 ${className}`} 
             onClick={handleCopy}
-            title={label || "Copy to clipboard"}
+            title={tooltip || label || "Copy to clipboard"}
         >
             {copied ? (
                 <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
