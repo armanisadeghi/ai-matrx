@@ -31,7 +31,6 @@ export const OVERLAY_IDS = [
   "agentChatCollapsible",
   "agentCompactModal",
   "agentConnectionsWindow",
-  "agentContentSidebarWindow",
   "agentConvertSystemWindow",
   "agentCreateAppWindow",
   "agentDataStorageWindow",

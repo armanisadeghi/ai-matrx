@@ -122,9 +122,8 @@ interface AgentContentWindowProps {
   onClose?: () => void;
   /**
    * Render the agent-picker sidebar + multi-agent browser tabs + dirty-change
-   * guard (the same composition the legacy "Agent Editor (Sidebar)" used).
-   * Default `true` — the editor without a sidebar leaves users stuck on a
-   * single agent. Pass `false` only when the host already owns agent
+   * guard. Default `true` — the editor without a sidebar leaves users stuck on
+   * a single agent. Pass `false` only when the host already owns agent
    * selection and wants to lock the editor to one agent (admin tooling, etc).
    */
   multiAgentMode?: boolean;

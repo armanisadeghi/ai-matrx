@@ -326,6 +326,8 @@ After the May 2026 overhaul (see `docs/OVERLAY_WINDOW_OVERHAUL.md`), what was on
 
 Hard rules: no JSX prop spread in `features/overlays/OverlayController.tsx`; no `kind: "window" | "modal"` discriminator; no callback functions through Redux (use the opener's `onX` props — the callback registry is hidden inside); the overlay catalogue is metadata-only and is NOT iterated to render.
 
+**Killing a panel/overlay for good?** **Invoke the `remove-window-panel` skill** — the reverse-operation checklist for deleting an overlay across all ~10 registration sites and leaving no shim, fallback, or dead name behind.
+
 ---
 
 ## Cross-Repo — matrx-extend

@@ -126,11 +126,6 @@ const AgentConnectionsWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/AgentConnectionsWindow"),
   { ssr: false },
 );
-const AgentContentSidebarWindow = lazyOverlay(
-  () =>
-    import("@/features/window-panels/windows/agents/AgentContentSidebarWindow"),
-  { ssr: false },
-);
 const AgentConvertSystemWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
@@ -776,9 +771,6 @@ export default function OverlayController() {
     agentConnectionsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentConnectionsWindow"),
     ),
-    agentContentSidebarWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "agentContentSidebarWindow"),
-    ),
     agentConvertSystemWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentConvertSystemWindow"),
     ),
@@ -1000,9 +992,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentConnectionsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentConnectionsWindow"),
-    ) as Record<string, unknown> | null,
-    agentContentSidebarWindow: useAppSelector((s) =>
-      selectOverlayData(s, "agentContentSidebarWindow"),
     ) as Record<string, unknown> | null,
     agentConvertSystemWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentConvertSystemWindow"),
@@ -1612,31 +1601,6 @@ export default function OverlayController() {
                 ? data.initialSelectedItemId
                 : null
             }
-          />
-        );
-      })()}
-
-      {/* TODO: review prop wiring for agentContentSidebarWindow */}
-      {/* agentContentSidebarWindow */}
-      {(() => {
-        const isOpen = isOpenById.agentContentSidebarWindow;
-        const data = dataById.agentContentSidebarWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        if (!isOpen) return null;
-        return (
-          <AgentContentSidebarWindow
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "agentContentSidebarWindow" }))
-            }
-            initialAgentId={
-              typeof data?.initialAgentId === "string"
-                ? data.initialAgentId
-                : null
-            }
-            initialTab={data?.initialTab as AgentContentTab | undefined}
           />
         );
       })()}

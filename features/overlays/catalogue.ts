@@ -80,11 +80,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  agentContentSidebarWindow: {
-    label: "Agent Content Sidebar Window",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
   agentConvertSystemWindow: {
     label: "Agent Convert System Window",
     instanceMode: "singleton",

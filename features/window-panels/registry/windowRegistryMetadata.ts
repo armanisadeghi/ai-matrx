@@ -438,21 +438,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "agent-content" },
   },
 
-  // ── Agent Content Sidebar ─────────────────────────────────────────────────
-  {
-    slug: "agent-content-sidebar-window",
-    overlayId: "agentContentSidebarWindow",
-    kind: "window",
-    label: "Agent Editor (Sidebar)",
-    defaultData: { initialAgentId: null, activeTab: "messages" },
-    mobilePresentation: "drawer",
-    mobileSidebarAs: "drawer",
-    deprecated: {
-      replacedBy: "agentAdvancedEditorWindow",
-      note: "The Advanced Editor now ships the same sidebar + multi-agent tabs + dirty-change guard by default. Open both side-by-side to confirm parity, then this window will be removed.",
-    },
-  },
-
   // ── Agent Gate ────────────────────────────────────────────────────────────
   {
     slug: "agent-gate-window",

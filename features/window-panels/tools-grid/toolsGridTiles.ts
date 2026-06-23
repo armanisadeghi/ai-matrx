@@ -366,18 +366,10 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   },
   {
     id: "tile.agent-advanced-editor",
-    label: "Agent Advanced Editor (new)",
+    label: "Agent Advanced Editor",
     icon: Brackets,
     category: "agents",
     overlayId: "agentAdvancedEditorWindow",
-    seedData: (ctx) => seedInitialAgentId(ctx),
-  },
-  {
-    id: "tile.agent-content-sidebar",
-    label: "Agent Editor (Sidebar)",
-    icon: FileStack,
-    category: "agents",
-    overlayId: "agentContentSidebarWindow",
     seedData: (ctx) => seedInitialAgentId(ctx),
   },
   {
