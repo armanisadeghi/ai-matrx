@@ -44,6 +44,7 @@ import { FileResourceChip } from "@/features/files";
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
+import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
@@ -451,8 +452,6 @@ export function AgentUserMessage({
   };
 
   const trimmedText = content.trim();
-  const { isCollapsed, setIsCollapsed, shouldBeCollapsible, measureRef } =
-    useCollapsibleMessageText(trimmedText);
   const hasContent = trimmedText || normalisedBlocks.length > 0;
   const metadata =
     record?.metadata && typeof record.metadata === "object"
@@ -505,6 +504,39 @@ export function AgentUserMessage({
       ? filteredSnapshot
       : null;
 
+  // Variable values for the first-turn strip — pulled here ONLY so the collapse
+  // signature reflects them. This is the "top section" that holds the largest
+  // text and was previously excluded from collapse measurement entirely.
+  const userVariableValues = useAppSelector(
+    selectUserVariableValues(conversationId),
+  );
+
+  // Collapse signature — a fingerprint of EVERYTHING that renders inside the
+  // bubble, so the whole component (variables + context chips + attachments +
+  // text) drives collapse, and a change to any section re-evaluates collapse.
+  // The measureRef wraps the entire inner stack; `scrollHeight` on the clamped
+  // container reports full height regardless of the max-h clamp, so no separate
+  // off-screen sizer is needed.
+  const collapseSignature = useMemo(() => {
+    const variableSig = isFirstTurnMessage
+      ? JSON.stringify(userVariableValues)
+      : "";
+    const contextSig = (contextSnapshot ?? [])
+      .map((e) => `${e.key}:${e.label}`)
+      .join("|");
+    const attachmentSig = normalisedBlocks.map((b) => b.key).join("|");
+    return `${variableSig}\u0000${contextSig}\u0000${attachmentSig}\u0000${trimmedText}`;
+  }, [
+    isFirstTurnMessage,
+    userVariableValues,
+    contextSnapshot,
+    normalisedBlocks,
+    trimmedText,
+  ]);
+
+  const { isCollapsed, setIsCollapsed, shouldBeCollapsible, measureRef } =
+    useCollapsibleMessageText(collapseSignature);
+
   if (!hasContent) return null;
 
   const containerMargin = compact ? "" : "ml-12";
@@ -537,85 +569,90 @@ export function AgentUserMessage({
       )}
 
       <div className="bg-muted border border-border rounded-lg px-2 py-2">
-        <div className="space-y-1.5">
-          {/* First-turn variables — the values this conversation was launched
-              with. Display-only, sourced from the instance variable slice, so
-              live and reloaded conversations render identically. Shown once,
-              on turn 1. */}
-          {isFirstTurnMessage && (
-            <FirstTurnVariables conversationId={conversationId} />
-          )}
+        {/* Collapsible region — the ENTIRE message body. The whole stack
+            (variables + context chips + attachment chips + text) is measured
+            and clamped as one unit: the outer component controls sizing, so
+            everything inside counts toward it. The variables strip in
+            particular is usually the largest block of text in the bubble and
+            MUST be collapsed with the rest. `measureRef` lives on the clamped
+            container itself — `scrollHeight` reports full height regardless of
+            the `max-h` clamp, so no off-screen duplicate is needed.
 
-          {/* Context slot chips — the TRUE per-turn context this message
-              carried, read ONLY from this message's own data: the server's
-              `model_context` column (authoritative; wins on reload) or, before
-              that record lands, the optimistic `metadata.context_snapshot`
-              frozen at submit by execute-instance.thunk. We never fall back to
-              the live conversation context here: doing so made every historical
-              bubble lie, showing the current context as if the model had seen
-              it. Neither source → show nothing (honest). */}
-          {contextSnapshot && contextSnapshot.length > 0 && (
-            <ContextSlotChipStrip
-              conversationId={conversationId}
-              agentId={agentId}
-              entries={contextSnapshot}
-            />
-          )}
+            Bubbles default to collapsed (live submit AND DB reload) and only
+            ever open on a physical user click. Do not move any section out of
+            this region. */}
+        <div className="relative min-w-0">
+          <div
+            ref={measureRef}
+            className={cn(
+              "space-y-1.5 overflow-hidden transition-all duration-300",
+              shouldBeCollapsible && isCollapsed && "max-h-12",
+            )}
+          >
+            {/* First-turn variables — the values this conversation was launched
+                with. Display-only, sourced from the instance variable slice, so
+                live and reloaded conversations render identically. Shown once,
+                on turn 1. */}
+            {isFirstTurnMessage && (
+              <FirstTurnVariables conversationId={conversationId} />
+            )}
 
-          {/* Attachment chips */}
-          {normalisedBlocks.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {normalisedBlocks.map((block) => (
-                <AttachmentChip
-                  key={block.key}
-                  block={block}
-                  onOpen={openDrawerForBlock}
-                />
-              ))}
-            </div>
-          )}
+            {/* Context slot chips — the TRUE per-turn context this message
+                carried, read ONLY from this message's own data: the server's
+                `model_context` column (authoritative; wins on reload) or, before
+                that record lands, the optimistic `metadata.context_snapshot`
+                frozen at submit by execute-instance.thunk. We never fall back to
+                the live conversation context here: doing so made every historical
+                bubble lie, showing the current context as if the model had seen
+                it. Neither source → show nothing (honest). */}
+            {contextSnapshot && contextSnapshot.length > 0 && (
+              <ContextSlotChipStrip
+                conversationId={conversationId}
+                agentId={agentId}
+                entries={contextSnapshot}
+              />
+            )}
 
-          {/* Text content */}
-          {trimmedText && (
-            <div className="relative min-w-0">
-              {/* Off-screen sizer — same width/typography, never clamped */}
-              <div
-                ref={measureRef}
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 -z-10 opacity-0 text-xs text-foreground whitespace-pre-wrap break-words"
-              >
+            {/* Attachment chips */}
+            {normalisedBlocks.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {normalisedBlocks.map((block) => (
+                  <AttachmentChip
+                    key={block.key}
+                    block={block}
+                    onOpen={openDrawerForBlock}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Text content */}
+            {trimmedText && (
+              <div className="text-xs text-foreground whitespace-pre-wrap break-words">
                 {trimmedText}
               </div>
+            )}
+          </div>
 
-              <div
-                className={cn(
-                  "text-xs text-foreground whitespace-pre-wrap break-words overflow-hidden transition-all duration-300",
-                  isCollapsed && "max-h-12",
-                )}
-              >
-                {trimmedText}
+          {/* Fade + expand affordance — overlays the whole collapsed body. */}
+          {shouldBeCollapsible && isCollapsed && (
+            <>
+              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-muted via-muted/60 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsCollapsed(false);
+                  }}
+                  className="h-6 w-6 p-0 rounded-full bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  title="Expand message"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
               </div>
-
-              {shouldBeCollapsible && isCollapsed && (
-                <>
-                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-muted via-muted/60 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsCollapsed(false);
-                      }}
-                      className="h-6 w-6 p-0 rounded-full bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                      title="Expand message"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+            </>
           )}
         </div>
       </div>
