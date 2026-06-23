@@ -53,6 +53,7 @@ import type {
   StructuredInputWarningData,
   VideoOutputData,
   WorkflowStepData,
+  ProviderRetryPayload,
 } from "@/types/python-generated/stream-events";
 import type {
   OperationEntry,
@@ -114,6 +115,18 @@ export const selectPrimaryRequest =
 
 export const selectRequestStatus = (requestId: string) => (state: RootState) =>
   state.activeRequests.byRequestId[requestId]?.status;
+
+export const selectProviderRetry =
+  (requestId: string) =>
+  (state: RootState): ProviderRetryPayload | null =>
+    state.activeRequests.byRequestId[requestId]?.providerRetry ?? null;
+
+export const selectProviderRetryHistory = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.providerRetryHistory,
+    (history): ProviderRetryPayload[] | undefined => history,
+  );
 
 /**
  * Derives accumulated text from render blocks (single source of truth).

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ExternalLink } from "lucide-react";
 import {
   getAccessibleLists,
   getPicklistForSelection,
@@ -62,12 +63,24 @@ export function PicklistBindingEditor({
     };
   }, []);
 
+  useEffect(() => {
+    if (!binding?.listId) return;
+    let cancelled = false;
+    getAccessibleLists()
+      .then((rows) => {
+        if (!cancelled) setLists(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setLists([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [binding?.listId]);
+
   // Load group names for the bound list (label-only RPC — never touches description).
   useEffect(() => {
-    if (!binding?.listId) {
-      setGroups([]);
-      return;
-    }
+    if (!binding?.listId) return;
     let cancelled = false;
     getPicklistForSelection(binding.listId)
       .then((data) => {
@@ -117,7 +130,20 @@ export function PicklistBindingEditor({
       {bound && (
         <div className="space-y-2 pt-1.5 border-t border-border">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">List</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs text-muted-foreground">List</Label>
+              {binding?.listId && (
+                <a
+                  href={`/lists/${binding.listId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Edit picklist
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
             <Select
               value={binding?.listId || ""}
               onValueChange={(v) => onChange({ ...binding!, listId: v })}

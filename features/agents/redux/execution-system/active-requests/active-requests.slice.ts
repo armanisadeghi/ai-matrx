@@ -50,6 +50,7 @@ import type {
   UntypedDataPayload,
   ToolEventPayload,
   ErrorPayload,
+  ProviderRetryPayload,
 } from "@/types/python-generated/stream-events";
 import { generateRequestId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
@@ -195,6 +196,8 @@ const activeRequestsSlice = createSlice({
         error: null,
         warnings: [],
         infoEvents: [],
+        providerRetry: null,
+        providerRetryHistory: [],
         reservations: {},
         dataPayloads: [],
         timeline: [],
@@ -724,6 +727,19 @@ const activeRequestsSlice = createSlice({
       }
     },
 
+    setProviderRetry(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        retry: ProviderRetryPayload;
+      }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      if (!request) return;
+      request.providerRetry = action.payload.retry;
+      request.providerRetryHistory.push(action.payload.retry);
+    },
+
     // ── Record Reservations ──────────────────────────────────────
 
     upsertReservation(
@@ -997,6 +1013,8 @@ const activeRequestsSlice = createSlice({
           error: null,
           warnings: [],
           infoEvents: [],
+          providerRetry: null,
+          providerRetryHistory: [],
           reservations: {},
           dataPayloads: [],
           timeline: [],
@@ -1061,6 +1079,7 @@ export const {
   appendDataPayload,
   addWarning,
   addInfoEvent,
+  setProviderRetry,
   upsertReservation,
   appendTimeline,
   appendRawEvent,

@@ -38,6 +38,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
     favicon: { color: "#9333ea", letter: "M" },
   },
   { href: "/data", favicon: { color: "#0891b2", letter: "L" } },
+  { href: "/voice", favicon: { color: "#be185d", letter: "Vc" } },
   {
     href: "/demo/voice/voice-manager",
     favicon: { color: "#ea580c", letter: "Vo" },

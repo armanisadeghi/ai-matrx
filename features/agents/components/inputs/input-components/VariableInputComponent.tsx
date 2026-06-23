@@ -315,7 +315,10 @@ export function VariableInputComponent({
   }
 
   return (
-    <div ref={containerRef} className={compact ? "space-y-0.5" : "space-y-1.5"}>
+    <div
+      ref={containerRef}
+      className={compact ? "min-w-0 space-y-0.5" : "min-w-0 space-y-1.5"}
+    >
       {!hideLabel && !compact && (
         <div>
           <Label className="text-sm font-medium">{formattedName}</Label>

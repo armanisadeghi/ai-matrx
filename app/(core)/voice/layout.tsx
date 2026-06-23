@@ -2,10 +2,20 @@ import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/voice", {
-  titlePrefix: "Voice Manager",
   title: "Voice",
-  description: "Browse and preview voices for TTS and in-app playback",
-  letter: "Vm",
+  description:
+    "Browse, preview, and tune production TTS voices for chat, assistants, transcripts, and podcasts.",
+  letter: "Vc",
+  additionalMetadata: {
+    keywords: [
+      "text to speech",
+      "TTS",
+      "voice synthesis",
+      "Cartesia",
+      "voice playground",
+      "AI voice",
+    ],
+  },
 });
 
 export default function VoiceManagerLayout({

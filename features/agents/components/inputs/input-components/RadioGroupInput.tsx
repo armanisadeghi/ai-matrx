@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { calcCols } from "./useContainerColumns";
@@ -34,44 +34,28 @@ export function RadioGroupInput({
 
   const isValueInOptions = options.includes(value);
 
-  const [selectedOption, setSelectedOption] = useState<string>(() => {
-    if (isValueInOptions) return value;
-    if (isOtherValue) return "Other";
-    return value;
-  });
-
-  const [customText, setCustomText] = useState<string>(otherText);
-
-  useEffect(() => {
-    if (isValueInOptions) {
-      setSelectedOption(value);
-      setCustomText("");
-    } else if (isOtherValue) {
-      setSelectedOption("Other");
-      setCustomText(value.substring(7));
-    } else {
-      setSelectedOption(value);
-    }
-  }, [value, isValueInOptions, isOtherValue]);
+  const selectedOption = isValueInOptions
+    ? value
+    : isOtherValue
+      ? "Other"
+      : value;
+  const customText = otherText;
 
   const handleOptionChange = (newValue: string) => {
-    setSelectedOption(newValue);
     if (newValue === "Other") {
       onChange(customText ? `Other: ${customText}` : "Other: ");
     } else {
       onChange(newValue);
-      setCustomText("");
     }
   };
 
   const handleCustomTextChange = (text: string) => {
-    setCustomText(text);
     onChange(`Other: ${text}`);
   };
 
   const itemClass = compact
-    ? "flex items-center space-x-2 p-1 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-    : "flex items-center space-x-3 p-1.5 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer";
+    ? "flex min-w-0 items-center space-x-2 p-1 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+    : "flex min-w-0 items-center space-x-3 p-1.5 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer";
 
   const cols = calcCols(containerWidth, options, wrap, compact);
   const isMultiCol = cols > 1;
@@ -101,7 +85,13 @@ export function RadioGroupInput({
                 value={option}
                 id={`${variableName}-${option}-${index}`}
               />
-              <span className={compact ? "flex-1 text-xs" : "flex-1 text-sm"}>
+              <span
+                className={
+                  compact
+                    ? "min-w-0 flex-1 break-words text-xs"
+                    : "min-w-0 flex-1 break-words text-sm"
+                }
+              >
                 {option || "(empty)"}
               </span>
             </label>
@@ -111,7 +101,13 @@ export function RadioGroupInput({
             <div style={isMultiCol ? { gridColumn: "1 / -1" } : undefined}>
               <label htmlFor={`${variableName}-other`} className={itemClass}>
                 <RadioGroupItem value="Other" id={`${variableName}-other`} />
-                <span className={compact ? "flex-1 text-xs" : "flex-1 text-sm"}>
+                <span
+                  className={
+                    compact
+                      ? "min-w-0 flex-1 break-words text-xs"
+                      : "min-w-0 flex-1 break-words text-sm"
+                  }
+                >
                   Other
                 </span>
               </label>

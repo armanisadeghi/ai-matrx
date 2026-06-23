@@ -16,11 +16,15 @@
  * Items, so the two surfaces never drift.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { Loader2, WandSparkles } from "lucide-react";
+import { toast } from "sonner";
 import {
   sanitizeVariableName,
   shouldShowSanitizationPreview,
@@ -33,6 +37,7 @@ import type {
 } from "@/features/agents/types/agent-definition.types";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
 import {
@@ -40,6 +45,13 @@ import {
   extractEffectiveValues,
 } from "@/features/agents/utils/variable-customcomponent";
 import type { ContextItemBinding } from "@/features/agents/types/agent-definition.types";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import {
+  AGENT_BUILDER_CONTEXT_MENU_PROPS,
+  buildAgentBuilderContextData,
+} from "@/features/agents/agent-context/buildAgentBuilderContextData";
+import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+import { createList } from "@/features/user-lists/service";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";
 import { ContextItemBindingEditor } from "./ContextItemBindingEditor";
 
@@ -72,14 +84,18 @@ export function AgentVariableEditor({
   readonly,
 }: AgentVariableEditorProps) {
   const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
   const rawVariables = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
   );
   const variables: VariableDefinition[] = rawVariables ?? [];
   const variable = variables.find((v) => v.name === variableName);
+  const helpTextRef = useRef<HTMLTextAreaElement>(null);
+  const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
 
   // Name buffer — local draft for editing; resets when the variable changes.
   const [nameDraft, setNameDraft] = useState(variableName);
+  const [isConvertingPicklist, setIsConvertingPicklist] = useState(false);
   useEffect(() => {
     setNameDraft(variableName);
   }, [variableName]);
@@ -161,6 +177,108 @@ export function AgentVariableEditor({
     updateVariable({ binding: next });
 
   const isBound = !!variable.binding?.itemKey;
+  const staticOptions = effective.options
+    .map((option) => option.trim())
+    .filter((option) => option.length > 0);
+  const canConvertOptionsToPicklist =
+    !readonly && !isPicklistBound && staticOptions.length > 0;
+
+  const getHelpTextApplicationScope = () => {
+    const el = helpTextRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const selectedText =
+      start !== end && el
+        ? el.value.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    const contextMenuData = buildAgentBuilderContextData({
+      agentScope: buildAgentScope(),
+      fieldContent: el?.value ?? variable.helpText ?? "",
+      focusedField: "variable_help_text",
+    });
+
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData: {
+        ...contextMenuData,
+        variable_name: variable.name,
+        variable_help_text: variable.helpText ?? "",
+        variable_default_value: variable.defaultValue ?? null,
+        variable_required: !!variable.required,
+        variable_custom_component: variable.customComponent ?? null,
+        variable_binding: variable.binding ?? null,
+        variable_json: JSON.stringify(variable),
+        editable_target: {
+          kind: "agent_variable",
+          agentId,
+          variableName: variable.name,
+          field: "helpText",
+        },
+      },
+    });
+  };
+
+  const handleConvertOptionsToPicklist = async () => {
+    if (!userId) {
+      toast.error("Sign in before creating a picklist.");
+      return;
+    }
+    if (staticOptions.length === 0) return;
+
+    setIsConvertingPicklist(true);
+    try {
+      const listName = `${variable.name.replace(/_/g, " ")} options`;
+      const created = await createList({
+        p_list_name: listName,
+        p_description: `Created from agent variable "${variable.name}".`,
+        p_user_id: userId,
+        p_is_public: false,
+        p_public_read: true,
+        p_items: staticOptions.map((option) => ({
+          Label: option,
+          Description: option,
+        })),
+      });
+      const createdRecord = Array.isArray(created) ? created[0] : created;
+      const listId =
+        typeof createdRecord === "string"
+          ? createdRecord
+          : (createdRecord as { list_id?: string; id?: string } | null)
+              ?.list_id ??
+            (createdRecord as { id?: string } | null)?.id;
+
+      if (!listId) {
+        throw new Error("The picklist was created, but no list id was returned.");
+      }
+
+      const nextCustomComponent = buildCustomComponent({
+        type: componentType,
+        options: [],
+        allowOther: effective.allowOther,
+        toggleValues: effective.toggleValues,
+        min: effective.min,
+        max: effective.max,
+        step: effective.step,
+        picklist: { listId },
+      });
+
+      updateVariable({
+        customComponent: nextCustomComponent,
+        defaultValue: "",
+      });
+      toast.success("Picklist created and linked to this variable.", {
+        description: "Each option was copied as both the label and injected text.",
+      });
+    } catch (error) {
+      toast.error("Could not convert options to a picklist.", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setIsConvertingPicklist(false);
+    }
+  };
 
   // ── Preview custom-component (for the default-value input at the bottom) ──
   const previewCc: VariableCustomComponent | undefined = buildCustomComponent({
@@ -218,7 +336,11 @@ export function AgentVariableEditor({
       {/* ── Help Text ────────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">Help Text</Label>
-        <Textarea
+        <ProTextarea
+          ref={helpTextRef}
+          surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
+          getApplicationScope={getHelpTextApplicationScope}
+          enableHelpWithThis
           autoGrow
           placeholder="Optional — shown to users as a hint"
           value={variable.helpText ?? ""}
@@ -226,6 +348,8 @@ export function AgentVariableEditor({
           disabled={readonly}
           minHeight={48}
           maxHeight={160}
+          className="text-base leading-relaxed"
+          style={{ fontSize: "16px" }}
         />
       </div>
 
@@ -264,6 +388,36 @@ export function AgentVariableEditor({
         />
       )}
 
+      {canConvertOptionsToPicklist && (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+          <div className="min-w-0">
+            <Label className="text-sm font-medium">
+              Convert options to picklist
+            </Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Create a reusable picklist from these {staticOptions.length} options
+              and link this variable to it. Each option is copied as both the
+              public label and the injected text so you can refine it in Lists.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-center"
+            onClick={handleConvertOptionsToPicklist}
+            disabled={isConvertingPicklist}
+          >
+            {isConvertingPicklist ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <WandSparkles className="h-4 w-4" />
+            )}
+            Convert to picklist
+          </Button>
+        </div>
+      )}
+
       {/* ── Default Value ─────────────────────────────────────────────── */}
       <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border border-border">
         <Label className="text-sm font-medium">Default Value</Label>
@@ -271,7 +425,7 @@ export function AgentVariableEditor({
           Pre-fills this variable at run time. Leave blank for no default.
         </p>
         {readonly ? (
-          <p className="text-sm text-foreground">
+          <p className="text-sm text-foreground whitespace-pre-wrap break-words">
             {variableValueToDisplay(variable.defaultValue) || (
               <span className="text-muted-foreground italic">None</span>
             )}

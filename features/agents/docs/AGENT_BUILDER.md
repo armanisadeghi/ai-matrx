@@ -96,6 +96,12 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 2. When any consumer surface loads this agent, the agent-load response includes variable + slot definitions — **but never system prompt or instructions**. Those are server-owned secrets.
 3. Consumer surface renders the declared UI components; the user fills them in; values come back to the server via `invocation.inputs.variables`.
 
+### Flow 4 — Variable help and option picklists
+
+1. The Edit Variable modal writes each field directly to `agentDefinition` Redux.
+2. Help Text is a `ProTextarea` on `matrx-user/agent-builder`; its live scope includes the full agent snapshot plus the focused variable (`variable_name`, `variable_help_text`, `variable_json`, and editable-target metadata).
+3. Static option variables can be converted into a user picklist: existing option text seeds both the public label and the hidden injected text, the variable is immediately rebound to the new picklist, and the picklist editor link opens `/lists/{id}` for refinement.
+
 ---
 
 ## Invariants & gotchas
@@ -120,6 +126,7 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 
 ## Change log
 
+- `2026-06-23` — codex: Edit Variable modal Help Text now uses agent-aware `ProTextarea`; long default option text wraps; static options can convert to a linked picklist.
 - `2026-04-22` — claude: initial doc extracted from `agent-system-mental-model.md` §1 and related sources.
 
 ---

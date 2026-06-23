@@ -12,6 +12,7 @@
 | **Data** | `data` | Typed, discriminated structured payload (switch on `data.type`) |
 | **Warning** | `warning` | Non-fatal issue with severity and machine-readable code |
 | **Info** | `info` | Lightweight FYI notification (ignorable) |
+| **Provider Retry** | `provider_retry` | Recoverable provider-capacity backoff and control state |
 | **Tool Event** | `tool_event` | Tool lifecycle update (sub-typed) |
 | **Content Block** | `content_block` | Structured block streaming |
 | **Record Reserved** | `record_reserved` | Database row pre-created, UUID announced |
@@ -162,6 +163,7 @@ Post-stream finalization:
 | `data` (typed) | `dataPayloads[]` (catch-all) or side-effects (conversation_id, labels) |
 | `warning` | `warnings[]` |
 | `info` | `infoEvents[]` |
+| `provider_retry` | `providerRetry`, `providerRetryHistory[]`, timeline (`suspended` also sets conversation status `paused`) |
 | `tool_event` | `toolLifecycle[callId]`, `pendingToolCalls[]` |
 | `content_block` | `contentBlocks[blockId]`, `contentBlockOrder[]` |
 | `record_reserved` | `reservations[recordId]` |

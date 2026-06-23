@@ -21688,45 +21688,6 @@
         }
       }
     },
-    "/rag/search-lab/agent/chat": {
-      "post": {
-        "tags": [
-          "RAG Search Lab"
-        ],
-        "summary": "Agent Chat Stream",
-        "operationId": "agent_chat_stream_rag_search_lab_agent_chat_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentChatRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/workflow/node-types": {
       "get": {
         "tags": [
@@ -37722,86 +37683,6 @@
         "type": "object",
         "title": "AgentBlocksStartRequest"
       },
-      "AgentChatRequest": {
-        "properties": {
-          "query": {
-            "type": "string",
-            "minLength": 1,
-            "title": "Query"
-          },
-          "history": {
-            "items": {
-              "$ref": "#/components/schemas/AgentMessage"
-            },
-            "type": "array",
-            "title": "History"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model",
-            "default": "claude-sonnet-4-6"
-          },
-          "data_store_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Data Store Id"
-          },
-          "source_kinds": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Kinds"
-          },
-          "admin_bypass_acl": {
-            "type": "boolean",
-            "title": "Admin Bypass Acl",
-            "default": false
-          },
-          "rerank": {
-            "type": "boolean",
-            "title": "Rerank",
-            "default": true
-          },
-          "multi_query": {
-            "type": "integer",
-            "maximum": 4,
-            "minimum": 1,
-            "title": "Multi Query",
-            "default": 1
-          },
-          "use_hyde": {
-            "type": "boolean",
-            "title": "Use Hyde",
-            "default": false
-          },
-          "max_tool_calls": {
-            "type": "integer",
-            "maximum": 12,
-            "minimum": 1,
-            "title": "Max Tool Calls",
-            "default": 6
-          }
-        },
-        "type": "object",
-        "required": [
-          "query"
-        ],
-        "title": "AgentChatRequest"
-      },
       "AgentConfigSettings": {
         "properties": {
           "temperature": {
@@ -37957,28 +37838,6 @@
         ],
         "title": "AgentDetail",
         "description": "Everything a caller needs to invoke an agent correctly."
-      },
-      "AgentMessage": {
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant"
-            ],
-            "title": "Role"
-          },
-          "content": {
-            "type": "string",
-            "title": "Content"
-          }
-        },
-        "type": "object",
-        "required": [
-          "role",
-          "content"
-        ],
-        "title": "AgentMessage"
       },
       "AgentStartRequest": {
         "properties": {

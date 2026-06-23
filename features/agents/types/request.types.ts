@@ -36,6 +36,7 @@ import type {
   RecordUpdatePayload,
   ResourceChangedPayload,
   StructuredOutputPayload,
+  ProviderRetryPayload,
 } from "@/types/python-generated/stream-events";
 
 // =============================================================================
@@ -95,6 +96,7 @@ export interface ClientMetrics {
   recordReservedEvents: number;
   recordUpdateEvents: number;
   resourceChangedEvents: number;
+  providerRetryEvents: number;
   otherEvents: number;
   accumulatedTextBytes: number;
   totalPayloadBytes: number;
@@ -246,6 +248,14 @@ export interface ActiveRequest {
   warnings: WarningPayload[];
   /** Lightweight info notifications */
   infoEvents: InfoPayload[];
+  /**
+   * The latest provider-capacity retry state. This is separate from `error`
+   * because overload backoff is recoverable and should not render like a failed
+   * turn unless the server later emits a fatal error.
+   */
+  providerRetry: ProviderRetryPayload | null;
+  /** Full ordered history for debug/timeline surfaces. */
+  providerRetryHistory: ProviderRetryPayload[];
 
   // ── Record Reservations ─────────────────────────────────────
   /**
@@ -457,6 +467,7 @@ export type TimelineEntry =
   | TimelineRecordUpdate
   | TimelineResourceChanged
   | TimelineStructuredOutput
+  | TimelineProviderRetry
   | TimelineUnknown;
 
 interface TimelineBase {
@@ -600,6 +611,11 @@ export interface TimelineStructuredOutput extends TimelineBase {
   data: StructuredOutputPayload;
 }
 
+export interface TimelineProviderRetry extends TimelineBase {
+  kind: "provider_retry";
+  data: ProviderRetryPayload;
+}
+
 // =============================================================================
 // Compile-time drift guards
 //
@@ -651,6 +667,10 @@ type _TimelinePayloadGuards = {
     TimelineStructuredOutput["data"],
     StructuredOutputPayload
   >;
+  provider_retry: _AssertEqual<
+    TimelineProviderRetry["data"],
+    ProviderRetryPayload
+  >;
 };
 
 // Reference the guards so the compiler actually checks them. If any
@@ -661,7 +681,6 @@ type _TimelinePayloadDriftGuard = {
     ? true
     : never;
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _ENFORCE_TIMELINE_PAYLOAD_GUARDS: _TimelinePayloadDriftGuard = {
   phase: true,
   init: true,
@@ -679,6 +698,7 @@ const _ENFORCE_TIMELINE_PAYLOAD_GUARDS: _TimelinePayloadDriftGuard = {
   record_update: true,
   resource_changed: true,
   structured_output: true,
+  provider_retry: true,
 };
 
 // =============================================================================

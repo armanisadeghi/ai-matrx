@@ -163,3 +163,7 @@ Two project-specific templates in `lib/email/client.ts`:
 | `auth_is_project_member(project_id)` | RLS policy helper |
 | `auth_is_project_admin(project_id)` | RLS policy helper |
 | `auth_is_project_owner(project_id)` | RLS policy helper |
+
+## Change Log
+
+- `2026-06-23` — Create-project window layout polish: default window geometry enlarged, outer body padding removed so the Use AI runner renders edge-to-edge, Manual/Paste JSON panes now use stable full-height layouts with footer actions pinned to the bottom, and project create name/description plus Paste JSON fields use `ProInput`/`ProTextarea` with live `matrx-user/projects` create context.

@@ -192,6 +192,16 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   /** Right-aligned footer content */
   footerRight?: React.ReactNode;
   /**
+   * Styling posture for the footer wrapper. Default `"bar"` applies the compact
+   * metadata-bar chrome (thin chips, `text-xs`, tiny buttons/icons via descendant
+   * selectors) tuned for status rows like `NoteMetadataBar`. That chrome CRUSHES
+   * rich content — use `"rich"` when the footer hosts a composer / input bar /
+   * anything with full-size buttons or a multi-row textarea (e.g. `SmartAgentInput`).
+   * `"rich"` drops the compact descendant selectors and the `bg-muted/40` chrome,
+   * leaving just `shrink-0 border-t` so the slot's own content owns its layout.
+   */
+  footerVariant?: "bar" | "rich";
+  /**
    * When true, the windowed panel sizes itself to fit its content rather than
    * using the explicit width/height from Redux. A ResizeObserver syncs the
    * measured dimensions back into Redux so drag/snap operations still work.
@@ -307,6 +317,7 @@ export function WindowPanel({
   footerLeft,
   footerCenter,
   footerRight,
+  footerVariant = "bar",
   fitContent = false,
   overlayId,
   onCollectData,
@@ -942,20 +953,38 @@ export function WindowPanel({
   const hasZonedFooter = footerLeft || footerCenter || footerRight;
   const hasFooter = footer || hasZonedFooter;
 
+  // Zoned trio — reused by both variants. In "bar" the wrapper is itself a flex
+  // row so the trio drops in as direct children; in "rich" the wrapper is a
+  // plain block, so the trio gets its own flex row to keep the left/center/right
+  // layout (rich is normally used with a single `footer` node, though).
+  const zonedFooter = (
+    <>
+      <div className="flex items-center gap-1 shrink-0">{footerLeft}</div>
+      <div className="flex-1 flex items-center justify-center gap-1">
+        {footerCenter}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">{footerRight}</div>
+    </>
+  );
+
   const footerBar = hasFooter ? (
     <div
-      className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-b-xl border-t border-border/50 bg-muted/40 select-none text-xs [&_svg]:h-3 [&_svg]:w-3 [&_button]:h-5 [&_button]:text-xs"
+      className={cn(
+        // Always: detach from scroll + separate from the body with a top border.
+        "shrink-0 border-t border-border/50",
+        footerVariant === "bar" &&
+          // Compact metadata-bar chrome — thin chips, tiny buttons/icons. Crushes
+          // rich content; consumers with a composer/input bar pass footerVariant="rich".
+          "flex items-center gap-1 px-2 py-1 rounded-b-xl bg-muted/40 select-none text-xs [&_svg]:h-3 [&_svg]:w-3 [&_button]:h-5 [&_button]:text-xs",
+      )}
       onPointerDown={(e) => e.stopPropagation()}
     >
-      {footer ?? (
-        <>
-          <div className="flex items-center gap-1 shrink-0">{footerLeft}</div>
-          <div className="flex-1 flex items-center justify-center gap-1">
-            {footerCenter}
-          </div>
-          <div className="flex items-center gap-1 shrink-0">{footerRight}</div>
-        </>
-      )}
+      {footer ??
+        (footerVariant === "bar" ? (
+          zonedFooter
+        ) : (
+          <div className="flex items-center gap-1">{zonedFooter}</div>
+        ))}
     </div>
   ) : null;
 

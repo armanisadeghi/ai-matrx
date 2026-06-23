@@ -102,6 +102,11 @@ export function ProjectCreatePanel({
       enableAi={enableAi}
       defaultMode={defaultMode}
       isMobile={isMobile}
+      manualScrolls={false}
+      headerClassName="px-4 pt-4 pb-3"
+      bodyClassName="min-h-[560px]"
+      manualPaneClassName="p-4 pt-1"
+      aiPaneClassName="bg-background"
       extraTabs={
         enableJsonImport
           ? [
@@ -109,6 +114,8 @@ export function ProjectCreatePanel({
                 id: "json",
                 label: "Paste JSON",
                 icon: FileJson,
+                className: "p-4 pt-1",
+                scrolls: false,
                 content: (
                   <ProjectImportJsonPanel
                     initialOrgId={coreProps.initialOrgId ?? null}

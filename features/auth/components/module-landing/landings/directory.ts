@@ -14,6 +14,7 @@ import {
   FileScan,
   Table,
   Mic,
+  AudioLines,
   BookOpen,
   FlaskConical,
   Aperture,
@@ -42,7 +43,11 @@ export interface ModuleLandingDirectoryEntry {
   /** One-line teaser shown on the card body. */
   teaser: string;
   /** Optional grouping label for the grid section. */
-  group: "Conversational" | "Knowledge & Data" | "Build & Run" | "Org & Context";
+  group:
+    | "Conversational"
+    | "Knowledge & Data"
+    | "Build & Run"
+    | "Org & Context";
 }
 
 export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
@@ -146,6 +151,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     group: "Knowledge & Data",
   },
   {
+    label: "Voice",
+    href: "/voice",
+    icon: AudioLines,
+    teaser:
+      "Browse, preview, and tune production TTS voices for chat, assistants, and podcasts.",
+    group: "Knowledge & Data",
+  },
+  {
     // Routes to the feature's own legacy landing (features/research/...);
     // pre-dates the `<ModuleLanding>` shell but still guest-safe.
     label: "Research",
@@ -161,8 +174,7 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     label: "Tasks",
     href: "/tasks",
     icon: ListTodo,
-    teaser:
-      "Tasks an agent can actually do — assign, run, intervene, replay.",
+    teaser: "Tasks an agent can actually do — assign, run, intervene, replay.",
     group: "Build & Run",
   },
   {

@@ -15,7 +15,7 @@
  * Do NOT fork this form. New surfaces wrap `ProjectFormCore` in their chrome.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   Plus,
   Loader2,
@@ -38,10 +38,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { createProject } from "../service";
 import {
   generateProjectSlug,
@@ -52,6 +54,7 @@ import { useProjectSlugAvailability } from "../hooks";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import type { Project } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -348,6 +351,28 @@ export function ProjectFormCore({
     ? `/organizations/${selectedOrg.slug}/projects/`
     : "/projects/";
 
+  const getProjectCreateApplicationScope = useCallback((): ApplicationScope => {
+    const context = {
+      surface: "project-create",
+      mode: "manual",
+      draft_project_name: name || undefined,
+      draft_project_slug: slug || undefined,
+      selected_organization_id: selectedOrg?.id,
+      selected_organization_name: selectedOrg?.name || undefined,
+      selected_organization_slug: selectedOrg?.slug || undefined,
+      org_locked: orgLocked,
+    };
+    const scope = createProjectsScope({
+      context,
+      active_project_name: name || undefined,
+      active_project_description: description || undefined,
+      active_organization_id: selectedOrg?.id,
+      active_organization_name: selectedOrg?.name || undefined,
+    });
+    scope.content = description;
+    return scope;
+  }, [description, name, orgLocked, selectedOrg, slug]);
+
   // ── Mobile layout ────────────────────────────────────────────────────────
   if (isMobile) {
     return (
@@ -374,7 +399,7 @@ export function ProjectFormCore({
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="mobile-project-name">Project Name *</Label>
-            <Input
+            <ProInput
               id="mobile-project-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -385,7 +410,7 @@ export function ProjectFormCore({
                 "text-base",
                 !nameValidation.valid ? "border-destructive" : "",
               )}
-              style={{ fontSize: "16px" }}
+              wrapperClassName="w-full"
             />
             {!nameValidation.valid && (
               <p className="text-xs text-destructive flex items-center gap-1">
@@ -441,16 +466,20 @@ export function ProjectFormCore({
           {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="mobile-project-description">Description</Label>
-            <Textarea
+            <ProTextarea
               id="mobile-project-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this project about?"
-              rows={3}
               maxLength={500}
               disabled={isSubmitting}
               className="text-base"
-              style={{ fontSize: "16px" }}
+              wrapperClassName="w-full"
+              autoGrow
+              minHeight={88}
+              maxHeight={180}
+              surfaceName="matrx-user/projects"
+              getApplicationScope={getProjectCreateApplicationScope}
             />
             <p className="text-xs text-muted-foreground">
               {description.length}/500
@@ -502,118 +531,126 @@ export function ProjectFormCore({
 
   // ── Desktop layout ───────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Org selector */}
-      <div className="space-y-2">
-        <Label>Owner</Label>
-        <OrgSelector
-          orgs={orgs}
-          orgsLoading={orgsLoading}
-          selectedOrg={selectedOrg}
-          onSelect={setSelectedOrg}
-          locked={orgLocked}
-          isMobile={false}
-        />
-        <p className="text-xs text-muted-foreground">
-          {selectedOrg
-            ? "Team members of this org can be added to the project."
-            : "Personal projects are private to you by default."}
-        </p>
-      </div>
-
-      {/* Name */}
-      <div className="space-y-2">
-        <Label htmlFor="project-name">Project Name *</Label>
-        <Input
-          id="project-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Website Redesign"
-          maxLength={50}
-          disabled={isSubmitting}
-          className={!nameValidation.valid ? "border-destructive" : ""}
-        />
-        {!nameValidation.valid && (
-          <p className="text-xs text-destructive flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            {nameValidation.error}
+    <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pr-1">
+        {/* Org selector */}
+        <div className="space-y-2">
+          <Label>Owner</Label>
+          <OrgSelector
+            orgs={orgs}
+            orgsLoading={orgsLoading}
+            selectedOrg={selectedOrg}
+            onSelect={setSelectedOrg}
+            locked={orgLocked}
+            isMobile={false}
+          />
+          <p className="text-xs text-muted-foreground">
+            {selectedOrg
+              ? "Team members of this org can be added to the project."
+              : "Personal projects are private to you by default."}
           </p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          {name.length}/50 characters
-        </p>
-      </div>
+        </div>
 
-      {/* Slug */}
-      <div className="space-y-2">
-        <Label htmlFor="project-slug">URL Slug *</Label>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground font-mono whitespace-nowrap">
-            {slugPrefix}
-          </span>
-          <Input
-            id="project-slug"
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value);
-              setIsSlugManuallyEdited(true);
-            }}
-            placeholder="website-redesign"
+        {/* Name */}
+        <div className="space-y-2">
+          <Label htmlFor="project-name">Project Name *</Label>
+          <ProInput
+            id="project-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Website Redesign"
             maxLength={50}
             disabled={isSubmitting}
-            className={cn(
-              "flex-1",
-              !slugValidation.valid ||
-                (!checkingSlug && slug && slugAvailable === false)
-                ? "border-destructive"
-                : slug && slugAvailable && slugValidation.valid
-                  ? "border-green-500"
-                  : "",
-            )}
+            className={!nameValidation.valid ? "border-destructive" : ""}
+            wrapperClassName="w-full"
           />
-        </div>
-        <div className="flex items-center justify-between">
-          <SlugIndicator
-            slug={slug}
-            checkingSlug={checkingSlug}
-            slugValidation={slugValidation}
-            slugAvailable={slugAvailable}
-          />
-          {!isSlugManuallyEdited && slug && (
-            <span className="text-xs text-muted-foreground">
-              Auto-generated from name
-            </span>
+          {!nameValidation.valid && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {nameValidation.error}
+            </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            {name.length}/50 characters
+          </p>
+        </div>
+
+        {/* Slug */}
+        <div className="space-y-2">
+          <Label htmlFor="project-slug">URL Slug *</Label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground font-mono whitespace-nowrap">
+              {slugPrefix}
+            </span>
+            <Input
+              id="project-slug"
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value);
+                setIsSlugManuallyEdited(true);
+              }}
+              placeholder="website-redesign"
+              maxLength={50}
+              disabled={isSubmitting}
+              className={cn(
+                "flex-1",
+                !slugValidation.valid ||
+                  (!checkingSlug && slug && slugAvailable === false)
+                  ? "border-destructive"
+                  : slug && slugAvailable && slugValidation.valid
+                    ? "border-green-500"
+                    : "",
+              )}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <SlugIndicator
+              slug={slug}
+              checkingSlug={checkingSlug}
+              slugValidation={slugValidation}
+              slugAvailable={slugAvailable}
+            />
+            {!isSlugManuallyEdited && slug && (
+              <span className="text-xs text-muted-foreground">
+                Auto-generated from name
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="project-description">Description</Label>
+          <ProTextarea
+            id="project-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What is this project about?"
+            maxLength={500}
+            disabled={isSubmitting}
+            wrapperClassName="w-full"
+            autoGrow
+            minHeight={88}
+            maxHeight={180}
+            surfaceName="matrx-user/projects"
+            getApplicationScope={getProjectCreateApplicationScope}
+          />
+          <p className="text-xs text-muted-foreground">
+            {description.length}/500 characters
+          </p>
+        </div>
+
+        {/* Permissions hint */}
+        <div className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
+          <Settings className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            After creating, open <strong>Project Settings</strong> to manage
+            member permissions and invitations.
+          </span>
         </div>
       </div>
 
-      {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="project-description">Description</Label>
-        <Textarea
-          id="project-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="What is this project about?"
-          rows={3}
-          maxLength={500}
-          disabled={isSubmitting}
-        />
-        <p className="text-xs text-muted-foreground">
-          {description.length}/500 characters
-        </p>
-      </div>
-
-      {/* Permissions hint */}
-      <div className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
-        <Settings className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-        <span>
-          After creating, open <strong>Project Settings</strong> to manage
-          member permissions and invitations.
-        </span>
-      </div>
-
-      <DialogFooter>
+      <DialogFooter className="mt-4 shrink-0 border-t border-border pt-3">
         <Button
           type="button"
           variant="outline"

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-07`
+**Last updated:** `2026-06-23`
 
 > Combined doc covering the three audio-adjacent features. This doc lives under `features/audio/` as the umbrella.
 
@@ -29,6 +29,7 @@ Three sibling features that together form the audio pipeline:
 - `types.ts`, `index.ts`, `migrations/`
 - `TROUBLESHOOTING.md` (existing)
 - `TASK-Eleven-labs-addition.md` (integration note)
+- **Routes:** `/voice` (guest marketing landing; authed → `/voice/playground`), `/voice/playground` (`AiVoicePage`), `/voice/tester` (`TtsTesterBench`)
 
 **Podcasts — `features/podcasts/`**
 - `components/`, `hooks/`, `service.ts`, `types.ts`, `index.ts`
@@ -157,6 +158,7 @@ WebM and MP4 are *containers*: identical magic bytes carry audio or video. When 
 - `2026-06-09` — Fixed Cartesia read-aloud 404 ("No API schema exists for the requested Cartesia-Version"). The `/api/cartesia` access-token route minted tokens with the SDK's default version (`2024-06-10`) while `useCartesiaSpeaker` opens the websocket at `CARTESIA_API_VERSION` (`2026-03-01`) — Cartesia rejects the version mismatch with a 404 on websocket connect. The route now mints the token with `cartesiaVersion: CARTESIA_API_VERSION`. **Invariant: the access-token mint version MUST equal the websocket `cartesiaVersion`.** (Note: `@cartesia/cartesia-js` is intentionally pinned at v2.2.9 — v3 removed the `WebPlayer` export every speaker hook depends on.)
 - `2026-06-07` — `pc_episodes.user_id` migration: episode ownership FK to `auth.users`; admin `createEpisode` stamps auth user; added `fetchEpisodesByUser`.
 - `2026-05-23` — Audio modal consolidated onto the canonical TTS system. `components/audio/AudioModal.tsx` now auto-plays via `useCartesiaSpeaker` (through `SpeakerGroupCore`) instead of the old per-modal `TextToSpeechPlayer`; the modal is `next/dynamic` and driven by a single global `<AudioModalHost />` (replaces the never-mounted `AudioModalProvider`, which left flashcard read-aloud broken). Deleted dead/duplicate trash: `components/audio/TextToSpeechPlayer.tsx`, `hooks/tts/TextToSpeechPlayer.tsx`, `components/audio/example-usage.tsx`, `components/audio/QuickAudioHelp.tsx`, `hooks/tts/useAudioExplanation.ts`, and the demo routes `app/(authenticated)/flash-cards/audio/**` + `app/(authenticated)/flash-cards/modal-test/**`. Flashcard UI unchanged.
+- `2026-06-23` — Added `/voice` guest marketing landing (`VoiceLanding` + `ModuleLanding` shell); authed users redirect to `/voice/playground`. Registered favicon (`Vc`, pink-700) and sub-route metadata for playground (`Vp`) and tester (`Vt`).
 - `2026-05-26` — Renamed `voicePadAi` overlay → `transcriptionCleanup` (slug `transcription-cleanup`, component `TranscriptionCleanup.tsx` under `components/official-candidate/transcription-cleanup/`). Renamed `/transcription/mobile` route → `/transcription/scribe` (component `ScribeScreen.tsx` under `features/transcript-studio/components/scribe/`); legacy `/transcription/mobile/*` 308-redirects to `/transcription/scribe/*` via `next.config.js`.
 - `2026-05-23` — TTS consolidated onto `lib/cartesia/config.ts` (Sonic 3.5 + `2026-03-01` + `generation_config`). Migrated `useCartesiaSpeaker`, `useCartesiaStreamingSpeaker`, `useCartesia`, and `hooks/tts/simple/*` off hardcoded models/buffers/`experimentalControls`; default voices Skylar/Daniel via `resolveVoiceId(purpose)`; user voice/speed prefs respected everywhere. Mobile transcript studio moved to real per-session routes (`/transcription/scribe/[sessionId]`, `/unsorted`).
 - `2026-05-21` — `useChunkedRecordAndTranscribe` exposes the crash-safe `safetyId` (via `getSafetyId()` on its return and on every `ChunkCompleteInfo`) so subscribers can reassemble a recording cycle's audio with `audioSafetyStore.getAudioBlob(safetyId)`. Consumed by the transcript-studio mobile capture flow; additive — existing consumers unaffected.

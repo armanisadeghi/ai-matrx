@@ -42,7 +42,7 @@ export function NoteCleanupButton({
   showLabel?: boolean;
   label?: string;
 }) {
-  const { content, label, apply } = useNoteCleanup(noteId);
+  const { content, label: noteLabel, apply } = useNoteCleanup(noteId);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [enabled, setEnabled] = useState<Set<CleanupOperationId>>(
     () => new Set(DEFAULT_ENABLED_OPERATIONS),
@@ -137,7 +137,7 @@ export function NoteCleanupButton({
           onOpenChange={setReviewOpen}
           report={run.report}
           noteId={noteId}
-          noteLabel={label}
+          noteLabel={noteLabel}
           onApply={handleApply}
         />
       )}
