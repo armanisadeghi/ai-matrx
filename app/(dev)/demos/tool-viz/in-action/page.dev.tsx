@@ -690,41 +690,37 @@ export default function ToolInActionPage() {
   const tool = toolList.find((t) => t.name === toolName) ?? toolList[0];
   const [speed, setSpeed] = useState(1);
 
-  // Resolve the sample for the selected tool: real `cx_tool_call` row if one
-  // exists, otherwise the synthetic fallback.
-  const [sample, setSample] = useState<SampleEntry | null>(null);
-  const [loadingSample, setLoadingSample] = useState(true);
+  // Synthetic sample is available SYNCHRONOUSLY, so the render column paints on
+  // the very first frame — the demo never sits behind a loading gate. We then
+  // async-UPGRADE to the real `cx_tool_call` row if one exists; until it lands
+  // (or if it never does), the synthetic turn is fully usable.
+  const syntheticSample = useMemo<SampleEntry>(
+    () => ({
+      args: tool.fallbackArgs,
+      result: tool.fallbackResult,
+      isReal: false,
+    }),
+    [tool.fallbackArgs, tool.fallbackResult],
+  );
+
+  const [realSample, setRealSample] = useState<SampleEntry | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setLoadingSample(true);
-    setSample(null);
+    setRealSample(null);
     fetchLatestSample(tool.name)
       .then((real) => {
-        if (cancelled) return;
-        setSample(
-          real ?? {
-            args: tool.fallbackArgs,
-            result: tool.fallbackResult,
-            isReal: false,
-          },
-        );
+        if (!cancelled && real) setRealSample(real);
       })
       .catch(() => {
-        if (cancelled) return;
-        setSample({
-          args: tool.fallbackArgs,
-          result: tool.fallbackResult,
-          isReal: false,
-        });
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingSample(false);
+        /* synthetic stays in place — already rendering */
       });
     return () => {
       cancelled = true;
     };
-  }, [tool.name, tool.fallbackArgs, tool.fallbackResult]);
+  }, [tool.name]);
+
+  const sample = realSample ?? syntheticSample;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -761,22 +757,15 @@ export default function ToolInActionPage() {
           </select>
         </div>
 
-        {loadingSample || !sample ? (
-          <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading real saved data for{" "}
-            <span className="font-medium text-foreground">{tool.label}</span>…
-          </div>
-        ) : (
-          <StreamedTurn
-            // Remount on tool/sample change so the player resets cleanly.
-            key={`${tool.name}:${sample.isReal}`}
-            tool={tool}
-            sample={sample}
-            speed={speed}
-            onSpeedChange={setSpeed}
-          />
-        )}
+        <StreamedTurn
+          // Remount on tool change (and when real data swaps in, so the upgraded
+          // sample re-seeds the player cleanly).
+          key={`${tool.name}:${sample.isReal}`}
+          tool={tool}
+          sample={sample}
+          speed={speed}
+          onSpeedChange={setSpeed}
+        />
       </div>
     </div>
   );
