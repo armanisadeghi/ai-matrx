@@ -41,6 +41,8 @@ import {
     parseSearch,
     getFaviconUrl,
     getDomain,
+    getSiteName,
+    getBreadcrumbParts,
     formatDate,
     type SearchGroup,
     type SearchRead,
@@ -55,30 +57,37 @@ type SortKey = "relevance" | "domain" | "date";
 
 const Favicon: React.FC<{ url: string; className?: string }> = ({ url, className }) => {
     const [failed, setFailed] = useState(false);
-    const src = getFaviconUrl(url);
-    if (failed || !src) return <Globe className={cn("text-muted-foreground", className)} />;
+    const src = getFaviconUrl(url, 64);
+    if (failed || !src)
+        return (
+            <span
+                className={cn(
+                    "flex items-center justify-center bg-muted text-muted-foreground",
+                    className,
+                )}
+            >
+                <Globe className="h-1/2 w-1/2" />
+            </span>
+        );
     return (
-        <img src={src} alt="" className={cn("rounded-sm", className)} onError={() => setFailed(true)} />
+        <img src={src} alt="" className={cn("object-contain", className)} onError={() => setFailed(true)} />
     );
 };
 
-/** Google-style breadcrumb: `domain › path › segments`. Domain in success-green. */
-const Breadcrumb: React.FC<{ url: string; domain: string }> = ({ url, domain }) => {
-    const segments = useMemo(() => {
-        try {
-            const p = new URL(url).pathname.replace(/\/+$/, "");
-            return p.split("/").filter(Boolean).slice(0, 3);
-        } catch {
-            return [];
-        }
-    }, [url]);
+/**
+ * Google-style breadcrumb path — `https://www.site.com › path › segments`. The
+ * origin (scheme + host, www kept) leads in success-green, then up to three
+ * decoded path segments.
+ */
+const BreadcrumbPath: React.FC<{ url: string }> = ({ url }) => {
+    const { origin, segments } = useMemo(() => getBreadcrumbParts(url), [url]);
     return (
-        <span className="flex min-w-0 items-center gap-1 truncate">
-            <span className="truncate font-medium text-success">{domain}</span>
+        <span className="flex min-w-0 items-center gap-1 truncate text-xs leading-tight">
+            <span className="truncate text-success/90">{origin}</span>
             {segments.map((seg, i) => (
                 <span key={i} className="flex items-center gap-1 truncate text-muted-foreground">
                     <span className="text-muted-foreground/50">›</span>
-                    <span className="truncate">{decodeURIComponent(seg)}</span>
+                    <span className="truncate">{seg}</span>
                 </span>
             ))}
         </span>
@@ -112,6 +121,7 @@ const FilterPill: React.FC<{
  */
 const ResultRow: React.FC<{ source: SearchSource; rank?: number }> = ({ source, rank }) => {
     const date = formatDate(source.date);
+    const siteName = getSiteName(source.url) || source.domain;
     return (
         <div className="group/result flex gap-3">
             {rank !== undefined && (
@@ -120,27 +130,36 @@ const ResultRow: React.FC<{ source: SearchSource; rank?: number }> = ({ source, 
                 </span>
             )}
             <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-xs">
-                    <Favicon url={source.url} className="h-4 w-4 flex-shrink-0" />
-                    <Breadcrumb url={source.url} domain={source.domain} />
+                {/* Top block: big favicon (2 lines) + [site name / breadcrumb path]. */}
+                <div className="flex items-center gap-3">
+                    <Favicon
+                        url={source.url}
+                        className="h-9 w-9 flex-shrink-0 rounded-full border border-border bg-card p-1.5"
+                    />
+                    <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium leading-tight text-foreground">
+                            {siteName}
+                        </div>
+                        <BreadcrumbPath url={source.url} />
+                    </div>
                 </div>
                 <a
                     href={source.url || undefined}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group/link mt-0.5 flex items-start gap-1.5"
+                    className="group/link mt-1.5 flex items-start gap-1.5"
                 >
-                    <span className="text-[15px] font-medium leading-snug text-primary underline-offset-2 group-hover/link:underline">
+                    <span className="text-lg font-medium leading-snug text-primary underline-offset-2 group-hover/link:underline">
                         {source.title}
                     </span>
-                    <ExternalLink className="mt-1 h-3 w-3 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/result:opacity-100" />
+                    <ExternalLink className="mt-1.5 h-3.5 w-3.5 flex-shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/result:opacity-100" />
                 </a>
                 {source.snippet && (
-                    <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                         {source.snippet}
                     </p>
                 )}
-                {date && <div className="mt-1 text-xs text-muted-foreground opacity-80">{date}</div>}
+                {date && <div className="mt-1.5 text-xs text-muted-foreground opacity-80">{date}</div>}
             </div>
         </div>
     );

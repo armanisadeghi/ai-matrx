@@ -3953,6 +3953,12 @@ export default function OverlayController() {
         return (
           <ScraperWindow
             isOpen
+            initialUrl={typeof data?.url === "string" ? data.url : undefined}
+            initialMode={
+              data?.mode === "web" || data?.mode === "url" || data?.mode === "batch"
+                ? data.mode
+                : undefined
+            }
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "scraperWindow" }))
             }

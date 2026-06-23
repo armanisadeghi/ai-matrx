@@ -19,7 +19,19 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const OVERLAY_ID = "scraperWindow" as const;
 
+/** Which workspace mode the scraper opens into. */
+export type ScraperWindowMode = "web" | "url" | "batch";
+
 export interface OpenScraperWindowOptions {
+  /**
+   * Seed URL — opens the scraper in single-URL ("url") mode pre-filled with this
+   * address so the user can read the page in one click. Used by the search
+   * renderer's "Read" affordance (the page-reading entry point). When omitted
+   * the scraper opens empty in its default Web-search mode.
+   */
+  url?: string;
+  /** Force a specific workspace mode. Defaults to "url" when a `url` is given. */
+  mode?: ScraperWindowMode;
 }
 
 export interface ScraperWindowHandle {
@@ -30,7 +42,11 @@ export function useOpenScraperWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
     (opts: OpenScraperWindowOptions = {}): ScraperWindowHandle => {
-      dispatch(openOverlay({ overlayId: OVERLAY_ID }));
+      const data =
+        opts.url || opts.mode
+          ? { url: opts.url, mode: opts.mode ?? (opts.url ? "url" : undefined) }
+          : undefined;
+      dispatch(openOverlay({ overlayId: OVERLAY_ID, data }));
       return {
         close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
       };

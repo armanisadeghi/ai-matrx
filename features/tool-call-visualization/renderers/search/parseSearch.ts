@@ -141,6 +141,69 @@ export function getFaviconUrl(url: string, size = 32): string {
 }
 
 /**
+ * The clean BRAND / site name Google shows above the breadcrumb — derived from
+ * the domain, NOT the full URL. We take the domain's main label (the part before
+ * the public suffix: `finout` from `finout.io`, `people` from `people.com`,
+ * `travelandleisure` from `www.travelandleisure.com`) and Title-case it. Multi-
+ * word labels split on `-` (`travel-leisure` → "Travel Leisure"). Falls back to
+ * the bare host when the shape is unusual (IP, single label). We can't recover a
+ * brand's intra-word casing from a domain (`deepseek` → "Deepseek", not
+ * "DeepSeek") — Title-case is the correct, honest derivation.
+ */
+export function getSiteName(url: string): string {
+    const domain = getDomain(url);
+    if (!domain) return "";
+    const labels = domain.split(".").filter(Boolean);
+    // The main label is the second-to-last for a normal `name.tld`; for a known
+    // two-part suffix (`co.uk`, `com.au`, `co.jp`) it's third-to-last.
+    const TWO_PART_TLD = new Set(["co", "com", "org", "net", "gov", "edu", "ac"]);
+    let mainIdx = labels.length - 2;
+    if (
+        labels.length >= 3 &&
+        TWO_PART_TLD.has(labels[labels.length - 2]) &&
+        labels[labels.length - 1].length <= 3
+    ) {
+        mainIdx = labels.length - 3;
+    }
+    const main = labels[mainIdx] ?? domain;
+    const titled = main
+        .split(/[-_]/)
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    return titled || domain;
+}
+
+/**
+ * The full breadcrumb line Google shows under the site name —
+ * `https://www.finout.io › blog › anthropic-api-pricing`. We KEEP the scheme and
+ * the original host (with `www.`, unlike the dedupe domain) because that is what
+ * Google renders, then append up to three decoded path segments joined by `›`.
+ * Returns just the `scheme://host` when there is no path.
+ */
+export function getBreadcrumbParts(url: string): { origin: string; segments: string[] } {
+    try {
+        const u = new URL(url);
+        const origin = `${u.protocol}//${u.host}`;
+        const segments = u.pathname
+            .replace(/\/+$/, "")
+            .split("/")
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((s) => {
+                try {
+                    return decodeURIComponent(s);
+                } catch {
+                    return s;
+                }
+            });
+        return { origin, segments };
+    } catch {
+        return { origin: url, segments: [] };
+    }
+}
+
+/**
  * The canonical base-URL dedupe key for a result.
  *
  * Base URL = scheme + host (www-stripped) + pathname, WITHOUT query string or

@@ -8,7 +8,7 @@
  * file — it's covered by `scraperWindow`.
  */
 
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -77,15 +77,38 @@ interface ScrapeItemState {
   error: string | null;
 }
 
-export function ScraperFloatingWorkspace({ onClose }: { onClose: () => void }) {
+export function ScraperFloatingWorkspace({
+  onClose,
+  initialUrl,
+  initialMode,
+}: {
+  onClose: () => void;
+  /** Seed URL — opens pre-filled in single-URL mode (the "Read" entry point). */
+  initialUrl?: string;
+  /** Seed workspace mode. Defaults to "url" when an `initialUrl` is given. */
+  initialMode?: WorkspaceMode;
+}) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const keywordForm = useScraperKeywordSearchForm();
 
-  const [mode, setMode] = useState<WorkspaceMode>("web");
-  const [url, setUrl] = useState("");
+  const [mode, setMode] = useState<WorkspaceMode>(
+    initialMode ?? (initialUrl ? "url" : "web"),
+  );
+  const [url, setUrl] = useState(initialUrl ?? "");
   const [keyword, setKeyword] = useState("");
   const [maxPages, setMaxPages] = useState("5");
+
+  // Re-seed when the overlay is re-opened against a different URL while still
+  // mounted (the opener updates `data.url`; this component instance persists).
+  // Loud-by-omission: we only ever ADOPT a non-empty incoming URL, never wipe a
+  // URL the user is mid-editing.
+  useEffect(() => {
+    if (!initialUrl) return;
+    setUrl(initialUrl);
+    setMode(initialMode ?? "url");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl, initialMode]);
 
   const [scrapedResults, setScrapedResults] = useState<ScraperResult[]>([]);
   const [scrapeStates, setScrapeStates] = useState<
