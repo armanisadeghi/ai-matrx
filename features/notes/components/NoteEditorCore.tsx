@@ -20,10 +20,12 @@ import React, { useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { cn } from "@/lib/utils";
 
 const TuiEditorContent = dynamic(
@@ -133,6 +135,22 @@ export interface NoteEditorCoreProps {
    * neighbors). Default false preserves the full-page behavior.
    */
   embedded?: boolean;
+  /**
+   * Surface Registry name (`matrx-user/notes`). When set, the PLAIN-mode body
+   * renders a `ProTextarea` whose "…" menu lists the surface's bound agents
+   * (My / System / Shared / org) and whose voice/copy/clean-up come for free —
+   * the same agent affordances the right-click menu offers, inline on the body.
+   * When omitted, the plain body stays the bare `Textarea` (every existing
+   * consumer is unchanged). Pair with `getApplicationScope` for full scope.
+   */
+  surfaceName?: string;
+  /**
+   * Live scope builder handed to the plain-mode `ProTextarea` (only used when
+   * `surfaceName` is set). Reads the textarea selection + Redux at call time so
+   * bound-agent runs from the body get the same rich `matrx-user/notes` scope
+   * as the context menu. See `useNotesSurfaceScope`.
+   */
+  getApplicationScope?: () => ApplicationScope;
 }
 
 /**
@@ -164,6 +182,8 @@ export function NoteEditorCore({
   actionsSurfaceId,
   largeScrollbar = false,
   embedded = false,
+  surfaceName,
+  getApplicationScope,
 }: NoteEditorCoreProps) {
   // Full-page surfaces pad the bottom by 85dvh so the last line can scroll to
   // the middle; embedded/tile surfaces must NOT (it balloons content past the
@@ -233,10 +253,18 @@ export function NoteEditorCore({
     [onChange],
   );
 
+  // The agent-wired ProTextarea (plain mode + `surfaceName`) brings its OWN
+  // voice control, so suppress this overlay there to avoid two stacked mics.
+  // Every other mode (split / wysiwyg / markdown-split) still needs it.
+  const showVoiceOverlay =
+    showVoiceButton &&
+    !readOnly &&
+    !(editorMode === "plain" && Boolean(surfaceName));
+
   return (
     <div className={cn("relative w-full h-full", className)}>
       {/* Voice button overlay */}
-      {showVoiceButton && !readOnly && (
+      {showVoiceOverlay && (
         <div className="absolute top-2 right-2 z-10">
           <MicrophoneIconButton
             onTranscriptionComplete={handleTranscription}
@@ -249,29 +277,48 @@ export function NoteEditorCore({
       {/* ── Plain Text ──────────────────────────────────────────────── */}
       {editorMode === "plain" && (
         <>
-          <Textarea
-            ref={(el) => {
-              if (textareaRef && "current" in textareaRef) {
-                (
-                  textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>
-                ).current = el;
-              }
-            }}
-            value={content}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            readOnly={readOnly}
-            className={cn(
-              "absolute inset-0 w-full h-full resize-none border-0",
-              "focus-visible:ring-0 focus-visible:ring-offset-0",
-              "text-sm leading-relaxed bg-transparent p-3",
-              bottomPad,
-              // Notes get long — opt into the larger, persistent,
-              // higher-contrast scrollbar so it's easy to find and grab.
-              largeScrollbar && "scrollbar-contrast-lg",
-              textareaClassName,
-            )}
-          />
+          {surfaceName ? (
+            // Agent-wired surface: ProTextarea gives the body the same agent
+            // affordances ("…" bound agents, voice, copy, clean-up) the
+            // right-click menu offers. Ref forwards to the real textarea, so
+            // cursor ops / find&replace / voice insertion are unchanged.
+            <ProTextarea
+              ref={textareaRef}
+              surfaceName={surfaceName}
+              getApplicationScope={getApplicationScope}
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              disabled={readOnly}
+              wrapperClassName="absolute inset-0 w-full h-full"
+              className={cn(
+                "w-full h-full resize-none border-0 shadow-none",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                "text-sm leading-relaxed bg-transparent p-3",
+                bottomPad,
+                largeScrollbar && "scrollbar-contrast-lg",
+                textareaClassName,
+              )}
+            />
+          ) : (
+            <Textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder={placeholder}
+              readOnly={readOnly}
+              className={cn(
+                "absolute inset-0 w-full h-full resize-none border-0",
+                "focus-visible:ring-0 focus-visible:ring-offset-0",
+                "text-sm leading-relaxed bg-transparent p-3",
+                bottomPad,
+                // Notes get long — opt into the larger, persistent,
+                // higher-contrast scrollbar so it's easy to find and grab.
+                largeScrollbar && "scrollbar-contrast-lg",
+                textareaClassName,
+              )}
+            />
+          )}
           {findOverlay}
         </>
       )}
@@ -310,17 +357,7 @@ export function NoteEditorCore({
       {/* ── Preview (Markdown with full edit-through) ───────────────── */}
       {editorMode === "preview" && (
         <div
-          ref={(el) => {
-            if (previewContainerRef) {
-              if (typeof previewContainerRef === "function") {
-                previewContainerRef(el);
-              } else {
-                (
-                  previewContainerRef as React.MutableRefObject<HTMLDivElement | null>
-                ).current = el;
-              }
-            }
-          }}
+          ref={previewContainerRef}
           className={cn(
             "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4",
             bottomPad,

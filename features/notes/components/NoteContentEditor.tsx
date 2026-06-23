@@ -44,6 +44,9 @@ import { useNotesInstanceId } from "../context/NotesInstanceContext";
 import { analyzeDiff } from "../utils/diffAnalysis";
 import { supabase } from "@/utils/supabase/client";
 import { NoteEditorCore, type EditorMode } from "./NoteEditorCore";
+import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
+import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
@@ -298,6 +301,34 @@ export function NoteContentEditor({
     };
   }, [dispatch, noteId]);
 
+  // ── Agent-context surface scope (`matrx-user/notes`) ─────────────────
+  // ONE builder, shared with the right-click menu's data path. Reads the live
+  // textarea selection + Redux at call time (no stale snapshot). The plain-mode
+  // ProTextarea's "…" bound-agent runs and the context menu both resolve scope
+  // through this, so the body and the menu stay perfectly in sync.
+  const buildSurfaceScope = useNotesSurfaceScope({
+    instanceId,
+    noteId,
+    content: localContent,
+    textareaRef,
+    editorMode,
+  });
+
+  const getApplicationScope = useCallback(() => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? 0;
+    const selectedText =
+      el && start !== end
+        ? el.value.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData: buildSurfaceScope() as Record<string, unknown>,
+    });
+  }, [buildSurfaceScope]);
+
   // ── Context menu handlers ─────────────────────────────────────────
   const handleSave = useCallback(() => {
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
@@ -472,6 +503,8 @@ export function NoteContentEditor({
             onChangeFlush={handleChangeFlush}
             editorMode={editorMode}
             textareaRef={textareaRef}
+            surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+            getApplicationScope={getApplicationScope}
             showVoiceButton={editorMode !== "preview"}
             placeholder="Start typing..."
             className="flex-1 min-h-0"

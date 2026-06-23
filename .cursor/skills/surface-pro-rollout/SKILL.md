@@ -56,13 +56,12 @@ A surface has two kinds of region; wire both:
 - **Editable region** (textarea/input/editor): wrap in `<UnifiedAgentContextMenu {...PROPS} getTextarea getApplicationScope contextData onTextReplace onTextInsertBefore onTextInsertAfter extraSections>` and put a **`ProTextarea` / `ProInput`** inside.
 - **Presentational region** (rendered markdown, a transcript, a result the user reads): wrap in `<UnifiedAgentContextMenu {...PROPS} isEditable={false} getApplicationScope contextData>` — right-click offers agent actions on the displayed text; no text-replace callbacks (read-only). This is the "assist the user with information presented to them" half — do not skip it.
 
-`getApplicationScope` is always:
+`getApplicationScope` is a **plain function** (NOT `useCallback`) — React Compiler memoizes it, and `useCallback` placed after a component's early `return` (e.g. `if (!record) return …`) is a rules-of-hooks violation:
 ```ts
-const getApplicationScope = useCallback(
-  () => buildApplicationScopeFromMenuContext({ selectedText, selectionRange, contextData }),
-  [contextData /* + live selection inputs */],
-);
+const getApplicationScope = () =>
+  buildApplicationScopeFromMenuContext({ selectedText, selectionRange, contextData });
 ```
+It reads the live DOM selection at call time. Never wrap it in `useCallback`/`useMemo`.
 
 ### 5. Replace plain inputs with Pro components
 
@@ -75,7 +74,7 @@ const getApplicationScope = useCallback(
 
 - `getApplicationScope` reads live values at call time; never store scope in state that re-renders.
 - Bound agents load on menu OPEN only (the menu/Pro components already do this) — don't prefetch per keystroke.
-- React Compiler is on: **no** manual `useMemo`/`useCallback`/`memo` beyond the stable callbacks shown. Don't add effects that rebuild scope on every change.
+- React Compiler is on: **no** manual `useMemo`/`useCallback`/`memo` — write plain functions/values (including `getApplicationScope`). Don't add effects that rebuild scope on every change. Don't forward a prop ref by mutating `.current` in a render callback (rules-of-hooks/immutability) — pass the ref straight to `ref={...}` (ProTextarea/ProInput forward it).
 
 ### 7. DB sync (main-thread / orchestrator step)
 

@@ -54,7 +54,12 @@ Every route under `app/(core)/transcripts/` stores through exactly **two record 
 
 **Context / hooks**
 - `context/TranscriptsContext.tsx` — provider with optimistic updates + realtime; wraps the processor.
-- `hooks/useTranscriptsSurfaceScope.ts` — surface scope wiring.
+- `hooks/useTranscriptsSurfaceScope.ts` — runtime surface-scope builder; reads live playback/selection at call time and delegates the shape to the pure `agent-context/buildTranscriptsContextData.ts`.
+
+**Agent context (`matrx-user/transcripts` surface)**
+- `agent-context/buildTranscriptsContextData.ts` — pure live-state → `createTranscriptsScope(...)` mapper (baselines + every sourceable custom value) plus `TRANSCRIPTS_CONTEXT_MENU_PROPS`. Demo + runtime share this one shape.
+- `agent-context/transcriptsExtraSections.ts` — surface-specific right-click items (Copy transcript), wired to real behavior.
+- `TranscriptViewer.tsx` mounts `UnifiedAgentContextMenu` on both the presentational rendered transcript (`isEditable={false}`) and the inline body editor (`isEditable`, `surfaceName` + `getApplicationScope` on its `ProTextarea`). Manifest: `features/surfaces/manifests/transcripts.manifest.ts`.
 
 **Components** — `components/`: `TranscriptsListPage` (list island), `TranscriptsLayout` / `TranscriptsHeader` / `TranscriptsSidebar` (processor shell), `TranscriptViewer`, `CreateTranscriptModal` (upload / upload+transcribe), `ImportTranscriptModal`, `RecordingInterface` / `RecordingPreview` / `DraftIndicator`, `DeleteTranscriptDialog`.
 
@@ -114,6 +119,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-06-23` — **Transcripts surface fully agent-wired (`matrx-user/transcripts`).** Added pure `agent-context/buildTranscriptsContextData.ts` (baselines + customs, shared by the runtime hook) + `transcriptsExtraSections.ts`. `TranscriptViewer` now mounts the context menu on both the presentational transcript (read-only, `getApplicationScope` from the live DOM selection) and the inline body editor (`isEditable`, with `ProTextarea` carrying `surfaceName` + `getApplicationScope`); metadata title/description swapped to `ProInput`/`ProTextarea`. No manifest/SurfaceValue change (every emitted value was already declared).
 - `2026-06-17` — **Studio uses shared transcripts mode nav.** `StudioLayout` portals `TranscriptsListHeader` (All / New / Process / Studio / Scribe / Clean) into the shell header — same escape hatch as `/transcripts` and `/transcripts/cleanup`. Session actions live in `ActiveSessionView`'s local toolbar instead of `StudioHeaderPortal` (removed).
 - `2026-06-17` — **Hub tree row UX.** Grouped table uses a dedicated tree-gutter column (chevron on expandable parents, `CornerDownRight` on children) with aligned name column — fixes child rows visually attaching to the wrong parent.
 - `2026-06-17` — **Hub grouping is table-only.** Removed grouped cards; grouping uses the same `TranscriptsHubTable` with parent-only sort/filter, collapsed-by-default fold rows, child rows on muted background + indent. Group toggle auto-switches to table; toolbar toggles use primary active state.

@@ -84,8 +84,16 @@ import { ContentActionBar } from "@/components/content-actions/ContentActionBar"
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
-import { createTranscriptsCleanupScope } from "@/features/surfaces/manifests/transcripts-cleanup.manifest";
+import {
+  buildTranscriptsCleanupContextData,
+  withActivePane,
+  TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS,
+  type CleanupPaneKind,
+  type CleanupSlotState,
+} from "../agent-context/buildTranscriptsCleanupContextData";
 import {
   useSurfaceAgentRoles,
   type RoleView,
@@ -689,66 +697,39 @@ export default function CleanupPad({
 
   /** Emits every value declared in `transcriptsCleanupManifest` except the
    * selection family (`selection` / `text_before` / `text_after`), which
-   * `UnifiedAgentContextMenu` captures itself at trigger time. */
+   * `UnifiedAgentContextMenu` captures itself at trigger time. Reads live refs
+   * at call time and delegates to the shared pure builder so the page and any
+   * demo emit one identical shape. */
   const buildScope = useCallback(() => {
     const s = scopeStateRef.current;
     const slotList = slotsRef.current;
-    const raw = baseTextRef.current;
-    const cleaned = responseRef.current;
-    const idx = Math.min(s.activeSlotIdx, slotList.length - 1);
-    const slot = slotList[idx];
-    const words = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
-    const slotLabel = (sl: CleanupCustomSlot, i: number) =>
-      sl.label ||
-      (sl.agentId ? s.agentNames[sl.agentId] : undefined) ||
-      `slot-${i + 1}`;
+    const slotStates: CleanupSlotState[] = slotList.map((slot, i) => ({
+      slot,
+      text: s.slotTexts[i] ?? "",
+      runStatus: s.slotPhases[i] ?? "idle",
+    }));
     const activeContextItems = contextItemsRef.current
       .filter((i) => i.value.trim())
       .map((i) => ({ key: i.key, label: i.label, value: i.value }));
 
-    return createTranscriptsCleanupScope({
-      content: raw,
-      raw_transcript_text: raw,
-      cleaned_transcript_text: cleaned || undefined,
-      custom_output_text: customRef.current || undefined,
-      all_custom_outputs: Object.fromEntries(
-        slotList.map((sl, i) => [slotLabel(sl, i), s.slotTexts[i] ?? ""]),
-      ),
-      session_id: sessionRefs.current.activeSessionId ?? undefined,
-      session_title: sessionRefs.current.activeSession?.title,
-      session_started_at: sessionRefs.current.activeSession?.startedAt,
-      raw_word_count: words(raw),
-      raw_char_count: raw.length,
-      cleaned_word_count: words(cleaned),
-      is_recording: s.isMicRecording,
-      is_transcribing: s.isMicTranscribing,
-      is_transcript_locked: false,
-      live_transcript_text: s.liveTranscript || undefined,
-      pending_insert_start: pendingPrefixRef.current || undefined,
-      pending_insert_end: pendingSuffixRef.current || undefined,
-      clean_agent_id: cleanAgentIdRef.current,
-      clean_agent_name: s.agentNames[cleanAgentIdRef.current],
-      clean_run_status: s.cleanPhase,
-      active_slot_index: idx,
-      active_slot_agent_id: slot?.agentId ?? undefined,
-      active_slot_agent_name: slot?.agentId
-        ? s.agentNames[slot.agentId]
-        : undefined,
-      active_slot_source: slot?.source ?? "clean",
-      active_slot_auto_run: slot?.autoRun ?? false,
-      active_slot_run_status: s.slotPhases[idx] ?? "idle",
-      custom_slot_count: slotList.length,
-      custom_slots_summary: slotList.map((sl, i) => ({
-        label: slotLabel(sl, i),
-        agent_id: sl.agentId,
-        agent_name: sl.agentId ? (s.agentNames[sl.agentId] ?? null) : null,
-        source: sl.source,
-        auto_run: sl.autoRun,
-        run_status: s.slotPhases[i] ?? "idle",
-        has_output: Boolean(s.slotTexts[i]?.trim()),
-      })),
-      context_items: activeContextItems,
-      context_item_count: activeContextItems.length,
+    return buildTranscriptsCleanupContextData({
+      rawTranscriptText: baseTextRef.current,
+      cleanedTranscriptText: responseRef.current,
+      slots: slotStates,
+      activeSlotIndex: s.activeSlotIdx,
+      sessionId: sessionRefs.current.activeSessionId,
+      sessionTitle: sessionRefs.current.activeSession?.title,
+      sessionStartedAt: sessionRefs.current.activeSession?.startedAt,
+      isRecording: s.isMicRecording,
+      isTranscribing: s.isMicTranscribing,
+      isTranscriptLocked: false,
+      liveTranscriptText: s.liveTranscript,
+      pendingInsertStart: pendingPrefixRef.current,
+      pendingInsertEnd: pendingSuffixRef.current,
+      cleanAgentId: cleanAgentIdRef.current,
+      cleanRunStatus: s.cleanPhase,
+      agentNames: s.agentNames,
+      contextItems: activeContextItems,
     });
   }, []);
 
@@ -756,16 +737,56 @@ export default function CleanupPad({
    * (`context` is omitted: the menu types it as a string; our scope's named
    * values carry everything the mappings need.) */
   const menuContextData = useCallback(
-    (pane: "transcript" | "clean" | "custom", paneText: string) => {
-      const { context: _omitted, ...scope } = buildScope();
-      return {
-        ...scope,
-        content: paneText,
-        active_pane: pane,
-        active_pane_text: paneText,
-      };
+    (pane: CleanupPaneKind, paneText: string) =>
+      withActivePane(buildScope(), pane, paneText),
+    [buildScope],
+  );
+
+  /**
+   * Per-pane live application scope for the context menu + ProTextarea "…"
+   * menu. Reads the pane textarea's selection AT CALL TIME (never stored in
+   * render state) and folds it onto the pane's surface scope via
+   * `buildApplicationScopeFromMenuContext`.
+   */
+  const paneApplicationScope = useCallback(
+    (
+      el: HTMLTextAreaElement | null,
+      pane: CleanupPaneKind,
+      paneText: string,
+    ) => {
+      const start = el?.selectionStart ?? 0;
+      const end = el?.selectionEnd ?? 0;
+      const selectedText =
+        el && start !== end
+          ? el.value.slice(Math.min(start, end), Math.max(start, end))
+          : "";
+      return buildApplicationScopeFromMenuContext({
+        selectedText,
+        selectionRange: el
+          ? { type: "editable", element: el, start, end }
+          : null,
+        contextData: withActivePane(buildScope(), pane, paneText),
+      });
     },
     [buildScope],
+  );
+
+  const transcriptGetScope = useCallback(
+    () =>
+      paneApplicationScope(
+        transcriptTaRef.current,
+        "transcript",
+        transcriptDisplayRef.current,
+      ),
+    [paneApplicationScope],
+  );
+  const cleanGetScope = useCallback(
+    () => paneApplicationScope(cleanTaRef.current, "clean", responseRef.current),
+    [paneApplicationScope],
+  );
+  const customGetScope = useCallback(
+    () => paneApplicationScope(customTaRef.current, "custom", customRef.current),
+    [paneApplicationScope],
   );
 
   // ── Session content loading: reset local state from the DB snapshot ───────
@@ -1879,17 +1900,17 @@ export default function CleanupPad({
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <UnifiedAgentContextMenu
-          sourceFeature="transcription-cleanup"
-          surfaceName="matrx-user/transcripts-cleanup"
+          {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => transcriptTaRef.current}
-          isEditable
+          getApplicationScope={transcriptGetScope}
           contextData={menuContextData("transcript", transcriptDisplay)}
-          placementMode={{ "content-block": "hide" }}
           className="flex min-h-0 flex-1 flex-col"
           {...transcriptHandlers}
         >
-          <textarea
+          <ProTextarea
             ref={transcriptTaRef}
+            surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+            getApplicationScope={transcriptGetScope}
             value={transcriptDisplay}
             onChange={(e) => handleDraftChange(e.target.value)}
             onFocus={handleTranscriptFocus}
@@ -1899,10 +1920,11 @@ export default function CleanupPad({
                 ? "Live transcript streams here while recording. Type freely to edit, or use At start / At end to queue inserts."
                 : "Tap the mic above to record, or type a transcript here..."
             }
+            wrapperClassName="flex min-h-0 flex-1 flex-col"
             className={cn(
-              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
               "text-base md:text-sm",
-              "focus:outline-none focus:ring-0",
+              "focus-visible:outline-none focus-visible:ring-0",
             )}
           />
         </UnifiedAgentContextMenu>
@@ -1966,25 +1988,26 @@ export default function CleanupPad({
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <UnifiedAgentContextMenu
-          sourceFeature="transcription-cleanup"
-          surfaceName="matrx-user/transcripts-cleanup"
+          {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => cleanTaRef.current}
-          isEditable
+          getApplicationScope={cleanGetScope}
           contextData={menuContextData("clean", responseValue)}
-          placementMode={{ "content-block": "hide" }}
           className="flex min-h-0 flex-1 flex-col"
           {...cleanHandlers}
         >
-          <textarea
+          <ProTextarea
             ref={cleanTaRef}
+            surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+            getApplicationScope={cleanGetScope}
             value={responseValue}
             onChange={(e) => handleResponseChange(e.target.value)}
             onFocus={handleCleanFocus}
             placeholder={responsePlaceholder}
+            wrapperClassName="flex min-h-0 flex-1 flex-col"
             className={cn(
-              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
               "text-base md:text-sm",
-              "focus:outline-none focus:ring-0",
+              "focus-visible:outline-none focus-visible:ring-0",
               cleanAi.phase === "error" && "text-destructive",
             )}
           />
@@ -2171,25 +2194,26 @@ export default function CleanupPad({
       {customToolbar}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <UnifiedAgentContextMenu
-          sourceFeature="transcription-cleanup"
-          surfaceName="matrx-user/transcripts-cleanup"
+          {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => customTaRef.current}
-          isEditable
+          getApplicationScope={customGetScope}
           contextData={menuContextData("custom", activeSlotValue)}
-          placementMode={{ "content-block": "hide" }}
           className="flex min-h-0 flex-1 flex-col"
           {...customHandlers}
         >
-          <textarea
+          <ProTextarea
             ref={customTaRef}
+            surfaceName={TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS.surfaceName}
+            getApplicationScope={customGetScope}
             value={activeSlotValue}
             onChange={(e) => handleCustomChange(e.target.value)}
             onFocus={handleCustomFocus}
             placeholder={customPlaceholder}
+            wrapperClassName="flex min-h-0 flex-1 flex-col"
             className={cn(
-              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed shadow-none",
               "text-base md:text-sm",
-              "focus:outline-none focus:ring-0",
+              "focus-visible:outline-none focus-visible:ring-0",
               activeAi.phase === "error" && "text-destructive",
             )}
           />

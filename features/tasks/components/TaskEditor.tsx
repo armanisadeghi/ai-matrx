@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Calendar,
@@ -43,6 +44,7 @@ import {
   selectSubtasksByParent,
   upsertTaskWithLevel,
 } from "@/features/agent-context/redux/tasksSlice";
+import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
@@ -69,6 +71,24 @@ import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded"
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import {
+  buildTasksContextData,
+  createTasksExtraSections,
+  TASKS_CONTEXT_MENU_PROPS,
+} from "@/features/tasks/agent-context/buildTasksContextData";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+
+/**
+ * The canonical agent context menu — heavy (pulls the unified-menu RPC graph),
+ * so it's code-split and never loaded on the server. Matches the Notes wiring.
+ */
+const UnifiedAgentContextMenu = dynamic(
+  () =>
+    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
+      default: m.UnifiedAgentContextMenu,
+    })),
+  { ssr: false },
+);
 
 type Priority = TaskPriority;
 
@@ -175,6 +195,22 @@ function TaskEditorInner({
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
   const operatingTaskId = useAppSelector(selectOperatingTaskId);
   const orgId = useAppSelector(selectOrganizationId);
+  const project = useAppSelector((s) =>
+    task?.project_id ? selectProjectById(s, task.project_id) : undefined,
+  );
+
+  // Live selection inside the description editor (read from the DOM at trigger
+  // time, mirrored to state so contextData refreshes for menu/agent runs).
+  const descriptionRef = useRef<HTMLTextAreaElement | null>(null);
+  const [descSelectionStart, setDescSelectionStart] = useState(0);
+  const [descSelectionEnd, setDescSelectionEnd] = useState(0);
+
+  const syncDescriptionSelection = useCallback(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    setDescSelectionStart(el.selectionStart);
+    setDescSelectionEnd(el.selectionEnd);
+  }, []);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -279,6 +315,50 @@ function TaskEditorInner({
   const completed = task.status === "completed";
   const isOperating = operatingTaskId === taskId;
 
+  // ── Surface scope (`matrx-user/tasks`) ────────────────────────────────────
+  // Pure map of the active task's live state → the manifest's scope helper.
+  const contextData = buildTasksContextData({
+    taskId,
+    title: effective.title,
+    description: effective.description,
+    selectionStart: descSelectionStart,
+    selectionEnd: descSelectionEnd,
+    status: task.status,
+    priority: effective.priority ?? null,
+    dueDate: effective.dueDate ?? null,
+    projectId: task.project_id ?? null,
+    projectName: project?.name ?? null,
+    subtasks: subtasks.map((s) => ({
+      id: s.id,
+      title: s.title,
+      status: s.status,
+    })),
+  });
+
+  // Plain function (NOT useCallback): it sits after the `if (!task)` early
+  // return, so a hook here would violate rules-of-hooks; React Compiler
+  // memoizes it anyway. Reads the live selection from the DOM at call time,
+  // not from render state.
+  const getApplicationScope = () => {
+    const el = descriptionRef.current;
+    const start = el?.selectionStart ?? descSelectionStart;
+    const end = el?.selectionEnd ?? descSelectionEnd;
+    const selectedText =
+      start !== end
+        ? effective.description.slice(
+            Math.min(start, end),
+            Math.max(start, end),
+          )
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el
+        ? { type: "editable", element: el, start, end }
+        : null,
+      contextData,
+    });
+  };
+
   const patch = <K extends keyof typeof draft>(
     key: K,
     value: (typeof draft)[K],
@@ -323,6 +403,15 @@ function TaskEditorInner({
   const handleToggleComplete = () => {
     dispatch(toggleTaskCompleteThunk({ taskId }));
   };
+
+  // Task-specific menu items (Save / toggle complete / Delete) wired to the
+  // live task — the core menu renders them; we only describe + supply handlers.
+  const tasksExtras = createTasksExtraSections({
+    onSave: () => void handleSave(),
+    onToggleComplete: handleToggleComplete,
+    onDelete: handleDelete,
+    completed,
+  });
 
   const handleCopyId = async () => {
     await navigator.clipboard.writeText(taskId);
@@ -417,15 +506,17 @@ function TaskEditorInner({
             )}
           </button>
 
-          <input
+          <ProInput
             value={effective.title}
             onChange={(e) => patch("title", e.target.value)}
             placeholder="Untitled task"
+            showCopyButton={false}
+            aria-label="Task title"
             className={cn(
-              "h-6 min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50",
+              "h-6 min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-foreground shadow-none outline-none placeholder:text-muted-foreground/50",
               completed && "text-muted-foreground line-through",
             )}
-            style={{ fontSize: "16px" }}
+            wrapperClassName="min-w-0 flex-1"
           />
 
           <EmbeddedToolbarButton
@@ -472,15 +563,17 @@ function TaskEditorInner({
             )}
           </button>
 
-          <input
+          <ProInput
             value={effective.title}
             onChange={(e) => patch("title", e.target.value)}
             placeholder="Untitled task"
+            showCopyButton={false}
+            aria-label="Task title"
             className={cn(
-              "flex-1 min-w-0 h-7 bg-transparent border-none outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground/50",
+              "flex-1 min-w-0 h-7 bg-transparent border-none shadow-none outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground/50",
               completed && "line-through text-muted-foreground",
             )}
-            style={{ fontSize: "16px" }}
+            wrapperClassName="flex-1 min-w-0"
           />
 
           <div className="flex items-center gap-0.5 shrink-0">
@@ -665,22 +758,65 @@ function TaskEditorInner({
             </PropertyRow>
           </section>
 
-          {/* Description — ProTextarea: floating label + voice dictation */}
-          <ProTextarea
-            value={effective.description}
-            onChange={(e) => patch("description", e.target.value)}
-            floatingLabel="Description"
-            autoGrow
-            minHeight={compact ? 72 : 120}
-            maxHeight={compact ? 220 : 400}
-            showCopyButton={!compact}
-            className={cn(
-              "resize-none border-border/60 bg-card/40 text-sm",
-              compact && "rounded-none border-x-0",
-            )}
-            wrapperClassName="w-full"
-            style={{ fontSize: "16px" }}
-          />
+          {/* Description — ProTextarea: floating label + voice dictation +
+              the canonical agent context menu (right-click → run a bound agent
+              on the active task with full `matrx-user/tasks` scope). */}
+          <UnifiedAgentContextMenu
+            {...TASKS_CONTEXT_MENU_PROPS}
+            extraSections={tasksExtras}
+            getTextarea={() => descriptionRef.current}
+            getApplicationScope={getApplicationScope}
+            onTextReplace={(next) => patch("description", next)}
+            onTextInsertBefore={(text) => {
+              const el = descriptionRef.current;
+              const at = el?.selectionStart ?? 0;
+              patch(
+                "description",
+                effective.description.slice(0, at) +
+                  text +
+                  "\n\n" +
+                  effective.description.slice(at),
+              );
+            }}
+            onTextInsertAfter={(text) => {
+              const el = descriptionRef.current;
+              const at = el?.selectionEnd ?? effective.description.length;
+              patch(
+                "description",
+                effective.description.slice(0, at) +
+                  "\n\n" +
+                  text +
+                  effective.description.slice(at),
+              );
+            }}
+            contextData={contextData}
+          >
+            <ProTextarea
+              ref={descriptionRef}
+              surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
+              getApplicationScope={getApplicationScope}
+              value={effective.description}
+              onChange={(e) => {
+                patch("description", e.target.value);
+                setDescSelectionStart(e.target.selectionStart);
+                setDescSelectionEnd(e.target.selectionEnd);
+              }}
+              onSelect={syncDescriptionSelection}
+              onKeyUp={syncDescriptionSelection}
+              onMouseUp={syncDescriptionSelection}
+              floatingLabel="Description"
+              autoGrow
+              minHeight={compact ? 72 : 120}
+              maxHeight={compact ? 220 : 400}
+              showCopyButton={!compact}
+              className={cn(
+                "resize-none border-border/60 bg-card/40 text-sm",
+                compact && "rounded-none border-x-0",
+              )}
+              wrapperClassName="w-full"
+              style={{ fontSize: "16px" }}
+            />
+          </UnifiedAgentContextMenu>
 
           {/* Labels — tight text chips; section icon only (no "Labels" header row) */}
           <div className="flex flex-wrap items-center gap-1 pl-1.5">
@@ -820,22 +956,32 @@ function TaskEditorInner({
                 <Loader2 className="size-3 animate-spin" /> Loading...
               </div>
             ) : comments.length > 0 ? (
-              <div className="mb-2 space-y-1.5 pl-1.5">
-                {comments.map((c) => (
-                  <div
-                    key={c.id}
-                    className="rounded-md border border-border/60 bg-card/40 p-2"
-                  >
-                    <p className="whitespace-pre-wrap text-xs text-foreground">
-                      {c.content}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <Clock className="size-2.5" />
-                      {new Date(c.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              // Presentational region — right-click the read-only comment
+              // thread to run an agent over the displayed text (no text-replace
+              // callbacks; this view is not editable).
+              <UnifiedAgentContextMenu
+                {...TASKS_CONTEXT_MENU_PROPS}
+                isEditable={false}
+                getApplicationScope={getApplicationScope}
+                contextData={contextData}
+              >
+                <div className="mb-2 space-y-1.5 pl-1.5">
+                  {comments.map((c) => (
+                    <div
+                      key={c.id}
+                      className="rounded-md border border-border/60 bg-card/40 p-2"
+                    >
+                      <p className="whitespace-pre-wrap text-xs text-foreground">
+                        {c.content}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Clock className="size-2.5" />
+                        {new Date(c.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </UnifiedAgentContextMenu>
             ) : null}
             <ProTextarea
               value={newComment}

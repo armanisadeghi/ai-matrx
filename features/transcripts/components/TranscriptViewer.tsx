@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useTranscriptsContext } from "../context/TranscriptsContext";
 import AdvancedTranscriptViewer, {
   TranscriptSegment,
@@ -28,9 +28,8 @@ import {
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { useToastManager } from "@/hooks/useToastManager";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { useFileSrc } from "@/features/files";
 import type { FileSource } from "@/features/files";
 import { Slider } from "@/components/ui/slider";
@@ -43,7 +42,13 @@ import {
 import { PromoteToStudioButton } from "@/features/transcript-studio/components/conversion/PromoteToStudioButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useTranscriptsSurfaceScope } from "@/features/transcripts/hooks/useTranscriptsSurfaceScope";
+import {
+  TRANSCRIPTS_CONTEXT_MENU_PROPS,
+  buildTranscriptsContextData,
+} from "@/features/transcripts/agent-context/buildTranscriptsContextData";
+import { createTranscriptsExtraSections } from "@/features/transcripts/agent-context/transcriptsExtraSections";
 
 export function TranscriptViewer() {
   const { activeTranscript, updateTranscript } = useTranscriptsContext();
@@ -65,6 +70,7 @@ export function TranscriptViewer() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement>(null);
   const segmentContainerRef = useRef<HTMLDivElement>(null);
+  const editContentRef = useRef<HTMLTextAreaElement>(null);
 
   // Build the `matrx-user/transcripts` surface scope. The builder snapshots
   // Redux/context state at call time, and reads live `currentTime` /
@@ -79,6 +85,57 @@ export function TranscriptViewer() {
     contentContainerRef: segmentContainerRef,
   });
   const surfaceScope = buildSurfaceScope();
+
+  // Presentational region: the user reads the rendered transcript. The browser
+  // text selection is captured live at click time (DOM selection, no editable
+  // element), and the surface scope flows in as `contextData`. Stable per the
+  // surface-pro-rollout recipe (the one sanctioned manual callback).
+  const getViewerApplicationScope = useCallback(
+    () =>
+      buildApplicationScopeFromMenuContext({
+        selectedText: window.getSelection?.()?.toString() ?? "",
+        selectionRange: null,
+        contextData: surfaceScope as unknown as Record<string, unknown>,
+      }),
+    [surfaceScope],
+  );
+
+  // Editable region: the inline transcript-body editor. Reads the live
+  // textarea selection at click time and builds the scope off the in-flight
+  // buffer so agent actions operate on exactly what's on screen.
+  const getEditorApplicationScope = useCallback(() => {
+    const el = editContentRef.current;
+    const start = el?.selectionStart ?? 0;
+    const end = el?.selectionEnd ?? start;
+    const text = el?.value ?? editContent;
+    const selectedText =
+      start !== end ? text.slice(Math.min(start, end), Math.max(start, end)) : "";
+    const contextData = buildTranscriptsContextData({
+      transcript: activeTranscript ?? null,
+      currentTime: audioRef.current?.currentTime ?? 0,
+      isPlaying: audioRef.current
+        ? !audioRef.current.paused && !audioRef.current.ended
+        : false,
+      playbackSpeed: audioRef.current?.playbackRate ?? 1,
+      selectionText: selectedText,
+      isEditingMetadata,
+    });
+    // The editable buffer is the plain in-flight text; the surface `content`
+    // baseline must reflect what the user is editing, not the timecoded
+    // display join. Keep every rich custom value, override only `content`.
+    contextData.content = text;
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el
+        ? { type: "editable", element: el, start, end }
+        : null,
+      contextData,
+    });
+  }, [activeTranscript, editContent, isEditingMetadata]);
+
+  const transcriptExtraSections = createTranscriptsExtraSections({
+    getTranscriptText: () => plainTranscriptText,
+  });
 
   // Playback speed options
   const speedOptions = [0.75, 1, 1.25, 1.5, 1.75, 2, 3];
@@ -234,6 +291,19 @@ export function TranscriptViewer() {
     setIsEditingContent(true);
   };
 
+  // Insert agent output relative to the caret in the inline content editor.
+  const insertEditContent = (text: string, position: "before" | "after") => {
+    const ta = editContentRef.current;
+    const base = ta?.value ?? editContent;
+    const start = ta?.selectionStart ?? base.length;
+    const end = ta?.selectionEnd ?? base.length;
+    const next =
+      position === "before"
+        ? `${base.slice(0, start)}${text}\n\n${base.slice(start)}`
+        : `${base.slice(0, end)}\n\n${text}${base.slice(end)}`;
+    setEditContent(next);
+  };
+
   const handleSaveContent = async () => {
     if (!activeTranscript) return;
     const trimmed = editContent.trim();
@@ -302,19 +372,18 @@ export function TranscriptViewer() {
       <div className="px-4 md:px-6 py-3 md:py-4 border-b border-border shrink-0">
         {isEditingMetadata ? (
           <div className="space-y-3">
-            <Input
+            <ProInput
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className="font-semibold text-base md:text-lg"
-              style={{ fontSize: "16px" }}
+              aria-label="Transcript title"
             />
-            <Textarea
+            <ProTextarea
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Description"
               rows={2}
               className="text-sm"
-              style={{ fontSize: "16px" }}
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleUpdateMetadata}>
@@ -524,14 +593,28 @@ export function TranscriptViewer() {
       >
         {isEditingContent ? (
           <div className="max-w-3xl mx-auto space-y-3">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              rows={16}
-              className="text-sm leading-relaxed min-h-[40dvh] resize-y"
-              style={{ fontSize: "16px" }}
-              disabled={contentSaveBusy}
-            />
+            <UnifiedAgentContextMenu
+              {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
+              isEditable
+              getTextarea={() => editContentRef.current}
+              getApplicationScope={getEditorApplicationScope}
+              onTextReplace={setEditContent}
+              onTextInsertBefore={(text) => insertEditContent(text, "before")}
+              onTextInsertAfter={(text) => insertEditContent(text, "after")}
+              extraSections={transcriptExtraSections}
+              contextData={surfaceScope as unknown as Record<string, unknown>}
+            >
+              <ProTextarea
+                ref={editContentRef}
+                surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
+                getApplicationScope={getEditorApplicationScope}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={16}
+                className="text-sm leading-relaxed min-h-[40dvh] resize-y"
+                disabled={contentSaveBusy}
+              />
+            </UnifiedAgentContextMenu>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -560,20 +643,15 @@ export function TranscriptViewer() {
           </div>
         ) : (
           <UnifiedAgentContextMenu
-            sourceFeature="transcripts"
-            surfaceName="matrx-user/transcripts"
+            {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
+            isEditable={false}
+            getApplicationScope={getViewerApplicationScope}
+            extraSections={transcriptExtraSections}
             // ApplicationScope.context is typed as object; the menu's
             // contextData.context is string. We don't populate `context`
             // here either way — surface values flow through the index
             // signature — so widen at the boundary.
             contextData={surfaceScope as unknown as Record<string, unknown>}
-            placementMode={{
-              "ai-action": "show",
-              "content-block": "hide",
-              "organization-tool": "show",
-              "user-tool": "show",
-              "quick-action": "show",
-            }}
           >
             <Card className="border-0 shadow-none bg-transparent">
               <CardContent className="p-0">

@@ -165,7 +165,11 @@ export const tasksManifest: SurfaceManifest = {
 export function createTasksScope(values: {
   selection?: string;
   content?: string;
-  context?: Record<string, unknown>;
+  // Allow the editor-surround blob (a string) as well as a structured bag,
+  // matching the Notes convention; the launcher normalizes a string `context`.
+  context?: Record<string, unknown> | string;
+  text_before?: string;
+  text_after?: string;
   active_task_id?: string;
   active_task_title?: string;
   active_task_description?: string;

@@ -66,6 +66,7 @@ behavior); otherwise items ride as ad-hoc context entries.
 
 ## Files
 
+- `agent-context/buildTranscriptsCleanupContextData.ts` — the shared surface contract for `matrx-user/transcripts-cleanup`: a PURE `buildTranscriptsCleanupContextData(args)` mapping live pad state → the manifest's `createTranscriptsCleanupScope` (value names can't drift), `withActivePane()` (overlay `content`/`active_pane`/`active_pane_text` per pane), `TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS` (the props every pane spreads onto `UnifiedAgentContextMenu`), and an optional `createTranscriptsCleanupExtraSections()`. `CleanupPad.buildScope()` reads its refs and calls the pure builder. Mirrors `features/notes/agent-context/`.
 - `hooks/useCleanupSession.ts` — session lifecycle + ALL persistence (list/create/load/delete, debounced saves, run audit). The only file that talks to `studioService`. Accepts `{ sessionId?, urlSync? }` for embedding (pin a host-owned session; skip URL read/write entirely).
 - `hooks/useAiPostProcess.ts` — any-agent launch + streaming state (one instance per output container).
 - `components/CleanupPad.tsx` — page shell: 3 resizable panels (sidebar │ transcript/clean │ custom), `<PageHeader>` portal title, mobile stacked + drawer. Layout cookies `panels:cleanup-h3` / `panels:cleanup-v` (server-read for first-paint sizes). **Embeddable** via OPTIONAL props (`sessionId`, `urlSync`, `variant="embedded"`, `sections`, `showNewSession`) — all defaulting to today's page behavior; embedded renders a chrome-free flex stack (no shell header, no panel cookies). Consumed embedded by the War Room Audio tab.
@@ -106,23 +107,38 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 
 ## Surfaces + context menu
 
-Every pane (Transcript / Clean / each Custom slot) is wrapped in
-`UnifiedAgentContextMenu` with `sourceFeature="transcription-cleanup"` and
-`surfaceName="matrx-user/transcripts-cleanup"` — right-click or select text
-and internal + user shortcuts work over the selection (textarea selection is
-captured by the menu), with replace/insert-before/insert-after writing back
-through the pane's change handler (and therefore persisting). Surface
-value-mappings (`agx_agent_surface`) drive variable resolution end-to-end.
-`content-block` placement is hidden (plain-text panes).
+Every pane (Transcript / Clean / each Custom slot) is BOTH wrapped in
+`UnifiedAgentContextMenu` AND rendered as a `ProTextarea` — all three carry
+the shared `TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS` (`sourceFeature="transcription-cleanup"`,
+`surfaceName="matrx-user/transcripts-cleanup"`, `placementMode` hides the
+plain-text `content-block`). Right-click (or the ProTextarea "…" menu) runs
+internal + user shortcuts AND the surface's bound agents (My / System / Shared /
+org) over the selection; replace/insert-before/insert-after write back through
+the pane's change handler (and therefore persist). The panes are always
+editable (`isEditable`); there is no read-only/preview region on this surface
+(the cleaned + custom outputs are themselves editable textareas), so no
+`isEditable={false}` mount exists. Surface value-mappings (`agx_agent_surface`)
+drive variable resolution end-to-end. Each pane now also carries an inline
+ProTextarea voice mic in addition to the central record pill (dictation into
+any pane); the record pill remains the primary recording pipeline.
 
-**Scope emitter invariant:** `CleanupPad.buildScope()` MUST emit every value
-declared in the manifest (36 values: container texts, session identity,
+**Live scope handoff:** every pane passes the SAME `getApplicationScope` to
+both its `UnifiedAgentContextMenu` and its `ProTextarea` — a stable callback
+that reads the pane textarea's selection AT CLICK TIME and folds it onto the
+pane's surface scope via `buildApplicationScopeFromMenuContext`
+(`features/context-menu-v2/utils/build-application-scope`). Scope is never
+stored in render state (no stale snapshots, no per-keystroke work).
+
+**Scope emitter invariant:** the shared pure builder
+`buildTranscriptsCleanupContextData()` (in `agent-context/`) MUST emit every
+value declared in the manifest (36 values: container texts, session identity,
 recording/mic state, agent + slot wiring, context items, derived counts)
 except the selection family (`selection` / `text_before` / `text_after`),
-which the menu captures at trigger time. Volatile render state reaches the
-builder via `scopeStateRef` (mirrored every render — no stale closures).
-`menuContextData(pane, paneText)` overlays `content` / `active_pane` /
-`active_pane_text` per pane. Add a manifest value → emit it in `buildScope`
+which the menu captures at trigger time. `CleanupPad.buildScope()` gathers the
+live values from refs (mirrored every render via `scopeStateRef` — no stale
+closures) and calls the builder; `menuContextData(pane, paneText)` =
+`withActivePane(...)` overlays `content` / `active_pane` / `active_pane_text`
+per pane. Add a manifest value → emit it in `buildTranscriptsCleanupContextData`
 in the same change.
 
 **Reference binding:** agent `Cleanup Surface Demo Reporter`
@@ -148,6 +164,23 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-23 — Surface Pro rollout completed for `matrx-user/transcripts-cleanup`.
+  Extracted `CleanupPad.buildScope`'s inline scope construction into the new
+  shared, PURE `agent-context/buildTranscriptsCleanupContextData.ts`
+  (`buildTranscriptsCleanupContextData` + `withActivePane` +
+  `TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS` + optional
+  `createTranscriptsCleanupExtraSections`), mirroring `features/notes/agent-context/`;
+  `buildScope` now reads refs and delegates. All three panes (Transcript /
+  Clean / Custom) swapped from raw `<textarea>` to `ProTextarea` with
+  `surfaceName` + `getApplicationScope`, so the agent "…" menu (bound agents +
+  voice + clean-up) is available inline, identical to the right-click menu.
+  Each pane now passes a stable per-pane `getApplicationScope` (live selection
+  read at click time via `buildApplicationScopeFromMenuContext`) to BOTH its
+  menu and its ProTextarea. No manifest / SurfaceValue change (the 36 values
+  were already declared + emitted); behavior preserved (controlled values,
+  focus-pause-on-edit, persistence, recording pipeline all unchanged). Note:
+  ProTextarea adds a per-pane inline voice mic alongside the central record
+  pill (no toggle exists to suppress it; record pill stays the primary path).
 - 2026-06-17 — Transcript / Clean / Custom panes are always freely editable:
   removed transcript `readOnly` during recording; live mic preview pauses while
   the transcript field is focused; Clean / Custom pin output on focus so

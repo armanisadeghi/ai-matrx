@@ -1,13 +1,7 @@
 // features/notes/components/NoteEditor.tsx
 "use client";
 
-import React, {
-  useEffect,
-  useState,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
   Save,
@@ -22,7 +16,8 @@ import {
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
@@ -37,11 +32,19 @@ import { getNoteMetadata } from "../types";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { useAllFolders } from "../utils/folderUtils";
 import { useNotesRedux } from "../hooks/useNotesRedux";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectNotesMap } from "../redux/selectors";
 import { cn } from "@/lib/utils";
 import { useToastManager } from "@/hooks/useToastManager";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
-// import { UnifiedAgentContextMenu } from '@/features/context-menu-v2';
+import type { EditorMode as SurfaceEditorMode } from "./NoteEditorCore";
+import {
+  buildNotesEditorContextData,
+  NOTES_EDITOR_CONTEXT_MENU_PROPS,
+} from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 
 // Dynamic imports for heavy components (only load when needed)
 const TuiEditorContent = dynamic(
@@ -68,6 +71,21 @@ const UnifiedAgentContextMenu = dynamic(
 );
 
 type EditorMode = "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
+
+// Note-specific menu items (Save / Export / Move / Delete) injected via
+// `extraSections` — built once at module scope, exactly as NotesDemoPanel does.
+const notesExtras = createNotesEditorExtraSections();
+
+// This editor's local mode names predate the canonical `matrx-user/notes`
+// surface vocabulary (`SurfaceEditorMode`). Map local → surface so the emitted
+// `editor_mode` SurfaceValue matches the manifest's declared enum.
+const SURFACE_EDITOR_MODE: Record<EditorMode, SurfaceEditorMode> = {
+  plain: "plain",
+  wysiwyg: "wysiwyg",
+  markdown: "markdown-split",
+  "matrx-split": "split",
+  preview: "preview",
+};
 
 interface NoteEditorProps {
   note: Note | null;
@@ -102,11 +120,16 @@ export function NoteEditor({
   const [localTags, setLocalTags] = useState<string[]>(note?.tags || []);
   const [localLabel, setLocalLabel] = useState(note?.label || "");
   const [editorMode, setEditorMode] = useState<EditorMode>("plain");
+  // Live textarea selection, mirrored into React so the surface scope reflects
+  // what the user is acting on (matches NotesDemoPanel's selection sync).
+  const [selectionStart, setSelectionStart] = useState(0);
+  const [selectionEnd, setSelectionEnd] = useState(0);
   const tuiEditorRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
-  const { refreshNotes, setActiveNoteDirty } = useNotesRedux();
+  const { refreshNotes, setActiveNoteDirty, openTabs } = useNotesRedux();
+  const notesMap = useAppSelector(selectNotesMap);
 
   // Use refs to avoid callback dependencies
   const localContentRef = useRef(localContent);
@@ -171,6 +194,54 @@ export function NoteEditor({
 
   // Get all folders (default + custom) - optimized to only recalculate when folder names change
   const availableFolders = useAllFolders(allNotes);
+
+  // ── Agent-context surface scope (`matrx-user/notes`) ─────────────────────
+  // Mirrors NotesDemoPanel: one `buildNotesEditorContextData` call feeds BOTH
+  // the context menu's `contextData` and the Pro inputs' `getApplicationScope`.
+  // Live selection is read from the textarea DOM at call time (not snapshotted).
+  const syncSelectionFromTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    setSelectionStart(el.selectionStart);
+    setSelectionEnd(el.selectionEnd);
+  }, []);
+
+  const contextData = buildNotesEditorContextData({
+    noteId: note?.id ?? "",
+    content: localContent,
+    selectionStart,
+    selectionEnd,
+    editorMode: SURFACE_EDITOR_MODE[editorMode],
+    noteRecord: note
+      ? {
+          label: note.label,
+          folder_name: note.folder_name ?? undefined,
+          tags: note.tags ?? undefined,
+          updated_at: note.updated_at ?? undefined,
+        }
+      : null,
+    isDirty,
+    isAutogenerated: note?.id === "__phantom__",
+    openTabs,
+    splitNoteId: null,
+    allFolders: availableFolders,
+    notesMap,
+  });
+
+  const getApplicationScope = useCallback(() => {
+    const el = textareaRef.current;
+    const start = el?.selectionStart ?? selectionStart;
+    const end = el?.selectionEnd ?? selectionEnd;
+    const selectedText =
+      start !== end
+        ? localContent.slice(Math.min(start, end), Math.max(start, end))
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
+      contextData,
+    });
+  }, [localContent, contextData, selectionEnd, selectionStart]);
 
   // Load editor mode from note metadata - update when metadata changes
   const noteMetadata = getNoteMetadata(note);
@@ -478,7 +549,7 @@ export function NoteEditor({
       <div className="flex-none border-b border-border bg-textured">
         {/* Note Title/Label - NEW */}
         <div className="px-3 pt-3 pb-2">
-          <input
+          <ProInput
             type="text"
             value={localLabel}
             onChange={(e) => handleLabelChange(e.target.value)}
@@ -497,7 +568,7 @@ export function NoteEditor({
                 }
               }
             }}
-            className="w-full bg-transparent border-0 text-lg font-semibold focus:outline-none focus:ring-0 placeholder:text-muted-foreground"
+            className="h-auto border-0 bg-transparent py-0 text-lg font-semibold shadow-none focus-visible:ring-0 placeholder:text-muted-foreground"
             placeholder="Untitled Note"
           />
         </div>
@@ -625,14 +696,11 @@ export function NoteEditor({
         {/* Editor Content with Unified Context Menu */}
         {editorMode === "plain" && (
           <UnifiedAgentContextMenu
-            sourceFeature="notes"
+            {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getTextarea={() => textareaRef.current}
-            contextData={{
-              content: localContent,
-              context: localContent,
-            }}
-            enabledPlacements={["ai-action", "content-block", "quick-action"]}
-            isEditable={true}
+            getApplicationScope={getApplicationScope}
+            contextData={contextData}
+            extraSections={notesExtras}
             onTextReplace={(newText) => {
               const textarea = textareaRef.current;
               if (textarea) {
@@ -690,25 +758,32 @@ export function NoteEditor({
               // Content block was inserted - already handled by content change
             }}
           >
-            <Textarea
+            <ProTextarea
               ref={textareaRef}
+              surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+              getApplicationScope={getApplicationScope}
               value={localContent}
-              onChange={(e) => handleContentChange(e.target.value)}
+              onChange={(e) => {
+                handleContentChange(e.target.value);
+                setSelectionStart(e.target.selectionStart);
+                setSelectionEnd(e.target.selectionEnd);
+              }}
+              onSelect={syncSelectionFromTextarea}
+              onKeyUp={syncSelectionFromTextarea}
+              onMouseUp={syncSelectionFromTextarea}
               placeholder="Start typing your note..."
-              className="absolute inset-0 w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50dvh]"
+              wrapperClassName="absolute inset-0 w-full h-full"
+              className="w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50dvh] shadow-none"
             />
           </UnifiedAgentContextMenu>
         )}
 
         {editorMode === "wysiwyg" && (
           <UnifiedAgentContextMenu
-            sourceFeature="notes"
-            contextData={{
-              content: localContent,
-              context: localContent,
-            }}
-            enabledPlacements={["ai-action", "content-block", "quick-action"]}
-            isEditable={true}
+            {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
+            getApplicationScope={getApplicationScope}
+            contextData={contextData}
+            extraSections={notesExtras}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
                 const editor = tuiEditorRef.current.getInstance();
@@ -749,13 +824,10 @@ export function NoteEditor({
 
         {editorMode === "markdown" && (
           <UnifiedAgentContextMenu
-            sourceFeature="notes"
-            contextData={{
-              content: localContent,
-              context: localContent,
-            }}
-            enabledPlacements={["ai-action", "content-block", "quick-action"]}
-            isEditable={true}
+            {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
+            getApplicationScope={getApplicationScope}
+            contextData={contextData}
+            extraSections={notesExtras}
             onTextReplace={(newText) => {
               if (tuiEditorRef.current?.getInstance) {
                 const editor = tuiEditorRef.current.getInstance();
@@ -805,18 +877,10 @@ export function NoteEditor({
 
         {editorMode === "preview" && (
           <UnifiedAgentContextMenu
-            sourceFeature="notes"
-            contextData={{
-              content: localContent,
-              context: localContent,
-            }}
-            enabledPlacements={[
-              "ai-action",
-              "content-block",
-              "quick-action",
-              "organization-tool",
-              "user-tool",
-            ]}
+            {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
+            isEditable={false}
+            getApplicationScope={getApplicationScope}
+            contextData={contextData}
           >
             <ScrollArea className="absolute inset-0 w-full h-full">
               <div className="p-6 pb-[50dvh] bg-textured">
