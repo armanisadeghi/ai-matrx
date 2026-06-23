@@ -61,7 +61,9 @@ inline views. One computation produces both representations.
 components/diff/
   DiffViewer.tsx              # ⭐ canonical headless core (engine router)
   text/
-    TextDiff.tsx              # light core: inline + split, word-level, toolbar
+    TextDiff.tsx              # light core: inline + split + highlight, word-level, toolbar
+    AnimatedDiffReveal.tsx    # single-pane human reader; animates a known edit landing
+    useDiffReveal.ts          # paced "fill the replacement in" reveal for a known before→after
     engine/
       types.ts                # DiffRow, InlineDiffLine, WordSegment, stats
       computeTextDiff.ts      # line LCS + inline/aligned builders + stats
@@ -198,3 +200,16 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 - 2026-06-15 — Added the light-engine `highlight` view (single-pane: new doc
   with changes tinted inline) to `TextDiff` + `DiffViewer`; Monaco falls back to
   inline. First consumer: working-doc `WorkingDocDiff` (Scribe + War Room).
+- 2026-06-23 — Animated diff reveal + engine word-pairing fix. Added
+  `text/useDiffReveal.ts` (paces a KNOWN before→after edit: hold on the removal,
+  then fill the replacement in char-by-char; inactive → final diff at once) and
+  `text/AnimatedDiffReveal.tsx` (single-pane human reader on `computeTextDiff` —
+  removed runs struck `destructive`, added runs `success`, surrounding text
+  plain; semantic tokens only). First consumer: the `ctx_patch` / working-doc
+  patch renderer (`PatchDiffInline`), which now renders instantly from the tool
+  args and animates the fill while live. Engine fix in `computeTextDiff`: change
+  blocks now collect added/removed lines in ANY order (was "removed* then
+  added*"), so a phrase inserted mid-line word-pairs correctly and tints only
+  the phrase — previously such pairs fell through to single-sided lines with no
+  intra-line segments (whole line tinted). `highlight` view tints switched from
+  raw `green/red-*` to `success`/`destructive` tokens.
