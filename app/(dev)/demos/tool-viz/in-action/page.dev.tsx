@@ -436,7 +436,17 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-const REAL_RUN_LIMIT = 60;
+const RUNS_PER_PAGE = 5;
+
+/** One row in the tool-picker left panel. */
+interface ToolItem {
+  toolName: string;
+  label: string;
+  /** DB run count for the current user (0 = no data yet). */
+  count: number;
+  hasCustomRenderer: boolean;
+  hasCuratedScript: boolean;
+}
 
 /**
  * Resolve the current user id WITHOUT a network round-trip. Prefer the Redux
@@ -454,63 +464,115 @@ async function resolveUserId(
   return data.session?.user?.id ?? null;
 }
 
-/**
- * Fetch the signed-in user's recent successful runs with non-null output.
- *
- * Scoping: explicit `user_id` filter (resolved locally via {@link resolveUserId})
- * PLUS Supabase RLS (`cx_tool_call_select` = `user_id = auth.uid() OR
- * has_permission(...)`), so a user only ever sees their own (or shared) rows.
- * Returns [] on any miss so the caller shows a clean empty state rather than
- * dead-ending.
- */
-async function fetchRealRuns(reduxUserId: string | null): Promise<RealRun[]> {
-  const userId = await resolveUserId(reduxUserId);
-  if (!userId) return [];
-
-  const query = supabase
-    .from("cx_tool_call")
-    .select(
-      "call_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
-    )
-    .eq("user_id", userId)
-    .eq("success", true)
-    .not("output", "is", null)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(REAL_RUN_LIMIT);
-
-  // Race against a hard timeout so a slow/hung round-trip can never strand the
-  // picker on "Loading…" — it surfaces the empty state instead. (Loud recovery:
-  // a timeout means the DB path is unhealthy.)
-  const result = await Promise.race([
+/** Race any Supabase query against a 6 s hard timeout. */
+async function withTimeout<T extends { data: unknown; error: unknown }>(
+  query: PromiseLike<T>,
+  label: string,
+): Promise<T> {
+  return Promise.race([
     query,
-    new Promise<{ data: null; error: { message: string } }>((resolve) =>
+    new Promise<T>((resolve) =>
       setTimeout(
         () =>
           resolve({
             data: null,
-            error: { message: "real-runs fetch timed out" },
-          }),
+            error: { message: `${label} timed out` },
+          } as T),
         6000,
       ),
     ),
   ]);
-  const { data, error } = result;
+}
+
+/**
+ * Fetch every tool_name the user has ever run successfully (non-null output),
+ * deduplicate on the client, and return a Map<toolName, count>.
+ * Fetches up to 1 000 rows (tool_name only — tiny payload) so we get a true
+ * distinct catalogue rather than just the last N.
+ */
+async function fetchToolSummary(
+  reduxUserId: string | null,
+): Promise<Map<string, number>> {
+  const userId = await resolveUserId(reduxUserId);
+  if (!userId) return new Map();
+
+  const { data, error } = await withTimeout(
+    supabase
+      .from("cx_tool_call")
+      .select("tool_name")
+      .eq("user_id", userId)
+      .eq("success", true)
+      .not("output", "is", null)
+      .is("deleted_at", null)
+      .limit(1000),
+    "tool-summary fetch",
+  );
 
   if (error || !data) {
     if (error)
       console.warn(
-        "[tool-viz/in-action] real-runs fetch failed:",
-        error.message,
+        "[tool-viz/in-action] tool summary fetch failed:",
+        (error as { message?: string })?.message ?? error,
       );
-    return [];
+    return new Map();
   }
 
+  const counts = new Map<string, number>();
+  for (const row of data as { tool_name: string }[]) {
+    counts.set(row.tool_name, (counts.get(row.tool_name) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * Fetch a page of real runs for one specific tool name.
+ * Fetches RUNS_PER_PAGE + 1 to detect whether more pages exist.
+ */
+async function fetchRunsForTool(
+  reduxUserId: string | null,
+  toolName: string,
+  page: number,
+): Promise<{ runs: RealRun[]; hasMore: boolean }> {
+  const userId = await resolveUserId(reduxUserId);
+  if (!userId) return { runs: [], hasMore: false };
+
+  const from = page * RUNS_PER_PAGE;
+  const to = from + RUNS_PER_PAGE; // one extra to detect hasMore
+
+  const { data, error } = await withTimeout(
+    supabase
+      .from("cx_tool_call")
+      .select(
+        "call_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
+      )
+      .eq("user_id", userId)
+      .eq("tool_name", toolName)
+      .eq("success", true)
+      .not("output", "is", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .range(from, to),
+    "tool-runs fetch",
+  );
+
+  if (error || !data) {
+    if (error)
+      console.warn(
+        "[tool-viz/in-action] tool runs fetch failed:",
+        (error as { message?: string })?.message ?? error,
+      );
+    return { runs: [], hasMore: false };
+  }
+
+  const rows = data as CxToolCallRow[];
+  const hasMore = rows.length > RUNS_PER_PAGE;
+  const pageRows = rows.slice(0, RUNS_PER_PAGE);
+
   const runs: RealRun[] = [];
-  for (const row of data as CxToolCallRow[]) {
+  for (const row of pageRows) {
     const record = rowToRecord(row);
     const entry = cxToolCallToLifecycleEntry(record);
-    if (entry.result == null) continue; // unparseable / empty output — skip
+    if (entry.result == null) continue;
     const args =
       entry.arguments && typeof entry.arguments === "object"
         ? entry.arguments
@@ -530,7 +592,7 @@ async function fetchRealRuns(reduxUserId: string | null): Promise<RealRun[]> {
       },
     });
   }
-  return runs;
+  return { runs, hasMore };
 }
 
 // ─── A single streamed tool call ────────────────────────────────────────────
@@ -899,7 +961,7 @@ function ModeToggle({
       {tab(
         "real",
         realCount != null
-          ? `Real saved runs (${realCount})`
+          ? `Real saved runs (${realCount} tool${realCount === 1 ? "" : "s"})`
           : "Real saved runs",
         <Database className="h-3.5 w-3.5" />,
       )}
@@ -912,48 +974,258 @@ function ModeToggle({
   );
 }
 
-// ─── Real saved runs picker ──────────────────────────────────────────────────
+// ─── Real saved runs panel ───────────────────────────────────────────────────
+// Two-column layout:
+//   Left  — full catalogue of known tools (registry + scripts + user's DB tools),
+//            sorted by run count desc. Tools with no data are greyed out.
+//   Right — paginated run list for the selected tool (5 per page).
 
-function RealRunPicker({
-  runs,
-  selectedCallId,
-  onSelect,
+function RealRunsPanel({
+  reduxUserId,
+  onSelectSample,
+  onToolCountChange,
 }: {
-  runs: RealRun[];
-  selectedCallId: string | null;
-  onSelect: (callId: string) => void;
+  reduxUserId: string | null;
+  onSelectSample: (sample: Sample | null) => void;
+  onToolCountChange: (count: number) => void;
 }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Database className="h-4 w-4 text-primary" />
-        Your recent tool runs — pick one to replay it through the chat turn.
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [dbCounts, setDbCounts] = useState<Map<string, number>>(new Map());
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [toolRuns, setToolRuns] = useState<RealRun[]>([]);
+  const [runsPage, setRunsPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [runsLoading, setRunsLoading] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+
+  // Keep the parent callbacks in refs so they never re-trigger the data
+  // effects. The parent recreates these on every render; if they sat in the
+  // effect dependency arrays the runs effect would fetch → onSelectSample →
+  // parent re-render → new callback identity → fetch again, forever.
+  const onSelectSampleRef = useRef(onSelectSample);
+  const onToolCountChangeRef = useRef(onToolCountChange);
+  useEffect(() => {
+    onSelectSampleRef.current = onSelectSample;
+    onToolCountChangeRef.current = onToolCountChange;
+  });
+
+  // One-time summary load — what tools has this user actually run?
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    fetchToolSummary(reduxUserId).then((counts) => {
+      if (cancelled) return;
+      setDbCounts(counts);
+      setSummaryLoading(false);
+      onToolCountChangeRef.current(counts.size);
+      // Auto-select the tool with the most runs.
+      const top =
+        [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      if (top) setSelectedTool(top);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [reduxUserId]);
+
+  // Fetch (or clear) runs whenever the selected tool or page changes.
+  useEffect(() => {
+    if (!selectedTool) return;
+    const count = dbCounts.get(selectedTool) ?? 0;
+    if (count === 0) {
+      setToolRuns([]);
+      setHasMore(false);
+      setRunsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setRunsLoading(true);
+    fetchRunsForTool(reduxUserId, selectedTool, runsPage).then(
+      ({ runs, hasMore: more }) => {
+        if (cancelled) return;
+        setToolRuns((prev) => (runsPage === 0 ? runs : [...prev, ...runs]));
+        setHasMore(more);
+        setRunsLoading(false);
+        if (runsPage === 0 && runs.length > 0) {
+          setSelectedCallId(runs[0].callId);
+          onSelectSampleRef.current(runs[0].sample);
+        }
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTool, runsPage, reduxUserId, dbCounts]);
+
+  // Build the full ordered tool list: data tools first (by count), then known
+  // tools with no data (registry + scripts), alphabetically within each group.
+  const registeredNames = useMemo(
+    () => new Set(Object.keys(toolRendererRegistry)),
+    [],
+  );
+  const scriptedNames = useMemo(() => new Set(SCRIPTS.map((s) => s.name)), []);
+
+  const allTools = useMemo((): ToolItem[] => {
+    const seen = new Set<string>();
+    const items: ToolItem[] = [];
+    const add = (toolName: string) => {
+      if (seen.has(toolName)) return;
+      seen.add(toolName);
+      items.push({
+        toolName,
+        label: getToolDisplayName(toolName),
+        count: dbCounts.get(toolName) ?? 0,
+        hasCustomRenderer: registeredNames.has(toolName),
+        hasCuratedScript: scriptedNames.has(toolName),
+      });
+    };
+    // Group 1: tools with real data, most-used first.
+    [...dbCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([name]) => add(name));
+    // Group 2: known tools with no data yet, alphabetically.
+    [...registeredNames].sort().forEach(add);
+    [...scriptedNames].sort().forEach(add);
+    return items;
+  }, [dbCounts, registeredNames, scriptedNames]);
+
+  const handleToolSelect = (toolName: string) => {
+    if (toolName === selectedTool) return;
+    setSelectedTool(toolName);
+    setRunsPage(0);
+    setToolRuns([]);
+    setSelectedCallId(null);
+    onSelectSample(null);
+  };
+
+  const handleRunSelect = (run: RealRun) => {
+    setSelectedCallId(run.callId);
+    onSelectSample(run.sample);
+  };
+
+  if (summaryLoading) {
+    return (
+      <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading tool catalogue…
       </div>
-      <div className="max-h-72 overflow-y-auto rounded-md border border-border bg-card">
-        {runs.map((run) => {
-          const selected = run.callId === selectedCallId;
-          return (
-            <button
-              key={run.callId}
-              type="button"
-              onClick={() => onSelect(run.callId)}
-              className={
-                "flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 transition-colors " +
-                (selected ? "bg-accent" : "hover:bg-muted")
-              }
-            >
-              <span className="min-w-28 shrink-0 text-sm font-medium text-foreground">
-                {run.label}
-              </span>
-              <span className="flex-1 truncate text-xs text-muted-foreground">
-                {run.snippet}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {relativeTime(run.createdAt)}
-              </span>
-            </button>
-          );
-        })}
+    );
+  }
+
+  const toolsWithData = allTools.filter((t) => t.count > 0).length;
+
+  return (
+    <div className="flex gap-3">
+      {/* Left panel — full tool catalogue */}
+      <div className="flex w-52 shrink-0 flex-col gap-0.5 rounded-md border border-border bg-card p-1.5">
+        <p className="px-1.5 pb-0.5 pt-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Tools{toolsWithData > 0 ? ` · ${toolsWithData} with data` : ""}
+        </p>
+        <div className="max-h-72 overflow-y-auto">
+          {allTools.map((tool) => {
+            const active = selectedTool === tool.toolName;
+            const hasData = tool.count > 0;
+            return (
+              <button
+                key={tool.toolName}
+                type="button"
+                onClick={() => handleToolSelect(tool.toolName)}
+                className={
+                  "flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-xs transition-colors " +
+                  (active
+                    ? "bg-primary text-primary-foreground"
+                    : hasData
+                      ? "text-foreground hover:bg-muted"
+                      : "text-muted-foreground/50 hover:bg-muted/50")
+                }
+              >
+                <span className="flex-1 truncate">{tool.label}</span>
+                {hasData && (
+                  <span
+                    className={
+                      "shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium " +
+                      (active
+                        ? "bg-white/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground")
+                    }
+                  >
+                    {tool.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Right panel — runs for the selected tool */}
+      <div className="flex flex-1 flex-col gap-1.5">
+        {!selectedTool ? (
+          <p className="pt-2 text-sm text-muted-foreground">
+            Select a tool on the left to see its saved runs.
+          </p>
+        ) : (dbCounts.get(selectedTool) ?? 0) === 0 ? (
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+            No saved runs for{" "}
+            <strong>{getToolDisplayName(selectedTool)}</strong> yet.
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">
+                {getToolDisplayName(selectedTool)}
+              </span>{" "}
+              — pick a run to replay
+            </p>
+            <div className="rounded-md border border-border bg-card">
+              {runsLoading && toolRuns.length === 0 ? (
+                <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading runs…
+                </div>
+              ) : toolRuns.length === 0 ? (
+                <div className="p-3 text-sm text-muted-foreground">
+                  No valid runs found.
+                </div>
+              ) : (
+                toolRuns.map((run) => {
+                  const selected = run.callId === selectedCallId;
+                  return (
+                    <button
+                      key={run.callId}
+                      type="button"
+                      onClick={() => handleRunSelect(run)}
+                      className={
+                        "flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 transition-colors " +
+                        (selected ? "bg-accent" : "hover:bg-muted")
+                      }
+                    >
+                      <span className="flex-1 truncate text-xs text-muted-foreground">
+                        {run.snippet}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {relativeTime(run.createdAt)}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {(hasMore || (runsLoading && toolRuns.length > 0)) && (
+              <button
+                type="button"
+                onClick={() => setRunsPage((p) => p + 1)}
+                disabled={runsLoading}
+                className="flex items-center gap-1.5 self-start rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {runsLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : null}
+                Load more runs…
+              </button>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -966,35 +1238,23 @@ export default function ToolInActionPage() {
   const [speed, setSpeed] = useState(1.2);
 
   // Current user id from Redux (instant when the shell has hydrated it). On the
-  // `(dev)/demos` route this may be null — `fetchRealRuns` then falls back to
-  // the local `auth.getSession()` read, so the query still scopes correctly.
+  // `(dev)/demos` route this may be null — resolveUserId() falls back to a
+  // local session read, so the query still scopes correctly.
   const reduxUserId = useAppSelector(selectUserId);
 
-  // ── Real saved runs ──
-  const [realRuns, setRealRuns] = useState<RealRun[] | null>(null); // null = loading
-  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  // ── Real saved runs (managed by RealRunsPanel) ──
+  // The panel owns all fetching; it hands us the selected sample + tool count.
+  const [realSample, setRealSample] = useState<Sample | null>(null);
+  const [realToolCount, setRealToolCount] = useState<number | null>(null);
+  // Key used to remount StreamedTurn when the selection changes. We derive it
+  // from a running counter inside the panel via a stable ref trick — instead we
+  // just track a simple counter here that increments whenever realSample changes.
+  const [realSampleKey, setRealSampleKey] = useState(0);
 
-  useEffect(() => {
-    let cancelled = false;
-    setRealRuns(null);
-    fetchRealRuns(reduxUserId)
-      .then((runs) => {
-        if (cancelled) return;
-        setRealRuns(runs);
-        setSelectedCallId(runs[0]?.callId ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setRealRuns([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reduxUserId]);
-
-  const selectedRun = useMemo(
-    () => realRuns?.find((r) => r.callId === selectedCallId) ?? null,
-    [realRuns, selectedCallId],
-  );
+  const handleSelectSample = (s: Sample | null) => {
+    setRealSample(s);
+    if (s) setRealSampleKey((k) => k + 1);
+  };
 
   // ── Synthetic scenarios ──
   // Tools with a registered inline renderer first (custom UI), then the rest.
@@ -1015,7 +1275,7 @@ export default function ToolInActionPage() {
 
   // ── The active sample driving the turn ──
   const sample: Sample | null = useMemo(() => {
-    if (mode === "real") return selectedRun?.sample ?? null;
+    if (mode === "real") return realSample;
     if (!syntheticScript) return null;
     return {
       toolName: syntheticScript.name,
@@ -1023,10 +1283,7 @@ export default function ToolInActionPage() {
       result: syntheticScript.syntheticResult,
       isReal: false,
     };
-  }, [mode, selectedRun, syntheticScript]);
-
-  const realLoading = realRuns === null;
-  const realEmpty = realRuns !== null && realRuns.length === 0;
+  }, [mode, realSample, syntheticScript]);
 
   return (
     <div className="min-h-dvh bg-background">
@@ -1044,39 +1301,14 @@ export default function ToolInActionPage() {
         </header>
 
         {/* Mode toggle — Real saved runs (default) vs Synthetic scenarios. */}
-        <ModeToggle
-          mode={mode}
-          onChange={setMode}
-          realCount={realRuns?.length ?? null}
-        />
+        <ModeToggle mode={mode} onChange={setMode} realCount={realToolCount} />
 
         {mode === "real" ? (
-          realLoading ? (
-            <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading your saved tool runs…
-            </div>
-          ) : realEmpty ? (
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-sm text-muted-foreground">
-              You don&apos;t have any saved tool runs yet. Once you chat with an
-              agent that calls tools, your real runs show up here. In the
-              meantime, switch to{" "}
-              <button
-                type="button"
-                onClick={() => setMode("synthetic")}
-                className="font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Synthetic scenarios
-              </button>{" "}
-              to preview the experience.
-            </div>
-          ) : (
-            <RealRunPicker
-              runs={realRuns ?? []}
-              selectedCallId={selectedCallId}
-              onSelect={setSelectedCallId}
-            />
-          )
+          <RealRunsPanel
+            reduxUserId={reduxUserId}
+            onSelectSample={handleSelectSample}
+            onToolCountChange={setRealToolCount}
+          />
         ) : (
           // Synthetic scenarios — the curated eight.
           <div className="flex flex-wrap items-center gap-2">
@@ -1104,11 +1336,10 @@ export default function ToolInActionPage() {
 
         {sample ? (
           <StreamedTurn
-            // Remount on sample change so the player resets cleanly. For real
-            // runs the callId is unique per row; for synthetic, the tool name.
+            // Remount on sample change so the player resets cleanly.
             key={
               mode === "real"
-                ? `real:${selectedCallId}`
+                ? `real:${realSampleKey}`
                 : `synthetic:${syntheticName}`
             }
             sample={sample}
