@@ -23,10 +23,13 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
+import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createWarRoomSession } from "@/features/war-room/redux/thunks";
 import { createNewNote } from "@/features/notes/redux/thunks";
+import { createDocument } from "@/features/data-tables/document-service";
+import { createWorkbook } from "@/features/data-tables/workbook-service";
 import type { ShellNavActionId } from "../constants/nav-data";
 
 export type ShellNavActionHandlers = Record<ShellNavActionId, () => void>;
@@ -35,6 +38,7 @@ export function useNavActions(): ShellNavActionHandlers {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
+  const openPicklistManager = useOpenPicklistManagerV2Window();
 
   return {
     "create-project": () => {
@@ -63,6 +67,35 @@ export function useNavActions(): ShellNavActionHandlers {
           toast.error("Couldn't create the note");
         }
       })();
+    },
+    "create-document": () => {
+      // Mirrors the /documents page "New" button: create a blank cloud doc,
+      // then open it.
+      void (async () => {
+        const res = await createDocument({ name: "Untitled document" });
+        if (res.success && res.data) {
+          router.push(`/documents/${res.data.id}`);
+        } else {
+          toast.error(res.error ?? "Couldn't create the document");
+        }
+      })();
+    },
+    "create-workbook": () => {
+      // Mirrors the /workbooks page "New" button: create a blank workbook,
+      // then open it.
+      void (async () => {
+        const res = await createWorkbook({ name: "Untitled workbook" });
+        if (res.success && res.data) {
+          router.push(`/workbooks/${res.data.id}`);
+        } else {
+          toast.error(res.error ?? "Couldn't create the workbook");
+        }
+      })();
+    },
+    "create-picklist": () => {
+      // Opens the canonical Pick List manager (browse view) where lists are
+      // created and edited.
+      openPicklistManager({});
     },
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Building2,
   Plus,
@@ -31,8 +32,13 @@ import { filterAndSortBySearch } from "@/utils/search-scoring";
  * - Loading and empty states
  */
 export function OrganizationList() {
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // Open the create modal when arriving via `?create=1` (the shell's "New Org"
+  // nav action). Reuses the canonical modal — no parallel create UI.
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(
+    () => searchParams?.get("create") === "1",
+  );
 
   const { organizations, loading, error, refresh } = useUserOrganizations();
 

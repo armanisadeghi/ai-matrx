@@ -24,7 +24,10 @@ export type ShellNavActionId =
   | "create-project"
   | "create-task"
   | "create-war-room"
-  | "create-note";
+  | "create-note"
+  | "create-document"
+  | "create-workbook"
+  | "create-picklist";
 
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "sidebar",
@@ -267,6 +270,13 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Plus",
         action: "create-note",
       },
+      {
+        // Creates a blank cloud document in place, then opens it.
+        label: "New Document",
+        href: "/documents",
+        iconName: "Plus",
+        action: "create-document",
+      },
     ],
   },
   {
@@ -316,6 +326,20 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Plus",
         actionItem: true,
       },
+      {
+        // Creates a blank workbook in place, then opens it.
+        label: "New Workbook",
+        href: "/workbooks",
+        iconName: "Plus",
+        action: "create-workbook",
+      },
+      {
+        // Opens the Pick List manager (create + edit) in place.
+        label: "New Pick List",
+        href: "/lists",
+        iconName: "Plus",
+        action: "create-picklist",
+      },
     ],
   },
   {
@@ -361,6 +385,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "cyan",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider. `?create=1` opens
+      // the canonical Create Organization modal on the launcher page.
+      {
+        label: "New Org",
+        href: "/organizations?create=1",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },
@@ -764,6 +796,14 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
+      },
+      // Actions — collected at the bottom below a divider. `?create=1` opens
+      // the canonical Create Sandbox modal on the sandbox list page.
+      {
+        label: "New Sandbox",
+        href: "/sandbox?create=1",
+        iconName: "Plus",
+        actionItem: true,
       },
     ],
   },

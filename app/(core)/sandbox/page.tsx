@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Container,
   Plus,
@@ -85,7 +85,13 @@ export default function SandboxListPage() {
     deleteInstance,
   } = useSandboxInstances();
 
-  const [createOpen, setCreateOpen] = useState(false);
+  // Open the create modal when arriving via `?create=1` (the shell's "New
+  // Sandbox" nav action). Reuses the canonical modal — no parallel create UI.
+  const searchParams = useSearchParams();
+  const [createOpen, setCreateOpen] = useState(
+    () => searchParams?.get("create") === "1",
+  );
+
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState(false);
