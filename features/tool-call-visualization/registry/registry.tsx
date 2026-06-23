@@ -27,10 +27,8 @@ import {
 } from "../renderers/seo-meta-tags";
 import { SeoMetaTitlesInline } from "../renderers/seo-meta-titles";
 import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions";
-import {
-  DeepResearchInline,
-  deepResearchOverlayTabs,
-} from "../renderers/deep-research";
+import { ResearchInline } from "../renderers/research/ResearchInline";
+import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search";
 import { RandomWheelInline } from "../renderers/random-wheel";
@@ -357,8 +355,8 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Research failed",
     },
     resultsLabel: "Research Results",
-    InlineComponent: DeepResearchInline,
-    OverlayTabs: deepResearchOverlayTabs,
+    InlineComponent: ResearchInline,
+    OverlayTabs: researchOverlayTabs,
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const query = getArg<string>(entry, "query");
@@ -388,8 +386,8 @@ export const toolRendererRegistry: ToolRegistry = {
       errorPrefix: "Research failed",
     },
     resultsLabel: "Research Results",
-    InlineComponent: DeepResearchInline,
-    OverlayTabs: deepResearchOverlayTabs,
+    InlineComponent: ResearchInline,
+    OverlayTabs: researchOverlayTabs,
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const query = getArg<string>(entry, "query");

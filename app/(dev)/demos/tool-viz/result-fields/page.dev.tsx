@@ -26,6 +26,8 @@ import { SearchInline } from "@/features/tool-call-visualization/renderers/searc
 import { SearchOverlay } from "@/features/tool-call-visualization/renderers/search/SearchOverlay";
 import { ScrapeInline } from "@/features/tool-call-visualization/renderers/scrape/ScrapeInline";
 import { ScrapeOverlay } from "@/features/tool-call-visualization/renderers/scrape/ScrapeOverlay";
+import { ResearchInline } from "@/features/tool-call-visualization/renderers/research/ResearchInline";
+import { SubagentReportBlock } from "@/features/tool-call-visualization/renderers/research/SubagentReportBlock";
 import {
     buildResearchRecording,
     buildScrapeRecording,
@@ -449,6 +451,83 @@ const RESEARCH_ENTRY = researchEntry("research_web");
 const RESEARCH_RECORDING = buildResearchRecording(RESEARCH_RESULT, {
     query: "best dietary sources to balance omega fatty acids 2026",
 });
+
+// ─── Research WITH a curated report (Wave 3 streaming report block) ──────────
+//
+// Same per-query result groups as RESEARCH_RESULT, plus the "# Curated Research
+// Results" section the research sub-agent writes (the markdown report parseSearch
+// surfaces as `report`). Drives the SubagentReportBlock — the streaming,
+// auto-scrolling, scroll-locked, collapsible report.
+
+const RESEARCH_REPORT = `# Curated Research Results
+
+The following is the result of synthesizing the sources above.
+
+## Bottom line
+
+For most people in 2026, the best way to balance omega fatty acids is to **prioritize EPA/DHA from marine sources** while moderating omega-6 intake — the absolute *level* of long-chain omega-3s matters more than chasing a specific omega-6:omega-3 ratio.
+
+## Best sources, ranked
+
+1. **Fatty fish** (salmon, mackerel, sardines) — the richest dietary EPA + DHA, highest bioavailability.
+2. **Algae oil** — the standout for plant-based eaters: the only source providing *preformed* EPA and DHA, and the most sustainable per the 2026 Nature analysis.
+3. **Walnuts, flax, chia** — supply ALA, but conversion to EPA/DHA is inefficient (5–10%), so treat them as a complement, not a replacement.
+
+## The ratio debate
+
+Recent work (Frontiers, 2026) challenges the long-held omega-6:omega-3 *ratio* hypothesis, arguing that **raising absolute EPA/DHA** lowers inflammatory markers regardless of the ratio. A meta-analysis of 42 trials supports prioritizing intake over ratio engineering.
+
+## Practical guidance
+
+- Aim for 2–3 servings of fatty fish per week, **or** a daily algae-oil supplement (250–500 mg EPA+DHA) if you don't eat fish.
+- Don't obsess over cutting all omega-6 — focus on adding omega-3s.
+- Choose third-party-tested supplements (NSF, ConsumerLab) for purity and freshness.
+
+## Next steps:
+- Compare specific algae-oil brands by EPA/DHA density.
+`;
+
+const RESEARCH_REPORT_RESULT = `${RESEARCH_RESULT}\n\n${RESEARCH_REPORT}`;
+
+const RESEARCH_REPORT_ARGS = {
+    query: "best dietary sources to balance omega fatty acids 2026",
+};
+
+function researchReportEntry(toolName: string, callId: string): ToolLifecycleEntry {
+    return {
+        callId,
+        toolName,
+        displayName: "Deep Research",
+        status: "completed",
+        arguments: RESEARCH_REPORT_ARGS,
+        startedAt: "2026-06-22T10:00:00.000Z",
+        completedAt: "2026-06-22T10:00:12.000Z",
+        latestMessage: null,
+        latestData: null,
+        result: RESEARCH_REPORT_RESULT,
+        resultPreview: null,
+        errorType: null,
+        errorMessage: null,
+        isDelegated: false,
+        events: [],
+    };
+}
+
+const RESEARCH_REPORT_ENTRY = researchReportEntry("research_web", "research-report-done");
+const RESEARCH_REPORT_RECORDING = buildResearchRecording(
+    RESEARCH_REPORT_RESULT,
+    RESEARCH_REPORT_ARGS,
+);
+
+// STATIC mid-stream snapshot — status "progress" with the FULL report already
+// in `result`. The report block paces it client-side (auto-scroll + scroll
+// LOCKED) without the simulator timer, so the streaming-report path is provable
+// even when Fast Refresh is thrashing the Play demo.
+const RESEARCH_STREAMING_SNAPSHOT: ToolLifecycleEntry = {
+    ...researchReportEntry("research_web", "research-report-streaming"),
+    status: "progress",
+    completedAt: null,
+};
 
 // ─── Web-search fixture (3 parallel queries, ~5 results each) ───────────────
 //
@@ -1070,6 +1149,59 @@ function LiveScrapeSection() {
     );
 }
 
+/**
+ * Live research (press Play) — the Wave-3 RESEARCH renderer. LIVE reuses the
+ * Wave 1 search conveyor + Wave 2 scrape activity (driven by events) so the
+ * sub-agent never sits still, and the curated report STREAMS into the
+ * SubagentReportBlock (auto-scrolling, scroll-locked, collapsible). On
+ * completion the report settles into a user-controllable shape.
+ */
+function LiveResearchSection() {
+    const [playKey, setPlayKey] = useState(0);
+    const hasPlayed = playKey > 0;
+    const simEntry = useSimulatedToolEntry(hasPlayed ? RESEARCH_REPORT_RECORDING : null, { playKey });
+
+    const statusVariant =
+        simEntry.status === "completed"
+            ? "default"
+            : simEntry.status === "error"
+              ? "destructive"
+              : "secondary";
+    const statusLabel = !hasPlayed ? "idle" : simEntry.status;
+
+    return (
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Live research + streaming report (press Play)
+                </h2>
+                <Button size="sm" onClick={() => setPlayKey((k) => k + 1)} className="gap-1.5">
+                    {hasPlayed ? <RotateCcw className="size-3.5" /> : <Play className="size-3.5" />}
+                    {hasPlayed ? "Replay" : "Play"}
+                </Button>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                {simEntry.latestMessage ? (
+                    <span className="text-xs text-muted-foreground">{simEntry.latestMessage}</span>
+                ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+                LIVE: the search conveyor + browsing activity keep the sub-agent visibly working; the curated report
+                then streams into a distinct, slightly-narrower &quot;sub-agent report&quot; card that auto-scrolls to
+                the bottom with user-scroll LOCKED. On completion it becomes scrollable + collapsible (none/partial/full)
+                with the RichDocument action toolkit. Press Play to run.
+            </p>
+            <div className="space-y-4">
+                <FixtureCard label="ResearchInline — LIVE activity → streaming report → settled (raw renderer)">
+                    <ResearchInline entry={simEntry} events={simEntry.events} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="Shell behavior (research_web — live: auto-expand → auto-collapse after)">
+                    <ToolCallVisualization entries={[simEntry]} hasContent />
+                </FixtureCard>
+            </div>
+        </section>
+    );
+}
+
 export default function ResultFieldsGalleryPage() {
     return (
         // Mirror AgentConversationColumn's centerWrap: w-full max-w-3xl mx-auto px-2.
@@ -1186,14 +1318,60 @@ export default function ResultFieldsGalleryPage() {
                 </div>
             </section>
 
+            {/* ─── Wave 3: research subagent + streaming report ─────────────── */}
+
+            <LiveResearchSection />
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Research report — STREAMING (STATIC mid-stream, timer-independent)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    A <code className="text-xs">status: &quot;progress&quot;</code> entry with the FULL curated report in{" "}
+                    <code className="text-xs">result</code> — the SubagentReportBlock paces it client-side and pins to
+                    the bottom with user-scroll LOCKED, no Play timer needed. Distinct &quot;sub-agent report&quot; card,
+                    slightly narrower than full width, ~400px viewport.
+                </p>
+                <FixtureCard label="ResearchInline — streaming report (static progress entry)">
+                    <ResearchInline entry={RESEARCH_STREAMING_SNAPSHOT} events={[]} onOpenOverlay={() => {}} />
+                </FixtureCard>
+                <FixtureCard label="SubagentReportBlock — streaming (direct render)">
+                    <SubagentReportBlock report={RESEARCH_REPORT} streaming queries={[RESEARCH_REPORT_ARGS.query]} />
+                </FixtureCard>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Research report — DONE (scrollable · collapsible · RichDocument actions)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    The settled report: free scroll in the ~400px window, Expand to full, collapse to the header, and
+                    the RichDocument action toolkit (copy / save to notes / open editor / …). Below, the full renderer
+                    with the report + sources summary + &quot;View full research&quot; overlay handoff.
+                </p>
+                <FixtureCard label="SubagentReportBlock — done (direct render)">
+                    <SubagentReportBlock report={RESEARCH_REPORT} streaming={false} queries={[RESEARCH_REPORT_ARGS.query]} />
+                </FixtureCard>
+                <FixtureCard label="ResearchInline — done (report + sources + overlay handoff)">
+                    <ResearchInline entry={RESEARCH_REPORT_ENTRY} events={[]} onOpenOverlay={() => {}} />
+                </FixtureCard>
+            </section>
+
             <ResearchStreamSection />
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Research (research_web) — Wave 3 renderer, static blob (click to expand)
+                    Research (research_web) — full shell + overlay tabs (click to expand)
                 </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    The research blob WITHOUT a curated report — the renderer leads with the sources summary; expand the
+                    row, then the overlay shows Report / Sources / Full Text / Input / Raw tabs.
+                </p>
                 <div className="rounded-lg border border-border bg-card p-3">
                     <ToolCallVisualization entries={[RESEARCH_ENTRY]} isPersisted hasContent />
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    <ToolCallVisualization entries={[RESEARCH_REPORT_ENTRY]} isPersisted hasContent />
                 </div>
             </section>
 
