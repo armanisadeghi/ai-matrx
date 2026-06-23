@@ -15,11 +15,12 @@
 // bodies (TileTaskTab / TileNotesTab / TileAudioTab) — nothing reimplemented.
 
 import { useState } from "react";
-import { Pin, Focus } from "lucide-react";
+import { Pin, Focus, GripVertical } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTileFlavor } from "@/features/war-room/redux/selectors";
 import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
+import type { ThreadDragHandle } from "../room/threadDrag";
 import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "./TileContextOverride";
 import { TileFlavorBadge } from "./TileFlavorBadge";
@@ -39,12 +40,16 @@ export function WarRoomTile({
   sessionId,
   featured,
   onStage,
+  /** When supplied (Feature e007e2fc), a drag grip in the header reorders the
+   *  grid; the double-click / focus button still stage the tile. */
+  dragHandle,
 }: {
   tileId: string;
   sessionId: string;
   featured?: boolean;
   /** Promote this tile to the Stage (Grid mode only). */
   onStage?: () => void;
+  dragHandle?: ThreadDragHandle;
 }) {
   const dispatch = useAppDispatch();
   const actions = useTileActions(tileId, sessionId);
@@ -113,6 +118,21 @@ export function WarRoomTile({
             flavor={flavor}
             onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
           />
+
+          {/* Drag to reorder — quiet until hover, alongside the focus control. */}
+          {dragHandle ? (
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              title="Drag to reorder"
+              aria-label="Drag to reorder thread"
+              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100 cursor-grab active:cursor-grabbing touch-none"
+              {...dragHandle.attributes}
+              {...dragHandle.listeners}
+            >
+              <GripVertical className="size-3.5" />
+            </button>
+          ) : null}
 
           {/* Focus — quiet until hover so a wall of 12 reads calm. */}
           {onStage ? (

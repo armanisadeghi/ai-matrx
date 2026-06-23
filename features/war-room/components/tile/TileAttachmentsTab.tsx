@@ -21,12 +21,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   Paperclip,
   FileText,
   FolderOpen,
   Upload,
   Plus,
+  FilePlus2,
   Loader2,
   ExternalLink,
   X,
@@ -71,6 +73,14 @@ import {
 import type { WarRoomAssignment } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 
+// Code-split: the new-file dialog pulls the full Monaco editor. Loading it lazily
+// keeps Monaco out of the War Room bundle; it loads the first time a user opens
+// the "New file" flow.
+const TileNewFileDialog = dynamic(
+  () => import("./TileNewFileDialog").then((m) => m.TileNewFileDialog),
+  { ssr: false },
+);
+
 export function TileAttachmentsTab({
   tileId,
   compact,
@@ -86,6 +96,7 @@ export function TileAttachmentsTab({
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState(false);
   const [docPickerOpen, setDocPickerOpen] = useState(false);
+  const [newFileOpen, setNewFileOpen] = useState(false);
 
   // Hydrate the tile's attachment rows on mount (idempotent — also seeded by
   // the room-load batch, but this covers a tile opened in isolation).
@@ -245,6 +256,12 @@ export function TileAttachmentsTab({
           actions={
             <>
               <SectionAction
+                icon={FilePlus2}
+                label="New file"
+                onClick={() => setNewFileOpen(true)}
+                disabled={isPicking || isUploading}
+              />
+              <SectionAction
                 icon={isPicking ? Loader2 : FolderOpen}
                 spinning={isPicking}
                 label="Add existing"
@@ -320,6 +337,16 @@ export function TileAttachmentsTab({
         onOpenChange={setDocPickerOpen}
         onPick={handleAttachDoc}
       />
+
+      {/* Mounted only once opened so Monaco never loads until the user creates a
+          file (the dynamic import + this guard keep it out of the room bundle). */}
+      {newFileOpen && (
+        <TileNewFileDialog
+          tileId={tileId}
+          open={newFileOpen}
+          onOpenChange={setNewFileOpen}
+        />
+      )}
     </div>
   );
 }

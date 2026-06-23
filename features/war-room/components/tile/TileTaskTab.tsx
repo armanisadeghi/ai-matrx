@@ -38,6 +38,7 @@ import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
 import { TileEmbeddedTaskView } from "./TileEmbeddedTaskView";
 import { TileProjectTab } from "./TileProjectTab";
 import { SubtaskRail } from "./SubtaskRail";
+import { SubtaskDetailPane } from "./SubtaskDetailPane";
 
 export function TileTaskTab({
   tileId,
@@ -265,8 +266,18 @@ function TileTaskBody({
   const openTaskWindow = useOpenTaskEditorWindow();
   const [railOpen, setRailOpen] = useState(false);
   const [railAutoFocus, setRailAutoFocus] = useState(false);
+  // Feature 9e383081 — the subtask the user opened as a FULL task in the
+  // adjacent pane (a split, never a navigation). Clicking a subtask in the rail
+  // opens it here beside the parent; back/close returns to the rail. Drilling
+  // (replacing the whole editor) is reserved for `onOpenLinkedTask` / project
+  // tiles — a subtask click stays in the thread, side-by-side.
+  const [openSubtaskId, setOpenSubtaskId] = useState<string | null>(null);
 
-  const showRail = railOpen;
+  // The right split shows the opened-subtask editor if one is open, else the
+  // rail when toggled. Opening a subtask supersedes the rail (one right pane).
+  const showDetail = openSubtaskId !== null;
+  const showRail = railOpen && !showDetail;
+  const rightOpen = showDetail || showRail;
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/task">
@@ -282,20 +293,23 @@ function TileTaskBody({
               <Button
                 type="button"
                 size="sm"
-                variant={showRail ? "secondary" : "ghost"}
+                variant={railOpen ? "secondary" : "ghost"}
                 onClick={() => {
-                  if (showRail) {
+                  if (railOpen) {
                     setRailOpen(false);
                     setRailAutoFocus(false);
                   } else {
+                    // Opening the rail closes any open subtask pane (the rail is
+                    // how you pick the next one).
+                    setOpenSubtaskId(null);
                     setRailOpen(true);
                     setRailAutoFocus(true);
                   }
                 }}
                 className="h-6 w-6 shrink-0 p-0"
-                aria-pressed={showRail}
-                title={showRail ? "Hide subtasks" : "Add / open subtasks"}
-                aria-label={showRail ? "Hide subtasks" : "Add / open subtasks"}
+                aria-pressed={railOpen}
+                title={railOpen ? "Hide subtasks" : "Add / open subtasks"}
+                aria-label={railOpen ? "Hide subtasks" : "Add / open subtasks"}
               >
                 <ListTree className="size-3.5" />
               </Button>
@@ -303,20 +317,35 @@ function TileTaskBody({
           />
         </div>
 
-        {showRail && (
+        {rightOpen && (
           <div
             className={cn(
               "flex min-h-0 min-w-0 flex-col border-t border-border/60",
-              "max-h-[55%] shrink-0 @[34rem]/task:max-h-none @[34rem]/task:w-72 @[34rem]/task:shrink-0 @[34rem]/task:border-l @[34rem]/task:border-t-0",
+              "max-h-[55%] shrink-0 @[34rem]/task:max-h-none @[34rem]/task:w-80 @[34rem]/task:shrink-0 @[34rem]/task:border-l @[34rem]/task:border-t-0",
             )}
           >
-            <SubtaskRail
-              taskId={taskId}
-              projectId={projectId}
-              onOpenPane={onDrillTask}
-              onOpenWindow={(id) => openTaskWindow({ taskId: id })}
-              autoFocus={railAutoFocus}
-            />
+            {showDetail && openSubtaskId ? (
+              <SubtaskDetailPane
+                subtaskId={openSubtaskId}
+                compact={compact}
+                onClose={() => {
+                  // Back to the rail so the user keeps browsing subtasks.
+                  setOpenSubtaskId(null);
+                  setRailOpen(true);
+                }}
+                onOpenInWindow={() => openTaskWindow({ taskId: openSubtaskId })}
+              />
+            ) : (
+              <SubtaskRail
+                taskId={taskId}
+                projectId={projectId}
+                // A subtask click opens it as a full task in this same right
+                // split — adjacent, staying in the thread (Feature 9e383081).
+                onOpenPane={(subtaskId) => setOpenSubtaskId(subtaskId)}
+                onOpenWindow={(id) => openTaskWindow({ taskId: id })}
+                autoFocus={railAutoFocus}
+              />
+            )}
           </div>
         )}
       </div>

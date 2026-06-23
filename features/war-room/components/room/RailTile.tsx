@@ -9,7 +9,7 @@
 // state (no context lost). It is read, not operated; operating happens on the
 // Stage. The kind accent edge keys it to the thread type.
 
-import { Pin } from "lucide-react";
+import { GripVertical, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
@@ -18,17 +18,22 @@ import { TileOptionsMenu } from "../tile/TileOptionsMenu";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTileFlavor } from "@/features/war-room/redux/selectors";
 import { tileTabKind } from "./tileKind";
+import type { ThreadDragHandle } from "./threadDrag";
 
 export function RailTile({
   tileId,
   sessionId,
   isStaged,
   onStage,
+  /** When supplied (Feature e007e2fc), a drag grip appears on hover that
+   *  reorders the rail; the body click still stages. */
+  dragHandle,
 }: {
   tileId: string;
   sessionId: string;
   isStaged: boolean;
   onStage: () => void;
+  dragHandle?: ThreadDragHandle;
 }) {
   const pulse = useTilePulse(tileId);
   const actions = useTileActions(tileId, sessionId);
@@ -64,6 +69,20 @@ export function RailTile({
           isStaged ? "bg-primary" : cn(kind.rail, "opacity-70"),
         )}
       />
+
+      {dragHandle ? (
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          title="Drag to reorder"
+          aria-label="Drag to reorder thread"
+          className="absolute right-1 bottom-1 z-10 grid size-5 place-items-center rounded text-muted-foreground/70 opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/rail:opacity-100 cursor-grab active:cursor-grabbing touch-none"
+          {...dragHandle.attributes}
+          {...dragHandle.listeners}
+        >
+          <GripVertical className="size-3.5" />
+        </button>
+      ) : null}
 
       <span className="mt-0.5 shrink-0">
         <PulseGlyph pulse={pulse} size={20} />

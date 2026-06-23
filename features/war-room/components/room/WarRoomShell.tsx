@@ -66,8 +66,10 @@ import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
 import { RoomIdentityButton } from "./RoomIdentityButton";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
+import { ThreadSearchBox } from "./ThreadSearchBox";
 import { roomColorOf, roomIconOf } from "./roomIdentity";
 import { useActiveTileRestore } from "./useActiveTileRestore";
+import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
   RoomViewProvider,
   useRoomView,
@@ -120,9 +122,16 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const tilesStatus = useAppSelector(selectTilesStatusForSession(sessionId));
   const { mode } = useRoomView();
 
-  // Seed the staged tile from session.active_tile_id on open + persist the
-  // focused tile back (debounced). The staged tile itself stays ephemeral
-  // view-state — this only mirrors it to/from the row for re-open restore.
+  // Restore the room VIEW on open, two complementary layers:
+  //   • URL params (thread + view + density) — the fast, shareable layer; a
+  //     refresh or a copied link restores exactly what was on screen. Mounted
+  //     FIRST so a `thread` param wins over the slower session-row seed.
+  //   • session.active_tile_id — the durable server mirror of the last-focused
+  //     thread (no URL needed); seeds when no `thread` param is present and
+  //     persists the focus back (debounced).
+  // The staged tile itself stays ephemeral view-state (roomViewContext); both
+  // layers only MIRROR it.
+  useRoomUrlSync(sessionId);
   useActiveTileRestore(sessionId);
 
   // Room branding (icon + color) — the chosen identity, with safe defaults.
@@ -225,6 +234,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
 
         {session ? (
           <div className="ml-auto shrink-0 flex items-center gap-1.5">
+            {ready ? <ThreadSearchBox /> : null}
             <ModeSwitch />
             {ready ? <InstrumentProjector /> : null}
             {ready ? <DensityDial /> : null}

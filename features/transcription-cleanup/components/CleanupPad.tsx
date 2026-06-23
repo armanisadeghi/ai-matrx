@@ -46,6 +46,7 @@ import {
   BookA,
   ChevronDown,
   CircleStop,
+  Layers,
   Loader2,
   PanelLeftOpen,
   Pin,
@@ -430,6 +431,18 @@ interface CleanupPadProps {
   compact?: boolean;
   /** Host-owned session switcher rendered at the start of the compact toolbar. */
   embeddedHeaderSlot?: React.ReactNode;
+  /**
+   * Host-owned SESSION LIST, revealed IN PLACE behind a "Sessions" affordance in
+   * the embedded reveal bar. The pad's own session list (CleanupSessionList) is
+   * PAGE-scoped (every session RLS allows) and writes the global studio store, so
+   * an embedded host that owns its OWN session lifecycle (e.g. a War Room tile,
+   * whose sessions are `source='war_room'` and tracked in the war-room slice)
+   * passes its scoped list here instead. When provided, the embedded variant shows
+   * a "Sessions" reveal chip that opens this node as an in-place left drawer —
+   * surfacing the powerful session-tracking feature without forking the pad or
+   * navigating away. Omit it and no Sessions chip renders (back-compat).
+   */
+  sessionListSlot?: React.ReactNode;
 }
 
 /** A compact toggle chip for the embedded pad's reveal bar (Controls / Custom). */
@@ -499,6 +512,7 @@ export default function CleanupPad({
   showNewSession = true,
   compact = false,
   embeddedHeaderSlot,
+  sessionListSlot,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -515,11 +529,18 @@ export default function CleanupPad({
   const [embeddedReveal, setEmbeddedReveal] = useState({
     sidebar: propSidebar,
     custom: propCustom,
+    // Session list starts closed — it's a host-owned reveal, opened on demand.
+    sessions: false,
   });
-  const toggleReveal = (key: "sidebar" | "custom", force?: boolean) =>
-    setEmbeddedReveal((r) => ({ ...r, [key]: force ?? !r[key] }));
+  const toggleReveal = (
+    key: "sidebar" | "custom" | "sessions",
+    force?: boolean,
+  ) => setEmbeddedReveal((r) => ({ ...r, [key]: force ?? !r[key] }));
   const showSidebar = isEmbedded ? embeddedReveal.sidebar : propSidebar;
   const showCustom = isEmbedded ? embeddedReveal.custom : propCustom;
+  // The host-owned session list is only revealable when the host actually
+  // provides one (a War Room tile passes its scoped list; the page doesn't).
+  const showSessions = isEmbedded && Boolean(sessionListSlot) && embeddedReveal.sessions;
   // In embedded the dictionary rides inside the revealed Controls drawer.
   const showDictionary = isEmbedded ? embeddedReveal.sidebar : propDictionary;
 
@@ -2280,6 +2301,16 @@ export default function CleanupPad({
           {compact ? (
             <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-0.5">
               {embeddedHeaderSlot}
+              {sessionListSlot && (
+                <RevealChip
+                  active={showSessions}
+                  onClick={() => toggleReveal("sessions")}
+                  icon={Layers}
+                  label="Sessions"
+                  title="Track this thread's recording sessions"
+                  iconOnly
+                />
+              )}
               <RevealChip
                 active={showSidebar}
                 onClick={() => toggleReveal("sidebar")}
@@ -2307,6 +2338,15 @@ export default function CleanupPad({
                   · context · dictionary · clean-up) as an in-place drawer; "Custom"
                   stacks the custom-agent output slots below the clean pane. */}
               <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
+                {sessionListSlot && (
+                  <RevealChip
+                    active={showSessions}
+                    onClick={() => toggleReveal("sessions")}
+                    icon={Layers}
+                    label="Sessions"
+                    title="Track this thread's recording sessions"
+                  />
+                )}
                 <RevealChip
                   active={showSidebar}
                   onClick={() => toggleReveal("sidebar")}
@@ -2371,6 +2411,39 @@ export default function CleanupPad({
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                   {sidebarBody}
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {/* Sessions drawer — the host's OWN session list (e.g. a War Room
+              tile's recording sessions), revealed in place on the left so the
+              transcript + clean panes stay visible behind it. The pad provides
+              the affordance + frame; the host drives the real list (its scoped
+              selectors + switch/new thunks). Nothing forked. */}
+          {showSessions && (
+            <div className="absolute inset-0 z-20">
+              <div
+                className="absolute inset-0 bg-black/30"
+                onClick={() => toggleReveal("sessions", false)}
+              />
+              <aside className="absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col border-r border-border bg-background shadow-xl">
+                <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Layers className="h-3.5 w-3.5" />
+                    Sessions
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleReveal("sessions", false)}
+                    aria-label="Close sessions"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                  {sessionListSlot}
                 </div>
               </aside>
             </div>

@@ -25,14 +25,24 @@ import { StageTile } from "./StageTile";
 import { ParkedThreadChip } from "./ParkedThreadChip";
 import { NewTile } from "../tile/NewTile";
 import { QuickAddThread } from "../tile/QuickAddThread";
+import { QuickAddTask } from "../tile/QuickAddTask";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
+import { ThreadSortable, SortableThread } from "./threadDrag";
+import { useThreadReorder } from "@/features/war-room/hooks/useThreadReorder";
+import { useThreadSearch } from "@/features/war-room/hooks/useThreadSearch";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function StageView({ sessionId }: { sessionId: string }) {
   const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
   const hidden = useAppSelector(selectHiddenTiles(sessionId));
   const allIds = useAppSelector(selectTileIdsForSession(sessionId));
-  const { chosenStageId, setChosenStageId, stageTile } = useRoomView();
+  const { chosenStageId, setChosenStageId, stageTile, threadQuery } =
+    useRoomView();
+  const { commitOrder } = useThreadReorder(sessionId);
+  // The rail lists only matches; the Stage keeps the thread you're driving
+  // (resolved against the FULL list) so a search never yanks you off it.
+  const railIds = useThreadSearch(sessionId, visibleIds, threadQuery);
+  const searching = threadQuery.trim().length > 0;
   const [parkedOpen, setParkedOpen] = useState(false);
 
   const stagedId = resolveStagedId(chosenStageId, visibleIds);
@@ -54,30 +64,73 @@ export function StageView({ sessionId }: { sessionId: string }) {
             Threads
           </span>
           <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
-            {visibleIds.length}
+            {searching ? `${railIds.length}/${visibleIds.length}` : visibleIds.length}
           </span>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col gap-1.5 pr-0.5">
-          {visibleIds.map((id) => (
-            <RailTile
-              key={id}
-              tileId={id}
-              sessionId={sessionId}
-              isStaged={stagedId === id}
-              onStage={() => setChosenStageId(id)}
-            />
-          ))}
+          {searching ? (
+            // Filtered: a flat, non-sortable list (reordering a subset is
+            // ambiguous) ranked by relevance.
+            railIds.length > 0 ? (
+              railIds.map((id) => (
+                <RailTile
+                  key={id}
+                  tileId={id}
+                  sessionId={sessionId}
+                  isStaged={stagedId === id}
+                  onStage={() => setChosenStageId(id)}
+                />
+              ))
+            ) : (
+              <p className="px-1 py-2 text-[12px] text-muted-foreground">
+                No threads match “{threadQuery.trim()}”.
+              </p>
+            )
+          ) : (
+            <ThreadSortable
+              ids={visibleIds}
+              strategy="vertical"
+              onReorder={commitOrder}
+            >
+              {visibleIds.map((id) => (
+                <SortableThread key={id} id={id}>
+                  {(dragHandle) => (
+                    <RailTile
+                      tileId={id}
+                      sessionId={sessionId}
+                      isStaged={stagedId === id}
+                      onStage={() => setChosenStageId(id)}
+                      dragHandle={dragHandle}
+                    />
+                  )}
+                </SortableThread>
+              ))}
+            </ThreadSortable>
+          )}
 
           {/* Quick-add: spin up a new thread without leaving the staged one.
               Create (default) keeps you here on the staged thread and re-arms
-              for the next add; Create & open stages the fresh thread. */}
-          <QuickAddThread
-            sessionId={sessionId}
-            nextPosition={allIds.length}
-            variant="rail"
-            onOpen={(tileId) => stageTile(tileId)}
-          />
+              for the next add; Create & open stages the fresh thread. Hidden
+              while searching (it's not a thread to filter). */}
+          {!searching ? (
+            <>
+              <QuickAddThread
+                sessionId={sessionId}
+                nextPosition={allIds.length}
+                variant="rail"
+                onOpen={(tileId) => stageTile(tileId)}
+              />
+              {/* Capture a task into the room (or into the staged thread)
+                  without leaving the thread you're on (Feature 67a282c8). */}
+              <QuickAddTask
+                sessionId={sessionId}
+                nextPosition={allIds.length}
+                stagedTileId={stagedId}
+                onOpen={(tileId) => stageTile(tileId)}
+              />
+            </>
+          ) : null}
 
           {hidden.length > 0 ? (
             <div className="mt-1 pt-1.5 border-t border-border/50">

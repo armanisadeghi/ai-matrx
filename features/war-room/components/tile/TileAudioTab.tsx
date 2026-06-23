@@ -11,10 +11,12 @@
 // "New Session"). CleanupPad is bound to the active session via `sessionId`
 // (variant="embedded", urlSync=false), and the FULL pipeline stays one click
 // away IN PLACE — never stripped: the pad's own reveal bar opens the clean
-// agent, context items, dictionary + clean-up (the "Controls" drawer) and the
-// custom-agent slots ("Custom"). The only things hidden in embedded are the
-// pad's PAGE-scoped session list + the GLOBAL ActiveContextButton (the tile
-// owns sessions, and War Room carries its own context, never the global one).
+// agent, context items, dictionary + clean-up (the "Controls" drawer), the
+// custom-agent slots ("Custom"), and the tile's recording-SESSION LIST (the
+// "Sessions" drawer — TileAudioSessionList, driven by the war-room association
+// store: list / switch / start a session, scoped to THIS tile). The pad's own
+// PAGE-scoped session list and the GLOBAL ActiveContextButton stay hidden (the
+// tile owns sessions, and War Room carries its own context, never the global).
 //
 // Grid / combined compact: session chrome folds into CleanupPad's single toolbar
 // row (sessions · + · Controls · Custom · record · save-only) — no duplicate
@@ -54,6 +56,7 @@ import {
   ensureTileAudioSession,
   setTileActiveAudioSession,
 } from "@/features/war-room/redux/thunks";
+import { TileAudioSessionList } from "./TileAudioSessionList";
 import { cn } from "@/lib/utils";
 
 function TileAudioSessionChrome({
@@ -217,6 +220,7 @@ export function TileAudioTab({
             showNewSession={false}
             compact={compact}
             embeddedHeaderSlot={compact ? sessionChrome : undefined}
+            sessionListSlot={<TileAudioSessionList tileId={tileId} />}
             sections={{
               sidebar: false,
               dictionary: false,
