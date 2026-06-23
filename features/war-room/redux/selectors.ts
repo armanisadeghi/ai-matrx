@@ -276,4 +276,38 @@ export const selectAttachmentsForTile =
 
 const EMPTY_ATTACHMENTS: WarRoomTileAttachment[] = [];
 
+// ── Agent-edit auto-approve (HITL) ───────────────────────────────────────
+/**
+ * Whether the user has granted "always approve" for `scope` on this tile, so the
+ * war-room dispatcher should skip the approval card. Returns a primitive — no
+ * memoization needed.
+ */
+export const selectIsTileAutoApproved =
+  (tileId: string | null, scope: string) =>
+  (state: RootState): boolean =>
+    tileId ? state.warRoom.autoApproveByTile[tileId]?.[scope] === true : false;
+
+const EMPTY_SCOPES: string[] = [];
+const autoApprovedScopesCache = new Map<
+  string,
+  (state: RootState) => string[]
+>();
+/** The list of scopes currently auto-approved on a tile (for UI indicators). */
+export function selectTileAutoApprovedScopes(tileId: string | null) {
+  if (!tileId) return () => EMPTY_SCOPES;
+  let sel = autoApprovedScopesCache.get(tileId);
+  if (!sel) {
+    sel = createSelector(
+      (state: RootState) => state.warRoom.autoApproveByTile[tileId],
+      (grants): string[] => {
+        if (!grants) return EMPTY_SCOPES;
+        const keys = Object.keys(grants).filter((k) => grants[k]);
+        return keys.length > 0 ? keys : EMPTY_SCOPES;
+      },
+    );
+    autoApprovedScopesCache.set(tileId, sel);
+  }
+  return sel;
+}
+
 export { asScopeIds };

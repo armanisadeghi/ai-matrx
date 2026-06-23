@@ -95,6 +95,9 @@ const KIND_ICONS = {
   notify: Info,
   plan_approval: CheckCheck,
   takeover: HelpCircle,
+  // "approval" cards are rendered by <ApprovalCard> via PendingAsksZone, never
+  // here — this entry only keeps the icon lookup total over PendingAskKind.
+  approval: ShieldCheck,
 } as const;
 
 export function AskCard({ ask }: AskCardProps) {
@@ -324,6 +327,10 @@ function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
       return (
         <TextBody ask={ask} secret={false} onAnswer={onAnswer} isLast={isLast} />
       );
+    case "approval":
+      // Rendered by <ApprovalCard> (PendingAsksZone routes it there) — never
+      // reaches <AskCard>. Present only to keep the switch exhaustive.
+      return null;
   }
 }
 
