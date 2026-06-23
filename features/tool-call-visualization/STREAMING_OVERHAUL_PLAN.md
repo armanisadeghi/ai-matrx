@@ -150,3 +150,20 @@ Traced `lib/api/stream-parser.ts` → `features/agents/redux/execution-system/th
 - Last 8 success rows for the web tools are **all `research_web`** (none `web_search`/`core_web_search`/`core_web_search_and_read`). Latest **2026-06-17** (≈6 days old — recent enough; shape current).
 - Every `research_web` row: `output_type:"text"`, `output` = "Comprehensive research using the following queries: …" big markdown blob (`output_chars` ranged ~1.8k–110k across the 8 rows), `output_preview` = `{"chars": N}`, `execution_events` = `["tool_started","tool_completed"]`, `data` types `[null]`.
 - **Action:** owner should trigger a fresh **`web_search`** standalone run to get a real sample for that renderer's demo (none exist to ground it).
+
+---
+
+### TOOL-NAME AUDIT (verified 2026-06-23, project `txzxabzwovsujtloxrus`, `cx_tool_call`)
+
+Renderers were registered for STALE tool names, so real calls fell through to the ugly `GenericRenderer`. Verified live counts/shapes and corrected the registry:
+
+- **`web` is the REAL, current web tool** (47 calls, latest **today**) — a SINGLE tool dispatched by `arguments.action`:
+  - `action:"search"` → `output_type:"text"` → the `Searched: "q" (N)\n---\n## "q" (N results)\nTitle:/URL:/Description:` blob (parsed by `renderers/search/parseSearch.ts`). 32 calls.
+  - `action:"batch_read"` → `output_type:"json"` → `{"pages":[{url,content,success}]}` (parsed by `renderers/scrape/parseScrape.ts`). 5 calls.
+  - `action:"read"` also exists (8 json + 2 text) — a read-like action; routes to scrape (the bare-string `read` is handled by `parseScrape`'s single-page path).
+  - **Fix:** new action-dispatcher `renderers/web/{WebInline,WebOverlay}.tsx` + `webAction.ts` (`resolveWebActionKind`) routes `search`→`SearchInline/Overlay`, read-like→`ScrapeInline/Overlay`, else→`GenericRenderer`. Registered `web` (inline+overlay, neutral "Web" phase label, action-aware header subtitle/extras, `keepExpandedOnStream`, added to `RESULT_IS_PURPOSE_TOOLS`). The dispatcher is a pure passthrough — no added border (the card shell draws the one frame; search/scrape render flush), so a "Web · N calls" batch is NOT triple-bordered.
+- **`web_search` is DEAD** (20 calls, last **2026-05-19**, ~5 weeks/2 months stale). Kept registered (harmless for old data) but it is no longer the tool that matters.
+- **`research_web` is real + current** (61 calls, latest today) — already registered; left as-is.
+- **`context_patch` is the LIVE patch tool used TODAY** (24 calls; same `{key,command,new_str}` arg shape as `ctx_patch`). The patch renderer was on `ctx_patch` only (76 calls but last **2026-06-20** — going stale). **Fix:** registered `context_patch` → the SAME `CtxPatchInline` (→ `PatchDiffInline`) renderer + config alongside `ctx_patch`.
+- **`fetch_url_as_markdown` has NO custom renderer yet** (42 calls, last **2026-05-26**) — flagged for a future renderer; falls through to GenericRenderer today.
+- Simulator: `app/(dev)/demos/tool-viz/in-action/page.dev.tsx` `recordingFor` now dispatches a saved `web` run by action (search→`buildSearchRecording`, read→`buildScrapeRecording`) instead of assuming "search".

@@ -20,6 +20,9 @@ import { SearchOverlay } from "../renderers/search/SearchOverlay";
 import { ScrapeInline } from "../renderers/scrape/ScrapeInline";
 import { ScrapeOverlay } from "../renderers/scrape/ScrapeOverlay";
 import { parseScrape } from "../renderers/scrape/parseScrape";
+import { WebInline } from "../renderers/web/WebInline";
+import { WebOverlay } from "../renderers/web/WebOverlay";
+import { resolveWebActionKind } from "../renderers/web/webAction";
 import { NewsInline, NewsOverlay } from "../renderers/news-api";
 import { SeoMetaTagsInline } from "../renderers/seo-meta-tags/SeoMetaTagsInline";
 import { SeoMetaTagsOverlay } from "../renderers/seo-meta-tags/SeoMetaTagsOverlay";
@@ -220,10 +223,60 @@ function scrapeHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// `web` (the REAL, current web tool) — a SINGLE tool dispatched by
+// `arguments.action`. Header subtitle/extras dispatch the same way so the slim
+// collapsed row shows the right summary per action: the query for a search, the
+// page domain / count for a read. Unknown actions fall through to null (the
+// shell then uses its generic single-arg subtitle).
+// ─────────────────────────────────────────────────────────────────────────────
+
+function webHeaderSubtitle(entry: ToolLifecycleEntry): string | null {
+  const kind = resolveWebActionKind(getArg<string>(entry, "action"));
+  if (kind === "search") return searchHeaderSubtitle(entry);
+  if (kind === "read") return scrapeHeaderSubtitle(entry);
+  return null;
+}
+
+function webHeaderExtras(entry: ToolLifecycleEntry): React.ReactNode {
+  const kind = resolveWebActionKind(getArg<string>(entry, "action"));
+  if (kind === "search") return searchHeaderExtras(entry);
+  if (kind === "read") return scrapeHeaderExtras(entry);
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Static tool registry
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const toolRendererRegistry: ToolRegistry = {
+  // ───────────────────────────────────────────────────────────────────────────
+  // `web` — THE REAL, CURRENT web tool (verified live in cx_tool_call: 47 calls,
+  // latest today). A SINGLE tool dispatched by `arguments.action`:
+  //   • action "search"     → the Google-class SearchInline/SearchOverlay.
+  //   • action "batch_read"/"read" → the page-card ScrapeInline/ScrapeOverlay.
+  //   • anything else       → a clean GenericRenderer fallback.
+  // WebInline/WebOverlay do that routing (see renderers/web/). The phase label is
+  // a neutral "Web" — the action is only known from the args, and the dispatched
+  // child shows the specifics (the search conveyor / the reading-wave cards).
+  // `web_search` below is DEAD (last call 2026-04-19) — kept harmless for old
+  // data; `web` is the one that matters.
+  // ───────────────────────────────────────────────────────────────────────────
+  web: {
+    toolName: "web",
+    displayName: "Web",
+    phaseLabels: {
+      running: "Web",
+      complete: "Web",
+      errorPrefix: "Web request failed",
+    },
+    resultsLabel: "Web Results",
+    InlineComponent: WebInline,
+    OverlayComponent: WebOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: webHeaderSubtitle,
+    getHeaderExtras: webHeaderExtras,
+  },
+
   web_search: {
     toolName: "web_search",
     displayName: "Web Search",
@@ -603,6 +656,34 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  // `context_patch` — the LIVE patch tool used TODAY (verified in cx_tool_call:
+  // 24 calls; same `{ key, command, new_str }` arg shape as `ctx_patch`). It was
+  // falling through to the GenericRenderer because the renderer was registered
+  // only under the stale `ctx_patch` name. Same renderer (CtxPatchInline →
+  // PatchDiffInline), same config — so a `context_patch` write shows the human
+  // working-document diff, live and on reload, exactly like `ctx_patch`.
+  context_patch: {
+    toolName: "context_patch",
+    displayName: "Context",
+    phaseLabels: {
+      running: "Updating context",
+      complete: "Updated context",
+      errorPrefix: "Couldn't update context",
+    },
+    resultsLabel: "Context",
+    InlineComponent: CtxPatchInline,
+    OverlayComponent: CtxPatchInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const key = getArg<string>(entry, "key");
+      if (typeof key === "string" && key) return key;
+      const result = resultAsObject(entry);
+      return typeof result?.key === "string" && result.key
+        ? (result.key as string)
+        : null;
+    },
+  },
+
   sql: {
     toolName: "sql",
     displayName: "Database",
@@ -859,6 +940,7 @@ export function shouldKeepExpandedOnStream(toolName: string | null): boolean {
  */
 const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "news_get_headlines",
+  "web", // the REAL web tool — search results / read pages are the deliverable
   "web_search",
   "core_web_search",
   "web_search_v1",

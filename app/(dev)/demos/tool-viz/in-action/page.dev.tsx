@@ -61,8 +61,10 @@ import {
   buildSimpleRecording,
   buildResearchRecording,
   buildSearchRecording,
+  buildScrapeRecording,
   type StreamRecording,
 } from "@/features/tool-call-visualization/simulator/streamRecording";
+import { resolveWebActionKind } from "@/features/tool-call-visualization/renderers/web/webAction";
 import { useSimulatedToolEntry } from "@/features/tool-call-visualization/simulator/useSimulatedToolEntry";
 import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
@@ -281,10 +283,24 @@ function recordingFor(
   ) {
     return buildResearchRecording(result, args);
   }
-  if (
-    (toolName === "web_search" || toolName === "web") &&
-    typeof result === "string"
-  ) {
+  // The REAL `web` tool is action-dispatched — so a saved `web` run must build
+  // the recording that matches its action, not assume "search". A search action
+  // gets the section-by-section search recording; a read action (batch_read /
+  // read) gets the page-reading recording off its `{ pages: [...] }` result.
+  if (toolName === "web") {
+    const kind = resolveWebActionKind(args.action);
+    if (kind === "read" && result && typeof result === "object") {
+      return buildScrapeRecording(
+        result as Record<string, unknown>,
+        args,
+        { toolName, displayName: label },
+      );
+    }
+    if (kind === "search" && typeof result === "string") {
+      return buildSearchRecording(result, args, { toolName, displayName: label });
+    }
+  }
+  if (toolName === "web_search" && typeof result === "string") {
     return buildSearchRecording(result, args, {
       toolName,
       displayName: label,
