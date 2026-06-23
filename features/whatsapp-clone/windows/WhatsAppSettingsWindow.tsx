@@ -92,11 +92,29 @@ export function WhatsAppSettingsWindow({
     <WindowPanel
       id={WINDOW_ID}
       overlayId={OVERLAY_ID}
-      title="Settings"
+      titleNode={
+        <span className="truncate text-xs font-medium text-foreground/80">
+          {top?.current.label ?? "Settings"}
+        </span>
+      }
       minWidth={760}
       minHeight={540}
-      bodyClassName="p-0"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       onClose={onClose}
+      // Drill-down back navigation is window-level chrome, not content — it
+      // lives in the header's left action zone.
+      actionsLeft={
+        showBack ? (
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Back"
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        ) : undefined
+      }
       sidebar={
         <SettingsNav
           userName={userName}
@@ -120,26 +138,9 @@ export function WhatsAppSettingsWindow({
         </button>
       }
     >
-      <div className="flex h-full flex-col bg-background">
-        <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-5">
-          {showBack ? (
-            <button
-              type="button"
-              onClick={goBack}
-              aria-label="Back"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          ) : null}
-          <h2 className="text-[20px] font-semibold text-foreground">
-            {top?.current.label ?? ""}
-          </h2>
-        </div>
-        <ScrollArea className="flex-1">
-          <div className="px-5 pb-6 pt-3">{panelNode}</div>
-        </ScrollArea>
-      </div>
+      <ScrollArea className="flex-1 bg-background">
+        <div className="px-5 pb-6 pt-3">{panelNode}</div>
+      </ScrollArea>
     </WindowPanel>
   );
 }

@@ -92,51 +92,74 @@ function MessageAnalysisWindowInner({
       minHeight={320}
       overlayId="messageAnalysisWindow"
       onCollectData={collectData}
-      bodyClassName="p-0"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      // The Request / Client / Session switcher is window-level chrome, not
+      // content — it lives in the header's right action zone so the body holds
+      // only the active panel.
+      actionsRight={
+        conversationId ? (
+          <MessageAnalysisTabBar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+          />
+        ) : undefined
+      }
     >
       {!conversationId ? (
         <div className="p-4 text-xs text-muted-foreground">
           No conversation selected.
         </div>
       ) : (
-        <div className="flex flex-col h-full min-h-0">
-          <div className="flex items-center border-b border-border shrink-0 px-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "px-3 py-1.5 text-[11px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
-                  activeTab === tab.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {activeTab === "request" && (
-              <RequestStatsPanel
-                conversationId={conversationId}
-                requestId={requestId}
-              />
-            )}
-            {activeTab === "client" && (
-              <ClientMetricsPanel
-                conversationId={conversationId}
-                requestId={requestId}
-              />
-            )}
-            {activeTab === "session" && (
-              <SessionStatsPanel conversationId={conversationId} />
-            )}
-          </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {activeTab === "request" && (
+            <RequestStatsPanel
+              conversationId={conversationId}
+              requestId={requestId}
+            />
+          )}
+          {activeTab === "client" && (
+            <ClientMetricsPanel
+              conversationId={conversationId}
+              requestId={requestId}
+            />
+          )}
+          {activeTab === "session" && (
+            <SessionStatsPanel conversationId={conversationId} />
+          )}
         </div>
       )}
     </WindowPanel>
+  );
+}
+
+// ─── MessageAnalysisTabBar — header-slot view switcher ────────────────────────
+// Compact segmented control rendered in the WindowPanel header's actionsRight
+// zone. Window-level chrome (switches which panel the body shows), not content.
+
+function MessageAnalysisTabBar({
+  activeTab,
+  onSelectTab,
+}: {
+  activeTab: TabId;
+  onSelectTab: (tab: TabId) => void;
+}) {
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 p-0.5">
+      {TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onSelectTab(tab.id)}
+          className={cn(
+            "rounded px-2 py-0.5 text-[11px] font-medium transition-colors whitespace-nowrap",
+            activeTab === tab.id
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
   );
 }

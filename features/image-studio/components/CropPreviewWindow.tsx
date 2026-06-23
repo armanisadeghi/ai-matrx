@@ -137,6 +137,9 @@ export function CropPreviewWindow({
         [files, activeFile, onActiveFileChange],
     );
 
+    // Footer slot only exists in cover mode (the only mode with a focal point).
+    const showFocalPoint = fit === "cover" && !!activePreset && !!activeFile;
+
     return (
         <WindowPanel
             id="image-studio-crop-preview"
@@ -147,123 +150,164 @@ export function CropPreviewWindow({
             width={720}
             height={560}
             position="bottom-right"
-        >
-            <div className="flex flex-col h-full min-h-0 bg-background">
-                {/* Selector bar */}
-                <div className="flex items-center gap-2 border-b border-border bg-card/40 px-3 py-2 text-xs">
-                    <SelectorPill icon={<ImageIcon className="h-3 w-3" />} label="File">
-                        <IconArrowButton
-                            onClick={() => cycleFile(-1)}
-                            disabled={files.length <= 1}
-                            title="Previous file"
-                        >
-                            <ChevronLeft className="h-3 w-3" />
-                        </IconArrowButton>
-                        <select
-                            value={activeFile?.id ?? ""}
-                            onChange={(e) => onActiveFileChange(e.target.value)}
-                            className="bg-transparent font-mono text-xs max-w-[140px] truncate focus:outline-none"
-                        >
-                            {files.map((f) => (
-                                <option key={f.id} value={f.id}>
-                                    {f.filenameBase}
-                                </option>
-                            ))}
-                            {files.length === 0 && <option value="">No files</option>}
-                        </select>
-                        <IconArrowButton
-                            onClick={() => cycleFile(1)}
-                            disabled={files.length <= 1}
-                            title="Next file"
-                        >
-                            <ChevronRight className="h-3 w-3" />
-                        </IconArrowButton>
-                    </SelectorPill>
-
-                    <SelectorPill icon={<Layers className="h-3 w-3" />} label="Preset">
-                        <IconArrowButton
-                            onClick={() => cyclePreset(-1)}
-                            disabled={previewablePresetIds.length <= 1}
-                            title="Previous preset"
-                        >
-                            <ChevronLeft className="h-3 w-3" />
-                        </IconArrowButton>
-                        <select
-                            value={activePreset?.id ?? ""}
-                            onChange={(e) => onActivePresetChange(e.target.value)}
-                            className="bg-transparent text-xs max-w-[180px] truncate focus:outline-none"
-                        >
-                            {previewablePresetIds.map((id) => {
-                                const p = getPresetById(id);
-                                return (
-                                    <option key={id} value={id}>
-                                        {p ? `${p.name} — ${p.width}×${p.height}` : id}
-                                    </option>
-                                );
-                            })}
-                            {previewablePresetIds.length === 0 && (
-                                <option value="">No presets available</option>
-                            )}
-                        </select>
-                        <IconArrowButton
-                            onClick={() => cyclePreset(1)}
-                            disabled={previewablePresetIds.length <= 1}
-                            title="Next preset"
-                        >
-                            <ChevronRight className="h-3 w-3" />
-                        </IconArrowButton>
-                    </SelectorPill>
-                    {previewingAll && (
-                        <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium">
-                            Browsing all presets — pick one in the catalog to lock it in
-                        </span>
-                    )}
-                </div>
-
-                {/* Preview body */}
-                <div className="flex-1 min-h-0">
-                    {activePreset ? (
-                        <CropPreview
-                            sourceUrl={activeFile?.objectUrl ?? null}
-                            sourceWidth={activeFile?.width ?? null}
-                            sourceHeight={activeFile?.height ?? null}
-                            sourceName={activeFile?.originalName}
-                            sourceBytes={activeFile?.size}
-                            dstWidth={activePreset.width}
-                            dstHeight={activePreset.height}
-                            presetName={activePreset.name}
-                            fit={fit}
+            bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+            actionsRight={
+                <CropPreviewSelectors
+                    files={files}
+                    activeFile={activeFile}
+                    onActiveFileChange={onActiveFileChange}
+                    cycleFile={cycleFile}
+                    previewablePresetIds={previewablePresetIds}
+                    activePreset={activePreset}
+                    onActivePresetChange={onActivePresetChange}
+                    cyclePreset={cyclePreset}
+                    previewingAll={previewingAll}
+                />
+            }
+            footer={
+                showFocalPoint ? (
+                    // The footer slot forces `[&_button]:h-5`; pin the picker's
+                    // 16px-square grid cells back to `h-4 w-4` so they don't
+                    // stretch into rectangles. `select-text` undoes the footer's
+                    // `select-none`.
+                    <div className="flex items-center gap-3 select-text [&_.grid_button]:!h-4 [&_.grid_button]:!w-4">
+                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                            Focal point
+                        </p>
+                        <MiniFocalPointPicker
                             position={position}
-                            backgroundColor={backgroundColor}
-                            onPositionChange={onPositionChange}
+                            onChange={onPositionChange}
                         />
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-sm text-muted-foreground p-6">
-                            <Eye className="h-6 w-6 mb-2 text-muted-foreground/60" />
-                            <p className="font-medium">No preset selected</p>
-                            <p className="text-xs mt-1">
-                                Pick one from the catalog to see the live crop.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Inline focal-point picker (for cover mode only) */}
-                {fit === "cover" && activePreset && activeFile && (
-                    <div className="border-t border-border bg-card/40 px-3 py-2">
-                        <div className="flex items-center gap-3">
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                                Focal point
-                            </p>
-                            <MiniFocalPointPicker
-                                position={position}
-                                onChange={onPositionChange}
-                            />
-                        </div>
+                    </div>
+                ) : undefined
+            }
+        >
+            {/* Preview body — content only */}
+            <div className="flex-1 min-h-0 bg-background">
+                {activePreset ? (
+                    <CropPreview
+                        sourceUrl={activeFile?.objectUrl ?? null}
+                        sourceWidth={activeFile?.width ?? null}
+                        sourceHeight={activeFile?.height ?? null}
+                        sourceName={activeFile?.originalName}
+                        sourceBytes={activeFile?.size}
+                        dstWidth={activePreset.width}
+                        dstHeight={activePreset.height}
+                        presetName={activePreset.name}
+                        fit={fit}
+                        position={position}
+                        backgroundColor={backgroundColor}
+                        onPositionChange={onPositionChange}
+                    />
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-sm text-muted-foreground p-6">
+                        <Eye className="h-6 w-6 mb-2 text-muted-foreground/60" />
+                        <p className="font-medium">No preset selected</p>
+                        <p className="text-xs mt-1">
+                            Pick one from the catalog to see the live crop.
+                        </p>
                     </div>
                 )}
             </div>
         </WindowPanel>
+    );
+}
+
+// ─── Header selector chrome ───────────────────────────────────────────────────
+// File + preset switchers that live in the WindowPanel `actionsRight` slot, not
+// in a hand-rolled bar inside the body.
+
+function CropPreviewSelectors({
+    files,
+    activeFile,
+    onActiveFileChange,
+    cycleFile,
+    previewablePresetIds,
+    activePreset,
+    onActivePresetChange,
+    cyclePreset,
+    previewingAll,
+}: {
+    files: StudioSourceFile[];
+    activeFile: StudioSourceFile | null;
+    onActiveFileChange: (fileId: string) => void;
+    cycleFile: (dir: 1 | -1) => void;
+    previewablePresetIds: string[];
+    activePreset: { id: string } | null;
+    onActivePresetChange: (presetId: string) => void;
+    cyclePreset: (dir: 1 | -1) => void;
+    previewingAll: boolean;
+}) {
+    return (
+        <div className="flex items-center gap-2 text-xs">
+            <SelectorPill icon={<ImageIcon className="h-3 w-3" />} label="File">
+                <IconArrowButton
+                    onClick={() => cycleFile(-1)}
+                    disabled={files.length <= 1}
+                    title="Previous file"
+                >
+                    <ChevronLeft className="h-3 w-3" />
+                </IconArrowButton>
+                <select
+                    value={activeFile?.id ?? ""}
+                    onChange={(e) => onActiveFileChange(e.target.value)}
+                    className="bg-transparent font-mono text-xs max-w-[140px] truncate focus:outline-none"
+                >
+                    {files.map((f) => (
+                        <option key={f.id} value={f.id}>
+                            {f.filenameBase}
+                        </option>
+                    ))}
+                    {files.length === 0 && <option value="">No files</option>}
+                </select>
+                <IconArrowButton
+                    onClick={() => cycleFile(1)}
+                    disabled={files.length <= 1}
+                    title="Next file"
+                >
+                    <ChevronRight className="h-3 w-3" />
+                </IconArrowButton>
+            </SelectorPill>
+
+            <SelectorPill icon={<Layers className="h-3 w-3" />} label="Preset">
+                <IconArrowButton
+                    onClick={() => cyclePreset(-1)}
+                    disabled={previewablePresetIds.length <= 1}
+                    title="Previous preset"
+                >
+                    <ChevronLeft className="h-3 w-3" />
+                </IconArrowButton>
+                <select
+                    value={activePreset?.id ?? ""}
+                    onChange={(e) => onActivePresetChange(e.target.value)}
+                    className="bg-transparent text-xs max-w-[180px] truncate focus:outline-none"
+                >
+                    {previewablePresetIds.map((id) => {
+                        const p = getPresetById(id);
+                        return (
+                            <option key={id} value={id}>
+                                {p ? `${p.name} — ${p.width}×${p.height}` : id}
+                            </option>
+                        );
+                    })}
+                    {previewablePresetIds.length === 0 && (
+                        <option value="">No presets available</option>
+                    )}
+                </select>
+                <IconArrowButton
+                    onClick={() => cyclePreset(1)}
+                    disabled={previewablePresetIds.length <= 1}
+                    title="Next preset"
+                >
+                    <ChevronRight className="h-3 w-3" />
+                </IconArrowButton>
+            </SelectorPill>
+            {previewingAll && (
+                <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5 text-[10px] font-medium">
+                    Browsing all presets — pick one in the catalog to lock it in
+                </span>
+            )}
+        </div>
     );
 }
 
