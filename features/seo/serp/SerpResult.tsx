@@ -140,7 +140,9 @@ export function SerpResult({
   return (
     <div
       className={cn(
-        "bg-card font-sans",
+        // Transparent — inherits the container's surface so it never two-tones
+        // against a tinted/validation card. Containers own the background.
+        "font-sans",
         device === "mobile" ? "max-w-[380px]" : "",
         className,
       )}

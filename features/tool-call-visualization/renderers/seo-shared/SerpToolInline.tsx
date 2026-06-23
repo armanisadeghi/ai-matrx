@@ -81,10 +81,11 @@ export function SerpToolInline({
           <div
             key={i}
             className={cn(
-              "animate-in fade-in slide-in-from-left rounded-lg border p-3",
-              entry.overallOk
-                ? "border-success/40 bg-success/5"
-                : "border-warning/40 bg-warning/5",
+              // ONE surface (bg-card) — status is a thin left accent + the
+              // footer chips, never a full background tint (that two-toned
+              // against the white SERP block).
+              "animate-in fade-in slide-in-from-left rounded-lg border border-border border-l-[3px] bg-card p-3",
+              entry.overallOk ? "border-l-success" : "border-l-warning",
             )}
             style={{
               animationDelay: `${i * 50}ms`,
