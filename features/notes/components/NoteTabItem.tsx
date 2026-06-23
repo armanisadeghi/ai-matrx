@@ -20,8 +20,9 @@ import {
   Trash2,
   X,
   Download,
-  Link2,
   Info,
+  Bookmark,
+  MoreHorizontal,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -45,6 +46,15 @@ import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindo
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { useIsOwner } from "@/utils/permissions";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 import { NoteContextStatusIcon } from "./NoteContextSection";
 import {
@@ -210,6 +220,75 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     }
   }, [bumpTabInteraction, dispatch, instanceId, openTabs]);
 
+  // Copy a live record reference (the "bookmark") to the clipboard — same fence
+  // ReferenceCopyButton produces, now reachable from the "…" menu.
+  const copyReference = useCallback(() => {
+    navigator.clipboard
+      .writeText(buildRecordReferenceFence({ type: "note", id: noteId, label }))
+      .then(() => toast.success("Reference copied", { description: label }))
+      .catch(() => toast.error("Failed to copy reference"));
+  }, [noteId, label]);
+
+  // Secondary actions — the single source for BOTH the "…" dropdown and the
+  // right-click menu, so they never drift. Primary actions (copy content,
+  // share, context, mic) live inline on the tab.
+  type TabMenuItem = {
+    icon: React.ReactNode;
+    label: string;
+    fn: () => void;
+    destructive?: boolean;
+  };
+  const menuItems: (TabMenuItem | null)[] = [
+    {
+      icon: <Save className="w-3.5 h-3.5" />,
+      label: isSaving ? "Saving…" : "Save",
+      fn: () => dispatch(saveNote(noteId)),
+    },
+    {
+      icon: <Bookmark className="w-3.5 h-3.5" />,
+      label: "Copy reference",
+      fn: copyReference,
+    },
+    {
+      icon: <CopyPlus className="w-3.5 h-3.5" />,
+      label: "Duplicate note",
+      fn: () => dispatch(copyNote(noteId)),
+    },
+    {
+      icon: <Info className="w-3.5 h-3.5" />,
+      label: "About this note",
+      fn: () => openNoteInfo({ noteId, title: label }),
+    },
+    {
+      icon: <Download className="w-3.5 h-3.5" />,
+      label: "Export as Markdown",
+      fn: handleExport,
+    },
+    null,
+    {
+      icon: <X className="w-3.5 h-3.5" />,
+      label: "Close tab",
+      fn: () => dispatch(removeInstanceTab({ instanceId, noteId })),
+    },
+    {
+      icon: <X className="w-3.5 h-3.5" />,
+      label: "Close other tabs",
+      fn: handleCloseOtherTabs,
+    },
+    {
+      icon: <X className="w-3.5 h-3.5" />,
+      label: "Close all tabs",
+      fn: handleCloseAllTabs,
+    },
+    null,
+    {
+      icon: <Trash2 className="w-3.5 h-3.5" />,
+      label: "Delete note",
+      fn: requestDelete,
+      destructive: true,
+    },
+  ];
+
   return (
     <>
       <div
@@ -260,7 +339,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           <span className="overflow-hidden text-ellipsis">{label}</span>
         )}
 
-        {/* Active tab action buttons */}
+        {/* Active tab action buttons: copy | share | context | mic | … */}
         {isActive && (
           <div
             className="flex items-center gap-px shrink-0 ml-1"
@@ -269,16 +348,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
               bumpTabInteraction();
             }}
           >
-            <button
-              className={cn(
-                actionBtnClass,
-                (isDirty || isSaving) && "text-amber-500",
-              )}
-              onClick={() => dispatch(saveNote(noteId))}
-              title="Save (Ctrl+S)"
-            >
-              <Save />
-            </button>
             <button
               className={actionBtnClass}
               onClick={() => {
@@ -295,28 +364,41 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             >
               <Share2 />
             </button>
-            <button
-              className={actionBtnClass}
-              onClick={() => openNoteInfo({ noteId, title: label })}
-              title="Note info, context & folder"
-            >
-              <Info />
-            </button>
             {/* Context shortcut — amber = no context yet (nudge), green = set.
                 Same picker + same save behavior as the note-footer panel. */}
             <NoteContextStatusIcon noteId={noteId} />
-            <button
-              className={cn(actionBtnClass, "hover:text-destructive")}
-              onClick={requestDelete}
-              title="Delete"
-            >
-              <Trash2 />
-            </button>
             <MicrophoneIconButton
               onTranscriptionComplete={handleTranscription}
               variant="icon-only"
               size="sm"
             />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={actionBtnClass} title="More actions">
+                  <MoreHorizontal />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[190px]">
+                {menuItems.map((item, i) =>
+                  item === null ? (
+                    <DropdownMenuSeparator key={`sep-${i}`} />
+                  ) : (
+                    <DropdownMenuItem
+                      key={item.label}
+                      onSelect={() => item.fn()}
+                      className={cn(
+                        "gap-2 text-xs",
+                        item.destructive &&
+                          "text-destructive focus:text-destructive",
+                      )}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </DropdownMenuItem>
+                  ),
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
 
@@ -343,57 +425,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             className="fixed z-[120] min-w-[160px] py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg"
             style={{ left: ctxMenu.x, top: ctxMenu.y }}
           >
-            {[
-              {
-                icon: <Save className="w-3 h-3" />,
-                label: "Save",
-                fn: () => dispatch(saveNote(noteId)),
-              },
-              {
-                icon: <Copy className="w-3 h-3" />,
-                label: "Copy Content",
-                fn: () =>
-                  navigator.clipboard.writeText(content).catch(() => {}),
-              },
-              {
-                icon: <CopyPlus className="w-3 h-3" />,
-                label: "Duplicate Note",
-                fn: () => dispatch(copyNote(noteId)),
-              },
-              {
-                icon: <Link2 className="w-3 h-3" />,
-                label: "Share Link",
-                fn: () => setShareOpen(true),
-              },
-              {
-                icon: <Download className="w-3 h-3" />,
-                label: "Export as Markdown",
-                fn: handleExport,
-              },
-              null,
-              {
-                icon: <X className="w-3 h-3" />,
-                label: "Close Tab",
-                fn: () => dispatch(removeInstanceTab({ instanceId, noteId })),
-              },
-              {
-                icon: <X className="w-3 h-3" />,
-                label: "Close Other Tabs",
-                fn: handleCloseOtherTabs,
-              },
-              {
-                icon: <X className="w-3 h-3" />,
-                label: "Close All Tabs",
-                fn: handleCloseAllTabs,
-              },
-              null,
-              {
-                icon: <Trash2 className="w-3 h-3" />,
-                label: "Delete Note",
-                fn: requestDelete,
-                destructive: true,
-              },
-            ].map((item, i) =>
+            {menuItems.map((item, i) =>
               item === null ? (
                 <div key={`sep-${i}`} className="h-px bg-border/50 my-1" />
               ) : (
@@ -401,7 +433,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                   key={item.label}
                   className={cn(
                     "flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors cursor-pointer",
-                    (item as any).destructive
+                    item.destructive
                       ? "text-destructive hover:bg-destructive/10"
                       : "text-foreground hover:bg-accent",
                   )}
