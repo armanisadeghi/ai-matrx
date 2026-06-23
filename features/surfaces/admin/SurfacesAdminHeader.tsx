@@ -10,8 +10,10 @@ import {
 import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 
 /**
- * Header controls for the surfaces admin shell. Lives inside `<PageHeader>`
- * and reads panel state through the cross-portal `PanelControlProvider`.
+ * Header controls for the surfaces admin shell. Lives inside the page header
+ * slot (injected via `PageSpecificHeader`, so it works under both the shell
+ * `#shell-header-center` and the new-layout `#page-specific-header-content`
+ * hosts) and reads panel state through the cross-portal `PanelControlProvider`.
  *
  * The five panels are: surfaces · agent · binding · surface-details ·
  * playground. The center (binding) is the non-collapsible filler — no
