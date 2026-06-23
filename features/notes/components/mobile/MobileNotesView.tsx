@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";
 import { NoteReferenceCopyButton } from "../NoteReferenceCopyButton";
+import { NoteCleanupButton } from "../cleanup/NoteCleanupButton";
 import {
   DEFAULT_FILTER_STATE,
   type NotesFilterState,
@@ -242,6 +243,13 @@ export default function MobileNotesView() {
                 </button>
               ))}
             </div>
+
+            {/* Clean up content */}
+            <NoteCleanupButton
+              noteId={selectedNote.id}
+              triggerClassName="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+              triggerActiveClassName="bg-muted/60 text-foreground"
+            />
 
             {/* Copy reference */}
             <NoteReferenceCopyButton

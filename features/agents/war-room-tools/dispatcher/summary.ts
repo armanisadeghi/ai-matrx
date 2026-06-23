@@ -1,99 +1,174 @@
 /**
- * Human-readable approval summaries for War Room write tools.
+ * buildApprovalChange — map a validated War Room tool call to the structured
+ * {@link ApprovalChange} the HITL <ApprovalCard> renders.
  *
- * The HITL confirm card shows the user EXACTLY what the agent is about to do
- * before they approve. This maps a validated tool call to a short, specific
- * one-liner + an uppercase header chip. Args are already Zod-validated, so this
- * only formats them.
+ * The card shows the user EXACTLY what the agent is about to do before they
+ * approve. Instead of a pre-baked English sentence (the old `buildApprovalCopy`,
+ * which forced the card to repeat itself), this emits the operation, the target,
+ * and the field-level diffs — so an add shows new values and an update shows
+ * before → after, each stated once.
  *
- * Kept out of the dispatcher so the wording lives in one place and stays in
- * lockstep with the schemas.
+ * It reads the CURRENT entity from the same slices the handlers write to, so the
+ * "before" side of every diff is the live value. Args are already Zod-validated.
+ *
+ * Kept out of the dispatcher so the wording + diff shaping live in one place and
+ * stay in lockstep with the schemas.
  */
 
+import type { RootState } from "@/lib/redux/store";
+import type {
+  ApprovalChange,
+  ApprovalFieldDiff,
+} from "@/features/agents/ui-first-tools/ui/approval-types";
 import type { WarRoomToolName } from "../tools/names";
+import {
+  selectActiveNoteId,
+  selectTileById,
+} from "@/features/war-room/redux/selectors";
+import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { selectNoteById } from "@/features/notes/redux/selectors";
 
-interface ApprovalCopy {
-  header: string;
-  summary: string;
+interface BuildCtx {
+  tileId: string;
+  getState: () => RootState;
 }
 
-const MAX = 120;
-function clip(s: string): string {
-  const t = s.replace(/\s+/g, " ").trim();
-  return t.length > MAX ? `${t.slice(0, MAX - 1)}…` : t;
+/** Cap block-field (description / note body) diffs so the card stays compact. */
+const BLOCK_MAX = 600;
+function clipBlock(s: string | null | undefined): string | null {
+  if (s == null) return null;
+  const t = s.replace(/\r\n/g, "\n");
+  return t.length > BLOCK_MAX ? `${t.slice(0, BLOCK_MAX - 1)}…` : t;
 }
 
-export function buildApprovalCopy(
+function str(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined;
+}
+
+export function buildApprovalChange(
   toolName: WarRoomToolName,
   args: Record<string, unknown>,
-): ApprovalCopy {
+  ctx: BuildCtx,
+): ApprovalChange {
+  const state = ctx.getState();
+  const tile = selectTileById(ctx.tileId)(state);
+
   switch (toolName) {
     case "war_room_update_task": {
-      const parts: string[] = [];
-      if (typeof args.title === "string") parts.push(`title → “${args.title}”`);
-      if (typeof args.status === "string") parts.push(`status → ${args.status}`);
-      if (args.priority === null) parts.push("clear priority");
-      else if (typeof args.priority === "string")
-        parts.push(`priority → ${args.priority}`);
-      if (args.due_date === null) parts.push("clear due date");
-      else if (typeof args.due_date === "string")
-        parts.push(`due → ${args.due_date}`);
-      if ("description" in args) parts.push("update description");
+      const taskId = tile?.task_id ?? null;
+      const task = taskId ? selectTaskById(state, taskId) : null;
+      const fields: ApprovalFieldDiff[] = [];
+      if (str(args.title) !== undefined)
+        fields.push({ label: "Title", before: task?.title ?? null, after: str(args.title)! });
+      if (str(args.status) !== undefined)
+        fields.push({ label: "Status", before: task?.status ?? null, after: str(args.status)! });
+      if ("priority" in args)
+        fields.push({
+          label: "Priority",
+          before: task?.priority ?? null,
+          after: (args.priority as string | null) ?? null,
+        });
+      if ("due_date" in args)
+        fields.push({
+          label: "Due date",
+          before: task?.due_date ?? null,
+          after: (args.due_date as string | null) ?? null,
+        });
+      if ("description" in args)
+        fields.push({
+          label: "Description",
+          before: clipBlock(task?.description ?? null),
+          after: clipBlock((args.description as string | null) ?? null),
+          block: true,
+        });
       return {
-        header: "TASK",
-        summary: clip(
-          parts.length
-            ? `Update this tile's task: ${parts.join(", ")}?`
-            : "Update this tile's task?",
-        ),
+        verb: "update",
+        entity: "task",
+        title: task?.title ?? null,
+        fields,
+        autoApprove: { scope: "task", noun: "task changes" },
       };
     }
 
-    case "war_room_add_subtask":
+    case "war_room_add_subtask": {
+      const fields: ApprovalFieldDiff[] = [];
+      const description = str(args.description);
+      if (description && description.trim())
+        fields.push({ label: "Notes", after: clipBlock(description), block: true });
       return {
-        header: "SUBTASK",
-        summary: clip(
-          `Add a subtask “${String(args.title ?? "")}” to this tile's task?`,
-        ),
+        verb: "add",
+        entity: "subtask",
+        title: str(args.title) ?? "",
+        fields,
+        autoApprove: { scope: "task", noun: "task changes" },
       };
+    }
 
     case "war_room_toggle_subtask": {
-      const target =
-        args.completed === true
-          ? "complete"
-          : args.completed === false
-            ? "incomplete"
-            : "toggle";
+      const subId = str(args.subtask_id);
+      const sub = subId ? selectTaskById(state, subId) : null;
+      const target = args.completed; // boolean | undefined
+      const willComplete =
+        target === true ||
+        (target === undefined && sub?.status !== "completed");
       return {
-        header: "SUBTASK",
-        summary: clip(
-          target === "toggle"
-            ? "Toggle this subtask's completion?"
-            : `Mark this subtask ${target}?`,
-        ),
+        verb: willComplete ? "complete" : "reopen",
+        entity: "subtask",
+        title: sub?.title ?? null,
+        fields: [
+          {
+            label: "Status",
+            before: sub?.status ?? null,
+            after: willComplete ? "completed" : "incomplete",
+          },
+        ],
+        autoApprove: { scope: "task", noun: "task changes" },
       };
     }
 
     case "war_room_update_note": {
-      const mode = args.mode === "append" ? "Append to" : "Replace";
-      const bits: string[] = [];
-      if ("content" in args)
-        bits.push(`${mode.toLowerCase()} the note content`);
-      if (typeof args.label === "string") bits.push(`rename it to “${args.label}”`);
+      const noteId =
+        selectActiveNoteId(ctx.tileId)(state) ?? tile?.note_id ?? null;
+      const note = noteId ? selectNoteById(noteId)(state) : null;
+      const append = args.mode === "append";
+      const fields: ApprovalFieldDiff[] = [];
+      if (str(args.label) !== undefined)
+        fields.push({ label: "Title", before: note?.label ?? null, after: str(args.label)! });
+      const content = str(args.content);
+      if (content !== undefined) {
+        if (append) {
+          fields.push({ label: "Appends", after: clipBlock(content), block: true });
+        } else {
+          fields.push({
+            label: "Content",
+            before: clipBlock(note?.content ?? null),
+            after: clipBlock(content),
+            block: true,
+          });
+        }
+      }
       return {
-        header: "NOTE",
-        summary: clip(
-          bits.length
-            ? `Edit this tile's note: ${bits.join(" and ")}?`
-            : "Edit this tile's note?",
-        ),
+        verb: append ? "append" : "update",
+        entity: "note",
+        title: note?.label ?? null,
+        fields,
+        autoApprove: { scope: "note", noun: "note edits" },
       };
     }
 
     case "war_room_update_tile":
       return {
-        header: "TILE",
-        summary: clip(`Rename this tile to “${String(args.title ?? "")}”?`),
+        verb: "rename",
+        entity: "tile",
+        title: tile?.title ?? null,
+        fields: [
+          {
+            label: "Name",
+            before: tile?.title ?? null,
+            after: str(args.title) ?? "",
+          },
+        ],
+        autoApprove: { scope: "tile", noun: "tile renames" },
       };
   }
 }

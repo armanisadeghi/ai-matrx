@@ -10,13 +10,15 @@
  * in the Smart Input "Document" tab.
  */
 
-import { useState, useEffect } from "react";
-import { Check, Copy, FileText, Link2, Loader2, Maximize2 } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect } from "react";
+import { FileText, Link2, Loader2, Maximize2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
+import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
+import type { ContentSource } from "@/features/rich-document/types";
 import { WorkingDocumentEditor } from "./WorkingDocumentEditor";
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
 import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
@@ -28,6 +30,19 @@ import {
   setWorkingDocMainView,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
+
+/**
+ * Stable RichDocument action-surface id for a conversation's document. Shared
+ * by the panel (which mounts the headless provider + renders the header bar)
+ * and any other view of the same document (the Smart Input "Document" tab)
+ * that wants to render the toolbar via `<RichDocumentActionSurface/>`.
+ */
+export function workingDocumentSurfaceId(
+  conversationId: string,
+  kind: WorkingDocumentKind = "working",
+): string {
+  return `working-document-${conversationId}-${kind}`;
+}
 
 interface WorkingDocumentPanelProps {
   conversationId: string;
@@ -69,7 +84,6 @@ export function WorkingDocumentPanel({
   const isScratch = kind === "scratch";
   const docNoun = isScratch ? "scratchpad" : "working document";
   const docTitleFallback = isScratch ? "Scratchpad" : "Working document";
-  const [hasCopied, setHasCopied] = useState(false);
 
   useEffect(() => {
     patchWorkingDocViewState(conversationId, { hasUnseenChange, saving });
@@ -79,22 +93,38 @@ export function WorkingDocumentPanel({
     if (mainView === "agent-diff") markSeen();
   }, [mainView, markSeen]);
 
-  const handleCopy = async () => {
-    const text = draft.trim();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(draft);
-      setHasCopied(true);
-      setTimeout(() => setHasCopied(false), 600);
-    } catch {
-      toast.error("Could not copy to clipboard");
-    }
-  };
-
   const isBound = binding.kind === "note" && !!binding.id;
+
+  // The working document's RichDocument identity. Drives the full action
+  // toolkit (copy / read-aloud / save-to-notes/task / HTML page / email /
+  // print / edit) — parity with an assistant response and a note — wherever
+  // this panel renders. `documentId` is the durable backing row (when bound to
+  // one) so save-to-task links a parent. The actions live in a REMOTE surface:
+  // a headless provider (mounted below) registers the live draft + source, and
+  // the header bar renders it — so the toolbar is present in every editor mode,
+  // not just preview.
+  const wdSurfaceId = workingDocumentSurfaceId(conversationId, kind);
+  const wdSource: ContentSource = {
+    type: "working-document",
+    conversationId,
+    kind,
+    documentId: binding.kind === "cx_working_document" ? binding.id : null,
+  };
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
+      {/* Headless action provider — registers the full RichDocument toolkit for
+          this document's surface from the LIVE draft, without re-rendering the
+          content engine. The header bar (and the body's right-click menu)
+          consume it. Mounted only while enabled so a disabled doc registers
+          nothing. */}
+      {enabled && (
+        <RichDocumentActionProvider
+          content={draft}
+          source={wdSource}
+          surfaceId={wdSurfaceId}
+        />
+      )}
       {showHeader && (
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -124,26 +154,15 @@ export function WorkingDocumentPanel({
 
           {enabled && (
             <>
-              <button
-                type="button"
-                onClick={() => void handleCopy()}
-                disabled={!draft.trim()}
-                aria-label={hasCopied ? "Copied" : "Copy document"}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-                  draft.trim()
-                    ? hasCopied
-                      ? "text-green-500 hover:bg-accent"
-                      : "text-foreground hover:bg-accent"
-                    : "text-muted-foreground/40",
-                )}
-              >
-                {hasCopied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </button>
+              {/* Full action toolkit — read aloud, save to notes/task, HTML
+                  page, email, print, edit, and more — same set an assistant
+                  response and a note expose. Renders the live draft via the
+                  headless provider above. */}
+              <RichDocumentActionSurface
+                surfaceId={wdSurfaceId}
+                variant="bar"
+                fallback={null}
+              />
               {showOpenInWindow && (
                 <button
                   type="button"
@@ -200,6 +219,7 @@ export function WorkingDocumentPanel({
                 draft={draft}
                 onChange={onChange}
                 onFlush={flush}
+                actionsSource={wdSource}
                 placeholder={
                   isScratch
                     ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."

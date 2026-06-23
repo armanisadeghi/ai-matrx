@@ -26,7 +26,7 @@
  */
 
 import React, { useState } from "react";
-import { PencilLine, Sparkles, type LucideIcon } from "lucide-react";
+import { Cpu, PencilLine, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { AgentRunWrapper } from "./AgentRunWrapper";
@@ -46,6 +46,8 @@ export interface CreateWithAiExtraTab {
   content: React.ReactNode;
   /** Whether this tab owns a scroll area. Default true. */
   scrolls?: boolean;
+  /** Optional pane class for feature-specific padding/sizing. */
+  className?: string;
 }
 
 export interface CreateWithAiTabsProps {
@@ -74,6 +76,11 @@ export interface CreateWithAiTabsProps {
   aiLabel?: string;
   /** Extra entry-method tabs rendered after Manual / Use AI. */
   extraTabs?: CreateWithAiExtraTab[];
+  className?: string;
+  headerClassName?: string;
+  bodyClassName?: string;
+  manualPaneClassName?: string;
+  aiPaneClassName?: string;
 }
 
 function ModeButton({
@@ -120,6 +127,11 @@ export function CreateWithAiTabs({
   manualLabel = "Manual",
   aiLabel = "Use AI",
   extraTabs = [],
+  className,
+  headerClassName,
+  bodyClassName,
+  manualPaneClassName,
+  aiPaneClassName,
 }: CreateWithAiTabsProps) {
   const [mode, setMode] = useState<CreateWithAiMode>(defaultMode);
   // Lazy-mount each non-manual tab on first visit, then keep it mounted so
@@ -146,8 +158,8 @@ export function CreateWithAiTabs({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex-shrink-0 px-1 pb-3">
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+      <div className={cn("flex-shrink-0 px-1 pb-3", headerClassName)}>
         <div className="inline-flex w-full items-center gap-1 rounded-lg bg-muted p-1">
           <ModeButton
             active={mode === "manual"}
@@ -160,7 +172,7 @@ export function CreateWithAiTabs({
             <ModeButton
               active={mode === "ai"}
               onClick={() => selectMode("ai")}
-              icon={Sparkles}
+              icon={Cpu}
               label={aiLabel}
               isMobile={isMobile}
             />
@@ -193,11 +205,12 @@ export function CreateWithAiTabs({
        * WindowPanel. The Manual tab stays in normal flow so the dialog still
        * grows to fit the hand-authored form.
        */}
-      <div className="relative flex-1 min-h-[460px]">
+      <div className={cn("relative flex-1 min-h-[460px]", bodyClassName)}>
         <div
           className={cn(
             "h-full min-h-0",
             scrollManual && "overflow-y-auto",
+            manualPaneClassName,
             mode !== "manual" && "hidden",
           )}
         >
@@ -205,7 +218,13 @@ export function CreateWithAiTabs({
         </div>
 
         {enableAi && mountedTabs.has("ai") && (
-          <div className={cn("absolute inset-0", mode !== "ai" && "hidden")}>
+          <div
+            className={cn(
+              "absolute inset-0",
+              aiPaneClassName,
+              mode !== "ai" && "hidden",
+            )}
+          >
             <AgentRunWrapper
               agentId={agentId}
               sourceFeature={sourceFeature}
@@ -222,6 +241,7 @@ export function CreateWithAiTabs({
                 className={cn(
                   "h-full min-h-0",
                   (tab.scrolls ?? true) && "overflow-y-auto",
+                  tab.className,
                   mode !== tab.id && "hidden",
                 )}
               >

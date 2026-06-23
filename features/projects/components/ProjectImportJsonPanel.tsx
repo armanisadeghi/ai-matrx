@@ -13,23 +13,25 @@
  * Wrapped by `ProjectCreatePanel`; never forked per surface.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  FileCheck2,
   Info,
   Loader2,
-  Sparkles,
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import {
   createProjectFromJson,
   validateProjectJson,
@@ -161,85 +163,117 @@ export function ProjectImportJsonPanel({
 
   const canCreate = !!effective?.valid && !isCreating;
 
+  const getJsonApplicationScope = useCallback((): ApplicationScope => {
+    const context = {
+      surface: "project-create",
+      mode: "paste-json",
+      selected_organization_id: selectedOrg?.id,
+      selected_organization_name: selectedOrg?.name || undefined,
+      selected_organization_slug: selectedOrg?.slug || undefined,
+      org_locked: orgLocked,
+      json_is_valid: effective?.valid,
+      json_errors: effective?.errors ?? [],
+      json_warnings: effective?.warnings ?? [],
+      json_task_count: effective?.summary?.taskCount,
+      json_subtask_count: effective?.summary?.subtaskCount,
+    };
+    const scope = createProjectsScope({
+      context,
+      active_project_name: effective?.summary?.name || undefined,
+      active_project_description: effective?.payload?.description || undefined,
+      active_organization_id: selectedOrg?.id,
+      active_organization_name: selectedOrg?.name || undefined,
+    });
+    scope.content = raw;
+    return scope;
+  }, [effective, orgLocked, raw, selectedOrg]);
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      {/* Owner */}
-      <div className="space-y-2">
-        <Label>Owner</Label>
-        <OrgSelector
-          orgs={orgs}
-          orgsLoading={orgsLoading}
-          selectedOrg={selectedOrg}
-          onSelect={setSelectedOrg}
-          locked={orgLocked}
-          isMobile={isMobile}
-        />
-      </div>
-
-      {/* JSON input */}
-      <div className="flex min-h-0 flex-1 flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="project-json">Project JSON</Label>
-          <span className="text-xs text-muted-foreground">
-            Paste the agent payload
-          </span>
-        </div>
-        <Textarea
-          id="project-json"
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          placeholder={PLACEHOLDER}
-          spellCheck={false}
-          disabled={isCreating}
-          className="min-h-[200px] flex-1 resize-none font-mono text-xs"
-          style={isMobile ? { fontSize: "16px" } : undefined}
-        />
-      </div>
-
-      {/* Validation report */}
-      {effective && (
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        {/* Owner */}
         <div className="space-y-2">
-          {effective.valid && effective.summary && (
-            <div className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-xs">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
-              <div className="text-foreground">
-                <span className="font-medium">{effective.summary.name}</span>
-                {" — "}
-                {effective.summary.taskCount} task(s),{" "}
-                {effective.summary.subtaskCount} subtask(s)
-              </div>
-            </div>
-          )}
-
-          {effective.errors.length > 0 && (
-            <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
-              {effective.errors.map((err, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-xs text-destructive"
-                >
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{err}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {effective.warnings.length > 0 && (
-            <ul className="space-y-1 rounded-md border border-border bg-muted px-3 py-2">
-              {effective.warnings.map((warn, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-xs text-muted-foreground"
-                >
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{warn}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <Label>Owner</Label>
+          <OrgSelector
+            orgs={orgs}
+            orgsLoading={orgsLoading}
+            selectedOrg={selectedOrg}
+            onSelect={setSelectedOrg}
+            locked={orgLocked}
+            isMobile={isMobile}
+          />
         </div>
-      )}
+
+        {/* JSON input */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="project-json">Project JSON</Label>
+            <span className="text-xs text-muted-foreground">
+              Paste the agent payload
+            </span>
+          </div>
+          <ProTextarea
+            id="project-json"
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            placeholder={PLACEHOLDER}
+            spellCheck={false}
+            disabled={isCreating}
+            className={cn(
+              "h-full min-h-[260px] flex-1 resize-none font-mono text-xs",
+              isMobile && "text-base",
+            )}
+            wrapperClassName="flex min-h-0 flex-1"
+            surfaceName="matrx-user/projects"
+            getApplicationScope={getJsonApplicationScope}
+          />
+        </div>
+
+        {/* Validation report */}
+        {effective && (
+          <div className="max-h-36 shrink-0 space-y-2 overflow-y-auto">
+            {effective.valid && effective.summary && (
+              <div className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-xs">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+                <div className="text-foreground">
+                  <span className="font-medium">{effective.summary.name}</span>
+                  {" — "}
+                  {effective.summary.taskCount} task(s),{" "}
+                  {effective.summary.subtaskCount} subtask(s)
+                </div>
+              </div>
+            )}
+
+            {effective.errors.length > 0 && (
+              <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
+                {effective.errors.map((err, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-xs text-destructive"
+                  >
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{err}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {effective.warnings.length > 0 && (
+              <ul className="space-y-1 rounded-md border border-border bg-muted px-3 py-2">
+                {effective.warnings.map((warn, i) => (
+                  <li
+                    key={i}
+                    className="flex items-start gap-2 text-xs text-muted-foreground"
+                  >
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{warn}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Actions */}
       <div
@@ -255,7 +289,7 @@ export function ProjectImportJsonPanel({
           disabled={isCreating || !raw.trim()}
           className={isMobile ? "min-h-[44px]" : undefined}
         >
-          <Sparkles className="mr-2 h-4 w-4" />
+          <FileCheck2 className="mr-2 h-4 w-4" />
           Validate
         </Button>
         <Button

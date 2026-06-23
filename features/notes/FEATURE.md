@@ -28,6 +28,7 @@ Comprehensive notes system: rich-text editing (WYSIWYG + markdown split view), f
 - `redux/` — slice + selectors
 - `route/` — route-level helpers
 - `service/` — Supabase DB calls
+- `components/cleanup/` — **Content cleanup** UI: `NoteCleanupButton` (in `NoteViewControls`) → `CleanupOptionsPopover` → `CleanupReviewDialog` (per-hunk staging diff). The engine is a reusable primitive at [`lib/content-cleanup/`](../../lib/content-cleanup/) (`segment` → `operations` → `clean` → `staging` → `debug`), not notes-specific.
 - `index.ts` — public barrel
 
 **Floating window** (`features/window-panels/windows/notes/NotesWindow.tsx`) — thin composition root: owns the per-instance lifecycle (`registerInstance` + notes-list/scopes fetch) and maps independent, prop-drill-free units (each takes only `instanceId`, reads Redux) onto `WindowPanel` slots — `sidebar`=`NoteSidebar`, `actionsRight`=`NoteViewControls` (view-mode menu + history toggle), `footer`=`NoteMetadataBar`, body=`NotesWindowView` (tab bar + presence + editor + split + window-relative version-history pane). Chrome lives in slots; no reinvented header/footer, no `sidebarExpandsWindow` rect mutation. Version-history open state is per-instance (`historyOpen` on `NotesInstance`; `setInstanceHistoryOpen` / `selectInstanceHistoryOpen`).
@@ -79,6 +80,12 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 2. Grants user / org permission → row in permissions table
 3. RLS enforces visibility; subscriber's notes list updates via realtime
 
+### Flow 6 — Content cleanup
+
+1. `NoteCleanupButton` opens an opt-in popover: the engine detects **protected regions** (code, JSON, tables, front-matter, inline code, HTML), shows per-operation toggles with live change counts, and warns when protected content exists.
+2. Run → `CleanupReviewDialog`: per-hunk accept/reject staging diff + protected-regions inspector + debug panel + "Copy for AI" XML.
+3. Accept writes **only the staged hunks** via `updateNoteContent` + `saveNote` (auto-versions); Cancel changes nothing — that's the "go back".
+
 ---
 
 ## Invariants & gotchas
@@ -86,6 +93,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 - **Small, granular updates only.** Never replace the entire note object in Redux — follow the project's small-update rule.
 - **Realtime is RLS-authorized.** Use Postgres Changes here (not Broadcast) so non-owners only see notes they have access to.
 - **The save-from-anywhere API is a public contract.** Agents and other features depend on it; don't break the signature silently.
+- **Cleanup never edits protected regions.** `lib/content-cleanup/` masks code / JSON / tables / front-matter / inline-code / HTML out before any whitespace or typography op, then restores them verbatim. The engine is pure and surface-agnostic — reuse it, never fork it, for any paste-cleanup need.
 - **Rich text editor:** Notes currently uses its own editor — the legacy `features/rich-text-editor/` is deprecated (per CLAUDE.md) and must not be re-adopted. Verify the current editor before modifying content rendering.
 - **Scope columns** (`user_id`, `organization_id`, `project_id`) follow the project's multi-scope convention — see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 - **Folder tree operations are transactional.** Moving a folder with children must update all descendants' paths — don't optimize away the reparenting walk.
@@ -102,6 +110,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Change log
 
+- `2026-06-23` — **Content cleanup added.** `NoteCleanupButton` (in `NoteViewControls`) opens an opt-in popover — per-operation toggles with live change counts, a protected-content summary, and a power-user warning — then a per-hunk staging diff review (`CleanupReviewDialog` → `CleanupStagedDiff` + `ProtectedRegionsInspector` + `CleanupDebugPanel` + Copy-for-AI XML). Accept writes only the staged hunks via `updateNoteContent` + `saveNote` (auto-versions). Engine is a new reusable primitive at `lib/content-cleanup/` (`segment` protected-region detector → `operations` registry → `clean` masking orchestrator → `staging` hunks → `debug` XML); whitespace/typography ops only ever touch unprotected text. Deletes the dead `utils/textCleanup.ts` (code-unsafe, zero callers).
 - `2026-06-23` — Notes editor wired to the live agent surface. `NoteEditorCore`/`NoteContentEditor` (live `/notes` route) and the legacy `NoteEditor` now render `ProTextarea` for the note body (ref forwarded straight to the textarea — no manual mutation) and `ProInput` for the title, each carrying `surfaceName: "matrx-user/notes"` + a plain `getApplicationScope`; the four `UnifiedAgentContextMenu` mounts pass `getApplicationScope` / `contextData` / `extraSections`, and the markdown-preview keeps its presentational menu. The body's "…" menu now lists the surface's bound agents and runs them with full scope.
 - `2026-06-22` — Target context-menu wiring extracted: `buildNotesEditorContextData`, `NOTES_EDITOR_CONTEXT_MENU_PROPS`, `createNotesEditorExtraSections`. `useNotesSurfaceScope` delegates to the shared builder. Demos use this as the canonical notes shape (surfaceName + full scope + extraSections) ahead of migrating `NoteEditor` off legacy `NoteContextMenu`.
 - `2026-06-23` — **`NotesWindow` can deep-link to a note.** `useOpenNotesWindow` / `OpenNotesWindowOptions`, `NotesWindowProps`, and the `OverlayController` notesWindow block gained `initialNoteId`. When set, the window opens that note as the active tab on mount (`addInstanceTab` + `setInstanceActiveTab` + `fetchNoteContent`) instead of just showing the list. Reusable opener primitive — first consumer is the `note` tool-call renderer's "Open in Notes" action (`features/tool-call-visualization/renderers/note/`).

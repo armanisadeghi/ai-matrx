@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
+import type { ContentSource } from "@/features/rich-document/types";
 import { useWorkingDocViewState } from "./workingDocumentViewStore";
 
 interface WorkingDocumentEditorProps {
@@ -11,6 +12,14 @@ interface WorkingDocumentEditorProps {
   onFlush: () => void;
   placeholder?: string;
   className?: string;
+  /**
+   * The working-document content source. Drives the right-click action menu in
+   * the rich preview (copy / save-to-notes-or-task / html / print / edit) so it
+   * operates on the real document, with parent linking on save-to-task. The
+   * panel header carries the always-visible action bar, so the in-body bar is
+   * suppressed (`previewActionsVariant="none"`).
+   */
+  actionsSource?: ContentSource;
 }
 
 export function WorkingDocumentEditor({
@@ -20,6 +29,7 @@ export function WorkingDocumentEditor({
   onFlush,
   placeholder,
   className,
+  actionsSource,
 }: WorkingDocumentEditorProps) {
   const { editorMode } = useWorkingDocViewState(conversationId);
 
@@ -50,6 +60,8 @@ export function WorkingDocumentEditor({
       showVoiceButton
       embedded
       resetKey={conversationId}
+      actionsSource={actionsSource}
+      previewActionsVariant="none"
     />
   );
 }

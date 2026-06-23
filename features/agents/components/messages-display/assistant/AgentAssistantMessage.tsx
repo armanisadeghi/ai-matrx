@@ -39,6 +39,7 @@ import {
   selectRequestError,
   selectRenderBlockCount,
   selectHasInlineError,
+  selectProviderRetry,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -58,6 +59,11 @@ import { commitInlineContentEdit } from "@/features/agents/redux/execution-syste
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+import { ProviderRetryCard } from "./ProviderRetryCard";
+import {
+  sendProviderRetryControl,
+  type ProviderRetryControlAction,
+} from "@/features/agents/redux/execution-system/thunks/provider-retry-control.thunk";
 import {
   isWarRoomTileAgentSurface,
   traceWarRoomRenderPath,
@@ -121,6 +127,8 @@ export function AgentAssistantMessage({
 
   const dispatch = useAppDispatch();
   const [retrying, setRetrying] = useState(false);
+  const [providerRetryBusyAction, setProviderRetryBusyAction] =
+    useState<ProviderRetryControlAction | null>(null);
 
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
   const handleFullPrint = useCallback(() => {
@@ -142,6 +150,9 @@ export function AgentAssistantMessage({
   // and the unified stream phase that drives the live indicator below.
   const streamError = useAppSelector(
     requestId ? selectRequestError(requestId) : () => undefined,
+  );
+  const providerRetry = useAppSelector(
+    requestId ? selectProviderRetry(requestId) : () => null,
   );
   const phase = useAppSelector(selectStreamPhase(conversationId));
 
@@ -225,6 +236,32 @@ export function AgentAssistantMessage({
     }
   }, [dispatch, conversationId]);
 
+  const handleProviderRetryControl = useCallback(
+    async (action: ProviderRetryControlAction) => {
+      if (!requestId) return;
+      setProviderRetryBusyAction(action);
+      try {
+        await dispatch(
+          sendProviderRetryControl({ requestId, action }),
+        ).unwrap();
+        toast.success(
+          action === "retry_now" ? "Retry requested" : "Cancel requested",
+        );
+      } catch (err) {
+        const message =
+          typeof err === "string"
+            ? err
+            : err instanceof Error
+              ? err.message
+              : "Provider control failed";
+        toast.error(message);
+      } finally {
+        setProviderRetryBusyAction(null);
+      }
+    },
+    [dispatch, requestId],
+  );
+
   // A turn is failed when the live request errored (in-session) OR the
   // persisted record is `status='failed'` / `metadata.failed` (reloaded from
   // the DB, or stamped mid-stream via record_update). Both render the same
@@ -269,6 +306,9 @@ export function AgentAssistantMessage({
   const showFilesStrip = !!messageId;
   const showPerMessageActionBar =
     !hideActionBar && !isStreamActive && !failed && !!messageId;
+  const showProviderRetry =
+    providerRetry !== null &&
+    (isStreamActive || providerRetry.state !== "recovered");
   const renderBranch =
     failed && !hasBody
       ? "error-only"
@@ -297,6 +337,8 @@ export function AgentAssistantMessage({
       showPerMessageActionBar,
       hideActionBar,
       canRetry,
+      providerRetryState: providerRetry?.state ?? null,
+      showProviderRetry,
     };
     const key = JSON.stringify(snapshot);
     if (prevRenderSnapshotRef.current === key) return;
@@ -367,6 +409,8 @@ export function AgentAssistantMessage({
     showPerMessageActionBar,
     hideActionBar,
     canRetry,
+    providerRetry?.state,
+    showProviderRetry,
   ]);
 
   useEffect(() => {
@@ -472,11 +516,29 @@ export function AgentAssistantMessage({
       className="group/assistant-msg rounded transition-shadow"
     >
       {bufferStream && isStreamActive && !failed ? (
-        <div className="flex items-center justify-center py-12">
-          <BreathingOrb size={48} />
-        </div>
+        <>
+          {showProviderRetry && providerRetry && (
+            <ProviderRetryCard
+              retry={providerRetry}
+              busyAction={providerRetryBusyAction}
+              onCancel={() => handleProviderRetryControl("cancel")}
+              onRetryNow={() => handleProviderRetryControl("retry_now")}
+            />
+          )}
+          <div className="flex items-center justify-center py-12">
+            <BreathingOrb size={48} />
+          </div>
+        </>
       ) : (
         <>
+          {showProviderRetry && providerRetry && (
+            <ProviderRetryCard
+              retry={providerRetry}
+              busyAction={providerRetryBusyAction}
+              onCancel={() => handleProviderRetryControl("cancel")}
+              onRetryNow={() => handleProviderRetryControl("retry_now")}
+            />
+          )}
           <MarkdownStream
             requestId={effectiveRequestId}
             turnId={messageId}

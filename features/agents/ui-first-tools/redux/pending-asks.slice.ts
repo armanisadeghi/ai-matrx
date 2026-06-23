@@ -16,6 +16,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AskUserResponse, UserAskOption } from "../tools/schemas";
+import type { ApprovalChange } from "../ui/approval-types";
 
 export type PendingAskKind =
   | "confirm"
@@ -25,7 +26,9 @@ export type PendingAskKind =
   | "secret"
   | "notify"
   | "plan_approval"
-  | "takeover";
+  | "takeover"
+  // Structured agent-edit approval rendered by <ApprovalCard> (not <AskCard>).
+  | "approval";
 
 export type PendingAskStatus = "pending" | "resolved" | "cancelled" | "expired";
 
@@ -61,6 +64,10 @@ export interface PendingAsk {
     reasoning?: string;
     estimated_minutes?: number;
   };
+  /** kind:"approval" — the structured change descriptor rendered by <ApprovalCard>. */
+  approval?: ApprovalChange;
+  /** kind:"approval" — the tile this change acts on (drives "always approve"). */
+  tileId?: string;
   /** Batched-question metadata (0-based). When set, the card shows "N of M". */
   batchIndex?: number;
   batchTotal?: number;

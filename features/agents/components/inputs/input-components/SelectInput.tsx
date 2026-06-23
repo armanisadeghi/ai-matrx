@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Select,
   SelectContent,
@@ -43,13 +43,12 @@ export function SelectInput({
   const otherText = isOtherValue ? value.substring(7) : "";
   const isValueInOptions = options.includes(value);
 
-  const [selectedOption, setSelectedOption] = useState<string>(() => {
-    if (isValueInOptions) return value;
-    if (isOtherValue) return "Other";
-    return value;
-  });
-
-  const [customText, setCustomText] = useState<string>(otherText);
+  const selectedOption = isValueInOptions
+    ? value
+    : isOtherValue
+      ? "Other"
+      : value;
+  const customText = otherText;
 
   const cols = calcCols(
     containerWidth,
@@ -58,30 +57,15 @@ export function SelectInput({
     compact,
   );
 
-  useEffect(() => {
-    if (isValueInOptions) {
-      setSelectedOption(value);
-      setCustomText("");
-    } else if (isOtherValue) {
-      setSelectedOption("Other");
-      setCustomText(value.substring(7));
-    } else {
-      setSelectedOption(value);
-    }
-  }, [value, isValueInOptions, isOtherValue]);
-
   const handleSelectChange = (newValue: string) => {
-    setSelectedOption(newValue);
     if (newValue === "Other") {
       onChange(customText ? `Other: ${customText}` : "Other: ");
     } else {
       onChange(newValue);
-      setCustomText("");
     }
   };
 
   const handleCustomTextChange = (text: string) => {
-    setCustomText(text);
     onChange(`Other: ${text}`);
   };
 
@@ -91,8 +75,8 @@ export function SelectInput({
     const gap = compact ? 4 : 6;
 
     const btnBase = compact
-      ? "w-full text-left px-2 py-1 text-xs rounded border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      : "w-full text-left px-3 py-1.5 text-sm rounded border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+      ? "w-full min-w-0 whitespace-normal break-words text-left px-2 py-1 text-xs rounded border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      : "w-full min-w-0 whitespace-normal break-words text-left px-3 py-1.5 text-sm rounded border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
     const btnSelected =
       "bg-primary border-primary text-primary-foreground hover:bg-primary/90";
     const btnUnselected =
@@ -159,7 +143,13 @@ export function SelectInput({
   return (
     <div className={compact ? "space-y-1" : "space-y-1.5"}>
       <Select value={selectedOption} onValueChange={handleSelectChange}>
-        <SelectTrigger className={compact ? "w-full h-8 text-xs" : "w-full"}>
+        <SelectTrigger
+          className={
+            compact
+              ? "min-h-8 h-auto w-full text-xs [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left"
+              : "h-auto min-h-9 w-full [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left"
+          }
+        >
           <SelectValue placeholder="Choose an option..." />
         </SelectTrigger>
         <SelectContent>

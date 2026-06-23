@@ -26,16 +26,23 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import { toast } from "sonner";
+import type { RootState, AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
 import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import {
+  setTileAutoApprove,
+  clearTileAutoApprove,
+} from "@/features/war-room/redux/slice";
+import { selectIsTileAutoApproved } from "@/features/war-room/redux/selectors";
+import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { getWarRoomToolEntry } from "../tools/registry";
 import { isWarRoomToolName } from "../tools/names";
 import { getTileForConversation } from "../binding-registry";
-import { requestWarRoomApproval } from "./approval";
-import { buildApprovalCopy } from "./summary";
+import { requestWarRoomApproval, cascadeAutoApprove } from "./approval";
+import { buildApprovalChange } from "./summary";
 
 export interface DispatchWarRoomToolPayload {
   conversationId: string;
@@ -153,21 +160,62 @@ export const dispatchWarRoomTool = createAsyncThunk<
       return;
     }
 
+    // `toolName` is narrowed to WarRoomToolName by the isWarRoomToolName guard
+    // above; `parsed.data` is `unknown` from the generic ZodTypeAny schema but
+    // is a validated object here. Build the structured change + its diff now, so
+    // the auto-approve check and the approval card share one descriptor.
+    const change = buildApprovalChange(
+      toolName,
+      parsed.data as Record<string, unknown>,
+      { tileId, getState },
+    );
+    const scope = change.autoApprove?.scope ?? null;
+
+    // Run the bound writer once approval is settled. Returns true on success so
+    // the auto-approve path fires its toast only when the write actually landed.
+    const runApprovedHandler = async (): Promise<boolean> => {
+      const startedAt = performance.now();
+      try {
+        const result = await entry.handler.run(parsed.data, {
+          conversationId,
+          callId,
+          userId,
+          tileId,
+          dispatch,
+          getState,
+        });
+        complete(
+          result as Record<string, unknown>,
+          Math.round(performance.now() - startedAt),
+        );
+        return true;
+      } catch (cause) {
+        fail(
+          "handler_threw",
+          extractErrorMessage(cause),
+          Math.round(performance.now() - startedAt),
+        );
+        return false;
+      }
+    };
+
+    // Auto-approve short-circuit: the user already granted "always approve" for
+    // this class of edit on this tile. Run immediately — but LOUDLY: a toast
+    // names the change and offers one-tap revoke (auto-approve is never silent).
+    if (scope && selectIsTileAutoApproved(tileId, scope)(getState())) {
+      const ok = await runApprovedHandler();
+      if (ok) fireAutoApproveToast(dispatch, tileId, scope, change);
+      return;
+    }
+
     // Truthful "waiting on the user" status while the approval card is up.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
-    // `toolName` is narrowed to WarRoomToolName by the isWarRoomToolName guard
-    // above; `parsed.data` is `unknown` from the generic ZodTypeAny schema but
-    // is a validated object here.
-    const { header, summary } = buildApprovalCopy(
-      toolName,
-      parsed.data as Record<string, unknown>,
-    );
     const decision = await requestWarRoomApproval({
       conversationId,
       callId,
-      header,
-      summary,
+      tileId,
+      change,
       dispatch,
     });
 
@@ -203,27 +251,51 @@ export const dispatchWarRoomTool = createAsyncThunk<
       return;
     }
 
-    // Approved — run the real writer (client-measured duration for cx_tool_call).
-    const startedAt = performance.now();
-    try {
-      const result = await entry.handler.run(parsed.data, {
+    // Approved. If the user asked to stop being asked, persist the grant and
+    // instantly clear any sibling cards stacked up for the same scope+tile.
+    if (decision.remember && scope) {
+      dispatch(setTileAutoApprove({ tileId, scope, value: true }));
+      cascadeAutoApprove({
         conversationId,
-        callId,
-        userId,
         tileId,
-        dispatch,
+        scope,
+        excludeCallId: callId,
         getState,
       });
-      complete(
-        result as Record<string, unknown>,
-        Math.round(performance.now() - startedAt),
-      );
-    } catch (cause) {
-      fail(
-        "handler_threw",
-        extractErrorMessage(cause),
-        Math.round(performance.now() - startedAt),
-      );
     }
+
+    await runApprovedHandler();
   },
 );
+
+/** Past-tense verb for the auto-approved-write toast. */
+const PAST_TENSE: Record<ApprovalChange["verb"], string> = {
+  add: "Added",
+  update: "Updated",
+  rename: "Renamed",
+  complete: "Completed",
+  reopen: "Reopened",
+  append: "Updated",
+};
+
+/**
+ * Loud, revocable confirmation that an auto-approved write landed. Auto-approve
+ * trades the blocking card for this — never silence.
+ */
+function fireAutoApproveToast(
+  dispatch: AppDispatch,
+  tileId: string,
+  scope: string,
+  change: ApprovalChange,
+): void {
+  const title = change.title?.trim()
+    ? `${PAST_TENSE[change.verb]} ${change.entity}: ${change.title.trim()}`
+    : `${PAST_TENSE[change.verb]} ${change.entity}`;
+  toast.success(title, {
+    description: "Auto-approved — the agent can make these edits on this tile.",
+    action: {
+      label: "Stop",
+      onClick: () => dispatch(clearTileAutoApprove({ tileId, scope })),
+    },
+  });
+}

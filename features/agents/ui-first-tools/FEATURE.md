@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-05-24` (nextjs-surface capability removed; UI-first tools resolve via surface)
+**Last updated:** `2026-06-23` (added `approval` ask kind + `<ApprovalCard>` for structured agent-edit approval)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -44,7 +44,14 @@ This feature exists because:
 - `<PendingAsksZone conversationId={id} />` — renders pending ask cards
   directly above the chat input. **Never disables the input.** The user
   can answer cards, type into the input, and submit either or both
-  independently.
+  independently. Routes `kind:"approval"` to `<ApprovalCard>` (structured
+  agent-edit approval) and every other kind to `<AskCard>`.
+- `<ApprovalCard ask={ask} />` (`ui/ApprovalCard.tsx`) — the agent-edit
+  approval surface. Renders an `ApprovalChange` (`ui/approval-types.ts`):
+  verb-tinted icon + "{Verb} {entity}" eyebrow + headline, a before→after
+  diff body, and one action row (Approve · Decline · Respond) plus an opt-in
+  "always approve {noun}". States the change **once** — no chip+context+question
+  triple. Producers emit `ApprovalChange`; the card is feature-agnostic.
 - `<TaskPanel ...>` — drawer panel opened by the chip.
 
 **Services**
@@ -220,6 +227,15 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-06-23` — Added the `approval` `PendingAsk` kind + `<ApprovalCard>`
+  (`ui/ApprovalCard.tsx`) and the generic `ApprovalChange` descriptor
+  (`ui/approval-types.ts`). Replaces the old reuse-the-confirm-AskCard approach
+  for War Room tile edits, which said the same thing three ways (chip + context
+  line + question) and stacked an extra note + "Write message instead". The card
+  states the change once: an add shows new values, an update shows before→after.
+  `PendingAsksZone` routes `kind:"approval"` here; `AskCard` is untouched.
+  Consumed by `features/agents/war-room-tools` (the producer of `ApprovalChange`
+  + the auto-approve grant); see that dispatcher for the "always approve" path.
 - `2026-05-24` — Removed the `nextjs-surface` client capability — a
   frontend-specific name whose payload (route/scope/admin/permission/theme)
   nothing on the server consumed. The seven UI-first tools now come online

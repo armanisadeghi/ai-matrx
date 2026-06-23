@@ -37,6 +37,7 @@ import {
   isRecordReservedEvent,
   isRecordUpdateEvent,
   isResourceChangedEvent,
+  isProviderRetryEvent,
   isCxMessageReservation,
   isCxRequestReservation,
   isCxToolCallReservation,
@@ -79,6 +80,7 @@ import {
   upsertRenderBlock,
   upsertToolLifecycle,
   setCompletion,
+  setProviderRetry,
   updateExtractedJson,
 } from "../active-requests/active-requests.slice";
 import { confirmServerSync } from "../conversations/conversations.slice";
@@ -333,6 +335,7 @@ export async function processStream({
   let recordReservedEvents = 0;
   let recordUpdateEvents = 0;
   let resourceChangedEvents = 0;
+  let providerRetryEvents = 0;
   let otherEvents = 0;
 
   let isInTextRun = false;
@@ -1408,6 +1411,27 @@ export async function processStream({
             },
           }),
         );
+      } else if (isProviderRetryEvent(event)) {
+        providerRetryEvents++;
+        const d = event.data;
+        dispatch(setProviderRetry({ requestId, retry: d }));
+        if (d.state === "suspended") {
+          dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+        } else if (d.state === "cancelled") {
+          dispatch(setRequestStatus({ requestId, status: "cancelled" }));
+          dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
+        }
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "provider_retry",
+              seq: 0,
+              timestamp: now,
+              data: d,
+            },
+          }),
+        );
       } else if (isErrorEvent(event)) {
         otherEvents++;
         // Pass the backend ErrorPayload through verbatim — both
@@ -2035,6 +2059,7 @@ export async function processStream({
     recordReservedEvents,
     recordUpdateEvents,
     resourceChangedEvents,
+    providerRetryEvents,
     otherEvents,
     accumulatedTextBytes,
     totalPayloadBytes,

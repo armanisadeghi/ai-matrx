@@ -1,15 +1,16 @@
 "use client";
 
 /**
- * tray-previews.tsx — JSX render functions for `WindowRegistryEntry.
- * renderTrayPreview`. Lives in a `.tsx` file so JSX can compile; the
- * registry itself stays `.ts` (data-only, no JSX) for IDE / lint speed.
+ * tray-previews.tsx — JSX render functions for minimized-tray chip previews.
+ * Lives in a `.tsx` file so JSX can compile; `trayPreviewRegistry.ts` itself
+ * stays `.ts` (data-only, no JSX) for IDE / lint speed.
  *
  * Each export is a function matching the `renderTrayPreview` shape:
  *   `(ctx: TrayPreviewContext) => ReactNode`
  *
- * Add a new preview here, then reference it in `windowRegistry.ts` like:
- *   renderTrayPreview: notesTrayPreview,
+ * Add a new preview here, then register it by overlay id in
+ * `trayPreviewRegistry.ts` like:
+ *   notesWindow: { renderTrayPreview: notesTrayPreview },
  */
 
 import type { ReactNode } from "react";

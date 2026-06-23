@@ -97,7 +97,7 @@ export function AgentVariableEditorModal({
               <span className="sr-only">Variable editor</span>
             </DrawerDescription>
           </DrawerHeader>
-          <ScrollArea className="flex-1 overflow-y-auto pb-4">
+          <ScrollArea className="min-w-0 flex-1 overflow-y-auto pb-4">
             {content}
           </ScrollArea>
         </DrawerContent>
@@ -107,15 +107,15 @@ export function AgentVariableEditorModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90dvh] overflow-hidden flex flex-col p-3">
+      <DialogContent className="min-w-0 sm:max-w-[500px] max-h-[90dvh] overflow-hidden flex flex-col p-3">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             <span className="sr-only">Variable editor</span>
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 overflow-y-auto pr-1">
-          <div className="py-1">{content}</div>
+        <ScrollArea className="min-w-0 flex-1 overflow-y-auto pr-1">
+          <div className="min-w-0 py-1">{content}</div>
         </ScrollArea>
       </DialogContent>
     </Dialog>

@@ -246,6 +246,40 @@ const warRoomSlice = createSlice({
       }
     },
 
+    // ── Agent-edit auto-approve (HITL) ────────────────────────────────
+    /**
+     * Grant ("always approve") a class of agent edit on a tile, so the approval
+     * card stops asking. The dispatcher fires a loud, revocable toast on each
+     * silently-approved write — auto-approve is never silent.
+     */
+    setTileAutoApprove(
+      state,
+      action: PayloadAction<{ tileId: string; scope: string; value: boolean }>,
+    ) {
+      const { tileId, scope, value } = action.payload;
+      const cur = state.autoApproveByTile[tileId] ?? {};
+      if (value) cur[scope] = true;
+      else delete cur[scope];
+      if (Object.keys(cur).length > 0) state.autoApproveByTile[tileId] = cur;
+      else delete state.autoApproveByTile[tileId];
+    },
+
+    /** Revoke one scope's grant (omit `scope` to revoke every grant on the tile). */
+    clearTileAutoApprove(
+      state,
+      action: PayloadAction<{ tileId: string; scope?: string }>,
+    ) {
+      const { tileId, scope } = action.payload;
+      if (!scope) {
+        delete state.autoApproveByTile[tileId];
+        return;
+      }
+      const cur = state.autoApproveByTile[tileId];
+      if (!cur) return;
+      delete cur[scope];
+      if (Object.keys(cur).length === 0) delete state.autoApproveByTile[tileId];
+    },
+
     /** Drop all loaded tiles for a session (e.g. when leaving the room). */
     clearSessionTiles(state, action: PayloadAction<string>) {
       const sessionId = action.payload;
@@ -257,6 +291,7 @@ const warRoomSlice = createSlice({
         delete state.noteIdsByTile[id];
         delete state.activeNoteByTile[id];
         delete state.attachmentsByTile[id];
+        delete state.autoApproveByTile[id];
       }
       delete state.tileIdsBySession[sessionId];
       delete state.tilesStatusBySession[sessionId];
@@ -289,6 +324,8 @@ export const {
   attachmentsLoadedForTile,
   attachmentUpserted,
   attachmentRemoved,
+  setTileAutoApprove,
+  clearTileAutoApprove,
   clearSessionTiles,
 } = warRoomSlice.actions;
 

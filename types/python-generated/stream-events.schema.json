@@ -289,6 +289,174 @@
     "title": "ErrorPayload",
     "type": "object"
   },
+  "ProviderRetryPayload": {
+    "additionalProperties": false,
+    "properties": {
+      "state": {
+        "enum": [
+          "scheduled",
+          "retrying_now",
+          "cancelled",
+          "suspended",
+          "recovered"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "provider": {
+        "title": "Provider",
+        "type": "string"
+      },
+      "error_type": {
+        "title": "Error Type",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "user_message": {
+        "title": "User Message",
+        "type": "string"
+      },
+      "status_code": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Status Code"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model"
+      },
+      "request_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Request Id"
+      },
+      "conversation_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Conversation Id"
+      },
+      "iteration": {
+        "title": "Iteration",
+        "type": "integer"
+      },
+      "failed_attempt": {
+        "description": "1-based count of failed provider calls in this iteration.",
+        "title": "Failed Attempt",
+        "type": "integer"
+      },
+      "next_attempt": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "1-based provider call number that will run next.",
+        "title": "Next Attempt"
+      },
+      "max_retries": {
+        "title": "Max Retries",
+        "type": "integer"
+      },
+      "retry_delay": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Seconds scheduled before the next retry.",
+        "title": "Retry Delay"
+      },
+      "retry_at": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Unix timestamp when the next retry is scheduled.",
+        "title": "Retry At"
+      },
+      "schedule": {
+        "items": {
+          "type": "number"
+        },
+        "title": "Schedule",
+        "type": "array"
+      },
+      "can_cancel": {
+        "default": true,
+        "title": "Can Cancel",
+        "type": "boolean"
+      },
+      "can_retry_now": {
+        "default": true,
+        "title": "Can Retry Now",
+        "type": "boolean"
+      },
+      "actions": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Actions",
+        "type": "object"
+      }
+    },
+    "required": [
+      "state",
+      "provider",
+      "error_type",
+      "message",
+      "user_message",
+      "iteration",
+      "failed_attempt",
+      "max_retries"
+    ],
+    "title": "ProviderRetryPayload",
+    "type": "object"
+  },
   "ToolEventPayload": {
     "additionalProperties": false,
     "properties": {
@@ -803,7 +971,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1141,7 +1309,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1638,7 +1806,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4140,7 +4308,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -4200,7 +4368,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -4451,7 +4619,8 @@
           "structured_output",
           "context_state",
           "context_trimmed",
-          "injection_consumed"
+          "injection_consumed",
+          "provider_retry"
         ],
         "title": "EventType",
         "type": "string"
@@ -4498,7 +4667,8 @@
       "structured_output",
       "context_state",
       "context_trimmed",
-      "injection_consumed"
+      "injection_consumed",
+      "provider_retry"
     ]
   }
 }

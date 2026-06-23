@@ -1,11 +1,12 @@
 /**
  * trayPreviewRegistry — overlay-id → tray-chip preview helpers.
  *
- * Replaces the `renderTrayPreview` / `captureTraySnapshot` fields that
- * used to live on `WindowRegistryEntry` in the deleted `windowRegistry.ts`.
- * Those fields lived next to `componentImport`, which is what kept dragging
- * the dynamic-import graph into anything that touched the registry — even
- * code that only needed metadata.
+ * Replaces the `renderTrayPreview` / `captureTraySnapshot` fields that used to
+ * live next to `componentImport` on a window's full entry. Co-locating them
+ * with the lazy `componentImport` is what kept dragging the dynamic-import
+ * graph into anything that touched the registry — even code that only needed
+ * metadata. Splitting tray previews out keeps the metadata lookup
+ * (`windowRegistryMetadata.ts`) import-safe everywhere.
  *
  * This file imports ONLY the tray-preview JSX functions (in `tray-previews.tsx`)
  * and a type. No window components, no `next/dynamic`. Safe to import from

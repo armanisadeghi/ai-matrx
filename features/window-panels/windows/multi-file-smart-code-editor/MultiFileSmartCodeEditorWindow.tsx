@@ -420,19 +420,32 @@ export function MultiFileSmartCodeEditorWindow({
         ) : undefined
       }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      // ── Footer chrome ──────────────────────────────────────────────────
+      // The agent composer is the window's bottom input bar. It lives in the
+      // `footer` slot with footerVariant="rich" so WindowPanel's compact
+      // metadata-bar styling (`text-xs`, `[&_button]:h-5`, `[&_svg]:h-3`) does
+      // NOT crush the multi-row SmartAgentInput. State it reads (conversationId,
+      // currentFile) is hoisted at the window root, so the slot — a sibling of
+      // the body — receives it directly.
+      footerVariant="rich"
+      footer={
+        <div className="px-2 py-2 bg-background">
+          <SmartAgentInput
+            conversationId={conversationId}
+            sendButtonVariant="default"
+            uploadBucket="userContent"
+            uploadPath="code-editor-attachments"
+            enablePasteImages={true}
+            surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}
+            disableSend={!currentFile}
+          />
+        </div>
+      }
     >
       {/* ── Body ──────────────────────────────────────────────────────────
-          Content only: the tab bar, the active file's editor, and the agent
-          composer the user types into. The editor toolbar + active-file
-          identity now live in the header slots (above).
-
-          The agent composer stays in the body (NOT the `footer` slot): the
-          WindowPanel footer bar hardcodes compact metadata-bar styling
-          (`text-xs`, `[&_button]:h-5`, `[&_svg]:h-3`) that would crush the
-          multi-row `SmartAgentInput` composer (36px send button, 14px icons,
-          textarea). A rich-footer escape hatch on WindowPanel is the missing
-          primitive — see FEATURE.md follow-up. The composer is the user's
-          input surface (like a chat composer), so it reads as content. */}
+          Content only: the tab bar and the active file's editor. The editor
+          toolbar + active-file identity live in the header slots (above); the
+          agent composer lives in the `footer` slot (footerVariant="rich"). */}
       <CodeEditorTabBar
         openTabs={openTabs}
         activeTab={activeTab}
@@ -467,19 +480,6 @@ export function MultiFileSmartCodeEditorWindow({
       ) : (
         <EmptyState files={files} onOpenFile={handleOpenFile} />
       )}
-
-      {/* Agent composer — the user's input surface for the embedded agent. */}
-      <div className="px-2 py-2 border-t shrink-0 bg-background">
-        <SmartAgentInput
-          conversationId={conversationId}
-          sendButtonVariant="default"
-          uploadBucket="userContent"
-          uploadPath="code-editor-attachments"
-          enablePasteImages={true}
-          surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}
-          disableSend={!currentFile}
-        />
-      </div>
     </WindowPanel>
   );
 }

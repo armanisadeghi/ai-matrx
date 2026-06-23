@@ -73,6 +73,7 @@ The discriminated union in `features/rich-document/types.ts`. The type drives wh
 | `{ type: "prompt-result", executionId, promptId? }` | a prompt run result |
 | `{ type: "artifact", artifactId }` | an artifact |
 | `{ type: "scraper-result", runId }` | a scraper/research run |
+| `{ type: "working-document", conversationId, kind, documentId? }` | the per-conversation working doc / scratchpad (`kind: "working" \| "scratch"`); edits persist via `persistWorkingDocumentContentThunk` |
 | `{ type: "raw" }` | generic content with no entity link (most read-only previews) |
 
 `raw` is fine for read-only displays — you still get copy/save/print/html-preview/etc.; only the parent link on `save-to-task` is absent.
@@ -138,6 +139,17 @@ Put the bar in a page header / toolbar while the content lives elsewhere:
 - The surface renders nothing (`fallback`) when no provider is registered (e.g. the body is in a non-preview mode) — so an empty header row is fine.
 - The registry is a **stack**: if two RichDocuments target one surfaceId, the most-recently-mounted wins, and out-of-order unmount during navigation stays correct. Don't add your own last-wins logic.
 - Real example to copy: `features/notes/components/NotesView.tsx` (header) + `NoteEditorCore.tsx` (body, via `actionsSurfaceId` prop).
+
+**Surface draws its OWN content (an editor)?** Don't mount a hidden `RichDocument` just to register the toolbar — it would double-render the heavy engine. Use the **headless `RichDocumentActionProvider`** (renders `null`):
+
+```tsx
+// Mounted once, always (gate on whatever "active" means for your surface):
+<RichDocumentActionProvider content={liveText} source={mySource} surfaceId={mySurfaceId} />
+// The toolbar, anywhere:
+<RichDocumentActionSurface surfaceId={mySurfaceId} variant="bar" fallback={null} />
+```
+
+This is how the toolbar appears in **every** editor mode (plain / split / wysiwyg / preview), not just the one mode that mounts a `RichDocument`. Real example: `features/agents/components/working-document/WorkingDocumentPanel.tsx` (provider + header bar) + `WorkingDocumentControls.tsx` (compact `menu` surface). It shares `useActionSurfaceProvider` with `RichDocument`, so behavior never drifts.
 
 `MatrxSplit` has opt-in passthrough props (`actionsSource` / `actionsVariant` / `actionsPosition` / `actionsBehavior` / `actionsSurfaceId` / `actionsExclude`) — when `actionsSource` is set it swaps its preview pane to RichDocument (lazily). Pattern in `components/matrx/MatrxSplit.tsx`.
 
@@ -236,8 +248,9 @@ The shape is `{ overlayId, data, instanceId }` — **not** `{ component, props }
 
 ```
 features/rich-document/
-├── RichDocument.tsx                 ← the wrapper (props, variant switch, positioning, context-menu mount, bridge + surface registration)
+├── RichDocument.tsx                 ← the wrapper (engine + variant switch, positioning, context-menu mount; delegates registration to useActionSurfaceProvider)
 ├── RichDocumentActionSurface.tsx    ← remote renderer (reads slice top-of-stack → bridge → variant)
+├── RichDocumentActionProvider.tsx   ← headless: registers the toolkit for a surfaceId WITHOUT the engine (renders null)
 ├── types.ts                         ← ContentSource, RichDocumentAction(Context), variant/position/behavior, adapter, specs
 ├── actions/
 │   ├── registry.ts                  ← registerAction / getAction / resolveActions
@@ -251,9 +264,10 @@ features/rich-document/
 │   ├── ContextMenu.tsx              ← lazy right-click menu (controlled dropdown at cursor)
 │   └── shared/{menuStructure,DropdownMenuTree,PrimaryButtons,runAction,categories}.ts
 ├── runtime/
+│   ├── useActionSurfaceProvider.ts   ← shared registration brain (RichDocument + RichDocumentActionProvider; buildContext/specs/provider+bridge effects)
 │   ├── providerBridge.ts            ← module-scope getCtx/actions registry (no functions in Redux)
 │   └── ContextMenuMount.tsx         ← lightweight, streaming-safe, lazy-loads ContextMenu
 └── redux/actionSurfacesSlice.ts     ← surfaceId → provider stack (metadata only)
 ```
 
-Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (remote header), `features/prompts/components/results-display/PromptToast.tsx` (remote + mini-bar), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover).
+Real migrated consumers to copy from: `features/notes/components/NoteEditorCore.tsx` + `NotesView.tsx` (remote header), `features/prompts/components/results-display/PromptToast.tsx` (remote + mini-bar), `features/tool-call-visualization/renderers/web-research/WebResearchOverlay.tsx` (icon-only hover), `features/agents/components/working-document/WorkingDocumentPanel.tsx` (headless provider — toolbar in every editor mode).

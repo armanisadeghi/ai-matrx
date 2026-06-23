@@ -137,10 +137,14 @@ export interface WindowStaticMetadata {
 }
 
 /**
- * Full registry entry — extends static metadata with dynamic (component) fields.
- * Only import this from modules that actually need to render the component
- * (e.g. UnifiedOverlayController). Importing this pulls in all dynamic
- * import expressions via windowRegistry.ts.
+ * Full entry shape — extends static metadata with dynamic (component) fields
+ * such as `componentImport`. Only modules that actually mount a window's
+ * component should depend on these fields, since each `componentImport` is a
+ * `() => import(...)` that pulls a window's lazy chunk into whoever references
+ * it. Note: windows are RENDERED via the `lazyOverlay(...)` blocks in
+ * `features/overlays/OverlayController.tsx` — the static-metadata lookup in
+ * `windowRegistryMetadata.ts` deliberately omits these fields so it stays
+ * import-safe everywhere.
  */
 export interface WindowRegistryEntry extends WindowStaticMetadata {
   /**

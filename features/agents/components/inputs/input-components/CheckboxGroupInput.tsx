@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { calcCols } from "./useContainerColumns";
@@ -36,15 +36,7 @@ export function CheckboxGroupInput({
     (item) => !item.startsWith("Other: "),
   );
 
-  const [customText, setCustomText] = useState<string>(otherText);
-
-  useEffect(() => {
-    if (otherItem) {
-      setCustomText(otherItem.substring(7));
-    } else {
-      setCustomText("");
-    }
-  }, [otherItem]);
+  const customText = otherText;
 
   const handleToggle = (option: string, checked: boolean) => {
     let newSelected: string[];
@@ -79,14 +71,13 @@ export function CheckboxGroupInput({
   };
 
   const handleCustomTextChange = (text: string) => {
-    setCustomText(text);
     const newSelected = [...regularSelectedItems, `Other: ${text}`];
     onChange(newSelected.join("\n"));
   };
 
   const checkboxClass = compact
-    ? "flex items-center space-x-2 p-1 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-    : "flex items-center space-x-3 p-1.5 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer";
+    ? "flex min-w-0 items-center space-x-2 p-1 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+    : "flex min-w-0 items-center space-x-3 p-1.5 bg-transparent rounded border-border hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer";
 
   const cols = calcCols(containerWidth, options, wrap, compact);
   const isMultiCol = cols > 1;
@@ -122,7 +113,13 @@ export function CheckboxGroupInput({
                 }
                 id={itemId}
               />
-              <span className={compact ? "flex-1 text-xs" : "flex-1 text-sm"}>
+              <span
+                className={
+                  compact
+                    ? "min-w-0 flex-1 break-words text-xs"
+                    : "min-w-0 flex-1 break-words text-sm"
+                }
+              >
                 {option || "(empty)"}
               </span>
             </label>
@@ -142,7 +139,13 @@ export function CheckboxGroupInput({
                 }
                 id={`${variableName}-other`}
               />
-              <span className={compact ? "flex-1 text-xs" : "flex-1 text-sm"}>
+              <span
+                className={
+                  compact
+                    ? "min-w-0 flex-1 break-words text-xs"
+                    : "min-w-0 flex-1 break-words text-sm"
+                }
+              >
                 Other
               </span>
             </label>

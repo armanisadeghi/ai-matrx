@@ -1,18 +1,20 @@
 /**
  * windowRegistryMetadata.ts
  *
- * Static metadata for all registered overlays — no componentImport,
- * no renderTrayPreview, no captureTraySnapshot. This file has ZERO
- * dynamic-import expressions and is safe to import from WindowPanel,
- * WindowPersistenceManager, and any other module that only needs to
- * look up window metadata without pulling in component code.
+ * Side-effect-free static metadata lookup for registered windows/overlays.
+ * `getStaticEntryByOverlayId(...)` returns an overlay's flags — its
+ * `mobilePresentation`, `urlSync`, `ephemeral`, `autosave`, and `deprecated`
+ * settings — and nothing else. This file carries ZERO component code and ZERO
+ * dynamic-import expressions, so it is safe to import from `WindowPanel.tsx`,
+ * `WindowPersistenceManager.tsx`, and anywhere else that needs window metadata
+ * without dragging window components into the bundle.
  *
- * (There is no `windowRegistry.ts` renderer registry — that legacy path is
- * deleted. Window COMPONENTS are lazy-loaded via `lazyOverlay` in
- * `features/overlays/OverlayController.tsx`. Static-importing a `*Window.tsx`
- * would collapse its lazy chunk into your bundle — see the Bundle invariant in
- * `features/window-panels/FEATURE.md`. This metadata file is safe to import
- * anywhere precisely because it carries no component code / dynamic imports.)
+ * This is NOT a render-driving registry. Windows are RENDERED via the
+ * `lazyOverlay(() => import(...))` blocks in
+ * `features/overlays/OverlayController.tsx` — there is no registry in this
+ * directory that maps an overlay to a component. Static-importing a
+ * `*Window.tsx` here would collapse its lazy chunk into every consumer of this
+ * metadata; see the Bundle invariant in `features/window-panels/FEATURE.md`.
  */
 
 import type {

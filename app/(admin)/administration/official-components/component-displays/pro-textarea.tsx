@@ -1,9 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ProJsonTextarea,
+  type ProJsonValidationState,
+  type ProJsonValidator,
+} from "@/components/official/ProJsonTextarea";
 import { Field } from "@/components/official/Field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +74,72 @@ export default function ProTextareaDisplay({
   const [cleanupDemo, setCleanupDemo] = useState(
     "so um basically what i wanted to say is that the the meeting went pretty good i think and we should probably like follow up with the client by next week maybe tuesday or wednesday",
   );
+  const [jsonValue, setJsonValue] = useState(`{
+  "name": "Support triage payload",
+  "version": 0,
+  "enabled": true,
+  "rules": [
+    {
+      "field": "priority",
+      "operator": "in",
+      "value": ["low", "medium", "urgent"]
+    }
+  ],
+  "extra": "This key is intentionally unknown"
+}`);
+  const [jsonValidation, setJsonValidation] =
+    useState<ProJsonValidationState | null>(null);
+
+  const jsonSchema = useMemo(
+    () => ({
+      type: "object",
+      required: ["name", "version", "rules"],
+      additionalProperties: true,
+      properties: {
+        name: { type: "string", minLength: 3 },
+        version: { type: "integer", minimum: 1 },
+        enabled: { type: "boolean" },
+        rules: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["field", "operator", "value"],
+            properties: {
+              field: { type: "string", minLength: 1 },
+              operator: { enum: ["eq", "neq", "in", "contains"] },
+              value: {},
+            },
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  const jsonValidators = useMemo<ProJsonValidator[]>(
+    () => [
+      ({ parsed }) => {
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          return [];
+        }
+        const data = parsed as Record<string, unknown>;
+        if (data.enabled === false) {
+          return [
+            {
+              kind: "custom",
+              severity: "warning",
+              path: "/enabled",
+              message: "Disabled payloads can be saved, but agents may ignore them.",
+              source: "demo custom validator",
+            },
+          ];
+        }
+        return [];
+      },
+    ],
+    [],
+  );
 
   if (!component) return null;
 
@@ -76,6 +147,7 @@ export default function ProTextareaDisplay({
   // own focused snippet (3-8 lines) so the right thing is visible per section;
   // this top-level block summarizes the full prop surface.
   const code = `import { ProTextarea } from '@/components/official/ProTextarea';
+import { ProJsonTextarea } from '@/components/official/ProJsonTextarea';
 import { Field } from '@/components/official/Field';
 
 // Every supported prop, with defaults inline.
@@ -120,6 +192,23 @@ import { Field } from '@/components/official/Field';
   // --- styling escape hatches ---
   className=""                             // textarea
   wrapperClassName=""                      // relative wrapper
+/>
+
+<ProJsonTextarea
+  value={json}
+  onChange={(e) => setJson(e.target.value)}
+  schema={jsonSchema}                      // JSON Schema via AJV
+  rootType="object"
+  allowedTopLevelKeys={["name", "version", "enabled", "rules"]}
+  validators={[customValidator]}           // domain-specific checks
+  onValidationChange={setValidation}
+  surfaceName="matrx-user/demo-json"
+  getApplicationScope={(state) => ({
+    content: state.text,
+    json_valid: state.isValid,
+    json_issues: state.issues,
+    page_state: { selectedModelId, activeTab }
+  })}
 />`;
 
   return (
@@ -474,6 +563,81 @@ import { Field } from '@/components/official/Field';
             placeholder="Type something messy, then … menu → Clean up."
             className="min-h-[120px]"
           />
+        </Variant>
+
+        {/* 12. JSON wrapper — ProTextarea plus non-blocking validation */}
+        <Variant
+          title="12. ProJsonTextarea (schema + custom validation)"
+          features={[
+            "JSON syntax",
+            "AJV schema",
+            "custom validators",
+            "agent scope",
+            "non-blocking",
+          ]}
+          code={`<ProJsonTextarea
+  value={json}
+  onChange={(e) => setJson(e.target.value)}
+  schema={jsonSchema}
+  rootType="object"
+  allowedTopLevelKeys={["name", "version", "enabled", "rules"]}
+  validators={jsonValidators}
+  onValidationChange={setJsonValidation}
+  surfaceName="matrx-user/demo-json"
+  getApplicationScope={(state) => ({
+    content: state.text,
+    json_valid: state.isValid,
+    json_issues: state.issues,
+    demo_state: { route: "official-components", component: "ProTextarea" },
+  })}
+  autoGrow
+  minHeight={260}
+  maxHeight={460}
+/>`}
+        >
+          <div className="space-y-3">
+            <ProJsonTextarea
+              value={jsonValue}
+              onChange={(e) => setJsonValue(e.target.value)}
+              schema={jsonSchema}
+              rootType="object"
+              allowedTopLevelKeys={["name", "version", "enabled", "rules"]}
+              validators={jsonValidators}
+              onValidationChange={setJsonValidation}
+              surfaceName="matrx-user/demo-json"
+              getApplicationScope={(state) => ({
+                content: state.text,
+                json_valid: state.isValid,
+                json_issues: state.issues,
+                demo_state: {
+                  route: "official-components",
+                  component: "ProTextarea",
+                  validationBadge: state.isValid ? "valid" : "has issues",
+                  currentLength: state.text.length,
+                },
+              })}
+              autoGrow
+              minHeight={260}
+              maxHeight={460}
+              placeholder={`{\n  "name": "Example",\n  "version": 1,\n  "rules": []\n}`}
+            />
+            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+              <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+                <span className="font-semibold text-foreground">Parsed:</span>{" "}
+                {jsonValidation?.isJson ? "yes" : "no"}
+              </div>
+              <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+                <span className="font-semibold text-foreground">Errors:</span>{" "}
+                {jsonValidation?.errors.length ?? 0}
+              </div>
+              <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+                <span className="font-semibold text-foreground">
+                  Warnings:
+                </span>{" "}
+                {jsonValidation?.warnings.length ?? 0}
+              </div>
+            </div>
+          </div>
         </Variant>
 
         {/* Programmatic protection — the requestClose() expando pattern */}

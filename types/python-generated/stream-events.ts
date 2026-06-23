@@ -27,6 +27,7 @@ export const EventType = {
   CONTEXT_STATE: "context_state",
   CONTEXT_TRIMMED: "context_trimmed",
   INJECTION_CONSUMED: "injection_consumed",
+  PROVIDER_RETRY: "provider_retry",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -119,6 +120,28 @@ export interface ErrorPayload {
   user_message?: string;
   code?: string | null;
   details?: Record<string, unknown> | null;
+}
+
+export interface ProviderRetryPayload {
+  state: "scheduled" | "retrying_now" | "cancelled" | "suspended" | "recovered";
+  provider: string;
+  error_type: string;
+  message: string;
+  user_message: string;
+  status_code?: number | null;
+  model?: string | null;
+  request_id?: string | null;
+  conversation_id?: string | null;
+  iteration: number;
+  failed_attempt: number;
+  next_attempt?: number | null;
+  max_retries: number;
+  retry_delay?: number | null;
+  retry_at?: number | null;
+  schedule?: number[];
+  can_cancel?: boolean;
+  can_retry_now?: boolean;
+  actions?: Record<string, string>;
 }
 
 export interface ToolEventPayload {
@@ -2609,6 +2632,11 @@ export interface InjectionConsumedEvent {
   data: InjectionConsumedPayload;
 }
 
+export interface ProviderRetryEvent {
+  event: "provider_retry";
+  data: ProviderRetryPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -2632,7 +2660,8 @@ export type TypedStreamEvent =
   | StructuredOutputEvent
   | ContextStateEvent
   | ContextTrimmedEvent
-  | InjectionConsumedEvent;
+  | InjectionConsumedEvent
+  | ProviderRetryEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -2754,6 +2783,10 @@ export function isContextTrimmedEvent(e: TypedStreamEvent): e is { event: "conte
 
 export function isInjectionConsumedEvent(e: TypedStreamEvent): e is { event: "injection_consumed"; data: InjectionConsumedPayload } {
   return e.event === "injection_consumed";
+}
+
+export function isProviderRetryEvent(e: TypedStreamEvent): e is { event: "provider_retry"; data: ProviderRetryPayload } {
+  return e.event === "provider_retry";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

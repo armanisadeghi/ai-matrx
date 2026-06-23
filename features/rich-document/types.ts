@@ -24,6 +24,7 @@ export type ContentSourceType =
   | "prompt-result"
   | "artifact"
   | "scraper-result"
+  | "working-document"
   | "raw";
 
 export type ContentSource =
@@ -37,6 +38,17 @@ export type ContentSource =
   | { type: "prompt-result"; executionId: string; promptId?: string }
   | { type: "artifact"; artifactId: string }
   | { type: "scraper-result"; runId: string }
+  | {
+      // The per-conversation collaborative working document / scratchpad
+      // (features/agents/.../instance-working-document). `kind` distinguishes
+      // the shared "working" doc from the private "scratch" pad. `documentId`
+      // is the durable `cx_working_documents` backing id when one exists
+      // (null while ephemeral or note-bound) — drives save-to-task linking.
+      type: "working-document";
+      conversationId: string;
+      kind: "working" | "scratch";
+      documentId?: string | null;
+    }
   | { type: "raw" };
 
 // ============================================================================
@@ -118,6 +130,7 @@ export type SourceExtensions =
   | { type: "prompt-result"; canReRun: boolean }
   | { type: "artifact"; canEdit: boolean }
   | { type: "scraper-result" }
+  | { type: "working-document" }
   | { type: "raw" };
 
 // ============================================================================

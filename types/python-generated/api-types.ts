@@ -7959,23 +7959,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/rag/search-lab/agent/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Agent Chat Stream */
-        post: operations["agent_chat_stream_rag_search_lab_agent_chat_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/workflow/node-types": {
         parameters: {
             query?: never;
@@ -13464,47 +13447,6 @@ export interface components {
             /** Is New */
             is_new?: boolean | null;
         };
-        /** AgentChatRequest */
-        AgentChatRequest: {
-            /** Query */
-            query: string;
-            /** History */
-            history?: components["schemas"]["AgentMessage"][];
-            /**
-             * Model
-             * @default claude-sonnet-4-6
-             */
-            model: string;
-            /** Data Store Id */
-            data_store_id?: string | null;
-            /** Source Kinds */
-            source_kinds?: string[] | null;
-            /**
-             * Admin Bypass Acl
-             * @default false
-             */
-            admin_bypass_acl: boolean;
-            /**
-             * Rerank
-             * @default true
-             */
-            rerank: boolean;
-            /**
-             * Multi Query
-             * @default 1
-             */
-            multi_query: number;
-            /**
-             * Use Hyde
-             * @default false
-             */
-            use_hyde: boolean;
-            /**
-             * Max Tool Calls
-             * @default 6
-             */
-            max_tool_calls: number;
-        };
         /**
          * AgentConfigSettings
          * @description Sampling / decode settings on an agent_config.
@@ -13577,16 +13519,6 @@ export interface components {
             skill_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
-        };
-        /** AgentMessage */
-        AgentMessage: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "user" | "assistant";
-            /** Content */
-            content: string;
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -45051,39 +44983,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentToolGetChunkResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    agent_chat_stream_rag_search_lab_agent_chat_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentChatRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

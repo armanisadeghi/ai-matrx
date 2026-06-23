@@ -22,7 +22,7 @@ export function PillToggleInput({
   compact = false,
   containerWidth = 0,
 }: PillToggleInputProps) {
-  const height = compact ? "h-7" : "h-8";
+  const height = compact ? "min-h-7" : "min-h-8";
   const textSize = compact ? "text-xs" : "text-sm";
   const px = compact ? "px-2.5" : "px-3";
 
@@ -42,7 +42,7 @@ export function PillToggleInput({
             aria-checked={isSelected}
             onClick={() => onChange(option)}
             className={`
-              flex-1 ${height} ${px} ${textSize} rounded font-medium transition-all duration-150
+              min-w-0 flex-1 ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
               focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
               ${
                 isSelected

@@ -52,6 +52,22 @@ function sourceToEntityType(source: ContentSource): {
       return { entity_type: "artifact", entity_id: source.artifactId };
     case "scraper-result":
       return { entity_type: "scraper_run", entity_id: source.runId };
+    case "working-document":
+      // Link to the durable backing row when one exists; otherwise hang the
+      // task off the conversation so it still has a home.
+      return source.documentId
+        ? {
+            entity_type: "cx_working_document",
+            entity_id: source.documentId,
+            parent: {
+              entity_type: "cx_conversation",
+              entity_id: source.conversationId,
+            },
+          }
+        : {
+            entity_type: "cx_conversation",
+            entity_id: source.conversationId,
+          };
     case "raw":
       return null;
   }

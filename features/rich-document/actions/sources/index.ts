@@ -17,6 +17,7 @@ import { noteAdapter } from "./note";
 import { promptResultAdapter } from "./prompt-result";
 import { artifactAdapter } from "./artifact";
 import { scraperResultAdapter } from "./scraper-result";
+import { workingDocumentAdapter } from "./working-document";
 import { rawAdapter } from "./raw";
 
 export const SOURCE_ADAPTERS: Record<
@@ -28,6 +29,7 @@ export const SOURCE_ADAPTERS: Record<
   "prompt-result": promptResultAdapter,
   artifact: artifactAdapter,
   "scraper-result": scraperResultAdapter,
+  "working-document": workingDocumentAdapter,
   raw: rawAdapter,
 };
 

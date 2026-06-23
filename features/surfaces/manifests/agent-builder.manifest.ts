@@ -216,6 +216,76 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 400,
   },
   {
+    name: "variable_name",
+    label: "Focused variable name",
+    description:
+      "Machine name of the variable currently being edited in Agent Builder. Empty when the focused field is not a variable field.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 50,
+    sortOrder: 411,
+  },
+  {
+    name: "variable_help_text",
+    label: "Focused variable help text",
+    description:
+      "Live help text for the variable currently being edited. This is the editable field content when focus is on a variable's Help Text.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 412,
+  },
+  {
+    name: "variable_default_value",
+    label: "Focused variable default value",
+    description:
+      "Current default value for the variable being edited, including structured values for media or picklist-bound variables.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 413,
+  },
+  {
+    name: "variable_required",
+    label: "Focused variable required",
+    description:
+      "Whether the variable currently being edited is required at run time.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 414,
+  },
+  {
+    name: "variable_custom_component",
+    label: "Focused variable component",
+    description:
+      "Custom component configuration for the variable currently being edited, including static options or picklist binding.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 500,
+    sortOrder: 415,
+  },
+  {
+    name: "variable_binding",
+    label: "Focused variable context binding",
+    description:
+      "Context-item binding for the variable currently being edited, or null when the variable is not bound to a scope context item.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 416,
+  },
+  {
+    name: "variable_json",
+    label: "Focused variable as JSON",
+    description:
+      "Full live variable definition serialized as JSON so an agent can inspect and propose edits against the exact variable being edited.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 1000,
+    sortOrder: 417,
+  },
+  {
     name: "is_dirty",
     label: "Has unsaved changes",
     description:
@@ -261,6 +331,13 @@ export function createAgentBuilderScope(values: {
   agent_settings?: Record<string, unknown>;
   agent_json?: string;
   focused_field?: string;
+  variable_name?: string;
+  variable_help_text?: string;
+  variable_default_value?: unknown;
+  variable_required?: boolean;
+  variable_custom_component?: unknown;
+  variable_binding?: unknown;
+  variable_json?: string;
   is_dirty?: boolean;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;

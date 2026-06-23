@@ -113,14 +113,15 @@ export default function CreateProjectWindow({
       title="Create Project"
       id={windowId}
       overlayId={OVERLAY_ID}
-      minWidth={420}
-      minHeight={420}
-      width={560}
-      height={720}
+      minWidth={640}
+      minHeight={620}
+      width={760}
+      height="88vh"
       position="center"
       onClose={onClose}
+      bodyClassName="flex-1 min-h-0 overflow-hidden"
     >
-      <div className="h-full min-h-0 p-4">
+      <div className="h-full min-h-0">
         <ProjectCreatePanel
           initialOrgId={initialOrgId ?? null}
           initialOrgSlug={initialOrgSlug ?? null}
