@@ -7,9 +7,12 @@
  * WindowPersistenceManager, and any other module that only needs to
  * look up window metadata without pulling in component code.
  *
- * The full registry (with dynamic componentImport functions) lives in
- * windowRegistry.ts and should only be imported by the renderer
- * (UnifiedOverlayController).
+ * (There is no `windowRegistry.ts` renderer registry — that legacy path is
+ * deleted. Window COMPONENTS are lazy-loaded via `lazyOverlay` in
+ * `features/overlays/OverlayController.tsx`. Static-importing a `*Window.tsx`
+ * would collapse its lazy chunk into your bundle — see the Bundle invariant in
+ * `features/window-panels/FEATURE.md`. This metadata file is safe to import
+ * anywhere precisely because it carries no component code / dynamic imports.)
  */
 
 import type {

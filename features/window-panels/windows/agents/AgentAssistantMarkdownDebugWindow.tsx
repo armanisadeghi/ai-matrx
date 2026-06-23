@@ -68,9 +68,9 @@ export default function AgentAssistantMarkdownDebugWindow({
       urlSyncId="agent-assistant-markdown-debug-window"
       urlSyncArgs={{ m: "amd" }}
       overlayId="agentAssistantMarkdownDebugWindow"
-    >
-      <div className="flex flex-col h-full min-h-0 bg-background text-foreground">
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border shrink-0">
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0 bg-background text-foreground"
+      actionsRight={
+        <div className="flex flex-wrap items-center gap-2">
           {keys.length > 0 ? (
             <Select
               value={activeKey ?? undefined}
@@ -104,8 +104,9 @@ export default function AgentAssistantMarkdownDebugWindow({
             Clear drafts
           </Button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-border">
+      }
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 min-h-0 divide-y md:divide-y-0 md:divide-x divide-border">
           <div className="flex flex-col min-h-0 min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-3 py-1 border-b border-border bg-muted/40 shrink-0">
               Source (conversation) — read-only preview
@@ -144,7 +145,6 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
           </div>
         </div>
-      </div>
     </WindowPanel>
   );
 }

@@ -135,12 +135,42 @@ export default function ShareModalWindow({
 
   return (
     <WindowPanel
-      title={`Share ${resourceLabel}`}
+      titleNode={
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm font-medium leading-tight">
+            {resourceName}
+          </span>
+          <span className="truncate text-[11px] leading-tight text-muted-foreground">
+            Manage {resourceLabel.toLowerCase()} access
+          </span>
+        </div>
+      }
+      actionsRight={
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleEmailLink}
+          disabled={emailingLink}
+          className="flex-shrink-0"
+        >
+          {emailingLink ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : emailSent ? (
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          ) : (
+            <Mail className="h-4 w-4" />
+          )}
+          <span className="ml-1.5 hidden sm:inline">
+            {emailSent ? "Sent!" : "Email link"}
+          </span>
+        </Button>
+      }
       width={650}
       height={500}
       urlSyncKey="share_modal"
       onClose={onClose}
       overlayId="shareModalWindow"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       onCollectData={() => ({
         resourceType,
         resourceId,
@@ -149,34 +179,6 @@ export default function ShareModalWindow({
       })}
     >
       <div className="flex flex-col h-full bg-background overflow-hidden p-4">
-        {/* Header Section */}
-        <div className="flex items-start justify-between gap-4 mb-4 flex-shrink-0">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold truncate">{resourceName}</h2>
-            <p className="text-sm text-muted-foreground">
-              Manage access and permissions
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEmailLink}
-            disabled={emailingLink}
-            className="flex-shrink-0"
-          >
-            {emailingLink ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : emailSent ? (
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            ) : (
-              <Mail className="h-4 w-4" />
-            )}
-            <span className="ml-1.5 hidden sm:inline">
-              {emailSent ? "Sent!" : "Email link"}
-            </span>
-          </Button>
-        </div>
-
         {/* Tabs Section */}
         <Tabs
           value={activeTab}

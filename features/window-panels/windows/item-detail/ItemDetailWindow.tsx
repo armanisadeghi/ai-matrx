@@ -214,7 +214,34 @@ function ItemDetailWindowInner({
         <div className="flex items-center gap-2 min-w-0">
           <Icon className={cn("h-4 w-4 shrink-0", config.accent.text)} />
           <span className="truncate text-sm font-medium">{displayTitle}</span>
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset",
+              config.accent.bg,
+              config.accent.text,
+              config.accent.ring,
+            )}
+          >
+            {config.label}
+          </span>
         </div>
+      }
+      actionsRight={
+        itemId ? (
+          <button
+            type="button"
+            onClick={handleCopyId}
+            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
+            title="Copy ID"
+          >
+            {copied ? (
+              <Check className="h-3 w-3 text-emerald-500" />
+            ) : (
+              <Copy className="h-3 w-3" />
+            )}
+            <span className="max-w-[160px] truncate">{itemId}</span>
+          </button>
+        ) : undefined
       }
       onClose={onClose}
       width={520}
@@ -224,55 +251,12 @@ function ItemDetailWindowInner({
       bodyClassName="overflow-y-auto"
     >
       <div className="flex flex-col">
-        {/* Header */}
-        <div className="relative flex items-start gap-3 border-b border-border/60 p-4">
-          <div
-            className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset",
-              config.accent.bg,
-              config.accent.ring,
-            )}
-          >
-            <Icon className={cn("h-5 w-5", config.accent.text)} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-base font-semibold text-foreground">
-                {displayTitle}
-              </h2>
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ring-1 ring-inset",
-                  config.accent.bg,
-                  config.accent.text,
-                  config.accent.ring,
-                )}
-              >
-                {config.label}
-              </span>
-            </div>
-            {initialAbout?.trim() && (
-              <p className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-3">
-                {initialAbout.trim()}
-              </p>
-            )}
-            {itemId && (
-              <button
-                type="button"
-                onClick={handleCopyId}
-                className="mt-2 inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground transition-colors hover:text-foreground"
-                title="Copy ID"
-              >
-                {copied ? (
-                  <Check className="h-3 w-3 text-emerald-500" />
-                ) : (
-                  <Copy className="h-3 w-3" />
-                )}
-                <span className="max-w-[260px] truncate">{itemId}</span>
-              </button>
-            )}
-          </div>
-        </div>
+        {/* About — agent-provided description (content, can run multi-line). */}
+        {initialAbout?.trim() && (
+          <p className="border-b border-border/60 p-4 text-xs leading-snug text-muted-foreground line-clamp-3">
+            {initialAbout.trim()}
+          </p>
+        )}
 
         {/* Body states */}
         <div className="p-4">
