@@ -12,6 +12,8 @@
  * - Smooth expand/collapse with fade effect
  */
 
+"use client";
+
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   generateUnifiedDiff,

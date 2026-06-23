@@ -111,6 +111,8 @@ Real exemplars:
 
 Now there are two loud layers — the lint guard (fails at commit/CI) and this doctrine — so the day someone re-adds a static import, lint screams instead of the build silently growing 10 minutes over a month.
 
+**If the static hunt comes back clean, do NOT stop at "looks fine" or fall back to blaming "big packages."** The bloat is then bundle SIZE (more shipped per route), route-count growth, or a heavy module sitting on every route's critical path (the root layout/provider chain) — none of which grep finds. Profile it: **`pnpm analyze`** (= `ANALYZE=true pnpm build`; `@next/bundle-analyzer` is installed) emits per-route First Load JS + the largest shared chunks and the module that dominates each. Compare against a known-good baseline; if the regression window is known, **git-bisect the build time** across it. "Big packages" is the answer ONLY once the analyzer proves WHICH chunk grew and WHEN — and even then it is usually a freshly-leaked import into a shared chunk, not the package itself.
+
 ## Before you ship — checklist
 
 - [ ] **Which benefit am I buying?** `ssr:false` (off the server) and/or a real **condition** (deferred fetch). If neither, delete the `dynamic()` and import statically.
