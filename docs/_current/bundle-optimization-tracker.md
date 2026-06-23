@@ -134,12 +134,24 @@ Tier 2 items #6, #7, #8 from the original list are now confirmed:
 
 ## 2026-06-23 — build-time re-audit (new findings since the 2026-04-28 analyzer run)
 
-Re-ran the static leak hunt (SA + verified by hand). The menu-class static leak
-that ballooned the build 15→24 min was found + fixed + **guarded** (eslint
-`canonicalMenuStaticImportBan` in `eslint.config.mjs`; see the `code-splitting`
-skill's "Build-time bloat" section). No new menu-class leaks; the root
-layout/provider chain is clean. **Two NEW build-time facts that post-date this
-doc — both are owner decisions, not yet acted on:**
+Ran the leak hunt PROPERLY. The precise detector for this class: a module that's
+`dynamic({ ssr: false })`-imported somewhere but **statically value-imported
+elsewhere** (the menu's exact shape) — and specifically any `*Impl` heavy-core
+imported directly instead of via its dynamic wrapper. (A first pass wrongly
+chased icons/profiler/packages and declared it "clean" — the exact mistake to
+avoid; the bloat is always a couple of static imports of a heavy thing, found
+overnight, not "big packages.") **This found a REAL menu-class leak:**
+`features/scraper/parts/ScrapedContentPretty.tsx` statically imported
+`@/components/MarkdownStreamImpl` — the heavy markdown/rich-document engine
+(block registry, code highlighter, jspdf, html2canvas) — **bypassing its
+`dynamic({ ssr: false })` wrapper** and bundling the whole pipeline into the
+scraper graph (reached via `WebpageResourcePicker`, a widely-used resource
+picker). **Fixed** (import the `MarkdownStream` wrapper instead) + **guarded** by
+`heavyImplStaticImportBan` in `eslint.config.mjs` — a static `@/…Impl` value
+import anywhere is now an eslint error (makes the whole `*Impl`-bypass class
+extinct). The earlier `UnifiedAgentContextMenu` leak was also fixed + guarded
+(`canonicalMenuStaticImportBan`). Root layout/provider chain is otherwise clean.
+**Two NEW build-time facts (owner decisions, not yet acted on):**
 
 | # | Item | What's true (verified) | Recommendation | Status |
 |---|---|---|---|---|

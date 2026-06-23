@@ -467,6 +467,26 @@ const canonicalMenuStaticImportBan = [
     },
 ];
 
+// Heavy-core "*Impl" components are split behind a thin dynamic wrapper (the
+// "*Impl + wrapper" pattern — see the code-splitting skill). The wrapper
+// dynamic-imports the Impl via a RELATIVE path; importing an `@/…Impl` module
+// statically from anywhere else bypasses the split and bundles the entire heavy
+// core (e.g. the whole markdown/rich-document pipeline) into that chunk — a
+// build-time leak of the exact class that ballooned the build. (Real instance:
+// ScrapedContentPretty statically imported `@/components/MarkdownStreamImpl`,
+// pulling the markdown engine — block registry, code highlighter, jspdf,
+// html2canvas — into the scraper graph.) Import the dynamic wrapper (the sibling
+// WITHOUT the `Impl` suffix) instead. `import type` and dynamic `import()` are
+// unaffected; relative `./FooImpl` wrapper-internal imports are unaffected.
+const heavyImplStaticImportBan = [
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value=/^@\\/.*Impl$/]",
+        message:
+            "Do not statically import a heavy `*Impl` core — it bundles the whole heavy component into this chunk (a build-time leak). Import its dynamic wrapper instead: the sibling module without the `Impl` suffix, which does next/dynamic({ ssr: false }). `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
+    },
+];
+
 export default [
     ...nextCoreWebVitals,
     {
@@ -557,6 +577,8 @@ export default [
                 // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
                 // never a static value import (it balloons the route chunk).
                 ...canonicalMenuStaticImportBan,
+                // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
+                ...heavyImplStaticImportBan,
             ],
         },
     },

@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import MarkdownStreamImpl from "@/components/MarkdownStreamImpl";
+import MarkdownStream from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
 
 export interface ScrapedContentPrettyProps {
@@ -13,7 +13,9 @@ export interface ScrapedContentPrettyProps {
 }
 
 /**
- * Renders scraper `markdown_renderable` with the same markdown stack as chat (MarkdownStreamImpl).
+ * Renders scraper `markdown_renderable` with the same markdown stack as chat,
+ * via the code-split `MarkdownStream` wrapper (NOT `MarkdownStreamImpl` directly
+ * — that statically bundles the entire markdown/rich-document pipeline).
  */
 export function ScrapedContentPretty({
   markdown,
@@ -36,7 +38,7 @@ export function ScrapedContentPretty({
 
   return (
     <div className={cn("min-w-0 bg-background p-4 text-foreground", className)}>
-      <MarkdownStreamImpl content={trimmed} />
+      <MarkdownStream content={trimmed} />
     </div>
   );
 }
