@@ -24,7 +24,10 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
+import type {
+  ContentSource,
+  RichDocumentActionsVariant,
+} from "@/features/rich-document/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +116,24 @@ export interface NoteEditorCoreProps {
    */
   noteId?: string;
   /**
+   * Explicit content source for the preview/split RichDocument, overriding the
+   * `noteId ? note : raw` default. Non-note editors that reuse this core (the
+   * working document / scratchpad) pass their own source — e.g.
+   * `{ type: "working-document", conversationId, kind }` — so edit-through,
+   * save-to-task linking, and the right-click menu operate on the real entity.
+   */
+  actionsSource?: ContentSource;
+  /**
+   * Override the inline action variant rendered over the preview (and the
+   * split preview pane). Defaults to a full `bar` in preview / a hover
+   * `icon-only` in split. Hosts that carry their OWN persistent action surface
+   * elsewhere (the working-document panel renders the bar in its header, in
+   * every view mode) pass `"none"` to suppress the in-body bar while keeping
+   * the right-click context menu. Ignored when `actionsSurfaceId` is set
+   * (that already routes actions remotely).
+   */
+  previewActionsVariant?: RichDocumentActionsVariant;
+  /**
    * When provided, the preview/split action surface renders REMOTELY to a
    * `<RichDocumentActionSurface surfaceId={...}/>` the parent mounts (e.g. a
    * page header) instead of inline. When omitted, actions render inline
@@ -179,6 +200,8 @@ export function NoteEditorCore({
   findOverlay,
   previewContainerRef,
   noteId,
+  actionsSource,
+  previewActionsVariant,
   actionsSurfaceId,
   largeScrollbar = false,
   embedded = false,
@@ -195,9 +218,10 @@ export function NoteEditorCore({
     ? "scrollbar-contrast-lg"
     : "scrollbar-thin-auto";
   // Shared content source + action placement for the preview / split panes.
-  const richSource: ContentSource = noteId
-    ? { type: "note", noteId }
-    : { type: "raw" };
+  // An explicit `actionsSource` (working document, etc.) wins; otherwise derive
+  // from noteId.
+  const richSource: ContentSource =
+    actionsSource ?? (noteId ? { type: "note", noteId } : { type: "raw" });
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const internalTuiRef = useRef<any>(null);
 
@@ -349,7 +373,11 @@ export function NoteEditorCore({
             previewClassName,
           )}
           actionsSource={richSource}
-          actionsVariant={actionsSurfaceId ? "remote" : "icon-only"}
+          actionsVariant={
+            actionsSurfaceId
+              ? "remote"
+              : (previewActionsVariant ?? "icon-only")
+          }
           actionsSurfaceId={actionsSurfaceId}
         />
       )}
@@ -369,7 +397,9 @@ export function NoteEditorCore({
             key={resetKey}
             content={content}
             source={richSource}
-            actionsVariant={actionsSurfaceId ? "remote" : "bar"}
+            actionsVariant={
+              actionsSurfaceId ? "remote" : (previewActionsVariant ?? "bar")
+            }
             actionsSurfaceId={actionsSurfaceId}
             actionsClassName="mb-2"
             enableContextMenu

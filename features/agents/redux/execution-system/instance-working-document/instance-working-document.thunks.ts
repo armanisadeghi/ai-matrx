@@ -265,6 +265,75 @@ export const ensureConversationDocumentThunk = createAsyncThunk<
 );
 
 // =============================================================================
+// Persist content (external editors — RichDocument edit action, etc.)
+// =============================================================================
+
+/**
+ * Persist a full content replacement for the conversation's (kind) document
+ * from OUTSIDE the live editor — the RichDocument `edit` action (fullscreen
+ * editor save), agent-tool writebacks, and any other surface that produces a
+ * new document body without owning the panel's debounced draft.
+ *
+ * Mirrors `useWorkingDocument`'s `commit`: writes the canonical slice content
+ * (so every open editor merges it in), then persists to the durable source —
+ * the `cx_working_documents` row or the bound note. Unbound documents stay
+ * Redux-only (ephemeral). LOUD on failure: marks the slice error and rethrows
+ * so the caller's catch surfaces a toast.
+ */
+export const persistWorkingDocumentContentThunk = createAsyncThunk<
+  void,
+  { conversationId: string; kind?: WorkingDocumentKind; content: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/persistContent",
+  async (
+    { conversationId, kind = DEFAULT_DOC_KIND, content },
+    { dispatch, getState },
+  ) => {
+    // Canonical content first so every mounted editor reflects the new body.
+    dispatch(setWorkingDocContent({ conversationId, kind, content }));
+
+    const binding = selectWorkingDocBinding(conversationId, kind)(getState());
+
+    if (binding.kind === "cx_working_document" && binding.id) {
+      try {
+        await updateCxWorkingDocumentContent(binding.id, content);
+      } catch (err) {
+        dispatch(
+          markWorkingDocError({
+            conversationId,
+            kind,
+            error: "Could not save the document.",
+          }),
+        );
+        throw err;
+      }
+      return;
+    }
+
+    if (binding.kind === "note" && binding.id) {
+      try {
+        await dispatch(
+          saveNoteField({ noteId: binding.id, field: "content", value: content }),
+        ).unwrap();
+      } catch (err) {
+        dispatch(
+          markWorkingDocError({
+            conversationId,
+            kind,
+            error: "Could not save to the bound note.",
+          }),
+        );
+        throw err;
+      }
+      return;
+    }
+
+    // Unbound (ephemeral) — the slice write above is the whole persistence.
+  },
+);
+
+// =============================================================================
 // Cross-conversation linking
 // =============================================================================
 

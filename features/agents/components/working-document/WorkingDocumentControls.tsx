@@ -34,7 +34,11 @@ import { Button } from "@/components/ui/button";
 import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { WorkingDocumentPanel } from "./WorkingDocumentPanel";
+import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
+import {
+  WorkingDocumentPanel,
+  workingDocumentSurfaceId,
+} from "./WorkingDocumentPanel";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";
 
 interface WorkingDocumentControlsProps {
@@ -109,6 +113,17 @@ export function WorkingDocumentControls({
             "disabled:opacity-60",
           )}
         />
+        {/* Full action toolkit (read aloud, save to notes/task, HTML page,
+            email, print, edit…) for the document — same set an assistant
+            response and a note offer. Compact ⋯ menu to fit this tight row;
+            the embedded panel below mounts the provider it reads from. */}
+        {enabled && (
+          <RichDocumentActionSurface
+            surfaceId={workingDocumentSurfaceId(conversationId, kind)}
+            variant="menu"
+            fallback={null}
+          />
+        )}
         <button
           type="button"
           onClick={openAsWindow}
