@@ -45,6 +45,10 @@ import { analyzeDiff } from "../utils/diffAnalysis";
 import { supabase } from "@/utils/supabase/client";
 import { NoteEditorCore, type EditorMode } from "./NoteEditorCore";
 import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
+import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
+import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "sonner";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { FindReplaceBar } from "./FindReplaceBar";
@@ -345,6 +349,17 @@ export function NoteContentEditor({
     });
   }, [buildSurfaceScope]);
 
+  // ── Note undo/redo ────────────────────────────────────────────────
+  // Mounting this hook ALSO installs the capture-phase Cmd+Z / Ctrl+Z (and
+  // Ctrl+Y) interceptor that routes undo to the note's Redux stack and
+  // suppresses native textarea undo (which desyncs from Redux). The bespoke
+  // menu used to mount it; now that NoteContentEditor owns the canonical menu,
+  // it must mount it — otherwise note undo silently regresses.
+  const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useNoteUndoRedo({
+    noteId,
+  });
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
   // ── Context menu handlers ─────────────────────────────────────────
   const handleSave = useCallback(() => {
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
@@ -416,6 +431,28 @@ export function NoteContentEditor({
     dispatch(deleteNote(noteId));
   }, [dispatch, instanceId, noteId]);
 
+  // Super-admin only — hard delete (bypasses soft-delete). Confirmed first.
+  const handlePermanentDelete = useCallback(async () => {
+    const ok = await confirm({
+      title: "Permanently delete note",
+      description: "Permanently delete this note? This cannot be undone.",
+      confirmLabel: "Permanently delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    try {
+      const { permanentlyDeleteNote } = await import(
+        "@/features/notes/service/notesService"
+      );
+      await permanentlyDeleteNote(noteId);
+      dispatch(markTabInteraction({ instanceId }));
+      dispatch(removeInstanceTab({ instanceId, noteId }));
+      toast.success("Note permanently deleted");
+    } catch {
+      toast.error("Failed to permanently delete note");
+    }
+  }, [dispatch, instanceId, noteId]);
+
   // ── Insert agent output at the cursor (before / after the selection) ──
   // Fed to the canonical menu's onTextInsertBefore/After so agent results land
   // in the note. Flushes straight to Redux (no debounce) like the demo.
@@ -457,6 +494,8 @@ export function NoteContentEditor({
     onCloseOtherTabs: handleCloseOtherTabs,
     onCloseAllTabs: handleCloseAllTabs,
     onDelete: handleDelete,
+    isSuperAdmin,
+    onPermanentDelete: handlePermanentDelete,
   });
 
   // ── Conflict resolution handlers ──────────────────────────────────
@@ -537,10 +576,17 @@ export function NoteContentEditor({
         extraSections={notesExtras}
         getTextarea={() => textareaRef.current}
         getApplicationScope={getApplicationScope}
+        contextData={buildSurfaceScope() as Record<string, unknown>}
         onTextReplace={handleChangeFlush}
         onTextInsertBefore={(t) => insertAtCursor(t, "before")}
         onTextInsertAfter={(t) => insertAtCursor(t, "after")}
         onContentInserted={() => {}}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        undoHint={undoHint}
+        redoHint={redoHint}
       >
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           {findReplaceState?.isOpen && (

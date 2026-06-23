@@ -44,6 +44,9 @@ export interface NotesEditorExtraSectionsConfig {
   onCloseOtherTabs: () => void;
   onCloseAllTabs: () => void;
   onDelete: () => void;
+  /** Super-admin only — hard delete (bypasses soft-delete). Omitted otherwise. */
+  isSuperAdmin?: boolean;
+  onPermanentDelete?: () => void;
 }
 
 export function createNotesEditorExtraSections(
@@ -65,6 +68,8 @@ export function createNotesEditorExtraSections(
     onCloseOtherTabs,
     onCloseAllTabs,
     onDelete,
+    isSuperAdmin,
+    onPermanentDelete,
   } = config;
 
   // Move-to-Folder submenu: one item per folder (current disabled) + the full
@@ -145,6 +150,18 @@ export function createNotesEditorExtraSections(
       onSelect: onDelete,
     },
   ];
+
+  // Super-admin only: hard delete (confirmed by the host before it fires).
+  if (isSuperAdmin && onPermanentDelete) {
+    items.push({
+      kind: "item",
+      id: "permanent-delete",
+      label: "Permanently Delete",
+      icon: Trash2,
+      destructive: true,
+      onSelect: onPermanentDelete,
+    });
+  }
 
   return [{ id: "notes-ops", label: "Note", anchor: "after-compare", items }];
 }
