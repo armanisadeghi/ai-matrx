@@ -12,13 +12,18 @@ import Link from "next/link";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@/features/notes/components/NoteContentEditor";
 import { NoteViewControls } from "@/features/notes/components/NoteViewControls";
+import { NoteVersionHistory } from "@/features/notes/components/NoteVersionHistory";
 import { NotesInstanceProvider } from "@/features/notes/context/NotesInstanceContext";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectNoteById } from "@/features/notes/redux/selectors";
+import {
+  selectNoteById,
+  selectInstanceHistoryOpen,
+} from "@/features/notes/redux/selectors";
 import {
   addInstanceTab,
   registerInstance,
   setInstanceActiveTab,
+  setInstanceHistoryOpen,
 } from "@/features/notes/redux/slice";
 import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import {
@@ -55,9 +60,13 @@ export function NoteTitleActions({ item }: ContextItemBodyProps) {
 export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   const dispatch = useAppDispatch();
   const noteId = item.refs.noteIds?.[0] ?? null;
+  const instanceId = noteId ? notesDrawerInstanceId(noteId) : "";
   useNotesDrawerInstance(noteId);
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
+  );
+  const historyOpen = useAppSelector(
+    noteId ? selectInstanceHistoryOpen(instanceId) : () => false,
   );
 
   useEffect(() => {
@@ -78,10 +87,18 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   }
 
   return (
-    <NotesInstanceProvider value={notesDrawerInstanceId(noteId)}>
+    <NotesInstanceProvider value={instanceId}>
       <div className="h-full min-h-0">
         <NoteContentEditor noteId={noteId} />
       </div>
+      <NoteVersionHistory
+        noteId={noteId}
+        open={historyOpen}
+        onOpenChange={(open) =>
+          dispatch(setInstanceHistoryOpen({ instanceId, open }))
+        }
+        onVersionRestored={() => dispatch(fetchNoteContent(noteId))}
+      />
     </NotesInstanceProvider>
   );
 }

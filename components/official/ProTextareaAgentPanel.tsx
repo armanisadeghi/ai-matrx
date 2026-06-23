@@ -24,6 +24,11 @@ import {
   setWorkingDocContent,
   setWorkingDocEnabled,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  setShowFreeformInput,
+  setShowAttachments,
+  setShowMicrophone,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ProTextareaAgentActionId } from "./proTextareaAgentActions";
@@ -143,6 +148,7 @@ function ProTextareaAgentRunner({
   onApplySourceText: (text: string) => void;
   onControlsChange: (controls: RunControls) => void;
 }) {
+  const dispatch = useAppDispatch();
   const panelInstanceId = useId();
   const surfaceKey = `pro-textarea:${actionId}:${panelInstanceId}:${agentId}`;
 
@@ -159,11 +165,17 @@ function ProTextareaAgentRunner({
       showDefinitionMessages: true,
       showDefinitionMessageContent: false,
       showPreExecutionGate: false,
-      showFreeformInput: true,
-      showAttachments: false,
-      showMicrophone: false,
     },
   });
+
+  // Input-chrome flags live in instance-ui-state (not AgentExecutionConfig);
+  // apply them via Redux once the conversation exists.
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(setShowFreeformInput({ conversationId, value: true }));
+    dispatch(setShowAttachments({ conversationId, value: false }));
+    dispatch(setShowMicrophone({ conversationId, value: false }));
+  }, [conversationId, dispatch]);
 
   if (!conversationId) {
     return (

@@ -17,6 +17,7 @@ import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { InputActionButtons } from "./InputActionButtons";
+import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import {
   smartExecute,
@@ -100,6 +101,10 @@ export function SmartAgentInputStacked({
     const handleStop = () => dispatch(cancelExecution(conversationId));
     return (
       <div className={shellClassName}>
+        <ConversationContextRail
+          conversationId={conversationId}
+          className="px-3 pt-2"
+        />
         <SmartAgentVariables
           conversationId={conversationId}
           compact={compact}
@@ -140,6 +145,11 @@ export function SmartAgentInputStacked({
       className={cn(shellClassName, "px-2.5 pt-2 pb-1.5 gap-1")}
       data-agent-input-shell
     >
+      {/* Conversation context rail — surfaces the working document, scratchpad,
+          agent lists, and active context so they're openable without scrolling
+          the transcript. Renders nothing when there's nothing to show. */}
+      <ConversationContextRail conversationId={conversationId} />
+
       {/* Variable inputs — scrolls internally, never pushes textarea/toolbar off screen */}
       <SmartAgentVariables
         conversationId={conversationId}

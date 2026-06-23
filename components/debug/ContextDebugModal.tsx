@@ -104,7 +104,7 @@ export function ContextDebugModal({
             <Badge variant="outline" className="text-xs">
               Admin Debug Mode
             </Badge>
-            <div className="ml-auto">
+            <div className="ml-auto mr-6">
               <Button
                 variant="outline"
                 size="sm"

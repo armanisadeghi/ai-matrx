@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContextMenuNav } from "./_components/ContextMenuNav";
+import { getNavPages } from "./_registry";
 
 export const metadata: Metadata = {
   title: "Context Menu — Testing Suite",
@@ -26,7 +27,7 @@ export default function ContextMenuLayout({
 }) {
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
-      <ContextMenuNav />
+      <ContextMenuNav pages={getNavPages()} />
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>
   );

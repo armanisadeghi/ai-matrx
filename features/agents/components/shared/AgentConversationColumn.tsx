@@ -8,7 +8,6 @@ import { AgentConversationDisplay } from "../messages-display/AgentConversationD
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
-import { TaskPanelChip } from "@/features/agents/ui-first-tools/ui/lists/TaskPanelChip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
@@ -264,13 +263,12 @@ export function AgentConversationColumn({
             />
           )}
 
-          {/* UI-first tools: chip surfaces plan/task/todo counts (hidden when
-              empty); zone surfaces pending ask cards directly above the input.
-              The chat input itself stays fully interactive — answering cards
-              and typing into the input are independent actions. */}
-          <div className="flex items-center justify-end mb-1">
-            <TaskPanelChip conversationId={displayId} />
-          </div>
+          {/* UI-first tools: pending ask cards surface directly above the
+              input. Plan/task/todo counts (and the working document, scratchpad
+              & active context) now live in the ConversationContextRail INSIDE
+              the SmartAgentInput, so every surface gets them — not just this
+              column. The chat input itself stays fully interactive: answering
+              cards and typing into the input are independent actions. */}
           <PendingAsksZone conversationId={displayId} />
 
           {!hideInput && (

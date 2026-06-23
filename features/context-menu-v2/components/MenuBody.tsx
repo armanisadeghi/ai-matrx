@@ -55,6 +55,11 @@ import type {
   AgentMenuEntry,
 } from "../hooks/useUnifiedAgentContextMenu";
 import type {
+  SurfaceBoundAgentEntry,
+  SurfaceBoundAgentSection,
+} from "@/features/surfaces/services/surface-bound-agents.service";
+import { BoundAgentsMenuSection } from "./BoundAgentsMenuSection";
+import type {
   ContextMenuExtraSection,
   ContextMenuExtraItem,
   ExtraSectionAnchor,
@@ -75,6 +80,7 @@ export interface MenuBodyRenderProps {
    */
   placementMode: Record<
     | "ai-action"
+    | "bound-agent"
     | "content-block"
     | "organization-tool"
     | "user-tool"
@@ -82,6 +88,11 @@ export interface MenuBodyRenderProps {
     "show" | "hide" | "disable"
   >;
   categoryGroups: AgentMenuCategoryGroup[];
+  /** Surface-bound agents — only when `surfaceName` is set on the menu. */
+  showBoundAgents?: boolean;
+  boundAgentSections?: SurfaceBoundAgentSection[];
+  boundAgentsLoading?: boolean;
+  onBoundAgentSelect?: (entry: SurfaceBoundAgentEntry) => void;
   onEntrySelect: (entry: AgentMenuEntry, placementType: string) => void;
   onCopy: () => void;
   onCut: () => void;
@@ -175,6 +186,10 @@ export function MenuBody(props: MenuBodyRenderProps) {
     isEditable,
     placementMode,
     categoryGroups,
+    showBoundAgents = false,
+    boundAgentSections = [],
+    boundAgentsLoading = false,
+    onBoundAgentSelect,
     onEntrySelect,
     onCopy,
     onCut,
@@ -488,16 +503,15 @@ export function MenuBody(props: MenuBodyRenderProps) {
 
       {renderExtraSections("after-compare")}
 
-      {(
-        [
-          "ai-action",
-          "content-block",
-          "organization-tool",
-          "user-tool",
-        ] as const
-      )
-        .filter((p) => placementMode[p] !== "hide")
-        .map((placementType) => {
+      {(() => {
+        const renderPlacementSubmenu = (
+          placementType:
+            | typeof PLACEMENT_TYPES.AI_ACTION
+            | typeof PLACEMENT_TYPES.CONTENT_BLOCK
+            | typeof PLACEMENT_TYPES.ORGANIZATION_TOOL
+            | typeof PLACEMENT_TYPES.USER_TOOL,
+        ) => {
+          if (placementMode[placementType] === "hide") return null;
           const mode = placementMode[placementType];
           const groups = grouped[placementType] || [];
           const hasItems =
@@ -535,7 +549,28 @@ export function MenuBody(props: MenuBodyRenderProps) {
               </SubContent>
             </Sub>
           );
-        })}
+        };
+
+        return (
+          <>
+            {renderPlacementSubmenu(PLACEMENT_TYPES.AI_ACTION)}
+
+            {showBoundAgents && onBoundAgentSelect && (
+              <BoundAgentsMenuSection
+                variant={variant}
+                loading={boundAgentsLoading}
+                sections={boundAgentSections}
+                onSelect={onBoundAgentSelect}
+                disabled={placementMode["bound-agent"] === "disable"}
+              />
+            )}
+
+            {renderPlacementSubmenu(PLACEMENT_TYPES.CONTENT_BLOCK)}
+            {renderPlacementSubmenu(PLACEMENT_TYPES.ORGANIZATION_TOOL)}
+            {renderPlacementSubmenu(PLACEMENT_TYPES.USER_TOOL)}
+          </>
+        );
+      })()}
 
       {renderExtraSections("after-placements")}
 

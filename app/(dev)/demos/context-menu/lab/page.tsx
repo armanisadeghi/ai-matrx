@@ -116,6 +116,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  formatLabContextJson,
+  getLabSurfacePreset,
+} from "../_fixtures/lab-surface-presets";
+import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
+import { DemoProTextarea } from "../_components/DemoProTextarea";
 
 // Heavy: the v2 menu pulls in dropdown + context-menu + selection capture +
 // floating icon. Keep the demo page's first paint tiny by lazy-loading it.
@@ -336,6 +342,7 @@ const ALL_SCOPES: Scope[] = [
 
 const PLACEMENT_KEYS = [
   "ai-action",
+  "bound-agent",
   "content-block",
   "organization-tool",
   "user-tool",
@@ -345,8 +352,10 @@ type PlacementKey = (typeof PLACEMENT_KEYS)[number];
 
 const DEFAULT_CONTEXT_DATA = `{
   "content": "Right-click here. The applicationScope sent to launchAgentExecution\\nwill include this 'content' key plus any 'selection' you make.",
-  "context": "ssr-context-menu-demo"
+  "context": "context-menu-lab"
 }`;
+
+const LAB_NOTES_EXTRAS = createNotesEditorExtraSections();
 
 export default function ContextMenuDemoPage() {
   const dispatch = useAppDispatch();
@@ -395,9 +404,29 @@ export default function ContextMenuDemoPage() {
     () => manifests.find((m) => m.surfaceName === surfaceName),
     [manifests, surfaceName],
   );
+  const surfacePreset = useMemo(
+    () => (surfaceName ? getLabSurfacePreset(surfaceName) : null),
+    [surfaceName],
+  );
+  const [labSourceFeature, setLabSourceFeature] = useState("demo");
 
   // -- contextData editor ------------------------------------------------
   const [contextDataText, setContextDataText] = useState(DEFAULT_CONTEXT_DATA);
+
+  useEffect(() => {
+    if (!surfaceName) {
+      setLabSourceFeature("demo");
+      setContextDataText(DEFAULT_CONTEXT_DATA);
+      return;
+    }
+    const preset = getLabSurfacePreset(surfaceName);
+    if (preset) {
+      setLabSourceFeature(preset.sourceFeature);
+      setContextDataText(formatLabContextJson(preset.sampleContextData));
+    } else {
+      setLabSourceFeature("demo");
+    }
+  }, [surfaceName]);
   const parsedContextData = useMemo<{
     parsed: Record<string, unknown> | null;
     error: string | null;
@@ -421,11 +450,23 @@ export default function ContextMenuDemoPage() {
     Record<PlacementKey, "show" | "hide" | "disable">
   >({
     "ai-action": "show",
+    "bound-agent": "show",
     "content-block": "show",
     "organization-tool": "show",
     "user-tool": "show",
     "quick-action": "show",
   });
+
+  const effectivePlacementMode = useMemo(() => {
+    if (!surfacePreset?.enabledPlacements) return placementMode;
+    const allowed = new Set(surfacePreset.enabledPlacements);
+    return Object.fromEntries(
+      PLACEMENT_KEYS.map((key) => [
+        key,
+        allowed.has(key) ? placementMode[key] : "hide",
+      ]),
+    ) as Record<PlacementKey, "show" | "hide" | "disable">;
+  }, [surfacePreset, placementMode]);
 
   // -- Right-click textarea -----------------------------------------------
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -485,7 +526,10 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
   //    runs its own copy of this hook internally; we don't pass groups in).
   const hookOutput = useUnifiedAgentContextMenu({
     placementTypes: PLACEMENT_KEYS.filter(
-      (p) => p !== "quick-action" && placementMode[p] !== "hide",
+      (p) =>
+        p !== "quick-action" &&
+        p !== "bound-agent" &&
+        placementMode[p] !== "hide",
     ),
     enabled: true,
     scope,
@@ -895,7 +939,9 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 <div className="text-xs font-medium">
                   Right-click here
                   <span className="ml-2 text-[10px] text-muted-foreground">
-                    sourceFeature=&quot;demo&quot; · scope=&quot;{scope}&quot;
+                    sourceFeature=&quot;{labSourceFeature}&quot; · scope=&quot;
+                    {scope}&quot;
+                    {surfaceName ? ` · ${surfaceName}` : ""}
                   </span>
                 </div>
                 {lastLaunch && (
@@ -908,7 +954,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               </div>
 
               <UnifiedAgentContextMenu
-                sourceFeature="demo"
+                sourceFeature={labSourceFeature}
                 surfaceName={surfaceName || undefined}
                 getTextarea={() => textareaRef.current}
                 onTextReplace={(v) => setTextareaValue(v)}
@@ -916,20 +962,27 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                 onTextInsertAfter={(t) => setTextareaValue(textareaValue + t)}
                 onContentInserted={refreshSelection}
                 isEditable
-                placementMode={placementMode}
+                placementMode={effectivePlacementMode}
+                extraSections={
+                  surfaceName === "matrx-user/notes"
+                    ? LAB_NOTES_EXTRAS
+                    : undefined
+                }
                 contextData={parsedContextData.parsed ?? undefined}
                 scope={scope}
                 scopeId={resolvedScopeId}
               >
-                <textarea
+                <DemoProTextarea
                   ref={textareaRef}
                   value={textareaValue}
                   onChange={(e) => setTextareaValue(e.target.value)}
                   onSelect={refreshSelection}
                   onMouseUp={refreshSelection}
                   onKeyUp={refreshSelection}
-                  className="w-full min-h-[260px] rounded-md border border-border bg-background p-3 text-[16px] outline-none focus:ring-2 focus:ring-primary"
+                  minHeight={260}
+                  maxHeight={520}
                   spellCheck={false}
+                  className="w-full bg-background"
                 />
               </UnifiedAgentContextMenu>
             </div>

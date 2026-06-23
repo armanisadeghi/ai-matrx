@@ -41,6 +41,25 @@ function prettifyClient(client: string): string {
 }
 
 type BindingFilter = "all" | "bound" | "unbound";
+type SetupFilter = "all" | "setup" | "not-setup";
+
+function isSurfaceSetUp(surface: SurfaceWithStats): boolean {
+  return surface.surfaceValueCount > 0;
+}
+
+function emptyListMessage(
+  bindingFilter: BindingFilter,
+  setupFilter: SetupFilter,
+): string {
+  if (bindingFilter !== "all" && setupFilter !== "all") {
+    return "No surfaces match these filters";
+  }
+  if (bindingFilter === "bound") return "No bound surfaces yet";
+  if (bindingFilter === "unbound") return "Every surface is bound";
+  if (setupFilter === "setup") return "No set-up surfaces yet";
+  if (setupFilter === "not-setup") return "Every surface is set up";
+  return "No surfaces match";
+}
 
 interface UrlMatch {
   segments: string[];
@@ -97,8 +116,8 @@ function surfaceMatchesUrl(surface: SurfaceWithStats, url: UrlMatch): boolean {
  * Column 1 — Surfaces.
  *
  * Sectioned by `client_name`; default collapsed. Bound surfaces (for the
- * current agent) are visually distinct, and a counts strip + Bound /
- * Unbound filter make it easy to focus.
+ * current agent) are visually distinct, and counts strips + Bound /
+ * Unbound and Set up / Not set up filters make it easy to focus.
  *
  * Search accepts a plain substring or a pasted URL. URL pastes try to
  * locate the surface that owns that route — string-match for now, a
@@ -118,6 +137,7 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
     useSurfacesAdminSelection();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<BindingFilter>("all");
+  const [setupFilter, setSetupFilter] = useState<SetupFilter>("all");
 
   useEffect(() => {
     void dispatch(loadSurfaces());
@@ -139,6 +159,12 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
   );
   const unboundCount = surfaces.length - boundCount;
 
+  const setupCount = useMemo(
+    () => surfaces.filter(isSurfaceSetUp).length,
+    [surfaces],
+  );
+  const notSetupCount = surfaces.length - setupCount;
+
   const groups = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     const urlQuery = parseUrlQuery(query);
@@ -159,13 +185,21 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
       );
     };
 
-    const passesFilter = (s: SurfaceWithStats) => {
+    const passesBindingFilter = (s: SurfaceWithStats) => {
       if (filter === "all") return true;
       const isBound = boundSet.has(s.name);
       return filter === "bound" ? isBound : !isBound;
     };
 
-    const filtered = surfaces.filter((s) => passesSearch(s) && passesFilter(s));
+    const passesSetupFilter = (s: SurfaceWithStats) => {
+      if (setupFilter === "all") return true;
+      const setUp = isSurfaceSetUp(s);
+      return setupFilter === "setup" ? setUp : !setUp;
+    };
+
+    const filtered = surfaces.filter(
+      (s) => passesSearch(s) && passesBindingFilter(s) && passesSetupFilter(s),
+    );
 
     const grouped = new Map<string, SurfaceWithStats[]>();
     for (const s of filtered) {
@@ -194,7 +228,7 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
         if (b.client === "matrx-default") return 1;
         return a.client.localeCompare(b.client);
       });
-  }, [surfaces, query, filter, boundSet]);
+  }, [surfaces, query, filter, setupFilter, boundSet]);
 
   const isSearching = query.trim().length > 0;
   const isUrlSearch = parseUrlQuery(query) !== null;
@@ -218,25 +252,44 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
         </div>
 
         {/* Counts strip */}
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span>
-            <span className="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
-              {boundCount}
-            </span>{" "}
-            bound
-          </span>
-          <span aria-hidden className="opacity-50">
-            ·
-          </span>
-          <span>
-            <span className="font-medium text-foreground/80 tabular-nums">
-              {unboundCount}
-            </span>{" "}
-            unbound
-          </span>
+        <div className="space-y-1 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span>
+              <span className="font-medium text-emerald-700 dark:text-emerald-400 tabular-nums">
+                {boundCount}
+              </span>{" "}
+              bound
+            </span>
+            <span aria-hidden className="opacity-50">
+              ·
+            </span>
+            <span>
+              <span className="font-medium text-foreground/80 tabular-nums">
+                {unboundCount}
+              </span>{" "}
+              unbound
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>
+              <span className="font-medium text-sky-700 dark:text-sky-400 tabular-nums">
+                {setupCount}
+              </span>{" "}
+              set up
+            </span>
+            <span aria-hidden className="opacity-50">
+              ·
+            </span>
+            <span>
+              <span className="font-medium text-foreground/80 tabular-nums">
+                {notSetupCount}
+              </span>{" "}
+              not set up
+            </span>
+          </div>
         </div>
 
-        {/* Filter pills */}
+        {/* Binding filter pills */}
         <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
           {(["all", "bound", "unbound"] as const).map((f) => (
             <button
@@ -251,6 +304,31 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
               )}
             >
               {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Setup filter pills */}
+        <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
+          {(
+            [
+              { id: "all", label: "All" },
+              { id: "setup", label: "Set up" },
+              { id: "not-setup", label: "Not set up" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setSetupFilter(id)}
+              className={cn(
+                "flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors",
+                setupFilter === id
+                  ? "bg-primary/10 text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
             </button>
           ))}
         </div>
@@ -288,11 +366,7 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
         )}
         {status !== "loading" && groups.length === 0 && (
           <div className="px-4 py-8 text-sm text-muted-foreground text-center">
-            {filter === "bound"
-              ? "No bound surfaces yet"
-              : filter === "unbound"
-                ? "Every surface is bound"
-                : "No surfaces match"}
+            {emptyListMessage(filter, setupFilter)}
           </div>
         )}
 

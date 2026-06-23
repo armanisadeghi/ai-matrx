@@ -62,8 +62,13 @@ import {
   type RagSearchResponse,
 } from "@/features/rag/api/search";
 import {
+  ragAgentToolGetChunk,
+  ragAgentToolSearch,
   ragDiagnoseStream,
   ragInventory,
+  type AgentToolGetChunkResponse,
+  type AgentToolSearchOne,
+  type AgentToolSearchResponse,
   type DiagnoseHit,
   type DiagnoseResponse,
   type ExpandResponse,
@@ -840,6 +845,385 @@ function SearchTab({ scope }: { scope: Scope }) {
 }
 
 // ===========================================================================
+// Agent tool view — the agent's ACTUAL rag_search, with play-out
+// ===========================================================================
+//
+// Calls /rag/search-lab/tool/search, which reproduces byte-for-byte what the
+// registered rag_search tool hands the model (same search() call, same output
+// mappers). Supports N queries (a real agent fires several) and the full arg
+// surface, threads the working-context org/scope (the missing piece that made
+// the simulation return 0), and lets you "play out" rag_get_chunk on any hit.
+
+interface ChunkPlayout {
+  loading: boolean;
+  data: AgentToolGetChunkResponse | null;
+  error: string | null;
+}
+
+function AgentToolResultBlock({
+  result,
+  orgOverride,
+}: {
+  result: AgentToolSearchOne;
+  orgOverride: string | null;
+}) {
+  const [rawOpen, setRawOpen] = useState(false);
+  const [chunkOut, setChunkOut] = useState<Record<string, ChunkPlayout>>({});
+
+  const playOut = useCallback(
+    async (chunkId: string) => {
+      setChunkOut((m) => ({
+        ...m,
+        [chunkId]: { loading: true, data: null, error: null },
+      }));
+      try {
+        const r = await ragAgentToolGetChunk({
+          chunk_id: chunkId,
+          include_parent: true,
+          organization_id: orgOverride,
+        });
+        setChunkOut((m) => ({
+          ...m,
+          [chunkId]: { loading: false, data: r, error: null },
+        }));
+      } catch (e) {
+        setChunkOut((m) => ({
+          ...m,
+          [chunkId]: {
+            loading: false,
+            data: null,
+            error: e instanceof Error ? e.message : "get-chunk failed",
+          },
+        }));
+      }
+    },
+    [orgOverride],
+  );
+
+  return (
+    <div className="rounded-md border bg-card overflow-hidden">
+      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
+        <SearchIcon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="font-mono font-medium">{result.query}</span>
+        <Badge variant="secondary" className="text-[10px] ml-auto">
+          {result.hits.length} hits
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          {result.total_candidates} candidates
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          {result.latency_ms} ms
+        </Badge>
+        <Badge variant="outline" className="text-[10px]">
+          {result.reranker_model ?? "rerank off"}
+        </Badge>
+      </div>
+
+      {result.error && (
+        <div className="px-3 py-2 text-xs text-destructive flex items-center gap-2">
+          <AlertCircle className="h-3.5 w-3.5" /> {result.error}
+        </div>
+      )}
+
+      {(result.matched_entities.length > 0 ||
+        result.entity_map.length > 0) && (
+        <div className="px-3 py-2 border-b flex flex-wrap items-center gap-1">
+          <Layers className="h-3 w-3 text-muted-foreground mr-1" />
+          {result.matched_entities.map((e) => (
+            <Badge key={`m-${e}`} className="text-[10px]" variant="default">
+              {e}
+            </Badge>
+          ))}
+          {result.entity_map.slice(0, 12).map((e) => (
+            <Badge
+              key={`em-${e.entity_id ?? e.name}`}
+              className="text-[10px]"
+              variant="outline"
+              title={
+                e.importance != null
+                  ? `importance ${e.importance.toFixed(2)}`
+                  : undefined
+              }
+            >
+              {e.name}
+              {e.kind ? (
+                <span className="text-muted-foreground ml-1">{e.kind}</span>
+              ) : null}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <div className="divide-y">
+        {result.hits.length === 0 && !result.error && (
+          <div className="px-3 py-4 text-xs text-muted-foreground">
+            No hits — the agent would receive an empty result set for this
+            query.
+          </div>
+        )}
+        {result.hits.map((h, i) => {
+          const out = h.chunk_id ? chunkOut[h.chunk_id] : undefined;
+          const chunk = (out?.data?.chunk ?? null) as {
+            content_text?: string;
+            parent?: { content_text?: string };
+          } | null;
+          return (
+            <div key={h.chunk_id ?? i} className="px-3 py-2 space-y-1">
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                <span className="font-mono w-6 text-right">#{i + 1}</span>
+                {h.file_name && (
+                  <span className="font-medium text-foreground truncate max-w-[260px]">
+                    {h.file_name}
+                  </span>
+                )}
+                {h.page_number != null && <span>p.{h.page_number}</span>}
+                <Badge variant="outline" className="text-[10px]">
+                  {h.source_kind}
+                </Badge>
+                {typeof h.score === "number" && (
+                  <span className="tabular-nums">
+                    score {h.score.toFixed(3)}
+                  </span>
+                )}
+                <code className="font-mono text-[10px] truncate">
+                  {h.chunk_id}
+                </code>
+                {h.chunk_id && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[10px] ml-auto"
+                    onClick={() => playOut(h.chunk_id as string)}
+                    disabled={out?.loading}
+                  >
+                    {out?.loading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Play className="h-3 w-3 mr-1" />
+                        Read full chunk
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs whitespace-pre-wrap text-foreground/90">
+                {h.snippet || (
+                  <span className="text-destructive">
+                    (empty snippet — the agent would get no readable text here)
+                  </span>
+                )}
+              </p>
+
+              {out && (
+                <div className="mt-1 rounded border bg-muted/30 p-2 text-xs">
+                  {out.loading && (
+                    <span className="text-muted-foreground">
+                      Loading full chunk…
+                    </span>
+                  )}
+                  {out.error && (
+                    <span className="text-destructive">{out.error}</span>
+                  )}
+                  {out.data && out.data.status !== "ok" && (
+                    <span className="text-amber-600 dark:text-amber-400">
+                      {out.data.note ??
+                        `rag_get_chunk → ${out.data.status}`}
+                    </span>
+                  )}
+                  {out.data && out.data.status === "ok" && chunk && (
+                    <div className="space-y-2">
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        rag_get_chunk → full chunk content
+                      </div>
+                      <p className="whitespace-pre-wrap">
+                        {chunk.content_text}
+                      </p>
+                      {chunk.parent?.content_text && (
+                        <>
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            parent context
+                          </div>
+                          <p className="whitespace-pre-wrap text-foreground/80">
+                            {chunk.parent.content_text}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-3 py-2 border-t">
+        <button
+          type="button"
+          onClick={() => setRawOpen((v) => !v)}
+          className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+        >
+          <FileText className="h-3 w-3" />
+          {rawOpen ? "Hide" : "Show"} raw tool_result (exactly what the agent
+          receives)
+        </button>
+        {rawOpen && (
+          <pre className="mt-2 max-h-72 overflow-auto rounded bg-muted/40 p-2 text-[10px] font-mono whitespace-pre-wrap break-all">
+            {result.tool_result_text}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AgentToolPanel({ scope }: { scope: Scope }) {
+  const searchContext = useRagSearchContext();
+  const orgOverride = searchContext.filters?.organization_id ?? null;
+  const scopeIds =
+    searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null;
+
+  const [queries, setQueries] = useState<string[]>([""]);
+  const [running, setRunning] = useState(false);
+  const [resp, setResp] = useState<AgentToolSearchResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = useCallback(async () => {
+    const qs = queries.map((q) => q.trim()).filter(Boolean);
+    if (qs.length === 0) return;
+    setRunning(true);
+    setError(null);
+    setResp(null);
+    try {
+      const r = await ragAgentToolSearch({
+        queries: qs,
+        limit: 10,
+        source_kinds: scope.sourceKinds ?? null,
+        data_store_id: scope.storeId ?? null,
+        multi_query: scope.multiQuery,
+        use_hyde: scope.useHyde,
+        rerank: scope.rerank,
+        use_mmr: true,
+        scope_ids: scopeIds,
+        organization_id: orgOverride,
+      });
+      setResp(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Agent tool search failed");
+    } finally {
+      setRunning(false);
+    }
+  }, [queries, scope, orgOverride, scopeIds]);
+
+  return (
+    <div className="rounded-md border bg-card overflow-hidden">
+      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+        <Brain className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="font-semibold">
+          Agent&apos;s actual tool · rag_search
+        </span>
+        <Badge variant="outline" className="text-[10px] ml-auto">
+          {orgOverride ? "org override" : "your org"}
+        </Badge>
+      </div>
+      <div className="px-3 py-3 space-y-2">
+        <p className="text-[11px] text-muted-foreground">
+          Runs the exact tool the agent calls and shows exactly what it gets
+          back. Add several queries — a real agent fires more than one.
+        </p>
+        {queries.map((q, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input
+              value={q}
+              onChange={(e) =>
+                setQueries((qs) =>
+                  qs.map((x, idx) => (idx === i ? e.target.value : x)),
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  run();
+                }
+              }}
+              placeholder={`Query ${i + 1}`}
+              className="h-9"
+            />
+            {queries.length > 1 && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 shrink-0"
+                onClick={() =>
+                  setQueries((qs) => qs.filter((_, idx) => idx !== i))
+                }
+                aria-label="Remove query"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setQueries((qs) => (qs.length >= 8 ? qs : [...qs, ""]))
+            }
+            disabled={queries.length >= 8}
+          >
+            + Add query
+          </Button>
+          <Button
+            size="sm"
+            onClick={run}
+            disabled={running || queries.every((q) => !q.trim())}
+            className="ml-auto"
+          >
+            {running ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-1" />
+                Run as agent
+              </>
+            )}
+          </Button>
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle className="h-4 w-4" /> {error}
+          </div>
+        )}
+        {resp?.notes.map((n, i) => (
+          <div
+            key={i}
+            className="text-[11px] text-amber-600 dark:text-amber-400"
+          >
+            {n}
+          </div>
+        ))}
+      </div>
+
+      {resp && resp.results.length > 0 && (
+        <div className="px-3 pb-3 space-y-3">
+          {resp.results.map((r, i) => (
+            <AgentToolResultBlock
+              key={i}
+              result={r}
+              orgOverride={orgOverride}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===========================================================================
 // Tab 2 — Agent Simulation
 // ===========================================================================
 
@@ -850,6 +1234,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
   const [expand, setExpand] = useState<ExpandResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Working-context org/scope — the SAME payload the Search tab sends. Without
+  // it the pipeline trace ran in the caller's personal org and reported 0
+  // visible chunks even when the Search tab (which honors it) found plenty.
+  const searchContext = useRagSearchContext();
   const requestPayload = useMemo(
     () => ({
       query: query.trim(),
@@ -862,8 +1250,11 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
       source_kinds: scope.sourceKinds,
       data_store_id: scope.storeId ?? null,
       admin_bypass_acl: scope.adminBypass,
+      organization_id: searchContext.filters?.organization_id ?? null,
+      scope_ids:
+        searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null,
     }),
-    [query, scope],
+    [query, scope, searchContext],
   );
 
   const runAll = useCallback(async () => {
@@ -1015,15 +1406,17 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           </Button>
         </form>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          This tab runs the full retrieval pipeline and exposes every layer:
-          query rewrites, HyDE passage, embedding vector preview, per-stage
-          counts, raw request/response, per-hit score breakdown, and the exact
-          prompt block an agent would receive.
+          The panel below runs the agent&apos;s ACTUAL rag_search tool (with
+          play-out into rag_get_chunk). Underneath, the full retrieval pipeline
+          is exposed layer by layer: query rewrites, HyDE passage, embedding
+          vector preview, per-stage counts, and the exact prompt block.
         </p>
       </header>
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
+          <AgentToolPanel scope={scope} />
+
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
@@ -1166,11 +1559,29 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     </Badge>
                   )}
                 </div>
-                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-4 gap-2">
                   <AnimatedKpiCard
                     icon={<Database className="h-3.5 w-3.5" />}
                     label={`Visible ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                     value={diag.visible_chunks_total}
+                    tone="info"
+                  />
+                  <AnimatedKpiCard
+                    icon={<SearchIcon className="h-3.5 w-3.5" />}
+                    label="Vector recall"
+                    value={diag.candidates_vector}
+                    tone="info"
+                  />
+                  <AnimatedKpiCard
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    label="Lexical recall"
+                    value={diag.candidates_lexical}
+                    tone="info"
+                  />
+                  <AnimatedKpiCard
+                    icon={<Layers className="h-3.5 w-3.5" />}
+                    label="Entity recall"
+                    value={diag.candidates_entity ?? 0}
                     tone="info"
                   />
                   <AnimatedKpiCard

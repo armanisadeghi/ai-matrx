@@ -892,8 +892,7 @@ export const ProTextarea = React.forwardRef<
                       );
                     })}
                   </div>
-                ) : menuMode !== "menu" &&
-                  isEmbeddedProTextareaAgentAction(menuMode) ? (
+                ) : isEmbeddedProTextareaAgentAction(menuMode) ? (
                   <ProTextareaAgentPanel
                     actionId={menuMode}
                     agentId={selectedAgent}

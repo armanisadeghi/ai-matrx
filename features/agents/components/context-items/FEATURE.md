@@ -21,7 +21,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 |---|---|---|
 | `NoteBody` | `input_notes` | yes (native `NoteContentEditor`) |
 | `TaskBody` | `input_task` | yes (native `TaskEditor`) |
-| `WorkingDocumentBody` | `working_document` | yes (native `WorkingDocumentPanel`) |
+| `WorkingDocumentBody` | `working_document` | yes (full `NoteEditorCore` modes + version history + agent diff) |
 | `WebpageBody` | `input_webpage` | preview + live iframe |
 | `DataBody` | `input_data` | preview |
 | `MediaBody` | image/audio/video/document/youtube | view (via `InlineMediaRef`) |
@@ -32,7 +32,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 
 - **Normalization** (`normalize.ts`) — `ManagedResource` and `RenderBlockPayload` both flatten to `ContextDrawerItem[]`, **one item per underlying record**. So a "3 Notes" chip becomes 3 drawer items; prev/next + the bottom thumbnail rail page through each individually. A chip opens the drawer at its first item.
 - **Editing** — note/task/working-document mount their canonical native editors, which self-persist to their own slices/DB.
-- **Re-context** (`recontext.ts`) — an attachment is sent to the model only once. If the user edits an already-sent (`origin: "block"`) editable record, the drawer footer offers **"Send updated version"** → dispatches `addResource` so the edit reaches the agent on the next turn. The live **working document** needs no re-attach (it's a context entry re-sent every turn) — it's edited via the `ContextSlotDetailSheet`, which now renders the editable `WorkingDocumentPanel` for the `working_document` key instead of a read-only value dump.
+- **Re-context** (`recontext.ts`) — an attachment is sent to the model only once. If the user edits an already-sent (`origin: "block"`) editable record, the drawer footer offers **"Send updated version"** → dispatches `addResource` so the edit reaches the agent on the next turn. The live **working document** needs no re-attach (it's a context entry re-sent every turn) — open it from the context-slot chip or (when registered in the drawer list) via `WorkingDocumentBody`.
 
 ## Invariants
 
@@ -53,10 +53,17 @@ If you find yourself adding a header or a tall block inside a body, stop — it 
 
 ## Working document
 
-Shown as a differentiated **"Context"** chip in the input strip whenever it's enabled (ring + primary tint — context, not a one-off attachment), and joins the drawer nav list. Its body is the native editor (`ProTextarea`, full height) with a footer **GitCompare** toggle (lights up + dot when the agent made an unseen edit) that swaps to the canonical `DiffViewer` (light engine / highlight view) fed by `useWorkingDocChanges` — reusing Scribe's diff stack. Only the Body mounts `useWorkingDocument`; the Footer reads a tiny shared store so the realtime channel / context-sync effects aren't double-mounted.
+Shown as a **context-slot chip** (live `working_document` key). Clicking opens `ContextSlotDetailSheet` with the same rich surface as Notes:
+
+- **Editor modes** — Edit / Split / Rich / MD Split / Preview (`NoteEditorCore` via `WorkingDocumentEditor`)
+- **Agent diff** — canonical `DiffViewer` fed by `useWorkingDocChanges` (lights up when the agent edits unseen)
+- **Version history** — note-bound docs use `note_versions`; otherwise per-turn snapshots from `cx_message.model_context.items` with prev/next cycling + two-version compare + restore
+
+Only the Body mounts `useWorkingDocument`; title actions + history read the shared per-conversation view store (`workingDocumentViewStore.ts`).
 
 ## Change log
 
+- `2026-06-22` — claude: **working document drawer parity with Notes.** Context-slot sheet now mounts `WorkingDocumentBody` (not plain `ProTextarea`): full `NoteEditorCore` view modes, nested version-history panel (note versions or per-turn snapshots with compare/restore), and agent-change diff. Shared primitives live under `features/agents/components/working-document/`. `NoteBody` drawer now wires `NoteVersionHistory` when the history toggle is on.
 - `2026-06-22` — claude: **note drawer gets view-mode controls; attachments no longer duplicate in context strip.** `NoteTitleActions` + `NoteViewControls` in the drawer title bar (Edit / Split / Rich / MD Split / Preview + history). `AgentUserMessage` stopped rendering `model_context.input_items` in `ContextSlotChipStrip` — attachments belong exclusively on the attachment chip row.
 - `2026-06-22` — claude: **fixed empty drawer when clicking sent note/task chips.** Post-submit bubbles passed raw `MessagePart[]` straight into the drawer normalizer; `AgentUserMessage` now runs `normalizeContentBlocks` first. `normalize.ts` accepts `{ id }` ResourceRefInput objects; `NoteBody` prefetches on open.
 - `2026-06-19` (2) — claude: **layout overhaul + working-document chip/diffs.** Full-height bodies; single compact icon-only footer (`Footer` added to the type def + `resolveContextItemFooter`); dynamic title via `setTitle`; dropped the bottom thumbnail rail and all descriptions. Documents/webpages/youtube now fill height (iframe via resolved `useFileSrc`). Working document surfaces as a pre-submit "Context" chip and gets an in-drawer edit↔diff toggle.

@@ -8494,6 +8494,13 @@ export type Database = {
             referencedRelation: "cx_user_request"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cx_request_snapshot: {
@@ -8698,6 +8705,13 @@ export type Database = {
             columns: ["user_request_id"]
             isOneToOne: false
             referencedRelation: "cx_user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request_summary"
             referencedColumns: ["id"]
           },
           {
@@ -11004,6 +11018,35 @@ export type Database = {
           {
             foreignKeyName: "industries_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "industries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      industry_curators: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          industry_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          industry_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          industry_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "industry_curators_industry_id_fkey"
+            columns: ["industry_id"]
             isOneToOne: false
             referencedRelation: "industries"
             referencedColumns: ["id"]
@@ -25967,6 +26010,52 @@ export type Database = {
           },
         ]
       }
+      cx_user_request_summary: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          api_duration_ms: number | null
+          completed_at: string | null
+          conversation_count: number | null
+          created_at: string | null
+          error_count: number | null
+          finish_reason: string | null
+          id: string | null
+          last_activity_at: string | null
+          last_request_at: string | null
+          request_count: number | null
+          source_app: string | null
+          source_feature: string | null
+          status: string | null
+          stored_total_cost: number | null
+          stored_total_tokens: number | null
+          tool_duration_ms: number | null
+          total_cached_tokens: number | null
+          total_cost: number | null
+          total_duration_ms: number | null
+          total_input_tokens: number | null
+          total_output_tokens: number | null
+          total_tokens: number | null
+          total_tool_calls: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_request_agent_fk"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_request_agent_version_fk"
+            columns: ["agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_unified_pages: {
         Row: {
           cleaned_text: string | null
@@ -27964,6 +28053,10 @@ export type Database = {
           p_view_count: number
         }
         Returns: number
+      }
+      can_curate_library_document: {
+        Args: { p_doc: string; p_user: string }
+        Returns: boolean
       }
       check_builtin_drift: {
         Args: { p_builtin_id?: string }
@@ -31236,6 +31329,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      industry_curator_grant: {
+        Args: { p_actor?: string; p_industry: string; p_user: string }
+        Returns: {
+          created_at: string
+          granted_by: string | null
+          industry_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "industry_curators"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      industry_curator_revoke: {
+        Args: { p_actor?: string; p_industry: string; p_user: string }
+        Returns: undefined
+      }
       industry_unassign_org: {
         Args: {
           p_actor?: string
@@ -31290,6 +31402,10 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
+      is_industry_curator: {
+        Args: { p_industry: string; p_user: string }
+        Returns: boolean
+      }
       is_member_of_organization: {
         Args: { p_org_id: string }
         Returns: boolean
@@ -31302,6 +31418,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      is_super_admin_user: { Args: { p_user: string }; Returns: boolean }
       kg_caller_can_target_scope: {
         Args: { p_scope_id: string }
         Returns: boolean

@@ -17,6 +17,7 @@ import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { SmartAgentVariables } from "../variable-input-variations/SmartAgentVariables";
 import { AgentTextarea } from "./AgentTextarea";
 import { SingleRowActionButtons } from "./SingleRowActionButtons";
+import { ConversationContextRail } from "./ConversationContextRail";
 import { UninitializedShell } from "./UninitializedShell";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -66,6 +67,9 @@ export function SmartAgentInputSingleRow({
 
   return (
     <div className="flex flex-col gap-1 w-full" data-agent-input-shell>
+      {/* Conversation context rail (working doc, scratchpad, lists, context) */}
+      <ConversationContextRail conversationId={conversationId} />
+
       {/* Variable inputs (stacked above the row when present) */}
       <SmartAgentVariables
         conversationId={conversationId}

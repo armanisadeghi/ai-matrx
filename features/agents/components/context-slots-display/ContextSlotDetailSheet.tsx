@@ -28,7 +28,6 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
-import { WorkingDocumentPanel } from "@/features/agents/components/working-document/WorkingDocumentPanel";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import {
   KnownContextDetail,
@@ -37,6 +36,11 @@ import {
   parseContextRecord,
   resolveContextEntryValue,
 } from "./knownContextValues";
+import {
+  WorkingDocumentBody,
+  WorkingDocumentTitleActions,
+  buildWorkingDocumentDrawerItem,
+} from "../context-items/bodies/WorkingDocumentBody";
 import { cn } from "@/lib/utils";
 
 const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
@@ -90,6 +94,12 @@ export function ContextSlotDetailSheet({
     CONTEXT_TYPE_CHIP_CLASS[type] ?? CONTEXT_TYPE_CHIP_CLASS.text;
 
   const label = slot?.label?.trim() || entry?.label?.trim() || contextKey;
+  const isWorkingDocument = contextKey === WORKING_DOCUMENT_CONTEXT_KEY;
+
+  const workingDocItem = useMemo(
+    () => buildWorkingDocumentDrawerItem(conversationId, label),
+    [conversationId, label],
+  );
 
   const inlinePolicyText = useMemo(() => {
     const mic = slot?.max_inline_chars;
@@ -104,43 +114,42 @@ export function ContextSlotDetailSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={
-        <span className="inline-flex items-center gap-2.5 min-w-0">
+        <span className="inline-flex min-w-0 items-center gap-2.5">
           <span
             className={cn(
-              "inline-flex items-center justify-center h-7 w-7 rounded-md border shrink-0",
+              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
               chipClass,
             )}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <Icon className="h-3.5 w-3.5" />
           </span>
-          <span className="truncate">{label}</span>
+          <span className="min-w-0 truncate">{label}</span>
+          {isWorkingDocument && (
+            <WorkingDocumentTitleActions item={workingDocItem} />
+          )}
         </span>
       }
       description={
-        <span className="font-mono">
-          {contextKey} · {type}
-        </span>
+        isWorkingDocument ? undefined : (
+          <span className="font-mono">
+            {contextKey} · {type}
+          </span>
+        )
       }
       expandButtonLabel="Context slot"
       position="right"
-      defaultSize={34}
+      defaultSize={isWorkingDocument ? 44 : 34}
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
-      {contextKey === WORKING_DOCUMENT_CONTEXT_KEY ? (
-        // The working document is collaborative and re-sent every turn — render
-        // the live editable panel instead of a read-only value dump.
+      {isWorkingDocument ? (
         <div className="min-h-0 flex-1">
-          <WorkingDocumentPanel
-            conversationId={conversationId}
-            showHeader={false}
-            showEnableToggle={false}
-          />
+          <WorkingDocumentBody item={workingDocItem} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           {slot?.description && (
             <DetailSection title="Description">
-              <p className="text-xs text-foreground/85 whitespace-pre-wrap">
+              <p className="whitespace-pre-wrap text-xs text-foreground/85">
                 {slot.description}
               </p>
             </DetailSection>
@@ -160,7 +169,7 @@ export function ContextSlotDetailSheet({
 
           {slot?.summary_agent_id && (
             <DetailSection title="Summary sub-agent">
-              <p className="text-[11px] font-mono text-muted-foreground break-all">
+              <p className="break-all font-mono text-[11px] text-muted-foreground">
                 {slot.summary_agent_id}
               </p>
             </DetailSection>
@@ -169,11 +178,11 @@ export function ContextSlotDetailSheet({
           {slot?.mutable && (
             <DetailSection title="Mutation">
               <p className="text-xs text-muted-foreground">
-                Mutable · persist={" "}
+                Mutable · persist{" "}
                 <span className="font-mono">{slot.persist ?? "never"}</span>
               </p>
               {slot.persist === "auto" && slot.source && (
-                <pre className="mt-1.5 text-[11px] font-mono bg-muted/40 border border-border rounded p-2 overflow-x-auto">
+                <pre className="mt-1.5 overflow-x-auto rounded border border-border bg-muted/40 p-2 font-mono text-[11px]">
                   {JSON.stringify(slot.source, null, 2)}
                 </pre>
               )}
@@ -202,8 +211,8 @@ function DetailSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="px-4 py-3 border-b border-border last:border-b-0">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+    <section className="border-b border-border px-4 py-3 last:border-b-0">
+      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </h3>
       {children}
@@ -244,9 +253,9 @@ function ValueRenderer({
         href={v}
         target="_blank"
         rel="noreferrer noopener"
-        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline break-all"
+        className="inline-flex items-center gap-1.5 break-all text-xs text-primary hover:underline"
       >
-        <ExternalLink className="w-3 h-3 shrink-0" />
+        <ExternalLink className="h-3 w-3 shrink-0" />
         <span className="break-all">{v}</span>
       </a>
     );
@@ -262,16 +271,14 @@ function ValueRenderer({
 
   if (type === "variable" && (typeof v === "string" || typeof v === "number")) {
     return (
-      <p className="text-xs font-mono text-foreground break-words">
+      <p className="break-words font-mono text-xs text-foreground">
         {String(v)}
       </p>
     );
   }
 
-  // json / db_ref / user / org / workspace / project / task — pretty-print JSON
   let pretty: string;
   if (typeof v === "string") {
-    // Sometimes JSON arrives pre-stringified
     try {
       const parsed = JSON.parse(v);
       pretty = JSON.stringify(parsed, null, 2);
@@ -286,7 +293,7 @@ function ValueRenderer({
     }
   }
   return (
-    <pre className="text-[11px] font-mono bg-muted/40 border border-border rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
+    <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded border border-border bg-muted/40 p-2 font-mono text-[11px]">
       {pretty}
     </pre>
   );

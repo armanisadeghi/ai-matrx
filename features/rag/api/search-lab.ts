@@ -106,6 +106,10 @@ export interface DiagnoseRequest {
   data_store_id?: string | null;
   admin_bypass_acl?: boolean;
   include_sources?: { source_kind: string; source_id: string }[];
+  /** Admin-only org override — mirrors /rag/search filters.organization_id. */
+  organization_id?: string | null;
+  /** Structural scope filter (ctx_scope ids), same as /rag/search. */
+  scope_ids?: string[] | null;
 }
 
 export interface DiagnoseHit {
@@ -134,6 +138,7 @@ export interface DiagnoseResponse {
   visible_chunks_total: number;
   candidates_vector: number;
   candidates_lexical: number;
+  candidates_entity?: number;
   candidates_after_fusion: number;
   candidates_after_mmr: number;
   hits: DiagnoseHit[];
@@ -177,6 +182,7 @@ export type DiagnoseEvent =
       candidates_after_fusion: number;
       candidates_vector: number;
       candidates_lexical: number;
+      candidates_entity?: number;
     }
   | {
       kind: "rag.diagnose.hits";
@@ -239,6 +245,129 @@ export async function* ragDiagnoseStream(
   } finally {
     reader.releaseLock();
   }
+}
+
+// ---------------------------------------------------------------------------
+// /tool/search — run the agent's ACTUAL rag_search tool (literal output)
+//
+// Reproduces, byte for byte, what the registered `rag_search` tool hands the
+// model: same search() call, same output mappers (imported server-side from
+// the package tool so they can't drift). Accepts the full agent arg surface
+// and N queries. The UI then "plays out" rag_get_chunk on any hit.
+// ---------------------------------------------------------------------------
+
+export interface AgentToolSearchRequest {
+  queries: string[];
+  limit?: number;
+  source_kinds?: string[] | null;
+  data_store_id?: string | null;
+  multi_query?: number;
+  use_hyde?: boolean;
+  rerank?: boolean;
+  use_mmr?: boolean;
+  scope_ids?: string[] | null;
+  /** Admin-only org override (mirrors /rag/search). */
+  organization_id?: string | null;
+  include_sources?: { source_kind: string; source_id: string }[];
+}
+
+export interface AgentToolEntityMapLink {
+  entity_id: string | null;
+  name: string | null;
+  kind: string | null;
+  weight: number | null;
+}
+
+export interface AgentToolEntityMapEntry {
+  entity_id: string | null;
+  name: string | null;
+  kind: string | null;
+  mention_count: number | null;
+  artifact_count: number | null;
+  source_kind_counts: Record<string, number>;
+  top_chunk_id: string | null;
+  importance: number | null;
+  is_concept: boolean;
+  linked: AgentToolEntityMapLink[];
+}
+
+export interface AgentToolHit {
+  chunk_id: string | null;
+  source_kind: string | null;
+  source_id: string | null;
+  snippet: string;
+  score: number | null;
+  vector_rank: number | null;
+  lexical_rank: number | null;
+  rerank_score: number | null;
+  metadata: Record<string, unknown>;
+  entities: string[];
+  entity_rank: number | null;
+  file_name: string | null;
+  page_number: number | null;
+}
+
+export interface AgentToolSearchOne {
+  query: string;
+  hits: AgentToolHit[];
+  total_candidates: number;
+  embedding_model: string;
+  reranker_model: string | null;
+  latency_ms: number;
+  matched_entities: string[];
+  entity_map: AgentToolEntityMapEntry[];
+  /** The verbatim JSON string the model receives as the tool_result content. */
+  tool_result_text: string;
+  error: string | null;
+}
+
+export interface AgentToolSearchResponse {
+  scope: InventoryScope;
+  tool_name: string;
+  args: Record<string, unknown>;
+  results: AgentToolSearchOne[];
+  notes: string[];
+}
+
+export async function ragAgentToolSearch(
+  body: AgentToolSearchRequest,
+  opts: { signal?: AbortSignal } = {},
+): Promise<AgentToolSearchResponse> {
+  const { data } = await postJson<
+    AgentToolSearchResponse,
+    AgentToolSearchRequest
+  >(`/rag/search-lab/tool/search`, body, { signal: opts.signal });
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// /tool/get-chunk — "play out" the agent's next move (rag_get_chunk)
+// ---------------------------------------------------------------------------
+
+export interface AgentToolGetChunkRequest {
+  chunk_id: string;
+  include_parent?: boolean;
+  /** Admin-only org override — should match the org used for the search. */
+  organization_id?: string | null;
+}
+
+export interface AgentToolGetChunkResponse {
+  status: "ok" | "not_found" | "forbidden";
+  scope: InventoryScope;
+  chunk: Record<string, unknown> | null;
+  tool_result_text: string | null;
+  note: string | null;
+}
+
+export async function ragAgentToolGetChunk(
+  body: AgentToolGetChunkRequest,
+  opts: { signal?: AbortSignal } = {},
+): Promise<AgentToolGetChunkResponse> {
+  const { data } = await postJson<
+    AgentToolGetChunkResponse,
+    AgentToolGetChunkRequest
+  >(`/rag/search-lab/tool/get-chunk`, body, { signal: opts.signal });
+  return data;
 }
 
 // ---------------------------------------------------------------------------

@@ -6895,6 +6895,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/data-stores/{store_id}/grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Data Store Grants Ep */
+        get: operations["list_data_store_grants_ep_rag_data_stores__store_id__grants_get"];
+        put?: never;
+        /** Publish Data Store Grant Ep */
+        post: operations["publish_data_store_grant_ep_rag_data_stores__store_id__grants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/data-stores/{store_id}/grants/{grant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Data Store Grant Ep */
+        delete: operations["revoke_data_store_grant_ep_rag_data_stores__store_id__grants__grant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Library Catalog Ep */
+        get: operations["list_library_catalog_ep_rag_library_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library-catalog/{store_id}/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subscribe Library Ep */
+        post: operations["subscribe_library_ep_rag_library_catalog__store_id__subscribe_post"];
+        /** Unsubscribe Library Ep */
+        delete: operations["unsubscribe_library_ep_rag_library_catalog__store_id__subscribe_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/library": {
         parameters: {
             query?: never;
@@ -8153,6 +8223,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/run-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Run Form
+         * @description The form a non-technical user fills to start a run — generated from the
+         *     workflow, never hardcoded. One section per io.user_input node. Empty
+         *     sections ⇒ the workflow needs no inputs (one-click Run).
+         */
+        get: operations["get_run_form_workflows__definition_id__run_form_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/{definition_id}/runs": {
         parameters: {
             query?: never;
@@ -8490,6 +8582,42 @@ export interface paths {
          *     stuck behind the first one.
          */
         post: operations["resume_errored_run_runs__run_id__resume_errored_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/rerun-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rerun From Node
+         * @description Re-run a workflow from one COMPLETED node, keeping every earlier
+         *     step's result. Streams the resumed run.
+         *
+         *     Plain-language intent: "earlier steps keep their results; this step and
+         *     everything after it run again." Cheap iteration on a downstream node
+         *     (tweak a prompt, swap a model) without paying again for the expensive
+         *     upstream LLM calls that already succeeded.
+         *
+         *     Mechanism (REUSES the retry machinery — no parallel resume path):
+         *     every super-step persists a checkpoint whose ``next_invocations`` name
+         *     the nodes about to run, with the reduced channel state as of just BEFORE
+         *     that step. We find the historical checkpoint that scheduled ``node_id``,
+         *     then build a child of it with that node's attempt bumped — identical to
+         *     ``_prepare_retry_checkpoint``. At the bumped attempt no outcome exists in
+         *     wf_node_outcome, so the scheduler runs the node FRESH; every node at an
+         *     earlier step replays its cached outcome (no re-execution, no re-charge).
+         *     ``_stream_recovery_resume`` then claims the run and streams the resume.
+         */
+        post: operations["rerun_from_node_runs__run_id__nodes__node_id__rerun_from_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13609,6 +13737,47 @@ export interface components {
             /** Cost Cap Per Call */
             cost_cap_per_call?: number | null;
         };
+        /** AgentUsageReportResponse */
+        AgentUsageReportResponse: {
+            /** Agents */
+            agents: components["schemas"]["AgentUsageRollupEntry"][];
+            /** Total Agents */
+            total_agents: number;
+            /** Total Usages */
+            total_usages: number;
+        };
+        /** AgentUsageRollupEntry */
+        AgentUsageRollupEntry: {
+            /** Agent Id */
+            agent_id: string;
+            /** Agent Name */
+            agent_name?: string | null;
+            /**
+             * Usage Count
+             * @default 0
+             */
+            usage_count: number;
+            /**
+             * Breaking
+             * @default 0
+             */
+            breaking: number;
+            /**
+             * Silent Breaking
+             * @default 0
+             */
+            silent_breaking: number;
+            /**
+             * Warning
+             * @default 0
+             */
+            warning: number;
+            /**
+             * Info
+             * @default 0
+             */
+            info: number;
+        };
         /**
          * AgentUserInputBody
          * @description Minimal request body for endpoints that previously took no body.
@@ -13725,6 +13894,21 @@ export interface components {
              * Default Redaction Mode
              * @default reversible
              */
+            default_redaction_mode: string;
+        };
+        /** AnalysisPreferencesPutResponse */
+        AnalysisPreferencesPutResponse: {
+            /** Status */
+            status: string;
+            /** Per Detector Enabled */
+            per_detector_enabled: {
+                [key: string]: boolean;
+            };
+            /** Default Tier Per Detector */
+            default_tier_per_detector: {
+                [key: string]: string;
+            };
+            /** Default Redaction Mode */
             default_redaction_mode: string;
         };
         /** AnalysisRecipeBody */
@@ -16274,6 +16458,32 @@ export interface components {
             /** Workflow Id */
             workflow_id: string;
         };
+        /**
+         * CodeAgentUsage
+         * @description One declared code usage — mirrors a row of public.agx_usage_registry.
+         */
+        CodeAgentUsage: {
+            /** Usage Key */
+            usage_key: string;
+            /**
+             * Source System
+             * @enum {string}
+             */
+            source_system: "matrx-ai" | "aidream";
+            /**
+             * Ref Kind
+             * @enum {string}
+             */
+            ref_kind: "version" | "agent" | "builtin";
+            /** Agent Version Id */
+            agent_version_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Purpose */
+            purpose: string;
+            /** Code Path */
+            code_path: string;
+        };
         /** CodeDeclaration */
         CodeDeclaration: {
             /** Name */
@@ -16796,6 +17006,11 @@ export interface components {
              * @default false
              */
             force: boolean;
+            /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
         };
         /**
          * ConversationRecord
@@ -17396,6 +17611,32 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DataStoreGrantCreate */
+        DataStoreGrantCreate: {
+            /** Audience */
+            audience: string;
+            /** Industry Id */
+            industry_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** DataStoreGrantOut */
+        DataStoreGrantOut: {
+            /** Id */
+            id: string;
+            /** Audience */
+            audience: string;
+            /** Industry Id */
+            industry_id?: string | null;
+            /** Industry Name */
+            industry_name?: string | null;
+            /** Industry Slug */
+            industry_slug?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organization Name */
+            organization_name?: string | null;
+        };
         /** DataStoreMemberAdminRow */
         DataStoreMemberAdminRow: {
             /** Data Store Id */
@@ -17726,16 +17967,6 @@ export interface components {
         DeleteTriggerResponse: {
             /** Deleted */
             deleted: boolean;
-        };
-        /** DeletedResponse */
-        DeletedResponse: {
-            /** Deleted */
-            deleted: boolean;
-            /**
-             * Soft
-             * @default true
-             */
-            soft: boolean;
         };
         /** DerivativeRequest */
         DerivativeRequest: {
@@ -19291,6 +19522,11 @@ export interface components {
             force: boolean;
             /** Field Id */
             field_id?: string | null;
+            /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
         };
         /** FileIngestResponse */
         FileIngestResponse: {
@@ -19593,7 +19829,13 @@ export interface components {
          * FileRefreshRequest
          * @description Reserved for the later ``suggestions_only`` option; empty body for v1.
          */
-        FileRefreshRequest: Record<string, never>;
+        FileRefreshRequest: {
+            /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
+        };
         /** FileUploadResponse */
         FileUploadResponse: {
             /** File Id */
@@ -20036,6 +20278,11 @@ export interface components {
             grantee_type: "user" | "group";
             /** Expires At */
             expires_at?: string | null;
+        };
+        /** GrantRevokedResponse */
+        GrantRevokedResponse: {
+            /** Revoked */
+            revoked: boolean;
         };
         /** GraphEdge */
         GraphEdge: {
@@ -21354,6 +21601,23 @@ export interface components {
              */
             highlight: boolean;
         };
+        /** LibraryCatalogItemOut */
+        LibraryCatalogItemOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Short Code */
+            short_code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Kind */
+            kind: string;
+            /** Member Count */
+            member_count: number;
+            /** Subscribed */
+            subscribed: boolean;
+        };
         /** LibraryChunkPreview */
         LibraryChunkPreview: {
             /** Id */
@@ -21618,6 +21882,11 @@ export interface components {
         LibraryPatchRequest: {
             /** Name */
             name?: string | null;
+        };
+        /** LibrarySubscribeResponse */
+        LibrarySubscribeResponse: {
+            /** Subscribed */
+            subscribed: boolean;
         };
         /** LibrarySummaryResponse */
         LibrarySummaryResponse: {
@@ -22891,6 +23160,42 @@ export interface components {
             /** Markdown */
             markdown: string;
         };
+        /** PdfFullPipelineRequest */
+        PdfFullPipelineRequest: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * @default {
+             *       "extract_text": true,
+             *       "force_ocr": false,
+             *       "use_ocr_threshold": 100,
+             *       "extract_tables": false,
+             *       "chunk_and_process_with_ai": false,
+             *       "chunk_size": 2000,
+             *       "overlap_size": 200,
+             *       "template_name": "default",
+             *       "include_page_markers": false,
+             *       "include_page_metadata": false,
+             *       "include_block_metadata": false,
+             *       "include_word_metadata": false,
+             *       "include_chunk_metadata": false,
+             *       "upload_result_to_supabase": false,
+             *       "supabase_bucket": "extracted_documents"
+             *     }
+             */
+            options: components["schemas"]["PdfPipelineOptions"];
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+        };
         /** PdfPageRange */
         PdfPageRange: {
             /** Start */
@@ -23866,6 +24171,11 @@ export interface components {
              */
             run_ner: boolean;
             /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
+            /**
              * Heartbeat Interval S
              * @default 15
              */
@@ -24535,6 +24845,83 @@ export interface components {
              */
             delegate: boolean;
         };
+        /** RegistryDbRow */
+        RegistryDbRow: {
+            /** Source System */
+            source_system: string;
+            /** Usage Key */
+            usage_key: string;
+            /** Ref Kind */
+            ref_kind: string;
+            /** Agent Id */
+            agent_id: string | null;
+            /** Agent Version Id */
+            agent_version_id: string | null;
+            /** Status */
+            status: string;
+            /** Purpose */
+            purpose: string | null;
+            /** Code Path */
+            code_path: string | null;
+            /** Last Synced At */
+            last_synced_at: string | null;
+        };
+        /** RegistryDiffResponse */
+        RegistryDiffResponse: {
+            /** Declared Count */
+            declared_count: number;
+            /** Db Count */
+            db_count: number;
+            /** Declared */
+            declared: components["schemas"]["CodeAgentUsage"][];
+            /** Db Rows */
+            db_rows: components["schemas"]["RegistryDbRow"][];
+            /** In Code Not In Db */
+            in_code_not_in_db: string[];
+            /** In Db Not In Code */
+            in_db_not_in_code: string[];
+            /** Import Failures */
+            import_failures: string[];
+        };
+        /** RegistrySyncReport */
+        RegistrySyncReport: {
+            /**
+             * Declared
+             * @default 0
+             */
+            declared: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+            /**
+             * Vanished
+             * @default 0
+             */
+            vanished: number;
+            /** Broken Pins */
+            broken_pins?: string[];
+            /** Import Failures */
+            import_failures?: string[];
+            /**
+             * Applied
+             * @default false
+             */
+            applied: boolean;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
+        };
         /** RenameArgs */
         RenameArgs: {
             /** New Name */
@@ -24895,6 +25282,21 @@ export interface components {
             conversation_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** RerunFromRequest */
+        RerunFromRequest: {
+            /**
+             * Config Override
+             * @description Optional one-shot config tweak applied ONLY to the re-run of this node; the saved workflow draft is NOT touched. Same shape as the node's config_schema. Use to test a change (swap a model, raise max_tokens) before committing it.
+             */
+            config_override?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps: number;
         };
         /**
          * ResearchTopicSummary
@@ -25389,6 +25791,49 @@ export interface components {
              */
             dry_run: boolean;
         };
+        /**
+         * RunFormField
+         * @description One section of the generated run form (GET /workflows/{id}/run-form).
+         *
+         *     Derived from a single ``io.user_input`` node (its author-defined fields)
+         *     or an entry node with required inputs no edge/static value satisfies.
+         *     The studio renders ``json_schema`` with the same ``AutoForm`` engine the
+         *     node inspector uses; the user's values come back as
+         *     ``RunWorkflowRequest.node_inputs[node_id]``.
+         */
+        RunFormField: {
+            /** Node Id */
+            node_id: string;
+            /** Title */
+            title: string;
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * RunFormSchema
+         * @description The form a non-technical user fills to start a run — generated, never
+         *     hardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click
+         *     Run).
+         */
+        RunFormSchema: {
+            /** Definition Id */
+            definition_id: string;
+            /** Version */
+            version: number;
+            /** Sections */
+            sections?: components["schemas"]["RunFormField"][];
+        } & {
+            [key: string]: unknown;
+        };
         /** RunListResponse */
         RunListResponse: {
             /** Runs */
@@ -25519,6 +25964,15 @@ export interface components {
             /** Inputs */
             inputs?: {
                 [key: string]: unknown;
+            };
+            /**
+             * Node Inputs
+             * @description Per-node user-supplied inputs keyed by node_id, merged on top of `inputs` for the addressed entry node at seed time. This is what the generated run form submits — one section per io.user_input node. `inputs` (broadcast to all entry nodes) stays valid as the escape-hatch path.
+             */
+            node_inputs?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
             };
             /**
              * Version Number
@@ -28646,6 +29100,16 @@ export interface components {
             };
             /** Members */
             members: components["schemas"]["UserDataStoreDetailMember"][];
+            /**
+             * Access
+             * @default owner
+             */
+            access: string;
+            /**
+             * Read Only
+             * @default false
+             */
+            read_only: boolean;
         };
         /** UserDataStoreDetailMember */
         UserDataStoreDetailMember: {
@@ -28685,6 +29149,16 @@ export interface components {
             member_count: number;
             /** Is Active */
             is_active: boolean;
+            /**
+             * Access
+             * @default owner
+             */
+            access: string;
+            /**
+             * Read Only
+             * @default false
+             */
+            read_only: boolean;
         };
         /** UserDataStorePatch */
         UserDataStorePatch: {
@@ -29407,6 +29881,17 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** WhoamiResponse */
+        WhoamiResponse: {
+            /** Authenticated */
+            authenticated: boolean;
+            /** User Id */
+            user_id: string | null;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Email */
+            email: string | null;
+        };
         /**
          * WorkflowCostRollup
          * @description Aggregated cost for one definition across a time window.
@@ -29452,6 +29937,11 @@ export interface components {
             field_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** DeletedResponse */
+        aidream__api__routers__admin_app_logs__DeletedResponse: {
+            /** Deleted */
+            deleted: boolean;
         };
         /** SystemErrorListResponse */
         aidream__api__routers__admin_persistence__SystemErrorListResponse: {
@@ -29579,6 +30069,11 @@ export interface components {
              * @default false
              */
             force: boolean;
+            /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
         };
         /** SearchHitOut */
         aidream__api__routers__rag__SearchHitOut: {
@@ -29734,6 +30229,16 @@ export interface components {
             /** Change Note */
             change_note?: string | null;
         };
+        /** DeletedResponse */
+        matrx_scheduler__api__schemas__DeletedResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /**
+             * Soft
+             * @default true
+             */
+            soft: boolean;
+        };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
             /** Running */
@@ -29887,9 +30392,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WhoamiResponse"];
                 };
             };
         };
@@ -33056,7 +33559,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PdfRequest"];
+                "application/json": components["schemas"]["PdfFullPipelineRequest"];
             };
         };
         responses: {
@@ -42308,6 +42811,186 @@ export interface operations {
             };
         };
     };
+    list_data_store_grants_ep_rag_data_stores__store_id__grants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataStoreGrantOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_data_store_grant_ep_rag_data_stores__store_id__grants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataStoreGrantCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataStoreGrantOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_data_store_grant_ep_rag_data_stores__store_id__grants__grant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+                grant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantRevokedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_library_catalog_ep_rag_library_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCatalogItemOut"][];
+                };
+            };
+        };
+    };
+    subscribe_library_ep_rag_library_catalog__store_id__subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibrarySubscribeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_library_ep_rag_library_catalog__store_id__subscribe_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibrarySubscribeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_library_documents_rag_library_get: {
         parameters: {
             query?: {
@@ -43606,9 +44289,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RegistrySyncReport"];
                 };
             };
         };
@@ -43628,9 +44309,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["RegistryDiffResponse"];
                 };
             };
         };
@@ -43670,9 +44349,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AgentUsageReportResponse"];
                 };
             };
         };
@@ -44516,6 +45193,39 @@ export interface operations {
             };
         };
     };
+    get_run_form_workflows__definition_id__run_form_get: {
+        parameters: {
+            query?: {
+                version_number?: number | null;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunFormSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_runs_for_workflow_workflows__definition_id__runs_get: {
         parameters: {
             query?: {
@@ -44999,6 +45709,42 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rerun_from_node_runs__run_id__nodes__node_id__rerun_from_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RerunFromRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -51103,9 +51849,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["aidream__api__routers__admin_app_logs__DeletedResponse"];
                 };
             };
             /** @description Validation Error */
@@ -51296,9 +52040,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["aidream__api__routers__admin_app_logs__DeletedResponse"];
                 };
             };
             /** @description Validation Error */
@@ -51628,7 +52370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeletedResponse"];
+                    "application/json": components["schemas"]["matrx_scheduler__api__schemas__DeletedResponse"];
                 };
             };
             /** @description Validation Error */
@@ -51790,7 +52532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DeletedResponse"];
+                    "application/json": components["schemas"]["matrx_scheduler__api__schemas__DeletedResponse"];
                 };
             };
             /** @description Validation Error */
@@ -52443,9 +53185,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["UserAnalysisPreferencesResponse"];
                 };
             };
         };
@@ -52469,9 +53209,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["AnalysisPreferencesPutResponse"];
                 };
             };
             /** @description Validation Error */

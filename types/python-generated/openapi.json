@@ -174,9 +174,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Whoami Auth Whoami Get"
+                  "$ref": "#/components/schemas/WhoamiResponse"
                 }
               }
             }
@@ -4605,7 +4603,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PdfRequest"
+                "$ref": "#/components/schemas/PdfFullPipelineRequest"
               }
             }
           },
@@ -18027,7 +18025,8 @@
               "schema": {
                 "$ref": "#/components/schemas/ConversationIngestRequest",
                 "default": {
-                  "force": false
+                  "force": false,
+                  "run_enrich": false
                 }
               }
             }
@@ -18486,6 +18485,260 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserDataStoreDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/data-stores/{store_id}/grants": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "List Data Store Grants Ep",
+        "operationId": "list_data_store_grants_ep_rag_data_stores__store_id__grants_get",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DataStoreGrantOut"
+                  },
+                  "title": "Response List Data Store Grants Ep Rag Data Stores  Store Id  Grants Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Publish Data Store Grant Ep",
+        "operationId": "publish_data_store_grant_ep_rag_data_stores__store_id__grants_post",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataStoreGrantCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataStoreGrantOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/data-stores/{store_id}/grants/{grant_id}": {
+      "delete": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Revoke Data Store Grant Ep",
+        "operationId": "revoke_data_store_grant_ep_rag_data_stores__store_id__grants__grant_id__delete",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          },
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Grant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantRevokedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library-catalog": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "List Library Catalog Ep",
+        "operationId": "list_library_catalog_ep_rag_library_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryCatalogItemOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Library Catalog Ep Rag Library Catalog Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library-catalog/{store_id}/subscribe": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Subscribe Library Ep",
+        "operationId": "subscribe_library_ep_rag_library_catalog__store_id__subscribe_post",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibrarySubscribeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Unsubscribe Library Ep",
+        "operationId": "unsubscribe_library_ep_rag_library_catalog__store_id__subscribe_delete",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Store Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibrarySubscribeResponse"
                 }
               }
             }
@@ -20728,9 +20981,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Sync Registered Usages Endpoint Agent Usage Sync Post"
+                  "$ref": "#/components/schemas/RegistrySyncReport"
                 }
               }
             }
@@ -20752,9 +21003,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Registry Diff Endpoint Agent Usage Registry Get"
+                  "$ref": "#/components/schemas/RegistryDiffResponse"
                 }
               }
             }
@@ -20798,9 +21047,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Report Endpoint Agent Usage Report Get"
+                  "$ref": "#/components/schemas/AgentUsageReportResponse"
                 }
               }
             }
@@ -22084,6 +22331,65 @@
         }
       }
     },
+    "/workflows/{definition_id}/run-form": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Run Form",
+        "description": "The form a non-technical user fills to start a run — generated from the\nworkflow, never hardcoded. One section per io.user_input node. Empty\nsections ⇒ the workflow needs no inputs (one-click Run).",
+        "operationId": "get_run_form_workflows__definition_id__run_form_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunFormSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/{definition_id}/runs": {
       "post": {
         "tags": [
@@ -22914,6 +23220,73 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/rerun-from": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Rerun From Node",
+        "description": "Re-run a workflow from one COMPLETED node, keeping every earlier\nstep's result. Streams the resumed run.\n\nPlain-language intent: \"earlier steps keep their results; this step and\neverything after it run again.\" Cheap iteration on a downstream node\n(tweak a prompt, swap a model) without paying again for the expensive\nupstream LLM calls that already succeeded.\n\nMechanism (REUSES the retry machinery — no parallel resume path):\nevery super-step persists a checkpoint whose ``next_invocations`` name\nthe nodes about to run, with the reduced channel state as of just BEFORE\nthat step. We find the historical checkpoint that scheduled ``node_id``,\nthen build a child of it with that node's attempt bumped — identical to\n``_prepare_retry_checkpoint``. At the bumped attempt no outcome exists in\nwf_node_outcome, so the scheduler runs the node FRESH; every node at an\nearlier step replays its cached outcome (no re-execution, no re-charge).\n``_stream_recovery_resume`` then claims the run and streams the resume.",
+        "operationId": "rerun_from_node_runs__run_id__nodes__node_id__rerun_from_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RerunFromRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -32843,11 +33216,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Norm Exception Route Admin App Logs Norm Exceptions  Exc Id  Delete"
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_app_logs__DeletedResponse"
                 }
               }
             }
@@ -33277,11 +33646,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Remove Suppression Admin App Logs Suppressions  Muted Id  Delete"
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_app_logs__DeletedResponse"
                 }
               }
             }
@@ -33810,7 +34175,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeletedResponse"
+                  "$ref": "#/components/schemas/matrx_scheduler__api__schemas__DeletedResponse"
                 }
               }
             }
@@ -34032,7 +34397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeletedResponse"
+                  "$ref": "#/components/schemas/matrx_scheduler__api__schemas__DeletedResponse"
                 }
               }
             }
@@ -34928,9 +35293,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Get Analysis Preferences Files Analysis Preferences Get"
+                  "$ref": "#/components/schemas/UserAnalysisPreferencesResponse"
                 }
               }
             }
@@ -34959,9 +35322,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Put Analysis Preferences Files Analysis Preferences Put"
+                  "$ref": "#/components/schemas/AnalysisPreferencesPutResponse"
                 }
               }
             }
@@ -38044,6 +38405,81 @@
         ],
         "title": "AgentToolSpec"
       },
+      "AgentUsageReportResponse": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentUsageRollupEntry"
+            },
+            "type": "array",
+            "title": "Agents"
+          },
+          "total_agents": {
+            "type": "integer",
+            "title": "Total Agents"
+          },
+          "total_usages": {
+            "type": "integer",
+            "title": "Total Usages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agents",
+          "total_agents",
+          "total_usages"
+        ],
+        "title": "AgentUsageReportResponse"
+      },
+      "AgentUsageRollupEntry": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "agent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Name"
+          },
+          "usage_count": {
+            "type": "integer",
+            "title": "Usage Count",
+            "default": 0
+          },
+          "breaking": {
+            "type": "integer",
+            "title": "Breaking",
+            "default": 0
+          },
+          "silent_breaking": {
+            "type": "integer",
+            "title": "Silent Breaking",
+            "default": 0
+          },
+          "warning": {
+            "type": "integer",
+            "title": "Warning",
+            "default": 0
+          },
+          "info": {
+            "type": "integer",
+            "title": "Info",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "title": "AgentUsageRollupEntry"
+      },
       "AgentUserInputBody": {
         "properties": {
           "user_input": {
@@ -38278,6 +38714,40 @@
         },
         "type": "object",
         "title": "AnalysisPreferencesBody"
+      },
+      "AnalysisPreferencesPutResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "per_detector_enabled": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Per Detector Enabled"
+          },
+          "default_tier_per_detector": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Default Tier Per Detector"
+          },
+          "default_redaction_mode": {
+            "type": "string",
+            "title": "Default Redaction Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "per_detector_enabled",
+          "default_tier_per_detector",
+          "default_redaction_mode"
+        ],
+        "title": "AnalysisPreferencesPutResponse"
       },
       "AnalysisRecipeBody": {
         "properties": {
@@ -45669,6 +46139,71 @@
         ],
         "title": "CloneTemplateResponse"
       },
+      "CodeAgentUsage": {
+        "properties": {
+          "usage_key": {
+            "type": "string",
+            "title": "Usage Key"
+          },
+          "source_system": {
+            "type": "string",
+            "enum": [
+              "matrx-ai",
+              "aidream"
+            ],
+            "title": "Source System"
+          },
+          "ref_kind": {
+            "type": "string",
+            "enum": [
+              "version",
+              "agent",
+              "builtin"
+            ],
+            "title": "Ref Kind"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "code_path": {
+            "type": "string",
+            "title": "Code Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "usage_key",
+          "source_system",
+          "ref_kind",
+          "purpose",
+          "code_path"
+        ],
+        "title": "CodeAgentUsage",
+        "description": "One declared code usage — mirrors a row of public.agx_usage_registry."
+      },
       "CodeDeclaration": {
         "properties": {
           "name": {
@@ -47104,6 +47639,11 @@
           "force": {
             "type": "boolean",
             "title": "Force",
+            "default": false
+          },
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
             "default": false
           }
         },
@@ -48566,6 +49106,116 @@
         ],
         "title": "DataStoreCreate"
       },
+      "DataStoreGrantCreate": {
+        "properties": {
+          "audience": {
+            "type": "string",
+            "pattern": "^(global|industry|organization)$",
+            "title": "Audience"
+          },
+          "industry_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "audience"
+        ],
+        "title": "DataStoreGrantCreate"
+      },
+      "DataStoreGrantOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "audience": {
+            "type": "string",
+            "title": "Audience"
+          },
+          "industry_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Id"
+          },
+          "industry_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Name"
+          },
+          "industry_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Slug"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "audience"
+        ],
+        "title": "DataStoreGrantOut"
+      },
       "DataStoreMemberAdminRow": {
         "properties": {
           "data_store_id": {
@@ -49548,24 +50198,6 @@
           "deleted"
         ],
         "title": "DeleteTriggerResponse"
-      },
-      "DeletedResponse": {
-        "properties": {
-          "deleted": {
-            "type": "boolean",
-            "title": "Deleted"
-          },
-          "soft": {
-            "type": "boolean",
-            "title": "Soft",
-            "default": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "deleted"
-        ],
-        "title": "DeletedResponse"
       },
       "DerivativeRequest": {
         "properties": {
@@ -53858,6 +54490,11 @@
               }
             ],
             "title": "Field Id"
+          },
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
+            "default": false
           }
         },
         "type": "object",
@@ -54773,7 +55410,13 @@
         "title": "FileRecord"
       },
       "FileRefreshRequest": {
-        "properties": {},
+        "properties": {
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
+            "default": false
+          }
+        },
         "additionalProperties": false,
         "type": "object",
         "title": "FileRefreshRequest",
@@ -55922,6 +56565,19 @@
           "grantee_id"
         ],
         "title": "GrantPermissionRequest"
+      },
+      "GrantRevokedResponse": {
+        "properties": {
+          "revoked": {
+            "type": "boolean",
+            "title": "Revoked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revoked"
+        ],
+        "title": "GrantRevokedResponse"
       },
       "GraphEdge": {
         "properties": {
@@ -59717,6 +60373,61 @@
         ],
         "title": "LegalSearchRequest"
       },
+      "LibraryCatalogItemOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "short_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Code"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "member_count": {
+            "type": "integer",
+            "title": "Member Count"
+          },
+          "subscribed": {
+            "type": "boolean",
+            "title": "Subscribed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "member_count",
+          "subscribed"
+        ],
+        "title": "LibraryCatalogItemOut"
+      },
       "LibraryChunkPreview": {
         "properties": {
           "id": {
@@ -60637,6 +61348,19 @@
         "additionalProperties": false,
         "type": "object",
         "title": "LibraryPatchRequest"
+      },
+      "LibrarySubscribeResponse": {
+        "properties": {
+          "subscribed": {
+            "type": "boolean",
+            "title": "Subscribed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscribed"
+        ],
+        "title": "LibrarySubscribeResponse"
       },
       "LibrarySummaryResponse": {
         "properties": {
@@ -63948,6 +64672,98 @@
         "title": "PdfExtractedTable",
         "description": "One table detected on one page."
       },
+      "PdfFullPipelineRequest": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "options": {
+            "$ref": "#/components/schemas/PdfPipelineOptions",
+            "default": {
+              "extract_text": true,
+              "force_ocr": false,
+              "use_ocr_threshold": 100,
+              "extract_tables": false,
+              "chunk_and_process_with_ai": false,
+              "chunk_size": 2000,
+              "overlap_size": 200,
+              "template_name": "default",
+              "include_page_markers": false,
+              "include_page_metadata": false,
+              "include_block_metadata": false,
+              "include_word_metadata": false,
+              "include_chunk_metadata": false,
+              "upload_result_to_supabase": false,
+              "supabase_bucket": "extracted_documents"
+            }
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          }
+        },
+        "type": "object",
+        "title": "PdfFullPipelineRequest"
+      },
       "PdfPageRange": {
         "properties": {
           "start": {
@@ -66471,6 +67287,11 @@
             "title": "Run Ner",
             "default": true
           },
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
+            "default": false
+          },
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
@@ -68184,6 +69005,213 @@
         ],
         "title": "RegisteredToolSpec"
       },
+      "RegistryDbRow": {
+        "properties": {
+          "source_system": {
+            "type": "string",
+            "title": "Source System"
+          },
+          "usage_key": {
+            "type": "string",
+            "title": "Usage Key"
+          },
+          "ref_kind": {
+            "type": "string",
+            "title": "Ref Kind"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "agent_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          },
+          "code_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Path"
+          },
+          "last_synced_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Synced At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_system",
+          "usage_key",
+          "ref_kind",
+          "agent_id",
+          "agent_version_id",
+          "status",
+          "purpose",
+          "code_path",
+          "last_synced_at"
+        ],
+        "title": "RegistryDbRow"
+      },
+      "RegistryDiffResponse": {
+        "properties": {
+          "declared_count": {
+            "type": "integer",
+            "title": "Declared Count"
+          },
+          "db_count": {
+            "type": "integer",
+            "title": "Db Count"
+          },
+          "declared": {
+            "items": {
+              "$ref": "#/components/schemas/CodeAgentUsage"
+            },
+            "type": "array",
+            "title": "Declared"
+          },
+          "db_rows": {
+            "items": {
+              "$ref": "#/components/schemas/RegistryDbRow"
+            },
+            "type": "array",
+            "title": "Db Rows"
+          },
+          "in_code_not_in_db": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "In Code Not In Db"
+          },
+          "in_db_not_in_code": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "In Db Not In Code"
+          },
+          "import_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Import Failures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "declared_count",
+          "db_count",
+          "declared",
+          "db_rows",
+          "in_code_not_in_db",
+          "in_db_not_in_code",
+          "import_failures"
+        ],
+        "title": "RegistryDiffResponse"
+      },
+      "RegistrySyncReport": {
+        "properties": {
+          "declared": {
+            "type": "integer",
+            "title": "Declared",
+            "default": 0
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged",
+            "default": 0
+          },
+          "vanished": {
+            "type": "integer",
+            "title": "Vanished",
+            "default": 0
+          },
+          "broken_pins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Broken Pins"
+          },
+          "import_failures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Import Failures"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied",
+            "default": false
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
+          }
+        },
+        "type": "object",
+        "title": "RegistrySyncReport"
+      },
       "RenameArgs": {
         "properties": {
           "new_name": {
@@ -69138,6 +70166,32 @@
         "additionalProperties": true,
         "type": "object",
         "title": "RequestRecord"
+      },
+      "RerunFromRequest": {
+        "properties": {
+          "config_override": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Override",
+            "description": "Optional one-shot config tweak applied ONLY to the re-run of this node; the saved workflow draft is NOT touched. Same shape as the node's config_schema. Use to test a change (swap a model, raise max_tokens) before committing it."
+          },
+          "max_steps": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Max Steps",
+            "default": 1000
+          }
+        },
+        "type": "object",
+        "title": "RerunFromRequest"
       },
       "ResearchTopicSummary": {
         "properties": {
@@ -70445,6 +71499,63 @@
         ],
         "title": "RunExtractionRequest"
       },
+      "RunFormField": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "node_id",
+          "title"
+        ],
+        "title": "RunFormField",
+        "description": "One section of the generated run form (GET /workflows/{id}/run-form).\n\nDerived from a single ``io.user_input`` node (its author-defined fields)\nor an entry node with required inputs no edge/static value satisfies.\nThe studio renders ``json_schema`` with the same ``AutoForm`` engine the\nnode inspector uses; the user's values come back as\n``RunWorkflowRequest.node_inputs[node_id]``."
+      },
+      "RunFormSchema": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/RunFormField"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "definition_id",
+          "version"
+        ],
+        "title": "RunFormSchema",
+        "description": "The form a non-technical user fills to start a run — generated, never\nhardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click\nRun)."
+      },
       "RunListResponse": {
         "properties": {
           "runs": {
@@ -70906,6 +72017,15 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Inputs"
+          },
+          "node_inputs": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Node Inputs",
+            "description": "Per-node user-supplied inputs keyed by node_id, merged on top of `inputs` for the addressed entry node at seed time. This is what the generated run form submits — one section per io.user_input node. `inputs` (broadcast to all entry nodes) stays valid as the escape-hatch path."
           },
           "version_number": {
             "anyOf": [
@@ -79559,6 +80679,16 @@
             },
             "type": "array",
             "title": "Members"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "owner"
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "default": false
           }
         },
         "type": "object",
@@ -79697,6 +80827,16 @@
           "is_active": {
             "type": "boolean",
             "title": "Is Active"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "owner"
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "default": false
           }
         },
         "type": "object",
@@ -81913,6 +83053,48 @@
         "title": "WcReportRead",
         "description": "One row from `wc_report`. Totals are populated only after `/calculate`.\n\n`datetime | str` accepts native datetimes from the ORM and serializes to\nISO strings on the wire — same shape the FE consumes."
       },
+      "WhoamiResponse": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authenticated",
+          "user_id",
+          "is_admin",
+          "email"
+        ],
+        "title": "WhoamiResponse"
+      },
       "WorkflowCostRollup": {
         "properties": {
           "workflow_id": {
@@ -82001,6 +83183,19 @@
           "content"
         ],
         "title": "WriteArgs"
+      },
+      "aidream__api__routers__admin_app_logs__DeletedResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "DeletedResponse"
       },
       "aidream__api__routers__admin_persistence__SystemErrorListResponse": {
         "properties": {
@@ -82319,6 +83514,11 @@
           "force": {
             "type": "boolean",
             "title": "Force",
+            "default": false
+          },
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
             "default": false
           }
         },
@@ -82705,6 +83905,24 @@
         },
         "type": "object",
         "title": "PublishRequest"
+      },
+      "matrx_scheduler__api__schemas__DeletedResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "soft": {
+            "type": "boolean",
+            "title": "Soft",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "DeletedResponse"
       },
       "matrx_scheduler__api__schemas__ScannerStatusResponse": {
         "properties": {

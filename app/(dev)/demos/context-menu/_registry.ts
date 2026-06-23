@@ -15,15 +15,14 @@
  * button is still clickable so you can iterate live.
  */
 
-import type { LucideIcon } from "lucide-react";
-import {
-  FlaskConical,
-  LayoutGrid,
-  Microscope,
-  GitCompareArrows,
-} from "lucide-react";
-
 export type PageStatus = "stable" | "wip" | "planned";
+
+/** Serializable icon key — resolved to Lucide components on the client. */
+export type ContextMenuIconKey =
+  | "git-compare-arrows"
+  | "microscope"
+  | "layout-grid"
+  | "flask-conical";
 
 export interface ContextMenuPage {
   /** URL slug under `/ssr/context-menu/`. Empty string = the hub itself. */
@@ -34,8 +33,8 @@ export interface ContextMenuPage {
   tagline: string;
   /** Longer paragraph rendered on the hub card. */
   description: string;
-  /** Lucide icon shown in nav + hub card. */
-  icon: LucideIcon;
+  /** Icon key resolved via `_registry.icons.tsx` in client components. */
+  icon: ContextMenuIconKey;
   /** When `"planned"`, the card is greyed out and the link is disabled. */
   status: PageStatus;
   /** Hidden from nav strip when true (still in hub). Defaults to false. */
@@ -49,20 +48,20 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     slug: "canonical",
     title: "Canonical Proving Ground",
     tagline:
-      "One core menu behind four wrappers (none/agent/notes/code) + extraSections injection + live Diff.",
+      "One core menu behind four production-target wrappers + live Diff.",
     description:
-      "The single page to validate the system as we build it. The SAME UniversalContextMenuV2 is rendered behind four wrapper configurations so you can confirm parity and per-surface tuning. The Notes panel demonstrates the `extraSections` injection contract (Save/Export/Move/Delete rendered by the core, described by the wrapper). The bottom section runs the Diff system live — right-click → Compare → 'Compare with clipboard', plus an inline DiffViewer and 'Open in window'.",
-    icon: GitCompareArrows,
+      "Validate the system as we build it. Panel 1 is raw core (no surface). Panels 2–4 use production-target wiring via shared demo panels: agent-builder (full agent scope), notes (full matrx-user/notes scope + extraSections), code editor (/code vsc_* contract). Diff playground at the bottom.",
+    icon: "git-compare-arrows",
     status: "wip",
   },
   {
     slug: "lab",
     title: "Diagnostic Lab",
     tagline:
-      "Single trigger + every inspector. Watch the menu fetch, resolve scope, and apply surface mappings live.",
+      "Single trigger + every inspector. Surface picker loads production-target context JSON.",
     description:
-      "The exhaustive view. One right-click target wired to a scope picker, surface picker, placement-mode toggles, contextData JSON editor, and a live applicationScope preview. Right side stacks JSON inspectors for the API response, Redux shortcuts/categories/blocks (with resolved scope), hook output, surface registry, and a raw `agx_context_menu_view` query. Use this first when 'I should see X but don't'.",
-    icon: Microscope,
+      "Exhaustive harness for debugging the v2 menu. Pick a surface (notes, code-editor, agent-builder) and the contextData editor auto-fills the canonical payload shape. Scope picker, placement toggles, API/Redux/hook inspectors, raw DB view query.",
+    icon: "microscope",
     status: "stable",
   },
   {
@@ -71,8 +70,8 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     tagline:
       "Five live panels exercising different placement / context combinations side-by-side.",
     description:
-      "Multi-panel smoke test. Each panel pins a different combination of `addedContexts`, `excludedContexts`, `placementMode`, editability, and `contextData` shape. Use this to verify behavioural deltas at a glance — code-editor vs content-editor visibility, read-only hiding, restrictive filters, the disable showcase, etc.",
-    icon: LayoutGrid,
+      "Multi-panel smoke test. Panel 1 is a production-accurate code editor harness (`CodeEditorDemoPanel` → same props/context as `/code`). Other panels pin different placement / context combinations. Use this to verify behavioural deltas at a glance — content-editor vs read-only hiding, explicit filter API vs contextFilter, disable showcase, etc.",
+    icon: "layout-grid",
     status: "stable",
   },
   // ── Placeholders for the advanced tests Arman flagged ───────────────────
@@ -85,7 +84,7 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
       "Resolve (agentId × surfaceName × scope) → value_mappings live; preview what mapScopeToInstanceWithSurface emits.",
     description:
       "Planned. Pick an agent + surface + scope, see the most-specific row from `agx_agent_surface`, and watch `mapScopeToInstanceWithSurface` produce variable + context entries from a sample applicationScope. The missing piece for diagnosing 'surface picked but values didn't land'.",
-    icon: FlaskConical,
+    icon: "flask-conical",
     status: "planned",
     hiddenFromNav: true,
   },
@@ -96,7 +95,7 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
       "Fire a specific shortcut with a hand-crafted applicationScope and inspect the assembled request envelope.",
     description:
       "Planned. Pick a shortcut from the menu (or by id), edit a sample applicationScope, watch the full `launchAgentExecution` pipeline produce its conversation, request body, variable values, context entries, and active-request state. The full agent execution flow with everything pinned.",
-    icon: FlaskConical,
+    icon: "flask-conical",
     status: "planned",
     hiddenFromNav: true,
   },

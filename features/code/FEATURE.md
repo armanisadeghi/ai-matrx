@@ -116,6 +116,7 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-06-22` — Extracted `buildCodeWorkspaceContextData` + `CODE_WORKSPACE_CONTEXT_MENU_PROPS` so `/code` and context-menu demo harnesses share one context shape.
 - `2026-05-06` — claude: added `"render-preview"` tab kind + render-preview registry (`features/code/preview/`). Library sources can register a previewer for their `tabIdPrefix`; tabs from those sources get an "Open preview" eye icon that pops a paired preview tab. Live buffer flows through `useDeferredValue`; Refresh button forces a remount. Source-tab close cascades to its preview tab. Used by the agent-apps editing route — see `features/agent-apps/code-preview/`.
 - `2026-04-28` — claude: initial FEATURE.md (index pointing at `SYSTEM_STATE.md`); explicit chat-binding split vs `features/code-editor/`; documents the bridge context-key contract; flags Phase 21 (resource pills + unified context menu) as in-flight.
 

@@ -22,6 +22,7 @@
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { CodeEditorDemoPanel } from "../_components/CodeEditorDemoPanel";
 
 // Dynamic — never bundles into the initial chunk; hooks + menu body load
 // only when this page actually needs them.
@@ -34,20 +35,6 @@ const UnifiedAgentContextMenu = dynamic(
 );
 
 export default function ContextMenuScenariosPage() {
-  // ── Panel 1: Editable code editor — code-editor + general contexts ──────
-  const codeRef = useRef<HTMLTextAreaElement | null>(null);
-  const [codeValue, setCodeValue] = useState(
-    `// Panel 1 — editable code editor\n// Right-click to see code-editor + general shortcuts.\n// Select any text first to enable selection-based shortcuts.\nfunction greet(name) {\n  return "Hello, " + name;\n}\n`,
-  );
-  const [codeHistory, setCodeHistory] = useState<string[]>([codeValue]);
-  const [codeHistoryIndex, setCodeHistoryIndex] = useState(0);
-  const pushCodeHistory = (next: string) => {
-    const trimmed = codeHistory.slice(0, codeHistoryIndex + 1);
-    trimmed.push(next);
-    setCodeHistory(trimmed);
-    setCodeHistoryIndex(trimmed.length - 1);
-  };
-
   // ── Panel 2: Editable content editor — content-editor + general ─────────
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
   const [contentValue, setContentValue] = useState(
@@ -59,12 +46,8 @@ export default function ContextMenuScenariosPage() {
     `Panel 3 — read-only block.\nContent Blocks and Quick Actions are HIDDEN here.\nOnly the AI-action submenus for general + content-editor remain.`,
   );
 
-  // ── Panel 4: Restrictive filter — code-editor ONLY (no general) ─────────
-  const [restrictiveRef, setRestrictiveRef] =
-    useState<HTMLTextAreaElement | null>(null);
-  const [restrictiveValue, setRestrictiveValue] = useState(
-    `Panel 4 — code-editor ONLY (general excluded).\nExpect shortcuts tagged with code-editor but NOT the generic 'Translate to Spanish' etc.`,
-  );
+  // ── Panel 4: Restrictive filter — explicit addedContexts API ───────────
+  const restrictiveInitial = `// Same /code context shape as panel 1, but general shortcuts\n// are excluded via explicit addedContexts/excludedContexts (not contextFilter).\nfunction greet(name: string): number {\n  return "Hello, " + name;\n}\n`;
 
   // ── Panel 5: Showcase of "disable" mode ─────────────────────────────────
   const [showcaseValue, setShowcaseValue] = useState(
@@ -82,72 +65,20 @@ export default function ContextMenuScenariosPage() {
       </div>
 
       <div className="flex-1 overflow-auto p-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {/* ── 1 ── Editable code editor */}
-        <section className="flex flex-col gap-2">
-          <header>
-            <h2 className="text-sm font-semibold">1. Code editor (editable)</h2>
-            <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>{`['code-editor']`}</code>
-              <br />
-              excludedContexts: none
-              <br />
-              placements: all show
-            </p>
-          </header>
-          <UnifiedAgentContextMenu
-            sourceFeature="demo"
-            getTextarea={() => codeRef.current}
-            onTextReplace={(v) => {
-              setCodeValue(v);
-              pushCodeHistory(v);
-            }}
-            onTextInsertBefore={(t) => {
-              const next = t + codeValue;
-              setCodeValue(next);
-              pushCodeHistory(next);
-            }}
-            onTextInsertAfter={(t) => {
-              const next = codeValue + t;
-              setCodeValue(next);
-              pushCodeHistory(next);
-            }}
-            onContentInserted={() => {
-              if (codeRef.current) pushCodeHistory(codeRef.current.value);
-            }}
-            isEditable
-            onUndo={() => {
-              if (codeHistoryIndex <= 0) return;
-              const i = codeHistoryIndex - 1;
-              setCodeHistoryIndex(i);
-              setCodeValue(codeHistory[i]);
-            }}
-            onRedo={() => {
-              if (codeHistoryIndex >= codeHistory.length - 1) return;
-              const i = codeHistoryIndex + 1;
-              setCodeHistoryIndex(i);
-              setCodeValue(codeHistory[i]);
-            }}
-            canUndo={codeHistoryIndex > 0}
-            canRedo={codeHistoryIndex < codeHistory.length - 1}
-            addedContexts={["code-editor"]}
-            contextData={{
-              content: codeValue,
-              context: "panel-1-code-editor",
-              file_path: "demo/panel-1.tsx",
-            }}
-            scope="user"
-          >
-            <textarea
-              ref={codeRef}
-              value={codeValue}
-              onChange={(e) => {
-                setCodeValue(e.target.value);
-                pushCodeHistory(e.target.value);
-              }}
-              className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-card p-3 text-[16px] font-mono outline-none focus:ring-2 focus:ring-primary"
-            />
-          </UnifiedAgentContextMenu>
-        </section>
+        {/* ── 1 ── Code editor (production /code wiring) */}
+        <CodeEditorDemoPanel
+          title="1. Code editor"
+          description={
+            <>
+              Mirrors <code>CodeWorkspaceContextMenu</code>:{" "}
+              <code>surfaceName=matrx-user/code-editor</code>,{" "}
+              <code>contextFilter=code-editor</code>, full <code>vsc_*</code>{" "}
+              keys, AI Actions + org/user tools only (no content blocks / quick
+              actions).
+            </>
+          }
+          minHeightClass="min-h-[220px]"
+        />
 
         {/* ── 2 ── Editable content editor */}
         <section className="flex flex-col gap-2">
@@ -217,43 +148,21 @@ export default function ContextMenuScenariosPage() {
           </UnifiedAgentContextMenu>
         </section>
 
-        {/* ── 4 ── Restrictive — code-editor ONLY (general excluded) */}
-        <section className="flex flex-col gap-2">
-          <header>
-            <h2 className="text-sm font-semibold">
-              4. Restrictive (code only)
-            </h2>
-            <p className="text-[11px] text-muted-foreground">
-              addedContexts: <code>{`['code-editor']`}</code>
-              <br />
-              excludedContexts: <code>{`['general']`}</code>
-              <br />
-              Only shortcuts explicitly tagged &apos;code-editor&apos; appear.
-            </p>
-          </header>
-          <UnifiedAgentContextMenu
-            sourceFeature="demo"
-            getTextarea={() => restrictiveRef}
-            onTextReplace={(v) => setRestrictiveValue(v)}
-            isEditable
-            addedContexts={["code-editor"]}
-            excludedContexts={["general"]}
-            contextData={{
-              content: restrictiveValue,
-              context: "panel-4-restrictive",
-              ts_errors: "Type 'string' is not assignable to type 'number'",
-              terminal_output: "npm run build\nBuild succeeded",
-            }}
-            scope="user"
-          >
-            <textarea
-              ref={setRestrictiveRef}
-              value={restrictiveValue}
-              onChange={(e) => setRestrictiveValue(e.target.value)}
-              className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-card p-3 text-[16px] font-mono outline-none focus:ring-2 focus:ring-primary"
-            />
-          </UnifiedAgentContextMenu>
-        </section>
+        {/* ── 4 ── Same filter via explicit addedContexts API */}
+        <CodeEditorDemoPanel
+          title="4. Code editor (explicit filter API)"
+          description={
+            <>
+              Identical shortcut filter to panel 1, but uses{" "}
+              <code>addedContexts</code> + <code>excludedContexts</code> instead
+              of <code>contextFilter</code> in contextData. Still full{" "}
+              <code>vsc_*</code> shape.
+            </>
+          }
+          initialContent={restrictiveInitial}
+          contextFilterMode="explicit"
+          minHeightClass="min-h-[220px]"
+        />
 
         {/* ── 5 ── Disable showcase */}
         <section className="flex flex-col gap-2">
@@ -302,7 +211,8 @@ export default function ContextMenuScenariosPage() {
           <div className="flex-1 min-h-[220px] w-full rounded-md border border-border bg-muted/30 p-3 text-[11px] text-muted-foreground leading-relaxed">
             <ol className="list-decimal ml-4 space-y-2">
               <li>
-                Code editor — shows shortcuts tagged code-editor OR general.
+                Code editor — matches <code>/code</code> workspace: surface +
+                vsc_* context + code-editor filter (no general shortcuts).
               </li>
               <li>
                 Content editor — shows shortcuts tagged content-editor OR
@@ -312,8 +222,8 @@ export default function ContextMenuScenariosPage() {
                 Read-only — hides Content Blocks and Quick Actions submenus.
               </li>
               <li>
-                Restrictive — ONLY shows shortcuts tagged code-editor (generic
-                &apos;general&apos; ones are filtered out).
+                Code editor (explicit API) — same shortcut set as panel 1 via{" "}
+                <code>addedContexts</code>/<code>excludedContexts</code>.
               </li>
               <li>
                 Disable showcase — Content Blocks and Organization Tools

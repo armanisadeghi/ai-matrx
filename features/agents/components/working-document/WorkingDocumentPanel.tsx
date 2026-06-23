@@ -8,34 +8,33 @@
  * → instanceContext), the user edits it here, and both stay in sync. Used
  * standalone, inside the floating window (`WorkingDocumentWindow`), and embedded
  * in the Smart Input "Document" tab.
- *
- * Modeled on Scribe's `WorkingDocumentHeader` / `FocusedDocumentEditor`, but
- * conversation-keyed and source-agnostic (ephemeral, or bound to a note).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, Copy, FileText, Link2, Loader2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { WorkingDocumentEditor } from "./WorkingDocumentEditor";
+import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
+import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
+import { DiffViewer } from "@/components/diff/DiffViewer";
+import { useWorkingDocChanges } from "@/features/transcript-studio/hooks/useWorkingDocChanges";
+import {
+  patchWorkingDocViewState,
+  setWorkingDocHistoryOpen,
+  setWorkingDocMainView,
+  useWorkingDocViewState,
+} from "./workingDocumentViewStore";
 
 interface WorkingDocumentPanelProps {
   conversationId: string;
-  /** Which document this panel edits. Default "working". */
   kind?: WorkingDocumentKind;
   className?: string;
-  /** Show the "Open as window" button in the header. Default true. */
   showOpenInWindow?: boolean;
-  /** Show the enable/disable switch in the header. Default true. */
   showEnableToggle?: boolean;
-  /**
-   * Render the title/binding/actions header. Default true. Set false when the
-   * host already provides its own control row (e.g. the Smart Input Document
-   * tab) so the editor gets the full height.
-   */
   showHeader?: boolean;
 }
 
@@ -54,17 +53,31 @@ export function WorkingDocumentPanel({
     saving,
     error,
     draft,
+    content,
     onChange,
     flush,
     setEnabled,
     openAsWindow,
   } = useWorkingDocument(conversationId, kind);
 
+  const { before, after, hasUnseenChange, markSeen } = useWorkingDocChanges(
+    content,
+    draft,
+  );
+  const { mainView, historyOpen } = useWorkingDocViewState(conversationId);
+
   const isScratch = kind === "scratch";
   const docNoun = isScratch ? "scratchpad" : "working document";
   const docTitleFallback = isScratch ? "Scratchpad" : "Working document";
-
   const [hasCopied, setHasCopied] = useState(false);
+
+  useEffect(() => {
+    patchWorkingDocViewState(conversationId, { hasUnseenChange, saving });
+  }, [conversationId, hasUnseenChange, saving]);
+
+  useEffect(() => {
+    if (mainView === "agent-diff") markSeen();
+  }, [mainView, markSeen]);
 
   const handleCopy = async () => {
     const text = draft.trim();
@@ -82,7 +95,6 @@ export function WorkingDocumentPanel({
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
-      {/* Header */}
       {showHeader && (
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
           <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -105,6 +117,10 @@ export function WorkingDocumentPanel({
               )}
             </span>
           </div>
+
+          {enabled && kind === "working" && (
+            <WorkingDocumentViewControls conversationId={conversationId} />
+          )}
 
           {enabled && (
             <>
@@ -152,7 +168,6 @@ export function WorkingDocumentPanel({
         </div>
       )}
 
-      {/* Body */}
       {enabled ? (
         <div className="flex min-h-0 flex-1 flex-col">
           {saving && (
@@ -166,18 +181,49 @@ export function WorkingDocumentPanel({
               {error}
             </div>
           )}
-          <ProTextarea
-            value={draft}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={flush}
-            placeholder={
-              isScratch
-                ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."
-                : "Empty. Ask the agent to draft or rework this document — or type here. Your edits and the agent's stay in sync each round."
-            }
-            wrapperClassName="flex min-h-0 flex-1 flex-col p-3"
-            className="h-full min-h-0 flex-1 resize-none border-0 bg-transparent text-base leading-relaxed text-foreground shadow-none focus-visible:ring-0"
-          />
+          <div className="min-h-0 flex-1">
+            {kind === "working" && mainView === "agent-diff" ? (
+              <DiffViewer
+                original={before}
+                modified={after}
+                engine="light"
+                language="markdown"
+                originalLabel="Before"
+                modifiedLabel="After (agent's edit)"
+                defaultView="highlight"
+                showToolbar
+                className="h-full min-h-0"
+              />
+            ) : (
+              <WorkingDocumentEditor
+                conversationId={conversationId}
+                draft={draft}
+                onChange={onChange}
+                onFlush={flush}
+                placeholder={
+                  isScratch
+                    ? "Your private scratchpad. Jot notes, links, or context here — the agent can read it to understand what you're thinking, but it never edits it."
+                    : undefined
+                }
+              />
+            )}
+          </div>
+          {kind === "working" && (
+            <WorkingDocumentVersionHistory
+              conversationId={conversationId}
+              currentContent={draft}
+              open={historyOpen}
+              onOpenChange={(open) =>
+                setWorkingDocHistoryOpen(conversationId, open)
+              }
+              onApplySnapshot={(snapshotContent) => {
+                onChange(snapshotContent);
+                flush();
+                setWorkingDocHistoryOpen(conversationId, false);
+                setWorkingDocMainView(conversationId, "editor");
+              }}
+            />
+          )}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">

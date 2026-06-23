@@ -4,13 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  CONTEXT_MENU_BASE,
-  getNavPages,
-  type ContextMenuPage,
-} from "../_registry";
+import { CONTEXT_MENU_BASE, type ContextMenuPage } from "../_registry";
+import { getContextMenuIcon } from "../_registry.icons";
 
 interface ContextMenuNavProps {
+  pages: ContextMenuPage[];
   /** When true, omits the "Hub" button — used on the hub itself. */
   hideHubButton?: boolean;
 }
@@ -23,9 +21,11 @@ interface ContextMenuNavProps {
  * highlights that page's button. The hub (exact-match on `/ssr/context-menu`)
  * is highlighted separately.
  */
-export function ContextMenuNav({ hideHubButton = false }: ContextMenuNavProps) {
+export function ContextMenuNav({
+  pages,
+  hideHubButton = false,
+}: ContextMenuNavProps) {
   const pathname = usePathname();
-  const pages = getNavPages();
 
   const isHub = pathname === CONTEXT_MENU_BASE;
   const isActive = (slug: string) => {
@@ -59,7 +59,7 @@ export function ContextMenuNav({ hideHubButton = false }: ContextMenuNavProps) {
 }
 
 function NavLink({ page, active }: { page: ContextMenuPage; active: boolean }) {
-  const Icon = page.icon;
+  const Icon = getContextMenuIcon(page.icon);
   return (
     <NavButton
       href={`${CONTEXT_MENU_BASE}/${page.slug}`}

@@ -26,6 +26,19 @@ function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+/**
+ * react-day-picker's `onSelect` signature varies across selection modes, so we
+ * read it through this widened shape rather than destructuring it out of the
+ * discriminated `DayPickerProps` union (which would collapse the `mode`
+ * discriminant and break the passthrough spread).
+ */
+type CalendarSelectHandler = (
+  selected: Date | undefined,
+  triggerDate: Date,
+  modifiers: Modifiers,
+  e: React.MouseEvent | React.KeyboardEvent,
+) => void;
+
 function Calendar({
   className,
   classNames,
@@ -39,13 +52,15 @@ function Calendar({
   month: monthProp,
   defaultMonth,
   onMonthChange,
-  onSelect,
-  mode,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
   showTodayButton?: boolean;
 }) {
+  const { mode, onSelect } = props as {
+    mode?: "single" | "multiple" | "range";
+    onSelect?: CalendarSelectHandler;
+  };
   const defaultClassNames = getDefaultClassNames();
   const [internalMonth, setInternalMonth] = React.useState<Date>(
     () => monthProp ?? defaultMonth ?? new Date(),
@@ -122,8 +137,6 @@ function Calendar({
       captionLayout={captionLayout}
       month={month}
       onMonthChange={handleMonthChange}
-      mode={mode}
-      onSelect={onSelect}
       footer={combinedFooter}
       formatters={{
         formatMonthDropdown: (date) =>

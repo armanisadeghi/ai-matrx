@@ -13,7 +13,12 @@
  * tracked in `phase-21-code-workspace-resource-pills.md`.
  */
 
-import React, { useCallback, useEffect, useState, type MutableRefObject } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  type MutableRefObject,
+} from "react";
 import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveTab } from "../redux/tabsSlice";
@@ -21,8 +26,11 @@ import {
   selectAllDiagnostics,
   selectDiagnosticsByTabId,
 } from "../redux/diagnosticsSlice";
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import type { StandaloneCodeEditor } from "../editor/MonacoEditor";
+import {
+  buildCodeWorkspaceContextData,
+  CODE_WORKSPACE_CONTEXT_MENU_PROPS,
+} from "./buildCodeWorkspaceContextData";
 
 const UnifiedAgentContextMenu = dynamic(
   () =>
@@ -95,41 +103,34 @@ export function CodeWorkspaceContextMenu({
     const position = ed?.getPosition();
 
     const fullContent = ed?.getValue() ?? activeTab?.content ?? "";
-    const language = activeTab?.language ?? model?.getLanguageId() ?? "plaintext";
+    const language =
+      activeTab?.language ?? model?.getLanguageId() ?? "plaintext";
     const filePath =
       activeTab?.path ?? model?.uri.path ?? activeTab?.name ?? "untitled";
 
-    return {
-      // Default scopes consumed by the shortcut runner
-      content: fullContent,
-      selection: selectedText,
-      contextFilter: "code-editor",
-
-      // `vsc_*` UI-context contract (see features/code/FEATURE.md)
-      vsc_active_file_path: filePath,
-      vsc_active_file_content: fullContent,
-      vsc_active_file_language: language,
-      vsc_selected_text: selectedText,
-      vsc_diagnostics: activeTabDiagnostics,
-      vsc_all_diagnostics: allDiagnostics,
-      vsc_current_line: position?.lineNumber ?? 0,
-      vsc_current_column: position?.column ?? 0,
-      vsc_line_count: model?.getLineCount() ?? 0,
-      vsc_has_selection: selectedText.length > 0,
-    };
-  }, [activeTab, activeTabDiagnostics, allDiagnostics, editorRef, selectedText]);
+    return buildCodeWorkspaceContextData({
+      fullContent,
+      selectedText,
+      language,
+      filePath,
+      currentLine: position?.lineNumber ?? 0,
+      currentColumn: position?.column ?? 0,
+      lineCount: model?.getLineCount() ?? 0,
+      activeTabDiagnostics,
+      allDiagnostics,
+    });
+  }, [
+    activeTab,
+    activeTabDiagnostics,
+    allDiagnostics,
+    editorRef,
+    selectedText,
+  ]);
 
   return (
     <div className={className}>
       <UnifiedAgentContextMenu
-        sourceFeature="code-editor"
-        surfaceName="matrx-user/code-editor"
-        isEditable={false}
-        enabledPlacements={[
-          PLACEMENT_TYPES.AI_ACTION,
-          PLACEMENT_TYPES.ORGANIZATION_TOOL,
-          PLACEMENT_TYPES.USER_TOOL,
-        ]}
+        {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         contextData={getContextData()}
       >
         {children}

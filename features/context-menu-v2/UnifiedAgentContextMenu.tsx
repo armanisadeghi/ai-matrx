@@ -45,7 +45,9 @@ import {
   useUnifiedAgentContextMenu,
   type AgentMenuEntry,
 } from "./hooks/useUnifiedAgentContextMenu";
+import { useSurfaceBoundAgents } from "./hooks/useSurfaceBoundAgents";
 import { MenuBody } from "./components/MenuBody";
+import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 import type { ContextMenuExtraSection } from "./extraSections";
 import {
   FloatingSelectionIcon,
@@ -61,11 +63,13 @@ import {
   type CapturedSelection,
   type SelectionRange,
 } from "./utils/selection-tracking";
+import { buildApplicationScopeFromMenuContext } from "./utils/build-application-scope";
 
 export type PlacementVisibility = "show" | "hide" | "disable";
 
 export type PlacementKey =
   | "ai-action"
+  | "bound-agent"
   | "content-block"
   | "organization-tool"
   | "user-tool"
@@ -172,6 +176,7 @@ export interface UnifiedAgentContextMenuProps {
 
 const DEFAULT_PLACEMENT_MODE: Required<PlacementMode> = {
   "ai-action": "show",
+  "bound-agent": "show",
   "content-block": "show",
   "organization-tool": "show",
   "user-tool": "show",
@@ -198,6 +203,7 @@ function resolvePlacementMode(
     const enabledSet = new Set(enabledPlacements);
     return {
       "ai-action": enabledSet.has("ai-action") ? "show" : "hide",
+      "bound-agent": enabledSet.has("bound-agent") ? "show" : "hide",
       "content-block": enabledSet.has("content-block") ? "show" : "hide",
       "organization-tool": enabledSet.has("organization-tool")
         ? "show"
@@ -277,6 +283,12 @@ export function UniversalContextMenuV2({
     scopeId,
   });
 
+  const {
+    sections: boundAgentSections,
+    loading: boundAgentsLoading,
+    refresh: refreshBoundAgents,
+  } = useSurfaceBoundAgents(surfaceName);
+
   // Lazy first-fetch: the unified-menu RPC is expensive (full join over
   // categories × shortcuts × agent/version) so we never kick it off on
   // render. Fire on the first engagement (right-click or icon open) only.
@@ -284,12 +296,15 @@ export function UniversalContextMenuV2({
   // there's at most one HTTP call per scope per session.
   const hasRefreshedRef = useRef(false);
   const ensureMenuLoaded = useCallback(() => {
+    if (surfaceName) {
+      void refreshBoundAgents();
+    }
     if (hasRefreshedRef.current) return;
     hasRefreshedRef.current = true;
     void refresh();
-  }, [refresh]);
+  }, [refresh, refreshBoundAgents, surfaceName]);
 
-  const { launchShortcut } = useAgentLauncher();
+  const { launchShortcut, launchAgent } = useAgentLauncher();
   const {
     openQuickNotes,
     openQuickTasks,
@@ -709,38 +724,11 @@ export function UniversalContextMenuV2({
       const selectionText =
         capturedSelection.current?.text || selectedText || "";
 
-      // Compute text_before / text_after from the textarea around the selection.
-      // This mirrors useAgentLauncherTester's applicationScope so shortcuts
-      // mapped to `text_before` / `text_after` actually receive values.
-      let textBefore = "";
-      let textAfter = "";
-      if (
-        selectionRange &&
-        selectionRange.type === "editable" &&
-        selectionRange.element
-      ) {
-        const value = selectionRange.element.value ?? "";
-        textBefore = value.substring(0, selectionRange.start ?? 0);
-        textAfter = value.substring(selectionRange.end ?? 0);
-      }
-
-      const cd = getEffectiveContextData();
-      const applicationScope: ApplicationScope = {
-        selection: selectionText,
-        text_before: textBefore,
-        text_after: textAfter,
-        content: typeof cd.content === "string" ? cd.content : "",
-        context:
-          typeof cd.context === "string"
-            ? { raw: cd.context }
-            : ((cd.context as Record<string, unknown> | undefined) ?? {}),
-      };
-
-      for (const [k, v] of Object.entries(cd)) {
-        if (k === "content" || k === "context" || k === "contextFilter")
-          continue;
-        applicationScope[k] = v;
-      }
+      const applicationScope = buildApplicationScopeFromMenuContext({
+        selectedText: selectionText,
+        selectionRange,
+        contextData: getEffectiveContextData(),
+      });
 
       const resultDisplay = (entry.displayMode ??
         "modal-full") as ResultDisplayMode;
@@ -784,6 +772,57 @@ export function UniversalContextMenuV2({
     [
       getEffectiveContextData,
       launchShortcut,
+      selectedText,
+      selectionRange,
+      sourceFeature,
+      surfaceName,
+    ],
+  );
+
+  const handleBoundAgentExecute = useCallback(
+    async (entry: SurfaceBoundAgentEntry) => {
+      const selectionText =
+        capturedSelection.current?.text || selectedText || "";
+
+      const applicationScope = buildApplicationScopeFromMenuContext({
+        selectedText: selectionText,
+        selectionRange,
+        contextData: getEffectiveContextData(),
+      });
+
+      try {
+        await launchAgent(entry.agentId, {
+          surfaceKey: `${sourceFeature}:bound-agent:${entry.agentId}`,
+          sourceFeature,
+          config: {
+            displayMode: "modal-full",
+            autoRun: true,
+            allowChat: true,
+            showVariablePanel: true,
+          },
+          runtime: {
+            applicationScope,
+            originalText: selectionText,
+            surfaceName,
+          },
+        });
+      } catch (error) {
+        console.error(
+          "[UnifiedAgentContextMenu] bound agent launch failed",
+          error,
+        );
+        const message =
+          error instanceof Error ? error.message : "An unknown error occurred";
+        toast({
+          title: "Execution Failed",
+          description: `${entry.name}: ${message}`,
+          variant: "destructive",
+        });
+      }
+    },
+    [
+      getEffectiveContextData,
+      launchAgent,
       selectedText,
       selectionRange,
       sourceFeature,
@@ -858,6 +897,10 @@ export function UniversalContextMenuV2({
     isEditable,
     placementMode: resolvedPlacementMode,
     categoryGroups,
+    boundAgentSections,
+    boundAgentsLoading,
+    showBoundAgents: Boolean(surfaceName) && resolvedPlacementMode["bound-agent"] !== "hide",
+    onBoundAgentSelect: (entry) => void handleBoundAgentExecute(entry),
     onEntrySelect: handleEntrySelect,
     onCopy: handleCopy,
     onCut: handleCut,

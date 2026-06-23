@@ -49,6 +49,7 @@ import { DataBody } from "./bodies/DataBody";
 import { MediaBody, MediaFooter } from "./bodies/MediaBody";
 import {
   WorkingDocumentBody,
+  WorkingDocumentFooter,
   WorkingDocumentTitleActions,
 } from "./bodies/WorkingDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
@@ -134,6 +135,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "input_document",
     editable: true,
     Body: WorkingDocumentBody,
+    Footer: WorkingDocumentFooter,
     TitleActions: WorkingDocumentTitleActions,
   },
   {

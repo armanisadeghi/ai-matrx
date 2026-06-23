@@ -13,21 +13,19 @@
  *     (or Set base / Compare with base), plus an always-on inline DiffViewer
  *     and an "Open in window" button.
  *
- * Everything loads via next/dynamic — nothing here is in the initial chunk,
- * and the unified-menu fetch is single-flight + never-refetch (see
- * fetchUnifiedMenu thunk). Watch the dev console / Network tab: one call.
+ * Panels 2–4 use production-*target* wiring (what surfaces should emit),
+ * not necessarily what legacy routes ship today.
  */
 
 import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { toast } from "sonner";
-import { Save, Download, FolderInput, Trash2, Code2 } from "lucide-react";
+import { Code2 } from "lucide-react";
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v2/extraSections";
+import { AgentBuilderDemoPanel } from "../_components/AgentBuilderDemoPanel";
+import { CodeEditorDemoPanel } from "../_components/CodeEditorDemoPanel";
+import { NotesDemoPanel } from "../_components/NotesDemoPanel";
 
-// Dynamic — the heavy menu (hook + body + modals) is excluded from the
-// initial chunk and loads only when the panel mounts it.
 const UniversalContextMenuV2 = dynamic(
   () =>
     import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
@@ -40,83 +38,11 @@ const TEXTAREA_CLASS =
   "flex-1 min-h-[180px] w-full rounded-md border border-border bg-card p-3 text-[16px] outline-none focus:ring-2 focus:ring-primary";
 
 export default function CanonicalContextMenuPage() {
-  // ── No wrapper ──────────────────────────────────────────────────────────
   const noneRef = useRef<HTMLTextAreaElement | null>(null);
   const [noneValue, setNoneValue] = useState(
     "No-wrapper panel.\nRaw UniversalContextMenuV2 with hand-set contextData.\nRight-click → Compare → Compare with clipboard.",
   );
 
-  // ── Agent-builder surface ─────────────────────────────────────────────────
-  const agentRef = useRef<HTMLTextAreaElement | null>(null);
-  const [agentValue, setAgentValue] = useState(
-    "Agent-builder panel.\nsurfaceName = matrx-user/agent-builder.\nSame core menu, AI Actions resolve against this surface.",
-  );
-
-  // ── Notes surface (with injected extraSections) ───────────────────────────
-  const notesRef = useRef<HTMLTextAreaElement | null>(null);
-  const [notesValue, setNotesValue] = useState(
-    "Notes panel.\nThe Save / Export / Move / Delete items below the editing block are INJECTED via extraSections — the core menu renders them, the wrapper only describes them.",
-  );
-  const notesExtras: ContextMenuExtraSection[] = [
-    {
-      id: "notes-ops",
-      label: "Note",
-      anchor: "after-compare",
-      items: [
-        {
-          kind: "item",
-          id: "save",
-          label: "Save",
-          icon: Save,
-          hint: "⌘S",
-          onSelect: () => toast.success("Save (surface-specific demo action)"),
-        },
-        {
-          kind: "item",
-          id: "export",
-          label: "Export as Markdown",
-          icon: Download,
-          onSelect: () => toast.success("Export (demo)"),
-        },
-        {
-          kind: "submenu",
-          id: "move",
-          label: "Move to Folder",
-          icon: FolderInput,
-          children: [
-            {
-              kind: "item",
-              id: "move-inbox",
-              label: "Inbox",
-              onSelect: () => toast.success("Moved to Inbox (demo)"),
-            },
-            {
-              kind: "item",
-              id: "move-archive",
-              label: "Archive",
-              onSelect: () => toast.success("Moved to Archive (demo)"),
-            },
-          ],
-        },
-        { kind: "separator", id: "sep" },
-        {
-          kind: "item",
-          id: "delete",
-          label: "Delete Note",
-          icon: Trash2,
-          destructive: true,
-          onSelect: () => toast.error("Delete (demo — destructive styling)"),
-        },
-      ],
-    },
-  ];
-
-  // ── Code surface (read-only, code-editor context) ─────────────────────────
-  const [codeValue] = useState(
-    "// Code panel (read-only)\n// surfaceName = matrx-user/code-editor, addedContexts=['code-editor']\nfunction greet(name) {\n  return `Hello, ${name}`;\n}",
-  );
-
-  // ── Diff playground ───────────────────────────────────────────────────────
   const [diffOriginal, setDiffOriginal] = useState(
     "You are a helpful assistant.\nAlways answer concisely.\nNever fabricate facts.",
   );
@@ -130,14 +56,13 @@ export default function CanonicalContextMenuPage() {
       <div className="border-b border-border bg-card/50 px-3 py-1.5 flex-shrink-0">
         <p className="text-[11px] text-muted-foreground">
           One core menu, four wrappers. Right-click any panel → <b>Compare</b> →
-          “Compare with clipboard”. The Notes panel shows{" "}
-          <code>extraSections</code> injection. Diff is live at the bottom.
+          “Compare with clipboard”. Panels 2–4 mirror production-target wiring
+          for agent-builder, notes, and <code>/code</code>. Diff is live below.
         </p>
       </div>
 
       <div className="flex-1 overflow-auto p-3 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          {/* No wrapper */}
           <section className="flex flex-col gap-2">
             <header>
               <h2 className="text-sm font-semibold">1. No wrapper</h2>
@@ -151,7 +76,6 @@ export default function CanonicalContextMenuPage() {
               onTextReplace={setNoneValue}
               isEditable
               contextData={{ content: noneValue, context: "no-wrapper" }}
-              scope="user"
             >
               <textarea
                 ref={noneRef}
@@ -162,87 +86,38 @@ export default function CanonicalContextMenuPage() {
             </UniversalContextMenuV2>
           </section>
 
-          {/* Agent builder */}
-          <section className="flex flex-col gap-2">
-            <header>
-              <h2 className="text-sm font-semibold">2. Agent wrapper</h2>
-              <p className="text-[11px] text-muted-foreground">
-                surfaceName: <code>matrx-user/agent-builder</code>
-              </p>
-            </header>
-            <UniversalContextMenuV2
-              sourceFeature="agent-builder"
-              surfaceName="matrx-user/agent-builder"
-              getTextarea={() => agentRef.current}
-              onTextReplace={setAgentValue}
-              isEditable
-              contextData={{
-                content: agentValue,
-                system_instruction: agentValue,
-                focused_field: "system_instruction",
-              }}
-              scope="user"
-            >
-              <textarea
-                ref={agentRef}
-                value={agentValue}
-                onChange={(e) => setAgentValue(e.target.value)}
-                className={TEXTAREA_CLASS}
-              />
-            </UniversalContextMenuV2>
-          </section>
+          <AgentBuilderDemoPanel
+            title="2. Agent builder"
+            description={
+              <>
+                Target <code>matrx-user/agent-builder</code> — full agent scope
+                + <code>focused_field</code>, AI Actions + content blocks +
+                quick actions.
+              </>
+            }
+          />
 
-          {/* Notes (extraSections) */}
-          <section className="flex flex-col gap-2">
-            <header>
-              <h2 className="text-sm font-semibold">3. Notes wrapper</h2>
-              <p className="text-[11px] text-muted-foreground">
-                surfaceName: <code>matrx-user/notes</code> · +extraSections
-              </p>
-            </header>
-            <UniversalContextMenuV2
-              sourceFeature="notes"
-              surfaceName="matrx-user/notes"
-              getTextarea={() => notesRef.current}
-              onTextReplace={setNotesValue}
-              isEditable
-              contextData={{ content: notesValue, context: "notes" }}
-              extraSections={notesExtras}
-              scope="user"
-            >
-              <textarea
-                ref={notesRef}
-                value={notesValue}
-                onChange={(e) => setNotesValue(e.target.value)}
-                className={TEXTAREA_CLASS}
-              />
-            </UniversalContextMenuV2>
-          </section>
+          <NotesDemoPanel
+            title="3. Notes editor"
+            description={
+              <>
+                Target <code>matrx-user/notes</code> — full surface scope +{" "}
+                <code>extraSections</code> (Save / Export / Move / Delete).
+              </>
+            }
+          />
 
-          {/* Code (read-only) */}
-          <section className="flex flex-col gap-2">
-            <header>
-              <h2 className="text-sm font-semibold">4. Code wrapper</h2>
-              <p className="text-[11px] text-muted-foreground">
-                read-only · addedContexts <code>{`['code-editor']`}</code>
-              </p>
-            </header>
-            <UniversalContextMenuV2
-              sourceFeature="code-editor"
-              surfaceName="matrx-user/code-editor"
-              isEditable={false}
-              addedContexts={["code-editor"]}
-              contextData={{ content: codeValue, context: "code-editor" }}
-              scope="user"
-            >
-              <pre className="flex-1 min-h-[180px] w-full rounded-md border border-border bg-card p-3 text-[13px] font-mono whitespace-pre-wrap overflow-auto">
-                {codeValue}
-              </pre>
-            </UniversalContextMenuV2>
-          </section>
+          <CodeEditorDemoPanel
+            title="4. Code editor"
+            description={
+              <>
+                Target <code>matrx-user/code-editor</code> — full{" "}
+                <code>vsc_*</code> context + placeholder diagnostics.
+              </>
+            }
+          />
         </div>
 
-        {/* Diff playground */}
         <section className="rounded-md border border-border">
           <header className="flex items-center justify-between border-b border-border px-3 py-1.5">
             <div className="flex items-center gap-2">
