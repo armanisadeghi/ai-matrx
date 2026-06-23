@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 import { toast } from "sonner";
 
-import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
+import MarkdownStream from "@/components/MarkdownStream";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,9 +208,14 @@ export function NotePreview({
         className="relative overflow-hidden"
         style={collapsed ? { maxHeight: collapsedMaxPx } : undefined}
       >
-        <BasicMarkdownContent
+        {/* MarkdownStream is the canonical renderer — it processes render
+            blocks (mermaid, tables, flashcards, …), unlike the thin
+            BasicMarkdownContent wrapper. */}
+        <MarkdownStream
           content={content as string}
-          showCopyButton={false}
+          isStreamActive={false}
+          hideCopyButton
+          allowFullScreenEditor={false}
         />
         {collapsed && overflowing ? (
           <div

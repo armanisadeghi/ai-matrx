@@ -22,6 +22,7 @@ import { Play, RotateCcw, Sparkles, Database, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ChatResultColumn } from "@/features/tool-call-visualization/components/ChatResultColumn";
 import {
   buildSimpleRecording,
   type StreamRecording,
@@ -353,11 +354,11 @@ function SimulatedTurn({ scenario }: { scenario: Scenario }) {
           Press <span className="font-medium text-foreground">Run</span> to watch the agent write, call the tool, and continue.
         </div>
       ) : (
-        // A single assistant turn — the exact width of a real chat message.
-        <div
-          key={runKey}
-          className="mx-auto w-full max-w-3xl space-y-2 rounded-lg border border-border bg-card p-4"
-        >
+        // A single assistant turn rendered EXACTLY as in chat — the real
+        // conversation column (max-w-3xl, plain surface), not a bg-card bubble,
+        // so the tool card sits on the same background it will in production.
+        <div key={runKey} className="mx-auto w-full max-w-3xl space-y-2 px-2">
+
           {segments.map((seg, i) => {
             if (i > activeIndex) return null;
             const isActive = i === activeIndex;
@@ -636,55 +637,53 @@ function RealRuns({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       ) : null}
 
       {rows && rows.length > 0 ? (
-        <div className="mx-auto grid w-full max-w-3xl gap-3 md:grid-cols-[260px_1fr]">
-          {/* Usage picker — most recent N */}
-          <ul className="space-y-1">
+        <div className="space-y-3">
+          {/* Usage picker — most recent N, as a horizontal strip so the render
+              below gets the FULL chat width (no side column stealing pixels). */}
+          <div className="mx-auto flex w-full max-w-3xl gap-1.5 overflow-x-auto px-2 pb-1">
             {rows.map((row) => {
               const active = row.id === selectedId;
               return (
-                <li key={row.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedId(row.id)}
-                    className={
-                      "w-full rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors " +
-                      (active
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50")
-                    }
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-foreground truncate">
-                        {summarizeRow(row)}
-                      </span>
-                      {row.is_error ? (
-                        <Badge variant="destructive" className="ml-auto shrink-0">
-                          error
-                        </Badge>
-                      ) : null}
-                    </div>
-                    <div className="mt-0.5 text-[10px] text-muted-foreground">
-                      {formatRelativeTime(row.created_at)}
-                    </div>
-                  </button>
-                </li>
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() => setSelectedId(row.id)}
+                  className={
+                    "shrink-0 rounded-md border px-2.5 py-1 text-left text-xs transition-colors " +
+                    (active
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50")
+                  }
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="max-w-[180px] truncate font-medium text-foreground">
+                      {summarizeRow(row)}
+                    </span>
+                    {row.is_error ? (
+                      <Badge variant="destructive" className="shrink-0">
+                        error
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-muted-foreground">
+                    {formatRelativeTime(row.created_at)}
+                  </div>
+                </button>
               );
             })}
-          </ul>
-
-          {/* Selected render */}
-          <div className="min-w-0">
-            {selected ? (
-              <div className="rounded-lg border border-border bg-card p-3">
-                <ToolCallVisualization
-                  key={selected.id}
-                  entries={[rowToEntry(selected)]}
-                  isPersisted
-                  hasContent
-                />
-              </div>
-            ) : null}
           </div>
+
+          {/* Selected render — the EXACT chat results column (no card / bg). */}
+          {selected ? (
+            <ChatResultColumn>
+              <ToolCallVisualization
+                key={selected.id}
+                entries={[rowToEntry(selected)]}
+                isPersisted
+                hasContent
+              />
+            </ChatResultColumn>
+          ) : null}
         </div>
       ) : null}
     </div>

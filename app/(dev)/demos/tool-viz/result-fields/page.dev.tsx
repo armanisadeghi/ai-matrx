@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ChatResultColumn } from "@/features/tool-call-visualization/components/ChatResultColumn";
 import { PatchDiffInline } from "@/features/tool-call-visualization/renderers/working-document/PatchDiffInline";
 import { SearchInline } from "@/features/tool-call-visualization/renderers/search/SearchInline";
 import { SearchOverlay } from "@/features/tool-call-visualization/renderers/search/SearchOverlay";
@@ -1433,12 +1434,13 @@ export default function ResultFieldsGalleryPage() {
                     Redux/Supabase-backed: the tiny result (`{`{ id, label, updated_at }`}`) hydrates the live note —
                     Edit/Preview toggle, collapsible markdown Preview, content stats, and "Open in Notes" (deep-linked
                     window). Log in as admin@admin.com to see real content; the second row is long enough to collapse.
+                    Rendered in the exact chat results column (no surrounding card) so it matches production.
                 </p>
-                <div className="rounded-lg border border-border bg-card p-3">
+                <ChatResultColumn>
                     {NOTE_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
-                </div>
+                </ChatResultColumn>
             </section>
 
             <section className="space-y-4">
