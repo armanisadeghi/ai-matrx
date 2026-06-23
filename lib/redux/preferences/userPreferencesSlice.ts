@@ -374,6 +374,26 @@ export interface ConversationFilterPreferences {
   surfaces: Record<string, ConversationFilterSurfacePref>;
 }
 
+/**
+ * Persisted audio input/output DEVICE choice — the canonical "remember my mic
+ * and speaker" store, read by the audio-devices manager (`features/audio/
+ * audioDevices.ts`). We store BOTH the `deviceId` AND the human `label` for
+ * each, because iOS Safari regenerates `deviceId` on every page load — on
+ * resolve we match by id → else by label → else system default. `""` everywhere
+ * means "system default" (no explicit choice).
+ *
+ * NOTE: this supersedes the legacy free-text `videoConference.defaultMicrophone`
+ * / `defaultSpeaker` fields (which were never wired to real `enumerateDevices`
+ * ids). VC is left untouched for now — a future pass should fold it into this
+ * single device store.
+ */
+export interface AudioDevicePreferences {
+  audioInputDeviceId: string;
+  audioInputDeviceLabel: string;
+  audioOutputDeviceId: string;
+  audioOutputDeviceLabel: string;
+}
+
 // Combine all module preferences into one interface
 export interface UserPreferences {
   display: DisplayPreferences;
@@ -398,6 +418,7 @@ export interface UserPreferences {
   agentConnections: AgentConnectionsPreferences;
   mermaid: MermaidPreferences;
   conversationFilters: ConversationFilterPreferences;
+  audioDevices: AudioDevicePreferences;
 }
 
 // Add state interface for async operations
@@ -614,6 +635,13 @@ export const initializeUserPreferencesState = (
       // (source-registry.ts → SURFACE_DEFAULTS).
       surfaces: {},
     },
+    audioDevices: {
+      // "" everywhere = system default (no explicit device chosen yet).
+      audioInputDeviceId: "",
+      audioInputDeviceLabel: "",
+      audioOutputDeviceId: "",
+      audioOutputDeviceLabel: "",
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -666,6 +694,10 @@ export const initializeUserPreferencesState = (
     conversationFilters: {
       ...defaultPreferences.conversationFilters,
       ...preferences.conversationFilters,
+    },
+    audioDevices: {
+      ...defaultPreferences.audioDevices,
+      ...preferences.audioDevices,
     },
   };
 
@@ -759,6 +791,9 @@ const userPreferencesSlice = createSlice({
         state.conversationFilters = {
           ...state._meta.loadedPreferences.conversationFilters,
         };
+        state.audioDevices = {
+          ...state._meta.loadedPreferences.audioDevices,
+        };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
       }
@@ -831,6 +866,11 @@ const userPreferencesSlice = createSlice({
           ...state.conversationFilters,
           ...loaded.conversationFilters,
         };
+      if (loaded.audioDevices)
+        state.audioDevices = {
+          ...state.audioDevices,
+          ...loaded.audioDevices,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -893,6 +933,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "agentContext",
   "mermaid",
   "conversationFilters",
+  "audioDevices",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

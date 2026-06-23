@@ -85,6 +85,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
@@ -552,6 +553,13 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                   />
                 )}
               </div>
+            )}
+
+            {/* Device-picker caret (Anthropic-style) — choose mic / open audio
+                settings, hidden while recording so it never crowds the stop
+                affordance. */}
+            {showMic && !isRecording && !isTranscribing && (
+              <MicDeviceMenu disabled={isVoiceDisabled} />
             )}
 
             {showMenu && (

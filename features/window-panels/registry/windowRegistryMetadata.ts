@@ -302,6 +302,18 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobileSidebarAs: "drawer",
   },
 
+  // ── Audio devices (mic / speaker picker + permission) ────────────────────
+  {
+    slug: "audio-devices-window",
+    overlayId: "audioDevices",
+    kind: "window",
+    label: "Audio Devices",
+    defaultData: {},
+    // Ephemeral: a device picker has no state worth restoring on reload.
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Gallery ───────────────────────────────────────────────────────────────
   {
     slug: "gallery-window",

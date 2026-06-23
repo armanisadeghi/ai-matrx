@@ -48,6 +48,7 @@ import {
   TTS_MODEL_ID,
   TTS_STREAMING_BUFFER_SEC,
 } from "@/lib/cartesia/config";
+import { installAudioContextSinkRouting } from "@/features/audio/audioOutputSink";
 
 export type SpeakerPhase =
   | "idle"
@@ -242,6 +243,14 @@ export function useCartesiaStreamingSpeaker({
     }
 
     if (!playerRef.current) {
+      // Output-device routing: the WebPlayer builds a hard-private AudioContext
+      // per utterance with no handle we can call setSinkId on. Instead we ensure
+      // the AudioContext sink patch is installed (idempotent) — it routes every
+      // newly-created playback context to the user's chosen speaker (Chromium;
+      // Safari has no AudioContext.setSinkId and gracefully no-ops). A device
+      // change applies to the NEXT utterance (a fresh context), which is the
+      // best we can do without a handle to the live one.
+      installAudioContextSinkRouting();
       // Lower buffer for real-time streaming (latency-sensitive), centralized in
       // lib/cartesia/config so it can't drift back to a stutter-prone value.
       playerRef.current = new WebPlayer({

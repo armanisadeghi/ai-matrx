@@ -35,6 +35,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  audioDevices: {
+    label: "Audio Devices",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentAdminFindUsagesWindow: {
     label: "Agent Admin Find Usages Window",
     instanceMode: "singleton",
