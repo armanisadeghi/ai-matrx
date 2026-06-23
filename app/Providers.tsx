@@ -72,6 +72,7 @@ import {
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
+import { AudioOutputHost } from "@/providers/AudioOutputHost";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
 // imported by `build-tool-injection.ts` (the CLIENT-side consumer) — NOT here.
@@ -157,6 +158,17 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   (see utils/audio/audioModal.ts). The modal is
                                   next/dynamic — no TTS code loads until first use. */}
                                   <AudioModalHost />
+                                  {/* App-root audio OUTPUT singleton — owns the
+                                  read-aloud / TTS streaming speaker so playback
+                                  survives War Room tab switches and route
+                                  changes (it used to die when the Agent+ tab
+                                  unmounted). Output-only (no mic permission).
+                                  Sibling of GlobalRecordingProvider (audio IN).
+                                  Surfaces drive it via voicePlaybackBus
+                                  (requestVoicePlayback / stopVoicePlayback). The
+                                  Cartesia SDK is next/dynamic — nothing TTS
+                                  loads on the server. See providers/AudioOutputHost. */}
+                                  <AudioOutputHost />
                                   {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed

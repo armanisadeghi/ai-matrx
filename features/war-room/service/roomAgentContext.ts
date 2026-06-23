@@ -19,9 +19,10 @@
  * sibling): although the room's tiles ARE hydrated in Redux while the shell is
  * open, the per-thread agent conversation id, task titles, and note snippets need
  * the same targeted cross-table reads the master builder does. Reusing the master
- * builder's exact read path (war-room service `getSession`/`listTiles`/
- * `list*ForTiles` + the studio_sessions / ctx_tasks / notes reads) keeps the two
- * tiers byte-for-byte consistent and avoids a second, drifting roster shape.
+ * builder's exact read path (war-room service `getSession`/`listTiles` +
+ * `listAssignmentsForContainers` + the studio_sessions / ctx_tasks / notes reads)
+ * keeps the two tiers byte-for-byte consistent and avoids a second, drifting
+ * roster shape.
  *
  * Naming contract (so the model understands the relationships, and so these never
  * collide with the studio keys recording_NN / session_cleaned / etc., the tile_*
@@ -44,22 +45,17 @@
 import { supabase } from "@/utils/supabase/client";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { getTaskById } from "@/features/tasks/services/taskService";
+import { getSession, listTiles } from "@/features/war-room/service";
+import { listAssignmentsForContainers } from "@/features/war-room/service/associations";
 import {
-  getSession,
-  listTiles,
-  listAudioLinksForTiles,
-  listNoteLinksForTiles,
-  listAttachmentsForTiles,
-} from "@/features/war-room/service";
-import type {
-  WarRoomTile,
-  WarRoomTileAudioSession,
-  WarRoomTileNote,
-  WarRoomTileAttachment,
+  threadRef,
+  type WarRoomAssignment,
+  type WarRoomTile,
 } from "@/features/war-room/types";
-import type {
-  MasterThreadEntry,
-  ThreadStatusResolver,
+import {
+  indexThreadAssignments,
+  type MasterThreadEntry,
+  type ThreadStatusResolver,
 } from "@/features/war-room/service/masterAgentContext";
 
 // Re-export so the room hook (and any future consumer) imports the resolver type
@@ -181,67 +177,27 @@ export async function buildRoomAgentContext(
 
   const allTileIds = tiles.map((t) => t.id);
 
-  // Batched per-tile reads. Each tolerates failure independently — a missing
-  // signal just omits that field from the roster, never blocks it.
-  const [audioLinks, noteLinks, attachments] = await Promise.all([
-    listAudioLinksForTiles(allTileIds).catch((err) => {
-      console.error(
-        "[war-room/room-agent] listAudioLinksForTiles failed:",
-        err,
-      );
-      return [] as WarRoomTileAudioSession[];
-    }),
-    listNoteLinksForTiles(allTileIds).catch((err) => {
-      console.error(
-        "[war-room/room-agent] listNoteLinksForTiles failed:",
-        err,
-      );
-      return [] as WarRoomTileNote[];
-    }),
-    listAttachmentsForTiles(allTileIds).catch((err) => {
-      console.error(
-        "[war-room/room-agent] listAttachmentsForTiles failed:",
-        err,
-      );
-      return [] as WarRoomTileAttachment[];
-    }),
-  ]);
-
-  // ── Index the batched links per tile ──────────────────────────────────
-  // Active audio session per tile (the one whose Agent+ conversation we want).
-  const activeAudioByTile = new Map<string, string>();
-  const hasAudioByTile = new Set<string>();
-  for (const link of audioLinks) {
-    hasAudioByTile.add(link.tile_id);
-    if (link.is_active) {
-      activeAudioByTile.set(link.tile_id, link.studio_session_id);
-    }
+  // ONE batched read of the polymorphic assignment table for this room's tiles,
+  // then index per tile (same helper the master builder uses). Tolerates failure
+  // — a missing signal just omits that field from the roster, never blocks it.
+  let assignments: WarRoomAssignment[] = [];
+  try {
+    assignments = await listAssignmentsForContainers(
+      allTileIds.map((id) => threadRef(id)),
+    );
+  } catch (err) {
+    console.error(
+      "[war-room/room-agent] listAssignmentsForContainers failed:",
+      err,
+    );
   }
-  // Fall back to the first linked session when none is flagged active.
-  for (const link of audioLinks) {
-    if (!activeAudioByTile.has(link.tile_id)) {
-      activeAudioByTile.set(link.tile_id, link.studio_session_id);
-    }
-  }
-
-  // Active note id per tile (prefer the flagged-active link; the tile.note_id
-  // pointer is the secondary source, handled below per-tile).
-  const activeNoteByTile = new Map<string, string>();
-  for (const link of noteLinks) {
-    if (link.is_active && !activeNoteByTile.has(link.tile_id)) {
-      activeNoteByTile.set(link.tile_id, link.note_id);
-    }
-  }
-  for (const link of noteLinks) {
-    if (!activeNoteByTile.has(link.tile_id)) {
-      activeNoteByTile.set(link.tile_id, link.note_id);
-    }
-  }
-
-  const fileCountByTile = new Map<string, number>();
-  for (const a of attachments) {
-    fileCountByTile.set(a.tile_id, (fileCountByTile.get(a.tile_id) ?? 0) + 1);
-  }
+  const {
+    taskByTile,
+    noteByTile: activeNoteByTile,
+    activeAudioByTile,
+    hasAudioByTile,
+    fileCountByTile,
+  } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
   // The thread agent's conversation id = studio_sessions.assistant_conversation_id
@@ -273,7 +229,9 @@ export async function buildRoomAgentContext(
   // on-open build, so N small reads are acceptable here.
   const taskIds = [
     ...new Set(
-      tiles.map((t) => t.task_id).filter((id): id is string => !!id),
+      tiles
+        .map((t) => taskByTile.get(t.id) ?? null)
+        .filter((id): id is string => !!id),
     ),
   ];
   const taskTitleById = new Map<string, string>();
@@ -294,11 +252,11 @@ export async function buildRoomAgentContext(
     }
   }
 
-  // Note ids: the active link OR the tile's own note_id pointer.
+  // Note ids: the active 'note' assignment per tile.
   const noteIds = [
     ...new Set(
       tiles
-        .map((t) => activeNoteByTile.get(t.id) ?? t.note_id ?? null)
+        .map((t) => activeNoteByTile.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -318,8 +276,9 @@ export async function buildRoomAgentContext(
 
   // ── Assemble the roster (this room's threads only) ─────────────────────
   const threads: MasterThreadEntry[] = tiles.map((tile, index) => {
-    const taskTitle = tile.task_id ? taskTitleById.get(tile.task_id) : undefined;
-    const noteId = activeNoteByTile.get(tile.id) ?? tile.note_id ?? null;
+    const taskId = taskByTile.get(tile.id) ?? null;
+    const taskTitle = taskId ? taskTitleById.get(taskId) : undefined;
+    const noteId = activeNoteByTile.get(tile.id) ?? null;
     const snippet = noteId ? noteSnippet(noteContentById.get(noteId)) : undefined;
     const activeStudioId = activeAudioByTile.get(tile.id) ?? null;
     const conversationId = activeStudioId

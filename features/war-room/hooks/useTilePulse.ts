@@ -26,9 +26,11 @@ import { selectNoteContent } from "@/features/notes/redux/selectors";
 import { selectSessionRawText } from "@/features/transcript-studio/redux/selectors";
 import {
   selectActiveAudioSessionId,
+  selectActiveNoteId,
   selectAudioSessionIdsForTile,
   selectTileById,
   selectTileEffectiveContext,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import type { TileTab } from "@/features/war-room/types";
 
@@ -79,8 +81,8 @@ function clampPreview(text: string | null | undefined): string | null {
 
 export function useTilePulse(tileId: string): TilePulse {
   const tile = useAppSelector(selectTileById(tileId));
-  const taskId = tile?.task_id ?? null;
-  const noteId = tile?.note_id ?? null;
+  const taskId = useAppSelector(selectTileTaskId(tileId));
+  const noteId = useAppSelector(selectActiveNoteId(tileId));
 
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,

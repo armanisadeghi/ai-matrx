@@ -15,7 +15,7 @@ import type {
 } from "../tools/schemas";
 import { createSubtaskThunk } from "@/features/tasks/redux/thunks";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
-import { selectTileById } from "@/features/war-room/redux/selectors";
+import { selectTileTaskId } from "@/features/war-room/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 
 export const addSubtaskHandler: WarRoomToolHandler<
@@ -26,8 +26,7 @@ export const addSubtaskHandler: WarRoomToolHandler<
   async run(args, ctx) {
     const { tileId, dispatch, getState } = ctx;
 
-    const tile = selectTileById(tileId)(getState());
-    const taskId = tile?.task_id ?? null;
+    const taskId = selectTileTaskId(tileId)(getState());
     if (!taskId) {
       return {
         ok: false,

@@ -7,11 +7,13 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
-import type {
-  TileContext,
-  WarRoomSession,
-  WarRoomTile,
-  WarRoomTileAttachment,
+import {
+  containerKey,
+  type TileContext,
+  type WarRoomAssignment,
+  type WarRoomContainerType,
+  type WarRoomSession,
+  type WarRoomTile,
 } from "../types";
 
 /** Coerce a jsonb context_scope_ids value to a string[]. */
@@ -181,8 +183,78 @@ export function selectTileEffectiveContext(tileId: string | null) {
   return sel;
 }
 
+// ── Associations (the one polymorphic M2M source of truth) ─────────────
+// Every per-type selector below DERIVES from assignmentsByContainer. Array
+// returns are memoized per key (stable reference for React 19); primitive
+// returns (a single id / mode) read directly — they're already stable.
+
+const EMPTY_ASSIGNMENTS: WarRoomAssignment[] = [];
+const selectAssignmentsByContainer = (state: RootState) =>
+  state.warRoom.assignmentsByContainer;
+
+const assignmentsContainerCache = new Map<
+  string,
+  (state: RootState) => WarRoomAssignment[]
+>();
+/** All assignment rows for one container (room or thread). Memoized per key. */
+export function selectAssignmentsForContainer(
+  type: WarRoomContainerType,
+  id: string | null,
+) {
+  if (!id) return () => EMPTY_ASSIGNMENTS;
+  const key = containerKey(type, id);
+  let sel = assignmentsContainerCache.get(key);
+  if (!sel) {
+    sel = createSelector(
+      selectAssignmentsByContainer,
+      (byKey) => byKey[key] ?? EMPTY_ASSIGNMENTS,
+    );
+    assignmentsContainerCache.set(key, sel);
+  }
+  return sel;
+}
+
+/** Direct (non-memoized) read of a thread/room bucket — for primitive derivations. */
+function bucket(
+  state: RootState,
+  type: WarRoomContainerType,
+  id: string,
+): WarRoomAssignment[] {
+  return state.warRoom.assignmentsByContainer[containerKey(type, id)] ?? EMPTY_ASSIGNMENTS;
+}
+
+/** entity_ids of one type in a thread, ordered by position. Memoized per (tile,type). */
+const entityIdsCache = new Map<string, (state: RootState) => string[]>();
+function selectThreadEntityIds(tileId: string, entityType: string) {
+  const cacheKey = `${tileId}:${entityType}`;
+  let sel = entityIdsCache.get(cacheKey);
+  if (!sel) {
+    sel = createSelector(
+      selectAssignmentsForContainer("thread", tileId),
+      (rows): string[] => {
+        const ids = rows
+          .filter((r) => r.entity_type === entityType)
+          .map((r) => r.entity_id);
+        return ids.length > 0 ? ids : EMPTY_IDS;
+      },
+    );
+    entityIdsCache.set(cacheKey, sel);
+  }
+  return sel;
+}
+
+/** The active (focused) entity_id of one type in a container, or null. */
+function activeEntityId(
+  rows: WarRoomAssignment[],
+  entityType: string,
+): string | null {
+  const active = rows.find((r) => r.entity_type === entityType && r.is_active);
+  if (active) return active.entity_id;
+  const first = rows.find((r) => r.entity_type === entityType);
+  return first?.entity_id ?? null;
+}
+
 // ── Flavor + project association ───────────────────────────────────────
-// All return stable primitives (string | null), so no memoization needed.
 
 /** A tile's flavor: 'thread' (default) | 'task' | 'project'. */
 export const selectTileFlavor =
@@ -192,6 +264,17 @@ export const selectTileFlavor =
     const f = t?.flavor;
     return f === "task" || f === "project" ? f : "thread";
   };
+
+/** A tile's active task assignment (NULL when none). */
+export const selectTileTaskId =
+  (tileId: string | null) =>
+  (state: RootState): string | null =>
+    tileId ? activeEntityId(bucket(state, "thread", tileId), "task") : null;
+
+// Project stays a real column on the tile/session (it feeds RLS via
+// check_resource_access(..., s.project_id, ...) and the room/tile invariant +
+// conflict logic). The backfilled 'project' assignment rows are kept for the
+// imminent platform-wide relationship refactor but are NOT the read source yet.
 
 /** A tile's own project_id (NULL when it inherits / has none). */
 export const selectTileProjectId =
@@ -209,8 +292,6 @@ export const selectSessionProjectId =
 /**
  * The project a tile effectively belongs to: its own project_id, else the
  * room's. This is the project a task created in the tile auto-associates to.
- * (The invariant guarantees these never CONFLICT — a tile's own id, when set,
- * is the room's id unless the room has none.)
  */
 export const selectEffectiveTileProjectId =
   (tileId: string | null) =>
@@ -230,7 +311,6 @@ export const selectEffectiveTileProjectId =
  *   • 'room'       — the room itself is one project (session.project_id set)
  *   • 'per-thread' — no room project, but ≥1 tile carries its own project
  *   • 'none'       — no project anywhere
- * Drives the room header label + the conflict prompt copy.
  */
 export const selectSessionProjectMode =
   (sessionId: string | null) =>
@@ -244,37 +324,47 @@ export const selectSessionProjectMode =
     return "none";
   };
 
-// ── Audio links ───────────────────────────────────────────────────────
-export const selectAudioSessionIdsForTile =
-  (tileId: string | null) =>
-  (state: RootState): string[] =>
-    tileId ? (state.warRoom.audioSessionIdsByTile[tileId] ?? EMPTY_IDS) : EMPTY_IDS;
+// ── Audio sessions (studio_session assignments) ────────────────────────
+export const selectAudioSessionIdsForTile = (tileId: string | null) =>
+  tileId ? selectThreadEntityIds(tileId, "studio_session") : () => EMPTY_IDS;
 
 export const selectActiveAudioSessionId =
   (tileId: string | null) =>
   (state: RootState): string | null =>
-    tileId ? (state.warRoom.activeAudioSessionByTile[tileId] ?? null) : null;
+    tileId ? activeEntityId(bucket(state, "thread", tileId), "studio_session") : null;
 
-// ── Note links ──────────────────────────────────────────────────────────
-export const selectNoteIdsForTile =
-  (tileId: string | null) =>
-  (state: RootState): string[] =>
-    tileId ? (state.warRoom.noteIdsByTile[tileId] ?? EMPTY_IDS) : EMPTY_IDS;
+// ── Notes (note assignments) ───────────────────────────────────────────
+export const selectNoteIdsForTile = (tileId: string | null) =>
+  tileId ? selectThreadEntityIds(tileId, "note") : () => EMPTY_IDS;
 
 export const selectActiveNoteId =
   (tileId: string | null) =>
   (state: RootState): string | null =>
-    tileId ? (state.warRoom.activeNoteByTile[tileId] ?? null) : null;
+    tileId ? activeEntityId(bucket(state, "thread", tileId), "note") : null;
 
-// ── File / document attachments ──────────────────────────────────────────
-export const selectAttachmentsForTile =
-  (tileId: string | null) =>
-  (state: RootState): WarRoomTileAttachment[] =>
-    tileId
-      ? (state.warRoom.attachmentsByTile[tileId] ?? EMPTY_ATTACHMENTS)
-      : EMPTY_ATTACHMENTS;
-
-const EMPTY_ATTACHMENTS: WarRoomTileAttachment[] = [];
+// ── File / document attachments (user_file + document assignments) ──────
+const attachmentsCache = new Map<
+  string,
+  (state: RootState) => WarRoomAssignment[]
+>();
+/** A tile's file + document attachments (as assignment rows), ordered by position. */
+export function selectAttachmentsForTile(tileId: string | null) {
+  if (!tileId) return () => EMPTY_ASSIGNMENTS;
+  let sel = attachmentsCache.get(tileId);
+  if (!sel) {
+    sel = createSelector(
+      selectAssignmentsForContainer("thread", tileId),
+      (rows): WarRoomAssignment[] => {
+        const atts = rows.filter(
+          (r) => r.entity_type === "user_file" || r.entity_type === "document",
+        );
+        return atts.length > 0 ? atts : EMPTY_ASSIGNMENTS;
+      },
+    );
+    attachmentsCache.set(tileId, sel);
+  }
+  return sel;
+}
 
 // ── Agent-edit auto-approve (HITL) ───────────────────────────────────────
 /**

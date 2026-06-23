@@ -101,7 +101,12 @@ function roomOpenTag(room: WarRoomRoomModel, selfClosing: boolean): string {
   return selfClosing ? `${tag}/>` : `${tag}>`;
 }
 
-/** One terse thread row for a roster (room / master scope). */
+/**
+ * One terse thread row for a room / master roster. Carries what an OVERSEER needs
+ * to decide where to act — task + status + the conversation id to message it —
+ * but NOT heavy bodies (no note snippet); those are fetched on demand. Keeps the
+ * roster from ballooning as a room grows to dozens of threads (task 15e53057).
+ */
 function threadRow(t: WarRoomThreadModel): string {
   return (
     "    <thread" +
@@ -111,9 +116,25 @@ function threadRow(t: WarRoomThreadModel): string {
     attr("status", t.status) +
     attr("task", t.taskTitle) +
     attr("task_status", t.taskStatus) +
-    attr("note_snippet", t.noteSnippet) +
     attr("audio", t.hasAudio ? "yes" : undefined) +
     attr("files", t.fileCount > 0 ? t.fileCount : undefined) +
+    "/>"
+  );
+}
+
+/**
+ * The MINIMAL sibling row a single-thread agent sees about the OTHER threads in
+ * its room: just enough to know they exist and their state (id + title + task
+ * status). It reads a sibling's full chain on demand with war_room_read_thread.
+ * Deliberately leaner than `threadRow` — a thread agent shouldn't carry the whole
+ * room's detail in its window (task 15e53057).
+ */
+function siblingRow(t: WarRoomThreadModel): string {
+  return (
+    "    <thread" +
+    attr("id", t.id) +
+    attr("title", t.title) +
+    attr("task_status", t.taskStatus ?? t.status) +
     "/>"
   );
 }
@@ -137,7 +158,13 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
     lines.push("    <note" + attr("id", t.noteId) + attr("chars", t.noteChars) + "/>");
   }
   if (t.hasAudio) {
-    lines.push('    <audio transcript="ctx_get session_cleaned"/>');
+    // The ACTIVE recording's cleaned transcript is in your studio context as
+    // `session_cleaned` when one exists; the reliable path for any/all of this
+    // thread's recordings is the data tool (resource_type "studio_session") or
+    // war_room_read_thread. Don't promise a key that may not have resolved yet.
+    lines.push(
+      '    <audio transcript_when_recording="session_cleaned" all_recordings="data: studio_session"/>',
+    );
   }
   if (t.fileCount > 0) {
     lines.push("    <files" + attr("count", t.fileCount) + "/>");
@@ -173,7 +200,7 @@ export function renderWarRoomXml(model: WarRoomContextModel): string {
       if (current) lines.push(currentThreadBlock(current));
       const others = room.threads.filter((t) => t.id !== model.currentThreadId);
       lines.push(`  <other_threads count="${others.length}">`);
-      for (const t of others) lines.push(threadRow(t));
+      for (const t of others) lines.push(siblingRow(t));
       lines.push("  </other_threads>");
     } else {
       lines.push(`  <threads count="${room.threads.length}">`);

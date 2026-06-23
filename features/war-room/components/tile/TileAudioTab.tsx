@@ -204,8 +204,13 @@ export function TileAudioTab({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {sessionId ? (
+          // NO `key={sessionId}`: CleanupPad already re-binds to a changed
+          // `sessionId` prop (useCleanupSession follows `opts.sessionId` via an
+          // effect, re-keys its VoicePad slice on the new id, and its load-reset
+          // effect re-applies the new session's content). A key would force a
+          // full remount on every session switch — unnecessary churn, and it
+          // would tear down the embedded record/transcribe pipeline mid-use.
           <CleanupPad
-            key={sessionId}
             sessionId={sessionId}
             urlSync={false}
             variant="embedded"

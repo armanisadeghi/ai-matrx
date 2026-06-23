@@ -4,11 +4,13 @@
 // Small, individual updates — no large-object replacements (repo doctrine).
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-  TileTab,
-  WarRoomSession,
-  WarRoomTile,
-  WarRoomTileAttachment,
+import {
+  containerKey,
+  SINGLE_ACTIVE_ENTITY_TYPES,
+  type TileTab,
+  type WarRoomAssignment,
+  type WarRoomSession,
+  type WarRoomTile,
 } from "../types";
 import {
   initialWarRoomState,
@@ -17,6 +19,17 @@ import {
 
 function removeId(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids.filter((x) => x !== id) : ids;
+}
+
+/** Demote every same-type sibling of `keep` to is_active=false (single-active types). */
+function demoteSiblings(
+  list: WarRoomAssignment[],
+  entityType: string,
+  keepId: string,
+): void {
+  for (const a of list) {
+    if (a.entity_type === entityType && a.id !== keepId) a.is_active = false;
+  }
 }
 
 const warRoomSlice = createSlice({
@@ -89,6 +102,32 @@ const warRoomSlice = createSlice({
         state.tileIdsBySession[t.session_id] = ids;
       }
     },
+    /**
+     * Move a thread (tile) from one room to another — thread PORTABILITY. The
+     * tile's assignment bucket (container_id = tileId) is untouched, so all its
+     * resources travel with it. Only the room membership lists + the tile's
+     * session_id change.
+     */
+    tileSessionChanged(
+      state,
+      action: PayloadAction<{
+        id: string;
+        fromSessionId: string;
+        toSessionId: string;
+      }>,
+    ) {
+      const { id, fromSessionId, toSessionId } = action.payload;
+      const tile = state.tilesById[id];
+      if (tile) tile.session_id = toSessionId;
+      if (state.tileIdsBySession[fromSessionId]) {
+        state.tileIdsBySession[fromSessionId] = removeId(
+          state.tileIdsBySession[fromSessionId],
+          id,
+        );
+      }
+      const toList = state.tileIdsBySession[toSessionId];
+      if (toList && !toList.includes(id)) toList.push(id);
+    },
     tileRemoved(
       state,
       action: PayloadAction<{ id: string; sessionId: string }>,
@@ -101,11 +140,7 @@ const warRoomSlice = createSlice({
           id,
         );
       }
-      delete state.audioSessionIdsByTile[id];
-      delete state.activeAudioSessionByTile[id];
-      delete state.noteIdsByTile[id];
-      delete state.activeNoteByTile[id];
-      delete state.attachmentsByTile[id];
+      delete state.assignmentsByContainer[containerKey("thread", id)];
     },
     setTileActiveTab(
       state,
@@ -135,114 +170,74 @@ const warRoomSlice = createSlice({
       const t = state.tilesById[action.payload.id];
       if (t) t.position = action.payload.position;
     },
-    setTileLink(
+    // ── Associations (polymorphic M2M — the one source of truth) ──────
+    /** Bulk-replace assignment buckets after a room load (keyed by containerKey). */
+    assignmentsLoadedBulk(
       state,
-      action: PayloadAction<{
-        id: string;
-        taskId?: string | null;
-        noteId?: string | null;
-      }>,
+      action: PayloadAction<{ byContainer: Record<string, WarRoomAssignment[]> }>,
     ) {
-      const t = state.tilesById[action.payload.id];
-      if (!t) return;
-      if (action.payload.taskId !== undefined) t.task_id = action.payload.taskId;
-      if (action.payload.noteId !== undefined) t.note_id = action.payload.noteId;
+      for (const [key, rows] of Object.entries(action.payload.byContainer)) {
+        state.assignmentsByContainer[key] = rows;
+      }
     },
-
-    // ── Audio links ───────────────────────────────────────────────────
-    audioSessionsLoadedForTile(
+    /** Replace one container's bucket (e.g. after loading a single tile's links). */
+    assignmentsLoadedForContainer(
       state,
-      action: PayloadAction<{
-        tileId: string;
-        studioSessionIds: string[];
-        activeId: string | null;
-      }>,
+      action: PayloadAction<{ key: string; assignments: WarRoomAssignment[] }>,
     ) {
-      const { tileId, studioSessionIds, activeId } = action.payload;
-      state.audioSessionIdsByTile[tileId] = studioSessionIds;
-      state.activeAudioSessionByTile[tileId] = activeId;
+      state.assignmentsByContainer[action.payload.key] =
+        action.payload.assignments;
     },
-    audioSessionLinkedToTile(
+    /** Upsert one assignment; single-active types demote their same-type siblings. */
+    assignmentUpserted(
       state,
-      action: PayloadAction<{ tileId: string; studioSessionId: string }>,
+      action: PayloadAction<{ key: string; assignment: WarRoomAssignment }>,
     ) {
-      const { tileId, studioSessionId } = action.payload;
-      const ids = state.audioSessionIdsByTile[tileId] ?? [];
-      if (!ids.includes(studioSessionId)) ids.push(studioSessionId);
-      state.audioSessionIdsByTile[tileId] = ids;
-      state.activeAudioSessionByTile[tileId] = studioSessionId;
+      const { key, assignment } = action.payload;
+      const list = state.assignmentsByContainer[key] ?? [];
+      if (
+        assignment.is_active &&
+        SINGLE_ACTIVE_ENTITY_TYPES.has(
+          assignment.entity_type as Parameters<
+            typeof SINGLE_ACTIVE_ENTITY_TYPES.has
+          >[0],
+        )
+      ) {
+        demoteSiblings(list, assignment.entity_type, assignment.id);
+      }
+      const idx = list.findIndex((a) => a.id === assignment.id);
+      if (idx >= 0) list[idx] = assignment;
+      else list.push(assignment);
+      state.assignmentsByContainer[key] = list;
     },
-    setActiveAudioSession(
+    /** Remove one assignment row from a container's bucket. */
+    assignmentRemoved(
       state,
-      action: PayloadAction<{ tileId: string; studioSessionId: string | null }>,
+      action: PayloadAction<{ key: string; id: string }>,
     ) {
-      state.activeAudioSessionByTile[action.payload.tileId] =
-        action.payload.studioSessionId;
-    },
-
-    // ── Note links ────────────────────────────────────────────────────
-    noteSessionsLoadedForTile(
-      state,
-      action: PayloadAction<{
-        tileId: string;
-        noteIds: string[];
-        activeId: string | null;
-      }>,
-    ) {
-      const { tileId, noteIds, activeId } = action.payload;
-      state.noteIdsByTile[tileId] = noteIds;
-      state.activeNoteByTile[tileId] = activeId;
-    },
-    noteLinkedToTile(
-      state,
-      action: PayloadAction<{ tileId: string; noteId: string }>,
-    ) {
-      const { tileId, noteId } = action.payload;
-      const ids = state.noteIdsByTile[tileId] ?? [];
-      if (!ids.includes(noteId)) ids.push(noteId);
-      state.noteIdsByTile[tileId] = ids;
-      state.activeNoteByTile[tileId] = noteId;
-    },
-    setActiveNote(
-      state,
-      action: PayloadAction<{ tileId: string; noteId: string | null }>,
-    ) {
-      state.activeNoteByTile[action.payload.tileId] = action.payload.noteId;
-    },
-
-    // ── File / document attachments ───────────────────────────────────
-    attachmentsLoadedForTile(
-      state,
-      action: PayloadAction<{
-        tileId: string;
-        attachments: WarRoomTileAttachment[];
-      }>,
-    ) {
-      state.attachmentsByTile[action.payload.tileId] =
-        action.payload.attachments;
-    },
-    attachmentUpserted(
-      state,
-      action: PayloadAction<{
-        tileId: string;
-        attachment: WarRoomTileAttachment;
-      }>,
-    ) {
-      const { tileId, attachment } = action.payload;
-      const list = state.attachmentsByTile[tileId] ?? [];
-      const idx = list.findIndex((a) => a.id === attachment.id);
-      if (idx >= 0) list[idx] = attachment;
-      else list.push(attachment);
-      state.attachmentsByTile[tileId] = list;
-    },
-    attachmentRemoved(
-      state,
-      action: PayloadAction<{ tileId: string; id: string }>,
-    ) {
-      const { tileId, id } = action.payload;
-      const list = state.attachmentsByTile[tileId];
+      const list = state.assignmentsByContainer[action.payload.key];
       if (list) {
-        state.attachmentsByTile[tileId] = list.filter((a) => a.id !== id);
+        state.assignmentsByContainer[action.payload.key] = list.filter(
+          (a) => a.id !== action.payload.id,
+        );
+      }
+    },
+    /** Mark one (entityType, entityId) active in a container, demoting siblings. */
+    assignmentActiveSet(
+      state,
+      action: PayloadAction<{
+        key: string;
+        entityType: string;
+        entityId: string;
+      }>,
+    ) {
+      const { key, entityType, entityId } = action.payload;
+      const list = state.assignmentsByContainer[key];
+      if (!list) return;
+      for (const a of list) {
+        if (a.entity_type === entityType) {
+          a.is_active = a.entity_id === entityId;
+        }
       }
     },
 
@@ -286,13 +281,10 @@ const warRoomSlice = createSlice({
       const ids = state.tileIdsBySession[sessionId] ?? [];
       for (const id of ids) {
         delete state.tilesById[id];
-        delete state.audioSessionIdsByTile[id];
-        delete state.activeAudioSessionByTile[id];
-        delete state.noteIdsByTile[id];
-        delete state.activeNoteByTile[id];
-        delete state.attachmentsByTile[id];
+        delete state.assignmentsByContainer[containerKey("thread", id)];
         delete state.autoApproveByTile[id];
       }
+      delete state.assignmentsByContainer[containerKey("room", sessionId)];
       delete state.tileIdsBySession[sessionId];
       delete state.tilesStatusBySession[sessionId];
     },
@@ -309,21 +301,17 @@ export const {
   setTilesStatus,
   tilesLoadedForSession,
   tileUpserted,
+  tileSessionChanged,
   tileRemoved,
   setTileActiveTab,
   setTilePinned,
   setTileHidden,
   setTilePosition,
-  setTileLink,
-  audioSessionsLoadedForTile,
-  audioSessionLinkedToTile,
-  setActiveAudioSession,
-  noteSessionsLoadedForTile,
-  noteLinkedToTile,
-  setActiveNote,
-  attachmentsLoadedForTile,
-  attachmentUpserted,
-  attachmentRemoved,
+  assignmentsLoadedBulk,
+  assignmentsLoadedForContainer,
+  assignmentUpserted,
+  assignmentRemoved,
+  assignmentActiveSet,
   setTileAutoApprove,
   clearTileAutoApprove,
   clearSessionTiles,

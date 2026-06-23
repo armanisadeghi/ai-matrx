@@ -5,9 +5,9 @@
 
 import type {
   TileTab,
+  WarRoomAssignment,
   WarRoomSession,
   WarRoomTile,
-  WarRoomTileAttachment,
 } from "../types";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
@@ -34,16 +34,14 @@ export interface WarRoomState {
   /** Load status of a session's tiles, keyed by sessionId. */
   tilesStatusBySession: Record<string, LoadStatus>;
 
-  // Audio links (tile → studio_session ids)
-  audioSessionIdsByTile: Record<string, string[]>;
-  activeAudioSessionByTile: Record<string, string | null>;
-
-  // Note links (tile → note ids)
-  noteIdsByTile: Record<string, string[]>;
-  activeNoteByTile: Record<string, string | null>;
-
-  // File / document attachment links (tile → attachment rows)
-  attachmentsByTile: Record<string, WarRoomTileAttachment[]>;
+  /**
+   * Polymorphic associations, keyed by `containerKey(type, id)` — i.e.
+   * "thread:<tileId>" or "room:<sessionId>". ONE bucket per container holds every
+   * resource it's linked to (task, project, note, studio_session, file, document,
+   * conversation). Replaces the old per-type maps (audio/note/attachment) and the
+   * tile FK columns. All per-type selectors derive from this single source.
+   */
+  assignmentsByContainer: Record<string, WarRoomAssignment[]>;
 
   /**
    * Auto-approve grants for agent tile edits: tileId → { scope → true }. When a
@@ -63,11 +61,7 @@ export const initialWarRoomState: WarRoomState = {
   tilesById: {},
   tileIdsBySession: {},
   tilesStatusBySession: {},
-  audioSessionIdsByTile: {},
-  activeAudioSessionByTile: {},
-  noteIdsByTile: {},
-  activeNoteByTile: {},
-  attachmentsByTile: {},
+  assignmentsByContainer: {},
   autoApproveByTile: {},
 };
 

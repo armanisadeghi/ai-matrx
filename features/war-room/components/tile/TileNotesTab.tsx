@@ -5,8 +5,8 @@
 // Notes view backed by real `notes` records + the notes autosave middleware.
 // A tile can hold MULTIPLE notes (mirror of the audio sessions): the tile owns
 // lifecycle via the compact "N/M" switcher + "New Note", and the active note's
-// editor renders below. The active note also lives on tile.note_id so note↔task
-// sync keeps working.
+// editor renders below. The active note is the is_active 'note' assignment row
+// (ctx_war_room_assignments) — read via selectActiveNoteId.
 //
 // Full view: one toolbar row (icon · Text / Matrx Split / Preview · + New).
 // Compact ("All"): same merged toolbar; editor fills the section below.
@@ -75,7 +75,7 @@ export function TileNotesTab({
 
   // Ensure the tile has a backing note so the editor always has one to bind to
   // (idempotent + coalesced inside the thunk). A fresh tile gets its first note
-  // here; an existing tile resolves its backfilled note_id.
+  // here; an existing tile resolves its active 'note' assignment.
   useEffect(() => {
     if (!noteId) void dispatch(ensureTileNote(tileId));
   }, [noteId, tileId, dispatch]);

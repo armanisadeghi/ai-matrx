@@ -17,9 +17,11 @@ import { selectNoteContent } from "@/features/notes/redux/selectors";
 import { selectSessionRawText } from "@/features/transcript-studio/redux/selectors";
 import {
   selectActiveAudioSessionId,
+  selectActiveNoteId,
   selectAudioSessionIdsForTile,
   selectTileById,
   selectTileEffectiveContext,
+  selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
 import type { TileTab } from "@/features/war-room/types";
 
@@ -49,8 +51,8 @@ export interface TileMetrics {
 
 export function useTileMetrics(tileId: string): TileMetrics {
   const tile = useAppSelector(selectTileById(tileId));
-  const taskId = tile?.task_id ?? null;
-  const noteId = tile?.note_id ?? null;
+  const taskId = useAppSelector(selectTileTaskId(tileId));
+  const noteId = useAppSelector(selectActiveNoteId(tileId));
 
   const task = useAppSelector((s) => (taskId ? selectTaskById(s, taskId) : undefined));
   const subtasks = useAppSelector((s) =>

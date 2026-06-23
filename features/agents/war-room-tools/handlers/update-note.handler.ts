@@ -2,9 +2,9 @@
  * `war_room_update_note` handler — edit the tile's ACTIVE note.
  *
  * Resolves the tile's active note (the same note the Notes tab edits — the
- * active-note pointer, falling back to the tile's `note_id`), then writes via
- * the REAL `notesApi.update` and dispatches `upsertNoteFromServer` so the
- * note in Redux — and therefore the open Notes tab — reflects the change live.
+ * active 'note' assignment via `selectActiveNoteId`), then writes via the REAL
+ * `notesApi.update` and dispatches `upsertNoteFromServer` so the note in Redux
+ * — and therefore the open Notes tab — reflects the change live.
  *
  * Modes:
  *   - replace (default) — `content` becomes the note body.
@@ -26,10 +26,7 @@ import { update as updateNoteApi } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
 import type { UpdateNoteInput } from "@/features/notes/types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
-import {
-  selectActiveNoteId,
-  selectTileById,
-} from "@/features/war-room/redux/selectors";
+import { selectActiveNoteId } from "@/features/war-room/redux/selectors";
 
 export const updateNoteHandler: WarRoomToolHandler<
   WarRoomUpdateNoteArgs,
@@ -40,8 +37,7 @@ export const updateNoteHandler: WarRoomToolHandler<
     const { tileId, dispatch, getState } = ctx;
 
     const state = getState();
-    const tile = selectTileById(tileId)(state);
-    const noteId = selectActiveNoteId(tileId)(state) ?? tile?.note_id ?? null;
+    const noteId = selectActiveNoteId(tileId)(state);
     if (!noteId) {
       return {
         ok: false,
