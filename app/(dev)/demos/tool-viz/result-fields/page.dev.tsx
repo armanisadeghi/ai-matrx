@@ -339,6 +339,31 @@ const SQL_ENTRIES: ToolLifecycleEntry[] = [
     }),
 ];
 
+// `note` tool — Redux/Supabase-backed renderer. Uses REAL note ids owned by
+// the local test user (admin@admin.com) so the card hydrates live content,
+// the Edit/Preview toggle, stats, and "Open in Notes" against actual data.
+// Log in via /login (admin@admin.com / Password1234#) for these to populate.
+const NOTE_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        callId: "note-compact",
+        toolName: "note",
+        result: {
+            id: "71bd1d75-de7c-4703-b765-e7737bb89a28",
+            label: "War Room note",
+            updated_at: "2026-06-15 01:49:10.909074+00:00",
+        },
+    }),
+    entry({
+        callId: "note-long",
+        toolName: "note",
+        result: {
+            id: "69e8b2d7-bdbd-46de-9ca8-365598ac8834",
+            label: "HTML Example",
+            updated_at: "2026-06-19 20:00:08.328877+00:00",
+        },
+    }),
+];
+
 // GenericRenderer state fixtures + shell fixtures.
 const STATE_ENTRIES: ToolLifecycleEntry[] = [
     entry({
@@ -1395,6 +1420,22 @@ export default function ResultFieldsGalleryPage() {
                 </p>
                 <div className="rounded-lg border border-border bg-card p-3">
                     {DB_RENDERER_ENTRIES.map((e) => (
+                        <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
+                    ))}
+                </div>
+            </section>
+
+            <section className="space-y-4">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Note renderer — `note` (click a row to expand)
+                </h2>
+                <p className="-mt-2 text-xs text-muted-foreground">
+                    Redux/Supabase-backed: the tiny result (`{`{ id, label, updated_at }`}`) hydrates the live note —
+                    Edit/Preview toggle, collapsible markdown Preview, content stats, and "Open in Notes" (deep-linked
+                    window). Log in as admin@admin.com to see real content; the second row is long enough to collapse.
+                </p>
+                <div className="rounded-lg border border-border bg-card p-3">
+                    {NOTE_ENTRIES.map((e) => (
                         <ToolCallVisualization key={e.callId} entries={[e]} isPersisted hasContent />
                     ))}
                 </div>

@@ -3439,6 +3439,11 @@ export default function OverlayController() {
                 ? data.windowInstanceId
                 : inst.instanceId
             }
+            initialNoteId={
+              typeof data?.initialNoteId === "string"
+                ? data.initialNoteId
+                : undefined
+            }
           />
         );
       })}

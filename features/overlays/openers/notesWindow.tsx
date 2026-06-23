@@ -20,6 +20,11 @@ export interface OpenNotesWindowOptions {
   instanceId?: string;
   title?: string;
   windowInstanceId?: string;
+  /**
+   * Optional note id to open directly. When set, the window opens that note in
+   * an active tab (fetching its content) instead of just showing the list.
+   */
+  initialNoteId?: string;
 }
 
 export interface NotesWindowHandle {
@@ -41,6 +46,7 @@ export function useOpenNotesWindow() {
           data: {
             title: opts.title,
             windowInstanceId: opts.windowInstanceId,
+            initialNoteId: opts.initialNoteId,
           },
         }),
       );
@@ -64,6 +70,6 @@ export function NotesWindowController(props: OpenNotesWindowOptions): null {
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.title, props.windowInstanceId]);
+  }, [open, props.title, props.windowInstanceId, props.initialNoteId]);
   return null;
 }

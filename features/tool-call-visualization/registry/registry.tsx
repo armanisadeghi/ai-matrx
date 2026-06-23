@@ -32,6 +32,8 @@ import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search";
 import { RandomWheelInline } from "../renderers/random-wheel";
+import { NoteToolInline } from "../renderers/note/NoteToolInline";
+import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
 import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
 import { CtxBatchInline } from "../renderers/ctx/CtxBatchInline";
 import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
@@ -711,6 +713,28 @@ export const toolRendererRegistry: ToolRegistry = {
           )}
         </div>
       );
+    },
+  },
+
+  note: {
+    toolName: "note",
+    displayName: "Note",
+    phaseLabels: {
+      running: "Saving note",
+      complete: "Saved note",
+      errorPrefix: "Note save failed",
+    },
+    resultsLabel: "Note",
+    InlineComponent: NoteToolInline,
+    OverlayComponent: NoteToolOverlay,
+    // A saved-note card is reference material the user keeps using — don't
+    // auto-collapse it a few seconds after the tool finishes.
+    displayMode: "stay-open",
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      return typeof result?.label === "string" && result.label
+        ? (result.label as string)
+        : null;
     },
   },
 };

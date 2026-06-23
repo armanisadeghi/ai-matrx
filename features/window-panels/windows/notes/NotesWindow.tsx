@@ -23,10 +23,13 @@ import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   registerInstance,
   unregisterInstance,
+  addInstanceTab,
+  setInstanceActiveTab,
 } from "@/features/notes/redux/slice";
 import {
   fetchNotesList,
   fetchAllNoteScopes,
+  fetchNoteContent,
 } from "@/features/notes/redux/thunks";
 import {
   selectInstanceActiveTab,
@@ -47,6 +50,8 @@ export interface NotesWindowProps
   title?: string;
   /** Unique overlay instance ID — derives stable notes instance + window IDs. */
   windowInstanceId?: string;
+  /** Optional note id to open directly in an active tab on mount. */
+  initialNoteId?: string;
   /** Required — multi-instance overlay. */
   onClose: () => void;
 }
@@ -55,6 +60,7 @@ export function NotesWindow({
   title = "Notes",
   id,
   windowInstanceId,
+  initialNoteId,
   onClose,
   ...windowProps
 }: NotesWindowProps) {
@@ -75,10 +81,22 @@ export function NotesWindow({
   // so the sidebar / header / footer slots can all read it immediately.
   useEffect(() => {
     dispatch(registerInstance(notesInstanceId));
+    // Deep-link: open the requested note as the active tab on mount.
+    if (initialNoteId) {
+      dispatch(
+        addInstanceTab({ instanceId: notesInstanceId, noteId: initialNoteId }),
+      );
+      dispatch(
+        setInstanceActiveTab({
+          instanceId: notesInstanceId,
+          noteId: initialNoteId,
+        }),
+      );
+    }
     return () => {
       dispatch(unregisterInstance(notesInstanceId));
     };
-  }, [dispatch, notesInstanceId]);
+  }, [dispatch, notesInstanceId, initialNoteId]);
 
   const fetchedRef = useRef(false);
   useEffect(() => {
@@ -86,8 +104,11 @@ export function NotesWindow({
       fetchedRef.current = true;
       dispatch(fetchNotesList());
       dispatch(fetchAllNoteScopes());
+      // Ensure the deep-linked note's body is hydrated even before the list
+      // settles (fetchNoteContent self-guards against duplicate fetches).
+      if (initialNoteId) dispatch(fetchNoteContent(initialNoteId));
     }
-  }, [dispatch, userId]);
+  }, [dispatch, userId, initialNoteId]);
 
   const activeTabId = useAppSelector(
     selectInstanceActiveTab(notesInstanceId),
