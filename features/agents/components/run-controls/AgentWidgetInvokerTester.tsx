@@ -1,5 +1,5 @@
 import { AgentExecutionTestModal } from "./AgentExecutionTestModal";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import {
   getAllDisplayTypes,
   getDisplayMeta,
@@ -33,7 +33,9 @@ export function AgentWidgetInvokerTester({
 
   const displayTypes = getAllDisplayTypes().map((displayMode) => {
     const meta = getDisplayMeta(displayMode);
-    const IconComponent = (props: any) => <DynamicIcon name={meta.icon} {...props} />;
+    const IconComponent = (props: any) => (
+      <DynamicIcon name={meta.icon} {...props} />
+    );
     return {
       name: meta.label,
       icon: IconComponent,

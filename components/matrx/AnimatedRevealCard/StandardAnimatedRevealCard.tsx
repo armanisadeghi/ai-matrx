@@ -7,7 +7,7 @@ import { CanvasRevealEffect } from "@/components/ui/canvas-reveal-effect";
 import { cn } from "@/lib/utils";
 import { presetStyles } from "./presets";
 import { HelpCircle } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 
 type PresetStyleKey = keyof typeof presetStyles;
 

@@ -28,7 +28,7 @@ import type {
 // DB-only icon renderer via the dynamic front door (scope-type icons come from
 // the database). Heavy payload stays out of this window chunk's eval until an
 // icon actually renders.
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
 import type { ContextItemBodyProps } from "../types";
 

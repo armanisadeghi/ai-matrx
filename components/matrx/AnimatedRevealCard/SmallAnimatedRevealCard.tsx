@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { CanvasRevealEffect } from "@/components/ui/canvas-reveal-effect";
 import { cn } from "@/lib/utils";
 import { HelpCircle } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { presetStyles } from "./presets";
 
 type PresetStyleKey = keyof typeof presetStyles;

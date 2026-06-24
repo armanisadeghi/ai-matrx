@@ -36,7 +36,7 @@ import {
   Database,
   Minimize2,
 } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 
 interface PromptRunnerModalSidebarTesterProps {
   runId?: string;
@@ -133,7 +133,9 @@ export function PromptRunnerModalSidebarTester({
   const displayTypes = getAllDisplayTypes().map((resultDisplay) => {
     const meta = getDisplayMeta(resultDisplay);
     // Get icon component from lucide-react dynamically
-    const IconComponent = (props: any) => <DynamicIcon name={meta.icon} {...props} />;
+    const IconComponent = (props: any) => (
+      <DynamicIcon name={meta.icon} {...props} />
+    );
 
     return {
       name: meta.label,

@@ -2,8 +2,8 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LayoutTemplate, SquareArrowRight } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { CustomAppConfig } from "@/types/customAppTypes";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 
 // Function to dynamically render Lucide icons
 const renderIcon = (

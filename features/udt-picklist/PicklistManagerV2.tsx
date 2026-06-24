@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 // DB/user-selected icon renderer via the dynamic front door.
-import IconResolver from "@/components/official/icons/IconResolver.dynamic";
+import IconResolver from "@/components/official/icons/IconResolver";
 import {
   useOpenCuratedIconPickerWindow,
   type CuratedIconPickerHandle,

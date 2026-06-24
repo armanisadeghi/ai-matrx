@@ -69,7 +69,7 @@ import { PLACEMENT_TYPES, getPlacementTypeMeta } from "../constants";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { getUserFriendlyError } from "../utils/error-handler";
 import { CategoryFormModal } from "../components/CategoryFormModal";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 
 type SortField = "label" | "placement" | "parent" | "sort_order" | "status";
 type SortDirection = "asc" | "desc";

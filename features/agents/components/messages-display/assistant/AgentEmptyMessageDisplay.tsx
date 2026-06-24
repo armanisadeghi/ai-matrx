@@ -4,7 +4,7 @@ import { selectInstanceAgentDescription } from "@/features/agents/redux/executio
 import { Webhook } from "lucide-react";
 import type { RootState } from "@/lib/redux/store";
 import MarkdownStream from "@/components/MarkdownStream";
-import IconResolver from "@/components/official/icons/IconResolver.dynamic";
+import IconResolver from "@/components/official/icons/IconResolver";
 
 export function AgentEmptyMessageDisplay({
   conversationId,

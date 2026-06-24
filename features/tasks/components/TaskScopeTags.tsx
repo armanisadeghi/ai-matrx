@@ -21,7 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { cn } from "@/utils/cn";
 

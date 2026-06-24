@@ -14,7 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronRight, Check, X, Search, Circle } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { createPortal } from "react-dom";
 import { cn } from "@/utils/cn";

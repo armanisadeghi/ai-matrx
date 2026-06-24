@@ -2,7 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { CategoryNodeData } from "@/features/workflows-xyflow/hooks/useCategoryNodeData";
 
 interface CategoryRecord {

@@ -50,7 +50,7 @@ import {
 // it loads only when those submenu icons actually render, i.e. AFTER the user
 // has opened the menu. First-level items use hardcoded lucide icons (above) and
 // never touch this. See the [IconResolver][TRIPWIRE] hunt.
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import {
   PLACEMENT_TYPES,
   PLACEMENT_TYPE_META,

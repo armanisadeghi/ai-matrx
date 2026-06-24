@@ -3,7 +3,7 @@ import { FancyInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Files, Plus, Trash } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { formatLabel, formatPlaceholder } from "../utils/label-util";
 import { SchemaField } from "@/constants/socket-schema";
 import { useAppDispatch } from "@/lib/redux/hooks";

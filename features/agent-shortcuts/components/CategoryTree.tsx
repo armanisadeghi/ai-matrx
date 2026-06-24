@@ -25,7 +25,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
 import type { AgentShortcutCategory, ScopeProps } from "../types";
 

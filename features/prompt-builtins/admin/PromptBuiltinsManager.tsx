@@ -41,7 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import {
   Plus,
   Trash2,
@@ -90,7 +90,10 @@ import {
   getPlacementTypeMeta,
   COMMON_SCOPE_CONFIGURATIONS,
 } from "../constants";
-import { RESULT_DISPLAY_META, type ResultDisplay } from "../types/execution-modes";
+import {
+  RESULT_DISPLAY_META,
+  type ResultDisplay,
+} from "../types/execution-modes";
 import { getUserFriendlyError } from "../utils/error-handler";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { SelectPromptForBuiltinModal } from "./SelectPromptForBuiltinModal";

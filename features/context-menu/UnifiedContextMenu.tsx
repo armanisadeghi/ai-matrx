@@ -94,7 +94,7 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
 import { extractErrorMessage } from "@/utils/errors";
-import IconResolver from "@/components/official/icons/IconResolver.dynamic";
+import IconResolver from "@/components/official/icons/IconResolver";
 import { toast } from "@/components/ui/use-toast";
 
 interface UnifiedContextMenuProps {
