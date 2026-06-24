@@ -50,6 +50,77 @@ export type ScopeAssignmentEntityType =
   // needed — this union is the single place the type is declared.
   | "page_extraction_job";
 
+// ─── Canonical entity vocabulary (platform.associations) ──────────────
+//
+// `EntityType` is the canonical token set for ANY entity that participates
+// in the unified association edge (`platform.associations`). Sourced 1:1
+// from DB `platform.entity_types` (15 rows) — this union IS the vocabulary
+// for the whole app's attach/detach primitive. New entity types are added
+// to `platform.entity_types` first, then mirrored here.
+//
+// NOTE: the legacy `ScopeAssignmentEntityType` above is a DIVERGENT subset
+// (it carries app-only tokens like `agent_app`, `page_extraction_job` that
+// predate the platform table, and omits several canonical ones). The two
+// are reconciled in a later pass; until then, association code uses
+// `EntityType` and the ctx_scope_assignments path keeps its own union.
+
+export type EntityType =
+  | "agent"
+  | "note"
+  | "file"
+  | "conversation"
+  | "prompt"
+  | "scope"
+  | "scope_type"
+  | "context_item"
+  | "project"
+  | "task"
+  | "category"
+  | "thread"
+  | "war_room"
+  | "studio_session"
+  | "transcript";
+
+// Targets allowed by the `platform.associations` CHECK constraint (8). A
+// `source_type` is unconstrained free text (any token may be a source), but
+// the TARGET of an edge must be one of these. Typed so `add`/`setTargets`
+// callers can't request an edge the DB would reject.
+export type AssociationTargetType =
+  | "scope"
+  | "scope_type"
+  | "project"
+  | "task"
+  | "context_item"
+  | "thread"
+  | "war_room"
+  | "category";
+
+// ─── Association edges (per-entity, both-directions cache) ─────────────
+//
+// One row of `assoc_for_entity(p_type, p_id)` — every edge touching the
+// entity in BOTH directions. `direction` is relative to the queried entity:
+// "outgoing" = the entity is the edge's source; "incoming" = it is the
+// target. `otherType`/`otherId` is the entity on the far end.
+
+export interface AssociationEdge {
+  id: string;
+  direction: "outgoing" | "incoming";
+  otherType: string;
+  otherId: string;
+  label: string | null;
+  metadata: Json;
+  orgId: string | null;
+  createdAt: string;
+}
+
+// Cache entry for one `${type}:${id}` endpoint — mirrors `EntityScopesEntry`.
+export interface AssociationsEntry {
+  status: "idle" | "loading" | "ready" | "error";
+  edges: AssociationEdge[];
+  fetchedAt: number | null;
+  error: string | null;
+}
+
 // ─── Tree shape (returned by the boot RPC and stored in scopesSlice) ───
 
 export interface ScopeNode {
