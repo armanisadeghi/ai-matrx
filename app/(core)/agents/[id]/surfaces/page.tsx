@@ -20,6 +20,7 @@ export default async function AgentSurfacesRoute({
     <SurfacesAdminShell
       agent={agent}
       backHref={`/agents/${id}`}
+      basePath="/agents"
       defaultLayout={defaultLayout}
     />
   );

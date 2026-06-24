@@ -8,7 +8,8 @@ import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPan
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { SurfacesAdminHeader } from "./SurfacesAdminHeader";
+import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import { SurfacesPanelToggleBar } from "./SurfacesPanelToggleBar";
 import { SurfacesListColumn } from "./columns/SurfacesListColumn";
 import { AgentColumn } from "./columns/AgentColumn";
 import { BindingColumn } from "./columns/BindingColumn";
@@ -34,17 +35,29 @@ export function SurfacesAdminShell({
   agent,
   backHref,
   defaultLayout,
+  basePath = "/agents",
 }: {
   agent: AgentDefinition;
   backHref: string;
   defaultLayout: Layout | undefined;
+  /** Base path for the shared agent header's mode tabs. `/agents` for the core
+   *  surface; the admin route passes its system-agents base. */
+  basePath?: string;
 }) {
   const isMobile = useIsMobile();
 
   return (
     <PanelControlProvider>
+      {/* Common agent header — selector, mode tabs (Build/Run/Surfaces/…),
+          save status, options. Same one every other agent sub-route renders;
+          surface-specific panel toggles live in the slim bar below. */}
       <PageSpecificHeader>
-        <SurfacesAdminHeader agentName={agent.name} backHref={backHref} />
+        <AgentHeader
+          agentId={agent.id}
+          agentName={agent.name}
+          backHref={backHref}
+          basePath={basePath}
+        />
       </PageSpecificHeader>
 
       {isMobile ? (
@@ -64,14 +77,15 @@ function DesktopResizable({
   defaultLayout: Layout | undefined;
 }) {
   return (
-    <div className="h-full overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
+      <SurfacesPanelToggleBar />
       <ClientGroup
         id="surfaces-admin-root"
         groupKey={GROUP_KEY}
         cookieName={SURFACES_ADMIN_COOKIE}
         orientation="horizontal"
         defaultLayout={defaultLayout}
-        className="h-full w-full"
+        className="flex-1 w-full min-h-0"
       >
         <RegisteredPanel
           registerAs="surfaces-list"
