@@ -28022,6 +28022,50 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      assoc_add: {
+        Args: {
+          p_label?: string
+          p_metadata?: Json
+          p_org_id?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
+      assoc_for_entity: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          created_at: string
+          direction: string
+          id: string
+          label: string
+          metadata: Json
+          org_id: string
+          other_id: string
+          other_type: string
+        }[]
+      }
+      assoc_remove: {
+        Args: {
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: undefined
+      }
+      assoc_set_targets: {
+        Args: {
+          p_org_id?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_ids: string[]
+          p_target_type: string
+        }
+        Returns: undefined
+      }
       associate_with_task: {
         Args: {
           p_entity_id: string

@@ -16,6 +16,8 @@
 
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
+  AssociationEdge,
+  AssociationsEntry,
   EntityScopesEntry,
   OrgNode,
   OrphanBucket,
@@ -103,6 +105,16 @@ export interface ScopesState {
    * `setEntityScopes`. The local-vs-global resolver reads from here.
    */
   entityScopesByKey: Record<string, EntityScopesEntry>;
+
+  /**
+   * Per-entity association edges (the unified `platform.associations` graph),
+   * keyed by `<entityType>:<entityId>`. Each entry holds EVERY edge touching
+   * the entity in BOTH directions. Populated lazily by `loadAssociations`;
+   * kept fresh by the association write thunks (which reload both endpoints).
+   * This is the canonical attach/detach cache — durable relationships, NOT
+   * active context (appContextSlice is never written from here).
+   */
+  associationsByKey: Record<string, AssociationsEntry>;
 }
 
 const initialState: ScopesState = {
@@ -115,6 +127,7 @@ const initialState: ScopesState = {
   tasksById: {},
   orphanProjectsByOrg: {},
   entityScopesByKey: {},
+  associationsByKey: {},
 };
 
 const scopesSlice = createSlice({
@@ -342,6 +355,66 @@ const scopesSlice = createSlice({
         fetchedAt: Date.now(),
         error: null,
       };
+    },
+
+    // ─── Associations (unified platform.associations cache) ──────
+    associationsFetchPending(state, action: PayloadAction<{ key: string }>) {
+      const prev = state.associationsByKey[action.payload.key];
+      state.associationsByKey[action.payload.key] = {
+        status: "loading",
+        edges: prev?.edges ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: null,
+      };
+    },
+    associationsFetchFulfilled(
+      state,
+      action: PayloadAction<{ key: string; edges: AssociationEdge[] }>,
+    ) {
+      state.associationsByKey[action.payload.key] = {
+        status: "ready",
+        edges: action.payload.edges,
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+    associationsFetchRejected(
+      state,
+      action: PayloadAction<{ key: string; error: string }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      state.associationsByKey[action.payload.key] = {
+        status: "error",
+        edges: prev?.edges ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: action.payload.error,
+      };
+    },
+    /** Optimistic/echoed single-edge add — pushed only if not already present. */
+    associationAdded(
+      state,
+      action: PayloadAction<{ key: string; edge: AssociationEdge }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      const edges = prev?.edges ?? [];
+      if (edges.some((e) => e.id === action.payload.edge.id)) return;
+      state.associationsByKey[action.payload.key] = {
+        status: "ready",
+        edges: [...edges, action.payload.edge],
+        fetchedAt: prev?.fetchedAt ?? Date.now(),
+        error: null,
+      };
+    },
+    /** Single-edge remove by association id. */
+    associationRemoved(
+      state,
+      action: PayloadAction<{ key: string; associationId: string }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      if (!prev) return;
+      prev.edges = prev.edges.filter(
+        (e) => e.id !== action.payload.associationId,
+      );
     },
 
     // ─── Reset (sign-out etc.) ───────────────────────────────────

@@ -19,8 +19,10 @@
 //   WRITES — `writeMode="live"` (default) writes scope assignments through the
 //   canonical `useEntityScopes().setScopes` path (ctx_scope_assignments via
 //   the scopesService chokepoint, incl. org adoption for org-less containers).
-//   Project/task associations log loudly until the ctx_associations migration
-//   lands. `writeMode="preview"` logs everything (design surfaces, demos).
+//   Project/task associations write through the canonical `useAssociations()`
+//   primitive (`platform.associations`, replace-semantics). Neither path ever
+//   touches appContextSlice — durable tagging is not the active working context
+//   (Surface A's exclusive right). `writeMode="preview"` logs everything.
 //
 //   MODES — "assignment" (durable tagging, multi-select) vs "active"
 //   (ephemeral working-context; applies LIVE on every toggle — no Set-context
@@ -70,6 +72,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
+import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
@@ -189,8 +192,8 @@ export interface ContextAssignmentFieldProps {
    *                  onSelectionChange. Has zero effect on any saving.
    */
   mode?: "assignment" | "active" | "filter";
-  /** "live" persists (scopes today; projects/tasks after ctx_associations).
-   *  "preview" console.logs everything. Default: "live". */
+  /** "live" persists scopes (ctx_scope_assignments) and project/task links
+   *  (platform.associations). "preview" console.logs everything. Default: "live". */
   writeMode?: "live" | "preview";
   /** Enforced-context default. User can ALWAYS change it afterwards. */
   defaultOrganizationId?: string | null;
@@ -842,6 +845,51 @@ export function ContextAssignmentField({
     entityScopes.scopeIds,
   ]);
 
+  // Existing project/task tags (assignment mode): the subject's durable
+  // associations live on `platform.associations`, NOT the scope assignments
+  // above. Hydrate the current project/task picks from the same per-entity
+  // cache `save()` writes to, so edits diff against reality. Only when those
+  // dimensions are shown (skip the fetch for scope-only surfaces).
+  const subjectAssociations = useAssociations({
+    type: subject?.entityType ?? "file",
+    id:
+      mode === "assignment" && subject && (dims.projects || dims.tasks)
+        ? subject.entityId
+        : null,
+  });
+  const assocHydratedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!subject) return;
+    const key = `${subject.entityType}:${subject.entityId}`;
+    if (mode !== "assignment" || assocHydratedFor.current === key) return;
+    if (!dims.projects && !dims.tasks) return;
+    if (subjectAssociations.status !== "ready") return;
+    assocHydratedFor.current = key;
+    const outgoing = subjectAssociations.edges.filter(
+      (e) => e.direction === "outgoing",
+    );
+    if (dims.projects) {
+      const projectIds = outgoing
+        .filter((e) => e.otherType === "project")
+        .map((e) => e.otherId);
+      if (projectIds.length > 0) setSelProjects(new Set(projectIds));
+    }
+    if (dims.tasks) {
+      const taskIds = outgoing
+        .filter((e) => e.otherType === "task")
+        .map((e) => e.otherId);
+      if (taskIds.length > 0) setSelTasks(new Set(taskIds));
+    }
+  }, [
+    mode,
+    subject?.entityType,
+    subject?.entityId,
+    dims.projects,
+    dims.tasks,
+    subjectAssociations.status,
+    subjectAssociations.edges,
+  ]);
+
   // Reset on subject change (NOT on org change — org switch keeps cross-org
   // project/task picks and existing scope tags from other orgs are unioned).
   useEffect(() => {
@@ -854,6 +902,7 @@ export function ContextAssignmentField({
     setAddedTasks([]);
     setQuery("");
     hydratedFor.current = null;
+    assocHydratedFor.current = null;
   }, [subject?.entityType, subject?.entityId]);
 
   const q = query.trim().toLowerCase();
@@ -1253,27 +1302,56 @@ export function ContextAssignmentField({
         });
         return;
       }
-      if (
-        (dims.projects && selection.projectIds.length > 0) ||
-        (dims.tasks && selection.taskIds.length > 0)
-      ) {
-        // Loud until ctx_associations lands — never a silent partial save.
-        console.warn(
-          "[context-assignment] project/task associations await the ctx_associations migration — logged only",
-          {
-            entity: subject
-              ? { entity_type: subject.entityType, entity_id: subject.entityId }
-              : null,
-            projectIds: selection.projectIds,
-            taskIds: selection.taskIds,
-          },
+      // Project/task associations through the canonical `platform.associations`
+      // primitive (replace-semantics — the picker is a multi-select, so the
+      // selection IS the full desired edge set). Only the subject can carry
+      // durable associations, so this is gated to assignment mode with a
+      // subject. `new:` ids are local quick-add placeholders — never persist.
+      if (subject && (dims.projects || dims.tasks)) {
+        const realProjectIds = selection.projectIds.filter(
+          (id) => !id.startsWith("new:"),
         );
-        toast.info(
-          "Scopes saved. Project/task links recorded for the upcoming migration.",
+        const realTaskIds = selection.taskIds.filter(
+          (id) => !id.startsWith("new:"),
         );
-      } else {
-        toast.success("Saved");
+        if (dims.projects) {
+          const r = await subjectAssociations.setTargets({
+            targetType: "project",
+            targetIds: realProjectIds,
+            orgId: org?.id ?? undefined,
+          });
+          if (!r.ok) {
+            toast.error(r.error ?? "Failed to save project links");
+            onSaved?.({
+              ok: false,
+              mode,
+              selection,
+              wroteScopes: true,
+              error: r.error,
+            });
+            return;
+          }
+        }
+        if (dims.tasks) {
+          const r = await subjectAssociations.setTargets({
+            targetType: "task",
+            targetIds: realTaskIds,
+            orgId: org?.id ?? undefined,
+          });
+          if (!r.ok) {
+            toast.error(r.error ?? "Failed to save task links");
+            onSaved?.({
+              ok: false,
+              mode,
+              selection,
+              wroteScopes: true,
+              error: r.error,
+            });
+            return;
+          }
+        }
       }
+      toast.success("Saved");
       onSaved?.({ ok: true, mode, selection, wroteScopes: true });
     } finally {
       setBusy(false);
