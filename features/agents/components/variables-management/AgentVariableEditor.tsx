@@ -244,12 +244,13 @@ export function AgentVariableEditor({
       const listId =
         typeof createdRecord === "string"
           ? createdRecord
-          : (createdRecord as { list_id?: string; id?: string } | null)
-              ?.list_id ??
-            (createdRecord as { id?: string } | null)?.id;
+          : ((createdRecord as { list_id?: string; id?: string } | null)
+              ?.list_id ?? (createdRecord as { id?: string } | null)?.id);
 
       if (!listId) {
-        throw new Error("The picklist was created, but no list id was returned.");
+        throw new Error(
+          "The picklist was created, but no list id was returned.",
+        );
       }
 
       const nextCustomComponent = buildCustomComponent({
@@ -268,7 +269,8 @@ export function AgentVariableEditor({
         defaultValue: "",
       });
       toast.success("Picklist created and linked to this variable.", {
-        description: "Each option was copied as both the label and injected text.",
+        description:
+          "Each option was copied as both the label and injected text.",
       });
     } catch (error) {
       toast.error("Could not convert options to a picklist.", {
@@ -295,7 +297,7 @@ export function AgentVariableEditor({
   const defaultValueStr = String(variable.defaultValue ?? "");
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {/* ── Name ─────────────────────────────────────────────────────────── */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">Name</Label>
@@ -375,10 +377,13 @@ export function AgentVariableEditor({
           local configurator is replaced by an inheritance note. */}
       {isBound ? (
         <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-          Input type and options are <span className="font-medium">inherited from the
-          bound context item</span>. At run time this variable is auto-filled from the
-          active scope and hidden from the user; the default below applies only when no
-          scope value is available.
+          Input type and options are{" "}
+          <span className="font-medium">
+            inherited from the bound context item
+          </span>
+          . At run time this variable is auto-filled from the active scope and
+          hidden from the user; the default below applies only when no scope
+          value is available.
         </div>
       ) : (
         <CustomComponentConfigurator
@@ -395,9 +400,10 @@ export function AgentVariableEditor({
               Convert options to picklist
             </Label>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Create a reusable picklist from these {staticOptions.length} options
-              and link this variable to it. Each option is copied as both the
-              public label and the injected text so you can refine it in Lists.
+              Create a reusable picklist from these {staticOptions.length}{" "}
+              options and link this variable to it. Each option is copied as
+              both the public label and the injected text so you can refine it
+              in Lists.
             </p>
           </div>
           <Button
@@ -419,7 +425,7 @@ export function AgentVariableEditor({
       )}
 
       {/* ── Default Value ─────────────────────────────────────────────── */}
-      <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border border-border">
+      <div className="min-w-0 space-y-1.5 overflow-hidden rounded-lg border border-border bg-muted/30 p-3">
         <Label className="text-sm font-medium">Default Value</Label>
         <p className="text-xs text-muted-foreground">
           Pre-fills this variable at run time. Leave blank for no default.

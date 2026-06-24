@@ -328,7 +328,7 @@ export function AgentVariablesPanel({ agentId }: AgentVariablesPanelProps) {
             </div>
 
             <ScrollArea className="flex-1">
-              <div className="px-5 py-4">
+              <div className="min-w-0 px-5 py-4">
                 <AgentVariableEditor
                   agentId={agentId}
                   variableName={selection.name}

@@ -7,7 +7,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { calcCols } from "./useContainerColumns";
+
+/** Overrides base SelectTrigger nowrap/line-clamp so long values wrap in-panel. */
+const dropdownTriggerClassName = (compact: boolean) =>
+  cn(
+    "h-auto w-full min-w-0 whitespace-normal items-start gap-2",
+    compact ? "min-h-8 py-1.5 text-xs" : "min-h-9 py-2",
+    "[&>span]:line-clamp-none [&>span]:min-w-0 [&>span]:flex-1",
+    "[&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left",
+    "[&>svg]:mt-0.5 [&>svg]:shrink-0",
+  );
+
+const dropdownItemClassName =
+  "h-auto min-h-9 items-start py-2 leading-snug [&>span:last-of-type]:min-w-0 [&>span:last-of-type]:whitespace-normal [&>span:last-of-type]:break-words";
 
 interface SelectInputProps {
   value: string;
@@ -141,27 +155,26 @@ export function SelectInput({
 
   // ── Dropdown mode (default) ──────────────────────────────────────────────
   return (
-    <div className={compact ? "space-y-1" : "space-y-1.5"}>
+    <div className={cn(compact ? "space-y-1" : "space-y-1.5", "min-w-0")}>
       <Select value={selectedOption} onValueChange={handleSelectChange}>
-        <SelectTrigger
-          className={
-            compact
-              ? "min-h-8 h-auto w-full text-xs [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left"
-              : "h-auto min-h-9 w-full [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left"
-          }
-        >
+        <SelectTrigger className={dropdownTriggerClassName(compact)}>
           <SelectValue placeholder="Choose an option..." />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
           {options.map((option, index) => (
             <SelectItem
               key={`${option}-${index}`}
               value={option || `__empty_${index}`}
+              className={dropdownItemClassName}
             >
               {option || "(empty)"}
             </SelectItem>
           ))}
-          {allowOther && <SelectItem value="Other">Other</SelectItem>}
+          {allowOther && (
+            <SelectItem value="Other" className={dropdownItemClassName}>
+              Other
+            </SelectItem>
+          )}
         </SelectContent>
       </Select>
 

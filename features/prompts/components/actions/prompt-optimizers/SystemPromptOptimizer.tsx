@@ -27,7 +27,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Check, X, Loader2, Copy, Zap, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
@@ -382,12 +382,20 @@ export function SystemPromptOptimizer({
                 <Label className="text-xs text-gray-600 dark:text-gray-400">
                   Additional Guidance (Optional)
                 </Label>
-                <Textarea
+                <ProTextarea
                   value={additionalGuidance}
                   onChange={(e) => setAdditionalGuidance(e.target.value)}
                   placeholder="e.g., 'Make it more concise' or 'Focus on technical accuracy'"
-                  className="text-sm h-16 resize-none"
+                  className="text-sm"
                   disabled={isOptimizing}
+                  autoGrow
+                  minHeight={64}
+                  maxHeight={240}
+                  enableVoice
+                  enableCleanup
+                  enableHelpWithThis
+                  enableCustomAgent
+                  showCopyButton
                 />
               </div>
             )}
