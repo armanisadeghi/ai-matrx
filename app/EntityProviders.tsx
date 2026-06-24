@@ -34,6 +34,7 @@ import { TranscriptsProvider } from "@/features/transcripts/context/TranscriptsC
 import { AudioRecoveryProvider } from "@/features/audio/providers/AudioRecoveryProvider";
 import { GlobalRecordingProvider } from "@/providers/GlobalRecordingProvider";
 import { RecordingPill } from "@/components/global/RecordingPill";
+import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 import { RequestRecoveryProvider } from "@/features/request-recovery/providers/RequestRecoveryProvider";
 import { RecoveryWindow } from "@/features/request-recovery/components/RecoveryWindow";
 import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNudge";
@@ -82,6 +83,15 @@ export function EntityProviders({
                         <TranscriptsProvider>
                           <AudioRecoveryProvider>
                             <RequestRecoveryProvider>
+                              {/* App-root audio DEVICE manager (mic/speaker
+                              selection + permission). Mounted above the
+                              recording provider so the persisted mic device is
+                              applied to the singleton before the first
+                              recording. Renders nothing; effects only. Matches
+                              app/Providers.tsx — legacy routes were previously
+                              missing this, so the canonical audio permission /
+                              device system now covers the whole app. */}
+                              <AudioDeviceProvider />
                               <GlobalRecordingProvider>
                                 <EntityPack>{children}</EntityPack>
                                 <RecordingPill />

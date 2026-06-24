@@ -163,30 +163,22 @@ function attachTrackHealth(stream: MediaStream): void {
   }
 }
 
-// Permission watcher — set up once. When the OS/user revokes mic permission
-// mid-session, scream so a recording surface can stop cleanly instead of
-// silently failing on the next acquire.
-let permissionWatched = false;
-function watchPermission(): void {
-  if (permissionWatched) return;
-  if (typeof navigator === "undefined" || !navigator.permissions) return;
-  permissionWatched = true;
-  navigator.permissions
-    .query({ name: "microphone" as PermissionName })
-    .then((status) => {
-      status.onchange = () => {
-        if (status.state === "denied") {
-          // eslint-disable-next-line no-console
-          console.error("[micStream] microphone permission REVOKED.");
-          hardStop();
-          emitInterruption("permission-revoked");
-        }
-      };
-    })
-    .catch(() => {
-      // Permissions API not supported for microphone (Firefox) — non-fatal.
-      permissionWatched = false;
-    });
+/**
+ * Permission revocation is handled by the ONE canonical permission watcher in
+ * `audioDevices.ts` (the single source of truth for mic-permission state, wired
+ * once on app boot via `startDeviceListeners()` on every route). When it sees
+ * the permission flip to "denied", it calls this so the warm stream is stopped
+ * NOW and recording surfaces get a loud interruption — instead of micStream
+ * running its own duplicate `navigator.permissions.query`. Keeping the
+ * hardStop + interruption emit here (not in audioDevices) preserves the mic
+ * interruption channel and the correct dependency direction (audioDevices →
+ * micStream, never the reverse).
+ */
+export function notifyMicPermissionRevoked(): void {
+  // eslint-disable-next-line no-console
+  console.error("[micStream] microphone permission REVOKED.");
+  hardStop();
+  emitInterruption("permission-revoked");
 }
 
 // Page-lifecycle backstop — set up once. The browser's "in use" mic indicator
@@ -281,7 +273,6 @@ export async function acquireMicStream(
       const stream = await navigator.mediaDevices.getUserMedia({ audio });
       m.stream = stream;
       attachTrackHealth(stream);
-      watchPermission();
       watchPageLifecycle();
       setState("active");
       return stream;

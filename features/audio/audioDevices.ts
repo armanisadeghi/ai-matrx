@@ -36,6 +36,7 @@ import {
   acquireMicStream,
   releaseMicStream,
   setPreferredInputDeviceId,
+  notifyMicPermissionRevoked,
 } from "@/features/audio/micStream";
 import { setPreferredOutputDeviceId } from "@/features/audio/audioOutputSink";
 
@@ -227,6 +228,10 @@ function wirePermissionStatus(status: PermissionStatus): void {
     setPermissionState(mapped);
     // A transition to "granted" unlocks labels — refresh the list.
     if (mapped === "granted") void listDevices();
+    // This is the ONE permission watcher for the app. On revoke, stop the warm
+    // mic stream NOW and emit a loud interruption so any in-flight recording
+    // surface reacts instead of silently failing on its next acquire.
+    if (mapped === "denied") notifyMicPermissionRevoked();
   };
 }
 

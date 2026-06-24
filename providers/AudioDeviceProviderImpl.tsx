@@ -52,6 +52,7 @@ export default function AudioDeviceProviderImpl(): null {
   // One-time boot wiring.
   useEffect(() => {
     installAudioContextSinkRouting();
+    console.log("[AudioDeviceProviderImpl] Starting device listeners");
     startDeviceListeners();
   }, []);
 
