@@ -52,6 +52,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
 import { DerivativeChunkList } from "./ChunkList";
+import { TableRowsViewer } from "./TableRowsViewer";
 import {
   DERIVE_KINDS,
   fetchEstimate,
@@ -70,6 +71,11 @@ import {
   formatUnits,
   sumCostToUnits,
 } from "@/lib/processing-units/units";
+import {
+  usePageVerificationSummary,
+  VERIFICATION_REASON_SHORT,
+  type PageVerificationSummary,
+} from "@/features/rag/hooks/usePageVerificationSummary";
 
 // ---------------------------------------------------------------------------
 // Per-kind presentation metadata
@@ -110,7 +116,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     icon: Layers,
     unit: "granularities",
     tone: "primary",
-    blurb: "Coarse + fine segment views for precision and recall.",
+    blurb: "Two chunk sizes — coarse for broad recall, fine for precise hits.",
   },
   page_image_caption: {
     label: "Figure captions",
@@ -170,10 +176,29 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   // doc on open (a few seconds: it does a PDF scan for tables/figures).
   const estimate = useDerivationsEstimate(doc.id);
 
+  // Page-verification truth, read straight from Supabase (public table) — the
+  // honest "N verified / M flagged" count that the kg_chunks rollup cannot give
+  // (verification persists flags on the page rows, it writes no chunks).
+  const verification = usePageVerificationSummary(doc.id);
+
   // Map rollup rows by kind for quick lookup of live chunk counts.
   const countByKind = useMemo(() => {
     const map = new Map<string, DerivationRollup>();
     for (const d of derivations) map.set(d.derivation_kind, d);
+    // "multigranularity" emits TWO derivative docs (chunked_coarse +
+    // chunked_fine), so the rollup never has a "multigranularity" row — the
+    // card read 0/unbuilt even after a successful run. Surface the combined
+    // count under the single card.
+    const coarse = map.get("chunked_coarse");
+    const fine = map.get("chunked_fine");
+    if (coarse || fine) {
+      map.set("multigranularity", {
+        derivation_kind: "multigranularity",
+        derivative_id: coarse?.derivative_id ?? fine?.derivative_id ?? "",
+        chunk_count: (coarse?.chunk_count ?? 0) + (fine?.chunk_count ?? 0),
+        updated_at: coarse?.updated_at ?? fine?.updated_at ?? null,
+      });
+    }
     return map;
   }, [derivations]);
 
@@ -293,6 +318,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
                 op={operations[kind]}
                 estimate={estimate.data?.estimates?.[kind]}
                 estimating={estimate.loading}
+                verification={
+                  kind === "page_verification" ? verification : undefined
+                }
                 onRun={() => void run(kind)}
                 onRebuild={() => void handleRebuild(kind, run)}
                 onCancel={() => cancel(kind)}
@@ -353,6 +381,7 @@ function RepresentationCard({
   op,
   estimate,
   estimating,
+  verification,
   onRun,
   onRebuild,
   onCancel,
@@ -362,6 +391,7 @@ function RepresentationCard({
   op: OpState;
   estimate: DeriveEstimate | undefined;
   estimating: boolean;
+  verification?: PageVerificationSummary;
   onRun: () => void;
   onRebuild: () => void;
   onCancel: () => void;
@@ -369,7 +399,11 @@ function RepresentationCard({
   const meta = KIND_META[kind];
   const Icon = meta.icon;
   const chunkCount = rollup?.chunk_count ?? 0;
-  const built = chunkCount > 0;
+  // page_verification writes no chunks — its truth is verified/flagged page
+  // counts read straight from Supabase. Show those instead of a 0 chunk count.
+  const isVerif = kind === "page_verification" && verification != null;
+  const displayCount = isVerif ? verification.verified : chunkCount;
+  const built = isVerif ? verification.hasRun : chunkCount > 0;
   const running = op.status === "running";
   const failed = op.status === "failed";
   const derivativeId = rollup?.derivative_id ?? null;
@@ -418,7 +452,7 @@ function RepresentationCard({
             </span>
           </div>
         </div>
-        <CountUpInline value={chunkCount} muted={!built} />
+        <CountUpInline value={displayCount} muted={!built} />
       </div>
 
       {/* Blurb / status line */}
@@ -427,8 +461,32 @@ function RepresentationCard({
           ? op.message || "Working…"
           : failed
             ? op.error || "Failed — try again."
-            : meta.blurb}
+            : isVerif && built
+              ? `${verification.verified.toLocaleString()} of ${verification.total.toLocaleString()} pages verified`
+              : meta.blurb}
       </p>
+
+      {/* Verification breakdown — the honest "why some pages are empty". */}
+      {isVerif && built && (
+        <div className="text-[10px] leading-snug">
+          {verification.flagged > 0 ? (
+            <span className="text-amber-700 dark:text-amber-400">
+              {verification.flagged.toLocaleString()} flagged —{" "}
+              {Object.entries(verification.byReason)
+                .sort((a, b) => b[1] - a[1])
+                .map(
+                  ([reason, n]) =>
+                    `${n} ${VERIFICATION_REASON_SHORT[reason] ?? reason}`,
+                )
+                .join(" · ")}
+            </span>
+          ) : (
+            <span className="text-emerald-700 dark:text-emerald-400">
+              All {verification.verified.toLocaleString()} pages clean
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Reality line — the live "how many runs + cost" from /estimate, so the
           user sees what Build will actually do BEFORE clicking. Hidden while
@@ -502,11 +560,18 @@ function RepresentationCard({
               : `View ${chunkCount.toLocaleString()} ${meta.unit}`}
           </button>
           {expanded && (
-            <div className="mt-2 max-h-72 overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-1.5">
-              <DerivativeChunkList
-                derivativeId={derivativeId}
-                expectedTotal={chunkCount}
-              />
+            <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-1.5">
+              {kind === "table_row" ? (
+                <TableRowsViewer
+                  derivativeId={derivativeId}
+                  expectedTotal={chunkCount}
+                />
+              ) : (
+                <DerivativeChunkList
+                  derivativeId={derivativeId}
+                  expectedTotal={chunkCount}
+                />
+              )}
             </div>
           )}
         </>

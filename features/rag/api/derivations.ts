@@ -191,6 +191,9 @@ export interface DerivativeChunkRow {
   has_oai_embedding: boolean;
   has_voyage_embedding: boolean;
   section_kind: string | null;
+  /** Full chunk metadata passthrough — e.g. table_row chunks carry
+   *  header / cells / table_index / row_index so the UI can rebuild real grids. */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface DerivativeChunksResponse {

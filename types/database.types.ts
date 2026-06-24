@@ -13938,6 +13938,8 @@ export type Database = {
           section_subtype: string | null
           section_title: string | null
           used_ocr: boolean
+          verification_flags: string[] | null
+          verified_at: string | null
           width: number | null
           words: Json | null
         }
@@ -13964,6 +13966,8 @@ export type Database = {
           section_subtype?: string | null
           section_title?: string | null
           used_ocr?: boolean
+          verification_flags?: string[] | null
+          verified_at?: string | null
           width?: number | null
           words?: Json | null
         }
@@ -13990,6 +13994,8 @@ export type Database = {
           section_subtype?: string | null
           section_title?: string | null
           used_ocr?: boolean
+          verification_flags?: string[] | null
+          verified_at?: string | null
           width?: number | null
           words?: Json | null
         }
