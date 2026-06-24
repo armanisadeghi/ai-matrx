@@ -78,13 +78,15 @@ export type ContextMenuExtraItem =
 
 /**
  * Where a surface section slots into the menu, relative to the core sections.
- * The core renders, in order: selection/content header → history → clipboard →
- * find → export/convert → attach/share → [dynamic placements] → quick actions →
- * editable (save/delete) → admin. Default anchor: "after-actions".
+ * v3 renders, in order: header → clipboard (copy/cut/paste/select-all/find/copy-as)
+ * → [after-clipboard] → history (undo/redo/view-history/compare) → export/convert
+ * → attach/share → [after-compare] → [dynamic placements] → [after-placements] →
+ * quick actions → editable (save/delete) → admin. Anchor names match v2 so every
+ * existing `extraSections` producer works unchanged. Default: "after-compare".
  */
 export type ExtraSectionAnchor =
   | "after-clipboard"
-  | "after-actions"
+  | "after-compare"
   | "after-placements";
 
 export interface ContextMenuExtraSection {

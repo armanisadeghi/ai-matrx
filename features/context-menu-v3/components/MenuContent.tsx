@@ -700,7 +700,7 @@ export default function MenuContent(props: MenuContentProps) {
 
   const renderExtraSections = (anchor: ExtraSectionAnchor) => {
     const sections = (extraSections ?? []).filter(
-      (s) => (s.anchor ?? "after-actions") === anchor,
+      (s) => (s.anchor ?? "after-compare") === anchor,
     );
     if (sections.length === 0) return null;
     return (
@@ -1016,7 +1016,7 @@ export default function MenuContent(props: MenuContentProps) {
 
       <Separator />
 
-      {renderExtraSections("after-actions")}
+      {renderExtraSections("after-compare")}
 
       {/* Dynamic, data-driven placements (from the single fetch). */}
       {renderPlacementSubmenu(PLACEMENT_TYPES.AI_ACTION)}
