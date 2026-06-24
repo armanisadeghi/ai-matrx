@@ -91,6 +91,10 @@ interface KindMeta {
   tone: KpiTone;
   /** One-line description shown on the card. */
   blurb: string;
+  /** True for ops that spend real LLM money (vision / summaries / Q&A). These
+   *  ALWAYS confirm cost before running — even if the estimate hasn't loaded —
+   *  so an expensive run can never start blind. Deterministic ops omit it. */
+  costly?: boolean;
 }
 
 export const KIND_META: Record<DeriveKind, KindMeta> = {
@@ -125,6 +129,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "figures",
     tone: "info",
     blurb: "Vision-caption every figure so images become searchable.",
+    costly: true,
   },
   section_summary: {
     label: "Section summaries",
@@ -133,6 +138,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "sections",
     tone: "success",
     blurb: "Summarize each section for high-level retrieval.",
+    costly: true,
   },
   synthetic_qa: {
     label: "Synthetic Q&A",
@@ -141,6 +147,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "Q&A pairs",
     tone: "warning",
     blurb: "Generate question/answer pairs that match how users ask.",
+    costly: true,
   },
 };
 
@@ -408,6 +415,36 @@ function RepresentationCard({
   const failed = op.status === "failed";
   const derivativeId = rollup?.derivative_id ?? null;
 
+  // --- Cost gate -----------------------------------------------------------
+  // A "costly" op (vision / summaries / Q&A) ALWAYS confirms before running —
+  // it must NEVER fail open. If the estimate loaded we show the exact units; if
+  // it didn't (slow scan / network), we still gate with a clear warning rather
+  // than letting an expensive run start blind. Deterministic ops just run.
+  const isCostly = meta.costly === true;
+  const estimateLoading = estimating && !estimate;
+  const estUnits = estimate ? costToUnits(estimate.cost_usd) : 0;
+  const costLabel = estUnits > 0 ? ` · ${formatUnits(estUnits)}` : "";
+
+  const handleBuild = async () => {
+    if (isCostly) {
+      const items = estimate?.items ?? 0;
+      const scope = items
+        ? `over ${items.toLocaleString()} ${estimate?.unit ?? meta.unit} `
+        : "";
+      const costPhrase =
+        estUnits > 0
+          ? `about ${formatUnits(estUnits)}`
+          : "Processing Units — we couldn't compute an exact estimate right now";
+      const ok = await confirm({
+        title: `Build ${meta.label.toLowerCase()}?`,
+        description: `This runs AI ${scope}and will cost ${costPhrase}. (Processing Units, not money.)`,
+        confirmLabel: estUnits > 0 ? `Build${costLabel}` : "Build anyway",
+      });
+      if (!ok) return;
+    }
+    onRun();
+  };
+
   // Results expander — only meaningful once content exists.
   const [expanded, setExpanded] = useState(false);
 
@@ -533,9 +570,14 @@ function RepresentationCard({
             Rebuild
           </Button>
         ) : (
-          <Button size="sm" onClick={onRun} className="h-7 flex-1 text-[10px]">
+          <Button
+            size="sm"
+            onClick={handleBuild}
+            disabled={estimateLoading}
+            className="h-7 flex-1 text-[10px]"
+          >
             <Play className="h-3 w-3 mr-1" />
-            Build
+            {estimateLoading ? "Estimating cost…" : `Build${costLabel}`}
           </Button>
         )}
       </div>

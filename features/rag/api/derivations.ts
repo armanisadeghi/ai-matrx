@@ -156,7 +156,10 @@ export async function fetchEstimate(
 ): Promise<DerivationsEstimate> {
   const { data } = await getJson<DerivationsEstimate>(
     `/rag/library/${encodeURIComponent(processedDocumentId)}/estimate`,
-    { signal },
+    // The estimate does a live PDF scan (tables/figures/sections); on a large
+    // doc it can take well over the default 30s. Give it room so our own fetch
+    // timeout doesn't turn a slow scan into "scope estimate unavailable".
+    { signal, timeoutMs: 120_000 },
   );
   return {
     name: typeof data?.name === "string" ? data.name : "",
