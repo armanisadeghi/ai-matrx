@@ -126,71 +126,62 @@ const ToolCallVisualizationInner: React.FC<{
         ? "never-open"
         : toolMode;
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(
-    () =>
-      // An errored tool has NO result to keep open — errors NEVER default to
-      // expanded, even for a stay-open tool (e.g. news that returned an error
-      // instead of headlines). It collapses to one calm line; click to see why.
-      phase === "error"
-        ? false
+  // Expand state is DERIVED, not effect-synced (avoids cascading setState-in-
+  // effect). Three inputs combine:
+  //   1. userChoice — the user's explicit toggle. Once set it STICKS and wins.
+  //   2. autoExpanded — the automatic decision, computed purely from phase/mode/
+  //      streaming below.
+  //   3. autoCollapsed — the auto "3s after a live finish" grace having elapsed.
+  //      The ONLY effect-set state, and it's set from a timer callback, never
+  //      synchronously in an effect body.
+  const [userChoice, setUserChoice] = useState<boolean | null>(null);
+  const [autoCollapsed, setAutoCollapsed] = useState(false);
+
+  // The automatic expand decision (no user override). Pure, except the grace,
+  // which rides on `autoCollapsed` (a timer flips it). Errors NEVER default to
+  // expanded — even a stay-open tool collapses to one calm line on error. A
+  // LIVE tool (`!isPersisted`) that's done stays open for the 3s grace; a
+  // persisted/reloaded tool collapses the moment it mounts done.
+  const autoExpanded =
+    phase === "error"
+      ? false
+      : effectiveMode === "stay-open"
+        ? true
         : effectiveMode === "never-open"
           ? false
-          : effectiveMode === "stay-open"
+          : streamingNow
             ? true
-            : streamingNow, // auto: open while streaming; collapsed if mounted done/persisted
-  );
-  // Once the user clicks, respect their choice — stop auto-collapse fighting them.
-  const [userToggled, setUserToggled] = useState(false);
+            : allTerminal && !isPersisted && !autoCollapsed;
+
+  const isExpanded = userChoice ?? autoExpanded;
+  const toggleExpand = () => setUserChoice(!isExpanded);
+
   // Mount the body once it has EVER been open, so the collapse can animate and a
   // live renderer keeps its state. A persisted/never-opened tool never mounts its
-  // body → no needless re-fetch/re-run on reload. State (not a render-phase ref)
-  // so it stays reactive under React Compiler.
+  // body → no needless re-fetch/re-run on reload. Latched via the React-endorsed
+  // "adjust state during render" pattern (converges in one pass; not an effect).
   const [hasEverExpanded, setHasEverExpanded] = useState<boolean>(isExpanded);
-  useEffect(() => {
-    if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
-  }, [isExpanded, hasEverExpanded]);
+  if (isExpanded && !hasEverExpanded) setHasEverExpanded(true);
 
   const [isOverlayOpen, setIsOverlayOpen] = useState<boolean>(false);
   const [initialOverlayTab, setInitialOverlayTab] = useState<
     string | undefined
   >(undefined);
 
-  // Collapse behavior. Once the user clicks, their choice sticks.
-  //   stay-open  → expand and never auto-collapse (handles the DB case where
-  //                the mode resolves async AFTER the initial render — e.g. a
-  //                reloaded news-like DB tool starts collapsed, then expands
-  //                once its `keep_expanded_on_stream` meta lands).
-  //   never-open → leave collapsed.
-  //   auto       → expand while streaming; collapse 3s after it finishes.
+  // Auto mode's 3s collapse after a LIVE finish. setState fires ONLY from the
+  // timer callback (deferred) — the effect body never sets state synchronously.
+  // stay-open / never-open never auto-collapse; an error already derives
+  // collapsed; a persisted/reloaded tool gets no grace.
   useEffect(() => {
-    if (userToggled) return;
-    // Errors never default to open — collapse even a stay-open tool that errored
-    // (covers a live tool that was expanded while streaming, then errors).
-    if (phase === "error") {
-      setIsExpanded(false);
-      return;
-    }
-    if (effectiveMode === "stay-open") {
-      setIsExpanded(true);
-      return;
-    }
-    if (effectiveMode === "never-open") return;
-    if (streamingNow) {
-      setIsExpanded(true);
-      return;
-    }
-    if (allTerminal && isExpanded) {
-      const t = setTimeout(() => setIsExpanded(false), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [
-    phase,
-    effectiveMode,
-    userToggled,
-    streamingNow,
-    allTerminal,
-    isExpanded,
-  ]);
+    if (userChoice !== null) return; // user took control — their choice sticks
+    if (effectiveMode !== "auto") return;
+    if (phase === "error") return;
+    if (!allTerminal) return;
+    if (isPersisted) return;
+    if (autoCollapsed) return;
+    const t = setTimeout(() => setAutoCollapsed(true), 3000);
+    return () => clearTimeout(t);
+  }, [userChoice, effectiveMode, phase, allTerminal, isPersisted, autoCollapsed]);
 
   // Prefetch any DB-stored renderers so they're ready before the body mounts.
   useEffect(() => {
@@ -340,18 +331,12 @@ const ToolCallVisualizationInner: React.FC<{
           artifact={artifact}
           conversationId={conversationId}
           peekExpanded={isExpanded}
-          onTogglePeek={() => {
-            setUserToggled(true);
-            setIsExpanded((v) => !v);
-          }}
+          onTogglePeek={toggleExpand}
         />
       ) : (
         <button
           type="button"
-          onClick={() => {
-            setUserToggled(true);
-            setIsExpanded((v) => !v);
-          }}
+          onClick={toggleExpand}
           className="flex w-full items-center gap-1.5 text-left"
         >
           {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
