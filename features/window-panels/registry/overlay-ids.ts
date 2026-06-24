@@ -144,6 +144,7 @@ export const OVERLAY_IDS = [
   "whatsappSettings",
   "whatsappShellWindow",
   "workingDocumentWindow",
+  "workingDocumentPanel",
 ] as const;
 
 /**

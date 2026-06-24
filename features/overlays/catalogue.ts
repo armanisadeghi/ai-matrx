@@ -555,6 +555,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  workingDocumentPanel: {
+    label: "Working Document",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   smartCodeEditorWindow: {
     label: "Smart Code Editor Window",
     instanceMode: "multi",

@@ -41,6 +41,8 @@ import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
+import { getToolArtifact } from "../registry/toolArtifact";
+import { ArtifactResultBar } from "./ArtifactResultBar";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
 
@@ -270,6 +272,19 @@ const ToolCallVisualizationInner: React.FC<{
   const querySubtitle: string | null =
     phase === "error" ? null : headerSubtitle;
 
+  // A completed tool that left behind an openable artifact (today: a working-
+  // document patch) gets a persistent, full-width ArtifactResultBar instead of
+  // the dim collapsed line — advertising the result + opening it in the sidebar.
+  // Single-entry only (a batch has no single artifact), and only when we have a
+  // conversationId to open against.
+  const artifact =
+    phase === "complete" &&
+    entries.length === 1 &&
+    typeof conversationId === "string" &&
+    conversationId.length > 0
+      ? getToolArtifact(headerTool)
+      : null;
+
   if (entries.length === 0) return null;
 
   const handleOpenOverlay = (tabId?: string) => {
@@ -320,15 +335,26 @@ const ToolCallVisualizationInner: React.FC<{
         className,
       )}
     >
-      <button
-        type="button"
-        onClick={() => {
-          setUserToggled(true);
-          setIsExpanded((v) => !v);
-        }}
-        className="flex w-full items-center gap-1.5 text-left"
-      >
-        {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
+      {artifact && conversationId ? (
+        <ArtifactResultBar
+          artifact={artifact}
+          conversationId={conversationId}
+          peekExpanded={isExpanded}
+          onTogglePeek={() => {
+            setUserToggled(true);
+            setIsExpanded((v) => !v);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setUserToggled(true);
+            setIsExpanded((v) => !v);
+          }}
+          className="flex w-full items-center gap-1.5 text-left"
+        >
+          {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
             so the tool call reads as part of the response, not a separate box. */}
         <span className="flex min-w-0 items-center gap-1.5">
           {phase === "processing" || phase === "starting" ? (
@@ -405,7 +431,8 @@ const ToolCallVisualizationInner: React.FC<{
             <Maximize2 className="h-3 w-3" />
           </span>
         </span>
-      </button>
+        </button>
+      )}
 
       {/* Expanded body: drops BELOW the chevron line — NO border, NO padding,
           TRANSPARENT background, so the renderer reads as part of the response

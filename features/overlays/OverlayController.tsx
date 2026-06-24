@@ -570,12 +570,16 @@ const QuickNoteSaveWindow = lazyOverlay(
 );
 const QuickNotesSheet = lazyOverlay(
   () =>
-    import("@/features/notes/actions/QuickNotesSheet").then((m) => {
-      console.log(
-        "[Track Quick Notes] 3, OverlayController.tsx — QuickNotesSheet dynamic chunk loaded",
-      );
-      return { default: m.QuickNotesSheet };
-    }),
+    import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
+      default: m.QuickNotesSheet,
+    })),
+  { ssr: false },
+);
+const DocumentsWorkspace = lazyOverlay(
+  () =>
+    import(
+      "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace"
+    ).then((m) => ({ default: m.DocumentsWorkspace })),
   { ssr: false },
 );
 const QuickScribeSheet = lazyOverlay(
@@ -945,6 +949,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
+    workingDocumentPanel: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "workingDocumentPanel"),
+    ),
     quickScribe: useAppSelector((s) => selectIsOverlayOpen(s, "quickScribe")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) =>
@@ -1186,6 +1193,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickNotes: useAppSelector((s) =>
       selectOverlayData(s, "quickNotes"),
+    ) as Record<string, unknown> | null,
+    workingDocumentPanel: useAppSelector((s) =>
+      selectOverlayData(s, "workingDocumentPanel"),
     ) as Record<string, unknown> | null,
     quickScribe: useAppSelector((s) =>
       selectOverlayData(s, "quickScribe"),
@@ -3761,9 +3771,6 @@ export default function OverlayController() {
           | null
           | undefined;
         if (!isOpen) return null;
-        console.log(
-          "[Track Quick Notes] 2, OverlayController.tsx — quickNotes open, rendering SidePanelSurface + QuickNotesSheet",
-        );
         return (
           <SidePanelSurface
             title="Quick Note"
@@ -3775,6 +3782,41 @@ export default function OverlayController() {
               className={
                 typeof data?.className === "string" ? data.className : undefined
               }
+            />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* workingDocumentPanel — the agent-edited working document, opened in a
+          resizable right sidebar from a chat tool's ArtifactResultBar. */}
+      {(() => {
+        const isOpen = isOpenById.workingDocumentPanel;
+        const data = dataById.workingDocumentPanel as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const conversationId =
+          typeof data?.conversationId === "string" ? data.conversationId : null;
+        if (!conversationId) return null;
+        const title =
+          typeof data?.title === "string" && data.title
+            ? data.title
+            : "Working document";
+        return (
+          <SidePanelSurface
+            title={title}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "workingDocumentPanel" }))
+            }
+            storageKey="working-document-panel"
+            defaultWidth={620}
+            maxWidth={1000}
+          >
+            <DocumentsWorkspace
+              conversationId={conversationId}
+              defaultRailOpen={false}
+              className="h-full"
             />
           </SidePanelSurface>
         );
