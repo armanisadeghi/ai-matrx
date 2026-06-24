@@ -28147,6 +28147,33 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      cat_create: {
+        Args: {
+          p_color?: string
+          p_dimension: string
+          p_icon?: string
+          p_name: string
+          p_org_id: string
+          p_parent_id?: string
+          p_slug?: string
+        }
+        Returns: string
+      }
+      cat_list: {
+        Args: { p_dimension?: string }
+        Returns: {
+          color: string
+          dimension: string
+          icon: string
+          id: string
+          is_system: boolean
+          name: string
+          org_id: string
+          parent_id: string
+          position: number
+          slug: string
+        }[]
+      }
       check_builtin_drift: {
         Args: { p_builtin_id?: string }
         Returns: {
@@ -32372,6 +32399,42 @@ export type Database = {
       udt_validate_row: {
         Args: { p_data: Json; p_prior: Json; p_table_id: string }
         Returns: Json
+      }
+      ues_get_bulk: {
+        Args: { p_entity_ids: string[]; p_entity_type: string }
+        Returns: {
+          entity_id: string
+          is_favorite: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          last_viewed_at: string
+        }[]
+      }
+      ues_list: {
+        Args: { p_kind?: string }
+        Returns: {
+          entity_id: string
+          entity_type: string
+          is_favorite: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          last_viewed_at: string
+          updated_at: string
+        }[]
+      }
+      ues_set: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_is_favorite?: boolean
+          p_is_hidden?: boolean
+          p_is_pinned?: boolean
+        }
+        Returns: undefined
+      }
+      ues_touch: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: undefined
       }
       update_all_bucket_tree_structures: { Args: never; Returns: Json }
       update_all_trending_scores: { Args: never; Returns: undefined }
