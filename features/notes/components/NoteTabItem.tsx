@@ -23,6 +23,7 @@ import {
   Info,
   Bookmark,
   MoreHorizontal,
+  Database,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -43,6 +44,8 @@ import {
 import { saveNote, copyNote, deleteNote } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
+import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { useIsOwner } from "@/utils/permissions";
 import { cn } from "@/lib/utils";
@@ -93,6 +96,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
 
   const openNoteInfo = useOpenNoteInfoWindow();
+  const openKnowledge = useOpenNoteKnowledgePanel();
+  // Only probe the active tab — avoids a Supabase query per open tab.
+  const ingest = useNoteIngestStatus(isActive ? noteId : null);
 
   // ── Local UI state ─────────────────────────────────────────────────
   const [localLabel, setLocalLabel] = useState(label);
@@ -258,6 +264,21 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       icon: <Info className="w-3.5 h-3.5" />,
       label: "About this note",
       fn: () => openNoteInfo({ noteId, title: label }),
+    },
+    {
+      icon: (
+        <span className="relative inline-flex">
+          <Database className="w-3.5 h-3.5" />
+          {ingest.state === "ingested" && (
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          )}
+        </span>
+      ),
+      label:
+        ingest.state === "ingested"
+          ? "Knowledge base"
+          : "Add to knowledge base",
+      fn: () => openKnowledge({ noteId, title: label }),
     },
     {
       icon: <Download className="w-3.5 h-3.5" />,

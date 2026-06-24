@@ -28,13 +28,18 @@ const PROCESSED_EVENT = "cloud-files:document-processed";
 
 export function useNoteIngestStatus(noteId: string | null): {
   state: NoteIngestState;
+  /** processed_documents.id when ingested — for /rag/viewer/<id> or the
+   *  embedded RAG viewer. Null when not ingested / still loading. */
+  documentId: string | null;
   refresh: () => void;
 } {
   const [state, setState] = useState<NoteIngestState>("loading");
+  const [documentId, setDocumentId] = useState<string | null>(null);
 
   const probe = useCallback(async () => {
     if (!noteId) {
       setState("not_ingested");
+      setDocumentId(null);
       return;
     }
     try {
@@ -52,13 +57,16 @@ export function useNoteIngestStatus(noteId: string | null): {
         // RLS filters rows, it never errors — a real error is transient.
         // Treat as not-ingested for display (the dot just stays off).
         setState("not_ingested");
+        setDocumentId(null);
         return;
       }
       setState(data ? "ingested" : "not_ingested");
+      setDocumentId(data?.id ?? null);
     } catch (err) {
       // Defensive — keep the indicator quiet on any unexpected failure.
       void extractErrorMessage(err);
       setState("not_ingested");
+      setDocumentId(null);
     }
   }, [noteId]);
 
@@ -78,5 +86,5 @@ export function useNoteIngestStatus(noteId: string | null): {
     return () => window.removeEventListener(PROCESSED_EVENT, handler);
   }, [noteId, probe]);
 
-  return { state, refresh: () => void probe() };
+  return { state, documentId, refresh: () => void probe() };
 }

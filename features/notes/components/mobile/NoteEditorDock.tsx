@@ -21,6 +21,7 @@ import {
   Trash2,
   Loader2,
   Network,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,8 @@ import {
 import MobileNoteToolbar from "./MobileNoteToolbar";
 import { NoteContextSection } from "../NoteContextSection";
 import { useToastManager } from "@/hooks/useToastManager";
+import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
+import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +70,8 @@ export function NoteEditorDock({
   isDeleting,
 }: NoteEditorDockProps) {
   const toast = useToastManager("notes");
+  const openKnowledge = useOpenNoteKnowledgePanel();
+  const ingest = useNoteIngestStatus(noteId);
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -292,6 +297,24 @@ export function NoteEditorDock({
         <BottomSheetHeader title="Note Actions" />
         <BottomSheetBody>
           <div className="px-4 py-2 space-y-1">
+            <button
+              onClick={() => {
+                setSheetOpen(null);
+                openKnowledge({ noteId });
+              }}
+              className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
+            >
+              <Database className="h-5 w-5 text-muted-foreground" />
+              {ingest.state === "ingested"
+                ? "Knowledge base"
+                : "Add to knowledge base"}
+              {ingest.state === "ingested" && (
+                <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Indexed
+                </span>
+              )}
+            </button>
             <button
               onClick={() => {
                 onDuplicate();

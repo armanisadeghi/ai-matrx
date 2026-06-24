@@ -520,6 +520,29 @@ export function NoteSidebar({
     setDropTargetFolder(null);
   }, []);
 
+  // Auto-scroll the note list while dragging a note near its top/bottom edge,
+  // so you can drop into a folder that's scrolled out of view. Fires on the
+  // bubbled dragover (folder rows don't stopPropagation); speed scales with
+  // proximity to the edge.
+  const handleListAutoScroll = useCallback(
+    (e: React.DragEvent) => {
+      if (!draggedNoteId) return;
+      const viewport = folderTreeRef.current;
+      if (!viewport) return;
+      const rect = viewport.getBoundingClientRect();
+      const EDGE = 60; // px from edge where scrolling begins
+      const MAX_SPEED = 8; // px/frame at the very edge
+      if (e.clientY >= rect.top && e.clientY < rect.top + EDGE) {
+        const proximity = 1 - (e.clientY - rect.top) / EDGE;
+        viewport.scrollTop -= MAX_SPEED * Math.max(0, proximity);
+      } else if (e.clientY <= rect.bottom && e.clientY > rect.bottom - EDGE) {
+        const proximity = 1 - (rect.bottom - e.clientY) / EDGE;
+        viewport.scrollTop += MAX_SPEED * Math.max(0, proximity);
+      }
+    },
+    [draggedNoteId],
+  );
+
   const handleFolderDrop = useCallback(
     (e: React.DragEvent, targetFolder: string) => {
       e.preventDefault();
@@ -805,7 +828,11 @@ export function NoteSidebar({
       </div>
 
       {/* Note list — grouped or flat */}
-      <div className="flex-1 overflow-y-auto" ref={folderTreeRef}>
+      <div
+        className="flex-1 overflow-y-auto"
+        ref={folderTreeRef}
+        onDragOver={handleListAutoScroll}
+      >
         {listStatus === "loaded" && allNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-8">
             <StickyNote className="w-10 h-10 mb-3 opacity-40" />

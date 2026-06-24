@@ -582,6 +582,13 @@ const DocumentsWorkspace = lazyOverlay(
     ).then((m) => ({ default: m.DocumentsWorkspace })),
   { ssr: false },
 );
+const NoteKnowledgePanel = lazyOverlay(
+  () =>
+    import("@/features/notes/components/NoteKnowledgePanel").then((m) => ({
+      default: m.NoteKnowledgePanel,
+    })),
+  { ssr: false },
+);
 const QuickScribeSheet = lazyOverlay(
   () =>
     import("@/features/transcript-studio/components/QuickScribeSheet").then(
@@ -952,6 +959,9 @@ export default function OverlayController() {
     workingDocumentPanel: useAppSelector((s) =>
       selectIsOverlayOpen(s, "workingDocumentPanel"),
     ),
+    noteKnowledgePanel: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "noteKnowledgePanel"),
+    ),
     quickScribe: useAppSelector((s) => selectIsOverlayOpen(s, "quickScribe")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) =>
@@ -1196,6 +1206,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     workingDocumentPanel: useAppSelector((s) =>
       selectOverlayData(s, "workingDocumentPanel"),
+    ) as Record<string, unknown> | null,
+    noteKnowledgePanel: useAppSelector((s) =>
+      selectOverlayData(s, "noteKnowledgePanel"),
     ) as Record<string, unknown> | null,
     quickScribe: useAppSelector((s) =>
       selectOverlayData(s, "quickScribe"),
@@ -3818,6 +3831,37 @@ export default function OverlayController() {
               defaultRailOpen={false}
               className="h-full"
             />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* noteKnowledgePanel — a note's RAG / knowledge-base surface (index,
+          status, re-index, chunks + test search) in a resizable right sidebar. */}
+      {(() => {
+        const isOpen = isOpenById.noteKnowledgePanel;
+        const data = dataById.noteKnowledgePanel as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const noteId =
+          typeof data?.noteId === "string" ? data.noteId : null;
+        if (!noteId) return null;
+        const title =
+          typeof data?.title === "string" && data.title
+            ? `Knowledge base — ${data.title}`
+            : "Knowledge base";
+        return (
+          <SidePanelSurface
+            title={title}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "noteKnowledgePanel" }))
+            }
+            storageKey="note-knowledge-panel"
+            defaultWidth={640}
+            maxWidth={1000}
+          >
+            <NoteKnowledgePanel noteId={noteId} />
           </SidePanelSurface>
         );
       })()}

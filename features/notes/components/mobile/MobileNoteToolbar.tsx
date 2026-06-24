@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { FolderOpen, Tag as TagIcon, X, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { FolderOpen, FolderPlus, Tag as TagIcon, X, Plus } from 'lucide-react';
 import { useNotesRedux } from '../../hooks/useNotesRedux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAllFolders } from '@/features/notes/utils/folderUtils';
+import { CreateFolderDialog } from '../CreateFolderDialog';
+import { createFolder } from '../../service/notesService';
 
 interface MobileNoteToolbarProps {
   folder: string;
@@ -26,8 +28,23 @@ export default function MobileNoteToolbar({
   const { notes } = useNotesRedux();
   const [newTag, setNewTag] = useState('');
   const [showFolders, setShowFolders] = useState(true);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
 
   const availableFolders = useAllFolders(notes);
+
+  // Create a folder (note_folders record) then move THIS note into it — same
+  // data model the desktop sidebar uses; the folder then shows in the list.
+  const handleCreateFolder = (name: string) => {
+    void (async () => {
+      try {
+        await createFolder(name);
+      } catch {
+        /* fall through — assigning the note still surfaces the folder */
+      }
+      onFolderChange(name);
+      onClose();
+    })();
+  };
 
   const handleAddTag = () => {
     const trimmedTag = newTag.trim();
@@ -78,6 +95,13 @@ export default function MobileNoteToolbar({
         {showFolders ? (
           /* Folders View */
           <div className="space-y-2">
+            <button
+              onClick={() => setCreateFolderOpen(true)}
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-border/80 transition-colors"
+            >
+              <FolderPlus size={18} />
+              <span className="flex-1 text-left font-medium">New folder…</span>
+            </button>
             {availableFolders.map((folderName) => (
               <button
                 key={folderName}
@@ -160,6 +184,13 @@ export default function MobileNoteToolbar({
           Done
         </Button>
       </div>
+
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        existingFolders={availableFolders}
+        onConfirm={handleCreateFolder}
+      />
     </div>
   );
 }

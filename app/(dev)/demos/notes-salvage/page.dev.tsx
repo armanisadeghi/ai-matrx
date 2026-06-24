@@ -69,24 +69,24 @@ const DELETED = [
 
 const PORT_CANDIDATES = [
   {
-    title: "RAG / knowledge-base indexing (shown at top)",
+    title: "RAG / knowledge-base indexing — SHIPPED (2026-06-24)",
     detail:
-      "ProcessForRagButton (sourceKind=\"note\") + useNoteIngestStatus dot. The canonical /notes tab has no way to index a note into the knowledge base. Worth wiring into the tab “…” menu.",
+      "Now in the tab “…” menu (“Add to knowledge base” / “Knowledge base”, with an indexed dot) and the mobile dock’s More sheet. Opens NoteKnowledgePanel in a pop-out side panel: index/re-index + the canonical RAG viewer (chunks + Test search). The live cluster above remains for quick trying.",
   },
   {
-    title: "Sidebar drag-edge auto-scroll",
+    title: "Sidebar drag-edge auto-scroll — SHIPPED (2026-06-24)",
     detail:
-      "The legacy NotesSidebar auto-scrolled the list while dragging a note near the top/bottom edge. The canonical NoteSidebar dropped this. Behavior, not a component — port into NoteSidebar's DnD if note reordering grows.",
+      "Ported into NoteSidebar (handleListAutoScroll): the note list auto-scrolls while you drag a note near its top/bottom edge.",
   },
   {
-    title: "Mobile “New Folder” creation",
+    title: "Mobile “New Folder” creation — SHIPPED (2026-06-24)",
     detail:
-      "MobileActionsMenu let you create a folder on mobile (TextInputDialog + findOrCreateEmptyNote). The live mobile surface only picks from existing folders. Both primitives survive — add a “New folder” entry to the mobile dock.",
+      "Added to the mobile dock’s Folder sheet (MobileNoteToolbar) — reuses the desktop CreateFolderDialog + createFolder, then moves the current note into the new folder.",
   },
   {
-    title: "Declarative single/split frame (RSC idea)",
+    title: "Declarative single/split frame (RSC idea) — not pursued",
     detail:
-      "shell/NoteViewShell expressed single-vs-split layout as a tiny declarative frame. NotesView inlines split imperatively. Not worth resurrecting, but the pattern is a clean direction if /notes ever moves to server components.",
+      "shell/NoteViewShell expressed single-vs-split layout as a tiny declarative frame. Left as a future direction only; not resurrected.",
   },
 ];
 
