@@ -9,8 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {GameConfiguration, useGameSettings} from '../hooks/useGameSettings';
 
-export const GameSettings = () => {
-    const { settings, updateSettings, resetSettings } = useGameSettings();
+interface GameSettingsProps {
+    settings?: GameConfiguration;
+    updateSettings?: (next: Partial<GameConfiguration>) => void;
+    resetSettings?: () => void;
+}
+
+export const GameSettings = (props: GameSettingsProps = {}) => {
+    // Use the shared instance passed by the page when provided (so the sliders
+    // drive the live game); otherwise fall back to a standalone instance.
+    const fallback = useGameSettings();
+    const settings = props.settings ?? fallback.settings;
+    const updateSettings = props.updateSettings ?? fallback.updateSettings;
+    const resetSettings = props.resetSettings ?? fallback.resetSettings;
 
     const handleSliderChange = (key: keyof GameConfiguration) => (value: number[]) => {
         updateSettings({ [key]: value[0] });

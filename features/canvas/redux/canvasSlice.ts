@@ -31,7 +31,13 @@ export type CanvasContentType =
   | "transcript"
   | "structured_info"
   | "tree"
-  | "tasks";
+  | "tasks"
+  // Live per-conversation editor surfaces (not artifacts) — render the real
+  // WorkingDocumentPanel inside the Canvas shell. `data` is a pointer
+  // `{ conversationId, kind }`; the panel reads live content from Redux and
+  // persists itself (cx_working_documents), so these are NON_PERSISTABLE here.
+  | "working_document"
+  | "scratchpad";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —

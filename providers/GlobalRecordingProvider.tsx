@@ -158,23 +158,17 @@ export function GlobalRecordingProvider({
     dispatch(failedChunkCountChanged(recorder.failedChunkCount));
   }, [dispatch, recorder.failedChunkCount]);
 
-  const start = useCallback(
+  // The newest start-request that is waiting for an in-flight recording to
+  // finish finalizing before it begins. Start-always-wins: only the LATEST
+  // pending request survives — a rapid A→B→C just records C.
+  const pendingStartRef = useRef<StartRecordingArgs | null>(null);
+
+  // The actual "begin a fresh recording" — wires the per-recording callbacks,
+  // marks the slice started, and kicks the shared recorder. Used both for an
+  // immediate start (recorder idle) and for a queued takeover once the previous
+  // recording has finished finalizing.
+  const beginRecording = useCallback(
     async (args: StartRecordingArgs): Promise<void> => {
-      if (recorder.isRecording) {
-        const message =
-          "A recording is already in progress. Stop it before starting a new one.";
-        args.onError?.(message);
-        throw new Error(message);
-      }
-      // Block while the previous recording is still finalizing. Starting now
-      // would reset the shared recorder's refs and strand the prior recording's
-      // pending finalize (lost transcript/audio + a card stuck "Saving…").
-      if (isFinalizing || recorder.isTranscribing) {
-        const message =
-          "Still saving the previous recording. Try again in a moment.";
-        args.onError?.(message);
-        throw new Error(message);
-      }
       contextRef.current = args.context;
       chunkSubRef.current = args.onChunkComplete;
       completeSubRef.current = args.onComplete;
@@ -188,7 +182,7 @@ export function GlobalRecordingProvider({
       );
       await recorder.startRecording();
     },
-    [dispatch, recorder, isFinalizing],
+    [dispatch, recorder],
   );
 
   const finalizeSafetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -206,6 +200,63 @@ export function GlobalRecordingProvider({
     dispatch(recordingStopped());
     recorder.stopRecording();
   }, [dispatch, recorder]);
+
+  const start = useCallback(
+    async (args: StartRecordingArgs): Promise<void> => {
+      // START-ALWAYS-WINS. There is exactly one shared recorder, so two
+      // recordings can never run at once. A new request never errors with
+      // "busy" — instead it TAKES OVER:
+      //   • If a recording is live, stop it (its transcript/audio finalize
+      //     safely in the background — nothing is stranded because the shared
+      //     refs aren't reset until that recording's finalize completes) and
+      //     queue this request; the flush effect below begins it the moment the
+      //     previous one is done finalizing.
+      //   • If a previous recording is still finalizing, just queue this one.
+      //   • Otherwise begin immediately.
+      // NOTE: with the single shared recorder there is a brief (~1 chunk)
+      // finalize gap between takeovers. A zero-gap instant handoff would require
+      // detaching the finalizer from the recorder instance — tracked as a
+      // follow-up; this keeps the never-lose-audio guarantee intact.
+      if (recorder.isRecording) {
+        pendingStartRef.current = args;
+        stop();
+        return;
+      }
+      if (isFinalizing || recorder.isTranscribing) {
+        pendingStartRef.current = args;
+        return;
+      }
+      await beginRecording(args);
+    },
+    [
+      recorder.isRecording,
+      recorder.isTranscribing,
+      isFinalizing,
+      stop,
+      beginRecording,
+    ],
+  );
+
+  // Flush a queued takeover once the previous recording is fully done: not
+  // recording, not transcribing, and past the finalize gate. This is the single
+  // place a deferred start fires, so it can't race the shared recorder's refs.
+  useEffect(() => {
+    if (
+      pendingStartRef.current &&
+      !isFinalizing &&
+      !recorder.isRecording &&
+      !recorder.isTranscribing
+    ) {
+      const next = pendingStartRef.current;
+      pendingStartRef.current = null;
+      void beginRecording(next);
+    }
+  }, [
+    isFinalizing,
+    recorder.isRecording,
+    recorder.isTranscribing,
+    beginRecording,
+  ]);
 
   useEffect(() => {
     if (!isFinalizing && finalizeSafetyRef.current) {

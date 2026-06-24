@@ -837,6 +837,15 @@ export interface ManagedAgentOptions {
   shortcutId?: string;
   manual?: { label?: string; baseSettings?: Partial<LLMParams> };
 
+  /**
+   * Client-assigned conversation id to use for this launch instead of minting a
+   * fresh one. `useAgentLauncher` resolves a STABLE id per surface (reuse the
+   * focused id, else mint once) and threads it here so the conversation exists
+   * under a known id from the first render — never null, never re-minted on
+   * remount. The server honors this id end-to-end (turn-1 body + X-Conversation-ID).
+   */
+  conversationId?: string;
+
   /** UI surface that triggered the launch. Required for telemetry and attribution. */
   sourceFeature: SourceFeature;
 

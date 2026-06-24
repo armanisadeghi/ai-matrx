@@ -41,6 +41,21 @@ import {
 import { toAudioFile } from "../utils/audio-mime";
 
 /**
+ * The capture constraints for a recording. Shared by `startRecording` and
+ * `resumeRecording` so a resume re-acquires the mic with the EXACT same shape
+ * as the original start (the warm singleton reuses a live stream regardless,
+ * but if the keepalive elapsed during a long pause this guarantees the fresh
+ * `getUserMedia` matches). 16 kHz mono is what the Whisper pipeline expects.
+ */
+const CAPTURE_CONSTRAINTS: MediaTrackConstraints = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+  sampleRate: 16_000,
+  channelCount: 1,
+};
+
+/**
  * Per-chunk timing + content payload. Fires once per chunk after a successful
  * transcription. `tStart` / `tEnd` are session-relative seconds (paused time
  * excluded), measured from the most recent `startRecording()` call.
@@ -694,13 +709,7 @@ export function useChunkedRecordAndTranscribe({
 
       // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
       // on every recording. Released (not hard-stopped) on teardown.
-      const stream = await acquireMicStream({
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        sampleRate: 16_000,
-        channelCount: 1,
-      });
+      const stream = await acquireMicStream(CAPTURE_CONSTRAINTS);
       micHeldRef.current = true;
       streamRef.current = stream;
 
@@ -861,25 +870,63 @@ export function useChunkedRecordAndTranscribe({
       rafRef.current = null;
     }
 
+    // Flush the current chunk (onstop → transcribeBlob saves + transcribes it).
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
+
+    // STANDBY, not "open". A paused recording is not capturing anything, so the
+    // mic hardware must be RELEASED — closing the track turns the OS/browser mic
+    // indicator OFF (merely flipping `track.enabled = false` would leave the
+    // light on, which alarms users and is the exact "open vs standby" bug we're
+    // killing). The grant + chosen device survive in the warm singleton, so
+    // `resumeRecording` re-acquires instantly with no re-prompt.
+    disconnectAnalyser();
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
+    }
 
     pausedAtRef.current = Date.now();
     setAudioLevel(0);
     setIsPaused(true);
-  }, []);
+  }, [disconnectAnalyser]);
 
-  const resumeRecording = useCallback(() => {
-    if (!streamRef.current) return;
-    pausedDurationRef.current += Date.now() - pausedAtRef.current;
+  const resumeRecording = useCallback(async () => {
+    // Re-acquire the mic out of standby. Within the singleton's keepalive this
+    // returns the same warm stream; after it, a fresh `getUserMedia` — both
+    // re-prompt-free on a granted origin. A new stream object means we must
+    // rebuild the analyser source (the old one was disconnected on pause).
+    try {
+      const stream = await acquireMicStream(CAPTURE_CONSTRAINTS);
+      micHeldRef.current = true;
+      streamRef.current = stream;
 
-    mediaRecorderRef.current = createRecorder(streamRef.current);
+      const sharedCtx = getSharedAudioContext();
+      if (sharedCtx) {
+        await resumeSharedAudioContext();
+        audioCtxRef.current = sharedCtx;
+        analyserRef.current = sharedCtx.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        const source = sharedCtx.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+        sourceNodeRef.current = source;
+      }
 
-    startAudioAnalysis();
-    startDurationTimer();
-    scheduleNextRotationRef.current?.();
-    setIsPaused(false);
-  }, [createRecorder, startAudioAnalysis, startDurationTimer, rotateChunk]);
+      pausedDurationRef.current += Date.now() - pausedAtRef.current;
+      mediaRecorderRef.current = createRecorder(stream);
+
+      startAudioAnalysis();
+      startDurationTimer();
+      scheduleNextRotationRef.current?.();
+      setIsPaused(false);
+    } catch (err) {
+      const sol = getErrorSolution(err);
+      onErrorRef.current?.(sol.message, sol.code);
+      cleanup();
+    }
+  }, [createRecorder, startAudioAnalysis, startDurationTimer, cleanup]);
 
   const reset = useCallback(() => {
     cleanup();

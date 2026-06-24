@@ -280,6 +280,7 @@ export const launchAgentExecution = createAsyncThunk<
     runtime,
     config,
     onConversationCreated,
+    conversationId: providedConversationId,
   } = options;
 
   // ── Read all config/runtime values from the nested bundles ────────────────
@@ -564,6 +565,9 @@ export const launchAgentExecution = createAsyncThunk<
     conversationId = await dispatch(
       createManualInstance({
         agentId,
+        ...(providedConversationId
+          ? { conversationId: providedConversationId }
+          : {}),
         sourceFeature,
         autoClearConversation,
         showAutoClearToggle,

@@ -16,6 +16,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { batch } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import type {
   AgentType,
@@ -194,6 +195,12 @@ export const createManualInstance = createAsyncThunk<
   const snapshot = readAgentSnapshot(state, agentId);
   const resolvedAgentType = agentType ?? snapshot.agentType;
 
+  // Atomic creation: batch all per-slice init dispatches into ONE React commit.
+  // react-redux's useSyncExternalStore re-renders subscribers on EVERY store
+  // mutation (to avoid tearing) and does NOT auto-batch across them, so without
+  // this wrapper a subscribed runner re-renders once per init action (~9×).
+  // `batch` coalesces them into a single notification → one render.
+  batch(() => {
   dispatch(
     createInstance({
       conversationId,
@@ -254,6 +261,7 @@ export const createManualInstance = createAsyncThunk<
     }),
   );
   dispatch(initInstanceMessages({ conversationId, apiEndpointMode }));
+  });
 
   return conversationId;
 });

@@ -1,5 +1,5 @@
 // types.ts
-import { LucideIcon } from 'lucide-react';
+import { ComponentType } from 'react';
 
 export type GameStatus = 'selecting' | 'ready' | 'playing' | 'gameover';
 
@@ -37,7 +37,7 @@ export interface GameState {
 }
 
 export interface Character {
-    icon: LucideIcon | any;
+    icon: ComponentType<{ size?: number | string; className?: string }>;
     name: string;
     render: (ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => void;
 }

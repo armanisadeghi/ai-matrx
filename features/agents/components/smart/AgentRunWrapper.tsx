@@ -25,6 +25,10 @@ export function AgentRunWrapper({
 }: AgentRunWrapperProps) {
   const surfaceKey = `${sourceFeature}:${agentId}`;
 
+  if (typeof window !== "undefined") {
+    console.log(`[Track AgentRunWrapper Render] surfaceKey=${surfaceKey}`);
+  }
+
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,

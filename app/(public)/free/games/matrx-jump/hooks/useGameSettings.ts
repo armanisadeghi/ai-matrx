@@ -34,7 +34,7 @@ export interface GameConfiguration {
     enemySpawnHeightBuffer: number;
 }
 
-const DEFAULT_SETTINGS: GameConfiguration = {
+export const DEFAULT_SETTINGS: GameConfiguration = {
     canvasWidth: 400,
     canvasHeight: 800,
     playerSize: 30,

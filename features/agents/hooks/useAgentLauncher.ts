@@ -24,8 +24,12 @@
  * handles conversation creation, source tracking, display-mode routing, and execution.
  */
 
-import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useCallback, useEffect, useRef } from "react";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import {
   destroyInstanceIfAllowed,
   destroyInstanceIfAbandoned,
@@ -35,6 +39,7 @@ import {
   selectFocusedConversation,
   selectDisplayConversation,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { generateConversationId } from "../redux/execution-system/utils/ids";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 import type { ManagedAgentOptions } from "../types/instance.types";
 import type { ConversationInvocation } from "../types/conversation-invocation.types";
@@ -140,11 +145,34 @@ export function useAgentLauncher(
 ): ImperativeMethods | ManagedReturn {
   const options = normaliseOptions(optionsInput);
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const surfaceKey = options?.surfaceKey;
-  const conversationId = useAppSelector(selectFocusedConversation(surfaceKey));
+  const focusedConversationId = useAppSelector(
+    selectFocusedConversation(surfaceKey),
+  );
   const displayConversationId = useAppSelector(
     selectDisplayConversation(surfaceKey ?? ""),
   );
+
+  // Stable per-surface conversation id. Resolve it synchronously DURING render
+  // (reuse the focused id, else mint once into a ref and keep it) so the managed
+  // consumer renders against a real id from the very first paint — never null,
+  // never re-minted on re-render. The effect below performs the actual create
+  // (or reuse) using this same id. The id is client-authoritative end-to-end:
+  // the server honors it (turn-1 body `conversation_id` + `X-Conversation-ID`).
+  const isManagedHook = agentId != null && surfaceKey != null;
+  const mintedIdRef = useRef<string | null>(null);
+  const mintedForKeyRef = useRef<string | undefined>(undefined);
+  if (isManagedHook && mintedForKeyRef.current !== surfaceKey) {
+    // First run, or the surface changed (incl. an agent swap that re-keys the
+    // surfaceKey) → resolve a fresh stable id for this surface: reuse its
+    // focused id if one exists, else mint once.
+    mintedForKeyRef.current = surfaceKey;
+    mintedIdRef.current = focusedConversationId ?? generateConversationId();
+  }
+  const conversationId = isManagedHook
+    ? (focusedConversationId ?? mintedIdRef.current)
+    : focusedConversationId;
 
   // ── Imperative methods (always created) ──────────────────────────────────
 
@@ -152,6 +180,7 @@ export function useAgentLauncher(
     async (id: string, opts?: ManagedAgentOptions): Promise<LaunchResult> => {
       const payload: ManagedAgentOptions = {
         agentId: id,
+        conversationId: opts?.conversationId,
         surfaceKey: opts?.surfaceKey,
         sourceFeature: opts?.sourceFeature,
         config: opts?.config,
@@ -248,11 +277,31 @@ export function useAgentLauncher(
   useEffect(() => {
     if (!isManaged || !ready || !surfaceKey) return;
 
-    let createdId: string | null = null;
+    // The id resolved synchronously during render — the instance is created
+    // (or reused) under THIS id, so the surface never re-keys.
+    const targetId = mintedIdRef.current!;
     let cancelled = false;
+
+    // Reuse branch: a live instance already exists for this surface's id (e.g.
+    // a remount where the conversation was retained). Re-point focus if needed
+    // and do nothing else — no create, no destroy, no dispatch storm.
+    const existing =
+      store.getState().conversations.byConversationId[targetId];
+    if (existing) {
+      if (selectFocusedConversation(surfaceKey)(store.getState()) !== targetId) {
+        dispatch(setFocus({ surfaceKey, conversationId: targetId }));
+      }
+      return;
+    }
+
+    // Create branch: set focus to the known id SYNCHRONOUSLY up-front (so the
+    // consumer is already pointed at the right conversation before the async
+    // create resolves), then launch with that same id threaded through.
+    dispatch(setFocus({ surfaceKey, conversationId: targetId }));
 
     launchAgent(agentId!, {
       surfaceKey,
+      conversationId: targetId,
       sourceFeature,
       // Managed-mode defaults: direct display, no auto-run.
       // Caller's config takes precedence via the spread.
@@ -264,15 +313,14 @@ export function useAgentLauncher(
       jsonExtraction,
       isEphemeral,
     })
-      .then((result) => {
-        createdId = result.conversationId;
-        // If this effect was torn down before the launch resolved (agent
-        // switch / route change), the surface has moved on — setting focus now
-        // would revert it to this stale conversation. Skip it.
-        if (cancelled) return;
-        dispatch(
-          setFocus({ surfaceKey, conversationId: result.conversationId }),
-        );
+      .then(() => {
+        // Torn down before the create resolved (close / route change): the
+        // instance just landed under targetId but nothing is mounted on it —
+        // reap it per the unmount policy so we don't orphan a Redux record.
+        if (cancelled) {
+          if (retainOnUnmount) dispatch(destroyInstanceIfAbandoned(targetId));
+          else dispatch(destroyInstanceIfAllowed(targetId));
+        }
       })
       .catch((err) =>
         console.error("Failed to create agent conversation:", err),
@@ -280,16 +328,13 @@ export function useAgentLauncher(
 
     return () => {
       cancelled = true;
-      if (createdId) {
-        // retainOnUnmount surfaces (chat route) keep started conversations
-        // alive across the route change that promotes /chat/new →
-        // /chat/[conversationId]; only abandoned (empty) instances are
-        // reaped. Everyone else destroys unconditionally.
-        if (retainOnUnmount) {
-          dispatch(destroyInstanceIfAbandoned(createdId));
-        } else {
-          dispatch(destroyInstanceIfAllowed(createdId));
-        }
+      // retainOnUnmount surfaces (chat route) keep started conversations alive
+      // across the route change that promotes /chat/new → /chat/[id]; only
+      // abandoned (empty) instances are reaped. Everyone else destroys.
+      if (retainOnUnmount) {
+        dispatch(destroyInstanceIfAbandoned(targetId));
+      } else {
+        dispatch(destroyInstanceIfAllowed(targetId));
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

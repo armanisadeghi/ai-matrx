@@ -9,8 +9,10 @@
  * Writes happen exclusively from the provider via these reducers.
  *
  * Design constraints:
- *   - At most one recording at a time, app-wide. The provider rejects a second
- *     `start()` while `isRecording === true`. This slice never holds an array
+ *   - At most one recording at a time, app-wide. Concurrent recording is
+ *     structurally impossible: there is ONE shared recorder behind the
+ *     provider. A new `start()` follows "start-always-wins" — it takes over any
+ *     in-flight recording rather than erroring. This slice never holds an array
  *     of concurrent recordings.
  *   - `audioLevel` updates ~60fps when recording. We don't subscribe to it
  *     from any list-rendering selectors; the pill reads it directly.
@@ -21,7 +23,13 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 export type RecordingContext =
   | { kind: "studio"; sessionId: string }
   | { kind: "voice-pad"; instanceId: string }
-  | { kind: "standalone"; label?: string };
+  | { kind: "standalone"; label?: string }
+  // A text-field surface (ProTextarea, ProInput, prompt/agent/notes inputs…)
+  // driving the one shared recorder via `useVoiceCapture`. `instanceId`
+  // identifies WHICH field currently owns the recorder so each field knows
+  // whether the live transcript belongs to it; `label` is for the global
+  // awareness indicator ("Recording — Agent message").
+  | { kind: "field"; instanceId: string; label?: string };
 
 export interface RecordingsState {
   isRecording: boolean;
