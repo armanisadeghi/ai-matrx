@@ -9,14 +9,14 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   buildCodeWorkspaceContextData,
   CODE_WORKSPACE_CONTEXT_MENU_PROPS,
 } from "@/features/code/agent-context/buildCodeWorkspaceContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { textareaCursorMeta } from "@/features/code/agent-context/textareaCursorMeta";
-import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
 import {
   DEMO_CODE_EDITOR_ALL_DIAGNOSTICS,
   DEMO_CODE_EDITOR_DIAGNOSTICS,
@@ -25,14 +25,6 @@ import {
   DEMO_CODE_EDITOR_LANGUAGE,
 } from "../_fixtures/code-editor-demo";
 import { DemoProTextarea } from "./DemoProTextarea";
-
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
 
 export interface CodeEditorDemoPanelProps {
   title: string;
@@ -44,7 +36,7 @@ export interface CodeEditorDemoPanelProps {
    */
   contextFilterMode?: "production" | "explicit";
   /** Extra props merged onto the production code-editor menu baseline. */
-  menuOverrides?: Partial<UnifiedAgentContextMenuProps>;
+  menuOverrides?: Partial<EditableContextMenuProps>;
   minHeightClass?: string;
 }
 
@@ -96,7 +88,7 @@ export function CodeEditorDemoPanel({
     },
   );
 
-  const explicitContextProps: Partial<UnifiedAgentContextMenuProps> =
+  const explicitContextProps: Partial<EditableContextMenuProps> =
     contextFilterMode === "explicit"
       ? {
           addedContexts: ["code-editor"],
@@ -125,7 +117,7 @@ export function CodeEditorDemoPanel({
         <h2 className="text-sm font-semibold">{title}</h2>
         <div className="text-[11px] text-muted-foreground">{description}</div>
       </header>
-      <UnifiedAgentContextMenu
+      <EditableContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         {...explicitContextProps}
         contextData={contextData}
@@ -148,7 +140,7 @@ export function CodeEditorDemoPanel({
           mono
           minHeightClass={minHeightClass}
         />
-      </UnifiedAgentContextMenu>
+      </EditableContextMenu>
     </section>
   );
 }
