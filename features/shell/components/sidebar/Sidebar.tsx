@@ -14,6 +14,7 @@
 
 import NavItem from "./NavItem";
 import NavFlyoutGroup from "./NavFlyoutGroup";
+import FavoritesNavGroup from "./FavoritesNavGroup";
 import AdminSidebarSection from "./admin-menu/AdminSidebarSection";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
@@ -64,6 +65,9 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
 
         {/* Standard nav — always server-rendered */}
         <div className="shell-sidebar-main-nav">
+          {/* Favorites — client island; reads pins from Redux (no fetch). Authed
+              users only (favorites are per-user). */}
+          {isAuthenticated && <FavoritesNavGroup />}
           {visibleItems.map((item) =>
             item.children ? (
               <NavFlyoutGroup key={item.label} item={item} />

@@ -5,6 +5,11 @@
 -- (public.conversation / public.recipe / public.udt_datasets). Those are not the
 -- tables users actually fill today.
 --
+-- NOTE on conversations: the live chat writes to public.cx_conversation
+-- (user_id, soft-deleted via deleted_at). public.conversations (plural) is a
+-- near-empty/unused table and public.conversation (singular) is legacy — do NOT
+-- count either.
+--
 -- Security: derives identity from auth.uid() and takes NO parameter, so a caller
 -- can never request another user's counts (unlike get_user_stats which trusted a
 -- p_user_id arg). SECURITY DEFINER so the counts ignore per-row RLS visibility
@@ -27,9 +32,9 @@ begin
 
   return jsonb_build_object(
     'agents',          (select count(*) from public.agx_agent    where user_id = uid and coalesce(is_archived, false) = false),
-    'conversations',   (select count(*) from public.conversations where created_by = uid),
+    'conversations',   (select count(*) from public.cx_conversation where user_id = uid and deleted_at is null),
     'knowledge_files', (select count(*) from public.cld_files     where owner_id = uid and deleted_at is null),
-    'published_apps',  (select count(*) from public.aga_apps      where user_id = uid and published_at is not null),
+    'published_apps',  (select count(*) from public.aga_apps        where user_id = uid and status = 'published'),
     'notes',           (select count(*) from public.notes        where user_id = uid and coalesce(is_deleted, false) = false),
     'tasks',           (select count(*) from public.ctx_tasks    where user_id = uid),
     'transcripts',     (select count(*) from public.transcripts  where user_id = uid and coalesce(is_deleted, false) = false),

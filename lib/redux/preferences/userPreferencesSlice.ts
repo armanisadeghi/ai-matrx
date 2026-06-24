@@ -815,9 +815,9 @@ const userPreferencesSlice = createSlice({
       state,
       action: PayloadAction<T>,
     ) => {
-      const module = action.payload;
-      state[module] = initializeUserPreferencesState()[
-        module
+      const moduleKey = action.payload;
+      state[moduleKey] = initializeUserPreferencesState()[
+        moduleKey
       ] as UserPreferences[T];
       // See note in `setPreference` — auto-save handles persistence.
       state._meta.error = null;

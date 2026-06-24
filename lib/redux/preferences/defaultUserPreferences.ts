@@ -1,6 +1,9 @@
 import { UserPreferences } from "./userPreferencesSlice";
 
 export const defaultUserPreferences: UserPreferences = {
+  favorites: {
+    items: [],
+  },
   display: {
     darkMode: true,
     theme: "default",

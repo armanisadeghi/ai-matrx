@@ -251,6 +251,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 
 | Feature | Doc |
 |---|---|
+| Dashboard (`/dashboard` hub + favorites/pinning primitive) | `features/dashboard/FEATURE.md` |
 | API integrations (incl. MCP) | `features/api-integrations/FEATURE.md` |
 | Tasks + Projects | `features/tasks/FEATURE.md` |
 | Organizations + Invitations | `features/organizations/FEATURE.md` |
