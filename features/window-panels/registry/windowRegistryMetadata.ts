@@ -314,6 +314,18 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Manage favorites (pin/unpin app areas) ───────────────────────────────
+  {
+    slug: "favorites-manager-window",
+    overlayId: "favoritesManagerWindow",
+    kind: "window",
+    label: "Manage Favorites",
+    defaultData: {},
+    // Ephemeral: the picker reads pins from preferences; nothing to restore.
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Gallery ───────────────────────────────────────────────────────────────
   {
     slug: "gallery-window",

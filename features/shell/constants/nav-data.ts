@@ -27,7 +27,8 @@ export type ShellNavActionId =
   | "create-note"
   | "create-document"
   | "create-workbook"
-  | "create-picklist";
+  | "create-picklist"
+  | "manage-favorites";
 
 export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "sidebar",
@@ -1131,6 +1132,57 @@ export function navItemsForViewer<T extends ShellNavItem | ShellNavChild>(
         "guestHref" in item ? (item as ShellNavItem).guestHref : undefined;
       return guestHref ? { ...item, href: guestHref } : item;
     });
+}
+
+/** A single pinnable/navigable destination flattened out of the nav tree. */
+export interface NavDestination {
+  label: string;
+  href: string;
+  iconName: string;
+  color?: string;
+  description?: string;
+  external?: boolean;
+}
+
+/**
+ * Every nav DESTINATION flagged `dashboard: true` — top-level items plus
+ * non-action group children — flattened and deduped by href. The single source
+ * for "things a user can pin / spotlight" (Favorites manager, Discover pool),
+ * so those surfaces never hand-maintain a parallel list.
+ */
+export function flattenNavDestinations(): NavDestination[] {
+  const out: NavDestination[] = [];
+  const seen = new Set<string>();
+  const push = (d: NavDestination) => {
+    if (seen.has(d.href)) return;
+    seen.add(d.href);
+    out.push(d);
+  };
+  for (const item of primaryNavItems) {
+    if (item.dashboard) {
+      push({
+        label: item.label,
+        href: item.href,
+        iconName: item.iconName,
+        color: item.color,
+        description: item.description,
+        external: item.external,
+      });
+    }
+    for (const child of item.children ?? []) {
+      if (child.dashboard && !isNavActionChild(child)) {
+        push({
+          label: child.label,
+          href: child.href,
+          iconName: child.iconName,
+          color: child.color,
+          description: child.description,
+          external: child.external,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 export const settingsItem: ShellNavItem = {

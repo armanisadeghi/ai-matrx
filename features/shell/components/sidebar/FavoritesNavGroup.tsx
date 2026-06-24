@@ -18,24 +18,22 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFavoriteItems } from "@/lib/redux/preferences/userPreferenceSelectors";
 import NavFlyoutGroup from "./NavFlyoutGroup";
-import NavItem from "./NavItem";
 import type { ShellNavChild, ShellNavItem } from "../../constants/nav-data";
 
 const FAVORITES_HREF = "/dashboard"; // hub that hosts the full "Pinned" grid
 
+// Always the last entry — `partitionNavChildren` collects it into the actions
+// section at the bottom of the flyout. Opens the Manage Favorites window so the
+// user can edit their pins straight from this menu (handler in navActions.ts).
+const MANAGE_CHILD: ShellNavChild = {
+  label: "Manage favorites",
+  href: FAVORITES_HREF,
+  iconName: "SlidersHorizontal",
+  action: "manage-favorites",
+};
+
 export default function FavoritesNavGroup() {
   const favorites = useAppSelector(selectFavoriteItems);
-
-  // Empty → plain link to the dashboard (where the user can pin things).
-  if (favorites.length === 0) {
-    const item: ShellNavItem = {
-      label: "Favorites",
-      href: FAVORITES_HREF,
-      iconName: "Star",
-      section: "primary",
-    };
-    return <NavItem item={item} />;
-  }
 
   const children: ShellNavChild[] = favorites.map((f) => ({
     label: f.label,
@@ -43,6 +41,9 @@ export default function FavoritesNavGroup() {
     iconName: f.iconName ?? "Star",
     external: f.href.startsWith("http"),
   }));
+  // "Manage favorites" is always available — even with zero pins, so the user
+  // can open the picker and add their first ones from here.
+  children.push(MANAGE_CHILD);
 
   const item: ShellNavItem = {
     label: "Favorites",

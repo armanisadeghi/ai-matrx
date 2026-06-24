@@ -23,6 +23,7 @@ export const OVERLAY_IDS = [
   "adminStateAnalyzer",
   "adminStateAnalyzerWindow",
   "audioDevices",
+  "favoritesManagerWindow",
   "agentAdminFindUsagesWindow",
   "agentAdminShortcutWindow",
   "agentAdvancedEditorWindow",

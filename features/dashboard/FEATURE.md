@@ -55,7 +55,8 @@ Favorites live in the **`favorites` module of `user_preferences`** (the synced p
 - **Store:** `userPreferences.favorites.items: FavoriteItem[]`, capped at `FAVORITES_MAX` (50). Dedupe + cap enforced in the slice reducers (`addFavorite` / `removeFavorite` / `toggleFavorite` / `reorderFavorites` / `setFavorites`) — single source of truth.
 - **Hook:** `usePinned()` (`components/favorites/usePinned.ts`) — `{ favorites, isPinned, pin, unpin, toggle, reorder }`. `favoriteId(kind, id)` builds stable ids (`nav` favorites use their href).
 - **Button:** `<PinButton item={...} />` (`components/favorites/PinButton.tsx`) — drop on any card/row/header to pin anything.
-- **Sidebar:** `FavoritesNavGroup` (`features/shell/components/sidebar/FavoritesNavGroup.tsx`) — the dual purpose. Reuses `NavFlyoutGroup`; reads pins from Redux; the flyout panel only renders on hover/click (nothing renders until interacted, no query ever).
+- **Sidebar:** `FavoritesNavGroup` (`features/shell/components/sidebar/FavoritesNavGroup.tsx`) — the dual purpose. Reuses `NavFlyoutGroup`; reads pins from Redux; the flyout panel only renders on hover/click (nothing renders until interacted, no query ever). Always appends a **"Manage favorites"** action (nav-action id `manage-favorites` → `navActions.ts`) at the bottom of the flyout.
+- **Manager:** `FavoritesManagerPanel` (`components/favorites/FavoritesManagerPanel.tsx`) — a checklist of every nav destination (`flattenNavDestinations()`) plus "other pins"; check/uncheck to pin/unpin. Shown as the `favoritesManagerWindow` overlay (`features/window-panels/windows/FavoritesManagerWindow.tsx` + opener `features/overlays/openers/favoritesManagerWindow.tsx`). Opened from the sidebar Favorites flyout.
 
 A favorite is a self-contained **reference** (`label`/`href`/`iconName`/`color` snapshot), not a bare id — that's what lets the sidebar + grid render without resolving anything.
 
@@ -103,6 +104,7 @@ A favorite is a self-contained **reference** (`label`/`href`/`iconName`/`color` 
 
 ## Change log
 
+- `2026-06-24` — Claude: Added the **Manage Favorites** window (`favoritesManagerWindow` overlay + `FavoritesManagerPanel`) — a check-to-include picker reachable from the sidebar Favorites flyout ("Manage favorites" action). Extracted `flattenNavDestinations()` into the nav registry (shared by the manager + Discover).
 - `2026-06-24` — Claude: Added 3 KPIs (research reports `rs_topic`, podcasts `pc_episodes`, messages `dm_messages`). Registered `Star` in `shellIconMap` (fixes empty collapsed Favorites entry). Consolidated all curation into `dashboard.config.ts` (Discover hide/order/extra + Start-something).
 - `2026-06-24` — Claude: Moved `/dashboard` from `(transitional)` to `(core)`; rebuilt as a lean hub (engagement metrics via new `get_user_dashboard_metrics` RPC, quick actions, pinned favorites, rotating Discover). Removed the AI-models widget. Added the favorites/pinning primitive (preferences module + `usePinned`/`PinButton`) and the sidebar `FavoritesNavGroup`.
 

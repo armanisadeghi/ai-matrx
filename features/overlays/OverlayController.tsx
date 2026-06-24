@@ -77,6 +77,10 @@ const AudioDevicesWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/AudioDevicesWindow"),
   { ssr: false },
 );
+const FavoritesManagerWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/FavoritesManagerWindow"),
+  { ssr: false },
+);
 const AgentAdminFindUsagesWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/AgentAdminFindUsagesWindow").then(
@@ -785,6 +789,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "adminStateAnalyzerWindow"),
     ),
     audioDevices: useAppSelector((s) => selectIsOverlayOpen(s, "audioDevices")),
+    favoritesManagerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "favoritesManagerWindow"),
+    ),
     agentAdminFindUsagesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentAdminFindUsagesWindow"),
     ),
@@ -3523,6 +3530,20 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "audioDevices" }))
+            }
+          />
+        );
+      })()}
+
+      {/* favoritesManagerWindow */}
+      {(() => {
+        const isOpen = isOpenById.favoritesManagerWindow;
+        if (!isOpen) return null;
+        return (
+          <FavoritesManagerWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "favoritesManagerWindow" }))
             }
           />
         );

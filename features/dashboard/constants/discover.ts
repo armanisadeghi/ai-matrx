@@ -6,10 +6,7 @@
 // To CURATE what shows here (hide / reorder / add), edit `../dashboard.config.ts`
 // — that's the one knob file. This module just assembles the pool from it.
 
-import {
-  primaryNavItems,
-  isNavActionChild,
-} from "@/features/shell/constants/nav-data";
+import { flattenNavDestinations } from "@/features/shell/constants/nav-data";
 import {
   DISCOVER_HIDDEN_HREFS,
   DISCOVER_FEATURED_ORDER,
@@ -30,67 +27,26 @@ export interface DiscoverItem {
 const DISCOVER_DENYLIST = new Set<string>(DISCOVER_HIDDEN_HREFS);
 
 function collectFromNav(): DiscoverItem[] {
-  const out: DiscoverItem[] = [];
-  const seen = new Set<string>();
+  // Start from the shared nav-destination catalog; Discover only advertises
+  // items that carry a blurb and aren't hidden via the config.
+  const out: DiscoverItem[] = flattenNavDestinations()
+    .filter((d) => d.description && !DISCOVER_DENYLIST.has(d.href))
+    .map((d) => ({
+      id: d.href,
+      label: d.label,
+      href: d.href,
+      iconName: d.iconName,
+      description: d.description as string,
+      color: d.color ?? "slate",
+      external: d.external,
+    }));
 
-  const push = (
-    label: string,
-    href: string,
-    iconName: string,
-    description: string | undefined,
-    color: string | undefined,
-    external: boolean | undefined,
-  ) => {
-    if (!description) return; // need a blurb to advertise
-    if (DISCOVER_DENYLIST.has(href)) return;
-    if (seen.has(href)) return;
-    seen.add(href);
-    out.push({
-      id: href,
-      label,
-      href,
-      iconName,
-      description,
-      color: color ?? "slate",
-      external,
-    });
-  };
-
-  for (const item of primaryNavItems) {
-    if (item.dashboard) {
-      push(
-        item.label,
-        item.href,
-        item.iconName,
-        item.description,
-        item.color,
-        item.external,
-      );
-    }
-    for (const child of item.children ?? []) {
-      if (child.dashboard && !isNavActionChild(child)) {
-        push(
-          child.label,
-          child.href,
-          child.iconName,
-          child.description,
-          child.color,
-          child.external,
-        );
-      }
-    }
-  }
-
-  // Custom spotlights from the config (deduped + denylist-respecting via push).
+  // Append custom spotlights from the config (deduped, denylist-respecting).
+  const seen = new Set(out.map((d) => d.href));
   for (const extra of DISCOVER_EXTRA) {
-    push(
-      extra.label,
-      extra.href,
-      extra.iconName,
-      extra.description,
-      extra.color,
-      extra.external,
-    );
+    if (DISCOVER_DENYLIST.has(extra.href) || seen.has(extra.href)) continue;
+    seen.add(extra.href);
+    out.push(extra);
   }
   return out;
 }

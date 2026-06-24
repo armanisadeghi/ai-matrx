@@ -40,6 +40,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  favoritesManagerWindow: {
+    label: "Manage Favorites",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentAdminFindUsagesWindow: {
     label: "Agent Admin Find Usages Window",
     instanceMode: "singleton",

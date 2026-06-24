@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
 import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createWarRoomSession } from "@/features/war-room/redux/thunks";
@@ -40,6 +41,7 @@ export function useNavActions(): ShellNavActionHandlers {
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
   const openPicklistManager = useOpenPicklistManagerV2Window();
+  const openFavoritesManager = useOpenFavoritesManagerWindow();
 
   return {
     "create-project": () => {
@@ -97,6 +99,10 @@ export function useNavActions(): ShellNavActionHandlers {
       // Opens the canonical Pick List manager (browse view) where lists are
       // created and edited.
       openPicklistManager({});
+    },
+    "manage-favorites": () => {
+      // Opens the Manage Favorites window (check app areas to pin/unpin).
+      openFavoritesManager({});
     },
   };
 }
