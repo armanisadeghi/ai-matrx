@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   buildNotesEditorContextData,
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
@@ -15,7 +14,8 @@ import {
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 import { toast } from "sonner";
-import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
 import {
   DEMO_NOTE_FOLDERS,
   DEMO_NOTE_ID,
@@ -26,19 +26,11 @@ import {
 } from "../_fixtures/notes-demo";
 import { DemoProTextarea } from "./DemoProTextarea";
 
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
-
 export interface NotesDemoPanelProps {
   title: string;
   description: React.ReactNode;
   initialContent?: string;
-  menuOverrides?: Partial<UnifiedAgentContextMenuProps>;
+  menuOverrides?: Partial<EditableContextMenuProps>;
   minHeightClass?: string;
 }
 
@@ -141,7 +133,7 @@ export function NotesDemoPanel({
         <h2 className="text-sm font-semibold">{title}</h2>
         <div className="text-[11px] text-muted-foreground">{description}</div>
       </header>
-      <UnifiedAgentContextMenu
+      <EditableContextMenu
         {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
         extraSections={notesExtras}
         getTextarea={() => textareaRef.current}
@@ -169,7 +161,7 @@ export function NotesDemoPanel({
           onMouseUp={syncSelectionFromTextarea}
           minHeightClass={minHeightClass}
         />
-      </UnifiedAgentContextMenu>
+      </EditableContextMenu>
     </section>
   );
 }

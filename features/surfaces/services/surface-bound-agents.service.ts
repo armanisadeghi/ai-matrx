@@ -53,12 +53,69 @@ function dedupeAgents(entries: SurfaceBoundAgentEntry[]): SurfaceBoundAgentEntry
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ── De-dupe cache ──────────────────────────────────────────────────────────
+// The context menu re-mounts its content on every open, so a naive fetch would
+// re-hit the DB each time the user right-clicks. Mirror the unified-menu thunk's
+// guarantee — a result cache + an inflight-promise map keyed by (surface, user)
+// collapse repeated opens to ONE network call per session. `force` bypasses;
+// `invalidateSurfaceBoundAgents` clears after a binding mutation.
+const boundAgentsCache = new Map<string, SurfaceBoundAgentSection[]>();
+const boundAgentsInflight = new Map<
+  string,
+  Promise<SurfaceBoundAgentSection[]>
+>();
+
+function boundAgentsKey(surfaceName: string, userId: string | null): string {
+  return `${surfaceName}::${userId ?? "anon"}`;
+}
+
+/** Drop cached bound-agent sections (all, or one surface) after a mutation. */
+export function invalidateSurfaceBoundAgents(surfaceName?: string): void {
+  if (!surfaceName) {
+    boundAgentsCache.clear();
+    return;
+  }
+  const prefix = `${surfaceName}::`;
+  for (const key of [...boundAgentsCache.keys()]) {
+    if (key.startsWith(prefix)) boundAgentsCache.delete(key);
+  }
+}
+
 /**
  * Fetch bindings for `surfaceName` visible to the caller (RLS) and bucket
  * agents into menu sections. An agent may appear in more than one section
  * when it has bindings at different scope tiers (e.g. owned + org-scoped).
+ *
+ * Deduped: repeated calls for the same `(surfaceName, user)` return the cached
+ * result (or join the inflight request) so re-opening the menu never refetches.
+ * Pass `{ force: true }` to bypass the cache.
  */
 export async function fetchSurfaceBoundAgentsGrouped(
+  surfaceName: string,
+  currentUserId: string | null,
+  opts?: { force?: boolean },
+): Promise<SurfaceBoundAgentSection[]> {
+  const key = boundAgentsKey(surfaceName, currentUserId);
+  if (!opts?.force) {
+    const cached = boundAgentsCache.get(key);
+    if (cached) return cached;
+    const inflight = boundAgentsInflight.get(key);
+    if (inflight) return inflight;
+  }
+  const request = fetchSurfaceBoundAgentsGroupedFromDb(surfaceName, currentUserId)
+    .then((sections) => {
+      boundAgentsCache.set(key, sections);
+      return sections;
+    })
+    .finally(() => {
+      boundAgentsInflight.delete(key);
+    });
+  boundAgentsInflight.set(key, request);
+  return request;
+}
+
+/** Uncached DB read — wrapped by `fetchSurfaceBoundAgentsGrouped` above. */
+async function fetchSurfaceBoundAgentsGroupedFromDb(
   surfaceName: string,
   currentUserId: string | null,
 ): Promise<SurfaceBoundAgentSection[]> {

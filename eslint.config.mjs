@@ -467,6 +467,22 @@ const canonicalMenuStaticImportBan = [
     },
 ];
 
+// Bundle-splitting fence for the v3 context menu. v3's public API is the
+// LIGHTWEIGHT shell (EditableContextMenu / NonEditableContextMenu) — import
+// those statically. The heavy layer is `MenuContent` (MenuBody-class tree +
+// react-icons + data hooks + launchers); the shell reaches it ONLY via
+// `dynamic(() => import('./components/MenuContent'))`. A static import drags the
+// whole heavy graph into the importing chunk, defeating the T0/T1 split.
+// Matches a static default import only; dynamic `import()` is unaffected.
+const contextMenuV3StaticImportBan = [
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v3/components/MenuContent'] > ImportDefaultSpecifier",
+        message:
+            "Do not statically import MenuContent — it's the heavy v3 layer and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
+    },
+];
+
 // Heavy-core "*Impl" components are split behind a thin dynamic wrapper (the
 // "*Impl + wrapper" pattern — see the code-splitting skill). The wrapper
 // dynamic-imports the Impl via a RELATIVE path; importing an `@/…Impl` module
@@ -577,6 +593,8 @@ export default [
                 // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
                 // never a static value import (it balloons the route chunk).
                 ...canonicalMenuStaticImportBan,
+                // v3 menu: MenuContent (heavy) must stay behind the shell's dynamic boundary.
+                ...contextMenuV3StaticImportBan,
                 // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
                 ...heavyImplStaticImportBan,
             ],

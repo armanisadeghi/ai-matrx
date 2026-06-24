@@ -45,6 +45,7 @@ import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
 import type { ContentEditorSeedDocument } from "@/features/window-panels/windows/content-editors/useOpenContentEditorWindow";
 import type { HierarchyCreationWindowData } from "@/features/window-panels/windows/context-scopes/HierarchyCreationWindow";
 import type { ScopeEditWindowData } from "@/features/window-panels/windows/context-scopes/ScopeEditWindow";
+import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
 import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
@@ -505,6 +506,17 @@ const DiffViewerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/DiffViewerWindow"),
   { ssr: false },
 );
+const FindReplaceOverlay = lazyOverlay(
+  () => import("@/features/overlays/components/FindReplaceOverlay"),
+  { ssr: false },
+);
+const ContextAssignmentWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/scopes/components/context-assignment/ContextAssignmentWindow"
+    ).then((m) => ({ default: m.ContextAssignmentWindow })),
+  { ssr: false },
+);
 const NewsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
@@ -836,6 +848,9 @@ export default function OverlayController() {
     cloudFilesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cloudFilesWindow"),
     ),
+    contextAssignment: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "contextAssignment"),
+    ),
     contextSwitcherWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "contextSwitcherWindow"),
     ),
@@ -856,6 +871,7 @@ export default function OverlayController() {
     filePreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
+    findReplace: useAppSelector((s) => selectIsOverlayOpen(s, "findReplace")),
     itemDetailWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "itemDetailWindow"),
     ),
@@ -1066,6 +1082,9 @@ export default function OverlayController() {
     cloudFilesWindow: useAppSelector((s) =>
       selectOverlayData(s, "cloudFilesWindow"),
     ) as Record<string, unknown> | null,
+    contextAssignment: useAppSelector((s) =>
+      selectOverlayData(s, "contextAssignment"),
+    ) as Record<string, unknown> | null,
     contextSwitcherWindow: useAppSelector((s) =>
       selectOverlayData(s, "contextSwitcherWindow"),
     ) as Record<string, unknown> | null,
@@ -1086,6 +1105,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     filePreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    findReplace: useAppSelector((s) =>
+      selectOverlayData(s, "findReplace"),
     ) as Record<string, unknown> | null,
     itemDetailWindow: useAppSelector((s) =>
       selectOverlayData(s, "itemDetailWindow"),
@@ -4022,6 +4044,61 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* contextAssignment */}
+      {(() => {
+        const isOpen = isOpenById.contextAssignment;
+        const data = dataById.contextAssignment as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const rawSubject =
+          data?.subject && typeof data.subject === "object"
+            ? (data.subject as Record<string, unknown>)
+            : null;
+        if (!rawSubject) return null;
+        const subject = {
+          entityType: rawSubject.entityType as ScopeAssignmentEntityType,
+          entityId:
+            typeof rawSubject.entityId === "string" ? rawSubject.entityId : "",
+          title: typeof rawSubject.title === "string" ? rawSubject.title : "",
+        };
+        return (
+          <ContextAssignmentWindow
+            open
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "contextAssignment" }))
+            }
+            subject={subject}
+            mode="assignment"
+            closeOnSaved
+          />
+        );
+      })()}
+
+      {/* findReplace */}
+      {(() => {
+        const isOpen = isOpenById.findReplace;
+        const data = dataById.findReplace as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <FindReplaceOverlay
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "findReplace" }))
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+          />
+        );
+      })()}
 
       {/* TODO: review prop wiring for shareModalWindow */}
       {/* shareModalWindow */}

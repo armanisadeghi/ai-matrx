@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -27,9 +28,8 @@ import {
   selectHasCompareBase,
 } from "@/lib/redux/slices/diffCompareSlice";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
-import { TextActionResultModal } from "@/components/modals/TextActionResultModal";
-import { FindReplaceModal } from "@/components/modals/FindReplaceModal";
-import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
+// TextActionResultModal / FindReplaceModal / ContextDebugModal are heavy modals —
+// dynamically imported ({ ssr: false }) + conditionally rendered below.
 import { toast } from "@/components/ui/use-toast";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -45,7 +45,8 @@ import {
   type AgentMenuEntry,
 } from "./hooks/useUnifiedAgentContextMenu";
 import { useSurfaceBoundAgents } from "./hooks/useSurfaceBoundAgents";
-import { MenuBody } from "./components/MenuBody";
+// MenuBody (the heavy menu body + its icon resolver / react-icons) is
+// dynamically imported below so it never enters the shell's chunk.
 import type { SurfaceBoundAgentEntry } from "@/features/surfaces/services/surface-bound-agents.service";
 import type { ContextMenuExtraSection } from "./extraSections";
 import {
@@ -64,6 +65,49 @@ import {
 } from "./utils/selection-tracking";
 import { buildApplicationScopeFromMenuContext } from "./utils/build-application-scope";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
+
+// Tiny placeholder shown for the (~0.5s) MenuBody chunk load on first open.
+function MenuBodySkeleton() {
+  return (
+    <div className="px-2 py-3 space-y-2" aria-busy="true">
+      <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+      <div className="h-3 w-32 rounded bg-muted animate-pulse" />
+      <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+    </div>
+  );
+}
+
+// ── Heavy children, code-split so the menu SHELL stays near-empty on mount ──
+// 99% of surface renders never open the menu; none of the below enters the
+// shell's chunk. MenuBody (+ its icon resolver / react-icons) loads on first
+// open; each modal loads only when its action fires. All render conditionally:
+// Radix mounts ContextMenuContent only when open, and the modals are gated on
+// their own open-state. This is the "lightweight outer shell" contract.
+const MenuBody = dynamic(
+  () => import("./components/MenuBody").then((m) => ({ default: m.MenuBody })),
+  { ssr: false, loading: () => <MenuBodySkeleton /> },
+);
+const TextActionResultModal = dynamic(
+  () =>
+    import("@/components/modals/TextActionResultModal").then((m) => ({
+      default: m.TextActionResultModal,
+    })),
+  { ssr: false },
+);
+const FindReplaceModal = dynamic(
+  () =>
+    import("@/components/modals/FindReplaceModal").then((m) => ({
+      default: m.FindReplaceModal,
+    })),
+  { ssr: false },
+);
+const ContextDebugModal = dynamic(
+  () =>
+    import("@/components/debug/ContextDebugModal").then((m) => ({
+      default: m.ContextDebugModal,
+    })),
+  { ssr: false },
+);
 
 export type PlacementVisibility = "show" | "hide" | "disable";
 
@@ -1093,22 +1137,24 @@ export function UniversalContextMenuV2({
         />
       )}
 
-      <FindReplaceModal
-        isOpen={findReplaceOpen}
-        onClose={() => {
-          setFindReplaceOpen(false);
-          findReplaceOpenRef.current = false;
-        }}
-        targetElement={
-          selectionRange?.type === "editable"
-            ? (selectionRange.element as
-                | HTMLTextAreaElement
-                | HTMLInputElement
-                | null)
-            : null
-        }
-        onReplace={onTextReplace}
-      />
+      {findReplaceOpen && (
+        <FindReplaceModal
+          isOpen={findReplaceOpen}
+          onClose={() => {
+            setFindReplaceOpen(false);
+            findReplaceOpenRef.current = false;
+          }}
+          targetElement={
+            selectionRange?.type === "editable"
+              ? (selectionRange.element as
+                  | HTMLTextAreaElement
+                  | HTMLInputElement
+                  | null)
+              : null
+          }
+          onReplace={onTextReplace}
+        />
+      )}
     </>
   );
 }
