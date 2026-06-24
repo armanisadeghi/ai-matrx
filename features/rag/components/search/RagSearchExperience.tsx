@@ -22,7 +22,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -95,16 +94,13 @@ import {
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProInput } from "@/components/official/ProInput";
 
-// Heavy client-only menu — code-split so it never lands in the SSR/server
-// chunk and only loads when this client surface mounts. Reused on both the
-// editable search box and the presentational results region.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrappers are the
+// lightweight shell (imported statically); MenuContent lazy-loads on first
+// open. The search box uses the editable wrapper (text replace on the query),
+// the presentational results use the read-only wrapper (Copy/AI/Export/Convert
+// via the DOM-content fallback).
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 // ===========================================================================
 // Agent Chat surface — the "Agent Chat" tab embeds the canonical agent system
@@ -795,9 +791,8 @@ function SearchTab({ scope }: { scope: Scope }) {
           }}
           className="flex items-center gap-2"
         >
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...RAG_SEARCH_CONTEXT_MENU_PROPS}
-            isEditable
             getApplicationScope={getApplicationScope}
             onTextReplace={setQuery}
             contextData={contextData}
@@ -817,7 +812,7 @@ function SearchTab({ scope }: { scope: Scope }) {
               }}
               autoFocus
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
           <Button
             type="submit"
             disabled={!query.trim() || running}
@@ -874,9 +869,8 @@ function SearchTab({ scope }: { scope: Scope }) {
             `key={response.query}` still remounts (enter fade) on each new
             search; removal is immediate. */}
         {response && (
-          <UnifiedAgentContextMenu
+          <NonEditableContextMenu
             {...RAG_SEARCH_CONTEXT_MENU_PROPS}
-            isEditable={false}
             getApplicationScope={getResultsApplicationScope}
             contextData={contextData}
           >
@@ -924,7 +918,7 @@ function SearchTab({ scope }: { scope: Scope }) {
                 ))
               )}
             </motion.div>
-          </UnifiedAgentContextMenu>
+          </NonEditableContextMenu>
         )}
       </ScrollArea>
     </div>

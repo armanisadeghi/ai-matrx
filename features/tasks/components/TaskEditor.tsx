@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Calendar,
@@ -78,17 +77,12 @@ import {
 } from "@/features/tasks/agent-context/buildTasksContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 
-/**
- * The canonical agent context menu — heavy (pulls the unified-menu RPC graph),
- * so it's code-split and never loaded on the server. Matches the Notes wiring.
- */
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrappers are the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+// The editable Description uses EditableContextMenu; the read-only comment
+// thread uses NonEditableContextMenu.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 type Priority = TaskPriority;
 
@@ -761,7 +755,7 @@ function TaskEditorInner({
           {/* Description — ProTextarea: floating label + voice dictation +
               the canonical agent context menu (right-click → run a bound agent
               on the active task with full `matrx-user/tasks` scope). */}
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...TASKS_CONTEXT_MENU_PROPS}
             extraSections={tasksExtras}
             getTextarea={() => descriptionRef.current}
@@ -816,7 +810,7 @@ function TaskEditorInner({
               wrapperClassName="w-full"
               style={{ fontSize: "16px" }}
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
 
           {/* Labels — tight text chips; section icon only (no "Labels" header row) */}
           <div className="flex flex-wrap items-center gap-1 pl-1.5">
@@ -964,9 +958,8 @@ function TaskEditorInner({
               // the comments). Instead the surface scope's `content` is the
               // joined comment thread; the menu captures any live DOM text
               // selection itself at launch.
-              <UnifiedAgentContextMenu
+              <NonEditableContextMenu
                 {...TASKS_CONTEXT_MENU_PROPS}
-                isEditable={false}
                 contextData={{
                   ...contextData,
                   content: comments.map((c) => c.content).join("\n\n"),
@@ -988,7 +981,7 @@ function TaskEditorInner({
                     </div>
                   ))}
                 </div>
-              </UnifiedAgentContextMenu>
+              </NonEditableContextMenu>
             ) : null}
             <ProTextarea
               value={newComment}

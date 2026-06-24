@@ -15,7 +15,6 @@
  */
 
 import React from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -75,15 +74,11 @@ const UUID_RE =
 // Tasks + projects have their own surfaces; don't double-count them as "resources".
 const EXCLUDE_FROM_RESOURCES = new Set(["task", "project"]);
 
-// Heavy agent context menu — code-split off the workspace's first paint. It only
-// mounts the agent/shortcut machinery on right-click, so it never needs SSR.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+// The hero is a read-only identity/overview region → NonEditableContextMenu
+// (the description editor below mounts its own editable Pro "…" menu).
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export function ProjectWorkspace() {
   const params = useParams();
@@ -268,9 +263,8 @@ export function ProjectWorkspace() {
             {/* Presentational surface region — right-click the project's
                 identity/overview the user reads to run an agent on it. The
                 description editor below mounts its own editable Pro menu. */}
-            <UnifiedAgentContextMenu
+            <NonEditableContextMenu
               {...PROJECTS_CONTEXT_MENU_PROPS}
-              isEditable={false}
               getApplicationScope={getApplicationScope}
               contextData={contextData}
               extraSections={projectsExtraSections}
@@ -348,7 +342,7 @@ export function ProjectWorkspace() {
                 />
               </div>
               </div>
-            </UnifiedAgentContextMenu>
+            </NonEditableContextMenu>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
               <div className="flex items-center gap-2">

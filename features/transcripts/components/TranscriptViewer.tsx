@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PromoteToStudioButton } from "@/features/transcript-studio/components/conversion/PromoteToStudioButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useTranscriptsSurfaceScope } from "@/features/transcripts/hooks/useTranscriptsSurfaceScope";
 import {
@@ -50,16 +49,12 @@ import {
 } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
 import { createTranscriptsExtraSections } from "@/features/transcripts/agent-context/transcriptsExtraSections";
 
-// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
-// never lands in the SSR/server chunk; loads only when this client surface
-// mounts. Single-tier dynamic — never nest.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrappers are the
+// lightweight shell (imported statically); MenuContent lazy-loads on first
+// open. The body editor uses the editable wrapper (Cut/Paste/Insert/Save), the
+// presentational viewer uses the read-only wrapper (Copy/AI/Export/Convert).
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export function TranscriptViewer() {
   const { activeTranscript, updateTranscript } = useTranscriptsContext();
@@ -87,7 +82,7 @@ export function TranscriptViewer() {
   // Redux/context state at call time, and reads live `currentTime` /
   // `paused` / `playbackRate` directly off the <audio> element so the
   // scope reflects the moment the user clicks an action — not the last
-  // render. We invoke it here so the scope flows in via UnifiedAgentContextMenu's
+  // render. We invoke it here so the scope flows in via the context menu's
   // `contextData` prop on every render (cheap; audio onTimeUpdate fires
   // a few times per second).
   const buildSurfaceScope = useTranscriptsSurfaceScope({
@@ -607,9 +602,8 @@ export function TranscriptViewer() {
       >
         {isEditingContent ? (
           <div className="max-w-3xl mx-auto space-y-3">
-            <UnifiedAgentContextMenu
+            <EditableContextMenu
               {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
-              isEditable
               getTextarea={() => editContentRef.current}
               getApplicationScope={getEditorApplicationScope}
               onTextReplace={setEditContent}
@@ -631,7 +625,7 @@ export function TranscriptViewer() {
                 // Safari doesn't auto-zoom on focus (text-sm renders at 14px).
                 style={{ fontSize: "16px" }}
               />
-            </UnifiedAgentContextMenu>
+            </EditableContextMenu>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -659,9 +653,8 @@ export function TranscriptViewer() {
             </div>
           </div>
         ) : (
-          <UnifiedAgentContextMenu
+          <NonEditableContextMenu
             {...TRANSCRIPTS_CONTEXT_MENU_PROPS}
-            isEditable={false}
             getApplicationScope={getViewerApplicationScope}
             extraSections={transcriptExtraSections}
             // ApplicationScope.context is typed as object; the menu's
@@ -683,7 +676,7 @@ export function TranscriptViewer() {
                 />
               </CardContent>
             </Card>
-          </UnifiedAgentContextMenu>
+          </NonEditableContextMenu>
         )}
       </div>
     </div>

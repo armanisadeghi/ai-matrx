@@ -2,14 +2,15 @@
 
 /**
  * CodeWorkspaceContextMenu — wires the `(a)/code` workspace's editable Monaco
- * surface to `UnifiedAgentContextMenu` so right-click delivers agent shortcuts
- * + bound agents (filtered by the `code-editor` context) AND can write their
- * output straight back into the buffer.
+ * surface to the universal v3 `EditableContextMenu` so right-click delivers
+ * agent shortcuts + bound agents (filtered by the `code-editor` context) AND
+ * can write their output straight back into the buffer.
  *
- * Editable region of the surface: this wrapper passes `isEditable` and wires
- * `onTextReplace` / `onTextInsertBefore` / `onTextInsertAfter` through Monaco's
- * `executeEdits`, so an agent action that returns replacement text applies in
- * place (read-only diff/preview regions use `CodeReadonlyContextMenu` instead).
+ * Editable region of the surface: this wrapper uses the editable wrapper and
+ * wires `onTextReplace` / `onTextInsertBefore` / `onTextInsertAfter` through
+ * Monaco's `executeEdits`, so an agent action that returns replacement text
+ * applies in place (read-only diff/preview regions use `CodeReadonlyContextMenu`
+ * instead).
  *
  * NOTE: this wrapper deliberately does NOT register Monaco's IDE actions
  * (Format Document, Go to Definition, etc.) inside the Radix menu — the
@@ -18,7 +19,6 @@
  */
 
 import React, { useEffect, useState, type MutableRefObject } from "react";
-import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { formatEditorSurroundContext } from "@/utils/format-editor-surround-context";
 import { selectActiveTab, selectCodeTabs } from "../redux/tabsSlice";
@@ -36,13 +36,9 @@ import {
 } from "./buildCodeWorkspaceContextData";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2").then((mod) => ({
-      default: mod.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 interface CodeWorkspaceContextMenuProps {
   children: React.ReactNode;
@@ -227,7 +223,7 @@ export function CodeWorkspaceContextMenu({
 
   return (
     <div className={className}>
-      <UnifiedAgentContextMenu
+      <EditableContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         contextData={getContextData()}
         getApplicationScope={getApplicationScope}
@@ -236,7 +232,7 @@ export function CodeWorkspaceContextMenu({
         onTextInsertAfter={handleTextInsertAfter}
       >
         {children}
-      </UnifiedAgentContextMenu>
+      </EditableContextMenu>
     </div>
   );
 }
