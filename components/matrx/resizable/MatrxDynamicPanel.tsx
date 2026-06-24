@@ -128,16 +128,14 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
 }) => {
   const [localExpanded, setLocalExpanded] = React.useState(defaultExpanded);
   const [isFullScreen, setIsFullScreen] = React.useState(false);
-  const [lastSize, setLastSize] = React.useState(defaultSize);
-  const [preFullScreenSize, setPreFullScreenSize] = React.useState<
-    number | null
-  >(defaultSize);
   const [currentPosition, setCurrentPosition] =
     React.useState<PanelPosition>(initialPosition);
   const isExpanded = controlledExpanded ?? localExpanded;
   const isMobile = useIsMobile();
 
   const panelGroupRef = React.useRef<GroupImperativeHandle | null>(null);
+  /** Snapshot taken before fullscreen so we can restore via setLayout. */
+  const preFullScreenLayoutRef = React.useRef<Layout | null>(null);
   const isVertical = currentPosition === "top" || currentPosition === "bottom";
   const isStartPosition =
     currentPosition === "left" || currentPosition === "top";
@@ -145,6 +143,27 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
   React.useEffect(() => {
     setCurrentPosition(initialPosition);
   }, [initialPosition]);
+
+  React.useEffect(() => {
+    const group = panelGroupRef.current;
+    if (!group || isMobile) return;
+
+    if (isFullScreen) {
+      if (!preFullScreenLayoutRef.current) {
+        preFullScreenLayoutRef.current = group.getLayout();
+      }
+      group.setLayout({
+        "dynamic-spacer": 0,
+        "dynamic-content": 100,
+      });
+      return;
+    }
+
+    if (preFullScreenLayoutRef.current) {
+      group.setLayout(preFullScreenLayoutRef.current);
+      preFullScreenLayoutRef.current = null;
+    }
+  }, [isFullScreen, isMobile]);
 
   const handlePositionChange = (newPosition: PanelPosition) => {
     setCurrentPosition(newPosition);
@@ -157,30 +176,13 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
   };
 
   const handleFullScreenToggle = () => {
-    setIsFullScreen((prev) => {
-      if (!prev) {
-        setPreFullScreenSize(lastSize);
-        return true;
-      }
-      return false;
-    });
+    setIsFullScreen((prev) => !prev);
   };
 
-  const handlePanelResize = (layout: Layout) => {
-    const contentSize = layout["dynamic-content"];
-    if (
-      contentSize != null &&
-      contentSize >= minSize &&
-      contentSize <= maxSize
-    ) {
-      setLastSize(contentSize);
-    }
-  };
-
+  /** Stable initial sizes only — never feed live resize back into defaultSize
+   *  (that remounts Panel children and breaks sheet content mid-drag). */
   const getPanelSizes = () => {
-    // Mobile is always full screen when expanded
-    // v4: numeric values = pixels, strings = percentages
-    if (isFullScreen || isMobile) {
+    if (isMobile) {
       return {
         contentPanel: {
           defaultSize: "100%",
@@ -195,16 +197,16 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
       };
     }
 
-    const currentSize = preFullScreenSize ?? lastSize;
+    const spacerDefault = Math.max(0, 100 - defaultSize);
 
     return {
       contentPanel: {
-        defaultSize: `${currentSize}%`,
+        defaultSize: `${defaultSize}%`,
         minSize: `${minSize}%`,
         maxSize: `${maxSize}%`,
       },
       spacerPanel: {
-        defaultSize: `${100 - currentSize}%`,
+        defaultSize: `${spacerDefault}%`,
         minSize: `${100 - maxSize}%`,
         maxSize: `${100 - minSize}%`,
       },
@@ -447,9 +449,9 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
     >
       <ResizablePanelGroup
         groupRef={panelGroupRef}
+        id="matrx-dynamic-panel"
         orientation={isVertical ? "vertical" : "horizontal"}
         className="h-full"
-        onLayoutChanged={handlePanelResize}
         style={{
           touchAction: "none",
           userSelect: "none",

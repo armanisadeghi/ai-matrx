@@ -2,21 +2,9 @@
 
 // features/war-room/hooks/useThreadSearch.ts
 //
-// Feature ba9f72e4 — filter a room's threads by a free-text query, ranked
-// NAME → DESCRIPTION → CONTENTS, in place. Built on the canonical relevance
-// scorer (`filterAndSortBySearch`, utils/search-scoring) so the ranking rules
-// (title beats body; exact > prefix > includes) match every other search box in
-// the app — not a bespoke `includes()`.
-//
-// A thread (tile) has no description column of its own; the user-authored
-// description lives on the thread's active note (set by QuickAddThread). So the
-// fields map to:
-//   • NAME        — the tile title
-//   • DESCRIPTION — the active note's content
-//   • CONTENTS    — the anchored task's title (the other "what's in this thread")
-//
-// Empty query ⇒ the input list is returned UNCHANGED (same order, same refs), so
-// the rail/gallery render exactly as before when no one is searching.
+// Feature ba9f72e4 — filter a room's threads by title, ranked by relevance.
+// Thread title = tile.title, falling back to the anchored task title when the
+// tile is still untitled — the same label shown in rails and cards.
 //
 // The searchable-text projection is ONE memoized selector reading the war-room
 // assignment buckets + the notes/tasks slices (cross-slice, so it lives here as
@@ -30,15 +18,12 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { containerKey } from "@/features/war-room/types";
+import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 
 interface ThreadSearchRow {
   id: string;
-  /** Thread name (tile title). */
-  name: string;
-  /** Active-note content — the thread's description. */
-  description: string;
-  /** Anchored task title — the thread's contents. */
-  taskTitle: string;
+  /** Thread title (tile title, else anchored task title). */
+  threadTitle: string;
 }
 
 /** Active entity_id of `entityType` in a thread bucket (active row, else first). */
@@ -64,23 +49,18 @@ function selectThreadSearchRows(sessionId: string) {
         (s: RootState) => s.warRoom.tileIdsBySession[sessionId],
         (s: RootState) => s.warRoom.tilesById,
         (s: RootState) => s.warRoom.assignmentsByContainer,
-        (s: RootState) => s.notes.notes,
-        // The agent-context tasks slice is an RTK entity adapter; `.entities`
-        // is its stable public id→record map.
         (s: RootState) => s.tasks.entities,
       ],
-      (ids, tilesById, byContainer, notes, taskEntities): ThreadSearchRow[] => {
+      (ids, tilesById, byContainer, taskEntities): ThreadSearchRow[] => {
         if (!ids || ids.length === 0) return EMPTY_ROWS;
         return ids.map((id): ThreadSearchRow => {
           const tile = tilesById[id];
           const bucket = byContainer[containerKey("thread", id)] ?? [];
-          const noteId = activeEntityIdOf(bucket, "note");
           const taskId = activeEntityIdOf(bucket, "task");
+          const taskTitle = taskId ? taskEntities[taskId]?.title : undefined;
           return {
             id,
-            name: tile?.title?.trim() ?? "",
-            description: (noteId ? notes[noteId]?.content : "") ?? "",
-            taskTitle: (taskId ? taskEntities[taskId]?.title : "") ?? "",
+            threadTitle: threadDisplayTitle(tile, taskTitle),
           };
         });
       },
@@ -93,9 +73,8 @@ function selectThreadSearchRows(sessionId: string) {
 const EMPTY_ROWS: ThreadSearchRow[] = [];
 
 /**
- * Returns the subset of `visibleIds` matching `query`, ranked by relevance
- * (NAME → DESCRIPTION → CONTENTS). When `query` is blank, returns `visibleIds`
- * unchanged (identity preserved).
+ * Returns the subset of `visibleIds` matching `query`, ranked by thread title.
+ * When `query` is blank, returns `visibleIds` unchanged (identity preserved).
  */
 export function useThreadSearch(
   sessionId: string,
@@ -110,9 +89,7 @@ export function useThreadSearch(
     const visibleSet = new Set(visibleIds);
     const candidates = rows.filter((r) => visibleSet.has(r.id));
     const ranked = filterAndSortBySearch(candidates, trimmed, [
-      { get: (r) => r.name, weight: "title" },
-      { get: (r) => r.description, weight: "body" },
-      { get: (r) => r.taskTitle, weight: "body" },
+      { get: (r) => r.threadTitle, weight: "title" },
     ]);
     return ranked.map((r) => r.id);
   }, [rows, visibleIds, trimmed]);

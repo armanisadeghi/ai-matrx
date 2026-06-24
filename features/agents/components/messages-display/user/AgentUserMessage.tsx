@@ -346,8 +346,15 @@ function extractBlockFileId(raw: ContentBlock): string | null {
   ) {
     return null;
   }
-  const r = raw as { file_id?: unknown };
-  return typeof r.file_id === "string" ? r.file_id : null;
+  const r = raw as {
+    file_id?: unknown;
+    data?: Record<string, unknown> | null;
+  };
+  if (typeof r.file_id === "string") return r.file_id;
+  const data = r.data;
+  if (data && typeof data.fileId === "string") return data.fileId;
+  if (data && typeof data.file_id === "string") return data.file_id;
+  return null;
 }
 
 function AttachmentChip({

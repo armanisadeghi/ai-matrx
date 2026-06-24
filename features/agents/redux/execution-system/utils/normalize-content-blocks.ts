@@ -53,6 +53,15 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
   );
   if (persisted) return persisted;
 
+  // Optimistic user bubbles (and the API wire spec) store attachments as
+  // `{ type: "image", file_id, url, … }`. cx_message uses `{ type: "media",
+  // kind: "image", … }`. Coerce before the typed switch so sent images render
+  // as attachment chips instead of vanishing into `unknown_data_event`.
+  const wireMedia = coerceWireMediaPart(raw as unknown as Record<string, unknown>);
+  if (wireMedia) {
+    return normalizeMedia(wireMedia, index);
+  }
+
   switch (raw.type) {
     case "text":
       return {
@@ -297,6 +306,31 @@ type AnyMediaPart =
   | VideoMediaPart
   | DocumentMediaPart
   | YouTubeMediaPart;
+
+const WIRE_MEDIA_KINDS = new Set(["image", "audio", "video", "document"]);
+
+/** Lift API wire-format media blocks into the cx_message `media` part shape. */
+function coerceWireMediaPart(
+  raw: Record<string, unknown>,
+): AnyMediaPart | null {
+  const wireType = raw.type;
+  if (typeof wireType !== "string" || !WIRE_MEDIA_KINDS.has(wireType)) {
+    return null;
+  }
+
+  return {
+    type: "media",
+    kind: wireType as NonNullable<ImageMediaPart["kind"]>,
+    file_id: typeof raw.file_id === "string" ? raw.file_id : null,
+    url: typeof raw.url === "string" ? raw.url : null,
+    file_uri: typeof raw.file_uri === "string" ? raw.file_uri : null,
+    mime_type: typeof raw.mime_type === "string" ? raw.mime_type : null,
+    metadata:
+      raw.metadata && typeof raw.metadata === "object" && !Array.isArray(raw.metadata)
+        ? (raw.metadata as Record<string, unknown>)
+        : undefined,
+  };
+}
 
 function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
   switch (raw.kind) {

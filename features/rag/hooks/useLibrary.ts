@@ -8,7 +8,7 @@
  * happens here so the component layer stays clean).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { getJson } from "@/lib/python-client";
@@ -409,29 +409,64 @@ export function useLibraryDoc(processedDocumentId: string | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const prevIdRef = useRef<string | null>(null);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
     if (!processedDocumentId) {
       setDoc(null);
+      setLoading(false);
+      setError(null);
+      prevIdRef.current = null;
       return;
     }
+
+    const switchingDoc = prevIdRef.current !== processedDocumentId;
+    prevIdRef.current = processedDocumentId;
+
+    const ctrl = new AbortController();
     let cancelled = false;
+    const requestSeq = ++requestSeqRef.current;
     setLoading(true);
     setError(null);
+    if (switchingDoc) setDoc(null);
 
-    getJson<ApiDocDetail>(`/rag/library/${processedDocumentId}`)
+    getJson<ApiDocDetail>(`/rag/library/${processedDocumentId}`, {
+      signal: ctrl.signal,
+    })
       .then(({ data }) => {
-        if (!cancelled && data) setDoc(mapDetail(data));
+        if (cancelled || requestSeq !== requestSeqRef.current) return;
+        if (!data) {
+          setDoc(null);
+          setError("Document not found");
+          return;
+        }
+        try {
+          setDoc(mapDetail(data));
+        } catch (err) {
+          setDoc(null);
+          setError(
+            err instanceof Error ? err.message : "Failed to parse document",
+          );
+        }
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message ?? "Failed to load document");
+        if (cancelled || (err as Error)?.name === "AbortError") return;
+        if (requestSeq !== requestSeqRef.current) return;
+        setDoc(null);
+        setError(
+          (err as { message?: string })?.message ?? "Failed to load document",
+        );
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && requestSeq === requestSeqRef.current) {
+          setLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
+      ctrl.abort();
     };
   }, [processedDocumentId, reloadKey]);
 

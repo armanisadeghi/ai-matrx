@@ -3,8 +3,15 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { ArrowUp, CircleStop } from "lucide-react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
+import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
+import {
+  useFileUpload,
+  composeLegacyFolderPath,
+  fileIdToMediaRef,
+} from "@/features/files";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
 import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
@@ -20,6 +27,10 @@ import {
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import {
+  addResource,
+  setResourcePreview,
+} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { useAuthGuardedAction } from "@/features/auth/components/useAuthGuardedAction";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
@@ -46,6 +57,9 @@ interface NewChatLandingInputProps {
    *  one conversation and stay in sync. */
   conversationId: string;
   surfaceKey: string;
+  uploadBucket?: string;
+  uploadPath?: string;
+  enablePasteImages?: boolean;
 }
 
 const MAX_TEXTAREA_HEIGHT = 220; // px — beyond this the textarea scrolls
@@ -73,6 +87,9 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — beyond this the textarea scrolls
 export function NewChatLandingInput({
   conversationId,
   surfaceKey,
+  uploadBucket = "userContent",
+  uploadPath = "agent-attachments",
+  enablePasteImages = true,
 }: NewChatLandingInputProps) {
   const dispatch = useAppDispatch();
   const text = useAppSelector(selectUserInputText(conversationId));
@@ -91,6 +108,56 @@ export function NewChatLandingInput({
   const visibleText = submissionPhase === "pending" ? "" : text;
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { upload } = useFileUpload();
+
+  const handlePasteImage = useCallback(
+    async (file: File) => {
+      try {
+        const normalized = await upload(
+          { kind: "file", file },
+          {
+            folderPath: composeLegacyFolderPath(uploadBucket, uploadPath),
+            visibility: "private",
+            createShareLink: true,
+            shareLinkPermissionLevel: "read",
+          },
+        );
+        const source = normalized.fileId
+          ? fileIdToMediaRef(normalized.fileId, file.type)
+          : normalized.url
+            ? { url: normalized.url, mime_type: file.type }
+            : null;
+        if (!source) return;
+        const resourceId = `res_${Date.now()}_paste`;
+        dispatch(
+          addResource({
+            conversationId,
+            blockType: "image",
+            source,
+            resourceId,
+          }),
+        );
+        dispatch(
+          setResourcePreview({
+            conversationId,
+            resourceId,
+            preview: file.name,
+          }),
+        );
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : "Upload failed";
+        toast.error(`Couldn't upload pasted image: ${reason}`);
+      }
+    },
+    [conversationId, dispatch, upload, uploadBucket, uploadPath],
+  );
+
+  useClipboardPaste({
+    textareaRef,
+    onPasteImage: handlePasteImage,
+    disabled: !enablePasteImages,
+  });
+
   // Once the textarea exceeds a single line we flip the grid layout so the
   // textarea spans the full width and the leading/trailing controls drop to
   // a footer row (ChatGPT-style). Single-line state keeps the inline pill.

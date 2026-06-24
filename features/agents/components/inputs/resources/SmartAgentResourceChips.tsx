@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   removeResource,
   updateResourceOptions,
@@ -338,6 +339,7 @@ export function SmartAgentResourceChips({
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
   const resources = useAppSelector(selectInstanceResources(conversationId));
+  const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const drawer = useContextItemDrawer();
 
@@ -377,6 +379,11 @@ export function SmartAgentResourceChips({
   );
 
   if (!showAttachments) return null;
+  // Mirror the textarea: while a submit is in flight the attachments have
+  // already been captured into the optimistic user bubble — hide them here so
+  // they appear to move up with the message instead of lingering in the box
+  // until stream completion clears `instanceResources`.
+  if (submissionPhase === "pending") return null;
   if (resources.length === 0) return null;
 
   return (

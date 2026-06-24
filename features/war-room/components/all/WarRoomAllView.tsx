@@ -16,7 +16,10 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { loadSessionsList } from "@/features/war-room/redux/thunks";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
+import { useWarRoomAllSearch } from "@/features/war-room/hooks/useWarRoomAllSearch";
+import { WarRoomSearchField } from "@/features/war-room/components/shared/WarRoomSearchField";
 import { SessionCard } from "./SessionCard";
+import { WarRoomThreadHitRow } from "./WarRoomThreadHitRow";
 import { NewSessionButton } from "./NewSessionButton";
 import { NewRoomFromProjectButton } from "./NewRoomFromProjectButton";
 
@@ -53,6 +56,9 @@ export function WarRoomAllView() {
   // Master Agent panel — local state owns open/closed. Non-modal so the rooms
   // list stays visible and interactive while the user chats with the master.
   const [masterOpen, setMasterOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { roomHits, threadHits, isSearching } =
+    useWarRoomAllSearch(searchQuery);
 
   useEffect(() => {
     if (status === "idle") dispatch(loadSessionsList());
@@ -69,6 +75,12 @@ export function WarRoomAllView() {
 
   const isLoading = status === "loading" || status === "idle";
   const isEmpty = status === "ready" && sessions.length === 0;
+  const searchEmpty =
+    isSearching && roomHits.length === 0 && threadHits.length === 0;
+  const filteredRoomIds = new Set(roomHits.map((r) => r.sessionId));
+  const visibleSessions = isSearching
+    ? sessions.filter((s) => filteredRoomIds.has(s.id))
+    : sessions;
 
   return (
     <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
@@ -110,6 +122,22 @@ export function WarRoomAllView() {
         </div>
       </header>
 
+      {/* Search — war room titles first, thread titles second (results below) */}
+      {!isLoading && !isEmpty ? (
+        <div className="shrink-0 border-b border-border px-4 sm:px-6 lg:px-8 py-2.5">
+          <div className="container mx-auto max-w-[1600px]">
+            <WarRoomSearchField
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search war rooms and threads by title…"
+              ariaLabel="Search war rooms and threads by title"
+              className="w-full max-w-xl"
+              inputClassName="flex-1"
+            />
+          </div>
+        </div>
+      ) : null}
+
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 max-w-[1600px]">
@@ -121,11 +149,45 @@ export function WarRoomAllView() {
             </div>
           ) : isEmpty ? (
             <EmptyState />
+          ) : searchEmpty ? (
+            <SearchEmptyState query={searchQuery.trim()} />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {sessions.map((s) => (
-                <SessionCard key={s.id} session={s} />
-              ))}
+            <div className="space-y-6">
+              {visibleSessions.length > 0 ? (
+                <section>
+                  {isSearching ? (
+                    <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      War Rooms
+                      <span className="ml-1.5 tabular-nums font-medium normal-case tracking-normal">
+                        ({visibleSessions.length})
+                      </span>
+                    </h2>
+                  ) : null}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {visibleSessions.map((s) => (
+                      <SessionCard key={s.id} session={s} />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {isSearching && threadHits.length > 0 ? (
+                <section>
+                  <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Threads
+                    <span className="ml-1.5 tabular-nums font-medium normal-case tracking-normal">
+                      ({threadHits.length})
+                    </span>
+                  </h2>
+                  <ul className="space-y-2 max-w-2xl">
+                    {threadHits.map((hit) => (
+                      <li key={hit.tileId}>
+                        <WarRoomThreadHitRow hit={hit} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
             </div>
           )}
         </div>
@@ -141,6 +203,18 @@ export function WarRoomAllView() {
           watch window for a thread agent even when the Master panel is closed.
           Renders nothing until a conversation is being watched. */}
       <MasterWatchLayer />
+    </div>
+  );
+}
+
+function SearchEmptyState({ query }: { query: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16 px-4">
+      <p className="text-sm font-medium text-foreground">No matches</p>
+      <p className="mt-1 text-xs text-muted-foreground max-w-md">
+        Nothing matched &ldquo;{query}&rdquo;. Try a war room title or thread
+        title — search ranks rooms first, then threads across every room.
+      </p>
     </div>
   );
 }

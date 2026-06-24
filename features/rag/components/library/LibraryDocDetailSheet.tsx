@@ -15,7 +15,7 @@
  *     page/chunk bodies from `/rag/library/.../page|chunks` endpoints.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   Dialog,
@@ -58,6 +58,8 @@ import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
 
 export interface LibraryDocDetailSheetProps {
   processedDocumentId: string | null;
+  /** Parent bumps this to refetch when the user re-clicks the same table row. */
+  reloadKey?: number;
   onClose: () => void;
   /** Called after the user mutates the doc (delete / rename) so the
    *  parent table can refetch. Optional — sheet still works without it. */
@@ -82,6 +84,7 @@ export interface LibraryDocDetailSheetProps {
 
 export function LibraryDocDetailSheet({
   processedDocumentId,
+  reloadKey: externalReloadKey = 0,
   onClose,
   onMutated,
   onRequestStageRun,
@@ -90,6 +93,13 @@ export function LibraryDocDetailSheet({
   onDismissJob,
 }: LibraryDocDetailSheetProps) {
   const { doc, loading, error, reload } = useLibraryDoc(processedDocumentId);
+  const lastExternalReloadKeyRef = useRef(externalReloadKey);
+
+  useEffect(() => {
+    if (externalReloadKey === lastExternalReloadKeyRef.current) return;
+    lastExternalReloadKeyRef.current = externalReloadKey;
+    if (processedDocumentId) reload();
+  }, [externalReloadKey, processedDocumentId, reload]);
   const [copiedId, setCopiedId] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
@@ -204,19 +214,26 @@ export function LibraryDocDetailSheet({
   const open = Boolean(processedDocumentId);
 
   const panelTitle =
-    loading || !doc ? "Loading document…" : error ? "Error" : doc.name;
+    loading && !doc
+      ? "Loading document…"
+      : error && !doc
+        ? "Could not load document"
+        : doc
+          ? doc.name
+          : "Document";
 
-  const panelDescription = error ? (
-    error
-  ) : doc && !loading ? (
-    <span className="inline-flex items-center gap-2">
-      <StatusBadge status={doc.status} />
-      <span>
-        {doc.derivationKind} · created{" "}
-        {new Date(doc.createdAt).toLocaleString()}
+  const panelDescription =
+    error && !doc ? (
+      error
+    ) : doc && !loading ? (
+      <span className="inline-flex items-center gap-2">
+        <StatusBadge status={doc.status} />
+        <span>
+          {doc.derivationKind} · created{" "}
+          {new Date(doc.createdAt).toLocaleString()}
+        </span>
       </span>
-    </span>
-  ) : undefined;
+    ) : undefined;
 
   const panelHeaderActions =
     doc && !error ? (
@@ -258,6 +275,7 @@ export function LibraryDocDetailSheet({
   return (
     <>
       <MatrxDynamicPanelHost
+        key={processedDocumentId ?? "closed"}
         open={open}
         onOpenChange={(o) => {
           if (!o) onClose();
@@ -270,14 +288,35 @@ export function LibraryDocDetailSheet({
         maxSize={92}
         contentClassName="flex min-h-0 flex-1 flex-col p-0"
       >
-        {loading || !doc ? (
+        {loading && !doc ? (
           <div className="space-y-3 p-6">
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : error ? null : (
+        ) : error && !doc ? (
+          <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button size="sm" variant="outline" onClick={reload}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Retry
+            </Button>
+          </div>
+        ) : doc ? (
           <>
+            {error ? (
+              <div className="mx-6 mt-3 flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                <span className="min-w-0 text-left">{error}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0"
+                  onClick={reload}
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : null}
             <div className="border-b px-6 pb-3 pt-1">
               {/* Action row */}
               <div className="flex flex-wrap gap-2">
@@ -736,7 +775,7 @@ export function LibraryDocDetailSheet({
               </TabsContent>
             </Tabs>
           </>
-        )}
+        ) : null}
       </MatrxDynamicPanelHost>
 
       {/* Rename dialog */}

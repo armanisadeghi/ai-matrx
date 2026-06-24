@@ -130,6 +130,9 @@ export function LibraryPage() {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(
     initialDocIdRef.current,
   );
+  /** Bumped when the user re-clicks the already-selected row so the detail
+   *  sheet refetches even though selectedDocId did not change. */
+  const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bulkConfirmStatus, setBulkConfirmStatus] = useState<DocStatus | null>(
     null,
@@ -637,7 +640,13 @@ export function LibraryPage() {
                   key={d.id}
                   doc={d}
                   pulsed={pulsedRows.has(d.id)}
-                  onSelect={() => setSelectedDocId(d.id)}
+                  onSelect={() => {
+                    if (selectedDocId === d.id) {
+                      setDetailReloadKey((k) => k + 1);
+                    } else {
+                      setSelectedDocId(d.id);
+                    }
+                  }}
                   onSearch={() => {
                     setSearchDocId(d.id);
                     setSearchDocName(d.name);
@@ -682,6 +691,7 @@ export function LibraryPage() {
 
       <LibraryDocDetailSheet
         processedDocumentId={selectedDocId}
+        reloadKey={detailReloadKey}
         onClose={() => setSelectedDocId(null)}
         onMutated={() => setRefreshKey((n) => n + 1)}
         onRequestStageRun={(stage, docId, docName) => {

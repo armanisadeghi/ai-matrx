@@ -40,9 +40,68 @@ function basename(path: string): string {
   return i === -1 ? path : path.slice(i + 1);
 }
 
+function readNonEmptyString(v: unknown): string | null {
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+function readNestedRecord(
+  obj: unknown,
+  key: string,
+): Record<string, unknown> | null {
+  if (!obj || typeof obj !== "object") return null;
+  const nested = (obj as Record<string, unknown>)[key];
+  return nested && typeof nested === "object" && !Array.isArray(nested)
+    ? (nested as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Lift `fileId` + a renderable URL off every media shape we store:
+ * pre-submit MediaRef (`file_id` / `url`), wire blocks, and post-submit
+ * `image_output.data` (UnifiedImageBlock camelCase).
+ */
+function extractMediaRefs(
+  data: Data,
+  raw: unknown,
+): { fileId: string | null; fileUrl: string | null } {
+  const d = data ?? {};
+  const rawRecord =
+    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+  const nestedData = readNestedRecord(raw, "data");
+
+  const fileId =
+    readNonEmptyString(d.fileId) ??
+    readNonEmptyString(d.file_id) ??
+    (rawRecord ? readNonEmptyString(rawRecord.file_id) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.fileId) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.file_id) : null) ??
+    null;
+
+  const fileUrl =
+    readNonEmptyString(d.cdnUrl) ??
+    readNonEmptyString(d.cdn_url) ??
+    readNonEmptyString(d.signedUrl) ??
+    readNonEmptyString(d.signed_url) ??
+    readNonEmptyString(d.externalUrl) ??
+    readNonEmptyString(d.external_url) ??
+    readNonEmptyString(d.downloadUrl) ??
+    readNonEmptyString(d.download_url) ??
+    readNonEmptyString(d.url) ??
+    (rawRecord ? readNonEmptyString(rawRecord.url) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.cdnUrl) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.signedUrl) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.externalUrl) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.url) : null) ??
+    null;
+
+  return { fileId, fileUrl };
+}
+
 function bestTitle(data: Data, fallback: string): string {
   const d = data ?? {};
   const candidate =
+    (d.fileName as string) ??
+    (d.file_name as string) ??
     (d.title as string) ??
     (d.label as string) ??
     (d.name as string) ??
@@ -105,12 +164,8 @@ function expand(
     );
   }
 
-  // Media — file_id / url
-  const fileId =
-    typeof (base.raw as { file_id?: unknown })?.file_id === "string"
-      ? ((base.raw as { file_id?: string }).file_id ?? null)
-      : null;
-  const fileUrl = typeof d.url === "string" ? (d.url as string) : null;
+  // Media — file_id / url (UnifiedImageBlock, MediaRef, wire blocks)
+  const { fileId, fileUrl } = extractMediaRefs(d, base.raw);
   if (fileId || fileUrl) {
     return [make("media", bestTitle(d, base.typeLabel), { fileId, fileUrl })];
   }

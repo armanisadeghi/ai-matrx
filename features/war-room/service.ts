@@ -120,6 +120,28 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 // ── Tiles ─────────────────────────────────────────────────────────────
 
+/**
+ * Every non-deleted tile across all of the current user's War Rooms — one query
+ * for the /all search index (room title → thread title ranking).
+ */
+export async function listAllUserTiles(): Promise<WarRoomTile[]> {
+  const userId = requireUserId();
+  const { data, error } = await supabase
+    .from(TILES)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_deleted", false)
+    .order("session_id", { ascending: true })
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("[war-room] listAllUserTiles failed:", error);
+    throw error;
+  }
+  return data ?? [];
+}
+
 export async function listTiles(sessionId: string): Promise<WarRoomTile[]> {
   const { data, error } = await supabase
     .from(TILES)
