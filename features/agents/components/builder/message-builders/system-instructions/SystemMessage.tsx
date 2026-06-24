@@ -7,19 +7,10 @@ import {
   useMemo,
 } from "react";
 import { Label } from "@/components/ui/label";
-import dynamic from "next/dynamic";
 
-// Dynamic — keeps UnifiedAgentContextMenu + its hooks out of the initial
-// agent-builder bundle; loads only when the editor actually mounts.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then(
-      (mod) => ({
-        default: mod.UnifiedAgentContextMenu,
-      }),
-    ),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 // OLD: Need to be replaced
 import { SystemPromptOptimizer } from "@/features/prompts/components/actions/prompt-optimizers/SystemPromptOptimizer";
@@ -633,7 +624,7 @@ export function SystemMessage({
   // Surface scope for `matrx-user/agent-builder`. Agent-level values (model,
   // tools, agent_json, etc.) come from the hook; `content` /
   // `system_instruction` are the developer message being edited. Top-level
-  // keys flow straight through UnifiedAgentContextMenu into the ApplicationScope.
+  // keys flow straight through EditableContextMenu into the ApplicationScope.
   const contextMenuData = useMemo(() => {
     return {
       ...buildAgentScope(),
@@ -711,7 +702,7 @@ export function SystemMessage({
               )}
             </div>
           ) : isEditing ? (
-            <UnifiedAgentContextMenu
+            <EditableContextMenu
               sourceFeature="agent-builder"
               surfaceName="matrx-user/agent-builder"
               getTextarea={() =>
@@ -720,8 +711,6 @@ export function SystemMessage({
               contextData={
                 contextMenuData as unknown as Record<string, unknown>
               }
-              enabledPlacements={["ai-action", "content-block", "quick-action"]}
-              isEditable={true}
               enableFloatingIcon={true}
               onTextReplace={handleTextReplace}
               onTextInsertBefore={handleTextInsertBefore}
@@ -754,7 +743,7 @@ export function SystemMessage({
                   lineHeight: "1.5",
                 }}
               />
-            </UnifiedAgentContextMenu>
+            </EditableContextMenu>
           ) : (
             <div
               className="text-xs pb-2 text-gray-600 dark:text-gray-400 whitespace-pre-wrap cursor-text leading-normal"
