@@ -35,7 +35,7 @@
 // own agent turn completes — the edit has landed by then. (Loud-recovery: a
 // targeted fetch keyed off THIS tile's conversation, not a guess.)
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -56,6 +56,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
@@ -103,6 +104,31 @@ export default function TileAgentPanel({
     if (taskId) void dispatch(loadTileSubtasks(taskId));
   }, [taskId, dispatch]);
 
+  // ── Hydrate the attached files' extraction + RAG-searchable signals ──────
+  // The `war_room` <files> manifest is built SYNC from Redux + a module cache,
+  // so the flags (extraction="yes|no", rag="indexed|no") are only accurate once
+  // we've probed each attached cld_file. Prefetch on mount / whenever the file
+  // set changes; bumping `filesProbeTick` when the searchable probes land
+  // re-pushes the context with the now-known flags. Best-effort — a failed
+  // probe just leaves a flag unknown (the builder omits it), never blocks.
+  const [filesProbeTick, setFilesProbeTick] = useState(0);
+  const userFileIds = attachments
+    .filter((a) => a.entity_type === "user_file")
+    .map((a) => a.entity_id)
+    .join(",");
+  useEffect(() => {
+    const ids = userFileIds ? userFileIds.split(",") : [];
+    if (ids.length === 0) return;
+    const ac = new AbortController();
+    void prefetchThreadFileSignals({
+      fileIds: ids,
+      dispatch,
+      signal: ac.signal,
+      onResolved: () => setFilesProbeTick((t) => t + 1),
+    });
+    return () => ac.abort();
+  }, [userFileIds, dispatch]);
+
   // A builder the assistant hook calls against fresh state. Its identity changes
   // whenever the tile's task/subtasks/note/files change (the values it closes
   // over), which is exactly what re-triggers the hook's context-refresh effect.
@@ -110,8 +136,9 @@ export default function TileAgentPanel({
   // task/note/files reach the agent without waiting for a recording or cleanup.
   const buildExtraEntries = useCallback(
     (state: RootState) => buildTileAgentContextEntries(state, tileId),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bust identity on
-    // the underlying tile data so the hook re-pushes context when it changes.
+    // Deliberately keyed on the underlying tile DATA (not just tileId) so the
+    // hook re-pushes context when the task/note/files change. (exhaustive-deps
+    // is disabled repo-wide; listed here for intent.)
     [
       tileId,
       taskId,
@@ -125,6 +152,9 @@ export default function TileAgentPanel({
       note?.content,
       note?.label,
       attachments,
+      // Re-push when the attached files' extraction/RAG signals resolve, so the
+      // <files> manifest's flags become accurate without a recording/cleanup.
+      filesProbeTick,
     ],
   );
 
@@ -169,10 +199,16 @@ export default function TileAgentPanel({
     dispatch(
       setClientTools({
         conversationId,
-        // Plus war_room_read_thread (read-only, no tile binding) so this
-        // thread's agent can read ANOTHER thread's chain by its tile id — the
-        // sibling threads are listed in the inline `war_room` block.
-        tools: [...WAR_ROOM_TOOL_NAMES, "war_room_read_thread"],
+        // Plus the read-only war-room-master-tools members (no tile binding, no
+        // HITL — they route to the read dispatcher by name): war_room_read_thread
+        // reads ANOTHER thread's chain by its tile id; war_room_read_file reads
+        // an attached file's extracted TEXT by its file id. Both targets are
+        // listed in the inline `war_room` block (siblings + the <files> manifest).
+        tools: [
+          ...WAR_ROOM_TOOL_NAMES,
+          "war_room_read_thread",
+          "war_room_read_file",
+        ],
       }),
     );
     return () => {

@@ -11,11 +11,13 @@ import type { z } from "zod";
 import type { WarRoomMasterToolHandler } from "../handlers/types";
 import {
   warRoomReadThreadArgsSchema,
+  warRoomReadFileArgsSchema,
   warRoomMessageThreadArgsSchema,
   warRoomCreateRoomArgsSchema,
   warRoomRenameRoomArgsSchema,
 } from "./schemas";
 import { readThreadHandler } from "../handlers/read-thread.handler";
+import { readFileHandler } from "../handlers/read-file.handler";
 import { messageThreadHandler } from "../handlers/message-thread.handler";
 import { createRoomHandler } from "../handlers/create-room.handler";
 import { renameRoomHandler } from "../handlers/rename-room.handler";
@@ -29,6 +31,10 @@ const registry: Record<string, WarRoomMasterToolRegistryEntry> = {
   war_room_read_thread: {
     schema: warRoomReadThreadArgsSchema,
     handler: readThreadHandler as WarRoomMasterToolHandler<unknown, unknown>,
+  },
+  war_room_read_file: {
+    schema: warRoomReadFileArgsSchema,
+    handler: readFileHandler as WarRoomMasterToolHandler<unknown, unknown>,
   },
   war_room_message_thread: {
     schema: warRoomMessageThreadArgsSchema,

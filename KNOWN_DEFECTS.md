@@ -17,6 +17,19 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D15 — War Room agent file access is frontend client-delegated; the generic platform primitives are not built
+**Severity: low — the War Room thread agent now reads attached-file extractions + searches RAG (shipped), but via war-room-specific wiring, not reusable server tools.**
+
+**What.** The thread agent now (a) sees attached files in its inline `war_room` `<files>` manifest, (b) reads a file's extracted raw/clean text via the **client-delegated** `war_room_read_file` tool (`features/agents/war-room-master-tools/`, reusing `features/rag/api/document.ts`), and (c) RAG-searches via the existing `rag_search` server tool (added to the three War Room `agx_agent` rows). Two gaps remain by design (expedited path):
+1. **No generic server-side `file_read` tool.** `war_room_read_file` is a client-delegated war-room tool — it only runs while the tile panel is mounted/connected (the established war-room read pattern) and is not available to other agents. The platform primitive is a server tool (`file_id` → `processed_document_pages.{raw_text,cleaned_text}` inside `acting_as_user`/RLS, in aidream) so EVERY agent reads file extractions disconnect-safe.
+2. **`rag_search` can't scope to a single file.** Its filters are `source_kinds` (we pass `cld_file`) + `scope_ids` (ctx scope), NOT `file_id`. So the agent searches the user's file corpus, steered to the thread's files by the manifest + role, rather than strictly one file. The fix is a `source_ids`/`file_ids` filter on `RagSearchArgs` + `matrx_rag.search.search` (aidream).
+
+**Why.** The owner needed this expedited; the frontend already had `fetchDocument`/`fetchDocumentPage` + `rag_search` existed server-side — so v1 wired those rather than building+deploying new aidream tools.
+
+**The fence / follow-up (aidream).** Build the generic `file_read` tool + the `source_ids` RAG filter; then `war_room_read_file` becomes a thin alias (or is retired) and any agent gets file access. Also: the `agx_agent.tools` `rag_search` addition was a DB edit — if the War Room personas are ever regenerated from a code source, re-add it there.
+
+**What's open.** Both aidream primitives above; arming `war_room_read_file` on the room/master agents (their rosters use the leaner `MasterThreadEntry` shape — needs the per-file manifest plumbed there first).
+
 ### D14 — War Room: live audio-session recording does NOT survive a tab-switch; agent sees only the active session's transcript
 **Severity: medium — recording data persists (no data loss), but the live capture/UI drops when the user switches a tile's tab, and the thread agent can't read a tile's non-active recordings.**
 

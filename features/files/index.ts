@@ -244,6 +244,27 @@ export { selectTreeStatus } from "@/features/files/redux/selectors";
 // handlers in non-React imperative shells).
 export { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 
+// Narrow READ contract for non-React consumers — sync Redux selectors used
+// from thunk handlers / context builders / plain services that can't run the
+// `useFile` hook (e.g. an agent context assembled synchronously from the
+// store, a delegated-tool handler resolving a file_id). Read-only; mutation
+// still goes through the handler + hooks. Mirrors the explorer-state contract
+// above: a small, deliberate slice of the redux surface, the rest stays
+// internal.
+export {
+  selectFileById,
+  selectRagStatusForFile,
+} from "@/features/files/redux/selectors";
+export type { RagStatus } from "@/features/files/types";
+// Extraction / RAG status hydration + the file→processed_document resolver —
+// the canonical reads behind the RAG badge, exposed for imperative callers
+// (e.g. an agent that wants a file's extraction-presence + searchable state).
+export { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
+export {
+  lookupFileDocument,
+  type FileDocumentState,
+} from "@/features/files/api/document-lookup";
+
 // ---------------------------------------------------------------------------
 // 5. MediaRef construction — the only sanctioned path
 // ---------------------------------------------------------------------------
