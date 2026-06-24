@@ -35,6 +35,12 @@ import { PicklistOverlay } from "../renderers/picklist/PicklistOverlay";
 import { TaskInline } from "../renderers/task/TaskInline";
 import { TaskOverlay } from "../renderers/task/TaskOverlay";
 import { TaskListInline } from "../renderers/task/TaskListInline";
+import { DocumentInline } from "../renderers/document/DocumentInline";
+import { DocumentOverlay } from "../renderers/document/DocumentOverlay";
+import { DatasetInline } from "../renderers/dataset/DatasetInline";
+import { DatasetOverlay } from "../renderers/dataset/DatasetOverlay";
+import { WorkbookInline } from "../renderers/workbook/WorkbookInline";
+import { WorkbookOverlay } from "../renderers/workbook/WorkbookOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
@@ -457,6 +463,86 @@ export const toolRendererRegistry: ToolRegistry = {
     resultsLabel: "Todos",
     InlineComponent: TaskListInline,
     keepExpandedOnStream: true,
+  },
+
+  document: {
+    toolName: "document",
+    displayName: "Document",
+    phaseLabels: {
+      running: "Working on document",
+      complete: "Document ready",
+      errorPrefix: "Document action failed",
+    },
+    resultsLabel: "Document",
+    InlineComponent: DocumentInline,
+    OverlayComponent: DocumentOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const r = resultAsObject(entry);
+      const name =
+        (typeof r?.name === "string" && r.name) ||
+        (typeof r?.title === "string" && r.title);
+      return name ? name : null;
+    },
+  },
+
+  dataset: {
+    toolName: "dataset",
+    displayName: "Dataset",
+    phaseLabels: {
+      running: "Working on dataset",
+      complete: "Dataset ready",
+      errorPrefix: "Dataset action failed",
+    },
+    resultsLabel: "Dataset",
+    InlineComponent: DatasetInline,
+    OverlayComponent: DatasetOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const r = resultAsObject(entry);
+      const meta =
+        r?.metadata && typeof r.metadata === "object"
+          ? (r.metadata as Record<string, unknown>)
+          : null;
+      const name =
+        (meta && typeof meta.dataset_name === "string" && meta.dataset_name) ||
+        (typeof r?.table_name === "string" && r.table_name);
+      return name ? name : null;
+    },
+  },
+
+  // Same entity as `dataset` (udt_datasets). Backend currently broken — the
+  // renderer degrades to a summary when table_id isn't a real id.
+  usertable_create: {
+    toolName: "usertable_create",
+    displayName: "Table",
+    phaseLabels: {
+      running: "Creating table",
+      complete: "Created table",
+      errorPrefix: "Table creation failed",
+    },
+    resultsLabel: "Table",
+    InlineComponent: DatasetInline,
+    OverlayComponent: DatasetOverlay,
+    keepExpandedOnStream: true,
+  },
+
+  workbook: {
+    toolName: "workbook",
+    displayName: "Workbook",
+    phaseLabels: {
+      running: "Working on workbook",
+      complete: "Workbook ready",
+      errorPrefix: "Workbook action failed",
+    },
+    resultsLabel: "Workbook",
+    InlineComponent: WorkbookInline,
+    OverlayComponent: WorkbookOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const r = resultAsObject(entry);
+      return typeof r?.name === "string" && r.name ? r.name : null;
+    },
   },
 
   web_search_v1: {
@@ -1042,6 +1128,9 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "seo_check_meta_titles",
   "seo_check_meta_descriptions",
   "picklist", // the created/loaded list is the deliverable
+  "document",
+  "dataset",
+  "workbook",
   "random_wheel",
 ]);
 
