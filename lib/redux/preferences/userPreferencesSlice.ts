@@ -394,8 +394,66 @@ export interface AudioDevicePreferences {
   audioOutputDeviceLabel: string;
 }
 
+/**
+ * What kind of thing a favorite points at. Drives the icon fallback and lets
+ * background validation route to the right "does this still exist?" check.
+ * `nav` = a static app-area destination (e.g. "Research", "PDF Extractor");
+ * the rest are user-owned records.
+ */
+export type FavoriteKind =
+  | "nav"
+  | "agent"
+  | "conversation"
+  | "note"
+  | "file"
+  | "app"
+  | "task"
+  | "transcript"
+  | "scope"
+  | "podcast"
+  | "other";
+
+/**
+ * A single pinned favorite. Stored as a self-contained *reference* — not a bare
+ * id — so the sidebar Favorites flyout and the dashboard grid render INSTANTLY
+ * from Redux (already hydrated at boot) with zero fetch. `label`/`iconName`/
+ * `color` are snapshots; an optional background pass can refresh/prune them.
+ */
+export interface FavoriteItem {
+  /**
+   * Stable dedupe key. For `nav` favorites this is the `href`; for records use
+   * `${kind}:${entityId}` so the same entity can never be pinned twice.
+   */
+  id: string;
+  kind: FavoriteKind;
+  /** Snapshot label for instant render. */
+  label: string;
+  /** Where clicking the favorite navigates. */
+  href: string;
+  /** ShellIcon / Lucide icon name (resolved via shellIconMap). */
+  iconName?: string;
+  /** Optional Tailwind color family (e.g. "sky") for the accent. */
+  color?: string;
+  /** ISO timestamp; drives default ordering (newest first) until reordered. */
+  pinnedAt: string;
+}
+
+/**
+ * User-curated favorites. Lives in the preferences JSON (already fetched +
+ * synced + in Redux), capped at FAVORITES_MAX so the blob can never bloat.
+ * Powers BOTH the dashboard "Pinned" grid and the sidebar Favorites menu.
+ */
+export interface FavoritesPreferences {
+  /** Ordered list of pinned items. Capped at FAVORITES_MAX. */
+  items: FavoriteItem[];
+}
+
+/** Hard cap on pinned favorites — keeps the preferences blob tiny (~6KB max). */
+export const FAVORITES_MAX = 50;
+
 // Combine all module preferences into one interface
 export interface UserPreferences {
+  favorites: FavoritesPreferences;
   display: DisplayPreferences;
   prompts: PromptsPreferences;
   voice: VoicePreferences;
@@ -446,6 +504,9 @@ export const initializeUserPreferencesState = (
   };
 
   const defaultPreferences: UserPreferences = {
+    favorites: {
+      items: [],
+    },
     display: {
       darkMode: false,
       theme: "default",
@@ -646,6 +707,7 @@ export const initializeUserPreferencesState = (
 
   // Merge with defaults to ensure all properties exist
   const mergedPreferences: UserPreferences = {
+    favorites: { ...defaultPreferences.favorites, ...preferences.favorites },
     display: { ...defaultPreferences.display, ...preferences.display },
     prompts: { ...defaultPreferences.prompts, ...preferences.prompts },
     voice: { ...defaultPreferences.voice, ...preferences.voice },
@@ -764,6 +826,7 @@ const userPreferencesSlice = createSlice({
     resetToLoadedPreferences: (state) => {
       if (state._meta.loadedPreferences) {
         // Restore each module from loaded preferences
+        state.favorites = { ...state._meta.loadedPreferences.favorites };
         state.display = { ...state._meta.loadedPreferences.display };
         state.prompts = { ...state._meta.loadedPreferences.prompts };
         state.voice = { ...state._meta.loadedPreferences.voice };
@@ -798,6 +861,55 @@ const userPreferencesSlice = createSlice({
         state._meta.error = null;
       }
     },
+    // ── Favorites / pinning ────────────────────────────────────────────────
+    // Dedupe + cap live HERE (single source of truth) so every callsite —
+    // dashboard PinButton, sidebar, future surfaces — gets identical behavior.
+    addFavorite: (state, action: PayloadAction<FavoriteItem>) => {
+      const item = action.payload;
+      const next = state.favorites.items.filter((f) => f.id !== item.id);
+      next.unshift(item); // newest first
+      state.favorites.items = next.slice(0, FAVORITES_MAX);
+      state._meta.error = null;
+    },
+    removeFavorite: (state, action: PayloadAction<string>) => {
+      state.favorites.items = state.favorites.items.filter(
+        (f) => f.id !== action.payload,
+      );
+      state._meta.error = null;
+    },
+    toggleFavorite: (state, action: PayloadAction<FavoriteItem>) => {
+      const item = action.payload;
+      const exists = state.favorites.items.some((f) => f.id === item.id);
+      if (exists) {
+        state.favorites.items = state.favorites.items.filter(
+          (f) => f.id !== item.id,
+        );
+      } else {
+        const next = state.favorites.items.filter((f) => f.id !== item.id);
+        next.unshift(item);
+        state.favorites.items = next.slice(0, FAVORITES_MAX);
+      }
+      state._meta.error = null;
+    },
+    reorderFavorites: (state, action: PayloadAction<string[]>) => {
+      // payload = new ordered list of ids; unknown ids dropped, missing ones appended
+      const byId = new Map(state.favorites.items.map((f) => [f.id, f]));
+      const next: FavoriteItem[] = [];
+      for (const id of action.payload) {
+        const f = byId.get(id);
+        if (f) {
+          next.push(f);
+          byId.delete(id);
+        }
+      }
+      for (const f of byId.values()) next.push(f);
+      state.favorites.items = next;
+      state._meta.error = null;
+    },
+    setFavorites: (state, action: PayloadAction<FavoriteItem[]>) => {
+      state.favorites.items = action.payload.slice(0, FAVORITES_MAX);
+      state._meta.error = null;
+    },
     clearUnsavedChanges: (state) => {
       state._meta.hasUnsavedChanges = false;
     },
@@ -818,6 +930,8 @@ const userPreferencesSlice = createSlice({
         | undefined;
       if (!loaded) return;
 
+      if (loaded.favorites)
+        state.favorites = { ...state.favorites, ...loaded.favorites };
       if (loaded.display)
         state.display = { ...state.display, ...loaded.display };
       if (loaded.prompts)
@@ -890,6 +1004,11 @@ export const {
   resetModulePreferences,
   resetAllPreferences,
   resetToLoadedPreferences,
+  addFavorite,
+  removeFavorite,
+  toggleFavorite,
+  reorderFavorites,
+  setFavorites,
   clearUnsavedChanges,
   clearError,
 } = userPreferencesSlice.actions;
@@ -914,6 +1033,7 @@ export default userPreferencesSlice.reducer;
 // `docs/concepts/full-sync-boardcast-storage/phase-2-plan.md` §6.
 
 const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
+  "favorites",
   "display",
   "prompts",
   "voice",
@@ -947,6 +1067,11 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       "userPreferences/resetModulePreferences",
       "userPreferences/resetAllPreferences",
       "userPreferences/resetToLoadedPreferences",
+      "userPreferences/addFavorite",
+      "userPreferences/removeFavorite",
+      "userPreferences/toggleFavorite",
+      "userPreferences/reorderFavorites",
+      "userPreferences/setFavorites",
       "userPreferences/clearUnsavedChanges",
       "userPreferences/clearError",
     ],

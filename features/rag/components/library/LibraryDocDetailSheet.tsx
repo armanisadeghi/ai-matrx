@@ -43,6 +43,7 @@ import {
   RefreshCw,
   Sparkles,
   Wand2,
+  Binary,
 } from "lucide-react";
 import { toast } from "sonner";
 import { del, getJson, patchJson, postJson } from "@/lib/python-client";
@@ -427,7 +428,7 @@ export function LibraryDocDetailSheet({
                   value={String(doc.chunks)}
                 />
                 <CountChip
-                  icon={<Sparkle />}
+                  icon={<Binary className="h-3 w-3" />}
                   label="OAI emb."
                   value={`${doc.embeddingsOai} / ${doc.chunks}`}
                   highlight={
@@ -437,7 +438,7 @@ export function LibraryDocDetailSheet({
                   }
                 />
                 <CountChip
-                  icon={<Sparkle />}
+                  icon={<Binary className="h-3 w-3" />}
                   label="Voyage emb."
                   value={String(doc.embeddingsVoyage)}
                 />
@@ -1211,23 +1212,5 @@ function PreviewBlock({ label, text }: { label: string; text: string }) {
         {text || <span className="italic text-muted-foreground">(empty)</span>}
       </pre>
     </div>
-  );
-}
-
-// Tiny inline icon to avoid pulling another import for the "Sparkle".
-function Sparkle() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-    </svg>
   );
 }

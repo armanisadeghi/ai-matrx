@@ -21,6 +21,8 @@ import type {
   AgentContextPreferences,
   MermaidPreferences,
   AudioDevicePreferences,
+  FavoritesPreferences,
+  FavoriteItem,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 
 // Base selector
@@ -169,6 +171,28 @@ export const selectAudioOutputDeviceId = createSelector(
 export const selectAudioOutputDeviceLabel = createSelector(
   selectAudioDevicePreferences,
   (audio): string => audio.audioOutputDeviceLabel,
+);
+
+// ── Favorites / pinning ────────────────────────────────────────────────────
+export const selectFavoritesPreferences = createSelector(
+  selectUserPreferences,
+  (state): FavoritesPreferences => state.favorites,
+);
+
+export const selectFavoriteItems = createSelector(
+  selectFavoritesPreferences,
+  (favorites): FavoriteItem[] => favorites.items,
+);
+
+export const selectFavoriteCount = createSelector(
+  selectFavoriteItems,
+  (items): number => items.length,
+);
+
+/** Set of pinned ids for O(1) membership tests (drives PinButton active state). */
+export const selectFavoriteIdSet = createSelector(
+  selectFavoriteItems,
+  (items): Set<string> => new Set(items.map((f) => f.id)),
 );
 
 // Meta selectors for async state management

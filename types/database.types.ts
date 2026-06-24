@@ -23280,82 +23280,6 @@ export type Database = {
           },
         ]
       }
-      user_files: {
-        Row: {
-          created_at: string
-          file_id: string
-          filename: string
-          folder_path: string
-          id: string
-          is_public: boolean
-          metadata: Json | null
-          mime_type: string | null
-          organization_id: string | null
-          project_id: string | null
-          size: number
-          storage_path: string
-          task_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          file_id: string
-          filename: string
-          folder_path?: string
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          mime_type?: string | null
-          organization_id?: string | null
-          project_id?: string | null
-          size: number
-          storage_path: string
-          task_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          file_id?: string
-          filename?: string
-          folder_path?: string
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          mime_type?: string | null
-          organization_id?: string | null
-          project_id?: string | null
-          size?: number
-          storage_path?: string
-          task_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_files_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_files_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_files_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_flashcard_reviews: {
         Row: {
           card_index: number
@@ -31207,6 +31131,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_user_dashboard_metrics: { Args: never; Returns: Json }
       get_user_email_preferences: {
         Args: { p_user_id: string }
         Returns: {

@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
+import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
@@ -103,6 +105,7 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const data = useMemo(() => parseListsData(entry), [entry]);
+    const openWindow = useOpenPicklistManagerV2Window();
 
     const filteredAndSorted = useMemo(() => {
         let items = [...data.lists];
@@ -351,7 +354,7 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                                 </span>
                             </div>
 
-                            {/* ID row */}
+                            {/* ID row + open actions */}
                             <div className="mt-2 flex items-center gap-2">
                                 <span className="text-xs font-mono text-muted-foreground truncate">{list.id}</span>
                                 <button
@@ -365,6 +368,13 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                                         <Copy className="w-3 h-3 text-muted-foreground" />
                                     )}
                                 </button>
+                                <EntityOpenActions
+                                    className="ml-auto"
+                                    onOpenWindow={() =>
+                                        openWindow({ forcedListId: list.id, title: list.list_name })
+                                    }
+                                    href={`/lists/${list.id}`}
+                                />
                             </div>
                         </div>
                     );

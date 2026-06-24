@@ -4479,6 +4479,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -12749,6 +12773,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/actions/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Action Catalog
+         * @description The full action catalog (every noun × every verb, with capability states).
+         */
+        get: operations["get_action_catalog_actions_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Action
+         * @description Run ONE `verb:noun` action (`create:`/`update:`/`delete:` <noun>) as the user.
+         *
+         *     Powers the admin UI "Execute". Writes run inside `acting_as_user` (RLS), so this is
+         *     no more powerful than the user's own access. Idempotent by content key — a repeat of
+         *     the same item in the same namespace is a no-op (set `force` for a deliberate dup).
+         */
+        post: operations["execute_action_actions_execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/analysis": {
         parameters: {
             query?: never;
@@ -13358,6 +13426,84 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActionApplyResult */
+        ActionApplyResult: {
+            /** Type */
+            type: string;
+            /** Applied */
+            applied: number;
+            /** Failed */
+            failed: number;
+            /** Receipts */
+            receipts: components["schemas"]["ActionReceipt"][];
+        };
+        /**
+         * ActionCatalog
+         * @description The whole grid: the verb axis + every noun row. This is what the API
+         *     returns and what the admin UI renders.
+         */
+        ActionCatalog: {
+            /** Matrx Version */
+            matrx_version: number;
+            /** Verbs */
+            verbs: string[];
+            /** Nouns */
+            nouns: components["schemas"]["NounActions"][];
+        };
+        /**
+         * ActionExecuteRequest
+         * @description Body for `POST /actions/execute` — one `verb:noun` output_directive envelope.
+         */
+        ActionExecuteRequest: {
+            /**
+             * Kind
+             * @default output_directive
+             */
+            kind: string;
+            /** Type */
+            type: string;
+            /** Items */
+            items?: {
+                [key: string]: unknown;
+            }[];
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
+        /** ActionReceipt */
+        ActionReceipt: {
+            /** Verb */
+            verb: string;
+            /** Noun */
+            noun: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "applied" | "already_applied" | "not_implemented" | "failed";
+            /** Resource Ids */
+            resource_ids?: string[];
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /**
+             * Idempotency Key
+             * @default
+             */
+            idempotency_key: string;
+            /** Error */
+            error?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
             /** File Id */
@@ -18493,6 +18639,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -23306,6 +23479,43 @@ export interface components {
             replacement?: string | null;
             /** Label */
             label?: string | null;
+        };
+        /**
+         * NounActions
+         * @description One row of the grid — a noun (Dimension 2) and its state for every verb.
+         */
+        NounActions: {
+            /** Noun */
+            noun: string;
+            /** Family */
+            family: string;
+            /** Table */
+            table: string;
+            /**
+             * Reference
+             * @enum {string}
+             */
+            reference: "yes" | "planned" | "no";
+            /**
+             * View
+             * @enum {string}
+             */
+            view: "yes" | "planned" | "no";
+            /**
+             * Create
+             * @enum {string}
+             */
+            create: "yes" | "planned" | "no";
+            /**
+             * Update
+             * @enum {string}
+             */
+            update: "yes" | "planned" | "no";
+            /**
+             * Delete
+             * @enum {string}
+             */
+            delete: "yes" | "planned" | "no";
         };
         /**
          * OccupationalCodesResponse
@@ -30544,7 +30754,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message";
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message" | "research";
             /** Source Id */
             source_id: string;
             /** Field Id */
@@ -38568,6 +38778,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -53721,6 +53966,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArchiveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_action_catalog_actions_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionCatalog"];
+                };
+            };
+        };
+    };
+    execute_action_actions_execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActionExecuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionApplyResult"];
                 };
             };
             /** @description Validation Error */

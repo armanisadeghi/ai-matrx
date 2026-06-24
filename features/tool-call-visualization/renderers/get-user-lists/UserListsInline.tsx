@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { List, CheckSquare, Lock, Globe, Users, Search, ChevronRight } from "lucide-react";
+import { List, CheckSquare, Lock, Globe, Users, Search, ChevronRight, ExternalLink } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
+import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 
 interface UserList {
@@ -101,6 +102,7 @@ export const UserListsInline: React.FC<ToolRendererProps> = ({
     toolGroupId = "default",
 }) => {
     const data = useMemo(() => parseListsData(entry), [entry]);
+    const openWindow = useOpenPicklistManagerV2Window();
 
     if (data.isLoading) {
         return (
@@ -155,7 +157,17 @@ export const UserListsInline: React.FC<ToolRendererProps> = ({
                     return (
                         <div
                             key={list.id}
-                            className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors animate-in fade-in slide-in-from-left"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => openWindow({ forcedListId: list.id, title: list.list_name })}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    openWindow({ forcedListId: list.id, title: list.list_name });
+                                }
+                            }}
+                            title="Open list in a window"
+                            className="group flex items-start gap-3 p-3 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors animate-in fade-in slide-in-from-left cursor-pointer"
                             style={{
                                 animationDelay: `${index * 60}ms`,
                                 animationDuration: "250ms",
@@ -171,8 +183,18 @@ export const UserListsInline: React.FC<ToolRendererProps> = ({
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
                                     <p className="text-sm font-medium text-foreground truncate">{list.list_name}</p>
-                                    <span className="flex-shrink-0 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                                    <span className="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                         <span className={vis.color}>{vis.icon}</span>
+                                        <a
+                                            href={`/lists/${list.id}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            title="Open in new tab"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </a>
                                     </span>
                                 </div>
                                 {list.description && (

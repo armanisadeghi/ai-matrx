@@ -64,6 +64,12 @@ import {
   useKnowledgeAssetRunner,
   type OpState,
 } from "@/features/rag/hooks/useKnowledgeAssetRunner";
+import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
+import {
+  costToUnits,
+  formatUnits,
+  sumCostToUnits,
+} from "@/lib/processing-units/units";
 
 // ---------------------------------------------------------------------------
 // Per-kind presentation metadata
@@ -146,13 +152,6 @@ export interface KnowledgeAssetDoc {
   totalPages?: number | null;
 }
 
-/** "$0.05", "<$0.01", or "free". Coarse on purpose — order-of-magnitude. */
-function formatCost(usd: number): string {
-  if (!Number.isFinite(usd) || usd <= 0) return "free";
-  if (usd < 0.01) return "<$0.01";
-  return `~$${usd.toFixed(2)}`;
-}
-
 export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
   const runner = useKnowledgeAssetRunner(doc.id);
   const {
@@ -191,11 +190,22 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
     (DERIVE_KINDS as readonly string[]).includes(d.derivation_kind),
   ).length;
 
+  // Total Processing Units to build everything — the pre-flight cost shown
+  // before "Build all" so nothing expensive is ever triggered blind.
+  const totalBuildUnits = useMemo(() => {
+    const est = estimate.data?.estimates;
+    if (!est) return null;
+    return sumCostToUnits(DERIVE_KINDS.map((k) => est[k]?.cost_usd));
+  }, [estimate.data]);
+
   const handleRunAll = async () => {
+    const costNote =
+      totalBuildUnits && totalBuildUnits > 0
+        ? ` Estimated cost: about ${formatUnits(totalBuildUnits)}.`
+        : "";
     const ok = await confirm({
       title: "Build all knowledge assets?",
-      description:
-        "Runs page verification, tables, multi-granularity, figure captions, section summaries, and synthetic Q&A in sequence. Each is idempotent — existing output is replaced.",
+      description: `Runs page verification, tables, multi-granularity, figure captions, section summaries, and synthetic Q&A in sequence.${costNote} Each is idempotent — existing output is replaced.`,
       confirmLabel: "Build all",
     });
     if (ok) void runAll();
@@ -225,6 +235,14 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           {/* Doc reality summary — "137 pages · 25 sections · 12 tables · 8
               figure pages" — so the user grasps the scope before building. */}
           <DocSummaryLine estimate={estimate} fallbackPages={doc.totalPages} />
+          {totalBuildUnits != null && totalBuildUnits > 0 && (
+            <div className="mt-1 flex items-center gap-1.5">
+              <ProcessingUnitsBadge units={totalBuildUnits} />
+              <span className="text-[10px] text-muted-foreground">
+                to build everything
+              </span>
+            </div>
+          )}
         </div>
         <Button
           size="sm"
@@ -527,7 +545,7 @@ function RealityLine({
     estimate.runs > 0
       ? `${estimate.runs.toLocaleString()} run${estimate.runs === 1 ? "" : "s"}`
       : "deterministic";
-  const cost = formatCost(estimate.cost_usd);
+  const units = costToUnits(estimate.cost_usd);
 
   return (
     <div className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
@@ -537,7 +555,14 @@ function RealityLine({
           {estimate.items.toLocaleString()} {estimate.unit || unit}
         </span>{" "}
         → {runsLabel}
-        {cost !== "free" && <> · {cost}</>}
+        {units > 0 && (
+          <>
+            {" · "}
+            <span className="font-medium text-foreground/70">
+              {formatUnits(units)}
+            </span>
+          </>
+        )}
         {estimate.note && (
           <span className="block text-muted-foreground/80">
             {estimate.note}

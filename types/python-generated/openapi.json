@@ -11572,6 +11572,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -35359,6 +35419,72 @@
         }
       }
     },
+    "/actions/catalog": {
+      "get": {
+        "tags": [
+          "Actions",
+          "Actions"
+        ],
+        "summary": "Get Action Catalog",
+        "description": "The full action catalog (every noun × every verb, with capability states).",
+        "operationId": "get_action_catalog_actions_catalog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionCatalog"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/execute": {
+      "post": {
+        "tags": [
+          "Actions",
+          "Actions"
+        ],
+        "summary": "Execute Action",
+        "description": "Run ONE `verb:noun` action (`create:`/`update:`/`delete:` <noun>) as the user.\n\nPowers the admin UI \"Execute\". Writes run inside `acting_as_user` (RLS), so this is\nno more powerful than the user's own access. Idempotent by content key — a repeat of\nthe same item in the same namespace is a no-op (set `force` for a deliberate dup).",
+        "operationId": "execute_action_actions_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionApplyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/analysis": {
       "get": {
         "tags": [
@@ -37340,6 +37466,183 @@
   },
   "components": {
     "schemas": {
+      "ActionApplyResult": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/ActionReceipt"
+            },
+            "type": "array",
+            "title": "Receipts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "applied",
+          "failed",
+          "receipts"
+        ],
+        "title": "ActionApplyResult"
+      },
+      "ActionCatalog": {
+        "properties": {
+          "matrx_version": {
+            "type": "integer",
+            "title": "Matrx Version"
+          },
+          "verbs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verbs"
+          },
+          "nouns": {
+            "items": {
+              "$ref": "#/components/schemas/NounActions"
+            },
+            "type": "array",
+            "title": "Nouns"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "matrx_version",
+          "verbs",
+          "nouns"
+        ],
+        "title": "ActionCatalog",
+        "description": "The whole grid: the verb axis + every noun row. This is what the API\nreturns and what the admin UI renders."
+      },
+      "ActionExecuteRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "output_directive"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ActionExecuteRequest",
+        "description": "Body for `POST /actions/execute` — one `verb:noun` output_directive envelope."
+      },
+      "ActionReceipt": {
+        "properties": {
+          "verb": {
+            "type": "string",
+            "title": "Verb"
+          },
+          "noun": {
+            "type": "string",
+            "title": "Noun"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "already_applied",
+              "not_implemented",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "resource_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resource Ids"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "idempotency_key": {
+            "type": "string",
+            "title": "Idempotency Key",
+            "default": ""
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "verb",
+          "noun",
+          "status"
+        ],
+        "title": "ActionReceipt"
+      },
       "ActivePageIdsResponse": {
         "properties": {
           "file_id": {
@@ -51581,6 +51884,61 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -64955,6 +65313,81 @@
           "replace_pattern"
         ],
         "title": "NormExceptionRequest"
+      },
+      "NounActions": {
+        "properties": {
+          "noun": {
+            "type": "string",
+            "title": "Noun"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "reference": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "planned",
+              "no"
+            ],
+            "title": "Reference"
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "planned",
+              "no"
+            ],
+            "title": "View"
+          },
+          "create": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "planned",
+              "no"
+            ],
+            "title": "Create"
+          },
+          "update": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "planned",
+              "no"
+            ],
+            "title": "Update"
+          },
+          "delete": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "planned",
+              "no"
+            ],
+            "title": "Delete"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "noun",
+          "family",
+          "table",
+          "reference",
+          "view",
+          "create",
+          "update",
+          "delete"
+        ],
+        "title": "NounActions",
+        "description": "One row of the grid — a noun (Dimension 2) and its state for every verb."
       },
       "OccupationalCodesResponse": {
         "properties": {
@@ -84705,7 +85138,8 @@
               "library_doc",
               "task",
               "project",
-              "cx_message"
+              "cx_message",
+              "research"
             ],
             "title": "Source Kind"
           },
