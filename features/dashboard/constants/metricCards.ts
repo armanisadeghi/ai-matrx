@@ -111,27 +111,37 @@ export const METRIC_CARDS: MetricCardConfig[] = [
     href: "/agents/shortcuts",
     emptyHint: "Create a shortcut",
   },
+  {
+    key: "research_reports",
+    label: "Research",
+    singular: "report",
+    iconName: "FlaskConical",
+    color: "purple",
+    href: "/research",
+    emptyHint: "Run a research report",
+  },
+  {
+    key: "podcasts",
+    label: "Podcasts",
+    singular: "podcast",
+    iconName: "Radio",
+    color: "violet",
+    href: "/podcast",
+    emptyHint: "Create a podcast",
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    singular: "message",
+    iconName: "Mail",
+    color: "pink",
+    href: "/messages",
+    emptyHint: "Send a message",
+  },
 ];
 
 export const FEATURED_METRICS = METRIC_CARDS.filter((m) => m.featured);
 export const SECONDARY_METRICS = METRIC_CARDS.filter((m) => !m.featured);
 
-// ── Quick actions ───────────────────────────────────────────────────────────
-// A small, fixed "start something" row. Each is pinnable (kind "nav"), so the
-// dashboard works even before the user has pinned anything.
-export interface QuickAction {
-  id: string;
-  label: string;
-  href: string;
-  iconName: string;
-  color: string;
-}
-
-export const QUICK_ACTIONS: QuickAction[] = [
-  { id: "/chat/new", label: "New Chat", href: "/chat/new", iconName: "MessageCircle", color: "indigo" },
-  { id: "/agents/new", label: "New Agent", href: "/agents/new", iconName: "Webhook", color: "blue" },
-  { id: "/files/all", label: "Upload Files", href: "/files/all", iconName: "FolderOpen", color: "amber" },
-  { id: "/research/topics/new", label: "New Research", href: "/research/topics/new", iconName: "FlaskConical", color: "purple" },
-  { id: "/transcripts/new", label: "New Transcript", href: "/transcripts/new", iconName: "Mic", color: "rose" },
-  { id: "/notes", label: "New Note", href: "/notes", iconName: "NotebookPen", color: "amber" },
-];
+// "Start something" quick actions live in `../dashboard.config.ts` (the single
+// curate-here file). Import `QUICK_ACTIONS` from there directly.

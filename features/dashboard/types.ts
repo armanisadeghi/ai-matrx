@@ -15,6 +15,9 @@ export interface DashboardMetrics {
   transcripts: number;
   scopes: number;
   shortcuts: number;
+  research_reports: number;
+  podcasts: number;
+  messages: number;
 }
 
 export const EMPTY_DASHBOARD_METRICS: DashboardMetrics = {
@@ -27,4 +30,7 @@ export const EMPTY_DASHBOARD_METRICS: DashboardMetrics = {
   transcripts: 0,
   scopes: 0,
   shortcuts: 0,
+  research_reports: 0,
+  podcasts: 0,
+  messages: 0,
 };

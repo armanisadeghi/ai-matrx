@@ -31,15 +31,16 @@
 - `useDiscoverRotation()` (`hooks/useDiscoverRotation.ts`) — picks which slice of the Discover pool to show.
 
 **Data/config**
-- `constants/discover.ts` — `DISCOVER_POOL`, built FROM `primaryNavItems` (the nav registry) so every spotlight is a real route.
-- `constants/metricCards.ts` — `METRIC_CARDS`, `QUICK_ACTIONS`.
+- `dashboard.config.ts` — **the single curate-here file.** Edit to hide/reorder/add Discover items (`DISCOVER_HIDDEN_HREFS` / `DISCOVER_FEATURED_ORDER` / `DISCOVER_EXTRA`) and the "Start something" launchers (`QUICK_ACTIONS`).
+- `constants/discover.ts` — assembles `DISCOVER_POOL` FROM `primaryNavItems` (the nav registry, so every spotlight is a real route) using the config knobs above.
+- `constants/metricCards.ts` — `METRIC_CARDS` (one per RPC key; tweak labels/icons/order/empty-hints here).
 
 ---
 
 ## Data model
 
 **RPC** (Supabase) — `migrations/get_user_dashboard_metrics.sql`
-- `get_user_dashboard_metrics()` → jsonb. `SECURITY DEFINER`, derives identity from `auth.uid()` (takes NO arg — a caller can't request another user's counts). Counts the calling user's rows in the CURRENT tables: `agx_agent`, `conversations`, `cld_files`, `aga_apps`, `notes`, `ctx_tasks`, `transcripts`, `ctx_scopes`, `agx_shortcut`. Replaces the role of the legacy `get_user_stats` (which counted the deprecated `conversation`/`recipe`/`udt_datasets` entity tables).
+- `get_user_dashboard_metrics()` → jsonb. `SECURITY DEFINER`, derives identity from `auth.uid()` (takes NO arg — a caller can't request another user's counts). Counts the calling user's rows in the CURRENT tables: `agx_agent`, `cx_conversation` (NOT `conversations`), `cld_files`, `aga_apps` (`status='published'`), `notes`, `ctx_tasks`, `transcripts`, `ctx_scopes`, `agx_shortcut`, `rs_topic` (research reports), `pc_episodes` (podcasts), `dm_messages` (messages sent, `sender_id`). Replaces the role of the legacy `get_user_stats` (which counted the deprecated `conversation`/`recipe`/`udt_datasets` entity tables).
 
 **Key types**
 - `DashboardMetrics` (`features/dashboard/types.ts`)
@@ -72,7 +73,8 @@ A favorite is a self-contained **reference** (`label`/`href`/`iconName`/`color` 
 
 - **Route group, not URL.** `/dashboard` is the URL regardless of group; moving the folder `(transitional)→(core)` kept every login/redirect reference valid. Don't add a second `/dashboard` route.
 - **Favorites cap is load-bearing.** Never bypass the reducers to push into `favorites.items` directly — the cap/dedupe protects the preferences blob size.
-- **Discover never hand-lists routes.** `DISCOVER_POOL` derives from `primaryNavItems`; add a nav entry with `dashboard: true` + a `description` and it auto-appears. No parallel list to drift.
+- **Discover never hand-lists routes.** `DISCOVER_POOL` derives from `primaryNavItems`; add a nav entry with `dashboard: true` + a `description` and it auto-appears. Curate (hide/reorder/add) only via `dashboard.config.ts`.
+- **`Star` must stay in `shellIconMap`.** The sidebar Favorites entry renders its icon via `ShellIcon name="Star"`; if `Star` is dropped from `features/shell/shellIconMap.ts` the collapsed entry becomes an empty hole.
 - **RPC takes no argument.** Call `supabase.rpc("get_user_dashboard_metrics")` with no params; identity is `auth.uid()`.
 
 ---
@@ -101,6 +103,7 @@ A favorite is a self-contained **reference** (`label`/`href`/`iconName`/`color` 
 
 ## Change log
 
+- `2026-06-24` — Claude: Added 3 KPIs (research reports `rs_topic`, podcasts `pc_episodes`, messages `dm_messages`). Registered `Star` in `shellIconMap` (fixes empty collapsed Favorites entry). Consolidated all curation into `dashboard.config.ts` (Discover hide/order/extra + Start-something).
 - `2026-06-24` — Claude: Moved `/dashboard` from `(transitional)` to `(core)`; rebuilt as a lean hub (engagement metrics via new `get_user_dashboard_metrics` RPC, quick actions, pinned favorites, rotating Discover). Removed the AI-models widget. Added the favorites/pinning primitive (preferences module + `usePinned`/`PinButton`) and the sidebar `FavoritesNavGroup`.
 
 ---

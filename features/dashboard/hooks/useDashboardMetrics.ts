@@ -29,6 +29,9 @@ function coerceMetrics(data: unknown): DashboardMetrics {
     transcripts: n("transcripts"),
     scopes: n("scopes"),
     shortcuts: n("shortcuts"),
+    research_reports: n("research_reports"),
+    podcasts: n("podcasts"),
+    messages: n("messages"),
   };
 }
 

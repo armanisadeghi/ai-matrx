@@ -4,7 +4,7 @@ import Link from "next/link";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
-import { QUICK_ACTIONS } from "../constants/metricCards";
+import { QUICK_ACTIONS } from "../dashboard.config";
 
 export function QuickActions() {
   return (
