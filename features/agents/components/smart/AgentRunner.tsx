@@ -71,15 +71,6 @@ export function AgentRunner({
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
-
-  // [Track AgentRunner Render] TEMP instrumentation — Wave A/B re-render audit.
-  // Remove before final commit. Logs every render + the subscribed values, so
-  // we can see WHICH value changed between renders.
-  if (typeof window !== "undefined") {
-    console.log(
-      `[Track AgentRunner Render] id=${conversationId ?? "(null)"} status=${status ?? "-"} autoRun=${autoRun} allowChat=${allowChat} needsPre=${needsPreExecution} shouldShowInput=${shouldShowInput} isExec=${isExecuting} hasInput=${hasUserInput} showVars=${showVariablePanel} title=${title ?? "-"}`,
-    );
-  }
   // ── Auto-run: fire execution once when conditions are met ──────────────────
   useEffect(() => {
     if (autoRunFiredRef.current) return;

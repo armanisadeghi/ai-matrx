@@ -60,6 +60,8 @@ export interface UseVoiceCaptureResult {
   start: () => Promise<void>;
   /** Stop recording (no-op unless this surface owns the recorder). */
   stop: () => void;
+  /** Discard this surface's recording without delivering its transcript. */
+  cancel: () => void;
   /** Toggle record/stop for this surface. */
   toggle: () => void;
   pause: () => void;
@@ -140,6 +142,11 @@ export function useVoiceCapture(
     if (isOwner) provider?.stop();
   }, [isOwner, provider]);
 
+  // Discard this surface's recording without delivering its transcript.
+  const cancel = useCallback(() => {
+    if (isOwner) provider?.cancel();
+  }, [isOwner, provider]);
+
   const pause = useCallback(() => {
     if (isOwner) provider?.pause();
   }, [isOwner, provider]);
@@ -168,6 +175,7 @@ export function useVoiceCapture(
     durationSec,
     start,
     stop,
+    cancel,
     toggle,
     pause,
     resume,

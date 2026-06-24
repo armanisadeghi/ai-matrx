@@ -20,6 +20,7 @@ import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "@/features/agents/components/inputs/variable-input-variations/variable-input-options";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 import { callbackManager } from "@/utils/callbackManager";
 
 // =============================================================================
@@ -831,6 +832,21 @@ const instanceUIStateSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    // Atomic creation. Delegate to the slice's own initInstanceUIState case
+    // reducer (resolved at dispatch time) so the ~45-field init can never drift
+    // from the createInstanceFull path. When no uiState bundle is present the
+    // defaults apply (conversationId only).
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { conversationId, uiState } = action.payload;
+      instanceUIStateSlice.caseReducers.initInstanceUIState(
+        state,
+        instanceUIStateSlice.actions.initInstanceUIState({
+          conversationId,
+          ...(uiState ?? {}),
+        }),
+      );
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       const conversationId = action.payload;
       const entry = state.byConversationId[conversationId];

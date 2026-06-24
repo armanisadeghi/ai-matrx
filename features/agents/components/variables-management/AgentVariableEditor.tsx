@@ -176,7 +176,9 @@ export function AgentVariableEditor({
   const handleBindingChange = (next: ContextItemBinding | undefined) =>
     updateVariable({ binding: next });
 
-  const isBound = !!variable.binding?.itemKey;
+  const isBound = !!(
+    variable.binding?.itemKey || variable.binding?.contextItemId
+  );
   const staticOptions = effective.options
     .map((option) => option.trim())
     .filter((option) => option.length > 0);

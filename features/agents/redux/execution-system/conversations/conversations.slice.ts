@@ -26,6 +26,7 @@ import { SOURCE_APP } from "@/features/agents/types/instance.types";
 import { generateConversationId } from "../utils/ids";
 import { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
 // Record alias
@@ -59,6 +60,107 @@ const initialState: ConversationsState = {
 };
 
 // =============================================================================
+// Shared record builder — the ONE place a ConversationRecord shell is created.
+// Used by both the `createInstance` reducer and the `createInstanceFull`
+// extraReducer so the two creation paths can never drift.
+// =============================================================================
+
+interface CreateInstanceArgs {
+  conversationId?: string;
+  agentId: string;
+  agentType: AgentType;
+  origin: InstanceOrigin;
+  shortcutId?: string;
+  status?: InstanceStatus;
+  sourceFeature?: SourceFeature;
+  // New ConversationInvocation / cx_conversation fields (all optional)
+  surfaceKey?: string;
+  initialAgentId?: string | null;
+  initialAgentVersionId?: string | null;
+  parentConversationId?: string | null;
+  forkedFromId?: string | null;
+  forkedAtPosition?: number | null;
+  organizationId?: string | null;
+  projectId?: string | null;
+  taskId?: string | null;
+  isEphemeral?: boolean;
+  isPublic?: boolean;
+  apiEndpointMode?: ApiEndpointMode;
+  reuseConversationId?: boolean;
+  builderAdvancedSettings?: ConversationRecord["builderAdvancedSettings"];
+  metadata?: Record<string, unknown>;
+}
+
+function applyCreateInstance(
+  state: ConversationsState,
+  payload: CreateInstanceArgs,
+): void {
+  const {
+    conversationId = generateConversationId(),
+    agentId,
+    agentType,
+    origin,
+    shortcutId = null,
+    status = "draft",
+    sourceFeature = "agent-runner",
+    surfaceKey,
+    initialAgentId,
+    initialAgentVersionId,
+    parentConversationId,
+    forkedFromId,
+    forkedAtPosition,
+    organizationId,
+    projectId,
+    taskId,
+    isEphemeral,
+    isPublic,
+    apiEndpointMode,
+    reuseConversationId,
+    builderAdvancedSettings,
+    metadata,
+  } = payload;
+
+  const now = new Date().toISOString();
+
+  state.byConversationId[conversationId] = {
+    // Legacy surface
+    conversationId,
+    agentId,
+    agentType,
+    origin,
+    shortcutId,
+    status,
+    sourceApp: SOURCE_APP,
+    sourceFeature,
+    cacheOnly: true,
+    createdAt: now,
+    updatedAt: now,
+    // Invocation-derived fields (only stamp when provided so the
+    // payload shape stays minimal for unchanged call sites)
+    ...(surfaceKey !== undefined ? { surfaceKey } : {}),
+    ...(initialAgentId !== undefined
+      ? { initialAgentId }
+      : { initialAgentId: agentId }),
+    ...(initialAgentVersionId !== undefined ? { initialAgentVersionId } : {}),
+    ...(parentConversationId !== undefined ? { parentConversationId } : {}),
+    ...(forkedFromId !== undefined ? { forkedFromId } : {}),
+    ...(forkedAtPosition !== undefined ? { forkedAtPosition } : {}),
+    ...(organizationId !== undefined ? { organizationId } : {}),
+    ...(projectId !== undefined ? { projectId } : {}),
+    ...(taskId !== undefined ? { taskId } : {}),
+    ...(isEphemeral !== undefined ? { isEphemeral } : {}),
+    ...(isPublic !== undefined ? { isPublic } : {}),
+    ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
+    ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),
+    ...(builderAdvancedSettings !== undefined
+      ? { builderAdvancedSettings }
+      : {}),
+    ...(metadata !== undefined ? { metadata } : {}),
+  };
+  state.allConversationIds.push(conversationId);
+}
+
+// =============================================================================
 // Slice
 // =============================================================================
 
@@ -66,99 +168,8 @@ const conversationsSlice = createSlice({
   name: "conversations",
   initialState,
   reducers: {
-    createInstance(
-      state,
-      action: PayloadAction<{
-        conversationId?: string;
-        agentId: string;
-        agentType: AgentType;
-        origin: InstanceOrigin;
-        shortcutId?: string;
-        status?: InstanceStatus;
-        sourceFeature?: SourceFeature;
-        // New ConversationInvocation / cx_conversation fields (all optional)
-        surfaceKey?: string;
-        initialAgentId?: string | null;
-        initialAgentVersionId?: string | null;
-        parentConversationId?: string | null;
-        forkedFromId?: string | null;
-        forkedAtPosition?: number | null;
-        organizationId?: string | null;
-        projectId?: string | null;
-        taskId?: string | null;
-        isEphemeral?: boolean;
-        isPublic?: boolean;
-        apiEndpointMode?: ApiEndpointMode;
-        reuseConversationId?: boolean;
-        builderAdvancedSettings?: ConversationRecord["builderAdvancedSettings"];
-        metadata?: Record<string, unknown>;
-      }>,
-    ) {
-      const {
-        conversationId = generateConversationId(),
-        agentId,
-        agentType,
-        origin,
-        shortcutId = null,
-        status = "draft",
-        sourceFeature = "agent-runner",
-        surfaceKey,
-        initialAgentId,
-        initialAgentVersionId,
-        parentConversationId,
-        forkedFromId,
-        forkedAtPosition,
-        organizationId,
-        projectId,
-        taskId,
-        isEphemeral,
-        isPublic,
-        apiEndpointMode,
-        reuseConversationId,
-        builderAdvancedSettings,
-        metadata,
-      } = action.payload;
-
-      const now = new Date().toISOString();
-
-      state.byConversationId[conversationId] = {
-        // Legacy surface
-        conversationId,
-        agentId,
-        agentType,
-        origin,
-        shortcutId,
-        status,
-        sourceApp: SOURCE_APP,
-        sourceFeature,
-        cacheOnly: true,
-        createdAt: now,
-        updatedAt: now,
-        // Invocation-derived fields (only stamp when provided so the
-        // payload shape stays minimal for unchanged call sites)
-        ...(surfaceKey !== undefined ? { surfaceKey } : {}),
-        ...(initialAgentId !== undefined
-          ? { initialAgentId }
-          : { initialAgentId: agentId }),
-        ...(initialAgentVersionId !== undefined
-          ? { initialAgentVersionId }
-          : {}),
-        ...(parentConversationId !== undefined ? { parentConversationId } : {}),
-        ...(forkedFromId !== undefined ? { forkedFromId } : {}),
-        ...(forkedAtPosition !== undefined ? { forkedAtPosition } : {}),
-        ...(organizationId !== undefined ? { organizationId } : {}),
-        ...(projectId !== undefined ? { projectId } : {}),
-        ...(taskId !== undefined ? { taskId } : {}),
-        ...(isEphemeral !== undefined ? { isEphemeral } : {}),
-        ...(isPublic !== undefined ? { isPublic } : {}),
-        ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
-        ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),
-        ...(builderAdvancedSettings !== undefined
-          ? { builderAdvancedSettings }
-          : {}),
-        ...(metadata !== undefined ? { metadata } : {}),
-      };
-      state.allConversationIds.push(conversationId);
+    createInstance(state, action: PayloadAction<CreateInstanceArgs>) {
+      applyCreateInstance(state, action.payload);
     },
 
     setInstanceStatus(
@@ -311,6 +322,22 @@ const conversationsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Atomic creation: build the conversation record shell from the unified
+    // createInstanceFull action (same helper as the createInstance reducer).
+    builder.addCase(createInstanceFull, (state, action) => {
+      const p = action.payload;
+      applyCreateInstance(state, {
+        conversationId: p.conversationId,
+        agentId: p.agentId,
+        agentType: p.agentType,
+        origin: p.origin,
+        sourceFeature: p.sourceFeature,
+        shortcutId: p.shortcutId,
+        initialAgentVersionId: p.initialAgentVersionId,
+        isEphemeral: p.isEphemeral,
+      });
+    });
+
     // When messages are hydrated from the database (reload path), the
     // conversation is by definition already persisted server-side — flip
     // cacheOnly off so selectors that gate on server confirmation (URL nav,

@@ -38,6 +38,7 @@ import {
   type ChunkCompleteInfo,
 } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import type { TranscriptionResult } from "@/features/audio/types";
+import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   audioLevelChanged,
@@ -80,11 +81,26 @@ export interface GlobalRecordingApi {
   context: RecordingContext | null;
   start: (args: StartRecordingArgs) => Promise<void>;
   stop: () => void;
+  /**
+   * Discard the active recording: stops capture and finalizes the audio safely
+   * (no IndexedDB orphan) but does NOT deliver the transcript to the
+   * subscriber. Used by "cancel" affordances so a cancelled recording never
+   * leaks text into the host field.
+   */
+  cancel: () => void;
   pause: () => void;
   resume: () => void;
 }
 
 const GlobalRecordingContext = createContext<GlobalRecordingApi | null>(null);
+
+/**
+ * Stable id under which the entire global transcription session holds the
+ * app-wide capture lock. The session manages global↔global takeover internally,
+ * so it presents as ONE holder to the lock; a raw recorder (voice message,
+ * flashcard) claiming the lock stops this session, and vice-versa.
+ */
+const GLOBAL_CAPTURE_ID = "global-recording-session";
 
 interface GlobalRecordingProviderProps {
   children: ReactNode;
@@ -105,6 +121,22 @@ export function GlobalRecordingProvider({
   const chunkErrorSubRef =
     useRef<StartRecordingArgs["onChunkError"]>(undefined);
   const errorSubRef = useRef<StartRecordingArgs["onError"]>(undefined);
+  // Set by cancel() so the imminent finalize discards the transcript instead of
+  // delivering it to the subscriber.
+  const cancelledRef = useRef(false);
+  // Latest stop() — the app-wide capture lock calls this when another recorder
+  // (raw voice message, flashcard) takes over, so capture is never concurrent.
+  const stopRef = useRef<() => void>(() => {});
+  // True while a takeover from start() is queued — guards the finalize-time
+  // capture-lock release so an internal global→global handoff never releases
+  // the lock the incoming recording is about to (re)claim.
+  const pendingStartRef = useRef<StartRecordingArgs | null>(null);
+
+  /** Release the capture lock once a recording truly ends — but not when a
+   *  global→global takeover is queued (the next recording keeps the lock). */
+  const releaseGlobalCaptureIfIdle = useCallback(() => {
+    if (!pendingStartRef.current) releaseCapture(GLOBAL_CAPTURE_ID);
+  }, []);
 
   const recorder = useChunkedRecordAndTranscribe({
     onChunkComplete: (info) => {
@@ -114,8 +146,15 @@ export function GlobalRecordingProvider({
       // Final state lands AFTER recordingStopped. Mirror final transcript,
       // then clear the slice context so a follow-up recording starts clean.
       dispatch(transcribingChanged(false));
-      if (result.text) dispatch(liveTranscriptUpdated(result.text));
-      completeSubRef.current?.(result, audioBlob);
+      const cancelled = cancelledRef.current;
+      cancelledRef.current = false;
+      if (cancelled) {
+        // Discard: drop any partial preview and never deliver to the subscriber.
+        dispatch(liveTranscriptUpdated(""));
+      } else {
+        if (result.text) dispatch(liveTranscriptUpdated(result.text));
+        completeSubRef.current?.(result, audioBlob);
+      }
       dispatch(recordingFinalized());
       contextRef.current = null;
       chunkSubRef.current = undefined;
@@ -123,12 +162,15 @@ export function GlobalRecordingProvider({
       chunkErrorSubRef.current = undefined;
       errorSubRef.current = undefined;
       setIsFinalizing(false);
+      // Recording fully done — drop the capture lock unless a takeover is queued.
+      releaseGlobalCaptureIfIdle();
     },
     onChunkError: (chunkIndex, error) => {
       chunkErrorSubRef.current?.(chunkIndex, error);
     },
     onError: (message, code) => {
       dispatch(recordingErrored(message));
+      cancelledRef.current = false;
       errorSubRef.current?.(message, code);
       contextRef.current = null;
       chunkSubRef.current = undefined;
@@ -136,6 +178,7 @@ export function GlobalRecordingProvider({
       chunkErrorSubRef.current = undefined;
       errorSubRef.current = undefined;
       setIsFinalizing(false);
+      releaseGlobalCaptureIfIdle();
     },
   });
 
@@ -158,10 +201,10 @@ export function GlobalRecordingProvider({
     dispatch(failedChunkCountChanged(recorder.failedChunkCount));
   }, [dispatch, recorder.failedChunkCount]);
 
-  // The newest start-request that is waiting for an in-flight recording to
-  // finish finalizing before it begins. Start-always-wins: only the LATEST
-  // pending request survives — a rapid A→B→C just records C.
-  const pendingStartRef = useRef<StartRecordingArgs | null>(null);
+  // (`pendingStartRef` is declared above — it doubles as the capture-lock
+  // release guard. The newest queued start-request waiting for an in-flight
+  // recording to finish finalizing; start-always-wins keeps only the LATEST, so
+  // a rapid A→B→C just records C.)
 
   // The actual "begin a fresh recording" — wires the per-recording callbacks,
   // marks the slice started, and kicks the shared recorder. Used both for an
@@ -169,6 +212,15 @@ export function GlobalRecordingProvider({
   // recording has finished finalizing.
   const beginRecording = useCallback(
     async (args: StartRecordingArgs): Promise<void> => {
+      // Claim the app-wide capture lock (start-always-wins). If a raw recorder
+      // (voice message, flashcard) is capturing, this stops it first so two
+      // captures can never overlap. Re-claiming with the same id on an internal
+      // global→global takeover is a no-op handoff.
+      claimCapture({
+        id: GLOBAL_CAPTURE_ID,
+        label: "Transcription session",
+        stop: () => stopRef.current(),
+      });
       contextRef.current = args.context;
       chunkSubRef.current = args.onChunkComplete;
       completeSubRef.current = args.onComplete;
@@ -200,6 +252,8 @@ export function GlobalRecordingProvider({
     dispatch(recordingStopped());
     recorder.stopRecording();
   }, [dispatch, recorder]);
+  // Keep the capture-lock takeover handle pointed at the latest stop().
+  stopRef.current = stop;
 
   const start = useCallback(
     async (args: StartRecordingArgs): Promise<void> => {
@@ -265,6 +319,21 @@ export function GlobalRecordingProvider({
     }
   }, [isFinalizing]);
 
+  const cancel = useCallback(() => {
+    if (!recorder.isRecording) return;
+    // Discard semantics: finalize the audio (so IndexedDB doesn't strand an
+    // orphan) but flag the finalize to swallow the transcript instead of
+    // delivering it. Mirrors stop()'s finalize-gate handling.
+    cancelledRef.current = true;
+    setIsFinalizing(true);
+    if (finalizeSafetyRef.current) clearTimeout(finalizeSafetyRef.current);
+    finalizeSafetyRef.current = setTimeout(() => {
+      setIsFinalizing(false);
+    }, 45_000);
+    dispatch(recordingStopped());
+    recorder.stopRecording();
+  }, [dispatch, recorder]);
+
   const pause = useCallback(() => {
     if (!recorder.isRecording || recorder.isPaused) return;
     recorder.pauseRecording();
@@ -284,10 +353,11 @@ export function GlobalRecordingProvider({
       context: contextRef.current,
       start,
       stop,
+      cancel,
       pause,
       resume,
     }),
-    [recorder.isRecording, isFinalizing, start, stop, pause, resume],
+    [recorder.isRecording, isFinalizing, start, stop, cancel, pause, resume],
   );
 
   return (

@@ -16,7 +16,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { batch } from "react-redux";
+import { createInstanceFull } from "../create-instance-full";
 import type { RootState } from "@/lib/redux/store";
 import type {
   AgentType,
@@ -195,73 +195,57 @@ export const createManualInstance = createAsyncThunk<
   const snapshot = readAgentSnapshot(state, agentId);
   const resolvedAgentType = agentType ?? snapshot.agentType;
 
-  // Atomic creation: batch all per-slice init dispatches into ONE React commit.
-  // react-redux's useSyncExternalStore re-renders subscribers on EVERY store
-  // mutation (to avoid tearing) and does NOT auto-batch across them, so without
-  // this wrapper a subscribed runner re-renders once per init action (~9×).
-  // `batch` coalesces them into a single notification → one render.
-  batch(() => {
+  // ATOMIC CREATION — one dispatch, one store mutation, ONE re-render.
+  //
+  // Every per-slice init runs from a SINGLE `createInstanceFull` action that all
+  // instance slices handle via `extraReducers`. This is the mirror of
+  // `destroyInstance` (which all slices already extraReduce on). It matters
+  // because react-redux's `useSyncExternalStore` re-renders every subscriber on
+  // EVERY store mutation to avoid tearing and does NOT batch across them — so the
+  // old 9-dispatch fan-out re-rendered a subscribed runner ~9× during creation.
+  // One action = one mutation = one render.
   dispatch(
-    createInstance({
+    createInstanceFull({
       conversationId,
       agentId,
-      ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
       agentType: resolvedAgentType,
       origin: "manual" as InstanceOrigin,
       sourceFeature,
+      ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
       ...(isEphemeral !== undefined ? { isEphemeral } : {}),
+      // Manual mode (Agent Builder) reads agent.settings LIVE at submit time and
+      // never touches the overrides slice — omit the bundle so it stays uninit.
+      ...(apiEndpointMode !== "manual"
+        ? { overrides: { baseSettings: snapshot.baseSettings } }
+        : {}),
+      variables: {
+        definitions: snapshot.variableDefinitions,
+        scopeValues: {},
+      },
+      uiState: {
+        displayMode,
+        isCreator: snapshot.isCreator,
+        autoClearConversation,
+        showAutoClearToggle,
+        autoRun,
+        allowChat,
+        showPreExecutionGate,
+        showVariablePanel:
+          showVariablePanel ?? snapshot.variableDefinitions.length > 0,
+        showDefinitionMessages,
+        showDefinitionMessageContent,
+        widgetHandleId,
+        hideReasoning,
+        hideToolResults,
+        responseDensity,
+        preExecutionMessage,
+        variablesPanelStyle,
+        jsonExtraction,
+        originalText,
+      },
+      messages: { apiEndpointMode },
     }),
   );
-
-  // Manual mode (the Agent Builder) reads `agent.settings` LIVE at submit
-  // time and never touches the overrides slice — initialising it here would
-  // be dead state and risks future code accidentally reading it as the
-  // source of truth. Agent mode keeps the snapshot.
-  if (apiEndpointMode !== "manual") {
-    dispatch(
-      initInstanceOverrides({
-        conversationId,
-        baseSettings: snapshot.baseSettings,
-      }),
-    );
-  }
-  dispatch(
-    initInstanceVariables({
-      conversationId,
-      definitions: snapshot.variableDefinitions,
-      scopeValues: {},
-    }),
-  );
-  dispatch(initInstanceResources({ conversationId }));
-  dispatch(initInstanceContext({ conversationId }));
-  dispatch(initInstanceUserInput({ conversationId }));
-  dispatch(initInstanceClientTools({ conversationId }));
-  dispatch(
-    initInstanceUIState({
-      conversationId,
-      displayMode,
-      isCreator: snapshot.isCreator,
-      autoClearConversation,
-      showAutoClearToggle,
-      autoRun,
-      allowChat,
-      showPreExecutionGate,
-      showVariablePanel:
-        showVariablePanel ?? snapshot.variableDefinitions.length > 0,
-      showDefinitionMessages,
-      showDefinitionMessageContent,
-      widgetHandleId,
-      hideReasoning,
-      hideToolResults,
-      responseDensity,
-      preExecutionMessage,
-      variablesPanelStyle,
-      jsonExtraction,
-      originalText,
-    }),
-  );
-  dispatch(initInstanceMessages({ conversationId, apiEndpointMode }));
-  });
 
   return conversationId;
 });

@@ -30,8 +30,16 @@ const ON_MISSING_OPTIONS: {
   hint: string;
 }[] = [
   { value: "empty", label: "Empty", hint: "Fill with an empty value" },
-  { value: "skip", label: "Skip", hint: "Leave the variable's default / caller value" },
-  { value: "error", label: "Error", hint: "Refuse to run if no scope supplies it" },
+  {
+    value: "skip",
+    label: "Skip",
+    hint: "Leave the variable's default / caller value",
+  },
+  {
+    value: "error",
+    label: "Error",
+    hint: "Refuse to run if no scope supplies it",
+  },
 ];
 
 /**
@@ -48,12 +56,18 @@ export function ContextItemBindingEditor({
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
   // Org is a picker-only concern (the binding stores the item's id/type/key, not the org).
   const [orgId, setOrgId] = useState<string>(activeOrgId ?? "");
-  const bound = !!binding?.itemKey || !!binding?.contextItemId;
+  // Binding "enabled" is the presence of the object — item ids are empty until the user picks one.
+  const bound = binding != null;
 
   const toggleBound = (on: boolean) => {
     onChange(
       on
-        ? { contextItemId: "", scopeTypeId: "", itemKey: "", onMissing: "empty" }
+        ? {
+            contextItemId: "",
+            scopeTypeId: "",
+            itemKey: "",
+            onMissing: "empty",
+          }
         : undefined,
     );
   };
@@ -76,11 +90,16 @@ export function ContextItemBindingEditor({
             Bind to a context item
           </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Auto-fills from the active scope and inherits the item&rsquo;s input. Optional —
-            with no context set it&rsquo;s just a normal input.
+            Auto-fills from the active scope and inherits the item&rsquo;s
+            input. Optional — with no context set it&rsquo;s just a normal
+            input.
           </p>
         </div>
-        <Switch checked={bound} onCheckedChange={toggleBound} disabled={readonly} />
+        <Switch
+          checked={bound}
+          onCheckedChange={toggleBound}
+          disabled={readonly}
+        />
       </div>
 
       {bound && (

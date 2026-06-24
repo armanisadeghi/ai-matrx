@@ -164,6 +164,16 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-24 — Fixed two transcript-pane regressions introduced with the
+  `<textarea>` → `ProTextarea` swap. (1) **Data loss:** `commitTranscript` now
+  falls back to the live streamed accumulation (`liveTranscriptRef`) whenever the
+  final `onTranscriptionComplete` payload comes back shorter than what streamed,
+  so a truncated/partial finalization can never wipe dictated content (logs loudly
+  when it fires). (2) **Blank live preview:** the live-transcript suppression now
+  keys off an actual in-progress manual edit (`transcriptEditedRef`, set on real
+  user input, reset on focus/blur) instead of mere field focus — clicking the
+  toolbar mic keeps focus on the field, so the old focus-only guard froze the
+  whole stream until stop.
 - 2026-06-23 — Surface Pro rollout completed for `matrx-user/transcripts-cleanup`.
   Extracted `CleanupPad.buildScope`'s inline scope construction into the new
   shared, PURE `agent-context/buildTranscriptsCleanupContextData.ts`

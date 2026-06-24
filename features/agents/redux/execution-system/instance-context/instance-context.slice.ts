@@ -13,6 +13,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
 // State
@@ -156,6 +157,10 @@ const instanceContextSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    builder.addCase(createInstanceFull, (state, action) => {
+      state.byConversationId[action.payload.conversationId] = {};
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
     });

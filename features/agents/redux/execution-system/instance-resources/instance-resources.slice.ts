@@ -25,6 +25,7 @@ import type {
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import { generateResourceId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
 // State
@@ -255,6 +256,10 @@ const instanceResourcesSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    builder.addCase(createInstanceFull, (state, action) => {
+      state.byConversationId[action.payload.conversationId] = {};
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
     });

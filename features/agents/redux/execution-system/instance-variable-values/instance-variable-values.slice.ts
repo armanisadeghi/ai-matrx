@@ -19,6 +19,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
 // State
@@ -205,6 +206,16 @@ const instanceVariableValuesSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { conversationId, variables } = action.payload;
+      state.byConversationId[conversationId] = {
+        conversationId,
+        definitions: variables?.definitions ?? [],
+        userValues: {},
+        scopeValues: variables?.scopeValues ?? {},
+      };
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
     });

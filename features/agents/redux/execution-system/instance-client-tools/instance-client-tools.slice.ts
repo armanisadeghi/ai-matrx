@@ -16,6 +16,7 @@
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { destroyInstance } from '../conversations/conversations.slice';
+import { createInstanceFull } from '../create-instance-full';
 
 // =============================================================================
 // State
@@ -88,6 +89,11 @@ const instanceClientToolsSlice = createSlice({
     },
 
     extraReducers: (builder) => {
+        builder.addCase(createInstanceFull, (state, action) => {
+            const { conversationId, clientTools } = action.payload;
+            state.byConversationId[conversationId] = clientTools?.tools ?? [];
+        });
+
         builder.addCase(destroyInstance, (state, action) => {
             delete state.byConversationId[action.payload];
         });

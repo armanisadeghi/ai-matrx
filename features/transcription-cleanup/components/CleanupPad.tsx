@@ -540,7 +540,8 @@ export default function CleanupPad({
   const showCustom = isEmbedded ? embeddedReveal.custom : propCustom;
   // The host-owned session list is only revealable when the host actually
   // provides one (a War Room tile passes its scoped list; the page doesn't).
-  const showSessions = isEmbedded && Boolean(sessionListSlot) && embeddedReveal.sessions;
+  const showSessions =
+    isEmbedded && Boolean(sessionListSlot) && embeddedReveal.sessions;
   // In embedded the dictionary rides inside the revealed Controls drawer.
   const showDictionary = isEmbedded ? embeddedReveal.sidebar : propDictionary;
 
@@ -647,6 +648,14 @@ export default function CleanupPad({
   const transcriptDisplayRef = useRef<string>("");
   const pendingPrefixRef = useRef("");
   const pendingSuffixRef = useRef("");
+  /**
+   * Mirrors the live (streamed, accumulated) transcript. `commitTranscript`
+   * reads this to guarantee the committed draft is never SHORTER than what the
+   * user actually saw streaming — the final-payload path can occasionally come
+   * back truncated, and dictated content must never silently vanish.
+   */
+  const liveTranscriptRef = useRef("");
+  liveTranscriptRef.current = liveTranscript;
 
   // Pane textarea refs — the context menu reads selection through these.
   const transcriptTaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -654,6 +663,14 @@ export default function CleanupPad({
   const customTaRef = useRef<HTMLTextAreaElement | null>(null);
   /** While the transcript textarea is focused, live mic preview must not fight typing. */
   const transcriptFocusedRef = useRef(false);
+  /**
+   * True only once the user actually edits (types into) the transcript field
+   * during the current focus session. Mere focus must NOT freeze the live
+   * preview — clicking the toolbar mic keeps focus on the field, and the user
+   * expects to watch their dictation stream in. Only an in-progress manual edit
+   * suppresses the live preview (so it can't clobber the caret). Reset on
+   * focus/blur. */
+  const transcriptEditedRef = useRef(false);
 
   const allText = useMemo(
     () => entries.map((e) => e.text).join("\n\n"),
@@ -813,11 +830,13 @@ export default function CleanupPad({
     [paneApplicationScope],
   );
   const cleanGetScope = useCallback(
-    () => paneApplicationScope(cleanTaRef.current, "clean", responseRef.current),
+    () =>
+      paneApplicationScope(cleanTaRef.current, "clean", responseRef.current),
     [paneApplicationScope],
   );
   const customGetScope = useCallback(
-    () => paneApplicationScope(customTaRef.current, "custom", customRef.current),
+    () =>
+      paneApplicationScope(customTaRef.current, "custom", customRef.current),
     [paneApplicationScope],
   );
 
@@ -1124,8 +1143,23 @@ export default function CleanupPad({
 
   const commitTranscript = useCallback(
     (text: string) => {
+      // Capture the live (streamed) accumulation BEFORE clearing it. The
+      // committed transcript must never contain less than what the user saw
+      // streaming: if the final payload comes back empty or truncated (a
+      // failed / partial finalization), fall back to the live text so dictated
+      // content can never silently vanish. The fallback fires loudly so a real
+      // finalization regression doesn't hide behind the safety net.
+      const live = liveTranscriptRef.current.trim();
       setLiveTranscript("");
-      const trimmed = text.trim();
+      const finalText = text.trim();
+      if (finalText.length < live.length) {
+        console.warn(
+          "[CleanupPad] Final transcript shorter than the live stream — " +
+            "falling back to the live text to avoid data loss.",
+          { finalLength: finalText.length, liveLength: live.length },
+        );
+      }
+      const trimmed = finalText.length >= live.length ? finalText : live;
       const prefix = pendingPrefixRef.current;
       const suffix = pendingSuffixRef.current;
       const combined = composeCommittedTranscript(
@@ -1187,7 +1221,11 @@ export default function CleanupPad({
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
-    if (transcriptFocusedRef.current) return;
+    // Suppress the live preview ONLY while the user is actively editing the
+    // field by hand (so the stream can't clobber their caret). Mere focus does
+    // not freeze the preview — the toolbar mic keeps focus on this field, and
+    // the user must be able to watch their dictation stream in real time.
+    if (transcriptEditedRef.current) return;
     setLiveTranscript(text);
   }, []);
 
@@ -1258,6 +1296,11 @@ export default function CleanupPad({
   // ── Edits ──────────────────────────────────────────────────────────────────
   const handleDraftChange = useCallback(
     (value: string) => {
+      // Real user input (controlled textarea onChange only fires on manual
+      // typing/paste, never on programmatic value-prop updates from the live
+      // stream). Mark the focus session as actively edited so the live preview
+      // stops fighting the caret until the field is blurred.
+      transcriptEditedRef.current = true;
       setLiveTranscript("");
       if (pendingPrefixRef.current || pendingSuffixRef.current) {
         setPendingPrefix("");
@@ -1280,10 +1323,13 @@ export default function CleanupPad({
 
   const handleTranscriptFocus = useCallback(() => {
     transcriptFocusedRef.current = true;
+    // Fresh focus session — not yet edited, so the live preview streams freely.
+    transcriptEditedRef.current = false;
   }, []);
 
   const handleTranscriptBlur = useCallback(() => {
     transcriptFocusedRef.current = false;
+    transcriptEditedRef.current = false;
   }, []);
 
   const handleCleanFocus = useCallback(() => {

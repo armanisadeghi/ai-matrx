@@ -21,9 +21,8 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { Mic } from "lucide-react";
-import { useChunkedRecordAndTranscribe } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
+import { useVoiceCapture } from "@/features/audio/hooks/useVoiceCapture";
 import { cn } from "@/lib/utils";
-import { TranscriptionResult } from "@/features/audio/types";
 import { RecordingIndicator } from "./RecordingIndicator";
 import { TranscriptionLoader } from "./TranscriptionLoader";
 import { VoiceTroubleshootingModal } from "./VoiceTroubleshootingModal";
@@ -104,13 +103,13 @@ const MicrophoneIconButtonCore = forwardRef<
 
   // ── Transcription success handler ────────────────────────────────────────
   const handleTranscriptionComplete = useCallback(
-    (result: TranscriptionResult) => {
-      if (!result.success || !result.text) return;
+    (finalText: string) => {
+      if (!finalText) return;
 
       if (variant === "modal-controls") {
         // APPEND each session's result so Add More doesn't overwrite
         setTranscribedText((prev) =>
-          prev ? prev + " " + result.text : result.text,
+          prev ? prev + " " + finalText : finalText,
         );
         return;
       }
@@ -118,9 +117,9 @@ const MicrophoneIconButtonCore = forwardRef<
       const mode = stopModeRef.current;
       stopModeRef.current = "full";
       if (mode === "transcript-only" && onTranscriptOnlyComplete) {
-        onTranscriptOnlyComplete(result.text);
+        onTranscriptOnlyComplete(finalText);
       } else {
-        onTranscriptionComplete(result.text);
+        onTranscriptionComplete(finalText);
       }
     },
     [variant, onTranscriptionComplete, onTranscriptOnlyComplete],
@@ -150,26 +149,32 @@ const MicrophoneIconButtonCore = forwardRef<
     [onError, variant],
   );
 
-  // ── Core hook (chunked — safe for any recording length) ─────────────────
+  // ── Shared session (start-always-wins, one-at-a-time, survives navigation,
+  //    crash-safe). Previously this component span up its OWN chunked recorder,
+  //    which is exactly how two mics could record at once. ───────────────────
   const {
     isRecording,
     isTranscribing,
     isPaused,
-    duration,
+    durationSec: duration,
     audioLevel,
     liveTranscript,
-    startRecording,
-    stopRecording,
-    pauseRecording,
-    resumeRecording,
-    reset,
-  } = useChunkedRecordAndTranscribe({
-    onTranscriptionComplete: handleTranscriptionComplete,
-    onChunkTranscribed: (chunk, accumulated) => {
-      onLiveTranscript?.(accumulated);
-    },
+    start: startRecording,
+    stop: stopRecording,
+    pause: pauseRecording,
+    resume: resumeRecording,
+  } = useVoiceCapture({
+    instanceId: id,
+    label: "Voice input",
+    onTranscript: (finalText) => handleTranscriptionComplete(finalText),
     onError: handleError,
   });
+
+  // Mirror the live streaming transcript out to the host (owner-gated, so a
+  // recording on another surface never leaks into this one's callback).
+  useEffect(() => {
+    if (liveTranscript) onLiveTranscript?.(liveTranscript);
+  }, [liveTranscript, onLiveTranscript]);
 
   useEffect(() => {
     onRecordingStateChange?.({ isRecording, isTranscribing });
@@ -233,32 +238,31 @@ const MicrophoneIconButtonCore = forwardRef<
   // ── Modal handlers ───────────────────────────────────────────────────────
   const handleModalCancel = useCallback(() => {
     if (isRecording) stopRecording();
-    reset();
     setTranscribedText(null);
     setModalOpen(false);
-  }, [isRecording, stopRecording, reset]);
+  }, [isRecording, stopRecording]);
 
   const handleModalAccept = useCallback(
     (text: string) => {
       onTranscriptionComplete(text);
       setTranscribedText(null);
       setModalOpen(false);
-      reset();
     },
-    [onTranscriptionComplete, reset],
+    [onTranscriptionComplete],
   );
 
   const handleModalRetry = useCallback(async () => {
     setTranscribedText(null);
-    reset();
+    // start() clears the shared session's live transcript and begins fresh.
     await startRecording();
-  }, [reset, startRecording]);
+  }, [startRecording]);
 
   // Add more: keeps accumulated text, starts a fresh recording pass that appends
+  // (start() clears liveTranscript on the shared session; transcribedText stays
+  // in local state).
   const handleModalAddMore = useCallback(async () => {
-    reset(); // clears liveTranscript in the hook; transcribedText stays in local state
     await startRecording();
-  }, [reset, startRecording]);
+  }, [startRecording]);
 
   // ── Shared base button classes ───────────────────────────────────────────
   const baseBtn = cn(

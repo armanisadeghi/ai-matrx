@@ -91,7 +91,7 @@ import {
   Bot,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
+import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
@@ -107,7 +107,6 @@ import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { supabase } from "@/utils/supabase/client";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
-import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
   AlertDialog,
@@ -293,18 +292,9 @@ export const ProTextarea = React.forwardRef<
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
-    const [showTroubleshooting, setShowTroubleshooting] = useState(false);
-    const [showTranscriptionWarning, setShowTranscriptionWarning] =
-      useState(false);
-    const [lastError, setLastError] = useState<{
-      message: string;
-      code: string;
-    } | null>(null);
     const internalRef = useRef<HTMLTextAreaElement>(null);
     const textareaRef =
       (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
-    const closeRequestedRef = useRef(false);
-    const preRecordingValueRef = useRef("");
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the
@@ -429,80 +419,36 @@ export const ProTextarea = React.forwardRef<
       }
     }, []);
 
-    const handleTranscriptionComplete = useCallback(
-      (result: TranscriptionResult) => {
-        if (result.success && result.text) {
-          const base = preRecordingValueRef.current;
-          const newValue =
-            appendTranscript && base ? `${base}\n${result.text}` : result.text;
-          pushToTextarea(newValue);
-          onTranscriptionComplete?.(result.text);
-        }
-      },
-      [appendTranscript, onTranscriptionComplete, pushToTextarea],
-    );
-
-    const handleTranscriptionError = useCallback(
-      (error: string, errorCode?: string) => {
-        console.error("Transcription error:", error, errorCode);
-
-        setLastError({ message: error, code: errorCode || "UNKNOWN_ERROR" });
-
-        toast.error("Voice input failed", {
-          description: error,
-          duration: 10000,
-          action: {
-            label: "Get Help",
-            onClick: () => setShowTroubleshooting(true),
-          },
-        });
-
-        onTranscriptionError?.(error);
-      },
-      [onTranscriptionError],
-    );
-
-    // Recording and transcription hook (streaming: real-time text while speaking)
+    // Voice-to-text now rides the ONE shared recorder (start-always-wins,
+    // one-at-a-time, survives navigation) via the reusable `useMicField`
+    // primitive. It owns the live-injection, finalizing, error/troubleshooting,
+    // and close-protection logic; ProTextarea renders the UI from its state.
+    // Destructured into the original local names so the JSX below is unchanged.
     const {
       isRecording,
       isTranscribing,
       audioLevel,
       liveTranscript,
-      startRecording,
-      stopRecording,
-    } = useRecordAndTranscribe({
-      onTranscriptionComplete: handleTranscriptionComplete,
-      onError: handleTranscriptionError,
-      autoTranscribe: true,
-      streaming: true,
-    });
-
-    // Stream liveTranscript into the textarea as chunks arrive
-    useEffect(() => {
-      if (!isRecording && !isTranscribing) return;
-      if (!liveTranscript) return;
-      const base = preRecordingValueRef.current;
-      const newValue =
-        appendTranscript && base
-          ? `${base}\n${liveTranscript}`
-          : liveTranscript;
-      pushToTextarea(newValue);
-    }, [
-      liveTranscript,
-      isRecording,
-      isTranscribing,
+      handleVoiceClick,
+      requestClose: handleCloseRequest,
+      showTroubleshooting,
+      setShowTroubleshooting,
+      showProtectionDialog: showTranscriptionWarning,
+      setShowProtectionDialog: setShowTranscriptionWarning,
+      lastError,
+      confirmClose,
+      cancelClose,
+    } = useMicField({
+      instanceId: inputId,
+      label: typeof floatingLabel === "string" ? floatingLabel : undefined,
+      getValue: () => textareaRef.current?.value ?? String(value ?? ""),
+      writeValue: pushToTextarea,
       appendTranscript,
-      pushToTextarea,
-    ]);
-
-    const handleCloseRequest = useCallback(() => {
-      if (protectTranscription && (isRecording || isTranscribing)) {
-        closeRequestedRef.current = true;
-        setShowTranscriptionWarning(true);
-      } else {
-        onRequestClose?.();
-      }
-    }, [isRecording, isTranscribing, protectTranscription, onRequestClose]);
+      protect: protectTranscription,
+      onRequestClose,
+      onTranscriptionComplete,
+      onTranscriptionError,
+    });
 
     // Attach custom methods as expando properties on the real DOM element so
     // consumers get a genuine HTMLTextAreaElement (focus/blur/select all work)
@@ -514,17 +460,6 @@ export const ProTextarea = React.forwardRef<
       (el as ProTextareaElement).isTranscribing = () => isTranscribing;
     }, [handleCloseRequest, isTranscribing]);
 
-    useEffect(() => {
-      if (
-        !isRecording &&
-        !isTranscribing &&
-        closeRequestedRef.current &&
-        showTranscriptionWarning
-      ) {
-        closeRequestedRef.current = false;
-      }
-    }, [isRecording, isTranscribing, showTranscriptionWarning]);
-
     const handleCopy = async () => {
       const textareaValue = textareaRef?.current?.value || String(value || "");
       if (textareaValue) {
@@ -533,15 +468,6 @@ export const ProTextarea = React.forwardRef<
         setTimeout(() => setHasCopied(false), 450);
       }
     };
-
-    const handleVoiceClick = useCallback(async () => {
-      if (isRecording) {
-        stopRecording();
-      } else if (!isTranscribing) {
-        preRecordingValueRef.current = textareaRef.current?.value || "";
-        await startRecording();
-      }
-    }, [isRecording, isTranscribing, startRecording, stopRecording]);
 
     const valueAsString = String(value ?? "");
     const hasContent = valueAsString.trim().length > 0;
@@ -946,9 +872,10 @@ export const ProTextarea = React.forwardRef<
 
           {/* Device-picker caret — choose mic / open audio settings. Hidden
               while recording so it never crowds the stop affordance. */}
-          {enableVoice && isAudioAvailable && !isRecording && !isTranscribing && (
-            <MicDeviceMenu disabled={isVoiceDisabled} />
-          )}
+          {enableVoice &&
+            isAudioAvailable &&
+            !isRecording &&
+            !isTranscribing && <MicDeviceMenu disabled={isVoiceDisabled} />}
 
           {showMenu && (
             <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
@@ -1182,33 +1109,18 @@ export const ProTextarea = React.forwardRef<
             <AlertDialogFooter>
               {isRecording || isTranscribing ? (
                 <>
-                  <AlertDialogCancel
-                    onClick={() => {
-                      setShowTranscriptionWarning(false);
-                      closeRequestedRef.current = false;
-                    }}
-                  >
+                  <AlertDialogCancel onClick={cancelClose}>
                     Cancel & Wait
                   </AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => {
-                      setShowTranscriptionWarning(false);
-                      closeRequestedRef.current = false;
-                      onRequestClose?.();
-                    }}
+                    onClick={confirmClose}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     {isRecording ? "Stop Recording" : "End Transcription"}
                   </AlertDialogAction>
                 </>
               ) : (
-                <AlertDialogAction
-                  onClick={() => {
-                    setShowTranscriptionWarning(false);
-                    closeRequestedRef.current = false;
-                    onRequestClose?.();
-                  }}
-                >
+                <AlertDialogAction onClick={confirmClose}>
                   Close
                 </AlertDialogAction>
               )}
