@@ -971,7 +971,7 @@
                 "type": "null"
               }
             ],
-            "default": 0.0,
+            "default": 0,
             "title": "Cost"
           }
         },
@@ -1309,7 +1309,7 @@
             "type": "null"
           }
         ],
-        "default": 0.0,
+        "default": 0,
         "title": "Cost"
       }
     },
@@ -1806,7 +1806,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0.0,
+        "default": 0,
         "title": "Progress",
         "type": "number"
       },
@@ -4308,7 +4308,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -4368,7 +4368,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },

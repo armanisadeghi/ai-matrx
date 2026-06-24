@@ -2975,6 +2975,46 @@
         }
       }
     },
+    "/ai/retry-now/{request_id}": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Retry Now Request",
+        "operationId": "retry_now_request_ai_retry_now__request_id__post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/chat/direct-chat": {
       "post": {
         "tags": [
@@ -6551,6 +6591,45 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProcessBlocksRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utilities/block-processing/simulate/provider-retry": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Simulate Provider Retry Stream",
+        "operationId": "simulate_provider_retry_stream_utilities_block_processing_simulate_provider_retry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateProviderRetryRequest"
               }
             }
           },
@@ -11029,6 +11108,68 @@
         }
       }
     },
+    "/agent-factory/pin-upgrades": {
+      "get": {
+        "tags": [
+          "Admin / Agent Factory"
+        ],
+        "summary": "Plan Pin Upgrades",
+        "operationId": "plan_pin_upgrades_agent_factory_pin_upgrades_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPinUpgradePlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-factory/pin-upgrades/apply": {
+      "post": {
+        "tags": [
+          "Admin / Agent Factory"
+        ],
+        "summary": "Apply Pin Upgrade Batch",
+        "operationId": "apply_pin_upgrade_batch_agent_factory_pin_upgrades_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyPinUpgradesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPinUpgradeApplyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-factory/build": {
       "post": {
         "tags": [
@@ -11424,66 +11565,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -19714,6 +19795,179 @@
             "schema": {
               "type": "string",
               "title": "Processed Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library/{processed_document_id}/derive/{kind}": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Derive Stream",
+        "description": "Run one Knowledge-Asset derivation over the doc, streaming live\nprogress. Inserts a `derive_runs` row so the operation is observable and\ncancelable (POST .../derive-runs/{run_id}/cancel).",
+        "operationId": "derive_stream_rag_library__processed_document_id__derive__kind__post",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library/{processed_document_id}/derivations": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "List Derivations",
+        "description": "List the doc's existing derivative sets (one per derivation_kind, with\na live chunk count) plus its recent derive_runs (status / progress).",
+        "operationId": "list_derivations_rag_library__processed_document_id__derivations_get",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library/{processed_document_id}/estimate": {
+      "get": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Estimate Derivations Endpoint",
+        "description": "The cost/run REALITY of each derivation for THIS doc, so the UI can show\n'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends. One DB\nread + one PDF scan (a few seconds on a large doc).",
+        "operationId": "estimate_derivations_endpoint_rag_library__processed_document_id__estimate_get",
+        "parameters": [
+          {
+            "name": "processed_document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Processed Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/library/derive-runs/{run_id}/cancel": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Cancel Derive Run",
+        "description": "Cancel an in-flight derivation run. Flips status -> 'cancelled' (only\nwhile still 'running'); the run's progress wrapper observes the flag and\nstops the derivation cooperatively.",
+        "operationId": "cancel_derive_run_rag_library_derive_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
             }
           }
         ],
@@ -37724,6 +37978,29 @@
         "title": "AgentConfigSettings",
         "description": "Sampling / decode settings on an agent_config."
       },
+      "AgentContractSnapshot": {
+        "properties": {
+          "variable_required": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Variable Required",
+            "default": {}
+          },
+          "context_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Context Names",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "AgentContractSnapshot",
+        "description": "Declared input contract for one DB-backed agent version."
+      },
       "AgentDetail": {
         "properties": {
           "id": {
@@ -37838,6 +38115,249 @@
         ],
         "title": "AgentDetail",
         "description": "Everything a caller needs to invoke an agent correctly."
+      },
+      "AgentPinUpgradeApplied": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "old_version_id": {
+            "type": "string",
+            "title": "Old Version Id"
+          },
+          "new_version_id": {
+            "type": "string",
+            "title": "New Version Id"
+          },
+          "files": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Files"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "old_version_id",
+          "new_version_id",
+          "files"
+        ],
+        "title": "AgentPinUpgradeApplied"
+      },
+      "AgentPinUpgradeApplyResult": {
+        "properties": {
+          "applied": {
+            "items": {
+              "$ref": "#/components/schemas/AgentPinUpgradeApplied"
+            },
+            "type": "array",
+            "title": "Applied"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Skipped"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "applied",
+          "skipped"
+        ],
+        "title": "AgentPinUpgradeApplyResult"
+      },
+      "AgentPinUpgradeCandidate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "default": ""
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "class_name": {
+            "type": "string",
+            "title": "Class Name"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "current_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Version Id"
+          },
+          "latest_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version Id"
+          },
+          "master_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Master Agent Id"
+          },
+          "pinned_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Version"
+          },
+          "latest_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version"
+          },
+          "pinned_contract": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentContractSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest_contract": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentContractSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variables_unchanged": {
+            "type": "boolean",
+            "title": "Variables Unchanged",
+            "default": false
+          },
+          "contexts_unchanged": {
+            "type": "boolean",
+            "title": "Contexts Unchanged",
+            "default": false
+          },
+          "latest_breaking_change": {
+            "type": "boolean",
+            "title": "Latest Breaking Change",
+            "default": false
+          },
+          "auto_update_allowed": {
+            "type": "boolean",
+            "title": "Auto Update Allowed",
+            "default": false
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Blockers",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "class_name",
+          "module",
+          "source_kind"
+        ],
+        "title": "AgentPinUpgradeCandidate",
+        "description": "Safety report for advancing one pinned ``NamedAgent`` to latest."
+      },
+      "AgentPinUpgradePlan": {
+        "properties": {
+          "imported": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Imported"
+          },
+          "import_failures": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Import Failures"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AgentPinUpgradeCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "imported",
+          "import_failures",
+          "candidates"
+        ],
+        "title": "AgentPinUpgradePlan"
       },
       "AgentStartRequest": {
         "properties": {
@@ -40512,6 +41032,19 @@
         ],
         "title": "AppLogStatsResponse",
         "description": "Facet counts for the dashboard filter bar, within the active window."
+      },
+      "ApplyPinUpgradesRequest": {
+        "properties": {
+          "selected_keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Selected Keys"
+          }
+        },
+        "type": "object",
+        "title": "ApplyPinUpgradesRequest"
       },
       "ApplyTagsRequest": {
         "properties": {
@@ -51047,61 +51580,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -74341,6 +74819,63 @@
           "expires_in"
         ],
         "title": "SignedUrlResponse"
+      },
+      "SimulateProviderRetryRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "description": "Provider label to put on provider_retry events",
+            "default": "anthropic"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "Model label to put on provider_retry events",
+            "default": "claude-sonnet-4-20250514"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Optional request id for action URLs"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "delays": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Delays",
+            "description": "Retry delays to advertise in seconds. The simulator does not sleep for the full delay."
+          },
+          "event_spacing_ms": {
+            "type": "integer",
+            "maximum": 5000,
+            "minimum": 0,
+            "title": "Event Spacing Ms",
+            "description": "Milliseconds to wait between simulated events.",
+            "default": 250
+          }
+        },
+        "type": "object",
+        "title": "SimulateProviderRetryRequest"
       },
       "SiteBatchArchiveRequest": {
         "properties": {

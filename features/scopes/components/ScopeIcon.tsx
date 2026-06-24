@@ -5,75 +5,59 @@
  * icon whose name comes from the DATABASE.
  *
  * Scope-type icons (`scope_type.icon`, `scope.icon`, template `icon`) are
- * user/admin-defined names stored in the DB, so they MUST resolve through the
- * DB-only DynamicIcon front door (never a static IconResolver import — that
- * leaks the ~145-icon payload into the build; see the [IconResolver][TRIPWIRE]
- * hunt). Scopes render in MANY places (org workspace, scope hub, chips,
- * taggers, template gallery, detail views), so the right move is a single
- * reusable primitive that does the dynamic part correctly and cheaply.
+ * user/admin-defined names stored in the DB, so they MUST resolve through a
+ * dynamic front door (never a static IconResolver import — that leaks the
+ * ~145-icon payload into the build).
  *
- * How it stays cheap:
- *   1. Renders an animated, payload-free placeholder INSTANTLY — a soft pulsing
- *      glyph tinted with the scope's color, so the UI reads as "a category" the
- *      moment it paints.
- *   2. Defers mounting the heavy DynamicIcon until the component is actually
- *      committed + idle (so the icon chunk isn't even requested during the
- *      initial render pass of a long list).
- *   3. Cross-fades the resolved icon in over the placeholder — the "cool effect"
- *      is free: it's just opacity on two stacked layers.
+ * Two-phase render:
+ *   1. FIRST PAINT — a plain, hardcoded `Boxes` lucide icon in the right color.
+ *      `Boxes` is a DIRECT lucide import, so this paint pulls ZERO dynamic
+ *      payload. No animation, no pulsing background.
+ *   2. AFTER MOUNT — a `useEffect` flips `mounted`, and only then do we render
+ *      the dynamic `IconResolver` (the heavy chunk), which resolves the real
+ *      DB icon name. A short opacity fade swaps it in.
  *
- * All of this is internal. Callers just do `<ScopeIcon name={t.icon}
- * color={t.color} />`.
+ * Color contract (matches the app via the LEAN, payload-free `icon-resolve`
+ * helpers):
+ *   - hex (`#2563eb`) → inline `style={{ color }}`.
+ *   - tailwind name (`blue`) → `text-blue-600 dark:text-blue-400`.
+ *   - absent → inherits the parent's `currentColor`.
  */
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { Boxes } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  getTextColorClass,
+  isHexColor,
+} from "@/components/official/icons/icon-resolve";
 
-// The heavy renderer, behind the dynamic front door. Lazily required only when
-// this component decides to mount it (post-commit), so the chunk is requested
-// at the latest possible moment.
-const DynamicIcon = dynamic(
-  () => import("@/components/official/icons/IconResolver").then((m) => m.DynamicIcon),
-  { ssr: false, loading: () => null },
+const IconResolver = dynamic(
+  () => import("@/components/official/icons/IconResolver"),
+  { ssr: false },
 );
 
 export interface ScopeIconProps {
   /** DB-defined icon name (lucide name, custom id, or `svg:` asset). */
   name: string | null | undefined;
-  /** Scope color — Tailwind name or hex. Tints both placeholder and icon. */
+  /** Scope color — Tailwind name or hex. */
   color?: string | null;
-  /** Extra classes (sizing lives here, e.g. `h-4 w-4`). */
+  /** Extra classes (sizing lives here, e.g. `h-4 w-4`). Defaults to `h-4 w-4`. */
   className?: string;
   /** Fallback icon name when `name` is missing/unresolvable. */
   fallbackIcon?: string;
 }
 
-/**
- * Animated placeholder: a tinted, softly-pulsing rounded glyph. Zero icon
- * payload — pure CSS — so it paints instantly for every row in a list.
- */
-function ScopeIconPlaceholder({
-  color,
-  className,
-}: {
-  color?: string | null;
-  className?: string;
-}) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-block shrink-0 rounded-[5px] animate-pulse",
-        "h-4 w-4",
-        className,
-      )}
-      style={{
-        backgroundColor: color ? `${color}` : "currentColor",
-        opacity: 0.35,
-      }}
-    />
-  );
+function resolveColorBits(color?: string | null) {
+  if (!color) return { colorClass: undefined, colorStyle: undefined };
+  if (isHexColor(color)) {
+    return { colorClass: undefined, colorStyle: { color } as const };
+  }
+  return {
+    colorClass: getTextColorClass(color) ?? undefined,
+    colorStyle: undefined,
+  };
 }
 
 export function ScopeIcon({
@@ -82,37 +66,35 @@ export function ScopeIcon({
   className,
   fallbackIcon = "Boxes",
 }: ScopeIconProps) {
-  // Gate the heavy icon mount until after commit + a microtask, so the chunk is
-  // not pulled during the synchronous render of a (potentially long) list.
-  const [showReal, setShowReal] = useState(false);
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const id = requestAnimationFrame(() => setShowReal(true));
-    return () => cancelAnimationFrame(id);
+    setMounted(true);
   }, []);
 
-  return (
-    <span className={cn("relative inline-flex shrink-0", "h-4 w-4", className)}>
-      {/* Placeholder layer — fades OUT once the real icon is ready. */}
-      <span
-        className={cn(
-          "absolute inset-0 transition-opacity duration-300",
-          showReal ? "opacity-0" : "opacity-100",
-        )}
-      >
-        <ScopeIconPlaceholder color={color} className="h-full w-full" />
-      </span>
+  const { colorClass, colorStyle } = resolveColorBits(color);
+  const sizeClass = className ?? "h-4 w-4";
+  const iconClass = cn("shrink-0", sizeClass, colorClass);
 
-      {/* Real icon layer — mounts post-commit, fades IN. */}
-      {showReal && (
-        <span className="absolute inset-0 animate-in fade-in duration-300">
-          <DynamicIcon
-            name={name ?? null}
-            color={color ?? undefined}
-            fallbackIcon={fallbackIcon}
-            className="h-full w-full"
-          />
-        </span>
+  // Phase 1: plain hardcoded icon (direct lucide import — no dynamic payload).
+  if (!mounted) {
+    return <Boxes className={iconClass} style={colorStyle} aria-hidden />;
+  }
+
+  // Phase 2: the real DB icon, loaded dynamically.
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 animate-in fade-in duration-200",
+        sizeClass,
+        colorClass,
       )}
+      style={colorStyle}
+    >
+      <IconResolver
+        iconName={name ?? null}
+        fallbackIcon={fallbackIcon}
+        className="h-full w-full"
+      />
     </span>
   );
 }

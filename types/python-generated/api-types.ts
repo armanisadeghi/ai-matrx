@@ -1439,6 +1439,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/retry-now/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Now Request */
+        post: operations["retry_now_request_ai_retry_now__request_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/chat/direct-chat": {
         parameters: {
             query?: never;
@@ -2751,6 +2768,23 @@ export interface paths {
          *     without requiring a live LLM call.
          */
         post: operations["process_blocks_stream_utilities_block_processing_process_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilities/block-processing/simulate/provider-retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulate Provider Retry Stream */
+        post: operations["simulate_provider_retry_stream_utilities_block_processing_simulate_provider_retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4264,6 +4298,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-factory/pin-upgrades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan Pin Upgrades */
+        get: operations["plan_pin_upgrades_agent_factory_pin_upgrades_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-factory/pin-upgrades/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Pin Upgrade Batch */
+        post: operations["apply_pin_upgrade_batch_agent_factory_pin_upgrades_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-factory/build": {
         parameters: {
             query?: never;
@@ -4405,30 +4473,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7372,6 +7416,93 @@ export interface paths {
          *     Streams every stage's progress events on one connection.
          */
         post: operations["stage_run_all_rag_library__processed_document_id__run_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library/{processed_document_id}/derive/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Derive Stream
+         * @description Run one Knowledge-Asset derivation over the doc, streaming live
+         *     progress. Inserts a `derive_runs` row so the operation is observable and
+         *     cancelable (POST .../derive-runs/{run_id}/cancel).
+         */
+        post: operations["derive_stream_rag_library__processed_document_id__derive__kind__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library/{processed_document_id}/derivations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Derivations
+         * @description List the doc's existing derivative sets (one per derivation_kind, with
+         *     a live chunk count) plus its recent derive_runs (status / progress).
+         */
+        get: operations["list_derivations_rag_library__processed_document_id__derivations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library/{processed_document_id}/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estimate Derivations Endpoint
+         * @description The cost/run REALITY of each derivation for THIS doc, so the UI can show
+         *     'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends. One DB
+         *     read + one PDF scan (a few seconds on a large doc).
+         */
+        get: operations["estimate_derivations_endpoint_rag_library__processed_document_id__estimate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/library/derive-runs/{run_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Derive Run
+         * @description Cancel an in-flight derivation run. Flips status -> 'cancelled' (only
+         *     while still 'running'); the run's progress wrapper observes the flag and
+         *     stops the derivation cooperatively.
+         */
+        post: operations["cancel_derive_run_rag_library_derive_runs__run_id__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13462,6 +13593,24 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AgentContractSnapshot
+         * @description Declared input contract for one DB-backed agent version.
+         */
+        AgentContractSnapshot: {
+            /**
+             * Variable Required
+             * @default {}
+             */
+            variable_required: {
+                [key: string]: boolean;
+            };
+            /**
+             * Context Names
+             * @default []
+             */
+            context_names: string[];
+        };
+        /**
          * AgentDetail
          * @description Everything a caller needs to invoke an agent correctly.
          */
@@ -13519,6 +13668,100 @@ export interface components {
             skill_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /** AgentPinUpgradeApplied */
+        AgentPinUpgradeApplied: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Old Version Id */
+            old_version_id: string;
+            /** New Version Id */
+            new_version_id: string;
+            /** Files */
+            files: string[];
+        };
+        /** AgentPinUpgradeApplyResult */
+        AgentPinUpgradeApplyResult: {
+            /** Applied */
+            applied: components["schemas"]["AgentPinUpgradeApplied"][];
+            /** Skipped */
+            skipped: {
+                [key: string]: string[];
+            };
+        };
+        /**
+         * AgentPinUpgradeCandidate
+         * @description Safety report for advancing one pinned ``NamedAgent`` to latest.
+         */
+        AgentPinUpgradeCandidate: {
+            /**
+             * Key
+             * @default
+             */
+            key: string;
+            /** Label */
+            label: string;
+            /** Class Name */
+            class_name: string;
+            /** Module */
+            module: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Current Version Id */
+            current_version_id?: string | null;
+            /** Latest Version Id */
+            latest_version_id?: string | null;
+            /** Master Agent Id */
+            master_agent_id?: string | null;
+            /** Pinned Version */
+            pinned_version?: number | null;
+            /** Latest Version */
+            latest_version?: number | null;
+            pinned_contract?: components["schemas"]["AgentContractSnapshot"] | null;
+            latest_contract?: components["schemas"]["AgentContractSnapshot"] | null;
+            /**
+             * Variables Unchanged
+             * @default false
+             */
+            variables_unchanged: boolean;
+            /**
+             * Contexts Unchanged
+             * @default false
+             */
+            contexts_unchanged: boolean;
+            /**
+             * Latest Breaking Change
+             * @default false
+             */
+            latest_breaking_change: boolean;
+            /**
+             * Auto Update Allowed
+             * @default false
+             */
+            auto_update_allowed: boolean;
+            /**
+             * Blockers
+             * @default []
+             */
+            blockers: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+        };
+        /** AgentPinUpgradePlan */
+        AgentPinUpgradePlan: {
+            /** Imported */
+            imported: string[];
+            /** Import Failures */
+            import_failures: {
+                [key: string]: string;
+            };
+            /** Candidates */
+            candidates: components["schemas"]["AgentPinUpgradeCandidate"][];
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -14492,6 +14735,11 @@ export interface components {
             unclassified: number;
             /** Filter Summary */
             filter_summary: string;
+        };
+        /** ApplyPinUpgradesRequest */
+        ApplyPinUpgradesRequest: {
+            /** Selected Keys */
+            selected_keys?: string[];
         };
         /**
          * ApplyTagsRequest
@@ -18244,33 +18492,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -26928,6 +27149,39 @@ export interface components {
             /** Expires In */
             expires_in: number;
         };
+        /** SimulateProviderRetryRequest */
+        SimulateProviderRetryRequest: {
+            /**
+             * Provider
+             * @description Provider label to put on provider_retry events
+             * @default anthropic
+             */
+            provider: string;
+            /**
+             * Model
+             * @description Model label to put on provider_retry events
+             * @default claude-sonnet-4-20250514
+             */
+            model: string;
+            /**
+             * Request Id
+             * @description Optional request id for action URLs
+             */
+            request_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Delays
+             * @description Retry delays to advertise in seconds. The simulator does not sleep for the full delay.
+             */
+            delays?: number[];
+            /**
+             * Event Spacing Ms
+             * @description Milliseconds to wait between simulated events.
+             * @default 250
+             */
+            event_spacing_ms: number;
+        };
         /** SiteBatchArchiveRequest */
         SiteBatchArchiveRequest: {
             /** Site Ids */
@@ -32642,6 +32896,37 @@ export interface operations {
             };
         };
     };
+    retry_now_request_ai_retry_now__request_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     direct_chat_ai_chat_direct_chat_post: {
         parameters: {
             query?: never;
@@ -35057,6 +35342,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ProcessBlocksRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_provider_retry_stream_utilities_block_processing_simulate_provider_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulateProviderRetryRequest"];
             };
         };
         responses: {
@@ -37938,6 +38256,59 @@ export interface operations {
             };
         };
     };
+    plan_pin_upgrades_agent_factory_pin_upgrades_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPinUpgradePlan"];
+                };
+            };
+        };
+    };
+    apply_pin_upgrade_batch_agent_factory_pin_upgrades_apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyPinUpgradesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPinUpgradeApplyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     build_one_agent_factory_build_post: {
         parameters: {
             query?: never;
@@ -38197,41 +38568,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -43823,6 +44159,131 @@ export interface operations {
             header?: never;
             path: {
                 processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_stream_rag_library__processed_document_id__derive__kind__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_derivations_rag_library__processed_document_id__derivations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    estimate_derivations_endpoint_rag_library__processed_document_id__estimate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                processed_document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_derive_run_rag_library_derive_runs__run_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
             };
             cookie?: never;
         };
