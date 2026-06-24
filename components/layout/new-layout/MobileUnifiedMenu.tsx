@@ -88,8 +88,7 @@ export function MobileUnifiedMenu() {
                   fill
                   className="object-cover"
                   sizes="28px"
-                  loading="eager"
-                  priority
+                  unoptimized
                 />
               </div>
             ) : (
@@ -114,8 +113,7 @@ export function MobileUnifiedMenu() {
                       fill
                       className="object-cover"
                       sizes="40px"
-                      loading="eager"
-                      priority
+                      unoptimized
                     />
                   </div>
                 ) : (

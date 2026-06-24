@@ -27,8 +27,7 @@ export default function AuthIsland({ user }: AuthIslandProps) {
               fill
               className="object-cover"
               sizes="24px"
-              loading="eager"
-              priority
+              unoptimized
             />
           ) : (
             <ShellIcon name="User" size={16} strokeWidth={2} />
@@ -39,7 +38,10 @@ export default function AuthIsland({ user }: AuthIslandProps) {
   }
 
   return (
-    <Link href="/login" className="shell-auth-island matrx-glass-thin-border shell-tactile">
+    <Link
+      href="/login"
+      className="shell-auth-island matrx-glass-thin-border shell-tactile"
+    >
       <span className="shell-auth-island-icon">
         <ShellIcon name="LogIn" size={16} strokeWidth={2} />
       </span>

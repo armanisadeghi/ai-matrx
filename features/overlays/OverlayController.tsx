@@ -278,6 +278,13 @@ const CanvasViewerWindow = lazyOverlay(
     })),
   { ssr: false },
 );
+const TableViewerWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/TableViewerWindow").then((m) => ({
+      default: m.TableViewerWindow,
+    })),
+  { ssr: false },
+);
 const ChatDebugWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/ChatDebugWindow"),
   { ssr: false },
@@ -730,12 +737,6 @@ const WhatsAppShellWindow = lazyOverlay(
 export default function OverlayController() {
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    console.log(
-      "[Track New Project] 8, OverlayController.tsx — OverlayController mounted",
-    );
-  }, []);
-
   // useEffect(() => {
   //   if (!_confirmedNewMount) {
   //     _confirmedNewMount = true;
@@ -760,9 +761,7 @@ export default function OverlayController() {
     adminStateAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "adminStateAnalyzerWindow"),
     ),
-    audioDevices: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "audioDevices"),
-    ),
+    audioDevices: useAppSelector((s) => selectIsOverlayOpen(s, "audioDevices")),
     agentAdminFindUsagesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentAdminFindUsagesWindow"),
     ),
@@ -827,6 +826,9 @@ export default function OverlayController() {
     ),
     canvasViewerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "canvasViewerWindow"),
+    ),
+    tableViewerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "tableViewerWindow"),
     ),
     chatDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "chatDebugWindow"),
@@ -1054,6 +1056,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     canvasViewerWindow: useAppSelector((s) =>
       selectOverlayData(s, "canvasViewerWindow"),
+    ) as Record<string, unknown> | null,
+    tableViewerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "tableViewerWindow"),
     ) as Record<string, unknown> | null,
     chatDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "chatDebugWindow"),
@@ -2202,6 +2207,28 @@ export default function OverlayController() {
               typeof data?.initialShareToken === "string"
                 ? data.initialShareToken
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* tableViewerWindow */}
+      {(() => {
+        const isOpen = isOpenById.tableViewerWindow;
+        const data = dataById.tableViewerWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <TableViewerWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "tableViewerWindow" }))
+            }
+            title={typeof data?.title === "string" ? data.title : undefined}
+            content={
+              typeof data?.content === "string" ? data.content : undefined
             }
           />
         );
@@ -3955,7 +3982,9 @@ export default function OverlayController() {
             isOpen
             initialUrl={typeof data?.url === "string" ? data.url : undefined}
             initialMode={
-              data?.mode === "web" || data?.mode === "url" || data?.mode === "batch"
+              data?.mode === "web" ||
+              data?.mode === "url" ||
+              data?.mode === "batch"
                 ? data.mode
                 : undefined
             }

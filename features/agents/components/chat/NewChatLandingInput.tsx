@@ -173,9 +173,7 @@ export function NewChatLandingInput({
         start !== end && el
           ? el.value.slice(Math.min(start, end), Math.max(start, end))
           : "",
-      selectionRange: el
-        ? { type: "editable", element: el, start, end }
-        : null,
+      selectionRange: el ? { type: "editable", element: el, start, end } : null,
       contextData,
     });
   };
@@ -190,7 +188,9 @@ export function NewChatLandingInput({
     const el = textareaRef.current;
     const base = el?.value ?? visibleText;
     if (!el) {
-      replaceDraft(position === "before" ? `${insert}\n\n${base}` : `${base}\n\n${insert}`);
+      replaceDraft(
+        position === "before" ? `${insert}\n\n${base}` : `${base}\n\n${insert}`,
+      );
       return;
     }
     const start = el.selectionStart;

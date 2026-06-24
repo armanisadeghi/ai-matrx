@@ -4,7 +4,6 @@ import React from "react";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import type { RootState } from "@/lib/redux/store";
 
 interface UserAvatarProps {
   size?: number;
@@ -48,8 +47,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           fill
           className="object-cover"
           sizes={`${size}px`}
-          loading="eager"
-          priority
+          unoptimized
         />
       ) : (
         <div className="flex items-center justify-center h-full w-full">

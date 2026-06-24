@@ -70,11 +70,7 @@ export function MessagesHeaderCompact({
             {/* Avatar with online indicator */}
             <div className="relative shrink-0">
               <Avatar className="h-7 w-7">
-                <AvatarImage
-                  src={avatarUrl || undefined}
-                  alt={title}
-                  loading="eager"
-                />
+                <AvatarImage src={avatarUrl || undefined} alt={title} />
                 <AvatarFallback className="bg-primary/10 text-primary text-xs">
                   {getInitials(title)}
                 </AvatarFallback>

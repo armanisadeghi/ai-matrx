@@ -69,8 +69,6 @@ import {
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
 
-const ASSISTANT_MSG_DEBUG = "[ASSISTANT MESSAGE DEBUG]";
-
 interface AgentAssistantMessageProps {
   conversationId: string;
   requestId?: string;
@@ -296,122 +294,9 @@ export function AgentAssistantMessage({
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
 
-  const showBufferLoader = bufferStream && isStreamActive && !failed;
-  const showMarkdownStream = !showBufferLoader;
-  const showTrailingOrb =
-    isStreamActive &&
-    !failed &&
-    (phase === "text_streaming" || phase === "interstitial");
-  const showTrailingFailedError = !hasInlineError && failed;
-  const showFilesStrip = !!messageId;
-  const showPerMessageActionBar =
-    !hideActionBar && !isStreamActive && !failed && !!messageId;
   const showProviderRetry =
     providerRetry !== null &&
     (isStreamActive || providerRetry.state !== "recovered");
-  const renderBranch =
-    failed && !hasBody
-      ? "error-only"
-      : showBufferLoader
-        ? "buffer-loader"
-        : "markdown-body";
-
-  const prevRenderSnapshotRef = useRef<string | null>(null);
-  useEffect(() => {
-    const snapshot = {
-      renderBranch,
-      failed,
-      hasBody,
-      isStreamActive,
-      phase,
-      bufferStream,
-      hasInlineError,
-      flatTextLength: flatText.length,
-      serverProcessedBlockCount: serverProcessedBlocks?.length ?? 0,
-      streamedBlockCount,
-      showBufferLoader,
-      showMarkdownStream,
-      showTrailingOrb,
-      showTrailingFailedError,
-      showFilesStrip,
-      showPerMessageActionBar,
-      hideActionBar,
-      canRetry,
-      providerRetryState: providerRetry?.state ?? null,
-      showProviderRetry,
-    };
-    const key = JSON.stringify(snapshot);
-    if (prevRenderSnapshotRef.current === key) return;
-
-    console.log(`${ASSISTANT_MSG_DEBUG} AgentAssistantMessage`, {
-      conversationId,
-      messageId: messageId ?? null,
-      requestId: requestId ?? null,
-      ...snapshot,
-      rendering: {
-        errorOnly: renderBranch === "error-only",
-        bufferLoaderOrb: showBufferLoader,
-        markdownStream: showMarkdownStream
-          ? {
-              path: requestId
-                ? "requestId-driven (streaming source)"
-                : "messageId-driven (persisted)",
-              isStreamActiveProp: isStreamActive && !failed,
-            }
-          : null,
-        trailingStreamingOrb: showTrailingOrb,
-        trailingFailedError: showTrailingFailedError,
-        messageFilesStrip: showFilesStrip,
-        actionBar: showPerMessageActionBar
-          ? "per-message AssistantActionBar"
-          : hideActionBar
-            ? "hidden (AssistantTurnGroup owns bar)"
-            : isStreamActive
-              ? "hidden (still streaming)"
-              : failed
-                ? "hidden (failed turn)"
-                : !messageId
-                  ? "hidden (no messageId yet)"
-                  : "hidden",
-      },
-      why: {
-        errorOnly:
-          failed && !hasBody ? "failed with no streamed/persisted body" : null,
-        bufferLoader: showBufferLoader
-          ? "bufferStream enabled while active stream"
-          : null,
-        trailingOrb: showTrailingOrb ? `phase=${phase}` : null,
-        suppressTrailingError: hasInlineError
-          ? "inline error already rendered in markdown"
-          : null,
-      },
-    });
-    prevRenderSnapshotRef.current = key;
-  }, [
-    conversationId,
-    messageId,
-    requestId,
-    renderBranch,
-    failed,
-    hasBody,
-    isStreamActive,
-    phase,
-    bufferStream,
-    hasInlineError,
-    flatText.length,
-    serverProcessedBlocks?.length,
-    streamedBlockCount,
-    showBufferLoader,
-    showMarkdownStream,
-    showTrailingOrb,
-    showTrailingFailedError,
-    showFilesStrip,
-    showPerMessageActionBar,
-    hideActionBar,
-    canRetry,
-    providerRetry?.state,
-    showProviderRetry,
-  ]);
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;

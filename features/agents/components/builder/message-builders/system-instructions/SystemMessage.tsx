@@ -49,12 +49,6 @@ import { selectAgentSystemMessage } from "@/features/agents/redux/agent-definiti
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
-import {
-  AGENT_BUILDER_CONTEXT_MENU_PROPS,
-  buildAgentBuilderContextData,
-} from "@/features/agents/agent-context/buildAgentBuilderContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,10 +95,6 @@ export function SystemMessage({
     Record<number, number>
   >({});
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
-  // Object ref handed to ProTextarea (it reads `.current` internally for voice /
-  // auto-grow / expando methods — a callback ref would break those). A layout
-  // effect mirrors it into `textareaRefs` so the existing handlers keep working.
-  const systemTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const dispatch = useAppDispatch();
 
   // Full messages array — needed for write-back
@@ -445,19 +435,15 @@ export function SystemMessage({
     contextMenuOpenRef.current = false;
   }, []);
 
-  // Mirror ProTextarea's object ref into the index-keyed map all handlers read,
-  // then run the same one-time init (auto-size + focus) the old callback ref did
-  // when the editor first mounts.
-  useLayoutEffect(() => {
-    const el = systemTextareaRef.current;
+  const handleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
     textareaRefs.current[systemMessageIndex] = el;
-    if (isEditing && el && !textareaInitializedRef.current) {
+    if (el && !textareaInitializedRef.current) {
       textareaInitializedRef.current = true;
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
       el.focus({ preventScroll: true });
     }
-  }, [isEditing, systemMessageIndex]);
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -646,36 +632,16 @@ export function SystemMessage({
 
   // Surface scope for `matrx-user/agent-builder`. Agent-level values (model,
   // tools, agent_json, etc.) come from the hook; `content` /
-  // `system_instruction` are the developer message being edited. Shares the
-  // canonical `buildAgentBuilderContextData` shape with the demo + ProTextarea.
-  const contextMenuData = useMemo(
-    () =>
-      buildAgentBuilderContextData({
-        agentScope: buildAgentScope(),
-        fieldContent: developerMessage,
-        focusedField: "system_instruction",
-      }),
-    [buildAgentScope, developerMessage],
-  );
-
-  // Live ApplicationScope at click/run time — reads the textarea selection
-  // straight from the DOM (not stale React state) and floors the baseline
-  // text triad via `buildApplicationScopeFromMenuContext`. Passed to both the
-  // context menu and ProTextarea's "…" menu so launched agents get full scope.
-  const getApplicationScope = useCallback(() => {
-    const el = textareaRefs.current[systemMessageIndex];
-    const start = el?.selectionStart ?? 0;
-    const end = el?.selectionEnd ?? 0;
-    const selectedText =
-      start !== end && el
-        ? el.value.slice(Math.min(start, end), Math.max(start, end))
-        : "";
-    return buildApplicationScopeFromMenuContext({
-      selectedText,
-      selectionRange: el ? { type: "editable", element: el, start, end } : null,
-      contextData: contextMenuData,
-    });
-  }, [contextMenuData]);
+  // `system_instruction` are the developer message being edited. Top-level
+  // keys flow straight through UnifiedAgentContextMenu into the ApplicationScope.
+  const contextMenuData = useMemo(() => {
+    return {
+      ...buildAgentScope(),
+      content: developerMessage,
+      system_instruction: developerMessage,
+      focused_field: "system_instruction",
+    };
+  }, [buildAgentScope, developerMessage]);
 
   // Not yet loaded
   if (messages === undefined) {
@@ -746,14 +712,16 @@ export function SystemMessage({
             </div>
           ) : isEditing ? (
             <UnifiedAgentContextMenu
-              {...AGENT_BUILDER_CONTEXT_MENU_PROPS}
+              sourceFeature="agent-builder"
+              surfaceName="matrx-user/agent-builder"
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }
-              getApplicationScope={getApplicationScope}
               contextData={
                 contextMenuData as unknown as Record<string, unknown>
               }
+              enabledPlacements={["ai-action", "content-block", "quick-action"]}
+              isEditable={true}
               enableFloatingIcon={true}
               onTextReplace={handleTextReplace}
               onTextInsertBefore={handleTextInsertBefore}
@@ -768,15 +736,8 @@ export function SystemMessage({
               onViewHistory={handleViewHistory}
               hasHistory={canUndo || canRedo}
             >
-              <ProTextarea
-                ref={systemTextareaRef}
-                surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
-                getApplicationScope={getApplicationScope}
-                // Click-to-edit field: opening the hover "…" bound-agents menu
-                // blurs the textarea → handleBlur collapses edit mode mid-click.
-                // The right-click UnifiedAgentContextMenu already offers bound
-                // agents, so nothing is lost.
-                enableBoundAgents={false}
+              <textarea
+                ref={handleTextareaRef}
                 value={developerMessage}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -787,7 +748,7 @@ export function SystemMessage({
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 placeholder="You're a very helpful assistant"
-                className="w-full bg-gray-50 dark:bg-gray-800 border-none shadow-none outline-none text-xs text-gray-900 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 px-0 py-0 resize-none overflow-hidden leading-normal"
+                className="w-full bg-gray-50 dark:bg-gray-800 border-none outline-none text-xs text-gray-900 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-0 resize-none overflow-hidden leading-normal"
                 style={{
                   minHeight: "240px",
                   lineHeight: "1.5",

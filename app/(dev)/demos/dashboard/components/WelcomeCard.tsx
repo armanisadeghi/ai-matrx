@@ -35,8 +35,7 @@ export default function WelcomeCard({ user }: WelcomeCardProps) {
             fill
             className="object-cover"
             sizes="48px"
-            loading="eager"
-            priority
+            unoptimized
           />
         ) : (
           <ShellIcon

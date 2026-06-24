@@ -186,10 +186,7 @@ export function OrgEmailTab({
                 onCheckedChange={() => toggleMember(member.userId)}
               />
               <Avatar className="h-7 w-7 flex-shrink-0">
-                <AvatarImage
-                  src={member.user?.avatarUrl || undefined}
-                  loading="eager"
-                />
+                <AvatarImage src={member.user?.avatarUrl || undefined} />
                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                   {getInitials(member.user?.displayName, member.user?.email)}
                 </AvatarFallback>

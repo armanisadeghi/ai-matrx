@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import Ajv, {
   type AnySchema,
   type ErrorObject,
@@ -536,10 +536,35 @@ export const ProJsonTextarea = React.forwardRef<
     ],
   );
 
+  const validationSignature = useMemo(
+    () =>
+      JSON.stringify({
+        text: validationState.text,
+        isJson: validationState.isJson,
+        isValid: validationState.isValid,
+        issues: validationState.issues,
+      }),
+    [
+      validationState.isJson,
+      validationState.isValid,
+      validationState.issues,
+      validationState.text,
+    ],
+  );
+  const lastValidationNotification = useRef<string | null>(null);
+
   useEffect(() => {
+    if (!onValidationChange && !onParsedChange) return;
+    if (lastValidationNotification.current === validationSignature) return;
+    lastValidationNotification.current = validationSignature;
     onValidationChange?.(validationState);
     onParsedChange?.(validationState.isJson ? validationState.parsed : null);
-  }, [onParsedChange, onValidationChange, validationState]);
+  }, [
+    onParsedChange,
+    onValidationChange,
+    validationSignature,
+    validationState,
+  ]);
 
   const handleFormat = () => {
     if (!validationState.isJson) {
