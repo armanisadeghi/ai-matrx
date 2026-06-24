@@ -35,10 +35,19 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 - **Envelope render (the "test it" payoff):** `reference`/`view` with state `yes` renders LIVE through the canonical `MatrxEnvelopeBlock` + `referenceResolvers.ts` from `features/matrx-envelope/` — the same reference-chip renderer chat uses (resolves the value from Supabase, opens the entity on click). No second renderer.
 - Component library: `Select`, `Input`, `Button`, `Badge`; Lucide icons; semantic tokens.
 
-## Stubbed (pending backend)
+## Execute (writes)
 
-- `create` / `update` / `delete`: there is **no execute endpoint yet** (Plane 1 writer + idempotency ledger). The Execute button is disabled with an inline note; the built envelope is the exact payload that path will accept. We never fake execution or write to Supabase directly. `no` cells are disabled + explained.
+- `create` / `update` on a state-`yes` noun: a JSON payload editor + **Execute** runs the
+  action via `POST /actions/execute` (authed; the write runs as the user under RLS on the
+  server). Idempotent by content key — a repeat is `already_applied`; `force` opts out.
+  Per-item receipts render below. `service.ts::executeAction` attaches the Supabase JWT
+  (`supabase.auth.getSession`); never writes Supabase directly.
+- `delete` is soft-delete → **planned** (disabled). `planned` / `no` write cells are
+  disabled + explained.
 
 ## Change Log
 
+- 2026-06-24 — Wired the Execute button to `POST /actions/execute` (Plane-1 writer):
+  create/update run live with a JSON payload editor, `force` toggle, and per-item receipts;
+  delete/planned/no stay disabled.
 - 2026-06-24 — Created: live action-catalog grid + builder/test panel; reuses matrx-envelope renderer for live reference tests; write-execute stubbed pending Plane 1 writer.
