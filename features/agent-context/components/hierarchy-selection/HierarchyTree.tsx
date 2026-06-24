@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { Input } from "@/components/ui/input";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,15 +27,6 @@ type LucideIcon = React.ComponentType<{
   className?: string;
   style?: React.CSSProperties;
 }>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 const LEVEL_ICONS: Record<string, LucideIcon> = {
   organization: Building2,
@@ -272,10 +263,8 @@ function TreeNodeRow({
   const selected = isSelected(node);
   const hasChildren = node.children.length > 0;
 
-  const Icon =
-    node.level === "scope" && node.iconName
-      ? resolveIcon(node.iconName)
-      : (LEVEL_ICONS[node.level] ?? Folder);
+  const isDbScopeIcon = node.level === "scope" && !!node.iconName;
+  const HardIcon = LEVEL_ICONS[node.level] ?? Folder;
   const accent = node.level === "scope" ? undefined : LEVEL_ACCENT[node.level];
   const inlineColor =
     node.level === "scope" && node.color ? node.color : undefined;
@@ -311,13 +300,23 @@ function TreeNodeRow({
             <ChevronRight className="h-3 w-3 text-muted-foreground" />
           )}
         </div>
-        <Icon
-          className={cn(
-            "h-3.5 w-3.5 shrink-0 mr-1.5",
-            selected ? "text-primary" : accent,
-          )}
-          style={!selected && inlineColor ? { color: inlineColor } : undefined}
-        />
+        {isDbScopeIcon ? (
+          <ScopeIcon
+            name={node.iconName}
+            color={!selected ? inlineColor : undefined}
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 mr-1.5",
+              selected ? "text-primary" : accent,
+            )}
+          />
+        ) : (
+          <HardIcon
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 mr-1.5",
+              selected ? "text-primary" : accent,
+            )}
+          />
+        )}
         <span
           className={cn(
             "text-xs truncate flex-1 min-w-0 py-1",

@@ -20,9 +20,7 @@ import {
   ListTodo,
   User,
   Tag,
-  Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,20 +54,12 @@ import { contextService } from "../service/contextService";
 import { INDUSTRY_CATEGORIES } from "../constants";
 import type { ContextTemplate, ContextScopeLevel } from "../types";
 import type { ScopeState } from "../hooks/useContextScope";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 
 type LucideIcon = React.ComponentType<{
   className?: string;
   style?: React.CSSProperties;
 }>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 const INDUSTRY_ICONS: Record<string, LucideIcon> = {
   Globe,
@@ -452,7 +442,6 @@ function ApplyTemplateDialog({
                     Scopes
                   </p>
                   {scopeTypes.map((st) => {
-                    const ScopeIcon = resolveIcon(st.icon);
                     const isTypeSelected = selectedScopeTypeId === st.id;
                     return (
                       <div key={st.id} className="space-y-1">
@@ -471,8 +460,9 @@ function ApplyTemplateDialog({
                           }}
                         >
                           <ScopeIcon
+                            name={st.icon}
+                            color={st.color}
                             className="h-4 w-4 shrink-0"
-                            style={{ color: st.color }}
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium">

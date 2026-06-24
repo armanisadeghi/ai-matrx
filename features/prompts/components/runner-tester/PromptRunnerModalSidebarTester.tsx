@@ -36,7 +36,7 @@ import {
   Database,
   Minimize2,
 } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 
 interface PromptRunnerModalSidebarTesterProps {
   runId?: string;

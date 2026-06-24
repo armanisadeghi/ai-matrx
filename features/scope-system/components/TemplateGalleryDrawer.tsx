@@ -39,7 +39,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 
 interface TemplateGalleryDrawerProps {
   open: boolean;
@@ -462,7 +462,6 @@ function TemplateCard({
   template: ScopeTemplate;
   onClick: () => void;
 }) {
-  const Icon = resolveIcon(template.icon);
   const visibleScopes = template.scope_types.slice(0, 3);
   const scopeOverflow = Math.max(0, template.scope_types.length - 3);
   return (
@@ -480,7 +479,7 @@ function TemplateCard({
     >
       <div className="flex items-start gap-3">
         <div className="text-muted-foreground shrink-0">
-          <Icon className="h-5 w-5" />
+          <ScopeIcon name={template.icon} className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground line-clamp-1">
@@ -525,13 +524,12 @@ function FlatScopeRow({
   busy: boolean;
   onApply: () => void;
 }) {
-  const Icon = resolveIcon(item.icon);
   const previewFields = item.fields.slice(0, 3);
   const overflow = Math.max(0, item.fields.length - previewFields.length);
   return (
     <Card className="p-3">
       <div className="flex items-start gap-3">
-        <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+        <ScopeIcon name={item.icon} className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium text-foreground">
@@ -608,7 +606,6 @@ function TemplateDetail({
   wholeApplying: boolean;
   individualApplyingKey: string | null;
 }) {
-  const Icon = resolveIcon(template.icon);
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack}>
@@ -618,7 +615,7 @@ function TemplateDetail({
 
       <div className="flex items-start gap-3">
         <div className="text-foreground shrink-0">
-          <Icon className="h-7 w-7" />
+          <ScopeIcon name={template.icon} className="h-7 w-7" />
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold">{template.name}</h3>
@@ -644,13 +641,12 @@ function TemplateDetail({
         </p>
         <div className="space-y-2">
           {template.scope_types.map((st, idx) => {
-            const StIcon = resolveIcon(st.icon);
             const rowKey = `${template.id}:detail:${idx}`;
             const busy = individualApplyingKey === rowKey;
             return (
               <Card key={`${st.label_plural}-${idx}`} className="p-3">
                 <div className="flex items-start gap-3">
-                  <StIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <ScopeIcon name={st.icon} className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{st.label_plural}</p>
                     <p className="text-xs text-muted-foreground">

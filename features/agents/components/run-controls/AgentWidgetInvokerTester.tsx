@@ -1,5 +1,5 @@
 import { AgentExecutionTestModal } from "./AgentExecutionTestModal";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import {
   getAllDisplayTypes,
   getDisplayMeta,

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Filter, Folder } from "lucide-react";
-import * as icons from "lucide-react";
+import { Filter } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   fetchScopeTypes,
   selectScopeTypesLoading,
@@ -15,20 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -121,15 +107,15 @@ export function EntityFilterBar({
       <ScrollArea className="flex-1">
         <div className="flex items-center gap-3 pb-1">
           {pickerOptions.map((group) => {
-            const Icon = resolveIcon(group.icon);
             return (
               <div
                 key={group.type_id}
                 className="flex items-center gap-1 shrink-0"
               >
-                <Icon
+                <ScopeIcon
+                  name={group.icon}
+                  color={group.color}
                   className="h-3.5 w-3.5 shrink-0"
-                  style={{ color: group.color }}
                 />
                 <div className="flex items-center gap-0.5">
                   {group.options.map((option) => {

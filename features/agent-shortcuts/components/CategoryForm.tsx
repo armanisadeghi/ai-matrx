@@ -33,7 +33,7 @@ import {
 import { AlertCircle, Copy, Loader2, Save, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { useToast } from "@/components/ui/use-toast";
 import { CategoryColorPicker } from "./CategoryColorPicker";
 import { ShortcutContextsPicker } from "./ShortcutContextsPicker";

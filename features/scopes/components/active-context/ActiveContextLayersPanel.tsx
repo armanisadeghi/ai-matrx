@@ -33,8 +33,7 @@ import type {
   ScopeNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
-// DB-only icon renderer via the dynamic front door (scope-type icons from DB).
-import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -214,7 +213,7 @@ function ScopeLayerCard({
             className="ml-auto shrink-0 text-[10px]"
             style={{ borderColor: found.type.color, color: found.type.color }}
           >
-            <DynamicIcon
+            <ScopeIcon
               name={found.type.icon}
               color={found.type.color}
               className="mr-1 h-3 w-3"

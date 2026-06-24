@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { File } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { cn } from "@/lib/utils";
 import { SchemaField } from "@/constants/socket-schema";
 import { formatLabel, formatPlaceholder } from "@/components/socket/utils/label-util";

@@ -2,7 +2,7 @@
 
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 
@@ -19,7 +19,6 @@ export function ScopeTypeCard({
   itemCount,
   onClick,
 }: ScopeTypeCardProps) {
-  const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
 
   return (
@@ -39,7 +38,7 @@ export function ScopeTypeCard({
         <div
           className={`w-12 h-12 rounded-lg ${color.fg} flex items-center justify-center shrink-0`}
         >
-          <Icon className="h-7 w-7" />
+          <ScopeIcon name={scopeType.icon} className="h-7 w-7" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground truncate">

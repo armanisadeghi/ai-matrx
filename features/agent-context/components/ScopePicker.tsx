@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronsUpDown, Search, Folder } from "lucide-react";
-import * as icons from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
@@ -33,20 +33,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 interface ScopePickerProps {
   entityType: string;
@@ -184,7 +170,6 @@ export function ScopePicker({
             )}
             <CommandEmpty>No scopes found.</CommandEmpty>
             {filteredGroups.map((group, groupIdx) => {
-              const Icon = resolveIcon(group.icon);
               const currentInGroup = group.options.filter((o) =>
                 selectedSet.has(o.value),
               ).length;
@@ -198,9 +183,10 @@ export function ScopePicker({
                   <CommandGroup
                     heading={
                       <span className="flex items-center gap-1.5">
-                        <Icon
+                        <ScopeIcon
+                          name={group.icon}
+                          color={group.color}
                           className="h-3.5 w-3.5"
-                          style={{ color: group.color }}
                         />
                         <span>{group.label}</span>
                         {group.max_assignments !== null && (

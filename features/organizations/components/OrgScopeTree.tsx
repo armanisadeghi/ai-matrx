@@ -22,7 +22,7 @@ import {
   fetchScopes,
   selectScopesByType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
@@ -64,7 +64,6 @@ export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
 
 function ScopeTypeNode({ type, slug }: { type: ScopeType; slug: string }) {
   const scopes = useAppSelector((s) => selectScopesByType(s, type.id));
-  const Icon = resolveIcon(type.icon);
   const color = resolveColor(type);
 
   return (
@@ -77,7 +76,7 @@ function ScopeTypeNode({ type, slug }: { type: ScopeType; slug: string }) {
         <span
           className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ring-1 ${SCOPE_ICON_SURFACE} ${color.fg} ${color.ring}`}
         >
-          <Icon className="h-4 w-4" />
+          <ScopeIcon name={type.icon} className="h-4 w-4" />
         </span>
         <span className="text-sm font-semibold text-foreground truncate">
           {type.label_plural}

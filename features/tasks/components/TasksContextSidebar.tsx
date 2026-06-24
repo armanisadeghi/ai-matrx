@@ -15,11 +15,10 @@ import {
   ListChecks,
   Flag,
   CalendarClock,
-  CircleDashed,
   ChevronDown,
   SlidersHorizontal,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectProjects,
@@ -66,16 +65,6 @@ type LucideIcon = React.ComponentType<{
   className?: string;
   style?: React.CSSProperties;
 }>;
-
-function resolveIcon(name: string | undefined): LucideIcon {
-  if (!name) return CircleDashed;
-  const pascal = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascal];
-  return Icon ?? CircleDashed;
-}
 
 const GROUP_MODES: { mode: TaskGroupBy; label: string; icon: LucideIcon }[] = [
   { mode: "project", label: TASK_GROUP_BY_LABELS.project, icon: FolderKanban },
@@ -377,7 +366,13 @@ export default function TasksContextSidebar() {
 
         {/* Context: each scope type with explicit clickable scopes */}
         {scopeTypesOrdered.map((type) => {
-          const Icon = resolveIcon(type.icon);
+          const TypeIcon = ({ className }: { className?: string }) => (
+            <ScopeIcon
+              name={type.icon}
+              color={type.color ?? undefined}
+              className={className}
+            />
+          );
           const opts = scopesByType.get(type.id) ?? [];
           const selectedId = scopeSelections[type.id] ?? null;
           const typeBelongsToActiveOrg =
@@ -391,8 +386,7 @@ export default function TasksContextSidebar() {
           return (
             <CollapsibleSidebarSection
               key={type.id}
-              icon={Icon}
-              iconStyle={type.color ? { color: type.color } : undefined}
+              icon={TypeIcon}
               title={type.label_plural}
               titleStyle={type.color ? { color: type.color } : undefined}
               titleMuted={!typeBelongsToActiveOrg}

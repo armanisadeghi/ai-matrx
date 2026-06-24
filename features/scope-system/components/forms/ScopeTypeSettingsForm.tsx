@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

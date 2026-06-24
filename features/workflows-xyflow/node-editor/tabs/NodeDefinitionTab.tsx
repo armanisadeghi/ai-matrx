@@ -18,7 +18,7 @@ import {
   useNodeCategoryWithFetch,
   useRegisteredNodeWithFetch,
 } from "@/lib/redux/entity/hooks/entityUsedHooks";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 
 interface NodeDefinitionTabProps {
   nodeId: string;

@@ -12,7 +12,7 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/styles/themes/utils";
 import { useCategoryNodeData } from "@/features/workflows-xyflow/hooks/useCategoryNodeData";
 import { WorkflowNode } from "@/lib/redux/workflow-nodes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 
 // Truncate text to specified length with ellipsis
 const truncateText = (text: string, maxLength: number = 30): string => {

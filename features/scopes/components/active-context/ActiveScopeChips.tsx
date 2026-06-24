@@ -33,7 +33,7 @@ import {
   makeSelectScope,
   makeSelectScopeType,
 } from "@/features/scopes/redux/selectors/tree";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { cn } from "@/utils/cn";
 
 interface ActiveScopeChipsProps {
@@ -182,7 +182,7 @@ function ScopeChip({
 
   return (
     <Chip
-      icon={<DynamicIcon name={iconName} className="h-3 w-3" />}
+      icon={<ScopeIcon name={iconName} className="h-3 w-3" />}
       label={label}
       onClear={onClear}
       colorClass="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"

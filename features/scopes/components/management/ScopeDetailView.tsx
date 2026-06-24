@@ -23,7 +23,7 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import type {
   ContextItemValue,
   OrgNode,
@@ -133,7 +133,7 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
           All Scopes
         </Link>
         <div className="flex items-center gap-2 flex-wrap">
-          <DynamicIcon
+          <ScopeIcon
             name={type.icon}
             color={type.color}
             className="h-5 w-5"

@@ -13,7 +13,7 @@ import { formatLabel, formatPlaceholder } from "../utils/label-util";
 import { SchemaField } from "@/constants/socket-constants";
 import ArrayField from "./ArrayField";
 import { File, Files } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { cn } from "@/lib/utils"; // Assuming you have a cn utility for classnames
 
 export type FieldType =

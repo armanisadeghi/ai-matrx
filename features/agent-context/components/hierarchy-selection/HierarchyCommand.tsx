@@ -8,9 +8,8 @@ import {
   Search,
   Check,
   Globe,
-  Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   Command,
   CommandInput,
@@ -32,20 +31,6 @@ import {
   FULL_HIERARCHY_LEVELS,
 } from "./useHierarchySelection";
 import type { HierarchyLevel, HierarchySelectionProps } from "./types";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 interface HierarchyCommandContentProps {
   levels: HierarchyLevel[];
@@ -139,7 +124,6 @@ export function HierarchyCommandContent({
 
         {levels.includes("scope") &&
           ctx.scopeLevels.map((scopeLevel) => {
-            const ScopeIcon = resolveIcon(scopeLevel.icon);
             const selectedScopeId = scopeSelections[scopeLevel.typeId] ?? null;
             return (
               <div key={scopeLevel.typeId}>
@@ -148,8 +132,9 @@ export function HierarchyCommandContent({
                   heading={
                     <span className="flex items-center gap-1.5">
                       <ScopeIcon
+                        name={scopeLevel.icon}
+                        color={scopeLevel.color}
                         className="h-3 w-3"
-                        style={{ color: scopeLevel.color }}
                       />
                       {scopeLevel.pluralLabel}
                     </span>

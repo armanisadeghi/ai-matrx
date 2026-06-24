@@ -26,7 +26,7 @@ import {
   Loader2,
   MessageCircle,
   RefreshCw,
-  Rocket
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";

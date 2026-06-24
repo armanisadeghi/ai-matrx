@@ -18,7 +18,7 @@ import {
   Tags,
   Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,19 +57,6 @@ import type {
   HierarchyNodeType,
 } from "../service/hierarchyService";
 import { matchesSearch } from "@/utils/search-scoring";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  return (icons as unknown as Record<string, LucideIcon>)[pascalName] ?? Folder;
-}
 
 // ─── Config ─────────────────────────────────────────────────────────
 
@@ -588,16 +575,9 @@ function TreeRow({
       ? node.id
       : (node.meta?.organization_id as string | undefined);
 
-  let Icon: LucideIcon;
-  let iconColor: string | undefined;
-
-  if (isScopeNode && node.icon) {
-    Icon = resolveIcon(node.icon);
-    iconColor = node.color;
-  } else {
-    Icon = ICONS[node.type as keyof typeof ICONS] ?? Folder;
-    iconColor = undefined;
-  }
+  const isDbScopeIcon = isScopeNode && !!node.icon;
+  const HardIcon = ICONS[node.type as keyof typeof ICONS] ?? Folder;
+  const iconColor = isDbScopeIcon ? node.color : undefined;
 
   const accent = iconColor
     ? ""
@@ -638,10 +618,17 @@ function TreeRow({
         </div>
 
         {/* Icon */}
-        <Icon
-          className={`h-3.5 w-3.5 shrink-0 mr-1.5 ${isSelected ? "text-primary" : accent}`}
-          style={iconColor && !isSelected ? { color: iconColor } : undefined}
-        />
+        {isDbScopeIcon ? (
+          <ScopeIcon
+            name={node.icon}
+            color={!isSelected ? node.color : undefined}
+            className={`h-3.5 w-3.5 shrink-0 mr-1.5 ${isSelected ? "text-primary" : accent}`}
+          />
+        ) : (
+          <HardIcon
+            className={`h-3.5 w-3.5 shrink-0 mr-1.5 ${isSelected ? "text-primary" : accent}`}
+          />
+        )}
 
         {/* Name */}
         <span

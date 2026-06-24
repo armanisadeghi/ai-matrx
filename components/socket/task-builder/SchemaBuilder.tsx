@@ -6,10 +6,8 @@ import { cn } from "@/lib/utils";
 import AccordionWrapper from "../../matrx/matrx-collapsible/AccordionWrapper";
 import { Checkbox } from "@/components/ui/checkbox";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import {
-  DynamicIcon,
-  isIconRegisteredSync,
-} from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
+import { isIconRegisteredSync } from "@/components/official/icons/icon-resolve";
 import {
   SchemaField,
   getReferenceOptions,

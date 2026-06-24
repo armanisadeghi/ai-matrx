@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -21,9 +21,7 @@ export default function LucideFullDemo() {
             Type an icon name (e.g.{" "}
             <code className="font-mono text-foreground">alarm-clock</code> or
             paste a JSX import like{" "}
-            <code className="font-mono text-foreground">
-              &lt;Rainbow /&gt;
-            </code>
+            <code className="font-mono text-foreground">&lt;Rainbow /&gt;</code>
             ) — the field auto-corrects it.
           </li>
           <li>

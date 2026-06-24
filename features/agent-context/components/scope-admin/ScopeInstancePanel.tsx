@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import * as icons from "lucide-react";
 import {
   Plus,
-  Folder,
   ChevronRight,
   ChevronDown,
   Pencil,
   Trash2,
   Users,
 } from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectScopeTreeByType,
@@ -33,19 +32,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeFormSheet } from "./ScopeFormSheet";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  return (icons as unknown as Record<string, LucideIcon>)[pascalName] ?? Folder;
-}
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -81,7 +67,6 @@ export function ScopeInstancePanel({
   );
   const [deleteTarget, setDeleteTarget] = useState<Scope | null>(null);
 
-  const Icon = resolveIcon(scopeType.icon);
   const totalCount = countNodes(tree);
 
   const handleAdd = (parentId?: string) => {
@@ -114,9 +99,10 @@ export function ScopeInstancePanel({
                 : undefined,
             }}
           >
-            <Icon
+            <ScopeIcon
+              name={scopeType.icon}
+              color={scopeType.color || undefined}
               className="h-4 w-4"
-              style={{ color: scopeType.color || undefined }}
             />
           </div>
           <div>
@@ -149,9 +135,10 @@ export function ScopeInstancePanel({
                   : undefined,
               }}
             >
-              <Icon
+              <ScopeIcon
+                name={scopeType.icon}
+                color={scopeType.color || undefined}
                 className="h-6 w-6 text-muted-foreground"
-                style={{ color: scopeType.color || undefined }}
               />
             </div>
             <p className="text-sm text-muted-foreground mb-4">

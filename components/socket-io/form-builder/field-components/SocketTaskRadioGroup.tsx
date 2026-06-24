@@ -43,7 +43,7 @@ The component will:
 import React, { useCallback, useEffect, useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { File } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { cn } from "@/lib/utils";
 import { SchemaField } from "@/constants/socket-schema";
 import { formatPlaceholder } from "@/components/socket/utils/label-util";

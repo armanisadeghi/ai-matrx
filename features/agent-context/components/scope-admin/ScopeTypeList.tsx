@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import * as icons from "lucide-react";
 import {
   Plus,
-  Folder,
   Loader2,
   GripVertical,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { deleteScopeType } from "../../redux/scope/scopeTypesSlice";
 import { selectScopesByType } from "../../redux/scope/scopesSlice";
@@ -28,19 +27,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScopeTypeFormSheet } from "./ScopeTypeFormSheet";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  return (icons as unknown as Record<string, LucideIcon>)[pascalName] ?? Folder;
-}
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -178,7 +164,6 @@ function ScopeTypeItem({
   const scopeCount = useAppSelector((state) =>
     selectScopesByType(state, type.id),
   ).length;
-  const Icon = resolveIcon(type.icon);
 
   return (
     <div
@@ -205,9 +190,10 @@ function ScopeTypeItem({
               : undefined,
           }}
         >
-          <Icon
+          <ScopeIcon
+            name={type.icon}
+            color={type.color || undefined}
             className="h-4 w-4"
-            style={{ color: type.color || undefined }}
           />
         </div>
         <div className="min-w-0 flex-1">

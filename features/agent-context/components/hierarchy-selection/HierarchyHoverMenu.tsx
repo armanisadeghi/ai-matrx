@@ -15,7 +15,7 @@ import {
   Globe,
   Circle,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { Button } from "@/components/ui/button";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { Input } from "@/components/ui/input";
@@ -40,15 +40,6 @@ type LucideIcon = React.ComponentType<{
   className?: string;
   style?: React.CSSProperties;
 }>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 // ─── Data model ─────────────────────────────────────────────────────────────
 
@@ -675,16 +666,15 @@ function MainRow({
     return false;
   })();
 
-  const Icon: LucideIcon =
+  const isDbScopeIcon = item.kind === "scope" && !!item.scopeIcon;
+  const HardIcon: LucideIcon =
     item.kind === "org"
       ? Building2
       : item.kind === "project"
         ? FolderKanban
         : item.kind === "task"
           ? ListTodo
-          : item.scopeIcon
-            ? resolveIcon(item.scopeIcon)
-            : Folder;
+          : Folder;
 
   const indentPx = item.kind === "task" ? 20 : 12;
   const iconColor =
@@ -713,14 +703,17 @@ function MainRow({
       onMouseEnter={() => onHover(item)}
       onClick={() => onSelect(buildSelectionFromItem(item, scopeSelections))}
     >
-      <Icon
-        className={cn("h-3.5 w-3.5 shrink-0", !isSelected && iconColor)}
-        style={
-          item.kind === "scope" && item.scopeColor && !isSelected
-            ? { color: item.scopeColor }
-            : undefined
-        }
-      />
+      {isDbScopeIcon ? (
+        <ScopeIcon
+          name={item.scopeIcon}
+          color={item.scopeColor && !isSelected ? item.scopeColor : undefined}
+          className={cn("h-3.5 w-3.5 shrink-0", !isSelected && iconColor)}
+        />
+      ) : (
+        <HardIcon
+          className={cn("h-3.5 w-3.5 shrink-0", !isSelected && iconColor)}
+        />
+      )}
       <span className="flex-1 truncate min-w-0">{item.name}</span>
 
       {/* Context hint */}
@@ -883,16 +876,13 @@ function DetailPanel({
         ? `${item.scopeTypeLabel ?? "Scope"}: ${item.name}`
         : item.name;
 
-  const panelIcon: LucideIcon =
+  const isDbPanelScopeIcon = item.kind === "scope" && !!item.scopeIcon;
+  const HardPanelIcon: LucideIcon =
     item.kind === "project"
       ? FolderKanban
       : item.kind === "org"
         ? Building2
-        : item.scopeIcon
-          ? resolveIcon(item.scopeIcon)
-          : Folder;
-
-  const PanelIcon = panelIcon;
+        : Folder;
 
   return (
     <div
@@ -901,14 +891,15 @@ function DetailPanel({
     >
       {/* Panel header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50 shrink-0 bg-muted/30">
-        <PanelIcon
-          className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-          style={
-            item.kind === "scope" && item.scopeColor
-              ? { color: item.scopeColor }
-              : undefined
-          }
-        />
+        {isDbPanelScopeIcon ? (
+          <ScopeIcon
+            name={item.scopeIcon}
+            color={item.scopeColor ?? undefined}
+            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+          />
+        ) : (
+          <HardPanelIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
         <span className="text-xs font-medium truncate flex-1">
           {panelTitle}
         </span>
@@ -944,14 +935,13 @@ function DetailPanel({
                     ? value.projectId === di.id
                     : false;
 
-              const DIIcon: LucideIcon =
+              const isDbDiScopeIcon = di.kind === "scope" && !!di.scopeIcon;
+              const HardDIIcon: LucideIcon =
                 di.kind === "task"
                   ? ListTodo
                   : di.kind === "project"
                     ? FolderKanban
-                    : di.scopeIcon
-                      ? resolveIcon(di.scopeIcon)
-                      : Folder;
+                    : Folder;
 
               const diSelection = (() => {
                 if (di.kind === "task") {
@@ -996,7 +986,15 @@ function DetailPanel({
                   )}
                   onClick={() => diSelection && onSelect(diSelection)}
                 >
-                  <DIIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {isDbDiScopeIcon ? (
+                    <ScopeIcon
+                      name={di.scopeIcon}
+                      color={di.scopeColor ?? undefined}
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                    />
+                  ) : (
+                    <HardDIIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
                   <span className="flex-1 truncate">{di.name}</span>
                   <StatusDot status={di.status} />
                   {isSelected && (

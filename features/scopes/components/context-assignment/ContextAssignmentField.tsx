@@ -70,7 +70,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   fetchAssignableProjects,
@@ -604,7 +604,6 @@ function HierarchyTree({
             {orgOpen &&
               types.map(({ t, scopes }) => {
                 const c = resolveColor(t);
-                const TIcon = resolveIcon(t.icon);
                 const typeOpen = q
                   ? true
                   : isOpen(typeOverrides, t.id, defaultTypeOpen);
@@ -626,7 +625,10 @@ function HierarchyTree({
                         ) : (
                           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                         )}
-                        <TIcon className={cn("h-3.5 w-3.5 shrink-0", c.fg)} />
+                        <ScopeIcon
+                          name={t.icon}
+                          className={cn("h-3.5 w-3.5 shrink-0", c.fg)}
+                        />
                         <span className={cn("min-w-0 truncate text-sm", c.fg)}>
                           {t.label_plural}
                         </span>
@@ -1425,12 +1427,18 @@ export function ContextAssignmentField({
                           </div>
                         )}
                         {types.map(({ type, scopes, total }) => {
-                          const Icon = resolveIcon(type.icon);
                           const c = resolveColor(type);
+                          const TypeIcon = ({
+                            className,
+                          }: {
+                            className?: string;
+                          }) => (
+                            <ScopeIcon name={type.icon} className={className} />
+                          );
                           return (
                             <SectionShell
                               key={type.id}
-                              icon={Icon}
+                              icon={TypeIcon}
                               iconClass={c.fg}
                               borderClass={c.border}
                               title={type.label_plural}

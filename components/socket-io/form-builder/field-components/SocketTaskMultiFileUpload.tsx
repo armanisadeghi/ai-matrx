@@ -37,7 +37,7 @@ The component will:
 import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { File } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { cn } from "@/lib/utils";
 import { SchemaField } from "@/constants/socket-schema";
 import { formatLabel, formatPlaceholder } from "@/components/socket/utils/label-util";

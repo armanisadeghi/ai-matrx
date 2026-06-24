@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";

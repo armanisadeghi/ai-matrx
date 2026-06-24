@@ -9,7 +9,7 @@
  */
 
 import React from "react";
-import IconResolver from "@/components/official/icons/IconResolver";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
 
 export const adminCategories = adminCategoriesData.map((category) => ({

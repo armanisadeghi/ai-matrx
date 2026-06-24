@@ -72,8 +72,8 @@ import {
 } from "@/features/scopes/redux/selectors/active-context";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
 import { listFiles } from "@/features/files/api/files";
 import { scopesService } from "@/features/scopes/service/scopesService";
 // THE OFFICIAL COMPONENT SET — this lab now demos the real shipping module,
@@ -1212,7 +1212,6 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
                       </div>
                       {groups.map(({ t, scopes }) => {
                         const c = resolveColor(t);
-                        const TIcon = resolveIcon(t.icon);
                         return (
                           <div key={t.id} className="mb-1">
                             <div
@@ -1221,7 +1220,7 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
                                 c.fg,
                               )}
                             >
-                              <TIcon className="h-3 w-3" />
+                              <ScopeGlyph icon={t.icon} className="h-3 w-3" />
                               {t.label_plural}
                               <span className="font-normal text-muted-foreground">
                                 · one

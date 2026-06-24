@@ -3,7 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
-import IconResolver from "@/components/official/icons/IconResolver";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import {
   SHORTCUT_CONTEXTS,
   SHORTCUT_CONTEXT_META,

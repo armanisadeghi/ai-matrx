@@ -39,7 +39,7 @@ import type {
   ScopeAssignmentEntityType,
   ScopeTypeNode,
 } from "@/features/scopes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
@@ -342,7 +342,7 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
             return (
               <div key={type.id} className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <DynamicIcon
+                  <ScopeIcon
                     name={type.icon}
                     color={type.color}
                     className="h-3.5 w-3.5"
@@ -406,7 +406,7 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
                     ) : (
                       <ChevronDown size={12} />
                     )}
-                    <DynamicIcon
+                    <ScopeIcon
                       name={type.icon}
                       color={type.color}
                       className="h-3.5 w-3.5"

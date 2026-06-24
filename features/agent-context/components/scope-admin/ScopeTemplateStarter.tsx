@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import * as icons from "lucide-react";
 import {
   Check,
   ChevronRight,
@@ -17,9 +16,9 @@ import {
   ShoppingBag,
   Store,
   Brain,
-  Folder,
   PenLine,
 } from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   createScopeType,
@@ -33,19 +32,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/utils/cn";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  return (icons as unknown as Record<string, LucideIcon>)[pascalName] ?? Folder;
-}
 
 function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace("#", "");
@@ -673,7 +659,6 @@ function TemplateSheet({
                   preset.label_singular.toLowerCase(),
                 );
                 const isChecked = checkedPresets.has(i);
-                const Icon = resolveIcon(preset.icon);
 
                 return (
                   <Card
@@ -706,9 +691,10 @@ function TemplateSheet({
                                 backgroundColor: hexToRgba(preset.color, 0.15),
                               }}
                             >
-                              <Icon
+                              <ScopeIcon
+                                name={preset.icon}
+                                color={preset.color}
                                 className="h-3.5 w-3.5"
-                                style={{ color: preset.color }}
                               />
                             </div>
                             <h4 className="text-xs font-semibold">

@@ -41,7 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import {
   Plus,
   Trash2,

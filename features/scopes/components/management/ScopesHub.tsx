@@ -23,7 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgSuggestionsNavButton";
 import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { cn } from "@/utils/cn";
@@ -176,7 +176,7 @@ export function ScopesHub() {
                       className="text-[10px] gap-1 px-1.5 py-0.5"
                       style={{ borderColor: t.color, color: t.color }}
                     >
-                      <DynamicIcon name={t.icon} className="h-2.5 w-2.5" />
+                      <ScopeIcon name={t.icon} color={t.color} className="h-2.5 w-2.5" />
                       <span>{t.label_plural}</span>
                       <span className="text-muted-foreground">
                         · {t.scopes.length}

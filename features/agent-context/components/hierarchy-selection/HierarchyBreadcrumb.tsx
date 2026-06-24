@@ -9,7 +9,7 @@ import {
   User,
   Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -25,20 +25,6 @@ import {
 } from "./useHierarchySelection";
 import type { HierarchySelectionProps, HierarchyLevel } from "./types";
 import { EMPTY_SELECTION } from "./types";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 const LEVEL_ICONS: Record<
   string,
@@ -187,20 +173,18 @@ export function HierarchyBreadcrumb({
           {crumbs.map((crumb, idx) => {
             const isLast = idx === crumbs.length - 1;
 
-            let IconComp: React.ComponentType<{
-              className?: string;
-              style?: React.CSSProperties;
-            }>;
-            let iconStyle: React.CSSProperties | undefined;
-            let accentClass: string | undefined;
-
-            if (crumb.level === "scope" && crumb.iconName) {
-              IconComp = resolveIcon(crumb.iconName);
-              iconStyle = crumb.color ? { color: crumb.color } : undefined;
-            } else {
-              IconComp = LEVEL_ICONS[crumb.level] ?? Folder;
-              accentClass = crumb.accent;
-            }
+            const isDbScopeIcon = crumb.level === "scope" && !!crumb.iconName;
+            const HardCrumbIcon = LEVEL_ICONS[crumb.level] ?? Folder;
+            const accentClass = isDbScopeIcon ? undefined : crumb.accent;
+            const iconEl = isDbScopeIcon ? (
+              <ScopeIcon
+                name={crumb.iconName}
+                color={crumb.color ?? undefined}
+                className="h-3 w-3"
+              />
+            ) : (
+              <HardCrumbIcon className={cn("h-3 w-3", accentClass)} />
+            );
 
             return (
               <span key={crumb.key} className="contents">
@@ -210,10 +194,7 @@ export function HierarchyBreadcrumb({
                 <BreadcrumbItem>
                   {isLast ? (
                     <BreadcrumbPage className="text-xs flex items-center gap-1">
-                      <IconComp
-                        className={cn("h-3 w-3", accentClass)}
-                        style={iconStyle}
-                      />
+                      {iconEl}
                       <span className="font-medium">{crumb.name}</span>
                     </BreadcrumbPage>
                   ) : (
@@ -221,10 +202,7 @@ export function HierarchyBreadcrumb({
                       className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => handleCrumbClick(crumb)}
                     >
-                      <IconComp
-                        className={cn("h-3 w-3", accentClass)}
-                        style={iconStyle}
-                      />
+                      {iconEl}
                       {crumb.name}
                     </button>
                   )}

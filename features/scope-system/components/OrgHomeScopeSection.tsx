@@ -32,7 +32,7 @@ import {
   selectValuesByScope,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { NewScopeInline } from "./NewScopeInline";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemsHref,
@@ -74,7 +74,6 @@ export function OrgHomeScopeSection({
     // Re-run when scope ids change
   }, [dispatch, scopes]);
 
-  const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
   const columns = items.slice(0, MAX_COLUMNS);
   const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
@@ -91,7 +90,7 @@ export function OrgHomeScopeSection({
           <div
             className={`w-10 h-10 rounded-lg ${color.fg} flex items-center justify-center shrink-0`}
           >
-            <Icon className="h-6 w-6" />
+            <ScopeIcon name={scopeType.icon} className="h-6 w-6" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">

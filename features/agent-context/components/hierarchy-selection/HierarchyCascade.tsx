@@ -9,10 +9,9 @@ import {
   ChevronsUpDown,
   Plus,
   Loader2,
-  Folder,
   X,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon as ScopeIconBase } from "@/features/scopes/components/ScopeIcon";
 import {
   Command,
   CommandEmpty,
@@ -38,20 +37,6 @@ import {
 import { useCreateProject, useCreateTask } from "../../hooks/useHierarchy";
 import { createScope } from "../../redux/scope/scopesSlice";
 import type { HierarchySelectionProps, HierarchyOption } from "./types";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 const ROW_HEIGHT = 32;
 const MIN_TOTAL_ROWS = 6;
@@ -286,8 +271,7 @@ function AnimatedRow({
 }
 
 function ScopeIcon({ iconName, color }: { iconName: string; color: string }) {
-  const Icon = resolveIcon(iconName);
-  return <Icon className="h-3.5 w-3.5" style={{ color }} />;
+  return <ScopeIconBase name={iconName} color={color} className="h-3.5 w-3.5" />;
 }
 
 interface ScopeLevelComboboxProps {

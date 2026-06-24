@@ -32,7 +32,7 @@ import { NodeHandles } from "./NodeHandles";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { workflowNodesSelectors } from "@/lib/redux/workflow-nodes/selectors";
 import { workflowNodesActions } from "@/lib/redux/workflow-nodes/slice";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 
 export interface BaseNodeData extends Record<string, unknown> {
   nodeType?: string;

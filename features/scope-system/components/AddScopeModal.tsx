@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

@@ -20,7 +20,7 @@ import React from "react";
 import { Building2, Loader2, Tag } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
@@ -161,7 +161,6 @@ export function AssignedScopesDisplay({
         </div>
       ) : (
         groups.map((g) => {
-          const Icon = resolveIcon(g.type.icon);
           const color = resolveColor(g.type);
           return (
             <Row
@@ -170,7 +169,7 @@ export function AssignedScopesDisplay({
                 <span
                   className={`h-6 w-6 rounded-md flex items-center justify-center ring-1 ${SCOPE_ICON_SURFACE} ${color.fg} ${color.ring}`}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <ScopeIcon name={g.type.icon} className="h-3.5 w-3.5" />
                 </span>
               }
               label={g.type.label_singular}

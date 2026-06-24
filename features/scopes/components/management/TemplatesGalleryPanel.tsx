@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { useTemplates } from "@/features/scopes/hooks/useTemplates";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 
 export function TemplatesGalleryPanel() {
   const { templates, status, error, refresh } = useTemplates();
@@ -103,8 +103,9 @@ export function TemplatesGalleryPanel() {
             {list.map((t) => (
               <Card key={t.id} className="p-3 flex flex-col gap-2">
                 <div className="flex items-start gap-2">
-                  <DynamicIcon
+                  <ScopeIcon
                     name={t.icon || "Sparkles"}
+                    fallbackIcon="Sparkles"
                     className="h-4 w-4 text-primary shrink-0 mt-0.5"
                   />
                   <div className="min-w-0">

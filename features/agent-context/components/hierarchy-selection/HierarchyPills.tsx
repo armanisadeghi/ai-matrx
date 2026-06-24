@@ -10,7 +10,7 @@ import {
   Loader2,
   Folder,
 } from "lucide-react";
-import * as icons from "lucide-react";
+import { ScopeIcon } from "@/features/scopes/components/ScopeIcon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,20 +27,6 @@ import type {
   HierarchyLevel,
   HierarchyOption,
 } from "./types";
-
-type LucideIcon = React.ComponentType<{
-  className?: string;
-  style?: React.CSSProperties;
-}>;
-
-function resolveIcon(name: string): LucideIcon {
-  const pascalName = name
-    .split(/[-_\s]+/)
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join("");
-  const Icon = (icons as unknown as Record<string, LucideIcon>)[pascalName];
-  return Icon ?? Folder;
-}
 
 const LEVEL_ICONS: Record<
   string,
@@ -114,6 +100,7 @@ export function HierarchyPills({
       className?: string;
       style?: React.CSSProperties;
     }>;
+    scopeIconName?: string;
     inlineColor?: string;
     pillActive?: string;
     pillIdle?: string;
@@ -150,7 +137,7 @@ export function HierarchyPills({
         selectedName: selectedOption?.name ?? null,
         onSelect: (id) => ctx.setScopeValue(scopeLevel.typeId, id),
         show: true,
-        icon: resolveIcon(scopeLevel.icon),
+        scopeIconName: scopeLevel.icon,
         inlineColor: scopeLevel.color,
         pillActive: `bg-opacity-10 border-opacity-20`,
         pillIdle:
@@ -238,14 +225,15 @@ export function HierarchyPills({
                     : undefined
                 }
               >
-                <Icon
-                  className="h-3 w-3 shrink-0"
-                  style={
-                    isScope && pill.inlineColor
-                      ? { color: pill.inlineColor }
-                      : undefined
-                  }
-                />
+                {isScope && pill.scopeIconName ? (
+                  <ScopeIcon
+                    name={pill.scopeIconName}
+                    color={pill.inlineColor ?? undefined}
+                    className="h-3 w-3 shrink-0"
+                  />
+                ) : (
+                  <Icon className="h-3 w-3 shrink-0" />
+                )}
                 <span className="truncate max-w-[120px]">
                   {pill.selectedName ?? pill.emptyLabel}
                 </span>

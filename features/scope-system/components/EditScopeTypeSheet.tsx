@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
