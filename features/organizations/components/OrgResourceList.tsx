@@ -8,7 +8,7 @@
  *   - `resourceType` drives the permissions-table join (`note`, `agent`, etc.)
  *   - `ownedQuery` returns rows owned by the org directly (where the table
  *     has an `organization_id` column). Pass `null` if the resource table
- *     has no `organization_id` (e.g. `user_files`, `udt_datasets`).
+ *     has no `organization_id` (e.g. `udt_datasets`).
  *   - `tableName` is the canonical Postgres table for hydrating shared rows.
  *   - `selectColumns` is the projection used by both queries.
  *   - `mapRow` turns a row into a `ResourceCardData` for rendering.

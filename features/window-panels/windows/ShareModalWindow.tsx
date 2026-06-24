@@ -62,7 +62,7 @@ export default function ShareModalWindow({
       transcripts: `/transcripts/${resourceId}`,
       quiz_sessions: `/quizzes/${resourceId}`,
       sandbox_instances: `/sandbox/${resourceId}`,
-      user_files: `/files/${resourceId}`,
+      cld_files: `/files/f/${resourceId}`,
       prompt_actions: `/ai/prompts/actions/${resourceId}`,
       flashcard_data: `/flashcards/${resourceId}`,
       flashcard_sets: `/flashcards/sets/${resourceId}`,

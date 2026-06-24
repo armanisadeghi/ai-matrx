@@ -8,19 +8,20 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
-const SELECT_COLS = "id, filename, mime_type, size, updated_at, folder_path";
+const SELECT_COLS = "id, file_name, mime_type, size_bytes, updated_at";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
-    .from("user_files")
+    .from("cld_files")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   return (res.data ?? []) as Array<Record<string, unknown>>;
 };
 
 const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
-  const size = row.size as number | null | undefined;
+  const size = row.size_bytes as number | null | undefined;
   const sizeStr =
     size && size > 0
       ? size > 1024 * 1024
@@ -29,12 +30,11 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
       : null;
   return {
     id: String(row.id),
-    title: (row.filename as string | null) ?? "Untitled",
+    title: (row.file_name as string | null) ?? "Untitled",
     subtitle: [row.mime_type as string | null, sizeStr]
       .filter(Boolean)
       .join(" · "),
     updatedAt: (row.updated_at as string | null) ?? null,
-    tags: row.folder_path ? [String(row.folder_path)] : undefined,
     source,
   };
 };
@@ -69,8 +69,8 @@ export default function OrgFilesPage() {
       ) : (
         <OrgResourceList
           orgId={resolvedOrgId}
-          resourceType="user_files"
-          tableName="user_files"
+          resourceType="cld_files"
+          tableName="cld_files"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}

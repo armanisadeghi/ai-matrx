@@ -186,7 +186,7 @@ const TABLE_META: Record<string, TableMeta> = {
     category: "Content",
     categoryColor: CATEGORY_COLORS.Content,
   },
-  user_files: {
+  cld_files: {
     label: "Files",
     icon: File,
     category: "Content",

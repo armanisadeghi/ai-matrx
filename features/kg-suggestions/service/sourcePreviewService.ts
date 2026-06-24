@@ -185,19 +185,19 @@ export async function resolveSourceTitle(
         return data?.title?.trim() || null;
       }
       case "cld_file": {
-        // A `cld_file` suggestion's `source_id` is the ingested document's
-        // `source_id` (the cloud-file id), NOT a `user_files.id` — so the
-        // filename lives on `processed_documents.name`, not `user_files`. The
-        // ingested doc is the reliable source of the human filename here.
+        // A `cld_file` suggestion's `source_id` IS the cloud-file id
+        // (`cld_files.id`). Prefer the ingested document's name (clean original
+        // filename) when present; otherwise read the filename straight off the
+        // cloud file row.
         const doc = await fetchProcessedDocument(kind, id);
         if (doc?.name?.trim()) return doc.name.trim();
-        // Fallback: some environments DO key by the user_files id.
         const { data } = await supabase
-          .from("user_files")
-          .select("filename")
+          .from("cld_files")
+          .select("file_name")
           .eq("id", id)
+          .is("deleted_at", null)
           .maybeSingle();
-        return data?.filename?.trim() || null;
+        return data?.file_name?.trim() || null;
       }
       case "code_file": {
         const { data } = await supabase
@@ -564,14 +564,15 @@ async function loadConversation(id: string): Promise<SourcePreviewDoc> {
 async function loadFile(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("cld_file", id);
   const { data } = await supabase
-    .from("user_files")
-    .select("filename, mime_type, size, created_at")
+    .from("cld_files")
+    .select("file_name, mime_type, size_bytes, created_at")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (data) {
-    doc.title = data.filename?.trim() || "File";
+    doc.title = data.file_name?.trim() || "File";
     if (data.mime_type) doc.meta.push({ label: "Type", value: data.mime_type });
-    const size = humanSize(data.size);
+    const size = humanSize(data.size_bytes);
     if (size) doc.meta.push({ label: "Size", value: size });
     const added = formatDate(data.created_at);
     if (added) doc.meta.push({ label: "Added", value: added });

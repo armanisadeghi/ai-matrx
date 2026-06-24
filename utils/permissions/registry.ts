@@ -215,15 +215,18 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/sandbox/{id}",
     rlsUsesHasPermission: true,
   },
-  user_files: {
-    resourceType: "user_files",
-    tableName: "user_files",
+  cld_files: {
+    resourceType: "cld_files",
+    tableName: "cld_files",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "owner_id",
     isPublicColumn: null,
     displayLabel: "File",
-    urlPathTemplate: "/files/{id}",
-    rlsUsesHasPermission: true,
+    urlPathTemplate: "/files/f/{id}",
+    // cld_files RLS enforces its OWN model (cld_user_has_permission_grant +
+    // cld_file_permissions / cld_share_links), NOT the generic has_permission().
+    // A row in `permissions` would NOT grant cloud-file access — false is honest.
+    rlsUsesHasPermission: false,
   },
   prompt_actions: {
     resourceType: "prompt_actions",

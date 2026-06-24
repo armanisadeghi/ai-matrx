@@ -20,9 +20,9 @@ import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
 interface FileRow {
-  filename: string | null;
+  file_name: string | null;
   mime_type: string | null;
-  size: number | null;
+  size_bytes: number | null;
   created_at: string | null;
 }
 
@@ -47,9 +47,10 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("user_files")
-        .select("filename, mime_type, size, created_at")
+        .from("cld_files")
+        .select("file_name, mime_type, size_bytes, created_at")
         .eq("id", id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!cancelled) {
         setRow((data as FileRow) ?? null);
@@ -65,9 +66,9 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
     <PeekDialog
       open={open}
       onClose={onClose}
-      title={row?.filename ?? "File"}
+      title={row?.file_name ?? "File"}
       icon={<FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/files/${id}`}
+      href={`/files/f/${id}`}
       loading={loading}
     >
       {row ? (
@@ -77,7 +78,7 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
               {row.mime_type ?? "unknown"}
             </Badge>
           </PeekField>
-          <PeekField label="Size">{humanSize(row.size)}</PeekField>
+          <PeekField label="Size">{humanSize(row.size_bytes)}</PeekField>
           <PeekField label="Added">
             {row.created_at ? new Date(row.created_at).toLocaleString() : "—"}
           </PeekField>

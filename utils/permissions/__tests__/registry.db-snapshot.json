@@ -165,14 +165,14 @@
     "is_active": true
   },
   {
-    "resource_type": "user_files",
-    "table_name": "user_files",
+    "resource_type": "cld_files",
+    "table_name": "cld_files",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "owner_id",
     "is_public_column": null,
     "display_label": "File",
-    "url_path_template": "/files/{id}",
-    "rls_uses_has_permission": true,
+    "url_path_template": "/files/f/{id}",
+    "rls_uses_has_permission": false,
     "is_active": true
   },
   {
