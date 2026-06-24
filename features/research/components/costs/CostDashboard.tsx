@@ -12,6 +12,7 @@ import {
 import { useCostSummary } from "../../hooks/useCostSummary";
 import { useTopicContext } from "../../context/ResearchContext";
 import type { TopicCostSummary, CostBreakdownItem } from "../../types";
+import { costToUnits, formatUnits } from "@/lib/processing-units/units";
 
 const PHASE_LABELS: Array<{
   key: keyof Pick<
@@ -31,11 +32,10 @@ const PHASE_LABELS: Array<{
   { key: "document_assembly", icon: Zap },
 ];
 
+// Users see Processing Units, never raw dollars (costToUnits = round(usd*2000);
+// one platform-wide conversion in lib/processing-units).
 function formatCost(usd: number): string {
-  if (usd === 0) return "$0.0000";
-  if (usd < 0.01) return `$${usd.toFixed(4)}`;
-  if (usd < 1) return `$${usd.toFixed(3)}`;
-  return `$${usd.toFixed(2)}`;
+  return formatUnits(costToUnits(usd));
 }
 
 function PhaseRow({
@@ -144,7 +144,7 @@ export default function CostDashboard() {
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-3">
           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            Estimated Cost
+            Processing Units
           </div>
           <div className="text-lg font-bold mt-0.5 tabular-nums leading-none">
             {formatCost(totalCost)}
@@ -177,7 +177,7 @@ export default function CostDashboard() {
                 Out Tokens
               </th>
               <th className="px-3 py-2 text-right text-[10px] font-medium text-muted-foreground">
-                Cost
+                Units
               </th>
             </tr>
           </thead>

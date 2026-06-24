@@ -574,6 +574,10 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.document_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.document_id) return undefined;
+      // ref.page_index is 1-based here (see AIDREAM_REFERENCE_IMPLEMENTATION.md:
+      // "page_index is 1-based" — the name is misleading). So `p.${page_index}`
+      // is already correct ("p.1" = first page); do NOT add +1. The truthy check
+      // is intentional: an empty/absent page yields no page suffix.
       const page = ref.page_index ? `p.${ref.page_index}` : undefined;
       const { data, error } = await supabase
         .from("udt_documents")
