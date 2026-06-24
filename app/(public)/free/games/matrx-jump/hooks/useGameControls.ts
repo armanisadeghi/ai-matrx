@@ -13,6 +13,9 @@ export const useGameControls = () => {
     const { controls: motionControls, isAvailable, hasPermission, requestPermission } = useDeviceMotion();
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault(); // don't let arrow keys scroll the page mid-game
+        }
         setKeyboardControls(prev => {
             switch (e.key) {
                 case 'ArrowRight':

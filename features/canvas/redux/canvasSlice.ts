@@ -49,6 +49,10 @@ export type CanvasContentType =
 export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   "code_preview",
   "code_edit_error",
+  // Live editor surfaces — they persist themselves to cx_working_documents;
+  // saving a canvas_items row would just freeze a dead pointer.
+  "working_document",
+  "scratchpad",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {

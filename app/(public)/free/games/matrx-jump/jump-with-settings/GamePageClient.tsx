@@ -1,110 +1,96 @@
-// app\enjoy\matrx-jump\jump-with-settings\GamePageClient.tsx
+// jump-with-settings/GamePageClient.tsx
 'use client';
 
-import React, { useState, RefObject } from 'react';
+import React, { useState } from 'react';
+import { RotateCcw, Users } from 'lucide-react';
 import { CharacterSelect } from '../components/CharacterSelect';
-import { useGameControls } from '../hooks/useGameControls';
-import { useGameEntities } from '../hooks/useGameEntities';
-import { useGameLoop } from '../hooks/useGameLoop';
-import type { Character, GameStatus } from '../types';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { GameSettings } from '../components/GameSettings';
+import { useGameEngine } from '../hooks/useGameEngine';
+import { useGameSettings } from '../hooks/useGameSettings';
+import type { Character } from '../types';
 
-// https://claude.ai/chat/2979c853-e93c-49ca-89ee-d0528cbcb8df
-
-export default function GamePage() {
+// Same game as the main route, plus a live settings panel: the sliders feed the
+// engine directly (one shared useGameSettings instance), so physics/scoring
+// changes take effect on the next run — and physics tweaks even mid-run.
+export default function GamePageClient() {
     const [character, setCharacter] = useState<Character>();
-    const [gameStatus, setGameStatus] = useState<GameStatus>('selecting');
-    const {
-        controls,
-        isGyroAvailable,
-        hasGyroPermission,
-        requestGyroPermission
-    } = useGameControls();
-
-    const { gameState, setGameState, initializeGame, updateEntities } = useGameEntities(character);
-    const { canvasRef } = useGameLoop(
-        gameState,
-        setGameState,
-        gameStatus,
-        setGameStatus,
-        character,
-        gameStatus === 'playing' ? (state) => updateEntities({ ...state, ...controls }) : undefined
-    );
-
-    const handleCharacterSelect = (selectedCharacter: Character) => {
-        setCharacter(selectedCharacter);
-        initializeGame();
-        setGameStatus('ready');
-    };
-
-    const handleStartGame = () => {
-        setGameStatus('playing');
-    };
-
-    const handleRestartGame = () => {
-        initializeGame();
-        setGameStatus('playing');
-    };
-
-    React.useEffect(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
-                if (gameStatus === 'ready') {
-                    handleStartGame();
-                } else if (gameStatus === 'gameover') {
-                    handleRestartGame();
-                }
-            }
-        };
-
-        window.addEventListener('keypress', handleKeyPress);
-        return () => window.removeEventListener('keypress', handleKeyPress);
-    }, [gameStatus]);
+    const { settings, updateSettings, resetSettings } = useGameSettings();
+    const engine = useGameEngine(character, settings);
 
     if (!character) {
-        return <CharacterSelect onSelect={handleCharacterSelect} />;
+        return (
+            <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
+                <CharacterSelect onSelect={setCharacter} />
+            </div>
+        );
     }
 
     return (
-        <div className="flex flex-col items-center gap-4">
-            <GameSettings />
-            <div className="text-xl font-bold">Score: {gameState.score}</div>
-            <div className="relative">
+        <div className="min-h-dvh bg-textured flex flex-col items-center gap-3 p-4">
+            <GameSettings settings={settings} updateSettings={updateSettings} resetSettings={resetSettings} />
+
+            <div className="flex w-full max-w-3xl items-center justify-between">
+                <h1 className="text-lg font-bold">Matrx Jump — Sandbox</h1>
+                <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+                        Score {engine.score}
+                    </span>
+                    <button
+                        onClick={() => setCharacter(undefined)}
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    >
+                        <Users size={14} />
+                        Character
+                    </button>
+                </div>
+            </div>
+
+            <div className="relative" style={{ width: engine.width, maxWidth: '100%' }}>
                 <canvas
-                    ref={canvasRef}
-                    width={CANVAS_WIDTH}
-                    height={CANVAS_HEIGHT}
-                    className="border border-border rounded-lg bg-background"
+                    ref={engine.canvasRef}
+                    width={engine.width}
+                    height={engine.height}
+                    {...engine.pointerProps}
+                    className="w-full rounded-xl border border-border bg-background touch-none select-none"
                 />
-                {gameStatus === 'ready' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+
+                {engine.status === 'ready' && (
+                    <div className="absolute inset-0 flex items-end justify-center pb-20">
                         <button
-                            onClick={handleStartGame}
-                            className="px-6 py-3 text-lg font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                            onClick={engine.startGame}
+                            className="rounded-lg bg-primary px-8 py-3 text-lg font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
                         >
                             Start Game
                         </button>
                     </div>
                 )}
+
+                {engine.status === 'gameover' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                        <p className="text-2xl font-bold text-white">Final Score: {engine.finalScore}</p>
+                        <button
+                            onClick={engine.startGame}
+                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3 text-lg font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <RotateCcw size={18} />
+                            Play Again
+                        </button>
+                    </div>
+                )}
             </div>
-            {isGyroAvailable && !hasGyroPermission && (
+
+            {engine.isGyroAvailable && !engine.hasGyroPermission && (
                 <button
-                    onClick={requestGyroPermission}
-                    className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                    onClick={() => engine.requestGyroPermission()}
+                    className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                    Enable Device Motion Controls
+                    Enable Tilt Controls
                 </button>
             )}
-            {isGyroAvailable && hasGyroPermission && (
-                <p>Tilt device left/right to move</p>
-            )}
 
-            <div className="text-sm text-muted-foreground space-y-1">
-                <p>Use ← → arrows to move</p>
-                <p>Jump on enemies to defeat them</p>
-                <p>Collect coins for points</p>
-                <p>Avoid hitting enemies from the sides</p>
+            <div className="space-y-1 text-center text-sm text-muted-foreground">
+                <p>Bounce on platforms to climb · don&apos;t fall off the bottom</p>
+                <p>Tap the left/right side of the board or use ← → to move</p>
             </div>
         </div>
     );

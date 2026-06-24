@@ -44,6 +44,17 @@ const CodeEditErrorCanvas = dynamic(
     ),
   { ssr: false },
 );
+// Live working document / scratchpad editor rendered INSIDE the Canvas shell.
+// Heavy (NoteEditorCore + RichDocument + the agent context menu), so it stays
+// out of the canvas base chunk until a document item actually opens. Header off
+// — CanvasPane supplies the single clean header; the panel is just the editor.
+const WorkingDocumentPanel = dynamic(
+  () =>
+    import(
+      "@/features/agents/components/working-document/WorkingDocumentPanel"
+    ).then((m) => ({ default: m.WorkingDocumentPanel })),
+  { ssr: false },
+);
 
 export interface CanvasBodyProps {
   content: CanvasContent;
@@ -145,6 +156,22 @@ function renderContent(content: CanvasContent): React.ReactNode {
   // mermaid, code, iframe, html, image → unified renderer via early-branch
   // (cases removed in Wave F; only NON_PERSISTABLE types remain below)
   switch (type) {
+    case "working_document":
+    case "scratchpad":
+      // `data` is a pointer { conversationId, kind }. The panel reads the live
+      // document from Redux and self-persists. CanvasPane owns the header, so
+      // the panel renders chrome-free.
+      return (
+        <WorkingDocumentPanel
+          conversationId={data.conversationId}
+          kind={type === "scratchpad" ? "scratch" : "working"}
+          showHeader={false}
+          showOpenInWindow={false}
+          showEnableToggle={false}
+          className="h-full"
+        />
+      );
+
     case "code_preview":
       return (
         <CodePreviewCanvas
