@@ -80,7 +80,7 @@ export const GameSettings = (props: GameSettingsProps = {}) => {
                             <Label>Jump Force</Label>
                             <Slider
                                 value={[Math.abs(settings.jumpForce)]}
-                                onValueChange={value => updateSettings({ jumpForce: -value[0] })}
+                                onValueChange={(value: number[]) => updateSettings({ jumpForce: -value[0] })}
                                 min={5}
                                 max={20}
                                 step={0.5}

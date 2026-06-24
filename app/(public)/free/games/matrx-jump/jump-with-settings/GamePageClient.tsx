@@ -51,7 +51,7 @@ export default function GamePageClient() {
                     width={engine.width}
                     height={engine.height}
                     {...engine.pointerProps}
-                    className="w-full rounded-xl border border-border bg-background touch-none select-none"
+                    className="h-auto w-full rounded-xl border border-border bg-background touch-none select-none"
                 />
 
                 {engine.status === 'ready' && (
