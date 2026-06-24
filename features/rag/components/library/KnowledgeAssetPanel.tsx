@@ -537,7 +537,12 @@ function RealityLine({
   unit: string;
 }) {
   if (loading && !estimate) {
-    return <Skeleton className="mt-1.5 h-3 w-3/4" />;
+    return (
+      <div className="mt-1.5 flex items-center gap-1 text-[10px] leading-snug text-muted-foreground">
+        <Loader2 className="h-2.5 w-2.5 shrink-0 animate-spin text-primary/70" />
+        <span>Scanning document to estimate processing…</span>
+      </div>
+    );
   }
   if (!estimate) return null;
 

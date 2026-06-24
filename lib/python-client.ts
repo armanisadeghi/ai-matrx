@@ -126,15 +126,100 @@ function buildAndLogTargetUrl(
 // JWT
 // ---------------------------------------------------------------------------
 
+/** Reject a promise if it hasn't settled within `ms`. Used to put a hard cap on
+ *  awaits that can silently deadlock (see getAccessTokenOrNull). */
+function promiseTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("timeout")), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
+/** Hard cap on the Supabase auth-token lookup. `supabase.auth.getSession()` can
+ *  DEADLOCK (the navigator-locks auth lock under multi-tab / an interrupted
+ *  token refresh) and never resolve — which silently hangs EVERY backend call
+ *  with no network request ever firing ("stuck loading, server never hit").
+ *  We fail LOUD instead: time out, surface a retryable error, never hang. */
+const AUTH_TOKEN_TIMEOUT_MS = 8000;
+
 /**
  * Resolve the access token for the current request. Returns `null` for guests
  * (no Supabase session); the caller decides whether that's acceptable based
- * on whether a guest fingerprint is available.
+ * on whether a guest fingerprint is available. Throws a loud, retryable error
+ * if the auth-token lookup itself deadlocks (never an infinite spinner).
  */
 async function getAccessTokenOrNull(): Promise<string | null> {
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session?.access_token) return null;
-  return data.session.access_token;
+  try {
+    const { data, error } = await promiseTimeout(
+      supabase.auth.getSession(),
+      AUTH_TOKEN_TIMEOUT_MS,
+    );
+    if (error || !data.session?.access_token) return null;
+    return data.session.access_token;
+  } catch {
+    // getSession() exceeded the cap (auth-lock deadlock) — fail loud so the
+    // caller shows an error + retry instead of spinning forever. A transient
+    // re-call usually succeeds once the lock clears.
+    throw new BackendApiError({
+      code: "auth_check_timeout",
+      detail: `auth token lookup exceeded ${AUTH_TOKEN_TIMEOUT_MS}ms`,
+      userMessage: "Couldn’t verify your session — please retry.",
+      status: 503,
+    });
+  }
+}
+
+/** Default hard timeout for JSON reads. A stalled GET must become a loud error,
+ *  not an infinite spinner. Overridable per-call via `opts.timeoutMs`. */
+const DEFAULT_JSON_TIMEOUT_MS = 30000;
+
+/**
+ * `fetch` with a hard timeout that composes with the caller's abort signal. On
+ * timeout it throws a loud, retryable BackendApiError (never hangs). A genuine
+ * caller-initiated abort propagates unchanged.
+ */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const onCallerAbort = () => controller.abort();
+  if (callerSignal) {
+    if (callerSignal.aborted) controller.abort();
+    else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+  }
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (timedOut) {
+      throw new BackendApiError({
+        code: "request_timeout",
+        detail: `${init.method ?? "GET"} ${url} exceeded ${timeoutMs}ms`,
+        userMessage: "The request timed out — please retry.",
+        status: 504,
+      });
+    }
+    throw e; // genuine caller abort or network error
+  } finally {
+    clearTimeout(timer);
+    if (callerSignal) callerSignal.removeEventListener("abort", onCallerAbort);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -240,9 +325,11 @@ export async function getJson<T>(
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, false);
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     buildAndLogTargetUrl(path, opts.baseUrlOverride, "getJson", "GET"),
-    { method: "GET", headers, signal: opts.signal },
+    { method: "GET", headers },
+    opts.signal,
+    opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
   );
   if (!response.ok) throw await parseHttpError(response);
   const data = (await response.json()) as T;

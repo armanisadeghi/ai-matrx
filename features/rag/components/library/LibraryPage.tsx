@@ -98,17 +98,13 @@ const STATUS_FILTERS: { value: DocStatus | "all"; label: string }[] = [
   { value: "pending", label: "Pending / failed" },
 ];
 
-/** A doc is in a "non-terminal" state if it could still be making progress
- *  on the server. While any visible doc is in this set we poll the list. */
-const NON_TERMINAL: DocStatus[] = [
-  "embedding",
-  "chunking",
-  "extracted",
-  "pending",
-];
-
-/** Poll cadence (ms) when the list/summary are auto-refreshing. */
-const POLL_INTERVAL_MS = 4000;
+/** Poll cadence (ms) while an in-session operation is actively running.
+ *  We deliberately do NOT auto-poll just because a doc sits in a non-terminal
+ *  state — a single stuck doc used to hammer GET /rag/library and
+ *  /summary/totals every few seconds, forever. Live cross-session updates
+ *  belong to Supabase Realtime, not a polling loop against the Python compute
+ *  server (which must never be used as a data-read endpoint). */
+const POLL_INTERVAL_MS = 7000;
 
 export function LibraryPage() {
   const search = useSearchParams();
@@ -217,8 +213,10 @@ export function LibraryPage() {
   // status. We derive `pollMs` from a state flag (updated AFTER each
   // fetch) instead of from the `docs` array directly so we can use a
   // single useLibrary call without rendering loops.
-  const [hasNonTerminalDocs, setHasNonTerminalDocs] = useState(false);
-  const pollMs = runner.hasActive || hasNonTerminalDocs ? POLL_INTERVAL_MS : 0;
+  // Poll ONLY while this session has an actively-running job (naturally bounded
+  // by the job completing). A doc stuck in a non-terminal state must never
+  // trigger auto-polling — that was the server-blasting bug.
+  const pollMs = runner.hasActive ? POLL_INTERVAL_MS : 0;
 
   const {
     docs: finalDocs,
@@ -233,12 +231,6 @@ export function LibraryPage() {
     refreshKey,
     pollMs,
   });
-
-  // After each fetch, recompute whether anything visible is still in flight.
-  useEffect(() => {
-    const inFlight = finalDocs.some((d) => NON_TERMINAL.includes(d.status));
-    setHasNonTerminalDocs(inFlight);
-  }, [finalDocs]);
 
   const { summary, loading: summaryLoading } = useLibrarySummary({
     refreshKey,
