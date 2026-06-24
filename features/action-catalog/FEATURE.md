@@ -47,6 +47,14 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 
 ## Change Log
 
+- 2026-06-24 — Added the `ask`-policy **confirm round-trip**: `confirmDirective` +
+  `POST /actions/confirm` (`service.ts` / `endpoints.ts` / `types.ts`). When a directive's
+  resolved apply policy is `ask`, the brain streams `directive_apply.proposed`;
+  `process-stream.ts` enqueues it into the `proposedDirectives` slice
+  (`features/matrx-envelope/state/`), and `<ProposedDirectivesZone>` (mounted beside the
+  chat input) renders an Approve/Decline card whose Approve POSTs the envelope back to
+  confirm (runs as the user, RLS; idempotent by `proposal_id`). Backend cascade:
+  aidream `services/output_directives/` (agent → surface → user, default `ask`).
 - 2026-06-24 — Wired the Execute button to `POST /actions/execute` (Plane-1 writer):
   create/update run live with a JSON payload editor, `force` toggle, and per-item receipts;
   delete/planned/no stay disabled.

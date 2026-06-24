@@ -120,6 +120,7 @@ import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-mo
 import type { ContentType } from "@/features/ai-models/capabilities/types";
 import { toast } from "sonner";
 import { isDirectiveApplyEvent } from "@/features/matrx-envelope/envelope";
+import { proposeDirective } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 
 /**
  * Maps a render-block `type` onto the canonical content type, when it
@@ -604,7 +605,25 @@ export async function processStream({
             }
           } else if (d.kind === "directive_apply.failed") {
             toast.error(`Failed to apply ${d.type}: ${d.error}`);
+          } else if (d.kind === "directive_apply.proposed") {
+            // `ask` policy: the agent proposed an action — surface an approve/
+            // decline card (proposedDirectives inbox). It applies only on accept
+            // (POST /actions/confirm). NOT auto-applied.
+            dispatch(
+              proposeDirective({
+                proposalId: d.proposal_id,
+                conversationId,
+                type: d.type,
+                verb: d.verb,
+                noun: d.noun,
+                summary: d.summary,
+                itemCount: d.item_count,
+                envelope: d.envelope,
+              }),
+            );
           }
+          // directive_apply.blocked is silent here (a model tried to apply an
+          // off-policy directive; the receipt is already on the timeline).
         } else if (d.type === "conversation_id") {
           const convData = d as ConversationIdData;
           // Manual mode mints a fresh wire conv_id per call; the assertion

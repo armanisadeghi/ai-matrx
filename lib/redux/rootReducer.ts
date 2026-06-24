@@ -154,6 +154,7 @@ import { default as instanceClientToolsReducer } from "@/features/agents/redux/e
 import { default as instanceContextReducer } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { default as instanceWorkingDocumentReducer } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { default as pendingAsksReducer } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { default as proposedDirectivesReducer } from "@/features/matrx-envelope/state/proposedDirectivesSlice";
 import { default as agentListsReducer } from "@/features/agents/ui-first-tools/redux/agent-lists.slice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import { activeToolsReducer } from "@/features/agents/redux/execution-system/active-tools/active-tools.slice";
@@ -380,6 +381,7 @@ export const slimReducerMap = {
   instanceUserInput: instanceUserInputReducer,
   instanceClientTools: instanceClientToolsReducer,
   pendingAsks: pendingAsksReducer,
+  proposedDirectives: proposedDirectivesReducer,
   agentLists: agentListsReducer,
   instanceUIState: instanceUIStateReducer,
   editorState: editorStateReducer,
