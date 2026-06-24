@@ -27,6 +27,12 @@ import { useNavActions } from "../../navigation/navActions";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
+  /**
+   * Launcher groups (e.g. Favorites) aren't a route — their children duplicate
+   * other nav items that already light up. Set this so the group never shows
+   * active state, keeping the "one highlighted route at a time" rule intact.
+   */
+  suppressActive?: boolean;
 }
 
 const OPEN_DELAY = 90;
@@ -36,7 +42,10 @@ function isOnRoute(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
+export default function NavFlyoutGroup({
+  item,
+  suppressActive = false,
+}: NavFlyoutGroupProps) {
   const children = item.children ?? [];
   const expanded = useSidebarExpanded();
   const pathname = usePathname() ?? "";
@@ -58,7 +67,8 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
   const activeHref = children
     .filter((c) => isOnRoute(pathname, c.href))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-  const isGroupActive = Boolean(activeHref) || isOnRoute(pathname, item.href);
+  const isGroupActive =
+    !suppressActive && (Boolean(activeHref) || isOnRoute(pathname, item.href));
 
   // Destinations up top (grouped), create actions collected at the bottom.
   const { sections, actions } = partitionNavChildren(children);
@@ -218,7 +228,7 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
     >
       <Link
         href={item.href}
-        data-nav-href={item.href}
+        data-nav-href={suppressActive ? undefined : item.href}
         data-nav-active={isGroupActive ? "true" : undefined}
         className="shell-nav-item shell-tactile-subtle"
         aria-haspopup="menu"
