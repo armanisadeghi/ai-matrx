@@ -24,6 +24,7 @@ import {
   setAssociationTargets as setAssociationTargetsThunk,
   associationsKey,
 } from "@/features/scopes/redux/thunks/associations";
+import type { AssociationWriteResult } from "@/features/scopes/redux/thunks/associations";
 import type {
   AssociationEdge,
   AssociationsEntry,
@@ -38,11 +39,9 @@ export interface UseAssociationsArgs {
   autoLoad?: boolean;
 }
 
-export interface AssociationWriteResult {
-  ok: boolean;
-  id?: string;
-  error?: string;
-}
+// Single declaration lives in the thunk; re-export so consumers can keep
+// importing it from the hook (doctrine forbids the duplicate definition).
+export type { AssociationWriteResult };
 
 export interface UseAssociationsReturn {
   /** Every edge touching this entity, both directions. */
