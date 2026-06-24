@@ -32,6 +32,9 @@ import { SeoMetaDescriptionsInline } from "../renderers/seo-meta-descriptions/Se
 import { SeoMetaDescriptionsOverlay } from "../renderers/seo-meta-descriptions/SeoMetaDescriptionsOverlay";
 import { PicklistInline } from "../renderers/picklist/PicklistInline";
 import { PicklistOverlay } from "../renderers/picklist/PicklistOverlay";
+import { TaskInline } from "../renderers/task/TaskInline";
+import { TaskOverlay } from "../renderers/task/TaskOverlay";
+import { TaskListInline } from "../renderers/task/TaskListInline";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
@@ -407,6 +410,53 @@ export const toolRendererRegistry: ToolRegistry = {
         </div>
       );
     },
+  },
+
+  task: {
+    toolName: "task",
+    displayName: "Task",
+    phaseLabels: {
+      running: "Updating task",
+      complete: "Updated task",
+      errorPrefix: "Task action failed",
+    },
+    resultsLabel: "Task",
+    InlineComponent: TaskInline,
+    OverlayComponent: TaskOverlay,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const title =
+        (typeof result?.title === "string" && result.title) ||
+        getArg<string>(entry, "title");
+      return typeof title === "string" && title ? title : null;
+    },
+  },
+
+  tasks: {
+    toolName: "tasks",
+    displayName: "Tasks",
+    phaseLabels: {
+      running: "Updating tasks",
+      complete: "Updated tasks",
+      errorPrefix: "Task update failed",
+    },
+    resultsLabel: "Tasks",
+    InlineComponent: TaskListInline,
+    keepExpandedOnStream: true,
+  },
+
+  user_todos: {
+    toolName: "user_todos",
+    displayName: "Todos",
+    phaseLabels: {
+      running: "Updating todos",
+      complete: "Updated todos",
+      errorPrefix: "Todo update failed",
+    },
+    resultsLabel: "Todos",
+    InlineComponent: TaskListInline,
+    keepExpandedOnStream: true,
   },
 
   web_search_v1: {

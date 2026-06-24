@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, PanelRight } from "lucide-react";
 
 import type { ToolRendererProps } from "../../types";
 import { isTerminal } from "../_shared";
@@ -151,8 +151,17 @@ export const NoteToolOverlay: React.FC<ToolRendererProps> = ({
         ) : null}
       </div>
 
-      {/* Primary action */}
-      <div className="flex justify-end">
+      {/* Primary actions */}
+      <div className="flex justify-end gap-2">
+        <a
+          href={`/notes/${data.noteId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          <ExternalLink className="h-4 w-4" />
+          New tab
+        </a>
         <button
           type="button"
           onClick={() =>
@@ -160,7 +169,7 @@ export const NoteToolOverlay: React.FC<ToolRendererProps> = ({
           }
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          <ExternalLink className="h-4 w-4" />
+          <PanelRight className="h-4 w-4" />
           Open in Notes
         </button>
       </div>
