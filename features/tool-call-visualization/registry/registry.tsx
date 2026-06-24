@@ -41,6 +41,8 @@ import { DatasetInline } from "../renderers/dataset/DatasetInline";
 import { DatasetOverlay } from "../renderers/dataset/DatasetOverlay";
 import { WorkbookInline } from "../renderers/workbook/WorkbookInline";
 import { WorkbookOverlay } from "../renderers/workbook/WorkbookOverlay";
+import { DictionaryInline } from "../renderers/dictionary/DictionaryInline";
+import { DictionaryOverlay } from "../renderers/dictionary/DictionaryOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
@@ -542,6 +544,32 @@ export const toolRendererRegistry: ToolRegistry = {
     getHeaderSubtitle: (entry) => {
       const r = resultAsObject(entry);
       return typeof r?.name === "string" && r.name ? r.name : null;
+    },
+  },
+
+  dictionary: {
+    toolName: "dictionary",
+    displayName: "Dictionary",
+    phaseLabels: {
+      running: "Updating dictionary",
+      complete: "Updated dictionary",
+      errorPrefix: "Dictionary action failed",
+    },
+    resultsLabel: "Dictionary",
+    InlineComponent: DictionaryInline,
+    OverlayComponent: DictionaryOverlay,
+    keepExpandedOnStream: true,
+    getHeaderExtras: (entry) => {
+      const r = resultAsObject(entry);
+      const count = Array.isArray(r?.entries) ? r.entries.length : 0;
+      if (!count) return null;
+      return (
+        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+          <span>
+            {count} {count === 1 ? "term" : "terms"}
+          </span>
+        </div>
+      );
     },
   },
 
@@ -1131,6 +1159,7 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "document",
   "dataset",
   "workbook",
+  "dictionary",
   "random_wheel",
 ]);
 
