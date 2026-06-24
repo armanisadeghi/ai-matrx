@@ -26,7 +26,6 @@ import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import {
   buildResearchContextData,
@@ -34,16 +33,9 @@ import {
 } from "../../agent-context/buildResearchContextData";
 
 /** A string with real (non-whitespace) content. */
-// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
-// never lands in the SSR/server chunk; loads only when this client surface
-// mounts. Single-tier dynamic — never nest.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — lightweight shell, imported statically;
+// MenuContent lazy-loads on first open.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 const hasText = (s: string | null | undefined): boolean =>
   !!s && s.trim().length > 0;
@@ -156,16 +148,15 @@ function SynthesisCard({
                   reason={synthesis.error || "Synthesis stopped early."}
                 />
               )}
-              <UnifiedAgentContextMenu
+              <NonEditableContextMenu
                 {...RESEARCH_CONTEXT_MENU_PROPS}
-                isEditable={false}
                 getApplicationScope={getSynthesisApplicationScope}
                 contextData={synthesisContextData}
               >
                 <div>
                   <MarkdownStream content={synthesis.result!} />
                 </div>
-              </UnifiedAgentContextMenu>
+              </NonEditableContextMenu>
               <div className="flex justify-end">
                 <ContentActionBar
                   content={synthesis.result!}
@@ -190,9 +181,8 @@ function SynthesisCard({
                   reason={synthesis.error || "Synthesis stopped early."}
                 />
               )}
-              <UnifiedAgentContextMenu
+              <NonEditableContextMenu
                 {...RESEARCH_CONTEXT_MENU_PROPS}
-                isEditable={false}
                 getApplicationScope={getSynthesisApplicationScope}
                 contextData={synthesisContextData}
               >
@@ -201,7 +191,7 @@ function SynthesisCard({
                     content={structuredToMarkdown(synthesis.result_structured)}
                   />
                 </div>
-              </UnifiedAgentContextMenu>
+              </NonEditableContextMenu>
             </div>
           ) : synthesis.error ? (
             // No content at all + an error → a real failure.
