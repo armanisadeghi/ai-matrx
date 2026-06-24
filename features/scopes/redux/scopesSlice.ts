@@ -18,6 +18,8 @@ import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
   AssociationEdge,
   AssociationsEntry,
+  CategoriesEntry,
+  PlatformCategory,
   EntityScopesEntry,
   OrgNode,
   OrphanBucket,
@@ -115,6 +117,16 @@ export interface ScopesState {
    * active context (appContextSlice is never written from here).
    */
   associationsByKey: Record<string, AssociationsEntry>;
+
+  /**
+   * The canonical faceted taxonomy (`platform.categories`), keyed by
+   * `dimension` (the facet — `agent-shortcut`, `skill`, `industry`, …). Each
+   * entry holds every category visible to the caller (system + their orgs) for
+   * that facet. Populated lazily by `loadCategories`; kept fresh by
+   * `createCategory`. The sibling of `associationsByKey`: this caches the
+   * category NOUNS, that caches the assignment EDGES.
+   */
+  categoriesByDimension: Record<string, CategoriesEntry>;
 }
 
 const initialState: ScopesState = {
@@ -128,6 +140,7 @@ const initialState: ScopesState = {
   orphanProjectsByOrg: {},
   entityScopesByKey: {},
   associationsByKey: {},
+  categoriesByDimension: {},
 };
 
 const scopesSlice = createSlice({
@@ -415,6 +428,61 @@ const scopesSlice = createSlice({
       prev.edges = prev.edges.filter(
         (e) => e.id !== action.payload.associationId,
       );
+    },
+
+    // ─── Categories (canonical platform.categories cache) ────────
+    categoriesFetchPending(
+      state,
+      action: PayloadAction<{ dimension: string }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "loading",
+        categories: prev?.categories ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: null,
+      };
+    },
+    categoriesFetchFulfilled(
+      state,
+      action: PayloadAction<{
+        dimension: string;
+        categories: PlatformCategory[];
+      }>,
+    ) {
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "ready",
+        categories: action.payload.categories,
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+    categoriesFetchRejected(
+      state,
+      action: PayloadAction<{ dimension: string; error: string }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "error",
+        categories: prev?.categories ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: action.payload.error,
+      };
+    },
+    /** Echoed single-category insert — pushed only if not already present. */
+    categoryCreated(
+      state,
+      action: PayloadAction<{ dimension: string; category: PlatformCategory }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      const categories = prev?.categories ?? [];
+      if (categories.some((c) => c.id === action.payload.category.id)) return;
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "ready",
+        categories: [...categories, action.payload.category],
+        fetchedAt: prev?.fetchedAt ?? Date.now(),
+        error: null,
+      };
     },
 
     // ─── Reset (sign-out etc.) ───────────────────────────────────

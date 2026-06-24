@@ -81,6 +81,20 @@ export type EntityType =
   | "studio_session"
   | "transcript";
 
+// ─── Favorite kinds (presentation vocabulary, folded onto EntityType) ──
+//
+// A favorite points either at a real ENTITY (any canonical `EntityType`
+// token — its per-user state lives in `platform.user_entity_state` keyed by
+// the entity's uuid) or at a static NAV destination (an app-area route, NOT
+// an entity, so it has no uuid). Folding the entity half into `EntityType`
+// keeps the favorites vocabulary 1:1 with the canonical token set; `"nav"`
+// is the single non-entity addition. This is the SOLE definition — the
+// `userPreferencesSlice` `FavoriteItem.kind` re-exports it (no parallel
+// union). The legacy `app`/`podcast`/`other` tokens were dropped: none had a
+// favorites callsite, and a new favoritable type is added to
+// `platform.entity_types` (then `EntityType`), never invented here.
+export type FavoriteKind = EntityType | "nav";
+
 // Targets allowed by the `platform.associations` CHECK constraint (8). A
 // `source_type` is unconstrained free text (any token may be a source), but
 // the TARGET of an edge must be one of these. Typed so `add`/`setTargets`
@@ -117,6 +131,71 @@ export interface AssociationEdge {
 export interface AssociationsEntry {
   status: "idle" | "loading" | "ready" | "error";
   edges: AssociationEdge[];
+  fetchedAt: number | null;
+  error: string | null;
+}
+
+// ─── Per-user entity state (platform.user_entity_state) ────────────────
+//
+// One row of the canonical per-user state ledger — the caller's favorite /
+// pinned / hidden flags + recency on a single entity. Reached ONLY via the
+// `ues_*` SECURITY-DEFINER RPCs; `favoritesService` is the sole chokepoint.
+// `entityType` is FREE TEXT in the DB (per-user state is tracked for non-
+// graph things too — e.g. `"nav"` destinations — so the table has no
+// entity_type CHECK), hence `string` here rather than the constrained
+// `EntityType`.
+export interface UserEntityState {
+  entityType: string;
+  entityId: string;
+  isFavorite: boolean;
+  isPinned: boolean;
+  isHidden: boolean;
+  lastViewedAt: string | null;
+}
+
+// ─── Categories (platform.categories) ─────────────────────────────────
+//
+// The canonical faceted taxonomy. ONE table, partitioned by `dimension`
+// (the facet — `agent-shortcut`, `skill`, `industry`, …), replacing the
+// fragmented per-feature category systems. `orgId === null` is a system /
+// global category visible to everyone; a non-null `orgId` is an org-owned
+// category. The client has NO direct grant on `platform.categories`; every
+// read/write goes through `cat_list` / `cat_create` (PUBLIC SECURITY-DEFINER
+// RPCs), and every call to those RPCs goes through `categoriesService.ts` —
+// the sibling chokepoint to `associationsService`.
+//
+// ASSIGNMENT of a category to an entity is NOT a category concern: it reuses
+// the association edge (`assoc_add(source, 'category', categoryId, orgId)` via
+// `associationsService` / `useAssociations`). `category` is already a valid
+// `AssociationTargetType`. A category is the noun; the association is the verb.
+
+/**
+ * The facet a category belongs to. Open vocabulary (new dimensions need no
+ * migration — `dimension` is free text in the DB), but the known dimensions
+ * are enumerated in `CATEGORY_DIMENSIONS` so callsites use a constant, not a
+ * stray string literal.
+ */
+export type CategoryDimension = string;
+
+/** One `platform.categories` row, camelCased (mirrors `cat_list`'s return). */
+export interface PlatformCategory {
+  id: string;
+  /** `null` = system / global category (visible to everyone). */
+  orgId: string | null;
+  dimension: CategoryDimension;
+  name: string;
+  slug: string | null;
+  parentId: string | null;
+  isSystem: boolean;
+  color: string | null;
+  icon: string | null;
+  position: number | null;
+}
+
+/** Cache entry for one `dimension` — mirrors `AssociationsEntry`. */
+export interface CategoriesEntry {
+  status: "idle" | "loading" | "ready" | "error";
+  categories: PlatformCategory[];
   fetchedAt: number | null;
   error: string | null;
 }
