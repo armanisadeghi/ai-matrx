@@ -21,7 +21,7 @@
  *   • merge-in of agent/remote edits while the user isn't actively typing.
  *
  * Controls: setEnabled (persisted), bindToNote, unbind, linkToDocument, setTitle,
- * openAsWindow.
+ * openInCanvas.
  *
  * `useWorkingDocumentContextSync` is the effect-only half (no draft); mount it
  * wherever a conversation is always present (the Smart Input) so the agent
@@ -77,7 +77,7 @@ import {
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
-import { useOpenWorkingDocumentWindow } from "@/features/overlays/openers/workingDocumentWindow";
+import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
 const AUTOSAVE_MS = 700;
 const CONTEXT_PUSH_MS = 300;
@@ -232,7 +232,8 @@ export interface UseWorkingDocumentResult {
   /** Link this conversation's document to an existing one (cross-conversation). */
   linkToDocument: (documentId: string) => void;
   setTitle: (title: string) => void;
-  openAsWindow: () => void;
+  /** Open this document as an item in the Canvas (the unified live workspace). */
+  openInCanvas: () => void;
 }
 
 export function useWorkingDocument(
@@ -240,7 +241,7 @@ export function useWorkingDocument(
   kind: WorkingDocumentKind = DEFAULT_DOC_KIND,
 ): UseWorkingDocumentResult {
   const dispatch = useAppDispatch();
-  const openWindow = useOpenWorkingDocumentWindow();
+  const canvas = useCanvas();
 
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
   const content = useAppSelector(selectWorkingDocContent(conversationId, kind));
@@ -414,9 +415,20 @@ export function useWorkingDocument(
     [dispatch, conversationId, kind, binding.kind, binding.id],
   );
 
-  const openAsWindow = useCallback(() => {
-    openWindow({ conversationId });
-  }, [openWindow, conversationId]);
+  const openInCanvas = useCallback(() => {
+    canvas.open({
+      type: kind === "scratch" ? "scratchpad" : "working_document",
+      data: { conversationId, kind },
+      metadata: {
+        title:
+          title || (kind === "scratch" ? "Scratchpad" : "Working document"),
+        conversationId,
+        // Stable dedup key so reopening reuses the same Canvas item instead of
+        // stacking duplicates (openCanvas dedups on sourceMessageId).
+        sourceMessageId: `wd:${conversationId}:${kind}`,
+      },
+    });
+  }, [canvas, conversationId, kind, title]);
 
   return {
     kind,
@@ -434,6 +446,6 @@ export function useWorkingDocument(
     unbind,
     linkToDocument,
     setTitle,
-    openAsWindow,
+    openInCanvas,
   };
 }

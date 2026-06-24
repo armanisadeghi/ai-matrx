@@ -62,7 +62,7 @@ export function WorkingDocumentControls({
     unbind,
     linkToDocument,
     setTitle,
-    openAsWindow,
+    openInCanvas,
   } = useWorkingDocument(conversationId, kind);
 
   // Note id awaiting a merge decision (set when the user picks a note while the
@@ -126,10 +126,10 @@ export function WorkingDocumentControls({
         )}
         <button
           type="button"
-          onClick={openAsWindow}
+          onClick={openInCanvas}
           disabled={!enabled}
-          aria-label="Open as window"
-          title="Open as window"
+          aria-label="Open in Canvas"
+          title="Open in Canvas"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent disabled:opacity-50"
         >
           <Maximize2 className="h-4 w-4" />

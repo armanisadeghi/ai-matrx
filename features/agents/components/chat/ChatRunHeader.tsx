@@ -11,6 +11,7 @@ import { selectAgentName } from "@/features/agents/redux/agent-definition/select
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { ChatCanvasButton } from "./ChatCanvasButton";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 
 interface ChatRunHeaderProps {
@@ -22,11 +23,15 @@ interface ChatRunHeaderProps {
   activeAgentId?: string;
   /** SSR-resolved name for first paint; replaced by the live Redux value. */
   initialAgentName?: string;
+  /** Active conversation (present on `/chat/[conversationId]`). Lets the Canvas
+   *  button open this conversation's working document when the Canvas is empty. */
+  conversationId?: string;
 }
 
 export function ChatRunHeader({
   activeAgentId,
   initialAgentName,
+  conversationId,
 }: ChatRunHeaderProps) {
   const router = useRouter();
   const store = useAppStore();
@@ -83,6 +88,8 @@ export function ChatRunHeader({
         triggerClassName="max-w-[320px]"
         checkboxVariant="standard"
       />
+      {/* Canvas — the unified live workspace, one click away at the top. */}
+      <ChatCanvasButton conversationId={conversationId} />
     </div>
   );
 }
