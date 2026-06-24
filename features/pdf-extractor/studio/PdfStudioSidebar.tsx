@@ -20,7 +20,7 @@
  * a project manager can scan dozens at a glance.
  */
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   Search,
   RefreshCw,
@@ -42,6 +42,7 @@ import {
   type StudioDocSummary,
 } from "./hooks/usePdfStudioDocs";
 import { buildPdfDocMenu } from "./pdfDocMenu";
+import { FileContextDialog } from "@/features/files/components/FileContextSection";
 import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
 import type { SidebarView } from "../state/types";
@@ -281,9 +282,17 @@ function DocRow({
 }) {
   const isMobile = useIsMobile();
   const isDerivative = !!doc.parentProcessedId;
+  const [contextOpen, setContextOpen] = useState(false);
+  const cloudFileId =
+    doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
   // Lazy form — the menu config is only built when the kebab / context menu
   // opens, so a long list doesn't construct N configs per render.
-  const menu = () => buildPdfDocMenu({ doc, onDelete: onDeleteDoc });
+  const menu = () =>
+    buildPdfDocMenu({
+      doc,
+      onDelete: onDeleteDoc,
+      onSetContext: cloudFileId ? () => setContextOpen(true) : undefined,
+    });
 
   const row = (
     <div
@@ -373,9 +382,19 @@ function DocRow({
   // Right-click opens the same menu (disabled on touch, where the kebab is
   // always visible).
   return (
-    <ItemContextMenu config={menu} enabled={!isMobile}>
-      {row}
-    </ItemContextMenu>
+    <>
+      <ItemContextMenu config={menu} enabled={!isMobile}>
+        {row}
+      </ItemContextMenu>
+      {cloudFileId ? (
+        <FileContextDialog
+          fileId={cloudFileId}
+          fileName={doc.name}
+          open={contextOpen}
+          onOpenChange={setContextOpen}
+        />
+      ) : null}
+    </>
   );
 }
 

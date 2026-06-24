@@ -13,6 +13,10 @@
 import { ExternalLink, Link as LinkIcon, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ItemMenuConfig } from "@/components/official/item/types";
+import {
+  FILE_CONTEXT_MENU_LABEL,
+  FileContextMenuIcon,
+} from "@/features/files/components/FileContextSection";
 import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 
@@ -37,12 +41,16 @@ export interface PdfDocMenuContext {
   doc: StudioDocSummary;
   /** Archive (soft-delete) the doc. Owns optimistic update + active cleanup. */
   onDelete: (id: string) => Promise<void>;
+  /** Opens the canonical file context picker (cloud-file-backed docs only). */
+  onSetContext?: () => void;
 }
 
 export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
   const { doc } = ctx;
   const studioHref = `/tools/pdf-extractor/${doc.id}`;
   const sourceHref = docSourceHref(doc);
+  const canSetContext =
+    doc.sourceKind === "cld_file" && !!doc.sourceId && !!ctx.onSetContext;
 
   return {
     header: { title: doc.name },
@@ -82,6 +90,15 @@ export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
                   "Couldn't copy — your browser blocked clipboard access",
                 );
               }
+            },
+          },
+          {
+            id: "set-context",
+            label: FILE_CONTEXT_MENU_LABEL,
+            icon: FileContextMenuIcon,
+            hidden: !canSetContext,
+            onSelect: () => {
+              ctx.onSetContext?.();
             },
           },
         ],

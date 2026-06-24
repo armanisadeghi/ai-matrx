@@ -34,6 +34,13 @@ import {
   Users,
 } from "lucide-react";
 import {
+  FileContextDialog,
+  FILE_CONTEXT_MENU_LABEL,
+  FileContextMenuIcon,
+} from "@/features/files/components/FileContextSection";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAllFilesMap } from "@/features/files/redux/selectors";
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -77,7 +84,10 @@ export function FileRightClickMenu({
   onDeleted,
 }: FileRightClickMenuProps) {
   const a = useFileMenuActions(fileId);
+  const filesById = useAppSelector(selectAllFilesMap);
+  const file = filesById[fileId];
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
 
   if (disabled) return <>{children}</>;
 
@@ -109,6 +119,11 @@ export function FileRightClickMenu({
           <ContextMenuItem onClick={a.showVersions}>
             <History className="mr-2 h-4 w-4" />
             Show versions
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => setContextOpen(true)}>
+            <FileContextMenuIcon className="mr-2 h-4 w-4" />
+            {FILE_CONTEXT_MENU_LABEL}
           </ContextMenuItem>
 
           <ContextMenuSub>
@@ -175,6 +190,15 @@ export function FileRightClickMenu({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {file ? (
+        <FileContextDialog
+          fileId={fileId}
+          fileName={file.fileName}
+          open={contextOpen}
+          onOpenChange={setContextOpen}
+        />
+      ) : null}
     </>
   );
 }

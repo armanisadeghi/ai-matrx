@@ -38,6 +38,11 @@ import {
   Users,
 } from "lucide-react";
 import {
+  FileContextDialog,
+  FILE_CONTEXT_MENU_LABEL,
+  FileContextMenuIcon,
+} from "@/features/files/components/FileContextSection";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -112,6 +117,7 @@ export function FileContextMenu({
   const [infoOpen, setInfoOpen] = useState(false);
   const [batchConfirmOpen, setBatchConfirmOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const [busy, setBusy] = useState<"download" | "move" | "delete" | null>(null);
 
   // When the host doesn't supply its own rename handler, fall back to the
@@ -543,6 +549,12 @@ export function FileContextMenu({
                 Rename
                 <DropdownMenuShortcut>F2</DropdownMenuShortcut>
               </DropdownMenuItem>
+              {!isVirtual ? (
+                <DropdownMenuItem onClick={() => setContextOpen(true)}>
+                  <FileContextMenuIcon className="mr-2 h-4 w-4" />
+                  {FILE_CONTEXT_MENU_LABEL}
+                </DropdownMenuItem>
+              ) : null}
               {onMove ? (
                 <DropdownMenuItem onClick={onMove}>
                   <FolderInput className="mr-2 h-4 w-4" />
@@ -735,6 +747,15 @@ export function FileContextMenu({
           kind="file"
           resourceId={fileId}
           currentName={file.fileName}
+        />
+      ) : null}
+
+      {file && !isVirtual ? (
+        <FileContextDialog
+          fileId={fileId}
+          fileName={file.fileName}
+          open={contextOpen}
+          onOpenChange={setContextOpen}
         />
       ) : null}
     </>

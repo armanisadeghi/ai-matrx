@@ -11,22 +11,13 @@
 
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDndMonitor } from "@dnd-kit/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileSelection } from "@/features/files/hooks/useFileSelection";
-import {
-  FILE_TREE_ROW_HEIGHT,
-  FileTreeRow,
-} from "./FileTreeRow";
+import { FILE_TREE_ROW_HEIGHT, FileTreeRow } from "./FileTreeRow";
 import { useTreeExpansion } from "./useTreeExpansion";
 import type { TreeRow } from "./useTreeExpansion";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
@@ -182,7 +173,14 @@ export function FileTree({
           break;
       }
     },
-    [rows, focusedIndex, expansion, virtualizer, onActivateFile, onActivateFolder],
+    [
+      rows,
+      focusedIndex,
+      expansion,
+      virtualizer,
+      onActivateFile,
+      onActivateFolder,
+    ],
   );
 
   // Keep focus in bounds if rows shrink.
@@ -223,7 +221,6 @@ export function FileTree({
                 className="inline-flex h-7 items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 text-[11px] font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
               >
                 <ChevronsDown className="h-4 w-4" aria-hidden="true" />
-                <span>Expand</span>
               </button>
             </TooltipIcon>
             <TooltipIcon label="Collapse all folders">
@@ -234,70 +231,69 @@ export function FileTree({
                 className="inline-flex h-7 items-center gap-1 rounded-md border border-border/60 bg-background px-1.5 text-[11px] font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
               >
                 <ChevronsUp className="h-4 w-4" aria-hidden="true" />
-                <span>Collapse</span>
               </button>
             </TooltipIcon>
           </div>
         </div>
-      <div
-        ref={containerRef}
-        role="tree"
-        tabIndex={0}
-        aria-multiselectable="true"
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "min-h-0 flex-1 overflow-auto outline-none",
-          readOnly && "opacity-90 cursor-default",
-        )}
-      >
         <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            position: "relative",
-            width: "100%",
-          }}
+          ref={containerRef}
+          role="tree"
+          tabIndex={0}
+          aria-multiselectable="true"
+          onKeyDown={handleKeyDown}
+          className={cn(
+            "min-h-0 flex-1 overflow-auto outline-none",
+            readOnly && "opacity-90 cursor-default",
+          )}
         >
-          {virtualItems.map((vItem) => {
-            const row = rows[vItem.index];
-            if (!row) return null;
-            return (
-              <div
-                key={row.id}
-                data-index={vItem.index}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  transform: `translateY(${vItem.start}px)`,
-                }}
-              >
-                <FileTreeRow
-                  row={row}
-                  selected={selection.isSelected(row.id)}
-                  focused={focusedIndex === vItem.index}
-                  dragDisabled={readOnly}
-                  isDragging={draggingId === row.id}
-                  onClick={(e) => handleRowClick(row, vItem.index, e)}
-                  onChevronClick={() => expansion.toggle(row.id)}
-                  onDoubleClick={() => handleRowDoubleClick(row)}
-                  onRename={
-                    onRenameRequest
-                      ? () => onRenameRequest(row.id)
-                      : undefined
-                  }
-                  onShare={
-                    onShareRequest ? () => onShareRequest(row.id) : undefined
-                  }
-                  onMove={
-                    onMoveRequest ? () => onMoveRequest(row.id) : undefined
-                  }
-                />
-              </div>
-            );
-          })}
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {virtualItems.map((vItem) => {
+              const row = rows[vItem.index];
+              if (!row) return null;
+              return (
+                <div
+                  key={row.id}
+                  data-index={vItem.index}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    transform: `translateY(${vItem.start}px)`,
+                  }}
+                >
+                  <FileTreeRow
+                    row={row}
+                    selected={selection.isSelected(row.id)}
+                    focused={focusedIndex === vItem.index}
+                    dragDisabled={readOnly}
+                    isDragging={draggingId === row.id}
+                    onClick={(e) => handleRowClick(row, vItem.index, e)}
+                    onChevronClick={() => expansion.toggle(row.id)}
+                    onDoubleClick={() => handleRowDoubleClick(row)}
+                    onRename={
+                      onRenameRequest
+                        ? () => onRenameRequest(row.id)
+                        : undefined
+                    }
+                    onShare={
+                      onShareRequest ? () => onShareRequest(row.id) : undefined
+                    }
+                    onMove={
+                      onMoveRequest ? () => onMoveRequest(row.id) : undefined
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
       </div>
     </>
   );
