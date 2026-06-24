@@ -6865,6 +6865,8 @@ export type Database = {
       ctx_war_room_sessions: {
         Row: {
           active_tile_id: string | null
+          anchor_id: string | null
+          anchor_type: string | null
           color: string | null
           context_scope_ids: Json
           created_at: string
@@ -6882,6 +6884,8 @@ export type Database = {
         }
         Insert: {
           active_tile_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string | null
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
@@ -6899,6 +6903,8 @@ export type Database = {
         }
         Update: {
           active_tile_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string | null
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
@@ -7061,6 +7067,8 @@ export type Database = {
       ctx_war_room_tiles: {
         Row: {
           active_tab: string
+          anchor_id: string | null
+          anchor_type: string | null
           context_organization_id: string | null
           context_scope_ids: Json | null
           created_at: string
@@ -7080,6 +7088,8 @@ export type Database = {
         }
         Insert: {
           active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string | null
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
@@ -7099,6 +7109,8 @@ export type Database = {
         }
         Update: {
           active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string | null
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
