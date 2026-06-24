@@ -260,6 +260,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: false,
   },
+  contextAssignment: {
+    label: "Attach To",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   contextSwitcherWindow: {
     label: "Context Switcher Window",
     instanceMode: "singleton",
@@ -314,6 +319,11 @@ export const OVERLAY_CATALOGUE = {
     label: "File Preview Window",
     instanceMode: "singleton",
     isWindow: true,
+  },
+  findReplace: {
+    label: "Find & Replace",
+    instanceMode: "singleton",
+    isWindow: false,
   },
   fullScreenEditor: {
     label: "Full Screen Editor",
