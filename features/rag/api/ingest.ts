@@ -48,7 +48,13 @@ export interface IngestRequestBody {
    * call sites compile today; if the backend lags, the per-stream
    * error event will still surface a clear failure in the toolbar.
    */
-  source_kind: "cld_file" | "note" | "code_file" | "transcript" | "scraped";
+  source_kind:
+    | "cld_file"
+    | "note"
+    | "code_file"
+    | "transcript"
+    | "scraped"
+    | "research";
   source_id: string;
   field_id?: string | null;
   force?: boolean;
