@@ -40,7 +40,7 @@ export default function RoomAgentWindow({
       width={ROOM_AGENT_W}
       height={ROOM_AGENT_H}
       minWidth={360}
-      minHeight={420}
+      minHeight={640}
       initialRect={{
         x: Math.max(16, window.innerWidth - ROOM_AGENT_W - 24),
         y: Math.max(16, window.innerHeight - ROOM_AGENT_H - 24),
