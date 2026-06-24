@@ -51,3 +51,46 @@ export function isActionCatalog(value: unknown): value is ActionCatalog {
 export function cellState(noun: NounActions, verb: ActionVerb): ActionState {
   return noun[verb];
 }
+
+// ── Execute (Plane-1 writer) — mirrors POST /actions/execute ──────────────────
+
+/** One item's apply outcome. Matches the backend `ActionReceipt`. */
+export interface ActionReceipt {
+  verb: string;
+  noun: string;
+  status: "applied" | "already_applied" | "not_implemented" | "failed";
+  resource_ids: string[];
+  summary: string;
+  idempotency_key: string;
+  error: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+/** The execute response — per-item receipts + counts. Matches `ActionApplyResult`. */
+export interface ActionApplyResult {
+  type: string;
+  applied: number;
+  failed: number;
+  receipts: ActionReceipt[];
+}
+
+/** The execute request body. Matches `ActionExecuteRequest`. */
+export interface ActionExecuteRequest {
+  kind: "output_directive";
+  type: string; // "create:<noun>" | "update:<noun>" | "delete:<noun>"
+  items: Record<string, unknown>[];
+  conversation_id?: string | null;
+  force?: boolean;
+}
+
+/** Runtime guard for the execute response. */
+export function isActionApplyResult(value: unknown): value is ActionApplyResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.type === "string" &&
+    typeof v.applied === "number" &&
+    typeof v.failed === "number" &&
+    Array.isArray(v.receipts)
+  );
+}

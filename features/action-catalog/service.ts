@@ -8,8 +8,19 @@
  * non-sensitive and unauthenticated, so no auth headers are attached.
  */
 
+import { supabase } from "@/utils/supabase/client";
+
 import { ENDPOINTS_ACTIONS } from "@/features/action-catalog/endpoints";
-import { isActionCatalog, type ActionCatalog } from "@/features/action-catalog/types";
+import {
+  isActionApplyResult,
+  isActionCatalog,
+  type ActionApplyResult,
+  type ActionCatalog,
+  type ActionExecuteRequest,
+} from "@/features/action-catalog/types";
+
+const trimRoot = (baseUrl: string): string =>
+  baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
 
 /**
  * Fetch the live action catalog from `baseUrl`. Throws a structured Error on a
@@ -40,6 +51,52 @@ export async function fetchActionCatalog(
     throw new Error(
       `Action catalog response was malformed (missing matrx_version / verbs / nouns) from ${url}`,
     );
+  }
+  return payload;
+}
+
+/**
+ * Run ONE `verb:noun` action via `POST {baseUrl}/actions/execute`. AUTHED — the
+ * write runs as the user (RLS) on the server, so we attach the Supabase JWT (same
+ * session client the reference resolvers use). Throws a structured Error on a
+ * missing base / no session / non-2xx (surfacing the server's `detail`) / a
+ * malformed payload — the panel shows it. Returns the per-item receipts.
+ */
+export async function executeAction(
+  baseUrl: string | undefined,
+  body: ActionExecuteRequest,
+): Promise<ActionApplyResult> {
+  if (!baseUrl) {
+    throw new Error("No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).");
+  }
+  const { data, error } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (error || !token) {
+    throw new Error("Not signed in — an action write needs an authenticated session.");
+  }
+  const url = `${trimRoot(baseUrl)}${ENDPOINTS_ACTIONS.execute}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`;
+    try {
+      const err: unknown = await response.json();
+      if (err && typeof err === "object" && "detail" in err) {
+        detail = String((err as { detail: unknown }).detail);
+      }
+    } catch {
+      /* non-JSON error body — keep the status line */
+    }
+    throw new Error(`Execute failed: ${detail}`);
+  }
+
+  const payload: unknown = await response.json();
+  if (!isActionApplyResult(payload)) {
+    throw new Error(`Execute response was malformed (missing type / applied / receipts) from ${url}`);
   }
   return payload;
 }

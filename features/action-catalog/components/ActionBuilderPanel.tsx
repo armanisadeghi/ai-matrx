@@ -10,18 +10,24 @@
  *    `MatrxEnvelopeBlock` — the same reference-chip renderer the chat uses, which
  *    resolves the value from Supabase and opens the entity on click. This works
  *    TODAY and is the "test it" payoff.
- *  - create / update / delete: there is no execute endpoint yet (Plane 1 writer
- *    pending) — the Execute button is disabled with an inline note. We NEVER fake
- *    an execution or write to Supabase directly.
+ *  - create / update (state "yes"): a JSON payload editor + Execute runs it via
+ *    `POST /actions/execute` (the Plane-1 writer, as the user / RLS) and shows the
+ *    per-item receipts. Idempotent by content key; `force` opts out. delete is soft
+ *    (planned) → disabled; non-"yes" writes are disabled. We NEVER write Supabase
+ *    directly — the server is the only write path.
  */
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Play, Sparkles } from "lucide-react";
+import { Check, Copy, Loader2, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -29,9 +35,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MATRX_VERSION } from "@/features/matrx-envelope/envelope";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
 import { StateBadge } from "@/features/action-catalog/components/StateCell";
+import { executeAction } from "@/features/action-catalog/service";
 import {
   buildActionEnvelope,
   isReferenceVerb,
@@ -39,7 +47,9 @@ import {
 } from "@/features/action-catalog/buildEnvelope";
 import {
   cellState,
+  type ActionApplyResult,
   type ActionCatalog,
+  type ActionReceipt,
   type ActionState,
   type ActionVerb,
   type NounActions,
@@ -47,6 +57,26 @@ import {
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const RECEIPT_PILL: Record<ActionReceipt["status"], string> = {
+  applied: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  already_applied: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  not_implemented: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  failed: "bg-red-500/15 text-red-600 dark:text-red-400",
+};
+
+function StatusPill({ status }: { status: ActionReceipt["status"] }) {
+  return (
+    <span
+      className={cn(
+        "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase",
+        RECEIPT_PILL[status],
+      )}
+    >
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
 
 export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   const verbs = catalog.verbs as ActionVerb[];
@@ -61,6 +91,14 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   const [copied, setCopied] = useState(false);
   // Bumping this commits the current fields into a live-rendered envelope.
   const [renderNonce, setRenderNonce] = useState(0);
+  // Write-verb state.
+  const [writePayload, setWritePayload] = useState("{\n  \n}");
+  const [force, setForce] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [result, setResult] = useState<ActionApplyResult | null>(null);
+  const [execError, setExecError] = useState<string | null>(null);
+
+  const baseUrl = useAppSelector(selectResolvedBaseUrl);
 
   const noun: NounActions | undefined = useMemo(
     () => nouns.find((n) => n.noun === nounName),
@@ -74,13 +112,72 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
     [isReference, nounName],
   );
 
-  const envelope = useMemo(
-    () => (nounName ? buildActionEnvelope(verb, nounName, fields) : null),
-    [verb, nounName, fields],
-  );
+  // The write payload, parsed. A reference has no payload (its ids drive it).
+  // `error` is null when valid; `value` is always an object (empty on error).
+  const parsed = useMemo<{ value: Record<string, unknown>; error: string | null }>(() => {
+    if (isReference) return { value: {}, error: null };
+    const text = writePayload.trim();
+    if (text.length === 0) return { value: {}, error: null };
+    try {
+      const v: unknown = JSON.parse(text);
+      if (typeof v !== "object" || v === null || Array.isArray(v)) {
+        return { value: {}, error: "Payload must be a JSON object (the row's fields)." };
+      }
+      return { value: v as Record<string, unknown>, error: null };
+    } catch (e) {
+      return { value: {}, error: e instanceof Error ? e.message : "Invalid JSON" };
+    }
+  }, [isReference, writePayload]);
+
+  const payloadError = parsed.error;
+  const payloadOk = parsed.error === null;
+
+  const envelope = useMemo(() => {
+    if (!nounName) return null;
+    if (isReference) return buildActionEnvelope(verb, nounName, fields);
+    return {
+      matrx_version: MATRX_VERSION,
+      kind: "output_directive" as const,
+      type: `${verb}:${nounName}`,
+      items: payloadOk ? [parsed.value] : [],
+    };
+  }, [verb, nounName, isReference, fields, payloadOk, parsed.value]);
 
   const setField = (key: string, value: string) =>
     setFields((prev) => ({ ...prev, [key]: value }));
+
+  // Only wired create/update on a "yes" noun can execute (delete is soft → planned).
+  const canExecute =
+    !isReference &&
+    (verb === "create" || verb === "update") &&
+    state === "yes" &&
+    payloadOk &&
+    !!baseUrl &&
+    !executing;
+
+  const handleExecute = async () => {
+    if (!canExecute || !nounName) return;
+    setExecuting(true);
+    setExecError(null);
+    setResult(null);
+    try {
+      const res = await executeAction(baseUrl, {
+        kind: "output_directive",
+        type: `${verb}:${nounName}`,
+        items: [parsed.value],
+        force,
+      });
+      setResult(res);
+      if (res.failed === 0) toast.success(`Applied ${res.applied} item(s)`);
+      else toast.error(`${res.failed} item(s) failed`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Execute failed";
+      setExecError(msg);
+      toast.error(msg);
+    } finally {
+      setExecuting(false);
+    }
+  };
 
   // Live render is only meaningful for a reference/view whose type resolves and
   // whose required UUID ids are present + valid.
@@ -261,22 +358,97 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            size="sm"
-            disabled
-            className="h-8 w-fit gap-1"
-            title="Execution endpoint pending"
-          >
-            <Play className="h-3.5 w-3.5" />
-            Execute
-          </Button>
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            {state === "no"
-              ? "Not a writable row — this noun has no create/update/delete path."
-              : "Execution endpoint pending (Plane 1 writer + idempotency ledger). The envelope above is the exact payload that path will accept."}
-          </p>
+        <div className="flex flex-col gap-3">
+          {/* Payload — the row's fields (shape mirrors the table). */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Payload — the row&apos;s fields (JSON)
+              {verb === "update" ? " · include the row's id" : ""}
+            </label>
+            <Textarea
+              value={writePayload}
+              onChange={(e) => setWritePayload(e.target.value)}
+              spellCheck={false}
+              className={cn(
+                "min-h-[120px] font-mono text-xs",
+                payloadError && "border-red-500 focus-visible:ring-red-500",
+              )}
+              placeholder={'{ "label": "My note", "content": "..." }'}
+            />
+            {payloadError && <p className="text-xs text-red-500">{payloadError}</p>}
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={force}
+              onCheckedChange={(v) => setForce(v === true)}
+            />
+            Force — bypass idempotency (apply a deliberate duplicate)
+          </label>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={!canExecute}
+              onClick={handleExecute}
+              className="h-8 w-fit gap-1"
+            >
+              {executing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              Execute
+            </Button>
+            {verb === "delete" && (
+              <span className="text-xs text-muted-foreground">
+                delete is soft-delete — not yet wired (planned).
+              </span>
+            )}
+          </div>
+
+          {state === "no" && (
+            <p className="text-xs text-muted-foreground">
+              Not a writable row — this noun has no create/update/delete path.
+            </p>
+          )}
+          {state === "planned" && verb !== "delete" && (
+            <p className="text-xs text-muted-foreground">
+              This write is <span className="font-medium">planned</span> — only wired
+              (&quot;Yes&quot;) nouns execute today.
+            </p>
+          )}
+
+          {execError && <p className="text-xs text-red-500">{execError}</p>}
+
+          {result && (
+            <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
+              <span className="text-xs font-medium text-muted-foreground">
+                Result — {result.applied} applied, {result.failed} failed
+              </span>
+              {result.receipts.map((r, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-0.5 rounded border border-border bg-muted px-2 py-1.5 text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <StatusPill status={r.status} />
+                    <span className="font-mono text-muted-foreground">
+                      {r.verb}:{r.noun}
+                    </span>
+                  </div>
+                  {r.summary && <span className="text-foreground">{r.summary}</span>}
+                  {r.resource_ids.length > 0 && (
+                    <span className="font-mono text-muted-foreground">
+                      id: {r.resource_ids.join(", ")}
+                    </span>
+                  )}
+                  {r.error && <span className="text-red-500">{r.error}</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -9,4 +9,6 @@
 export const ENDPOINTS_ACTIONS = {
   /** GET — the live noun × verb action catalog (Public, non-sensitive). */
   catalog: "/actions/catalog" as const,
+  /** POST — run ONE `verb:noun` action as the user (authed; RLS). */
+  execute: "/actions/execute" as const,
 } as const;
