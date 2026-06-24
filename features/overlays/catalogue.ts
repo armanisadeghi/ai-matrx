@@ -565,6 +565,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  tableViewerWindow: {
+    label: "Table Viewer Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   taskEditorWindow: {
     label: "Task Editor Window",
     instanceMode: "multi",

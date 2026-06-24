@@ -118,8 +118,7 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
               width={22}
               height={22}
               className="w-[22px] h-[22px] rounded-full object-cover"
-              loading="eager"
-              priority
+              unoptimized
             />
           ) : user?.name ? (
             <span className="w-[22px] h-[22px] rounded-full bg-[var(--matrx-glass-bg-active)] flex items-center justify-center text-[10px] font-semibold text-[var(--shell-nav-text)]">

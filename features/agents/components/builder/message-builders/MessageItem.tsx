@@ -53,9 +53,6 @@ import type {
 } from "@/features/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
-import { AGENT_BUILDER_CONTEXT_MENU_PROPS } from "@/features/agents/agent-context/buildAgentBuilderContextData";
-import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import MarkdownStream from "@/components/MarkdownStream";
 
@@ -430,18 +427,16 @@ export function MessageItem({
     }
   }, [messageIndex, isEditing]);
 
-  // ProTextarea owns `textareaRef` (object ref — it reads `.current` for voice /
-  // auto-grow / expando methods). Run the one-time init (auto-size + focus) the
-  // old callback ref did, once the editor mounts.
-  useLayoutEffect(() => {
-    const el = textareaRef.current;
-    if (isEditing && el && !textareaInitializedRef.current) {
+  // Textarea handlers
+  const handleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
+    textareaRef.current = el;
+    if (el && !textareaInitializedRef.current) {
       textareaInitializedRef.current = true;
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
       el.focus({ preventScroll: true });
     }
-  }, [isEditing]);
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -621,10 +616,9 @@ export function MessageItem({
   const buildAgentScope = useAgentBuilderSurfaceScope(agentId);
 
   // Surface scope for `matrx-user/agent-builder`. Agent-level values come from
-  // the hook; `content` is the message text being edited. This is a priming
-  // (user/assistant) message — NOT the system instruction — so `focused_field`
-  // names the message role and we never stamp `system_instruction` here.
-  const contextMenuData = useMemo<Record<string, unknown>>(
+  // the hook; `content` is the message text being edited. Top-level keys flow
+  // through UnifiedAgentContextMenu into the ApplicationScope.
+  const contextMenuData = useMemo(
     () => ({
       ...buildAgentScope(),
       content: currentText,
@@ -632,25 +626,6 @@ export function MessageItem({
     }),
     [buildAgentScope, currentText, message],
   );
-
-  // Live ApplicationScope at click/run time — reads the textarea selection
-  // straight from the DOM (not stale React state) and floors the baseline text
-  // triad via `buildApplicationScopeFromMenuContext`. Shared by the context
-  // menu and ProTextarea's "…" menu so launched agents get full surface scope.
-  const getApplicationScope = useCallback(() => {
-    const el = textareaRef.current;
-    const start = el?.selectionStart ?? 0;
-    const end = el?.selectionEnd ?? 0;
-    const selectedText =
-      start !== end && el
-        ? el.value.slice(Math.min(start, end), Math.max(start, end))
-        : "";
-    return buildApplicationScopeFromMenuContext({
-      selectedText,
-      selectionRange: el ? { type: "editable", element: el, start, end } : null,
-      contextData: contextMenuData,
-    });
-  }, [contextMenuData]);
 
   const displayRole =
     message?.role === "user" || message?.role === "assistant"
@@ -735,10 +710,12 @@ export function MessageItem({
           </div>
         ) : isEditing ? (
           <UnifiedAgentContextMenu
-            {...AGENT_BUILDER_CONTEXT_MENU_PROPS}
+            sourceFeature="agent-builder"
+            surfaceName="matrx-user/agent-builder"
             getTextarea={() => textareaRef.current}
-            getApplicationScope={getApplicationScope}
             contextData={contextMenuData as unknown as Record<string, unknown>}
+            enabledPlacements={["ai-action", "content-block", "quick-action"]}
+            isEditable={true}
             enableFloatingIcon={true}
             onTextReplace={handleTextReplace}
             onTextInsertBefore={handleTextInsertBefore}
@@ -753,14 +730,8 @@ export function MessageItem({
             onViewHistory={handleViewHistory}
             hasHistory={canUndo || canRedo}
           >
-            <ProTextarea
-              ref={textareaRef}
-              surfaceName={AGENT_BUILDER_CONTEXT_MENU_PROPS.surfaceName}
-              getApplicationScope={getApplicationScope}
-              // The right-click UnifiedAgentContextMenu already provides
-              // bound-agent launches; the ProTextarea hover "…" menu would blur
-              // the textarea on open → handleBlur unmounts the editor mid-click.
-              enableBoundAgents={false}
+            <textarea
+              ref={handleTextareaRef}
               value={currentText}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
@@ -775,7 +746,7 @@ export function MessageItem({
                   ? "Assistant response / example output..."
                   : "User message / example input..."
               }
-              className="w-full bg-transparent border-none shadow-none outline-none text-xs text-foreground placeholder:text-muted-foreground px-0 py-0 resize-none overflow-hidden leading-normal"
+              className="w-full bg-transparent border-none outline-none text-xs text-foreground placeholder:text-muted-foreground p-0 resize-none overflow-hidden leading-normal"
               style={{ minHeight: "80px", lineHeight: "1.5" }}
             />
           </UnifiedAgentContextMenu>

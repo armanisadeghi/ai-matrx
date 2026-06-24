@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import IconResolver from "@/components/official/icons/IconResolver";
+// DB/user-selected icon renderer via the dynamic front door.
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import {
   useOpenCuratedIconPickerWindow,
   type CuratedIconPickerHandle,

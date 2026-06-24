@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+
+console.log("[IconResolver] Loading IconResolver file...");
+
 // Statically import commonly used Lucide icons to reduce bundle size
 import {
   Zap,
@@ -175,12 +178,51 @@ import {
   FcBusiness,
 } from "react-icons/fc";
 import { FaBrave } from "react-icons/fa6";
-import { isLucideModuleIconExport } from "@/utils/icons/lucide-module-icon";
+import { parseMatrxSvgPublicPath } from "@/utils/icons/matrx-public-svg-registry";
 import {
-  isMatrxSvgIconValue,
-  listMatrxSvgIconValues,
-  parseMatrxSvgPublicPath,
-} from "@/utils/icons/matrx-public-svg-registry";
+  markIconResolved,
+  isHexColor,
+  getTextColorClass,
+} from "./icon-resolve";
+
+// ─── TRIPWIRE ───────────────────────────────────────────────────────────────
+// This module statically imports the FULL icon payload (~145 lucide + ~30
+// react-icons). It is DB-ONLY: it must load ONLY after a user action that pulls
+// a user-defined icon name from the database, always via a *.dynamic.tsx front
+// door. If you see this log during a plain page/menu/header render — BEFORE any
+// user interaction — a file is rendering a hardcoded icon through the DB-only
+// system instead of importing it directly from lucide-react / using the SVG
+// TapTarget set. That file is the leak. Find it and fix it.
+console.log(
+  "[IconResolver][TRIPWIRE] heavy icon payload loaded — this should ONLY happen after a user action that renders a DB-defined icon. If this fired on a static render, find the offender.",
+);
+// Stack trace so we can SEE which import chain pulled this module at boot.
+// Captured as a single string block (easy to copy in one go) AND as a native
+// console.trace (expandable frames). Remove once the boot leak is confirmed dead.
+console.trace("[IconResolver][TRIPWIRE] import chain that loaded the payload");
+try {
+  const stack =
+    new Error("IconResolver payload load site").stack ?? "(no stack)";
+  console.log(
+    "[IconResolver][TRIPWIRE] COPYABLE STACK ↓↓↓\n" +
+      stack +
+      "\n↑↑↑ COPYABLE STACK",
+  );
+} catch {
+  /* noop */
+}
+
+// Re-export the lean, payload-free helpers so existing importers of these names
+// keep working. New logic-only callers should import them from
+// "./icon-resolve" directly (no payload). See that module's header.
+export {
+  getCuratedIconIdsForPicker,
+  isIconRegisteredSync,
+  isRegisteredOrLucideIconName,
+} from "./icon-resolve";
+// `isHexColor` / `getTextColorClass` are imported above for internal use and
+// re-exported here for back-compat with existing importers.
+export { isHexColor, getTextColorClass };
 
 // Statically imported Lucide icons map (commonly used icons for optimal bundle size)
 // Exported so callers can spread it as a scope without importing the full lucide namespace.
@@ -363,71 +405,6 @@ const customIconMap: Record<string, any> = {
 const dynamicIconCache: Record<string, any> = {};
 
 /**
- * Finite list for the curated icon gallery: every statically bundled Lucide name,
- * custom registry ids (react-icons), and all `svg:…` public assets.
- */
-export function getCuratedIconIdsForPicker(): string[] {
-  const set = new Set<string>();
-  for (const k of Object.keys(staticLucideIconMap)) {
-    set.add(k);
-  }
-  for (const k of Object.keys(customIconMap)) {
-    set.add(k);
-  }
-  for (const id of listMatrxSvgIconValues()) {
-    set.add(id);
-  }
-  return Array.from(set).sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" }),
-  );
-}
-
-/**
- * True if this exact name maps to a known icon (static Lucide, custom map, or
- * previously resolved dynamic Lucide cached under this key).
- *
- * Does not import lucide-react — use with {@link isRegisteredOrLucideIconName} for full checks.
- */
-export function isIconRegisteredSync(
-  iconName: string | null | undefined,
-): boolean {
-  if (!iconName || iconName.trim() === "") {
-    return false;
-  }
-  const name = iconName;
-  if (customIconMap[name]) return true;
-  if (staticLucideIconMap[name]) return true;
-  return Boolean(dynamicIconCache[name]);
-}
-
-/**
- * True if `iconName` is a real icon id: custom/static/cached, or a Lucide export
- * that is a function component (not the fallback Zap).
- *
- * Prefer this over truthiness on {@link getIconComponent}, which always returns a component.
- */
-export async function isRegisteredOrLucideIconName(
-  iconName: string | null | undefined,
-): Promise<boolean> {
-  if (!iconName || iconName.trim() === "") {
-    return false;
-  }
-  if (isMatrxSvgIconValue(iconName)) {
-    return true;
-  }
-  if (isIconRegisteredSync(iconName)) {
-    return true;
-  }
-  try {
-    const iconModule = await import("lucide-react");
-    const Exported = iconModule[iconName as keyof typeof iconModule];
-    return isLucideModuleIconExport(iconName, Exported);
-  } catch {
-    return false;
-  }
-}
-
-/**
  * HOW TO ADD MORE STATIC ICONS:
  *
  * If you find yourself frequently using an icon that's not in the static map,
@@ -509,6 +486,7 @@ const IconResolver: React.FC<IconResolverProps> = ({
 
         if (IconComponent) {
           dynamicIconCache[iconName] = IconComponent;
+          markIconResolved(iconName);
           setDynamicIcon(() => IconComponent);
         } else {
           // Icon not found, use fallback
@@ -566,6 +544,10 @@ export const getIconComponent = (
   iconName: string | null,
   fallbackIcon: string = "Zap",
 ) => {
+  console.log(
+    "[IconResolver][TRIPWIRE] getIconComponent called — DB-only path. iconName:",
+    iconName,
+  );
   if (!iconName) {
     return staticLucideIconMap[fallbackIcon] || Zap;
   }
@@ -598,49 +580,12 @@ export const renderIcon = (
   props?: React.ComponentProps<any>,
   fallbackIcon: string = "Zap",
 ) => {
+  console.log(
+    "[IconResolver][TRIPWIRE] renderIcon called — DB-only path. iconName:",
+    iconName,
+  );
   const IconComponent = getIconComponent(iconName, fallbackIcon);
   return <IconComponent {...props} />;
-};
-
-/**
- * Utility to detect if a string is a hex color code
- */
-export const isHexColor = (color: string): boolean => {
-  return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
-};
-
-export const getTextColorClass = (color?: string) => {
-  if (!color) return "text-gray-600 dark:text-gray-400";
-
-  // If it's a hex color, return null (we'll use inline styles instead)
-  if (isHexColor(color)) return null;
-
-  const colorMap: Record<string, string> = {
-    gray: "text-gray-600 dark:text-gray-400",
-    rose: "text-rose-600 dark:text-rose-400",
-    blue: "text-blue-600 dark:text-blue-400",
-    amber: "text-amber-600 dark:text-amber-400",
-    cyan: "text-cyan-600 dark:text-cyan-400",
-    emerald: "text-emerald-600 dark:text-emerald-400",
-    fuchsia: "text-fuchsia-600 dark:text-fuchsia-400",
-    green: "text-green-600 dark:text-green-400",
-    indigo: "text-indigo-600 dark:text-indigo-400",
-    lime: "text-lime-600 dark:text-lime-400",
-    neutral: "text-neutral-600 dark:text-neutral-400",
-    orange: "text-orange-600 dark:text-orange-400",
-    pink: "text-pink-600 dark:text-pink-400",
-    purple: "text-purple-600 dark:text-purple-400",
-    red: "text-red-600 dark:text-red-400",
-    sky: "text-sky-600 dark:text-sky-400",
-    slate: "text-slate-600 dark:text-slate-400",
-    stone: "text-stone-600 dark:text-stone-400",
-    teal: "text-teal-600 dark:text-teal-400",
-    violet: "text-violet-600 dark:text-violet-400",
-    yellow: "text-yellow-600 dark:text-yellow-400",
-    zinc: "text-zinc-600 dark:text-zinc-400",
-  };
-
-  return colorMap[color.toLowerCase()] || "text-gray-600 dark:text-gray-400";
 };
 
 /**
@@ -682,6 +627,8 @@ export const DynamicIcon: React.FC<IconProps> = ({
   const isHex = color && isHexColor(color);
   const colorClass = isHex ? null : getTextColorClass(color);
   const sizeClass = `h-${size} w-${size}`;
+
+  console.log("[DynamicIcon] rendering icon:", name);
 
   // Build className: always include size, include colorClass if not hex, include custom className
   const combinedClassName = [sizeClass, !isHex && colorClass, className]

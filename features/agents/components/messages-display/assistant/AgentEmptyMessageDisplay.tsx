@@ -2,24 +2,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceAgentName } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectInstanceAgentDescription } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { Webhook } from "lucide-react";
-import dynamic from "next/dynamic";
 import type { RootState } from "@/lib/redux/store";
-
-const MarkdownStream = dynamic(
-  () =>
-    import("@/components/MarkdownStreamImpl").then((m) => ({
-      default: m.default,
-    })),
-  { ssr: false },
-);
-
-const IconResolver = dynamic(
-  () =>
-    import("@/components/official/icons/IconResolver").then((m) => ({
-      default: m.default,
-    })),
-  { ssr: false },
-);
+import MarkdownStream from "@/components/MarkdownStream";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 
 export function AgentEmptyMessageDisplay({
   conversationId,

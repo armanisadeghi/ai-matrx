@@ -89,6 +89,10 @@ export default function ProTextareaDisplay({
 }`);
   const [jsonValidation, setJsonValidation] =
     useState<ProJsonValidationState | null>(null);
+  const jsonAllowedTopLevelKeys = useMemo(
+    () => ["name", "version", "enabled", "rules"] as const,
+    [],
+  );
 
   const jsonSchema = useMemo(
     () => ({
@@ -601,7 +605,7 @@ import { Field } from '@/components/official/Field';
               onChange={(e) => setJsonValue(e.target.value)}
               schema={jsonSchema}
               rootType="object"
-              allowedTopLevelKeys={["name", "version", "enabled", "rules"]}
+              allowedTopLevelKeys={jsonAllowedTopLevelKeys}
               validators={jsonValidators}
               onValidationChange={setJsonValidation}
               surfaceName="matrx-user/demo-json"

@@ -25,6 +25,9 @@ import {
   Database,
   ExternalLink,
   Table2,
+  Columns3,
+  Maximize2,
+  EyeOff,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,7 +35,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
@@ -60,7 +66,11 @@ import {
   duplicateColumn,
   type TableShape,
 } from "../../tables/editing/tableMutations";
-import { parseMarkdownTable, type ParsedTable } from "./parseMarkdownTable";
+import {
+  parseMarkdownTable,
+  cleanTableHeaderKey,
+  type ParsedTable,
+} from "./parseMarkdownTable";
 
 // ============================================================================
 // TYPES
@@ -96,6 +106,23 @@ interface StreamingTableRendererProps {
     busy?: boolean;
     disabled?: boolean;
   };
+  /**
+   * Rendered inside the full-size TableViewerWindow. Suppresses the
+   * "Open in window" action (no recursive open) and skips the compact
+   * padding so the roomy window view reads larger.
+   */
+  expanded?: boolean;
+}
+
+/**
+ * Header keys treated as "actions" columns — hidden by default so they don't
+ * eat horizontal space in the small inline UI. The user can re-show them from
+ * the Columns menu.
+ */
+const ACTION_COLUMN_KEYS = new Set(["actions", "action"]);
+
+function isActionColumn(header: string): boolean {
+  return ACTION_COLUMN_KEYS.has(cleanTableHeaderKey(header).toLowerCase());
 }
 
 // ============================================================================
@@ -246,14 +273,16 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   metadata,
   isStreamActive = false,
   className,
-  fontSize = 14,
+  fontSize = 13,
   theme = "professional",
   onSave = () => {},
   onContentChange,
   convertToTable,
+  expanded = false,
 }) => {
   const toast = useToastManager();
   const isMobile = useIsMobile();
+  const openTableWindow = useOpenTableViewerWindow();
   const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
 
   // State Management
@@ -284,6 +313,37 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   // Once the user enters edit mode, internalTableData diverges from parsedTable.
   const tableData = internalTableData ?? parsedTable;
   const { headers, rows } = tableData;
+
+  // ── Column visibility ─────────────────────────────────────────────────────
+  // Hidden columns are tracked by index. By default we hide any "actions"
+  // column so it doesn't eat space in the small UI. A hidden column leaves a
+  // thin "trace" stub in the table (one narrow cell per row) so it's never
+  // forgotten — clicking the stub or toggling it back in the Columns menu
+  // restores it. Edit mode forces every column visible (you can't edit a
+  // column you can't see).
+  const defaultHiddenCols = useMemo(() => {
+    const hidden = new Set<number>();
+    headers.forEach((h, i) => {
+      if (isActionColumn(h)) hidden.add(i);
+    });
+    return hidden;
+  }, [JSON.stringify(headers)]);
+
+  const [hiddenColsOverride, setHiddenColsOverride] =
+    useState<Set<number> | null>(null);
+  const hiddenCols = hiddenColsOverride ?? defaultHiddenCols;
+
+  const toggleColumn = (index: number) => {
+    setHiddenColsOverride((prev) => {
+      const base = prev ?? defaultHiddenCols;
+      const next = new Set(base);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const showAllColumns = () => setHiddenColsOverride(new Set());
 
   // Show loading indicator during streaming if we have partial content
   const showStreamingIndicator = isStreamActive && metadata?.hasPartialContent;
@@ -685,6 +745,18 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
     setEditMode,
   });
 
+  // Compact cell padding for the small inline UI; roomier when expanded
+  // (full-size window view).
+  const cellPaddingClass = expanded ? "px-3 py-2" : "px-2.5 py-1.5";
+
+  // Column visibility is suppressed in edit mode (you must see a column to edit
+  // it). Outside edit mode, hidden columns collapse into a thin trace stub.
+  const isColumnHidden = (index: number) =>
+    !isEditingEnabled && hiddenCols.has(index);
+  const hasHiddenColumns = !isEditingEnabled && hiddenCols.size > 0;
+  const hiddenHeaderLabel = (index: number) =>
+    cleanTableHeaderKey(headers[index] ?? "") || `Column ${index + 1}`;
+
   return (
     <div className={cn("relative w-full my-3", className)}>
       {showNormalized && tableData.normalizedData ? (
@@ -726,56 +798,75 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                   {isEditingEnabled && (
                     <th className="w-5 p-0" aria-hidden="true" />
                   )}
-                  {headers.map((header, index) => (
-                    <th
-                      key={index}
-                      data-cell="header"
-                      data-cell-col={index}
-                      className={cn(
-                        "px-4 py-3 text-left font-semibold",
-                        tableTheme.headerText,
-                        isMobile && "whitespace-nowrap",
-                        isEditingEnabled && "group/col",
-                      )}
-                    >
-                      <div
+                  {headers.map((header, index) =>
+                    isColumnHidden(index) ? null : (
+                      <th
+                        key={index}
+                        data-cell="header"
+                        data-cell-col={index}
                         className={cn(
-                          "flex items-center gap-2",
-                          isEditingEnabled && "justify-between",
+                          cellPaddingClass,
+                          "text-left font-semibold",
+                          tableTheme.headerText,
+                          isMobile && "whitespace-nowrap",
+                          isEditingEnabled && "group/col",
                         )}
                       >
-                        <div className="flex-1 min-w-0">
-                          {isEditingHeader ? (
-                            <input
-                              type="text"
-                              value={header}
-                              onChange={(e) =>
-                                handleHeaderChange(index, e.target.value)
+                        <div
+                          className={cn(
+                            "flex items-center gap-2",
+                            isEditingEnabled && "justify-between",
+                          )}
+                        >
+                          <div className="flex-1 min-w-0">
+                            {isEditingHeader ? (
+                              <input
+                                type="text"
+                                value={header}
+                                onChange={(e) =>
+                                  handleHeaderChange(index, e.target.value)
+                                }
+                                className={cn(
+                                  "w-full bg-transparent outline-none border border-dashed border-blue-300 p-1",
+                                  tableTheme.headerText,
+                                )}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <InlineMarkdownWithLinks text={header} />
+                            )}
+                          </div>
+                          {isEditingEnabled && (
+                            <ColumnActionsMenu
+                              onInsertBefore={() =>
+                                handleInsertColumnBefore(index)
                               }
-                              className={cn(
-                                "w-full bg-transparent outline-none border border-dashed border-blue-300 p-1",
-                                tableTheme.headerText,
-                              )}
-                              onClick={(e) => e.stopPropagation()}
+                              onInsertAfter={() =>
+                                handleInsertColumnAfter(index)
+                              }
+                              onDuplicate={() => handleDuplicateColumn(index)}
+                              onClear={() => handleClearColumn(index)}
+                              onDelete={() => handleDeleteColumn(index)}
                             />
-                          ) : (
-                            <InlineMarkdownWithLinks text={header} />
                           )}
                         </div>
-                        {isEditingEnabled && (
-                          <ColumnActionsMenu
-                            onInsertBefore={() =>
-                              handleInsertColumnBefore(index)
-                            }
-                            onInsertAfter={() => handleInsertColumnAfter(index)}
-                            onDuplicate={() => handleDuplicateColumn(index)}
-                            onClear={() => handleClearColumn(index)}
-                            onDelete={() => handleDeleteColumn(index)}
-                          />
-                        )}
-                      </div>
+                      </th>
+                    ),
+                  )}
+                  {/* Hidden-columns trace: a thin gutter so hidden columns are
+                      never forgotten. Click to reveal all. */}
+                  {hasHiddenColumns && (
+                    <th
+                      className="w-6 px-1 py-1.5 text-center align-middle cursor-pointer text-muted-foreground hover:text-foreground"
+                      title={`${hiddenCols.size} hidden column${hiddenCols.size === 1 ? "" : "s"} — click to show all`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showAllColumns();
+                      }}
+                    >
+                      <EyeOff className="h-3.5 w-3.5 mx-auto" />
                     </th>
-                  ))}
+                  )}
                 </tr>
               </thead>
 
@@ -805,44 +896,51 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                         />
                       </td>
                     )}
-                    {headers.map((_, colIndex) => (
-                      <td
-                        key={colIndex}
-                        data-cell="body"
-                        data-cell-row={rowIndex}
-                        data-cell-col={colIndex}
-                        className={cn(
-                          "px-4 py-3 text-sm text-foreground",
-                          isMobile
-                            ? "whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis"
-                            : "whitespace-normal",
-                        )}
-                      >
-                        {editMode === rowIndex ? (
-                          <textarea
-                            ref={bindCellTextareaRef(rowIndex, colIndex)}
-                            value={row[colIndex] || ""}
-                            onChange={(e) =>
-                              handleCellChange(
-                                rowIndex,
-                                colIndex,
-                                e.target.value,
-                              )
-                            }
-                            className={cn(
-                              "w-full bg-transparent outline-none border border-dashed border-blue-300 p-1",
-                              "resize-y min-h-[8rem]",
-                            )}
-                            onClick={(e) => e.stopPropagation()}
-                            onFocus={(e) => e.target.select()}
-                          />
-                        ) : row[colIndex] ? (
-                          <InlineMarkdownWithLinks text={row[colIndex]} />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                    ))}
+                    {headers.map((_, colIndex) =>
+                      isColumnHidden(colIndex) ? null : (
+                        <td
+                          key={colIndex}
+                          data-cell="body"
+                          data-cell-row={rowIndex}
+                          data-cell-col={colIndex}
+                          className={cn(
+                            cellPaddingClass,
+                            "text-foreground",
+                            isMobile
+                              ? "whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis"
+                              : "whitespace-normal",
+                          )}
+                        >
+                          {editMode === rowIndex ? (
+                            <textarea
+                              ref={bindCellTextareaRef(rowIndex, colIndex)}
+                              value={row[colIndex] || ""}
+                              onChange={(e) =>
+                                handleCellChange(
+                                  rowIndex,
+                                  colIndex,
+                                  e.target.value,
+                                )
+                              }
+                              className={cn(
+                                "w-full bg-transparent outline-none border border-dashed border-blue-300 p-1",
+                                "resize-y min-h-[8rem]",
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                              onFocus={(e) => e.target.select()}
+                            />
+                          ) : row[colIndex] ? (
+                            <InlineMarkdownWithLinks text={row[colIndex]} />
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      ),
+                    )}
+                    {/* Hidden-columns trace cell — keeps the gutter aligned. */}
+                    {hasHiddenColumns && (
+                      <td className="w-6 px-1 py-0 align-middle" aria-hidden />
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -888,6 +986,74 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                 isMobile ? "flex-wrap justify-start" : "justify-end",
               )}
             >
+              {/* Column visibility — only when there's a column to hide and
+                  not while editing (edit mode forces all columns visible). */}
+              {!isEditingEnabled && headers.length > 1 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+                    >
+                      <Columns3 className="h-4 w-4" />
+                      Columns
+                      {hiddenCols.size > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({headers.length - hiddenCols.size}/{headers.length})
+                        </span>
+                      )}
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {headers.map((_, index) => (
+                      <DropdownMenuCheckboxItem
+                        key={index}
+                        checked={!hiddenCols.has(index)}
+                        onCheckedChange={() => toggleColumn(index)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <span className="truncate">
+                          {hiddenHeaderLabel(index)}
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    {hiddenCols.size > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={showAllColumns}
+                          className="cursor-pointer"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Show all
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {/* Open in a full-size floating window. Suppressed when already
+                  rendered inside that window (`expanded`). */}
+              {!expanded && !isEditingEnabled && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    openTableWindow({
+                      content,
+                      title: cleanTableHeaderKey(headers[0] ?? "") || "Table",
+                    })
+                  }
+                  className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  Open in window
+                </Button>
+              )}
               {tableData.normalizedData && (
                 <Button
                   variant="outline"

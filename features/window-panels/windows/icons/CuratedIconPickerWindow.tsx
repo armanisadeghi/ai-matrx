@@ -16,9 +16,9 @@ import React, { useMemo, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import IconResolver, {
-  getCuratedIconIdsForPicker,
-} from "@/components/official/icons/IconResolver";
+// Lean, payload-free name list; heavy renderer via the dynamic front door.
+import { getCuratedIconIdsForPicker } from "@/components/official/icons/icon-resolve";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { TapTargetLabeled } from "@/components/icons/TapTargetLabeled";
 import {

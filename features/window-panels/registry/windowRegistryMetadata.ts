@@ -558,6 +558,16 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Table Viewer ──────────────────────────────────────────────────────────
+  {
+    slug: "table-viewer-window",
+    overlayId: "tableViewerWindow",
+    kind: "window",
+    label: "Table Viewer",
+    defaultData: { content: null, title: null },
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Feedback ──────────────────────────────────────────────────────────────
   {
     slug: "feedback-window",

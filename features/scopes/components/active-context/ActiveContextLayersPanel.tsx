@@ -33,7 +33,8 @@ import type {
   ScopeNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+// DB-only icon renderer via the dynamic front door (scope-type icons from DB).
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";

@@ -33,7 +33,6 @@ import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
 import { toast } from "@/components/ui/use-toast";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import type { Scope } from "@/features/agents/redux/shared/scope";
 import type {
@@ -994,7 +993,8 @@ export function UniversalContextMenuV2({
         <ContextMenuContent className={`w-64 ${className ?? ""}`}>
           <MenuBody variant="context" {...menuBodyProps} />
           <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
-            {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V{menuVersion}
+            {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V
+            {menuVersion}
           </div>
         </ContextMenuContent>
       </ContextMenu>
@@ -1035,7 +1035,8 @@ export function UniversalContextMenuV2({
           >
             <MenuBody variant="dropdown" {...menuBodyProps} />
             <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
-              {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V{menuVersion}
+              {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION}V
+              {menuVersion}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>

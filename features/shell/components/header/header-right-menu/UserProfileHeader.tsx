@@ -7,8 +7,7 @@ interface UserProfileHeaderProps {
 }
 
 export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
-  const displayName =
-    userData.userMetadata.name ?? userData.email ?? "You";
+  const displayName = userData.userMetadata.name ?? userData.email ?? "You";
   const initial = displayName.charAt(0).toUpperCase() || "?";
   return (
     <label htmlFor="shell-user-menu" className="block">
@@ -24,8 +23,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
               fill
               className="object-cover"
               sizes="28px"
-              loading="eager"
-              priority
+              unoptimized
             />
           </span>
         ) : (

@@ -45,7 +45,12 @@ import {
   Clipboard as ClipboardIcon,
   Pin,
 } from "lucide-react";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+// DB-defined icons (category/entry icons in the NESTED submenus) render via the
+// dynamic front door so the heavy icon payload is NOT imported at module eval —
+// it loads only when those submenu icons actually render, i.e. AFTER the user
+// has opened the menu. First-level items use hardcoded lucide icons (above) and
+// never touch this. See the [IconResolver][TRIPWIRE] hunt.
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import {
   PLACEMENT_TYPES,
   PLACEMENT_TYPE_META,
@@ -125,14 +130,6 @@ export interface MenuBodyRenderProps {
   onOpenQuickData: () => void;
   onOpenQuickFiles: () => void;
   onOpenVoicePad: () => void;
-}
-
-function resolveIcon(
-  iconName: string | null | undefined,
-  fallback: string = "FileText",
-) {
-  if (!iconName) return getIconComponent(fallback, fallback);
-  return getIconComponent(iconName, fallback);
 }
 
 function getPlacementIcon(placementType: string) {
@@ -311,7 +308,6 @@ export function MenuBody(props: MenuBodyRenderProps) {
     placementType: string,
   ): React.ReactElement => {
     const { category, items, children } = group;
-    const CategoryIcon = resolveIcon(category.iconName);
     const hasContent = items.length > 0 || children.length > 0;
 
     return (
@@ -319,10 +315,17 @@ export function MenuBody(props: MenuBodyRenderProps) {
         <SubTrigger
           className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}
         >
-          <CategoryIcon
-            className="h-4 w-4 mr-2"
-            style={{ color: category.color || "currentColor" }}
-          />
+          {category.iconName ? (
+            <DynamicIcon
+              name={category.iconName}
+              fallbackIcon="Folder"
+              className="h-4 w-4 mr-2"
+              color={category.color || undefined}
+            />
+          ) : (
+            // No DB icon name → loud red folder so it's easy to find + fix later.
+            <FolderOpen className="h-4 w-4 mr-2 text-red-600 dark:text-red-500" />
+          )}
           {category.label}
         </SubTrigger>
         <SubContent className="w-64">
@@ -335,11 +338,6 @@ export function MenuBody(props: MenuBodyRenderProps) {
           )}
 
           {items.map((entry) => {
-            const ItemIcon = resolveIcon(
-              entry.entryType === "content_block"
-                ? entry.iconName
-                : entry.iconName,
-            );
             const isDisabled =
               entry.entryType === "agent_shortcut" && !entry.agentId;
             // Legacy-only match (matched via enabledFeatures/untagged, not the
@@ -357,11 +355,17 @@ export function MenuBody(props: MenuBodyRenderProps) {
                     : undefined
                 }
               >
-                <ItemIcon
-                  className={`h-4 w-4 mr-2 ${
-                    isLegacy ? "text-red-600 dark:text-red-400" : ""
-                  }`}
-                />
+                {entry.iconName ? (
+                  <DynamicIcon
+                    name={entry.iconName}
+                    fallbackIcon="FileText"
+                    className={`h-4 w-4 mr-2 ${
+                      isLegacy ? "text-red-600 dark:text-red-400" : ""
+                    }`}
+                  />
+                ) : (
+                  <FolderOpen className="h-4 w-4 mr-2 text-red-600 dark:text-red-500" />
+                )}
                 {entry.label}
                 {entry.entryType === "agent_shortcut" &&
                   entry.keyboardShortcut && (

@@ -8,9 +8,9 @@
  *   Layer 3: per-category submenu of tools
  *
  * Lives in a lazy chunk (loaded by AdminSidebarSection only for admins), so the
- * catalog data and IconResolver never touch the main bundle. Icons resolve by
- * name via IconResolver. Styling uses the shared shadcn dropdown (popover
- * tokens) so it matches the rest of the menu.
+ * catalog data never touches the main bundle. Catalog icons render via
+ * AdminCatalogIcon (direct lucide imports — NOT the DB-only IconResolver).
+ * Styling uses the shared shadcn dropdown (popover tokens).
  */
 
 import Link from "next/link";
@@ -28,7 +28,17 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import {
+  ShieldCheck,
+  ChevronRight,
+  LayoutDashboard,
+  Gauge,
+  ArrowUpRight,
+} from "lucide-react";
+// Catalog icon names are HARDCODED build-time strings (not DB) → direct lucide
+// via AdminCatalogIcon, NOT the DB-only IconResolver. Keeps the heavy icon
+// payload out of the admin menu entirely.
+import { AdminCatalogIcon } from "./AdminCatalogIcon";
 import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 
@@ -48,16 +58,10 @@ export default function AdminMenu() {
           data-nav-href="/administration"
         >
           <span className="shell-nav-icon">
-            <IconResolver
-              iconName="ShieldCheck"
-              className="h-[18px] w-[18px]"
-            />
+            <ShieldCheck className="h-[18px] w-[18px]" />
           </span>
           <span className="shell-nav-label">Administration</span>
-          <IconResolver
-            iconName="ChevronRight"
-            className="shell-nav-flyout-caret h-3.5 w-3.5"
-          />
+          <ChevronRight className="shell-nav-flyout-caret h-3.5 w-3.5" />
         </button>
       </DropdownMenuTrigger>
 
@@ -71,7 +75,7 @@ export default function AdminMenu() {
         <DropdownMenuItem asChild className="gap-2">
           <Link href="/administration">
             <span className={iconSlot}>
-              <IconResolver iconName="LayoutDashboard" />
+              <LayoutDashboard className="h-4 w-4" />
             </span>
             <span className="truncate">Dashboard</span>
           </Link>
@@ -81,15 +85,12 @@ export default function AdminMenu() {
             <span
               className={cn(iconSlot, "text-emerald-500 dark:text-emerald-400")}
             >
-              <IconResolver iconName="Gauge" />
+              <Gauge className="h-4 w-4" />
             </span>
             <span className="flex-1 truncate font-medium text-emerald-600 dark:text-emerald-400">
               Admin Console
             </span>
-            <IconResolver
-              iconName="ArrowUpRight"
-              className="h-3.5 w-3.5 text-emerald-500/70 dark:text-emerald-400/70"
-            />
+            <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500/70 dark:text-emerald-400/70" />
           </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -98,7 +99,10 @@ export default function AdminMenu() {
           <DropdownMenuSub key={category.name}>
             <DropdownMenuSubTrigger className="gap-2">
               <span className={iconSlot}>
-                <IconResolver iconName={category.iconName} />
+                <AdminCatalogIcon
+                  name={category.iconName}
+                  className="h-4 w-4"
+                />
               </span>
               <span className="flex-1 truncate">{category.name}</span>
               <span className="text-xs text-muted-foreground">
@@ -117,7 +121,10 @@ export default function AdminMenu() {
                     >
                       <Link href={feature.link}>
                         <span className={iconSlot}>
-                          <IconResolver iconName={feature.iconName} />
+                          <AdminCatalogIcon
+                            name={feature.iconName}
+                            className="h-4 w-4"
+                          />
                         </span>
                         <span className="flex-1 truncate">{feature.title}</span>
                         {feature.isNew && (

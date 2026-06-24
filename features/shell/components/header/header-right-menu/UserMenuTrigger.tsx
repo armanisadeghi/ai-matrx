@@ -21,8 +21,7 @@ export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
             fill
             className="object-cover"
             sizes="32px"
-            loading="eager"
-            priority
+            unoptimized
           />
         ) : userData?.userMetadata.name ? (
           <span className="text-xs font-semibold text-foreground leading-none">

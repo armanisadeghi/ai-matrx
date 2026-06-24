@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import DynamicIcon from "@/components/official/icons/DynamicIcon.dynamic";
 import {
   Wrench,
   Search,
@@ -1067,93 +1067,82 @@ function ServerToolsTab({
           <AgentBundlesPanel agentId={agentId} />
         ) : (
           <>
-        {/* Orphaned tools warning */}
-        {orphanedTools.length > 0 && (
-          <OrphanedToolsBanner
-            orphanedTools={orphanedTools}
-            onRemove={removeOrphan}
-            onRemoveAll={removeAllOrphans}
-          />
-        )}
+            {/* Orphaned tools warning */}
+            {orphanedTools.length > 0 && (
+              <OrphanedToolsBanner
+                orphanedTools={orphanedTools}
+                onRemove={removeOrphan}
+                onRemoveAll={removeAllOrphans}
+              />
+            )}
 
-        {/* Search */}
-        <div className="px-3 py-2.5 border-b border-border shrink-0 flex items-center gap-2">
-          {/* Mobile: category filter button */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 shrink-0 sm:hidden"
-            onClick={() => setMobileCategorySheetOpen(true)}
-            title="Filter by category"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-          </Button>
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Search ${totalCount} tools…`}
-              className="pl-8 pr-8 h-8 text-sm"
-              style={{ fontSize: "16px" }}
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            {/* Search */}
+            <div className="px-3 py-2.5 border-b border-border shrink-0 flex items-center gap-2">
+              {/* Mobile: category filter button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0 sm:hidden"
+                onClick={() => setMobileCategorySheetOpen(true)}
+                title="Filter by category"
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Panel label */}
-        <div className="px-3 py-2 shrink-0 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {activeCategory !== ALL_CATEGORY &&
-              activeCategory !== ENABLED_CATEGORY && (
-                <span
-                  className={`w-2 h-2 rounded-full shrink-0 ${getCategoryColor(activeCategory).dot}`}
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </Button>
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={`Search ${totalCount} tools…`}
+                  className="pl-8 pr-8 h-8 text-sm"
+                  style={{ fontSize: "16px" }}
                 />
-              )}
-            {activeCategory === ENABLED_CATEGORY && (
-              <Zap className="w-3 h-3 text-primary shrink-0" />
-            )}
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
-              {activeCategory === ALL_CATEGORY
-                ? "All Tools"
-                : activeCategory === ENABLED_CATEGORY
-                  ? "Enabled Tools"
-                  : activeCategory}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {enabledCount > 0 && (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-primary sm:hidden">
-                <Zap className="w-3 h-3" />
-                {enabledCount}
-              </span>
-            )}
-            <span className="text-[11px] text-muted-foreground tabular-nums">
-              {isEnabledTab ? visibleTools.length : toolsList?.total || 0} tools
-            </span>
-            {/* Select all / Deselect all for visible tools */}
-            {visibleTools.length > 0 && !isEnabledTab && (
-              <div className="flex items-center gap-0.5">
-                {allVisibleSelected ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
-                    onClick={deselectAllVisible}
-                    title="Deselect all visible tools"
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    None
-                  </Button>
-                ) : (
-                  <>
-                    {someVisibleSelected && (
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Panel label */}
+            <div className="px-3 py-2 shrink-0 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {activeCategory !== ALL_CATEGORY &&
+                  activeCategory !== ENABLED_CATEGORY && (
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${getCategoryColor(activeCategory).dot}`}
+                    />
+                  )}
+                {activeCategory === ENABLED_CATEGORY && (
+                  <Zap className="w-3 h-3 text-primary shrink-0" />
+                )}
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                  {activeCategory === ALL_CATEGORY
+                    ? "All Tools"
+                    : activeCategory === ENABLED_CATEGORY
+                      ? "Enabled Tools"
+                      : activeCategory}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {enabledCount > 0 && (
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-primary sm:hidden">
+                    <Zap className="w-3 h-3" />
+                    {enabledCount}
+                  </span>
+                )}
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {isEnabledTab ? visibleTools.length : toolsList?.total || 0}{" "}
+                  tools
+                </span>
+                {/* Select all / Deselect all for visible tools */}
+                {visibleTools.length > 0 && !isEnabledTab && (
+                  <div className="flex items-center gap-0.5">
+                    {allVisibleSelected ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1163,178 +1152,192 @@ function ServerToolsTab({
                       >
                         None
                       </Button>
+                    ) : (
+                      <>
+                        {someVisibleSelected && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+                            onClick={deselectAllVisible}
+                            title="Deselect all visible tools"
+                          >
+                            None
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                          onClick={selectAllVisible}
+                          title="Select all visible tools"
+                        >
+                          Select all
+                        </Button>
+                      </>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
-                      onClick={selectAllVisible}
-                      title="Select all visible tools"
-                    >
-                      Select all
-                    </Button>
-                  </>
+                  </div>
+                )}
+                {isEnabledTab && enabledCount > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
+                        title="Copy enabled tools"
+                      >
+                        {copiedFormat ? (
+                          <Check className="h-3 w-3 text-success" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                        <span>{copiedFormat ? "Copied" : "Copy"}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Copy {enabledCount} enabled tool
+                        {enabledCount === 1 ? "" : "s"} as
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="flex-col items-start gap-0.5 py-2"
+                        onClick={() => handleCopyEnabled("full")}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          {copiedFormat === "full" ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <FileCode2 className="h-3 w-3" />
+                          )}
+                          Full JSON
+                        </div>
+                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                          All metadata, parameters, output schema
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex-col items-start gap-0.5 py-2"
+                        onClick={() => handleCopyEnabled("compact")}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          {copiedFormat === "compact" ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <FileCode2 className="h-3 w-3" />
+                          )}
+                          Compact JSON
+                        </div>
+                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                          id · name · description
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex-col items-start gap-0.5 py-2"
+                        onClick={() => handleCopyEnabled("minimal")}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          {copiedFormat === "minimal" ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <FileCode2 className="h-3 w-3" />
+                          )}
+                          Minimal JSON
+                        </div>
+                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                          name + description (≤120 chars)
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="flex-col items-start gap-0.5 py-2"
+                        onClick={() => handleCopyEnabled("xml")}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          {copiedFormat === "xml" ? (
+                            <Check className="h-3 w-3 text-success" />
+                          ) : (
+                            <Tag className="h-3 w-3" />
+                          )}
+                          XML for prompts
+                        </div>
+                        <span className="text-[10px] text-muted-foreground pl-[18px]">
+                          &lt;tool name=…&gt;…&lt;/tool&gt; for model context
+                        </span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
-            )}
-            {isEnabledTab && enabledCount > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
-                    title="Copy enabled tools"
-                  >
-                    {copiedFormat ? (
-                      <Check className="h-3 w-3 text-success" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                    <span>{copiedFormat ? "Copied" : "Copy"}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Copy {enabledCount} enabled tool
-                    {enabledCount === 1 ? "" : "s"} as
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="flex-col items-start gap-0.5 py-2"
-                    onClick={() => handleCopyEnabled("full")}
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      {copiedFormat === "full" ? (
-                        <Check className="h-3 w-3 text-success" />
-                      ) : (
-                        <FileCode2 className="h-3 w-3" />
-                      )}
-                      Full JSON
-                    </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
-                      All metadata, parameters, output schema
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="flex-col items-start gap-0.5 py-2"
-                    onClick={() => handleCopyEnabled("compact")}
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      {copiedFormat === "compact" ? (
-                        <Check className="h-3 w-3 text-success" />
-                      ) : (
-                        <FileCode2 className="h-3 w-3" />
-                      )}
-                      Compact JSON
-                    </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
-                      id · name · description
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="flex-col items-start gap-0.5 py-2"
-                    onClick={() => handleCopyEnabled("minimal")}
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      {copiedFormat === "minimal" ? (
-                        <Check className="h-3 w-3 text-success" />
-                      ) : (
-                        <FileCode2 className="h-3 w-3" />
-                      )}
-                      Minimal JSON
-                    </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
-                      name + description (≤120 chars)
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="flex-col items-start gap-0.5 py-2"
-                    onClick={() => handleCopyEnabled("xml")}
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      {copiedFormat === "xml" ? (
-                        <Check className="h-3 w-3 text-success" />
-                      ) : (
-                        <Tag className="h-3 w-3" />
-                      )}
-                      XML for prompts
-                    </div>
-                    <span className="text-[10px] text-muted-foreground pl-[18px]">
-                      &lt;tool name=…&gt;…&lt;/tool&gt; for model context
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Tool cards */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-3 pb-4 space-y-1">
-            {isListLoading ? (
-              <div className="flex items-center justify-center py-12 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                <span className="text-xs">Loading items...</span>
+            {/* Tool cards */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-3 pb-4 space-y-1">
+                {isListLoading ? (
+                  <div className="flex items-center justify-center py-12 text-muted-foreground">
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <span className="text-xs">Loading items...</span>
+                  </div>
+                ) : visibleTools.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+                    <Search className="w-5 h-5 opacity-40" />
+                    <p className="text-xs">
+                      {search
+                        ? `No tools match "${search}"`
+                        : "No tools in this category"}
+                    </p>
+                  </div>
+                ) : (
+                  visibleTools.map((tool: any) => {
+                    const isActive = activeSet.has(tool.id);
+                    return (
+                      <ToolCard
+                        key={tool.id}
+                        tool={tool}
+                        active={isActive}
+                        expanded={expandedTool === tool.id}
+                        onToggle={toggleTool}
+                        onExpand={() =>
+                          setExpandedTool(
+                            expandedTool === tool.id ? null : tool.id,
+                          )
+                        }
+                        dupBundles={dupBundlesByToolId.get(tool.id)}
+                      />
+                    );
+                  })
+                )}
               </div>
-            ) : visibleTools.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-                <Search className="w-5 h-5 opacity-40" />
-                <p className="text-xs">
-                  {search
-                    ? `No tools match "${search}"`
-                    : "No tools in this category"}
-                </p>
-              </div>
-            ) : (
-              visibleTools.map((tool: any) => {
-                const isActive = activeSet.has(tool.id);
-                return (
-                  <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    active={isActive}
-                    expanded={expandedTool === tool.id}
-                    onToggle={toggleTool}
-                    onExpand={() =>
-                      setExpandedTool(expandedTool === tool.id ? null : tool.id)
-                    }
-                    dupBundles={dupBundlesByToolId.get(tool.id)}
-                  />
-                );
-              })
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Pagination */}
-        {!isEnabledTab && toolsList && toolsList.page_count > 1 && (
-          <div className="flex items-center justify-between px-4 py-2 border-t border-border shrink-0 bg-muted/20">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="h-7 text-xs"
-            >
-              Previous
-            </Button>
-            <span className="text-[10px] text-muted-foreground">
-              Page {page} of {toolsList.page_count}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= toolsList.page_count}
-              onClick={() => setPage((p) => p + 1)}
-              className="h-7 text-xs"
-            >
-              Next
-            </Button>
-          </div>
-        )}
+            {/* Pagination */}
+            {!isEnabledTab && toolsList && toolsList.page_count > 1 && (
+              <div className="flex items-center justify-between px-4 py-2 border-t border-border shrink-0 bg-muted/20">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="h-7 text-xs"
+                >
+                  Previous
+                </Button>
+                <span className="text-[10px] text-muted-foreground">
+                  Page {page} of {toolsList.page_count}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= toolsList.page_count}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-7 text-xs"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

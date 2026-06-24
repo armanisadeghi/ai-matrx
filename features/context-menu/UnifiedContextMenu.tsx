@@ -94,7 +94,7 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
 import { extractErrorMessage } from "@/utils/errors";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import IconResolver from "@/components/official/icons/IconResolver.dynamic";
 import { toast } from "@/components/ui/use-toast";
 
 interface UnifiedContextMenuProps {
@@ -977,7 +977,7 @@ export function UnifiedContextMenu({
             {isDebugMode && (
               <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
                 {error instanceof Error
-                  ? error.stack ?? error.message
+                  ? (error.stack ?? error.message)
                   : extractErrorMessage(error)}
               </pre>
             )}
@@ -1025,12 +1025,6 @@ export function UnifiedContextMenu({
     } else if (item.type === "content_block") {
       handleContentBlockInsert(item);
     }
-  };
-
-  // Helper to get Lucide icon component
-  const getIcon = (iconName?: string | null) => {
-    if (!iconName) return FileText;
-    return getIconComponent(iconName, "FileText");
   };
 
   // Get icon for placement type
@@ -1089,7 +1083,6 @@ export function UnifiedContextMenu({
       placementType: string,
     ) => {
       const { category, items, children } = group;
-      const CategoryIcon = getIcon(category.icon_name);
       const hasContent = items.length > 0 || (children && children.length > 0);
 
       return (
@@ -1098,9 +1091,11 @@ export function UnifiedContextMenu({
             <SubTrigger
               className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}
             >
-              <CategoryIcon
+              <IconResolver
+                iconName={category.icon_name}
                 className="h-4 w-4 mr-2"
                 style={{ color: category.color || "currentColor" }}
+                fallbackIcon="FileText"
               />
               {category.label}
             </SubTrigger>
@@ -1114,10 +1109,6 @@ export function UnifiedContextMenu({
               )}
 
               {items.map((item) => {
-                const ItemIcon =
-                  item.type === "content_block"
-                    ? item.icon
-                    : getIcon(item.icon_name);
                 const isDisabled =
                   item.type === "prompt_shortcut" &&
                   (!item.prompt_builtin || !item.prompt_builtin_id);
@@ -1128,7 +1119,15 @@ export function UnifiedContextMenu({
                     onSelect={() => handleMenuItemSelect(item, placementType)}
                     disabled={isDisabled}
                   >
-                    <ItemIcon className="h-4 w-4 mr-2" />
+                    {item.type === "content_block" ? (
+                      <item.icon className="h-4 w-4 mr-2" />
+                    ) : (
+                      <IconResolver
+                        iconName={item.icon_name}
+                        className="h-4 w-4 mr-2"
+                        fallbackIcon="FileText"
+                      />
+                    )}
                     {item.label}
                     {isDisabled && (
                       <span className="ml-auto text-xs text-muted-foreground">
@@ -1570,7 +1569,6 @@ export function UnifiedContextMenu({
     placementType: string,
   ) => {
     const { category, items, children } = group;
-    const CategoryIcon = getIcon(category.icon_name);
 
     // Show category even if empty (user wants this!)
     const hasContent = items.length > 0 || (children && children.length > 0);
@@ -1581,9 +1579,11 @@ export function UnifiedContextMenu({
           <ContextMenuSubTrigger
             className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <CategoryIcon
+            <IconResolver
+              iconName={category.icon_name}
               className="h-4 w-4 mr-2"
               style={{ color: category.color || "currentColor" }}
+              fallbackIcon="FileText"
             />
             {category.label}
           </ContextMenuSubTrigger>
@@ -1599,12 +1599,6 @@ export function UnifiedContextMenu({
 
             {/* Render items in this category */}
             {items.map((item) => {
-              // Get icon based on item type
-              const ItemIcon =
-                item.type === "content_block"
-                  ? item.icon
-                  : getIcon(item.icon_name);
-
               // Check if disabled (only for shortcuts)
               const isDisabled =
                 item.type === "prompt_shortcut" &&
@@ -1616,7 +1610,15 @@ export function UnifiedContextMenu({
                   onSelect={() => handleMenuItemSelect(item, placementType)}
                   disabled={isDisabled}
                 >
-                  <ItemIcon className="h-4 w-4 mr-2" />
+                  {item.type === "content_block" ? (
+                    <item.icon className="h-4 w-4 mr-2" />
+                  ) : (
+                    <IconResolver
+                      iconName={item.icon_name}
+                      className="h-4 w-4 mr-2"
+                      fallbackIcon="FileText"
+                    />
+                  )}
                   {item.label}
                   {isDisabled && (
                     <span className="ml-auto text-xs text-muted-foreground">
