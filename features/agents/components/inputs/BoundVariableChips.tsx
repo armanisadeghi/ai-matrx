@@ -33,6 +33,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+// Surface A: the "Select {ScopeType}" prompt sets the globally-active scope so a
+// globally-triggered agent run resolves its bound variables (the server fills them
+// authoritatively from request.scope_ids). Explicit active-context selection.
+// eslint-disable-next-line no-restricted-syntax -- Surface A: agent-run active-scope selection
 import { setScopeSelections } from "@/lib/redux/slices/appContextSlice";
 import {
   selectActiveOrganizationId,

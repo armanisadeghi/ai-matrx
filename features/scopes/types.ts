@@ -26,45 +26,25 @@ export type TemplateRow = Database["public"]["Tables"]["ctx_templates"]["Row"];
 export type ContextAccessLogRow =
   Database["public"]["Tables"]["ctx_context_access_log"]["Row"];
 
-// ─── Entity types that can be tagged with scopes ────────────────────
+// ─── Canonical entity vocabulary — `EntityType` ─────────────────────
 //
-// `ctx_scope_assignments.entity_type` is a string column in the DB.
-// Enumerate it here so callers can't pass arbitrary values. New entity
-// types must be added here AND on the server-side validation.
-
-export type ScopeAssignmentEntityType =
-  | "note"
-  | "task"
-  | "project"
-  | "agent"
-  | "agent_app"
-  | "agent_shortcut"
-  | "agent_surface_binding"
-  | "conversation"
-  | "project_resource"
-  | "file"
-  // An extraction dataset (one `page_extraction_jobs` row). Tagged durably so
-  // a dataset of extracted rows participates in the context system like any
-  // other entity. `set_entity_scopes` does not whitelist entity_type and
-  // `ctx_scope_assignments.entity_type` has no CHECK, so no migration is
-  // needed — this union is the single place the type is declared.
-  | "page_extraction_job";
-
-// ─── Canonical entity vocabulary (platform.associations) ──────────────
+// THE single token set for any entity the app treats as first-class: what can
+// be tagged with a scope (`ctx_scope_assignments.entity_type`) AND what can
+// participate in the unified association edge (`platform.associations`). One
+// vocabulary — there is no separate "scope assignment" union.
 //
-// `EntityType` is the canonical token set for ANY entity that participates
-// in the unified association edge (`platform.associations`). Sourced 1:1
-// from DB `platform.entity_types` (15 rows) — this union IS the vocabulary
-// for the whole app's attach/detach primitive. New entity types are added
-// to `platform.entity_types` first, then mirrored here.
+// The DB registry `platform.entity_types` is the source of truth; this union
+// mirrors it. New entity types are added to `platform.entity_types` FIRST,
+// then mirrored here — never the reverse. (Neither `ctx_scope_assignments`
+// nor `platform.associations.source_type` enforce membership at the DB level —
+// both are free-text source columns — so this union is the app-side guard that
+// stops callers inventing tokens.)
 //
-// NOTE: the legacy `ScopeAssignmentEntityType` above is a DIVERGENT subset
-// (it carries app-only tokens like `agent_app`, `page_extraction_job` that
-// predate the platform table, and omits several canonical ones). The two
-// are reconciled in a later pass; until then, association code uses
-// `EntityType` and the ctx_scope_assignments path keeps its own union.
-
+// 15 canonical registry tokens + 3 app entity types (`agent_app`,
+// `agent_surface_binding`, `page_extraction_job`), registered in the registry
+// by migrations/platform_entity_types_app_tokens.sql.
 export type EntityType =
+  // ── canonical (platform.entity_types) ──
   | "agent"
   | "note"
   | "file"
@@ -79,7 +59,11 @@ export type EntityType =
   | "thread"
   | "war_room"
   | "studio_session"
-  | "transcript";
+  | "transcript"
+  // ── app entity types (also registered in platform.entity_types) ──
+  | "agent_app" //             an `aga_apps` row (packaged agent experience)
+  | "agent_surface_binding" // an agent⇄surface binding row
+  | "page_extraction_job"; //  an extraction dataset (one `page_extraction_jobs` row)
 
 // ─── Favorite kinds (presentation vocabulary, folded onto EntityType) ──
 //

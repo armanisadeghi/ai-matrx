@@ -17,6 +17,9 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/utils/supabase/client";
 import { useAppDispatch } from "@/lib/redux/hooks";
+// Surface A lifecycle write: reset the global active context on sign-out so the
+// previous user's org/scope/context never bleeds into the next same-tab session.
+// eslint-disable-next-line no-restricted-syntax -- Surface A: logout active-context reset
 import { clearContext } from "@/lib/redux/slices/appContextSlice";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { contextValuesActions } from "@/features/scopes/redux/contextValuesSlice";

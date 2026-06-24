@@ -32,7 +32,7 @@ import type {
   ResolvedSuggestionItem,
   ResolvedSuggestionTarget,
   ResolvedSuggestionValue,
-  ScopeAssignmentEntityType,
+  EntityType,
   ScopeNode,
   ScopeTreeResponse,
   ScopeTypeNode,
@@ -531,12 +531,12 @@ export const scopesService = {
 
   async listEntitiesByScopes(args: {
     scope_ids: string[];
-    entity_type?: ScopeAssignmentEntityType;
+    entity_type?: EntityType;
     match_all?: boolean;
   }): Promise<
     ScopesRpcResult<{
       entities: Array<{
-        entity_type: ScopeAssignmentEntityType;
+        entity_type: EntityType;
         entity_id: string;
       }>;
     }>
@@ -558,7 +558,7 @@ export const scopesService = {
       const matches = new Map<
         string,
         {
-          entity_type: ScopeAssignmentEntityType;
+          entity_type: EntityType;
           entity_id: string;
           hits: Set<string>;
         }
@@ -570,7 +570,7 @@ export const scopesService = {
           entry.hits.add(row.scope_id);
         } else {
           matches.set(key, {
-            entity_type: row.entity_type as ScopeAssignmentEntityType,
+            entity_type: row.entity_type as EntityType,
             entity_id: row.entity_id,
             hits: new Set([row.scope_id]),
           });
@@ -653,7 +653,7 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
 
   async getEntityScopes(
-    entityType: ScopeAssignmentEntityType,
+    entityType: EntityType,
     entityId: string,
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
     try {
@@ -676,7 +676,7 @@ export const scopesService = {
    * context status — N visible rows must never mean N requests.
    */
   async getEntityScopesBulk(
-    entityType: ScopeAssignmentEntityType,
+    entityType: EntityType,
     entityIds: string[],
   ): Promise<ScopesRpcResult<{ byEntity: Record<string, string[]> }>> {
     try {
@@ -711,7 +711,7 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
 
   async setEntityScopes(
-    entityType: ScopeAssignmentEntityType,
+    entityType: EntityType,
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
@@ -756,11 +756,11 @@ export const scopesService = {
    * violate the Surface A/B global-context invariant.
    */
   async adoptEntityOrgFromScopes(
-    entityType: ScopeAssignmentEntityType,
+    entityType: EntityType,
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
-    const ENTITY_ORG_TABLE: Partial<Record<ScopeAssignmentEntityType, string>> =
+    const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> =
       {
         project: "ctx_projects",
         task: "ctx_tasks",

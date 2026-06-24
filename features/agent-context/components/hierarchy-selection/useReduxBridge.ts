@@ -2,6 +2,11 @@
 
 import { useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+// Canonical Surface A redux bridge — dispatches active-context writes for the
+// global hierarchy pickers (SidebarContextSelector, ContextSwitcherWindow,
+// TaskContentNew). Classified "Surface-A writer — correct, not a bug" in
+// features/window-panels/docs/inventory/context-scopes.md.
+// eslint-disable-next-line no-restricted-syntax -- Surface A: canonical global-context bridge
 import {
   selectAppContext,
   setOrganization,

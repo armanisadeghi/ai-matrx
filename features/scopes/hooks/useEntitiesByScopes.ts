@@ -25,13 +25,13 @@
 import { useEffect, useRef, useState } from "react";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 
 export interface UseEntitiesByScopesArgs {
   /** active scope ids (typically from `selectScopeSelectionsContext`) */
   scopeIds: readonly string[];
   /** optional entity_type filter (note / task / agent / etc.) */
-  entityType?: ScopeAssignmentEntityType;
+  entityType?: EntityType;
   /** if true, require ALL scope_ids; otherwise ANY. Defaults to false. */
   matchAll?: boolean;
   /** when false, the hook returns null and skips fetching. */
@@ -56,7 +56,7 @@ const inFlight = new Map<string, Promise<Set<string>>>();
 
 function buildKey(
   scopeIds: readonly string[],
-  entityType: ScopeAssignmentEntityType | undefined,
+  entityType: EntityType | undefined,
   matchAll: boolean,
 ): string {
   const sorted = [...scopeIds].sort().join(",");

@@ -89,7 +89,7 @@ import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWin
 import type {
   OrgNode,
   ScopeTypeNode,
-  ScopeAssignmentEntityType,
+  EntityType,
 } from "@/features/scopes/types";
 
 /** Sentinel org value: no org filter — show / span every organization.
@@ -100,7 +100,7 @@ export const ALL_ORGS = "__all_orgs__";
 
 export interface ContextAssignmentSubject {
   /** Canonical entity type ("file", "note", "agent", …). */
-  entityType: ScopeAssignmentEntityType;
+  entityType: EntityType;
   entityId: string;
   title: string;
   subtitle?: string;

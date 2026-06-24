@@ -101,14 +101,14 @@ import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 
 /**
  * Canonical entity_type for `agx_agent_surface` rows in the scope-assignments
  * many-to-many system. Mirrors the per-component constant used by
  * `agent-apps` and `notes`.
  */
-const SCOPE_ENTITY_TYPE: ScopeAssignmentEntityType = "agent_surface_binding";
+const SCOPE_ENTITY_TYPE: EntityType = "agent_surface_binding";
 
 interface Props {
   agent: AgentDefinition;

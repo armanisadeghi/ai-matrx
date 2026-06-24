@@ -351,6 +351,34 @@ const scopesChokepointSyntaxRestrictions = [
     },
 ];
 
+// appContextSlice IS the global "active working context" (active org / scope
+// selections / project / task / conversation). The load-bearing invariant
+// (CLAUDE.md "Scopes and Context"; features/scopes/FEATURE.md "Global vs local
+// context") is: ONLY Surface A components — under
+// features/scopes/components/active-context/** — may WRITE it. Every other
+// surface that wants to "tag X with a scope" persists a DURABLE association
+// (platform.associations via the association primitive, or ctx_scope_assignments);
+// it must never dispatch setOrganization / setScopeSelections / setProject /
+// setTask / setConversation / setFullContext / clearContext. A picker that
+// silently changes the sidebar's active context is the #1 bug this kills.
+//
+// Modeled on the scopesService chokepoint above: the selector bans IMPORTING the
+// write action creators from the slice; the active-context allowlist override at
+// the bottom of the file re-enables them for Surface A. A legitimate Surface-A
+// writer that lives OUTSIDE active-context/** (e.g. the canonical
+// useHierarchyReduxBridge, the logout-reset watcher) must carry an explicit
+// `// eslint-disable-next-line no-restricted-syntax` WITH a one-line justification,
+// so every exception is visible and reviewed. The selector reports on the whole
+// ImportDeclaration, so the disable comment goes directly above the `import` line.
+const appContextWriteSyntaxRestrictions = [
+    {
+        selector:
+            "ImportDeclaration[source.value='@/lib/redux/slices/appContextSlice']:has(ImportSpecifier[imported.name=/^(setOrganization|setScopeSelections|setProject|setTask|setConversation|setFullContext|clearContext)$/])",
+        message:
+            "appContextSlice write actions (setOrganization / setScopeSelections / setProject / setTask / setConversation / setFullContext / clearContext) may be imported ONLY by Surface A components under features/scopes/components/active-context/**. Global active context is written by Surface A alone; every other surface must persist a DURABLE association (platform.associations via the association primitive, or ctx_scope_assignments) instead of mutating the sidebar's working context. If this IS a legitimate Surface-A active-context write, add `// eslint-disable-next-line no-restricted-syntax` directly above this import with a one-line justification. See CLAUDE.md 'Scopes and Context' + features/scopes/FEATURE.md 'Global vs local context'.",
+    },
+];
+
 // Client tool results MUST be posted through @/features/agents/api/submit-tool-results
 // (the `submitToolResult` thunk → microtask batcher → `postToolResults`). That
 // funnel intrinsically reads `continuation_needed` on the response and fires
@@ -588,6 +616,8 @@ export default [
                 ...fileHandlerSyntaxRestrictions,
                 // features/scopes chokepoint — only scopesService.ts may touch ctx_* tables.
                 ...scopesChokepointSyntaxRestrictions,
+                // appContextSlice writes — only Surface A (active-context/**) may import the write actions.
+                ...appContextWriteSyntaxRestrictions,
                 // features/agents tool-results chokepoint — only submit-tool-results.ts may POST /tool_results.
                 ...toolResultsChokepointSyntaxRestrictions,
                 // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
@@ -624,6 +654,7 @@ export default [
                 ...legacySupabaseKeyBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 {
                     selector:
@@ -645,8 +676,12 @@ export default [
         rules: {
             // The files feature owns the supabase.storage / cloud-files
             // internals. It still must NOT use legacy Supabase API key
-            // env vars.
-            'no-restricted-syntax': ['error', ...legacySupabaseKeyBan],
+            // env vars, nor write the global active context (Surface A only).
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...appContextWriteSyntaxRestrictions,
+            ],
         },
     },
     {
@@ -669,6 +704,7 @@ export default [
                 ...legacySupabaseKeyBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
                 {
                     selector: "JSXOpeningElement[name.name='img']",
@@ -789,6 +825,7 @@ export default [
                 ...fileHandlerSyntaxRestrictions,
                 // scopesChokepointSyntaxRestrictions intentionally omitted.
                 ...toolResultsChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
             ],
         },
     },
@@ -812,6 +849,7 @@ export default [
                 ...legacySupabaseKeyBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
                 // toolResultsChokepointSyntaxRestrictions intentionally omitted.
             ],
         },
@@ -876,6 +914,40 @@ export default [
         ],
         rules: {
             'no-restricted-imports': 'off',
+        },
+    },
+    // ─── appContextSlice (Surface A) write-action allowlist ────────────
+    //
+    // appContextWriteSyntaxRestrictions bans IMPORTING the appContextSlice write
+    // action creators everywhere. This override re-enables them for the ONLY
+    // sanctioned writers: Surface A components under
+    // features/scopes/components/active-context/**, plus the slice's own file.
+    // It re-lists every OTHER global syntax ban (flat-config replaces, not
+    // merges, the rule per file) and omits ONLY the appContext one — exactly the
+    // shape of the scopes-chokepoint allowlist above.
+    //
+    // Adding any other path here is a Doctrine violation: a non-Surface-A writer
+    // must instead carry a justified `// eslint-disable-next-line
+    // no-restricted-syntax`, or (the correct fix) persist a durable association.
+    // Placed LAST so no later config object can override its no-restricted-syntax.
+    {
+        files: [
+            'features/scopes/components/active-context/**/*',
+            'lib/redux/slices/appContextSlice.ts',
+        ],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                ...canonicalMenuStaticImportBan,
+                ...contextMenuV3StaticImportBan,
+                ...heavyImplStaticImportBan,
+                // appContextWriteSyntaxRestrictions intentionally omitted — these
+                // ARE the Surface A writers permitted to set global active context.
+            ],
         },
     },
 ];

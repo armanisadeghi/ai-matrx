@@ -350,7 +350,7 @@ flowchart TD
 
 The canonical **"associate ANY entity to ANY entity"** primitive, owned by this module. It replaces scattered `project_id`/`task_id` FK tagging and per-feature M2M tables (`ctx_scope_assignments`, `ctx_task_associations`, …) with **one polymorphic edge table**. Read this before adding any "tag / link / attach this to that" relationship anywhere in the app — extend the edge, never spin up a new M2M table or FK column.
 
-`platform.associations(source_type, source_id, target_type, target_id, org_id, label, metadata, created_by, created_at)`. A `source_type` is free text (any token may be a source); a **`target_type` is CHECK-constrained to 8 tokens**: `scope`, `scope_type`, `project`, `task`, `context_item`, `thread`, `war_room`, `category`. The entity vocabulary is driven by `platform.entity_types` (15 canonical tokens) — `AssociationTargetType` (8) and `EntityType` (15) in `types.ts` mirror these 1:1.
+`platform.associations(source_type, source_id, target_type, target_id, org_id, label, metadata, created_by, created_at)`. A `source_type` is free text (any token may be a source); a **`target_type` is CHECK-constrained to 8 tokens**: `scope`, `scope_type`, `project`, `task`, `context_item`, `thread`, `war_room`, `category`. The entity vocabulary is driven by `platform.entity_types` — `AssociationTargetType` (8 CHECK-constrained targets) and the single `EntityType` union in `types.ts` mirror the registry 1:1. `EntityType` = 15 canonical registry tokens + 3 app entity types (`agent_app`, `agent_surface_binding`, `page_extraction_job`), registered via `migrations/platform_entity_types_app_tokens.sql`.
 
 ### The primitive (all under `features/scopes/`)
 
@@ -373,7 +373,7 @@ Reads can move to `platform.associations` **now**; the column/table drops are a 
 
 - **33 FK mirrors** + the 2 new M2M mirrors (`ctx_scope_assignments`, `ctx_task_associations` via `platform._mirror_m2m_to_assoc`) replicate every legacy `project_id`/`task_id` write and M2M row into `platform.associations`.
 - **War Room writes associations directly** (no mirror) — it is already native to the edge.
-- The `ctx_scope_assignments` path keeps its own `ScopeAssignmentEntityType` union (a **divergent subset** of `EntityType`, with app-only tokens like `agent_app`/`page_extraction_job`); the two are reconciled in a later pass. Association code uses `EntityType`.
+- **One entity vocabulary** (reconciled 2026-06-24): the `ctx_scope_assignments` path and association code share the single `EntityType` union — the divergent `ScopeAssignmentEntityType` subset is deleted. `EntityType` carries the 15 registry tokens + the 3 live app entity types (`agent_app`, `agent_surface_binding`, `page_extraction_job`); the dead `agent_shortcut`/`project_resource` tokens were dropped.
 
 ### The invariant — durable association ≠ active working context
 
@@ -726,7 +726,7 @@ Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (
 
 ## Invariants & gotchas
 
-- **Global context is ONLY written by Surface A components.** Surface B is locked out at the import path via ESLint.
+- **Global context is ONLY written by Surface A components** (`features/scopes/components/active-context/**`). Enforced, not just documented: `appContextWriteSyntaxRestrictions` (`eslint.config.mjs`, modeled on the scopesService chokepoint) bans importing the `appContextSlice` write actions (`setOrganization`/`setScopeSelections`/`setProject`/`setTask`/`setConversation`/`setFullContext`/`clearContext`) anywhere else. A legitimate Surface-A writer living outside that folder (`useHierarchyReduxBridge`, `useContextScope`, `BoundVariableChips`, `TasksContextSidebar`, the logout reset) carries a justified `// eslint-disable-next-line no-restricted-syntax`. Every other surface persists a durable association instead.
 - **Association writes NEVER touch `appContextSlice`.** A durable `platform.associations` edge is a stored relationship, not the active working context. All edge writes go through `useAssociations` → `associationsService` → the `assoc_*` RPCs; new "tag / link X to Y" UI extends the edge, never a fresh M2M table or FK column.
 - **One scope per scope_type in active context.** Multiple selections on the same type are rejected at the reducer (idempotent replace).
 - **Across-type selection is fully additive.** Never silently clear other dimensions.
@@ -740,7 +740,7 @@ Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (
 - **Templates are read-only catalog.** Mutations on `ctx_templates` happen elsewhere (seed scripts, admin-only).
 - **`max_assignments_per_entity` is a hint, not a hard limit at the DB layer.** Surface B enforces in UI; the server validates in RPCs.
 - **The "Personal" pseudo-org sentinel** continues to live in `appContextSlice` per the existing rule in `features/agent-context/FEATURE.md` (see "Personal-projects sentinel"). The sentinel is storable in Redux / passable in UI props; the API boundary strips it. Carry forward unchanged.
-- **`ctx_scope_assignments.entity_type` is a string.** Define an enum in `features/scopes/types.ts` (`'note' | 'task' | 'agent' | 'agent_app' | 'agent_shortcut' | 'project_resource' | 'conversation' | ...`) and use it. Free-form strings are how the old code got into trouble.
+- **One entity vocabulary — `EntityType`.** Both `ctx_scope_assignments.entity_type` and `platform.associations.source_type` are free-text DB columns; the single `EntityType` union (`features/scopes/types.ts`) is the app-side guard that stops callers inventing tokens. There is NO separate `ScopeAssignmentEntityType` (deleted). New entity types are added to `platform.entity_types` FIRST, then mirrored into `EntityType` — never the reverse.
 
 ---
 
@@ -882,6 +882,8 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 ---
 
 ## Change log
+
+- `2026-06-24` — claude: **`appContextSlice` writes ESLint-enforced + entity vocabulary unified.** (1) The "global context is written by Surface A ONLY" invariant is now enforced, not just convention: `appContextWriteSyntaxRestrictions` (`eslint.config.mjs`, modeled on the scopesService chokepoint) bans importing the slice's write actions (`setOrganization`/`setScopeSelections`/`setProject`/`setTask`/`setConversation`/`setFullContext`/`clearContext`) outside `features/scopes/components/active-context/**` (+ the slice file). The 5 legitimate Surface-A writers outside that folder carry a justified `eslint-disable-next-line` (`useHierarchyReduxBridge`, `useContextScope`, `BoundVariableChips`, `TasksContextSidebar`, `AuthSessionWatcher`); none were the durable-association anti-pattern. (2) **One entity vocabulary:** deleted the divergent `ScopeAssignmentEntityType`; all ~17 callsites use the canonical `EntityType`, now 15 registry tokens + 3 app entity types (`agent_app`/`agent_surface_binding`/`page_extraction_job`), dead `agent_shortcut`/`project_resource` dropped. Registry parity: `migrations/platform_entity_types_app_tokens.sql` (registers the 3 in `platform.entity_types`).
 
 - `2026-06-24` — claude: **The unified association edge shipped** — `platform.associations` (one polymorphic `source→target` table, target CHECK-constrained to 8 tokens, driven by `platform.entity_types`/15) replaces scattered `project_id`/`task_id` FK tagging + per-feature M2M tables. New FE primitive under `features/scopes/`: `service/associationsService.ts` (sole `assoc_*` chokepoint), `hooks/useAssociations`, `components/associations/EntityAssociator.tsx`, `scopesSlice.associationsByKey` + `redux/thunks/selectors/associations`, plus `EntityType`/`AssociationTargetType`/`AssociationEdge`/`AssociationsEntry` in `types.ts`. FE data path = four PUBLIC SECURITY-DEFINER RPCs (`assoc_for_entity`/`assoc_add`/`assoc_remove`/`assoc_set_targets` — `authenticated` has no direct `platform.*` grant); migrations `assoc_public_rpcs.sql` + `assoc_m2m_mirror_triggers.sql`. **Transition contract:** old M2M tables + FK columns are MIRRORED into the edge by triggers (33 FK + 2 M2M via `_mirror_m2m_to_assoc`), so reads can move now; drops are a later destructive wave. War Room writes the edge directly. `ContextAssignmentField`'s project/task tagging now persists real edges via `setTargets` (was a dead stub). **Invariant:** association thunks never write `appContextSlice`. New §"The unified association edge"; reconciled the "final picker shape — deferred" note (relationship UI is now `EntityAssociator`). Also this changeover (FE swap pending, documented at the consuming features): `platform.user_entity_state` (favorites/pins/hidden/recency; RPCs `ues_set`/`ues_list`/`ues_get_bulk`/`ues_touch`) and `platform.categories` (faceted by `dimension`; RPCs `cat_list`/`cat_create`; assignment reuses `assoc_add(target_type='category')`).
 

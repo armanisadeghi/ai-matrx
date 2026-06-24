@@ -10,7 +10,7 @@ import type {
   OrgNode,
   OrphanBucket,
   ProjectNode,
-  ScopeAssignmentEntityType,
+  EntityType,
   ScopeNode,
   ScopeTypeNode,
   TaskBucketEntry,
@@ -246,7 +246,7 @@ export const makeSelectEntityScopes = () =>
     (state: RootState) => state.scopesTree.entityScopesByKey,
     (
       _: RootState,
-      args: { entityType: ScopeAssignmentEntityType; entityId: string },
+      args: { entityType: EntityType; entityId: string },
     ) => `${args.entityType}:${args.entityId}`,
     (byKey, key): EntityScopesEntry => byKey[key] ?? EMPTY_ENTITY_SCOPES,
   );
@@ -256,7 +256,7 @@ export const makeSelectEntityScopeIds = () =>
     (state: RootState) => state.scopesTree.entityScopesByKey,
     (
       _: RootState,
-      args: { entityType: ScopeAssignmentEntityType; entityId: string },
+      args: { entityType: EntityType; entityId: string },
     ) => `${args.entityType}:${args.entityId}`,
     (byKey, key): string[] => byKey[key]?.scope_ids ?? empty,
   );
@@ -283,7 +283,7 @@ export const makeSelectEntityIdsMatchingScopes = () =>
     (
       _: RootState,
       args: {
-        entityType: ScopeAssignmentEntityType;
+        entityType: EntityType;
         scopeIds: readonly string[];
         matchAll: boolean;
       },

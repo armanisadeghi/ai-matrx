@@ -193,10 +193,10 @@ export type KgDecisionResponse = void;
 //
 // A suggestion's `source_kind` is a RAG source kind (note | task | project |
 // cld_file | transcript | scraped | code_file | …). Only a subset maps to a
-// taggable `ScopeAssignmentEntityType` (features/scopes/types.ts). Used by both
+// taggable `EntityType` (features/scopes/types.ts). Used by both
 // the Stage-A link accept (tag the source to its target scope) and the
 // heavy-hitter accept (tag the source to the freshly-created scope). The string
-// values MUST match the `ScopeAssignmentEntityType` union; kept as a plain
+// values MUST match the `EntityType` union; kept as a plain
 // record (not importing the union) to avoid a cross-feature type cycle — the
 // caller validates at the `setEntityScopes` boundary.
 
@@ -218,7 +218,7 @@ export function kgSourceKindToEntityType(sourceKind: string): string | null {
 // A suggestion list is always scoped to ONE of three views. The discriminated
 // union below is the public addressing scheme the hook + chip + drawer share.
 // `sourceKind` mirrors the row `source_kind` (a broad string, NOT the narrower
-// `ScopeAssignmentEntityType` union — a suggestion's source is broader than the
+// `EntityType` union — a suggestion's source is broader than the
 // set of taggable entities).
 
 export interface KgSourceFilter {
