@@ -38,10 +38,13 @@ import {
   selectTileIdsForSession,
   selectTileTaskId,
 } from "@/features/war-room/redux/selectors";
-import type { WarRoomTile } from "@/features/war-room/types";
+import type { WarRoomAssignment, WarRoomTile } from "@/features/war-room/types";
+import { selectFileById, selectRagStatusForFile } from "@/features/files";
+import { getThreadFileRagIndexed } from "@/features/war-room/service/threadFileRagCache";
 import {
   buildWarRoomContextEntry,
   type WarRoomContextModel,
+  type WarRoomFileModel,
   type WarRoomRoomModel,
   type WarRoomThreadModel,
 } from "@/features/war-room/service/warRoomContextXml";
@@ -58,11 +61,61 @@ function threadLabel(
   return `Thread ${index + 1}`;
 }
 
+/**
+ * Build the per-file manifest for ONE thread from its attachment rows + the
+ * files slice. Best-effort flags:
+ *   - hasExtraction ← the file's `canonicalProcessedDocumentId` (the canonical
+ *     "has OUR extraction" signal), else the cloudFiles `ragStatus` slice
+ *     (extraction-presence: indexed ⇒ yes, not_indexed ⇒ no), else undefined.
+ *   - ragIndexed ← the searchable-RAG probe cache (filled by TileAgentPanel's
+ *     prefetch); undefined when not yet probed — OMITTED, never guessed.
+ * `name` prefers the file slice's `fileName`, falling back to the assignment
+ * `label`. Documents (entity_type='document') carry no cld_files extraction —
+ * they're read via the agent's `document` tool, so flags stay undefined.
+ */
+function buildThreadFiles(
+  state: RootState,
+  attachments: WarRoomAssignment[],
+): WarRoomFileModel[] {
+  return attachments.map((a): WarRoomFileModel => {
+    const kind: "file" | "document" =
+      a.entity_type === "document" ? "document" : "file";
+    const record = kind === "file" ? selectFileById(state, a.entity_id) : undefined;
+    const name = record?.fileName ?? a.label ?? "untitled";
+    const mime = record?.mimeType ?? undefined;
+
+    let hasExtraction: boolean | undefined;
+    if (kind === "file") {
+      if (record?.canonicalProcessedDocumentId != null) {
+        hasExtraction = true;
+      } else {
+        const ragSlice = selectRagStatusForFile(state, a.entity_id);
+        if (ragSlice === "indexed") hasExtraction = true;
+        else if (ragSlice === "not_indexed") hasExtraction = false;
+        // "pending" / "unknown" / undefined ⇒ leave unknown (omit the flag).
+      }
+    }
+
+    const ragIndexed =
+      kind === "file" ? getThreadFileRagIndexed(a.entity_id) : undefined;
+
+    return {
+      id: a.entity_id,
+      name,
+      ...(mime ? { mime } : {}),
+      kind,
+      ...(hasExtraction === undefined ? {} : { hasExtraction }),
+      ...(ragIndexed === undefined ? {} : { ragIndexed }),
+    };
+  });
+}
+
 /** Build one thread model for a tile, reading whatever Redux has hydrated. */
 function tileToThreadModel(
   state: RootState,
   tile: WarRoomTile,
   index: number,
+  withFiles: boolean,
 ): WarRoomThreadModel {
   const taskId = selectTileTaskId(tile.id)(state);
   const task = taskId ? selectTaskById(state, taskId) : undefined;
@@ -70,7 +123,7 @@ function tileToThreadModel(
   const note = noteId ? selectNoteById(noteId)(state) : undefined;
   const noteContent = (note?.content ?? "").trim();
   const audioCount = selectAudioSessionIdsForTile(tile.id)(state).length;
-  const fileCount = selectAttachmentsForTile(tile.id)(state).length;
+  const attachments = selectAttachmentsForTile(tile.id)(state);
 
   return {
     id: tile.id,
@@ -84,7 +137,12 @@ function tileToThreadModel(
     noteId,
     noteChars: noteContent ? noteContent.length : undefined,
     hasAudio: audioCount > 0,
-    fileCount,
+    fileCount: attachments.length,
+    // Only the CURRENT thread gets the full per-file manifest — siblings keep
+    // the terse count (a thread agent shouldn't carry every sibling's files).
+    ...(withFiles && attachments.length > 0
+      ? { files: buildThreadFiles(state, attachments) }
+      : {}),
   };
 }
 
@@ -118,7 +176,9 @@ export function buildTileAgentContextEntries(
   const threads: WarRoomThreadModel[] = tileIds
     .map((id, index) => {
       const t = id === tileId ? tile : selectTileById(id)(state);
-      return t ? tileToThreadModel(state, t, index) : null;
+      // Only the current thread gets the per-file manifest (it's the one the
+      // agent acts in + the only one its read tools target by these ids).
+      return t ? tileToThreadModel(state, t, index, id === tileId) : null;
     })
     .filter((t): t is WarRoomThreadModel => t !== null);
 
@@ -141,7 +201,13 @@ export function buildTileAgentContextEntries(
       "specific body or to act.",
     howTo:
       "Edit THIS thread's task/note with your war_room tools (the user " +
-      "approves each). For this thread's transcripts, the ACTIVE recording is " +
+      "approves each). To READ an attached file's text, call " +
+      "war_room_read_file(file_id=<id from <files>>) — it returns OUR extracted " +
+      "text (mode=clean tidied / raw verbatim / chunks RAG-ready), never the raw " +
+      "PDF; only files with extraction=\"yes\" are readable. To SEARCH across " +
+      "files indexed for RAG (rag=\"indexed\"), use rag_search (source_kinds " +
+      "includes 'cld_file'). A document-kind attachment is read with your " +
+      "document tool. For this thread's transcripts, the ACTIVE recording is " +
       'in your studio context as `session_cleaned` when one exists; for any/all ' +
       'recordings use the data tool (resource_type "studio_session"). Read ' +
       "ANOTHER thread's chain with war_room_read_thread(thread_id=<its id>). " +

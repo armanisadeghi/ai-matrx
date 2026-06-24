@@ -26,6 +26,7 @@ import {
 } from "./names";
 
 const MESSAGE_MODE = ["fresh", "fork"] as const;
+const READ_FILE_MODE = ["clean", "raw", "chunks"] as const;
 
 const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
   war_room_read_thread: {
@@ -49,6 +50,42 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
         },
       },
       required: ["thread_id"],
+    },
+  },
+
+  war_room_read_file: {
+    kind: "inline",
+    name: "war_room_read_file",
+    description:
+      "Read the extracted TEXT of a file attached to this thread — our raw/" +
+      "cleaned extraction, not the raw PDF. Pass the file's `id` from the " +
+      "`war_room` <files> block (only files with extraction=\"yes\" are " +
+      "readable). mode=clean (default, tidied text) | raw (verbatim extraction) " +
+      "| chunks (RAG-ready fragments). Use this to actually READ a file; use " +
+      "rag_search to SEARCH across files indexed for RAG. Read-only — runs " +
+      "immediately, changes nothing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        file_id: {
+          type: "string",
+          description:
+            "The file's id (the `id` of a <file> in the war_room <files> block).",
+        },
+        mode: {
+          type: "string",
+          enum: [...READ_FILE_MODE],
+          description:
+            "'clean' = tidied text (default); 'raw' = verbatim extraction; " +
+            "'chunks' = RAG-ready fragments.",
+        },
+        max_chars: {
+          type: "number",
+          description:
+            "Truncate the returned text to this many characters (default 50000).",
+        },
+      },
+      required: ["file_id"],
     },
   },
 

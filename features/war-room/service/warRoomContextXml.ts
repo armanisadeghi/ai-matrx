@@ -32,6 +32,25 @@ const INLINE_CEIL = 24_000;
 export type WarRoomBasis = "project" | "task" | "standalone";
 export type WarRoomScope = "thread" | "room" | "all";
 
+/**
+ * One file/document attached to a thread, as the agent sees it in the inline
+ * `<files>` manifest. `id` is the `cld_files.id` (file) / `udt_documents.id`
+ * (document) — the handle `war_room_read_file(file_id=…)` (files) / the `document`
+ * tool (documents) read by. `hasExtraction`/`ragIndexed` are best-effort: omitted
+ * (undefined) when not yet known rather than guessed (see tileToThreadModel).
+ */
+export interface WarRoomFileModel {
+  /** cld_files.id (kind="file") or udt_documents.id (kind="document"). */
+  id: string;
+  name: string;
+  mime?: string;
+  kind: "file" | "document";
+  /** True when OUR text extraction exists (readable via war_room_read_file). */
+  hasExtraction?: boolean;
+  /** True when the file is indexed for RAG (searchable via rag_search). */
+  ragIndexed?: boolean;
+}
+
 export interface WarRoomThreadModel {
   /** Tile id — pass to `war_room_read_thread` / `war_room_message_thread`. */
   id: string;
@@ -46,7 +65,14 @@ export interface WarRoomThreadModel {
   noteChars?: number;
   noteSnippet?: string;
   hasAudio: boolean;
+  /** Count of attached files/documents — the terse roster signal. */
   fileCount: number;
+  /**
+   * Per-file manifest for the thread an agent is working IN (current_thread
+   * only). Populated by the Tier-1 builder (`tileToThreadModel`); the async
+   * Tier-2/3 builders leave it undefined and rely on `fileCount`.
+   */
+  files?: WarRoomFileModel[];
 }
 
 export interface WarRoomRoomModel {
@@ -166,11 +192,54 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
       '    <audio transcript_when_recording="session_cleaned" all_recordings="data: studio_session"/>',
     );
   }
-  if (t.fileCount > 0) {
+  // Per-file manifest: each attachment with its id + extraction/RAG signals, so
+  // the agent knows exactly what it can READ (war_room_read_file) and SEARCH
+  // (rag_search). Falls back to the bare count when the manifest isn't built.
+  if (t.files && t.files.length > 0) {
+    lines.push("    <files" + attr("count", t.files.length) + ">");
+    for (const f of t.files) lines.push(fileRow(f));
+    lines.push("    </files>");
+  } else if (t.fileCount > 0) {
     lines.push("    <files" + attr("count", t.fileCount) + "/>");
   }
   lines.push("  </current_thread>");
   return lines.join("\n");
+}
+
+/**
+ * One file row in a thread's `<files>` manifest. `extraction`/`rag` are emitted
+ * only when known (a yes/no), so an unknown flag is simply absent rather than a
+ * misleading "no". `read` names the exact tool for a readable file.
+ */
+function fileRow(f: WarRoomFileModel): string {
+  return (
+    "      <file" +
+    attr("id", f.id) +
+    attr("name", f.name) +
+    attr("mime", f.mime) +
+    attr("kind", f.kind) +
+    attr(
+      "extraction",
+      f.hasExtraction === undefined ? undefined : f.hasExtraction ? "yes" : "no",
+    ) +
+    attr(
+      "rag",
+      f.ragIndexed === undefined
+        ? undefined
+        : f.ragIndexed
+          ? "indexed"
+          : "no",
+    ) +
+    attr(
+      "read",
+      f.kind === "document"
+        ? "document tool"
+        : f.hasExtraction === false
+          ? undefined
+          : "war_room_read_file",
+    ) +
+    "/>"
+  );
 }
 
 /** Serialize the model to the concise `<war_room>` XML block. */
