@@ -263,17 +263,21 @@ const ToolCallVisualizationInner: React.FC<{
   const querySubtitle: string | null =
     phase === "error" ? null : headerSubtitle;
 
-  // A completed tool that left behind an openable artifact (today: a working-
-  // document patch) gets a persistent, full-width ArtifactResultBar instead of
-  // the dim collapsed line — advertising the result + opening it in the sidebar.
-  // Single-entry only (a batch has no single artifact), and only when we have a
-  // conversationId to open against.
-  const artifact =
-    phase === "complete" &&
-    entries.length === 1 &&
-    typeof conversationId === "string" &&
-    conversationId.length > 0
+  // A completed tool that left behind an openable artifact (a working-document
+  // patch, a saved/edited note) gets a persistent, full-width ArtifactResultBar
+  // instead of the dim collapsed line — advertising the result + opening the
+  // final version. Single-entry only (a batch has no single artifact); each kind
+  // needs its open handle (working document → conversationId; note → its id).
+  const artifactRaw =
+    phase === "complete" && entries.length === 1
       ? getToolArtifact(headerTool)
+      : null;
+  const artifact =
+    artifactRaw &&
+    (artifactRaw.kind === "working_document"
+      ? typeof conversationId === "string" && conversationId.length > 0
+      : Boolean(artifactRaw.id))
+      ? artifactRaw
       : null;
 
   if (entries.length === 0) return null;
@@ -326,7 +330,7 @@ const ToolCallVisualizationInner: React.FC<{
         className,
       )}
     >
-      {artifact && conversationId ? (
+      {artifact ? (
         <ArtifactResultBar
           artifact={artifact}
           conversationId={conversationId}
