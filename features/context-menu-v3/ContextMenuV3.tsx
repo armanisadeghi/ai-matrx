@@ -48,9 +48,11 @@ import {
 import type { ContextMenuV3Props, MenuContentProps } from "./types";
 
 /**
- * Canonical v3 menu version. Rendered as `C<n>` in the footer. A surface still
- * on a bespoke (non-v3) menu shows no `C·V` tag — that absence flags it as
- * un-migrated.
+ * Canonical v3 menu revision. Rendered in the footer as
+ * `v3.<n> · V<menuVersion>` (e.g. `v3.1 · V1`) so a v3 surface is INSTANTLY
+ * distinguishable from a v2 one (which renders `C1V1`). Bump when the v3 menu's
+ * structure/behavior changes. A surface on a bespoke (non-v3) menu shows no
+ * `v3.·V` tag at all — that absence flags it as un-migrated.
  */
 export const CANONICAL_MENU_VERSION_V3 = 1;
 
@@ -378,7 +380,7 @@ export function ContextMenuV3({
 
   const footer = (
     <div className="select-none border-t border-border/50 px-2 py-1 text-[10px] leading-none text-muted-foreground/70">
-      {surfaceName ?? "(no surface)"} · C{CANONICAL_MENU_VERSION_V3}V
+      {surfaceName ?? "(no surface)"} · v3.{CANONICAL_MENU_VERSION_V3} · V
       {menuVersion}
     </div>
   );
