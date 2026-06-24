@@ -346,6 +346,41 @@ flowchart TD
 
 ---
 
+## The unified association edge — `platform.associations`
+
+The canonical **"associate ANY entity to ANY entity"** primitive, owned by this module. It replaces scattered `project_id`/`task_id` FK tagging and per-feature M2M tables (`ctx_scope_assignments`, `ctx_task_associations`, …) with **one polymorphic edge table**. Read this before adding any "tag / link / attach this to that" relationship anywhere in the app — extend the edge, never spin up a new M2M table or FK column.
+
+`platform.associations(source_type, source_id, target_type, target_id, org_id, label, metadata, created_by, created_at)`. A `source_type` is free text (any token may be a source); a **`target_type` is CHECK-constrained to 8 tokens**: `scope`, `scope_type`, `project`, `task`, `context_item`, `thread`, `war_room`, `category`. The entity vocabulary is driven by `platform.entity_types` (15 canonical tokens) — `AssociationTargetType` (8) and `EntityType` (15) in `types.ts` mirror these 1:1.
+
+### The primitive (all under `features/scopes/`)
+
+| Layer | What |
+|---|---|
+| **Service** | `service/associationsService.ts` — the **SOLE chokepoint** for the `assoc_*` RPCs. No other file may call them. Returns `ScopesRpcResult`, never throws. |
+| **Hook** | `hooks/useAssociations({ type, id }) → { edges, status, add, remove, setTargets, reload }` — the public API UI consumes. Components never touch the slice, thunks, or service directly. (`useEntityRelationships` is an alias.) |
+| **Component** | `components/associations/EntityAssociator.tsx` — the reusable panel; fed `sourceType` + `sourceId`, renders an entity's durable relationships (both directions) as chips + per-target-type "Add". Reuses the scope-tree pickers. |
+| **Redux** | `redux/scopesSlice.ts` `associationsByKey` cache (keyed `${type}:${id}`); `redux/thunks/associations.ts` (load/add/remove/setTargets); `redux/selectors/associations.ts` `selectAssociationsFor`. |
+
+`assoc_for_entity(p_type, p_id)` returns **both directions** in one round-trip — `direction` is relative to the queried entity (`outgoing` = it is the source; `incoming` = it is the target). `EntityAssociator` lets you detach only `outgoing` edges (this entity authored them); `incoming` are read-only.
+
+### Data path — PUBLIC SECURITY-DEFINER RPCs
+
+`authenticated` has **no direct grant** on `platform.*`, so every read/write goes through four SECURITY-DEFINER RPCs (org-filtered inside the function): `assoc_for_entity` (read, both directions), `assoc_add` (idempotent single edge), `assoc_remove`, `assoc_set_targets` (replace-semantics for one target type, the set-counterpart of `setEntityScopes`). Migrations: `migrations/assoc_public_rpcs.sql`, `migrations/assoc_m2m_mirror_triggers.sql`.
+
+### Transition contract — old tables are MIRRORED, not yet dropped
+
+Reads can move to `platform.associations` **now**; the column/table drops are a later destructive wave. Until then, triggers keep the edge in sync with the legacy storage:
+
+- **33 FK mirrors** + the 2 new M2M mirrors (`ctx_scope_assignments`, `ctx_task_associations` via `platform._mirror_m2m_to_assoc`) replicate every legacy `project_id`/`task_id` write and M2M row into `platform.associations`.
+- **War Room writes associations directly** (no mirror) — it is already native to the edge.
+- The `ctx_scope_assignments` path keeps its own `ScopeAssignmentEntityType` union (a **divergent subset** of `EntityType`, with app-only tokens like `agent_app`/`page_extraction_job`); the two are reconciled in a later pass. Association code uses `EntityType`.
+
+### The invariant — durable association ≠ active working context
+
+> **Association thunks NEVER write `appContextSlice`.** A durable edge is a stored relationship; it is NOT the user's active working context (Surface A owns `appContextSlice`). An `EntityAssociator` on a surface must never change the sidebar's active context — the same load-bearing rule that governs Surface B tagging.
+
+---
+
 ## Redux shape
 
 One canonical tree slice plus two sidecars. Replaces eight existing slices.
@@ -530,10 +565,12 @@ selectContradictions({ entityType?, entityId? })   // returns Array<{ typeId, gl
 - `useTemplates()` — read templates.
 - `useResolvedContext({ entityType?, entityId? })` — read the merged bundle for an entity-bound action.
 - `useContradictions({ entityType?, entityId? })` — read collision list.
+- `useAssociations({ type, id })` — read + mutate an entity's `platform.associations` edges (both directions). See §"The unified association edge".
 
 ### Service
 
 - `features/scopes/service/scopesService.ts` — the **only** file allowed to call `supabase.from('ctx_*')`. ESLint rule enforces. All other code goes through Redux thunks or hooks.
+- `features/scopes/service/associationsService.ts` — the **only** file allowed to call the `assoc_*` RPCs (`platform.associations`). Same chokepoint discipline.
 
 ### Slices
 
@@ -597,9 +634,11 @@ Lives under `features/scopes/components/templates/`.
 - `<TemplateDetail templateId />`
 - `<ApplyTemplateFlow templateId orgId />`
 
-### Final picker shape — explicitly deferred
+### Associations panel (SHIPPED) + final scope-picker shape
 
-The decision of whether to merge `<ActiveScopePicker />` and `<EntityScopeTagger />` into one configurable picker, or keep them split, is **deferred until Phase 3 ships and we see both in real use**. The non-negotiable rule is the same regardless: **Surface B never writes to `appContextSlice`**.
+The universal "link any entity to any entity" UI is **built**: `<EntityAssociator />` (see §"The unified association edge"). It is the canonical home for durable cross-entity relationships and reuses the scope-tree pickers rather than inventing new ones.
+
+Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (Surface A) and `<EntityScopeTagger />` (Surface B) into one configurable picker, or keep them split. The non-negotiable rule is the same for all three — **Surface B and association panels never write to `appContextSlice`**.
 
 ---
 
@@ -659,6 +698,7 @@ The decision of whether to merge `<ActiveScopePicker />` and `<EntityScopeTagger
 ## Invariants & gotchas
 
 - **Global context is ONLY written by Surface A components.** Surface B is locked out at the import path via ESLint.
+- **Association writes NEVER touch `appContextSlice`.** A durable `platform.associations` edge is a stored relationship, not the active working context. All edge writes go through `useAssociations` → `associationsService` → the `assoc_*` RPCs; new "tag / link X to Y" UI extends the edge, never a fresh M2M table or FK column.
 - **One scope per scope_type in active context.** Multiple selections on the same type are rejected at the reducer (idempotent replace).
 - **Across-type selection is fully additive.** Never silently clear other dimensions.
 - **Cross-org snap is automatic and silent.** A scope from org B → active org becomes B. No confirm. Document it; never gate it.
@@ -813,6 +853,8 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 ---
 
 ## Change log
+
+- `2026-06-24` — claude: **The unified association edge shipped** — `platform.associations` (one polymorphic `source→target` table, target CHECK-constrained to 8 tokens, driven by `platform.entity_types`/15) replaces scattered `project_id`/`task_id` FK tagging + per-feature M2M tables. New FE primitive under `features/scopes/`: `service/associationsService.ts` (sole `assoc_*` chokepoint), `hooks/useAssociations`, `components/associations/EntityAssociator.tsx`, `scopesSlice.associationsByKey` + `redux/thunks/selectors/associations`, plus `EntityType`/`AssociationTargetType`/`AssociationEdge`/`AssociationsEntry` in `types.ts`. FE data path = four PUBLIC SECURITY-DEFINER RPCs (`assoc_for_entity`/`assoc_add`/`assoc_remove`/`assoc_set_targets` — `authenticated` has no direct `platform.*` grant); migrations `assoc_public_rpcs.sql` + `assoc_m2m_mirror_triggers.sql`. **Transition contract:** old M2M tables + FK columns are MIRRORED into the edge by triggers (33 FK + 2 M2M via `_mirror_m2m_to_assoc`), so reads can move now; drops are a later destructive wave. War Room writes the edge directly. `ContextAssignmentField`'s project/task tagging now persists real edges via `setTargets` (was a dead stub). **Invariant:** association thunks never write `appContextSlice`. New §"The unified association edge"; reconciled the "final picker shape — deferred" note (relationship UI is now `EntityAssociator`). Also this changeover (FE swap pending, documented at the consuming features): `platform.user_entity_state` (favorites/pins/hidden/recency; RPCs `ues_set`/`ues_list`/`ues_get_bulk`/`ues_touch`) and `platform.categories` (faceted by `dimension`; RPCs `cat_list`/`cat_create`; assignment reuses `assoc_add(target_type='category')`).
 
 - `2026-06-19` — claude: **`ActiveContextLayersPanel`** — read-only display of the selected context (`active-context/ActiveContextLayersPanel.tsx`). For each active scope it shows the scope's context items + current values (reuses the `ScopeDetailView` data pattern: `useContextValues` + `scopesService.listContextItems`); org/project render a compact card with a manage link; a selected task embeds the native `TaskEditor`. Pure Surface-A read (no dispatch). Wired into the `RunControlsMenu` Context tab beneath `ActiveContextPanel` (picker `sectionHeight` trimmed to 220, tab now scrolls). Closes the gap where selected context layers showed nothing of what they carried.
 
