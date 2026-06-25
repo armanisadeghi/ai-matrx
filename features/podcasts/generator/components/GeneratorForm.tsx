@@ -111,6 +111,8 @@ interface GeneratorFormProps {
   initialTopic?: string;
   initialFormat?: PodcastFormat;
   initialAgentLabel?: string;
+  /** Free-text request carried from an entryway composer → seeds prep_user_message. */
+  initialInstructions?: string;
 }
 
 const SECTION_LABEL =
@@ -192,6 +194,7 @@ export function GeneratorForm({
   initialTopic = "",
   initialFormat = "educational",
   initialAgentLabel,
+  initialInstructions,
 }: GeneratorFormProps) {
   const [sourceKind, setSourceKind] = useState<PodcastSourceKind>("topic");
   const [text, setText] = useState(initialTopic);
@@ -224,10 +227,15 @@ export function GeneratorForm({
    *  down to One or Skip for fast, cheap test runs. */
   const [imageMode, setImageMode] = useState<MediaLimitMode>("all");
   const [videoMode, setVideoMode] = useState<MediaLimitMode>("all");
-  const [prepMessage, setPrepMessage] = useState(
-    initialAgentLabel
-      ? `Entryway selected agent profile: ${initialAgentLabel}.`
-      : "",
+  const [prepMessage, setPrepMessage] = useState(() =>
+    [
+      initialInstructions?.trim(),
+      initialAgentLabel
+        ? `Entryway selected agent profile: ${initialAgentLabel}.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
   );
   const [firstShowInfo, setFirstShowInfo] = useState("");
 

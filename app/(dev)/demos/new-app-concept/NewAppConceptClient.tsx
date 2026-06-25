@@ -4,18 +4,21 @@
 //
 // Concept demo: a single adaptive creation composer.
 //
-// The shape is a NORMAL AI chat input — a real text area is the primary element
-// — expanded a little at the bottom to hold a compact control strip. That strip
-// (add-source, format dropdown, agent dropdown, send) stays well under ~35-40%
-// of the box height, and its dropdowns open as SMALL popovers. All of it
-// reconfigures when the user picks a workflow below (Brainstorm / Research /
-// Plan / Write / Podcast): the input's label/placeholder, the format options,
-// and the agent options all swap.
+// It is a normal AI chat input. The TOP is pure free-text chat — you type your
+// request to the AI. Beneath it sits a compact strip of WORKFLOW FIELDS that the
+// selected card injects: for Podcast that's a Topic field plus Format and Agent
+// dropdowns. Pick a different card (Brainstorm / Research / Plan / Write) and the
+// fields below reconfigure — they are the required/optional parameters for that
+// kind of request. The chat text up top never becomes a field; it stays your
+// message.
 //
-// Two handoffs are LIVE today and route into the real product flows:
-//   • Podcast  → /podcast/studio/create  (reads topic / format / agent params)
-//   • Research → /research/topics/new     (reads topic + mode=ai params)
-// The remaining workflows are illustrative until their entry flows are wired.
+// Handoffs route into the real product flows (all params verified consumed):
+//   • Podcast  → /podcast/studio/create  (topic, format, agent + instructions)
+//   • Research → /research/topics/new     (topic, mode=ai + instructions)
+//   • From scratch → /chat
+// The free-text chat is carried as `instructions` and lands in the destination's
+// "extra instruction" / "additional instructions" field. Other workflows surface
+// an honest toast until their entry flows are wired.
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -37,11 +40,13 @@ import {
   Plus,
   Search,
   Star,
+  Type,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -70,9 +75,11 @@ interface AgentOption {
 interface WorkflowConfig {
   id: WorkflowId;
   label: string;
-  /** Eyebrow above the input — changes per workflow ("Enter Topic", …). */
-  inputLabel: string;
-  placeholder: string;
+  /** Label of the workflow's primary field, e.g. "Topic". Changes per card. */
+  fieldLabel: string;
+  /** Placeholder for that field's input. */
+  fieldPlaceholder: string;
+  /** Seed value for that field in this demo. */
   sample: string;
   icon: LucideIcon;
   /** Decorative accent for the workflow card. */
@@ -85,8 +92,8 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
   brainstorm: {
     id: "brainstorm",
     label: "Brainstorm",
-    inputLabel: "Seed idea",
-    placeholder: "What should we brainstorm?",
+    fieldLabel: "Idea",
+    fieldPlaceholder: "What should we brainstorm?",
     sample: "Launch ideas for a patient education hub",
     icon: Lightbulb,
     iconBubble: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
@@ -104,8 +111,8 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
   research: {
     id: "research",
     label: "Research",
-    inputLabel: "Research subject",
-    placeholder: "What should we research?",
+    fieldLabel: "Subject",
+    fieldPlaceholder: "What should we research?",
     sample: "Huntington's disease treatment landscape",
     icon: Search,
     iconBubble: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
@@ -123,8 +130,8 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
   plan: {
     id: "plan",
     label: "Plan",
-    inputLabel: "Plan goal",
-    placeholder: "What are we planning?",
+    fieldLabel: "Goal",
+    fieldPlaceholder: "What are we planning?",
     sample: "Clinical content calendar for Q3",
     icon: ClipboardList,
     iconBubble: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
@@ -142,8 +149,8 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
   write: {
     id: "write",
     label: "Write",
-    inputLabel: "Writing brief",
-    placeholder: "What should we write?",
+    fieldLabel: "Brief",
+    fieldPlaceholder: "What should we write?",
     sample: "Plain-language explainer for caregivers",
     icon: Pencil,
     iconBubble: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
@@ -161,8 +168,8 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
   podcast: {
     id: "podcast",
     label: "Podcast",
-    inputLabel: "Enter Topic",
-    placeholder: "What should the episode cover?",
+    fieldLabel: "Topic",
+    fieldPlaceholder: "What should the episode cover?",
     sample: "Huntington's Disease",
     icon: Mic,
     iconBubble: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300",
@@ -187,7 +194,7 @@ const LIVE_WORKFLOWS = new Set<WorkflowId>(["podcast", "research"]);
 function initialSelection(workflowId: WorkflowId) {
   const config = workflowConfigs[workflowId];
   return {
-    value: config.sample,
+    topic: config.sample,
     formatId: config.formats[0].id,
     agentId: config.agents[0].id,
   };
@@ -204,6 +211,8 @@ const NAV_ITEMS: { label: string; icon: LucideIcon; href?: string }[] = [
 export function NewAppConceptClient() {
   const router = useRouter();
   const [workflowId, setWorkflowId] = useState<WorkflowId>("podcast");
+  /** The top free-text chat — a normal request, never a field. */
+  const [message, setMessage] = useState("");
   const [selections, setSelections] = useState(() => {
     const entries = workflowOrder.map((id) => [id, initialSelection(id)]);
     return Object.fromEntries(entries) as Record<
@@ -220,7 +229,6 @@ export function NewAppConceptClient() {
     config.formats.find((item) => item.id === selection.formatId) ?? config.formats[0];
   const agent =
     config.agents.find((item) => item.id === selection.agentId) ?? config.agents[0];
-  const ActiveIcon = config.icon;
 
   const updateSelection = (patch: Partial<ReturnType<typeof initialSelection>>) => {
     setSelections((prev) => ({
@@ -230,16 +238,23 @@ export function NewAppConceptClient() {
   };
 
   const submit = () => {
-    const topic = selection.value.trim();
-    if (!topic) {
-      toast.error("Add a topic before submitting.");
+    if (workflowId !== "podcast" && workflowId !== "research") {
+      toast.info(`${config.label} isn't wired yet — Podcast and Research are live in this demo.`);
       return;
     }
 
+    const topic = selection.topic.trim();
+    if (!topic) {
+      toast.error(`Add a ${config.fieldLabel.toLowerCase()} below to continue.`);
+      return;
+    }
+
+    const instructions = message.trim();
     const params = new URLSearchParams();
     params.set("topic", topic);
     params.set("source", "new-app-concept");
     params.set("agent", agent.label);
+    if (instructions) params.set("instructions", instructions);
 
     if (workflowId === "podcast") {
       params.set("format", format.routeValue ?? "educational");
@@ -247,13 +262,8 @@ export function NewAppConceptClient() {
       return;
     }
 
-    if (workflowId === "research") {
-      params.set("mode", "ai");
-      startTransition(() => router.push(`/research/topics/new?${params.toString()}`));
-      return;
-    }
-
-    toast.info(`${config.label} isn't wired yet — Podcast and Research are live in this demo.`);
+    params.set("mode", "ai");
+    startTransition(() => router.push(`/research/topics/new?${params.toString()}`));
   };
 
   const startFromScratch = () => {
@@ -265,6 +275,8 @@ export function NewAppConceptClient() {
     [activeNav],
   );
 
+  const topicPlaceholder = `Enter ${config.fieldLabel.toLowerCase()}`;
+
   return (
     <div className="w-full overflow-x-hidden bg-textured text-foreground">
       <div className="mx-auto flex min-h-[calc(100dvh-var(--header-height,2.5rem))] w-full max-w-7xl flex-col px-4 pb-8 pt-8 sm:px-6 lg:px-10">
@@ -273,30 +285,25 @@ export function NewAppConceptClient() {
             What are we creating today?
           </h1>
 
-          {/* The composer — a normal AI input. Text area is the primary element;
-              the control strip below it stays small (well under ~40% height). */}
+          {/* A normal AI chat input. Top = free-text request. The strip beneath
+              holds the selected workflow's fields and stays compact. */}
           <div className="mt-10 w-full max-w-3xl rounded-3xl border border-border bg-card p-2.5 shadow-[0_20px_70px_rgba(15,23,42,0.10)] focus-within:border-primary/40 dark:shadow-[0_20px_70px_rgba(0,0,0,0.35)]">
             <div className="px-3 pt-2.5">
-              <label
-                htmlFor="concept-input"
-                className="mb-1 block text-xs font-medium text-muted-foreground"
-              >
-                {config.inputLabel}
-              </label>
               <Textarea
                 id="concept-input"
-                value={selection.value}
-                onChange={(event) => updateSelection({ value: event.target.value })}
-                placeholder={config.placeholder}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder={`Ask anything, or add direction for your ${config.label.toLowerCase()}…`}
                 autoGrow
-                minHeight={92}
+                minHeight={96}
                 maxHeight={240}
                 wrapperClassName="bg-transparent"
                 className="resize-none border-0 bg-transparent px-0 py-0 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
-            <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
+            {/* Workflow fields — injected by the selected card. Compact strip. */}
+            <div className="flex flex-wrap items-center gap-2 px-2 pb-1.5 pt-1.5">
               {/* Add source — illustrative in this concept */}
               <button
                 type="button"
@@ -309,6 +316,53 @@ export function NewAppConceptClient() {
                 <Plus className="h-4 w-4" />
               </button>
 
+              {/* Topic — the workflow's primary field (free text in a small popover) */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
+                  >
+                    <Type className="h-4 w-4 shrink-0 text-primary" />
+                    <span
+                      className={cn(
+                        "max-w-[170px] truncate font-medium",
+                        selection.topic ? "text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {selection.topic || topicPlaceholder}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-80 rounded-xl border-border bg-popover p-3 shadow-xl"
+                >
+                  <label
+                    htmlFor="concept-topic"
+                    className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {config.fieldLabel}
+                  </label>
+                  <Input
+                    id="concept-topic"
+                    autoFocus
+                    value={selection.topic}
+                    onChange={(event) => updateSelection({ topic: event.target.value })}
+                    placeholder={config.fieldPlaceholder}
+                    className="h-9 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateSelection({ topic: config.sample })}
+                    className="mt-2 inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+                  >
+                    <span className="truncate">{config.sample}</span>
+                  </button>
+                </PopoverContent>
+              </Popover>
+
               {/* Format — small dropdown popover */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -316,8 +370,8 @@ export function NewAppConceptClient() {
                     type="button"
                     className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
                   >
-                    <ActiveIcon className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="max-w-[160px] truncate font-medium text-foreground">
+                    <config.icon className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="max-w-[150px] truncate font-medium text-foreground">
                       {format.label}
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

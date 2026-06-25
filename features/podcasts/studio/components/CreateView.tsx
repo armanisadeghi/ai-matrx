@@ -43,6 +43,7 @@ export function CreateView() {
       ? formatParam
       : "educational";
   const initialAgentLabel = searchParams.get("agent") ?? undefined;
+  const initialInstructions = searchParams.get("instructions") ?? undefined;
 
   if (!isAuthenticated) {
     return (
@@ -115,6 +116,7 @@ export function CreateView() {
           initialTopic={initialTopic}
           initialFormat={initialFormat}
           initialAgentLabel={initialAgentLabel}
+          initialInstructions={initialInstructions}
         />
       </div>
     </div>

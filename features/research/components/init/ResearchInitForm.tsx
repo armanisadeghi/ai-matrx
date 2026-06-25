@@ -1210,8 +1210,9 @@ export default function ResearchInitForm() {
   const [createProjectOrgId, setCreateProjectOrgId] = useState<string | null>(
     null,
   );
-  const [showAdditionalInstructions, setShowAdditionalInstructions] =
-    useState(false);
+  const [showAdditionalInstructions, setShowAdditionalInstructions] = useState(
+    Boolean(searchParams.get("instructions")),
+  );
 
   // ── URL-derived step / mode ───────────────────────────────────────────────
   const modeParam = searchParams.get("mode") as Mode | null;
@@ -1230,7 +1231,9 @@ export default function ResearchInitForm() {
   const [subjectDescription, setSubjectDescription] = useState(
     searchParams.get("topic") ?? "",
   ); // AI: subject_name_or_description
-  const [additionalInstructions, setAdditionalInstructions] = useState(""); // AI: user_input
+  const [additionalInstructions, setAdditionalInstructions] = useState(
+    searchParams.get("instructions") ?? "",
+  ); // AI: user_input
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] =
     useState<ResearchTemplate | null>(null);
