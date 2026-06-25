@@ -242,4 +242,31 @@ export const associationsService = {
       return { ok: false, error: mapPgError(e) };
     }
   },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  WRITE — purge EVERY edge touching one entity (both directions).
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Remove every edge where `${type}:${id}` is the source OR the target,
+   * org-filtered inside the RPC. The deletion counterpart of `listForEntity` —
+   * call it when an entity is deleted so no edge is left orphaned (a dangling
+   * membership/content edge would otherwise point at a deleted entity).
+   */
+  async removeForEntity(
+    type: string,
+    id: string,
+  ): Promise<ScopesRpcResult<null>> {
+    try {
+      requireUserId();
+      const { error } = await supabase.rpc("assoc_remove_for_entity", {
+        p_type: type,
+        p_id: id,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return ok(null);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 };
