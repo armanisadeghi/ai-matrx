@@ -18,6 +18,7 @@ import {
   Trash2,
   Building2,
   FolderInput,
+  FolderMinus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,8 +36,12 @@ import type { TileActions } from "@/features/war-room/hooks/useTileActions";
 import {
   selectSessionsList,
   selectTileById,
+  selectUnassignedSessionId,
 } from "@/features/war-room/redux/selectors";
-import { moveThreadToRoom } from "@/features/war-room/redux/thunks";
+import {
+  moveThreadToRoom,
+  removeThreadFromRoom,
+} from "@/features/war-room/redux/thunks";
 import { useTileCopyForAiTarget } from "../shared/TileCopyForAiButton";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
@@ -64,9 +69,14 @@ export function TileOptionsMenu({
   const dispatch = useAppDispatch();
   const sessions = useAppSelector(selectSessionsList);
   const tile = useAppSelector(selectTileById(tileId ?? null));
+  const unassignedId = useAppSelector(selectUnassignedSessionId);
   const currentSessionId = tile?.session_id ?? null;
-  // Other rooms this thread can be moved into (every saved room but its own).
-  const otherRooms = sessions.filter((s) => s.id !== currentSessionId);
+  const inHolding = !!currentSessionId && currentSessionId === unassignedId;
+  // Rooms this thread can be moved INTO: every saved room but its own and the
+  // "Unassigned" holding room (that's reached via "Remove from room", not here).
+  const otherRooms = sessions.filter(
+    (s) => s.id !== currentSessionId && s.id !== unassignedId,
+  );
 
   return (
     <DropdownMenu>
@@ -164,6 +174,15 @@ export function TileOptionsMenu({
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+        ) : null}
+        {tileId && currentSessionId && !inHolding ? (
+          <DropdownMenuItem
+            onClick={() => void dispatch(removeThreadFromRoom(tileId))}
+            className="gap-2"
+          >
+            <FolderMinus className="size-3.5 shrink-0" />
+            Remove from room
+          </DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem

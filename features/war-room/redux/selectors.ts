@@ -15,6 +15,7 @@ import {
   type WarRoomSession,
   type WarRoomTile,
 } from "../types";
+import { UNASSIGNED_ROOM_TITLE } from "../constants";
 
 /** Coerce a jsonb context_scope_ids value to a string[]. */
 function asScopeIds(value: Json | null | undefined): string[] {
@@ -44,6 +45,21 @@ export const selectSessionsList = createSelector(
     return ids.map((id) => byId[id]).filter(Boolean) as WarRoomSession[];
   },
 );
+
+// ── Unassigned holding room (the holding area) ──────────────────────────
+/** The user's "Unassigned threads" holding room id (where removed threads land), or null. */
+export const selectUnassignedSessionId = createSelector(
+  [selectSessionsById, selectSessionIds],
+  (byId, ids): string | null =>
+    ids.find((id) => byId[id]?.title === UNASSIGNED_ROOM_TITLE) ?? null,
+);
+
+/** Whether a session IS the holding room — for distinct treatment + move-target guards. */
+export const selectIsUnassignedSession =
+  (sessionId: string | null) =>
+  (state: RootState): boolean =>
+    !!sessionId &&
+    state.warRoom.sessionsById[sessionId]?.title === UNASSIGNED_ROOM_TITLE;
 
 const sessionByIdCache = new Map<
   string,

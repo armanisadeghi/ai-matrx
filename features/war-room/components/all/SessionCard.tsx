@@ -4,10 +4,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2, Clock } from "lucide-react";
+import { Trash2, Loader2, Clock, Inbox } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteSession } from "@/features/war-room/redux/thunks";
+import { UNASSIGNED_ROOM_TITLE } from "@/features/war-room/constants";
 import {
   roomColorOf,
   roomIconOf,
@@ -23,9 +24,14 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
   const [pending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false);
 
+  // The per-user "Unassigned threads" holding room is shown distinctly (inbox
+  // glyph, explanatory subtitle) and is NOT deletable — it's the holding area,
+  // not a normal room.
+  const isHolding = session.title === UNASSIGNED_ROOM_TITLE;
+
   // Room branding — the chosen icon + color (safe defaults when unset) make
   // each room visually distinct in the gallery.
-  const RoomIcon = roomIconOf(session.icon);
+  const RoomIcon = isHolding ? Inbox : roomIconOf(session.icon);
   const roomColor = roomColorOf(session.color);
 
   function open() {
@@ -93,25 +99,31 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
         >
           <RoomIcon className="size-4.5" />
         </span>
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
-          aria-label="Delete War Room"
-        >
-          {deleting ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Trash2 className="size-4" />
-          )}
-        </button>
+        {isHolding ? null : (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+            aria-label="Delete War Room"
+          >
+            {deleting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Trash2 className="size-4" />
+            )}
+          </button>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
         <h3 className="text-sm font-semibold text-foreground truncate">
           {session.title}
         </h3>
-        {session.description ? (
+        {isHolding ? (
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+            Threads with no room — open to move them into one.
+          </p>
+        ) : session.description ? (
           <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
             {session.description}
           </p>
