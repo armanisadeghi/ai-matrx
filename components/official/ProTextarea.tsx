@@ -800,7 +800,7 @@ export const ProTextarea = React.forwardRef<
           <Label
             htmlFor={inputId}
             className={cn(
-              "absolute left-3 px-1 pointer-events-none transition-all duration-200 ease-in-out z-10 bg-card",
+              "absolute left-3 px-1 pointer-events-none transition-all duration-200 ease-in-out z-10 bg-transparent",
               labelFloated ? "-top-2 text-xs" : "top-3 text-sm",
               isInvalid
                 ? "text-destructive"
