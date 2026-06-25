@@ -12,6 +12,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { applyFavoritesFromUes } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
 import type { AppThunk, RootState } from "@/lib/redux/store";
 import {
   setScopePageSuccess,
@@ -65,9 +66,12 @@ export interface FetchConversationHistoryResult {
   replace: boolean;
 }
 
-/** Columns we project from `cx_conversation` — enough for sidebar rendering. */
+/** Columns we project from `cx_conversation` — enough for sidebar rendering.
+ * `is_favorite` is intentionally absent: favorite state is canonical in
+ * `platform.user_entity_state` (overlaid via `applyFavoritesFromUes`), and the
+ * column is being retired. */
 const HISTORY_COLUMNS =
-  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite, exclude_from_kg";
+  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg";
 
 /**
  * Fetches a page of conversations for `scopeId`. If the scope doesn't yet
@@ -197,7 +201,10 @@ export const fetchConversationHistory = createAsyncThunk<
     }
 
     const rows = data ?? [];
-    const items: ConversationListItem[] = rows.map((row) => ({
+    // Favorite state is canonical in `platform.user_entity_state`, not the
+    // (soon-to-be-dropped) `cx_conversation.is_favorite` column — default false
+    // here, then overlay the real flag via `applyFavoritesFromUes`.
+    const mapped: ConversationListItem[] = rows.map((row) => ({
       conversationId: row.id as string,
       title: (row.title ?? null) as string | null,
       description: (row.description ?? null) as string | null,
@@ -205,13 +212,14 @@ export const fetchConversationHistory = createAsyncThunk<
       createdAt: row.created_at as string,
       status: row.status as string,
       messageCount: (row.message_count ?? 0) as number,
-      isFavorite: (row.is_favorite ?? false) as boolean,
+      isFavorite: false,
       excludeFromKg: (row.exclude_from_kg ?? false) as boolean,
       agentId: (row.initial_agent_id ?? null) as string | null,
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,
       sourceFeature: (row.source_feature ?? undefined) as string | undefined,
     }));
+    const items = await applyFavoritesFromUes(mapped);
 
     const hasMore = items.length === pageSize;
     const nextOffset = offset + items.length;

@@ -13,10 +13,11 @@ export interface ConversationListItem {
   messageCount: number;
   status: string;
   /**
-   * User-pinned flag (`cx_conversation.is_favorite`). Present in every
-   * conversation source — populated by `get_agent_conversations` RPC,
-   * the global `cx_conversation` select, and the per-scope history
-   * fetch. Default `false` for legacy/uncached rows.
+   * User-favorite flag. Canonical in `platform.user_entity_state`
+   * (entity_type `"conversation"`), read via `favoritesService` and overlaid
+   * onto every conversation source by `applyFavoritesFromUes` after the rows
+   * load — NOT the legacy `cx_conversation.is_favorite` column (being
+   * retired). Default `false` until the bulk read resolves.
    */
   isFavorite: boolean;
   /**
