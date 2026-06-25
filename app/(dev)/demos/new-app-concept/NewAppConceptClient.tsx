@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { WorkflowGallery, makeGallerySelect } from "./WorkflowGallery";
 
 type WorkflowId = "brainstorm" | "research" | "plan" | "write" | "podcast";
 
@@ -188,6 +189,12 @@ const workflowConfigs: Record<WorkflowId, WorkflowConfig> = {
 
 const workflowOrder: WorkflowId[] = ["brainstorm", "research", "plan", "write", "podcast"];
 
+/** Shared two-line field-pill trigger (label over value). */
+const PILL =
+  "inline-flex h-11 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2 text-left shadow-sm transition hover:border-primary/40 hover:bg-accent";
+const PILL_LABEL =
+  "block text-[10px] font-medium uppercase tracking-wide text-muted-foreground";
+
 /** Workflows whose handoff is wired into a real product flow today. */
 const LIVE_WORKFLOWS = new Set<WorkflowId>(["podcast", "research"]);
 
@@ -238,7 +245,7 @@ export function NewAppConceptClient() {
   };
 
   const submit = () => {
-    if (workflowId !== "podcast" && workflowId !== "research") {
+    if (!LIVE_WORKFLOWS.has(workflowId)) {
       toast.info(`${config.label} isn't wired yet — Podcast and Research are live in this demo.`);
       return;
     }
@@ -277,6 +284,14 @@ export function NewAppConceptClient() {
 
   const topicPlaceholder = `Enter ${config.fieldLabel.toLowerCase()}`;
 
+  const galleryItems = workflowOrder.map((id) => {
+    const c = workflowConfigs[id];
+    return { id, label: c.label, icon: c.icon, iconBubble: c.iconBubble };
+  });
+  const selectWorkflow = makeGallerySelect(workflowOrder, (id) =>
+    setWorkflowId(id as WorkflowId),
+  );
+
   return (
     <div className="w-full overflow-x-hidden bg-textured text-foreground">
       <div className="mx-auto flex min-h-[calc(100dvh-var(--header-height,2.5rem))] w-full max-w-7xl flex-col px-4 pb-8 pt-8 sm:px-6 lg:px-10">
@@ -285,32 +300,32 @@ export function NewAppConceptClient() {
             What are we creating today?
           </h1>
 
-          {/* A normal AI chat input. Top = free-text request. The strip beneath
-              holds the selected workflow's fields and stays compact. */}
-          <div className="mt-10 w-full max-w-3xl rounded-3xl border border-border bg-card p-2.5 shadow-[0_20px_70px_rgba(15,23,42,0.10)] focus-within:border-primary/40 dark:shadow-[0_20px_70px_rgba(0,0,0,0.35)]">
-            <div className="px-3 pt-2.5">
+          {/* A normal AI chat input. Top = free-text request (~2 lines, autogrows).
+              The strip beneath holds the selected workflow's fields. */}
+          <div className="mt-10 w-full max-w-3xl rounded-3xl border border-border bg-card p-2 shadow-[0_20px_70px_rgba(15,23,42,0.10)] focus-within:border-primary/40 dark:shadow-[0_20px_70px_rgba(0,0,0,0.35)]">
+            <div className="px-3 pt-2">
               <Textarea
                 id="concept-input"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder={`Ask anything, or add direction for your ${config.label.toLowerCase()}…`}
                 autoGrow
-                minHeight={96}
-                maxHeight={240}
+                minHeight={48}
+                maxHeight={200}
                 wrapperClassName="bg-transparent"
                 className="resize-none border-0 bg-transparent px-0 py-0 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
 
-            {/* Workflow fields — injected by the selected card. Compact strip. */}
-            <div className="flex flex-wrap items-center gap-2 px-2 pb-1.5 pt-1.5">
+            {/* Workflow fields — injected by the selected card. */}
+            <div className="flex flex-wrap items-center gap-1.5 px-1 pb-0.5 pt-1">
               {/* Add source — illustrative in this concept */}
               <button
                 type="button"
                 onClick={() =>
                   toast.info("Add a source — files, URLs, and notes plug in here.")
                 }
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
                 aria-label="Add source"
               >
                 <Plus className="h-4 w-4" />
@@ -319,18 +334,18 @@ export function NewAppConceptClient() {
               {/* Topic — the workflow's primary field (free text in a small popover) */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
-                  >
+                  <button type="button" className={PILL}>
                     <Type className="h-4 w-4 shrink-0 text-primary" />
-                    <span
-                      className={cn(
-                        "max-w-[170px] truncate font-medium",
-                        selection.topic ? "text-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      {selection.topic || topicPlaceholder}
+                    <span className="min-w-0 leading-tight">
+                      <span className={PILL_LABEL}>{config.fieldLabel}</span>
+                      <span
+                        className={cn(
+                          "block max-w-[150px] truncate text-sm font-semibold",
+                          selection.topic ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {selection.topic || topicPlaceholder}
+                      </span>
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
@@ -366,13 +381,13 @@ export function NewAppConceptClient() {
               {/* Format — small dropdown popover */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
-                  >
+                  <button type="button" className={PILL}>
                     <config.icon className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="max-w-[150px] truncate font-medium text-foreground">
-                      {format.label}
+                    <span className="min-w-0 leading-tight">
+                      <span className={PILL_LABEL}>Format</span>
+                      <span className="block max-w-[140px] truncate text-sm font-semibold text-foreground">
+                        {format.label}
+                      </span>
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
@@ -415,13 +430,13 @@ export function NewAppConceptClient() {
               {/* Agent — small dropdown popover */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
-                  >
+                  <button type="button" className={cn(PILL, "ml-auto")}>
                     <Cpu className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="max-w-[140px] truncate font-medium text-foreground">
-                      {agent.label}
+                    <span className="min-w-0 leading-tight">
+                      <span className={PILL_LABEL}>Agent</span>
+                      <span className="block max-w-[130px] truncate text-sm font-semibold text-foreground">
+                        {agent.label}
+                      </span>
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
@@ -469,7 +484,7 @@ export function NewAppConceptClient() {
                 size="icon"
                 onClick={submit}
                 disabled={isPending}
-                className="ml-auto h-9 w-9 shrink-0 rounded-xl"
+                className="h-11 w-11 shrink-0 rounded-xl"
                 aria-label="Submit"
               >
                 <ArrowUp className="h-4 w-4" />
@@ -481,38 +496,12 @@ export function NewAppConceptClient() {
             Start with a workflow...
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            {workflowOrder.map((id, index) => {
-              const item = workflowConfigs[id];
-              const Icon = item.icon;
-              const active = id === workflowId;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setWorkflowId(id)}
-                  className={cn(
-                    "flex h-36 w-32 flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card text-foreground shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg",
-                    index % 2 === 0 ? "rotate-[-2deg]" : "rotate-[1.5deg]",
-                    active &&
-                      "border-primary/50 shadow-[0_20px_50px_rgba(37,99,235,0.18)] ring-2 ring-primary/30",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-16 w-16 items-center justify-center rounded-full",
-                      item.iconBubble,
-                    )}
-                  >
-                    <Icon className="h-8 w-8" />
-                  </span>
-                  <span className="text-lg font-semibold">{item.label}</span>
-                  {!LIVE_WORKFLOWS.has(id) && (
-                    <span className="sr-only">(preview)</span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="mt-6 w-full">
+            <WorkflowGallery
+              items={galleryItems}
+              activeId={workflowId}
+              onSelect={selectWorkflow}
+            />
           </div>
 
           <button
