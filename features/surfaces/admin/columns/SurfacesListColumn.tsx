@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Layers, Search, Link2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Layers, Layers3, Search, Link2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/styles/themes/utils";
@@ -123,7 +124,15 @@ function surfaceMatchesUrl(surface: SurfaceWithStats, url: UrlMatch): boolean {
  * locate the surface that owns that route — string-match for now, a
  * `url_pattern` column will make this deterministic.
  */
-export function SurfacesListColumn({ agentId }: { agentId: string }) {
+export function SurfacesListColumn({
+  agentId,
+  basePath = "/agents",
+}: {
+  agentId: string;
+  /** Base path for the Batch link. `/agents` for core; admin passes its
+   *  system-agents base so the batch route stays in the admin shell. */
+  basePath?: string;
+}) {
   const dispatch = useAppDispatch();
   const surfaces = useAppSelector(selectActiveSurfaces);
   const status = useAppSelector(selectSurfacesStatus);
@@ -249,6 +258,18 @@ export function SurfacesListColumn({ agentId }: { agentId: string }) {
               {surfaces.length} active
             </div>
           </div>
+          <Link
+            href={`${basePath}/${agentId}/surfaces/batch`}
+            title="Bind many surfaces at once"
+            className={cn(
+              "ml-auto shrink-0 inline-flex items-center gap-1.5 rounded-md px-2 py-1",
+              "text-xs font-medium border border-border bg-background",
+              "text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors",
+            )}
+          >
+            <Layers3 className="h-3.5 w-3.5" />
+            Batch
+          </Link>
         </div>
 
         {/* Counts strip */}

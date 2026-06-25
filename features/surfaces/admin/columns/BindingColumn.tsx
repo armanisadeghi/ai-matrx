@@ -85,10 +85,27 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
     [agent.id],
   );
   const allBindings = useAppSelector(selectBindings);
+
+  // The binding being edited. Resolution order:
+  //   1. An explicit `?binding=<id>` selection (drilled in from a binding row).
+  //   2. Auto-adopt: if a surface is selected but no binding id is in the URL
+  //      and that surface ALREADY has a binding for this agent, edit the real
+  //      row instead of opening a seeded "new" form. Without this, selecting a
+  //      bound surface from the left list showed the Default seed and a Save
+  //      silently OVERWROTE the surface's real binding (the cross-surface leak).
+  //      Prefer the current user's scope row, else the first.
   const existing = useMemo(() => {
-    if (!bindingId) return null;
-    return allBindings.find((b) => b.id === bindingId) ?? null;
-  }, [allBindings, bindingId]);
+    if (bindingId) {
+      return allBindings.find((b) => b.id === bindingId) ?? null;
+    }
+    if (!surfaceName) return null;
+    const forSurface = allBindings.filter((b) => b.surfaceName === surfaceName);
+    if (forSurface.length === 0) return null;
+    return (
+      forSurface.find((b) => b.userId && b.userId === currentUserId) ??
+      forSurface[0]
+    );
+  }, [allBindings, bindingId, surfaceName, currentUserId]);
 
   // The user's binding on the singleton Default surface — used as the
   // seed for every NEW binding on a different surface. Editing this
@@ -114,10 +131,17 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
   }
 
   // Seed only when (a) we're creating a new binding (no `existing`),
-  // (b) the surface being bound isn't the Default surface itself, and
-  // (c) the user actually has a Default binding to seed from.
+  // (b) the surface has NO binding of its own for this agent — the seed is a
+  //     pure UI starting point and must never shadow or risk overwriting a
+  //     real binding,
+  // (c) the surface being bound isn't the Default surface itself, and
+  // (d) the user actually has a Default binding to seed from.
+  const surfaceHasBinding = allBindings.some(
+    (b) => b.surfaceName === surfaceName,
+  );
   const seedMappings =
     !existing &&
+    !surfaceHasBinding &&
     surfaceName !== DEFAULT_SURFACE_NAME &&
     defaultBinding?.valueMappings
       ? defaultBinding.valueMappings
@@ -154,7 +178,7 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
-function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
+export function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
   const targets: BindingTarget[] = [];
   const seen = new Set<string>();
   for (const v of agent.variableDefinitions ?? []) {
@@ -201,8 +225,11 @@ interface BindingFormProps {
 }
 
 function cloneMapping(m: ValueMapping): ValueMapping {
-  // Mappings are flat-ish objects; spread is enough.
-  return { ...m } as ValueMapping;
+  // Deep clone: `direct_value.target` / `prompt_user.defaultValue` are
+  // `unknown` and may hold objects/arrays. A shallow spread would share those
+  // nested references with the Redux-held Default binding, so editing a
+  // seeded form could mutate it. structuredClone severs every reference.
+  return structuredClone(m);
 }
 
 function cloneMappings(map: ValueMappingMap): ValueMappingMap {

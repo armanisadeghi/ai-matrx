@@ -215,3 +215,61 @@ export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
   const { error } = await sb().from("agx_agent_surface").delete().eq("id", id);
   if (error) throw error;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Batch upsert
+//
+// One write per (agent, surface, scope) — `bulkUpsertAgentSurfaceBindings` is
+// just N independent `upsertAgentSurfaceBinding` calls run concurrently, so
+// each surface stays completely on its own (no cross-row mutation) and we get
+// clean per-surface success/failure for partial-failure reporting.
+//
+// We deliberately do NOT use a single PostgREST upsert with `onConflict`: the
+// uniqueness is enforced by FIVE partial unique indexes (one per scope tier),
+// and `onConflict` can only name one constraint — so per-row upsert via the
+// existing scope-matching `findBinding` is both simpler and correct.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface BulkUpsertBindingInput {
+  surfaceName: string;
+  scope: ScopeInput;
+  valueMappings: ValueMappingMap;
+}
+
+export interface BulkUpsertResult {
+  succeeded: AgentSurfaceBinding[];
+  failed: { surfaceName: string; error: string }[];
+}
+
+export async function bulkUpsertAgentSurfaceBindings(args: {
+  agentId: string;
+  bindings: BulkUpsertBindingInput[];
+}): Promise<BulkUpsertResult> {
+  const { agentId, bindings } = args;
+  const settled = await Promise.allSettled(
+    bindings.map((b) =>
+      upsertAgentSurfaceBinding({
+        agentId,
+        surfaceName: b.surfaceName,
+        scope: b.scope,
+        valueMappings: b.valueMappings,
+      }),
+    ),
+  );
+
+  const succeeded: AgentSurfaceBinding[] = [];
+  const failed: { surfaceName: string; error: string }[] = [];
+  settled.forEach((outcome, i) => {
+    if (outcome.status === "fulfilled") {
+      succeeded.push(outcome.value);
+    } else {
+      const reason = outcome.reason;
+      failed.push({
+        surfaceName: bindings[i].surfaceName,
+        error: reason instanceof Error ? reason.message : String(reason),
+      });
+    }
+  });
+
+  return { succeeded, failed };
+}
