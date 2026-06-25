@@ -12,13 +12,13 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **19** (cx ×10, agx ×4, prompt ×5) |
+| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **28** (cx ×10, agx ×4, prompt ×5, note ×5, canvas ×2, ctx-wr ×2) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
 | Registered in `platform.entity_types` | 18 |
 
-**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — IN PROGRESS (cx)** · 4 Schema reorg/rename ⏳ · 5 Litter drops ⏳
+**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — IN PROGRESS (cx + ctx war-room)** · 4 Schema reorg/rename ⏳ · 5 Litter drops ⏳
 
 ---
 
@@ -49,7 +49,7 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | Group | Tables | R | O | L | | Group | Tables | R | O | L |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **cx** | 21 | **10** | 4 | 3 | | ui | 6 | 0 | 2 | 0 |
-| ctx | 24 | 0 | 6 | 10 | | kg | 6 | 0 | 5 | 0 |
+| ctx | 24 | **2** | 7 | 10 | | kg | 6 | 0 | 5 | 0 |
 | scrape | 25 | 0 | 0 | 0 | | app | 6 | 0 | 1 | 1 |
 | cld | 18 | 0 | 7 | 0 | | ai | 6 | 0 | 1 | 1 |
 | user | 16 | 0 | 0 | 0 | | **aga** | 6 | 0 | 1 | 2 |
@@ -64,8 +64,8 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | file | 7 | 0 | 0 | 0 | | agent | 3 | 0 | 0 | 0 |
 | wbx | 7 | 0 | 0 | 0 | | cmp | 3 | 0 | 1 | 1 |
 | **agx** | 7 | **4** | 4 | 4 | | dict | 3 | 0 | 2 | 0 |
-| canvas | 7 | 0 | 1 | 1 | | dm | 3 | 0 | 0 | 0 |
-| note | 6 | 0 | 0 | 0 | | feedback | 3 | 0 | 0 | 0 |
+| canvas | 7 | **2** | 1 | 1 | | dm | 3 | 0 | 0 | 0 |
+| note | 6 | **5** | 0 | 0 | | feedback | 3 | 0 | 0 | 0 |
 | skl | 6 | 0 | 3 | 4 | | admin | 3 | 0 | 0 | 0 |
 | | | | | | | pdf | 3 | 0 | 1 | 0 |
 | | | | | | | scope | 3 | 0 | 3 | 0 |
@@ -155,3 +155,4 @@ Admin dashboards (both Next.js) audited: **do not read** these columns. Python a
   - **Files to reconcile (lead bookkeeping):** routine file → final v3; `platform_system_org_tenant.sql`; `agx_entities_retrofit.sql` (uncomment the 3 now-applied calls); ledger each.
 - **2026-06-24 (cont.2)** — **`prompt` group delegated + done** (5 Base-1: `prompt_actions`/`apps`/`builtins`/`shortcuts`/`templates`; 6 logs + 1 lookup skipped) via a subagent + the routine. **19 tables retrofitted.** Delegation-brief lesson: point subagents at the `SKILL.md` **file**, not "invoke the skill" (the latter no-op'd once). The bespoke version-snapshot double-bump (`_touch_row` + a feature trigger) now spans `agx_agent`/`templates` + `prompt_apps`/`builtins` — reconcile in the Base-3 `*_versions` pass.
 - **2026-06-24 (cont.)** — Routine + system-org files reconciled + ledgered. **cx batch 2** retrofitted via the routine (`cx_agent_plan` / `cx_observational_memory` / `cx_tool_call` / `cx_user_request` / `cx_user_todo` / `cx_working_documents`). **14 tables retrofitted.** Remaining cx: Base-3 logs (`cx_request`/`_snapshot`/`cx_tool_trace`/`_observational_memory_event`/`cx_pending_injection` → ledger pass), `cx_conversation_documents` (join), `cx_user_usage_summary` (special), `cx_agent_task` (**deferred** — `created_by` enum needs a consumer audit before rename), + 3 planned-empty (keep). Remaining file debt: agx system-row uncomment + `cx_agent_memory` file.
+- **2026-06-25** — **`ctx` group opened: War Room retrofitted** (first `ctx` table) via `platform.retrofit_entity`. `ctx_war_room_sessions` (token `war_room`, `personal` org) + `ctx_war_room_tiles` (token `thread`, org denormalized from the parent session via `session_id`) — additive base cols + actor/org backfill (7 sessions, 53 tiles; **0 null-org, 0 null-creator** verified live), legacy `*_updated_at` → `_touch_row`/`_stamp_actor`, ledgered (`ctx_war_room_base_retrofit.sql`, `matrx-frontend`). **16 tables retrofitted.** DEFERRED (gated, post-deploy): `_version_capture`, org-first RLS flip, `organization_id NOT NULL`, `is_deleted`→`deleted_at` + `metadata`, and ALL litter drops (`task_id`/`note_id`/`project_id`/`context_organization_id`/`context_scope_ids`/`session_id` + the legacy `ctx_war_room_assignments` / `_tile_notes` / `_tile_audio_sessions` / `_tile_attachments` tables) — pending the War Room frontend repoint onto the `assoc_*` RPCs + branch deploy. Work is on branch `claude/inspiring-ride-6ufddz` (NOT main).
