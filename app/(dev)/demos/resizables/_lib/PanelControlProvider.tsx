@@ -92,9 +92,14 @@ export function PanelControlProvider({
   const notifyResize = useCallback((panelId: string, sizePercent: number) => {
     const entry = panelsRef.current[panelId];
     if (!entry) return;
-    if (sizePercent > 0) {
-      entry.lastOpenSize = sizePercent;
-    }
+    // Deliberately DO NOT capture lastOpenSize from the live drag. A
+    // drag-to-collapse passes through every size down to ~minSize before it
+    // snaps to 0 — capturing those transient values would leave lastOpenSize a
+    // useless sliver, so the panel "reopens" to a few pixels (the reported
+    // "won't reopen / operates backwards" bug). The accurate pre-collapse size
+    // is captured in toggle() from getLayout() instead. This handler only
+    // mirrors the collapsed BOOLEAN so toggle icons + hidden handles react to a
+    // drag-collapse.
     setIntent((prev) => {
       const isAtZero = sizePercent === 0;
       return prev[panelId] === isAtZero
@@ -123,8 +128,12 @@ export function PanelControlProvider({
     //   - all OTHER panels keep their current size
     // The library's setLayout normalizes the sum to 100; the delta is
     // absorbed by panels with room (typically the non-collapsible filler).
+    // Defensive floor: never expand to a 0/sliver — fall back to the panel's
+    // default size if the remembered size is missing or implausibly small.
+    const restoreSize =
+      entry.lastOpenSize > 0 ? entry.lastOpenSize : entry.defaultSizePercent;
     const newLayout: Record<string, number> = { ...currentLayout };
-    newLayout[panelId] = willCollapse ? 0 : entry.lastOpenSize;
+    newLayout[panelId] = willCollapse ? 0 : restoreSize;
 
     groupRef.setLayout(newLayout);
 
