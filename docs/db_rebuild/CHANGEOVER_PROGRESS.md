@@ -22,6 +22,30 @@
 
 ---
 
+## Path to the DROP phase — what's left (2026-06-25 live inventory)
+
+Live DB: **394 base tables · 57 retrofitted · 0 org-first RLS on public · 57 tables carry `project_id`/`task_id` litter · 13 rename compat-views · 62 empty tables · `pg_stat_statements` ON.**
+
+**Blocking gate (still open):** **PITR confirmation** — nothing drops / goes `NOT NULL` until the user confirms it.
+
+**Five tracks to finish:**
+1. **Finish Wave-3 retrofit** (sweep PAUSED). ~12–15 in-scope Base-1 tables still un-retrofitted: `transcripts`, `prompts`, `content_blocks`, `sandbox_instances`, `quiz_sessions`, `ai_runs`, `page_extraction_jobs`, `app_instances`, `cmp_comparison_sets`, `shortcut_categories`, `study_structured_section`, `content_template`, `guest_execution_log`. (Other un-retrofitted litter tables are out-of-scope `sch_*`/`wf_*`/`code_*`/`wc_*` or the `ctx_*` spine.)
+2. **Litter-column drops** (`project_id`/`task_id` → `platform.associations`). 57 tables carry them; ~21 are retrofitted + mirror-triggered to associations. Drop a column only after (a) association backfill verified complete, (b) consumers read associations not the column, (c) PITR. Out-of-scope litter stays.
+3. **Compat-view drops** (13: 7 `file_*`, 6 `ctx_war_room_*`). **NOT SAFE YET** — drop-watch shows ALL 13 still heavily called by old names (`file_pages` 1.28M, `file_analysis` 210K, `file_analysis_result` 33K, `ctx_war_room_tiles` 1.3K…). Repoint aidream + War Room FE first ([compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md)), watch `platform.v_deprecated_table_access` → 0, then drop.
+4. **Empty / unused tables** (62 empty). Review against `platform.v_table_access_stats` (reads/writes/last_read) + consumer audit → graveyard the truly-dead. Many empties are planned-but-unused (keep).
+5. **ctx Group-B transition** (USER-LED): `ctx_project_members`→`iam.memberships`, `ctx_task_comments`→`platform.comments`, `ctx_project_invitations`→`iam.invitations` (generic targets now exist).
+
+**Deferred (do before the RLS phase):** register child entity tokens (#11); varchar-`version`→`version_label` repoint (#10); version-double-bump reconcile (agx/prompt/aga/notes).
+
+## Observability — drop-watch (2026-06-25)
+
+`pg_stat_statements` (schema `extensions`) is ON. Two admin views (query via the Supabase MCP), shipped in `migrations/observability_drop_watch.sql`:
+- **`platform.v_deprecated_table_access`** — call counts per renamed-away old name. **calls=0 ⇒ safe to drop that compat view; calls>0 ⇒ repoint first.** The gate for compat-view drops. (Right now: all 13 nonzero.)
+- **`platform.v_table_access_stats`** — per-table reads/writes/last_read; `reads=0 AND writes=0` over a full cycle ⇒ drop candidate.
+- **Real-time per-request:** Supabase MCP `get_logs(service:'api'|'postgres')` (24h) — how the matrx-extend `sch_task.trigger_type` flood was caught.
+
+---
+
 ## What "done" means (the standard — see the skill for the exact recipe)
 
 Per **Base-1** table, additive first, then gated: **(1)** standard columns (`org_id`/`organization_id`, `created_by`, `updated_by`, `created_at`, `updated_at`, `deleted_at`, `version`, `metadata`); **(2)** org + actor backfilled (0 nulls verified); **(3)** `_touch_row` + `_stamp_actor` triggers (legacy `*_updated_at` trigger replaced); **(4)** `_version_capture('<token>')` unless extreme-churn opt-out; **(5)** `iam.apply_rls(...,'entity')` + drop legacy policies (gated — verify reads survive); **(6)** `org_id NOT NULL` (after 0-null verify); **(7)** litter/superseded columns dropped (gated — see repoint tracker + PITR). **Base-2** (joins) → `apply_rls(...,'join')`. **Base-3** (logs/events) → `apply_rls(...,'ledger')`, no version/soft-delete.
