@@ -202,13 +202,15 @@ export function buildTileAgentContextEntries(
     howTo:
       "Edit THIS thread's task/note with your war_room tools (the user " +
       "approves each). To READ an attached file's text, call " +
-      "war_room_read_file(file_id=<id from <files>>) — it returns OUR extracted " +
-      "text (mode=clean tidied / raw verbatim / chunks RAG-ready), never the raw " +
-      "PDF; only files with extraction=\"yes\" are readable. To SEARCH across " +
-      "files indexed for RAG (rag=\"indexed\"), use rag_search (source_kinds " +
-      "includes 'cld_file'). A document-kind attachment is read with your " +
-      "document tool. For this thread's transcripts, the ACTIVE recording is " +
-      'in your studio context as `session_cleaned` when one exists; for any/all ' +
+      'data_action(operation="read_file_extraction", inputs={file_id:<id from ' +
+      '<files>>, mode:"clean"}) — it returns OUR extracted text on the SERVER ' +
+      '(mode "clean" tidied / "raw" verbatim), never the raw PDF, and never ' +
+      'suspends the conversation; only files with extraction="yes" are readable. ' +
+      'To SEARCH files indexed for RAG (rag="indexed") use rag_search ' +
+      "(source_kinds includes 'cld_file'; pass source_ids=[file_id] to scope the " +
+      "search to specific files). A document-kind attachment is read with your " +
+      "document tool. For this thread's transcripts, the ACTIVE recording is in " +
+      'your studio context as `session_cleaned` when one exists; for any/all ' +
       'recordings use the data tool (resource_type "studio_session"). Read ' +
       "ANOTHER thread's chain with war_room_read_thread(thread_id=<its id>). " +
       "Read or edit any task / note / project / other resource by id with the " +

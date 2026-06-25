@@ -409,3 +409,45 @@ export async function copyContainerAssignments(
   }
   return copied;
 }
+
+// ── Thread ↔ room membership (the mobility mechanism) ───────────────────
+//
+// A thread's room membership is a REVERSED edge `thread → war_room` (the tile is
+// the SOURCE/member, the room the TARGET) — distinct from content edges
+// (entity → container). It is the unified-model mechanism for thread mobility and
+// the future Unassigned holding area (no edge = unassigned). During the
+// transition it is kept in sync with `tile.session_id` (which stays the RLS
+// source until it is dropped post-deploy), so moving a thread repoints BOTH.
+
+const MEMBERSHIP_META: Json = { membership: true };
+
+/**
+ * Re-point a thread's room-membership edge from `fromRoomId` to `toRoomId`
+ * (idempotent). The org is resolved from the destination room (never NULL).
+ */
+export async function moveThreadMembership(
+  tileId: string,
+  fromRoomId: string | null,
+  toRoomId: string,
+): Promise<void> {
+  if (fromRoomId === toRoomId) return;
+  const orgId = await resolveContainerOrgId({ type: "room", id: toRoomId });
+  if (fromRoomId) {
+    const removed = await associationsService.remove({
+      sourceType: "thread",
+      sourceId: tileId,
+      targetType: "war_room",
+      targetId: fromRoomId,
+    });
+    if (isScopesRpcErr(removed)) throw new WarRoomAssocError(removed.error);
+  }
+  const added = await associationsService.add({
+    sourceType: "thread",
+    sourceId: tileId,
+    targetType: "war_room",
+    targetId: toRoomId,
+    orgId,
+    metadata: MEMBERSHIP_META,
+  });
+  if (isScopesRpcErr(added)) throw new WarRoomAssocError(added.error);
+}

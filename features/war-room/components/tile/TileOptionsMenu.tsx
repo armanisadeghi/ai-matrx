@@ -17,6 +17,7 @@ import {
   EyeOff,
   Trash2,
   Building2,
+  FolderInput,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,9 +25,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { TileActions } from "@/features/war-room/hooks/useTileActions";
+import {
+  selectSessionsList,
+  selectTileById,
+} from "@/features/war-room/redux/selectors";
+import { moveThreadToRoom } from "@/features/war-room/redux/thunks";
 import { useTileCopyForAiTarget } from "../shared/TileCopyForAiButton";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
@@ -51,6 +61,12 @@ export function TileOptionsMenu({
   contextActive?: boolean;
 }) {
   const copyTarget = useTileCopyForAiTarget(tileId ?? "");
+  const dispatch = useAppDispatch();
+  const sessions = useAppSelector(selectSessionsList);
+  const tile = useAppSelector(selectTileById(tileId ?? null));
+  const currentSessionId = tile?.session_id ?? null;
+  // Other rooms this thread can be moved into (every saved room but its own).
+  const otherRooms = sessions.filter((s) => s.id !== currentSessionId);
 
   return (
     <DropdownMenu>
@@ -128,6 +144,27 @@ export function TileOptionsMenu({
           <EyeOff className="size-3.5 shrink-0" />
           Hide
         </DropdownMenuItem>
+        {tileId && otherRooms.length > 0 ? (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="gap-2">
+              <FolderInput className="size-3.5 shrink-0" />
+              Move to room
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="max-h-64 w-52 overflow-y-auto">
+              {otherRooms.map((room) => (
+                <DropdownMenuItem
+                  key={room.id}
+                  onClick={() => void dispatch(moveThreadToRoom(tileId, room.id))}
+                  className="gap-2"
+                >
+                  <span className="truncate">
+                    {room.title?.trim() || "Untitled room"}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => void actions.remove()}

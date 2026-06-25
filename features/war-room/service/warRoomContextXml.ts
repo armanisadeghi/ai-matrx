@@ -45,7 +45,8 @@ export interface WarRoomFileModel {
   name: string;
   mime?: string;
   kind: "file" | "document";
-  /** True when OUR text extraction exists (readable via war_room_read_file). */
+  /** True when OUR text extraction exists (readable server-side via the
+   *  data_action read_file_extraction operation). */
   hasExtraction?: boolean;
   /** True when the file is indexed for RAG (searchable via rag_search). */
   ragIndexed?: boolean;
@@ -193,8 +194,8 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
     );
   }
   // Per-file manifest: each attachment with its id + extraction/RAG signals, so
-  // the agent knows exactly what it can READ (war_room_read_file) and SEARCH
-  // (rag_search). Falls back to the bare count when the manifest isn't built.
+  // the agent knows exactly what it can READ (data_action read_file_extraction)
+  // and SEARCH (rag_search). Falls back to the bare count when the manifest isn't built.
   if (t.files && t.files.length > 0) {
     lines.push("    <files" + attr("count", t.files.length) + ">");
     for (const f of t.files) lines.push(fileRow(f));
@@ -236,7 +237,7 @@ function fileRow(f: WarRoomFileModel): string {
         ? "document tool"
         : f.hasExtraction === false
           ? undefined
-          : "war_room_read_file",
+          : "data_action read_file_extraction",
     ) +
     "/>"
   );
