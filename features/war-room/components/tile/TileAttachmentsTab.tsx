@@ -212,7 +212,7 @@ export function TileAttachmentsTab({
   };
 
   const remove = (a: WarRoomAssignment) =>
-    dispatch(detachTileAttachment(tileId, a.id));
+    dispatch(detachTileAttachment(tileId, a));
 
   // ── Compact (combined "All" view): list only, no chrome ─────────────────
   if (compact) {

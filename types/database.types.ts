@@ -28068,6 +28068,19 @@ export type Database = {
           other_type: string
         }[]
       }
+      assoc_for_targets: {
+        Args: { p_target_ids: string[]; p_target_type: string }
+        Returns: {
+          created_at: string
+          id: string
+          label: string
+          metadata: Json
+          org_id: string
+          source_id: string
+          source_type: string
+          target_id: string
+        }[]
+      }
       assoc_remove: {
         Args: {
           p_source_id: string

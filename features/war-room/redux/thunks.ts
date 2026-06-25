@@ -44,6 +44,7 @@ import {
   type TileFlavor,
   type TileTab,
   type WarRoomAssignment,
+  type WarRoomAssignmentEntityType,
   type WarRoomSession,
   type WarRoomSessionUpdate,
   type WarRoomTile,
@@ -1109,19 +1110,9 @@ export const loadTileAttachments =
     }
   };
 
-/**
- * A Postgres unique-violation (PostgREST surfaces code 23505) means the row
- * already exists — for attachments that's "already attached", a friendly state,
- * not an error (UNIQUE(tile_id, entity_type, entity_id) on the link table).
- */
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "23505"
-  );
-}
+// Re-attaching an already-linked resource is no longer an error: createAssignment
+// upserts via assoc_add (ON CONFLICT) and returns the existing row, so there is no
+// 23505 to special-case. The catch blocks below handle only genuine failures.
 
 /** Link an existing/just-uploaded cloud file (cld_files.id) to a tile. */
 export const attachFileToTile =
@@ -1139,11 +1130,6 @@ export const attachFileToTile =
       );
       return true;
     } catch (err) {
-      // Re-attaching the same file is a no-op, not a failure.
-      if (isUniqueViolation(err)) {
-        toast.info("Already attached");
-        return true;
-      }
       reportWarRoomError("attachFileToTile", err, {
         toast: "Couldn't attach the file",
       });
@@ -1167,11 +1153,6 @@ export const attachDocumentToTile =
       );
       return true;
     } catch (err) {
-      // Re-attaching the same document is a no-op, not a failure.
-      if (isUniqueViolation(err)) {
-        toast.info("Already attached");
-        return true;
-      }
       reportWarRoomError("attachDocumentToTile", err, {
         toast: "Couldn't attach the document",
       });
@@ -1201,7 +1182,6 @@ export const attachConversationToTile =
       );
       return true;
     } catch (err) {
-      if (isUniqueViolation(err)) return true; // already linked
       reportWarRoomError("attachConversationToTile", err, { toast: false });
       return false;
     }
@@ -1296,16 +1276,21 @@ export const importThreadToRoom =
 
 /** Remove a tile's attachment link (the file/document itself is untouched). */
 export const detachTileAttachment =
-  (tileId: string, attachmentId: string) => async (dispatch: AppDispatch) => {
+  (tileId: string, attachment: WarRoomAssignment) =>
+  async (dispatch: AppDispatch) => {
     // Optimistic — the link is cheap to re-create.
     dispatch(
       assignmentRemoved({
         key: containerKey("thread", tileId),
-        id: attachmentId,
+        id: attachment.id,
       }),
     );
     try {
-      await assoc.removeAssignment(attachmentId);
+      await assoc.removeAssignmentByEntity(
+        threadRef(tileId),
+        attachment.entity_type as WarRoomAssignmentEntityType,
+        attachment.entity_id,
+      );
     } catch (err) {
       dispatch(loadTileAttachments(tileId));
       reportWarRoomError("detachTileAttachment", err, {

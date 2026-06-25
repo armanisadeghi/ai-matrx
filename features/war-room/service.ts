@@ -5,6 +5,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 import { DEFAULT_SESSION_TITLE } from "./constants";
 import type {
   CreateSessionInput,
@@ -17,6 +18,43 @@ import type {
 
 const SESSIONS = "ctx_war_room_sessions";
 const TILES = "ctx_war_room_tiles";
+
+/**
+ * Resolve a war-room container's organization_id, NEVER returning null. A real
+ * input org (not the "Personal" pseudo-sentinel) wins; otherwise the user's
+ * personal org. A NULL-org container would make every association edge into it
+ * invisible (`platform.associations` fails closed), so org-on-create is the
+ * load-bearing guarantee behind the unified relationship model.
+ */
+async function resolveOrgIdNeverNull(
+  orgIdInput: string | null | undefined,
+): Promise<string> {
+  const real =
+    orgIdInput && !isPersonalPseudoOrgId(orgIdInput) ? orgIdInput : null;
+  if (real) return real;
+  const userId = requireUserId();
+  const { data, error } = await supabase.rpc("ensure_personal_organization", {
+    p_user_id: userId,
+  });
+  if (error || !data) {
+    console.error("[war-room] resolveOrgIdNeverNull failed:", error?.message);
+    throw error ?? new Error("Could not resolve a war-room organization");
+  }
+  return data as string;
+}
+
+/** The tile's anchor (its singular primary subject) derived from create input.
+ *  Task wins over project — matching the A.3 backfill priority — else canvas.
+ *  Satisfies the CHECK (`canvas ⇒ anchor_id NULL`, else NOT NULL). */
+function deriveAnchor(input: CreateTileInput): {
+  anchor_type: "task" | "project" | "canvas";
+  anchor_id: string | null;
+} {
+  if (input.taskId) return { anchor_type: "task", anchor_id: input.taskId };
+  if (input.projectId)
+    return { anchor_type: "project", anchor_id: input.projectId };
+  return { anchor_type: "canvas", anchor_id: null };
+}
 
 // ── Sessions ──────────────────────────────────────────────────────────
 
@@ -57,6 +95,9 @@ export async function createSession(
   input: CreateSessionInput = {},
 ): Promise<WarRoomSession> {
   const userId = requireUserId();
+  // org-on-create: a room is a container that holds association edges, so it must
+  // carry a real org from birth (never NULL — see resolveOrgIdNeverNull).
+  const organizationId = await resolveOrgIdNeverNull(input.organizationId);
   const { data, error } = await supabase
     .from(SESSIONS)
     .insert({
@@ -65,8 +106,11 @@ export async function createSession(
       description: input.description ?? null,
       icon: input.icon ?? null,
       color: input.color ?? null,
-      organization_id: input.organizationId ?? null,
+      organization_id: organizationId,
       project_id: input.projectId ?? null,
+      // anchor (singular primary subject): a project room is project-anchored.
+      anchor_type: input.projectId ? "project" : "canvas",
+      anchor_id: input.projectId ?? null,
       context_scope_ids: input.contextScopeIds ?? [],
       last_opened_at: new Date().toISOString(),
     })
@@ -181,11 +225,22 @@ export async function getTile(id: string): Promise<WarRoomTile | null> {
 
 export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
   const userId = requireUserId();
+  // A tile is a container too: inherit the room's org (denormalized, NEVER NULL)
+  // so its own association edges resolve to the right org, and stamp the anchor
+  // (its singular subject) alongside the legacy FKs until those FKs are dropped.
+  const { data: sessionRow } = await supabase
+    .from(SESSIONS)
+    .select("organization_id")
+    .eq("id", input.sessionId)
+    .maybeSingle();
+  const organizationId = await resolveOrgIdNeverNull(sessionRow?.organization_id);
+  const anchor = deriveAnchor(input);
   const { data, error } = await supabase
     .from(TILES)
     .insert({
       session_id: input.sessionId,
       user_id: userId,
+      organization_id: organizationId,
       task_id: input.taskId ?? null,
       note_id: input.noteId ?? null,
       active_tab: input.activeTab ?? "task",
@@ -193,6 +248,8 @@ export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
       title: input.title ?? null,
       flavor: input.flavor ?? "thread",
       project_id: input.projectId ?? null,
+      anchor_type: anchor.anchor_type,
+      anchor_id: anchor.anchor_id,
     })
     .select("*")
     .single();

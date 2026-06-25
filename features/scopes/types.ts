@@ -111,6 +111,22 @@ export interface AssociationEdge {
   createdAt: string;
 }
 
+// One row of `assoc_for_targets(p_target_type, p_target_ids[])` — every INCOMING
+// edge (a member → one of the queried containers). `targetId` says which queried
+// target the edge points at, so a caller loading MANY containers at once can
+// group rows back by container in one pass. The batch counterpart of
+// `AssociationEdge` (single entity, both directions).
+export interface AssociationTargetEdge {
+  id: string;
+  targetId: string;
+  sourceType: string;
+  sourceId: string;
+  label: string | null;
+  metadata: Json;
+  orgId: string | null;
+  createdAt: string;
+}
+
 // Cache entry for one `${type}:${id}` endpoint — mirrors `EntityScopesEntry`.
 export interface AssociationsEntry {
   status: "idle" | "loading" | "ready" | "error";
