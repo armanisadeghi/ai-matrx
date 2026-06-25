@@ -40,8 +40,7 @@ import {
   X as XIcon,
   Loader2,
   AlertTriangle,
-  ChevronDown,
-  ChevronRight,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,8 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
-import { DerivativeChunkList } from "./ChunkList";
-import { TableRowsViewer } from "./TableRowsViewer";
+import { DerivativeResultsDialog } from "./DerivativeResultsDialog";
 import {
   DERIVE_KINDS,
   fetchEstimate,
@@ -445,8 +443,8 @@ function RepresentationCard({
     onRun();
   };
 
-  // Results expander — only meaningful once content exists.
-  const [expanded, setExpanded] = useState(false);
+  // Full-screen results viewer — only meaningful once content exists.
+  const [resultsOpen, setResultsOpen] = useState(false);
 
   const pct =
     op.total > 0 ? Math.min(100, Math.round((op.current / op.total) * 100)) : 0;
@@ -582,40 +580,28 @@ function RepresentationCard({
         )}
       </div>
 
-      {/* Results expander — the KEY fix. "Table rows: 62" → click to SEE the 62
-          rows and WHERE they came from (page numbers on each ChunkCard). */}
+      {/* Results — open the FULL-SCREEN viewer (no more card-in-a-card). For
+          table_row this is the real grid of every row with search + page
+          provenance; for other kinds, the chunk list. */}
       {built && derivativeId && (
         <>
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
-            aria-expanded={expanded}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setResultsOpen(true)}
+            className="mt-2 h-7 w-full text-[10px]"
           >
-            {expanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-            {expanded
-              ? "Hide results"
-              : `View ${chunkCount.toLocaleString()} ${meta.unit}`}
-          </button>
-          {expanded && (
-            <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-1.5">
-              {kind === "table_row" ? (
-                <TableRowsViewer
-                  derivativeId={derivativeId}
-                  expectedTotal={chunkCount}
-                />
-              ) : (
-                <DerivativeChunkList
-                  derivativeId={derivativeId}
-                  expectedTotal={chunkCount}
-                />
-              )}
-            </div>
-          )}
+            <ExternalLink className="h-3 w-3 mr-1" />
+            View {chunkCount.toLocaleString()} {meta.unit}
+          </Button>
+          <DerivativeResultsDialog
+            open={resultsOpen}
+            onOpenChange={setResultsOpen}
+            kind={kind}
+            derivativeId={derivativeId}
+            title={meta.label}
+            total={chunkCount}
+          />
         </>
       )}
 
