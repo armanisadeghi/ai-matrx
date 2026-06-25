@@ -34,7 +34,9 @@ export function DictionaryOverlay({ entry }: ToolRendererProps) {
           </span>
         ) : null}
       </div>
-      <DictEntryList entries={entries} />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <DictEntryList entries={entries} />
+      </div>
     </div>
   );
 }

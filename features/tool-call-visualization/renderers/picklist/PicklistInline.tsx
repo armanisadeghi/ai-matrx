@@ -3,25 +3,24 @@
 import { useMemo } from "react";
 import {
   ListChecks,
-  ExternalLink,
   PanelRight,
+  ExternalLink,
+  Maximize2,
   Loader2,
   AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
 import { GroupSection } from "@/features/user-lists/components/GroupSection";
 import type { GroupedItem } from "@/features/user-lists/types";
+import { useOpenPicklistManagerV2Window } from "@/features/overlays/openers/picklistManagerV2Window";
 import type { ToolRendererProps } from "../../types";
 import { parsePicklist } from "./parsePicklist";
 import { usePicklistDetail } from "./usePicklistDetail";
+import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
 
 /**
- * Inline renderer for the `picklist` tool. Shows the REAL stored list — loaded
- * by id and rendered with the canonical `GroupSection`/`ListItem` components —
- * plus the two ways to take it further: open it in the picklist window panel,
- * or open its route in a new tab. Read-only here (isOwner=false); editing
- * happens in the window/route.
+ * Inline renderer for the `picklist` tool — a polished entity card (glossy
+ * glyph · name · count · "Open in" menu) wrapping the REAL stored list rendered
+ * with the canonical `GroupSection`/`ListItem`.
  */
 
 function orderedGroups(
@@ -34,7 +33,7 @@ function orderedGroups(
     );
 }
 
-export function PicklistInline({ entry }: ToolRendererProps) {
+export function PicklistInline({ entry, onOpenOverlay }: ToolRendererProps) {
   const summary = useMemo(() => parsePicklist(entry), [entry]);
   const listId = summary.listId;
   const { list, loading } = usePicklistDetail(listId);
@@ -45,8 +44,6 @@ export function PicklistInline({ entry }: ToolRendererProps) {
     [list],
   );
 
-  // Actions without a list id (list / update_item / batch_update) — just the
-  // server message; there is nothing to render as a list.
   if (!listId) {
     return summary.message ? (
       <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
@@ -61,44 +58,38 @@ export function PicklistInline({ entry }: ToolRendererProps) {
     summary.itemCount ??
     (list ? groups.reduce((acc, [, items]) => acc + items.length, 0) : null);
 
+  const actions: EntityAction[] = [
+    {
+      label: "Open in window",
+      icon: PanelRight,
+      onSelect: () => openWindow({ forcedListId: listId, title: name }),
+    },
+    { label: "Open in new tab", icon: ExternalLink, href },
+    ...(onOpenOverlay
+      ? [
+          {
+            label: "Expand",
+            icon: Maximize2,
+            onSelect: () => onOpenOverlay(),
+            separatorBefore: true,
+          } satisfies EntityAction,
+        ]
+      : []),
+  ];
+
   return (
-    <div className="space-y-2">
-      {/* Identity + the two "take it further" affordances */}
-      <div className="flex items-center gap-2">
-        <ListChecks className="h-4 w-4 shrink-0 text-primary" />
-        <span className="truncate text-sm font-medium text-foreground">{name}</span>
-        {count != null ? (
-          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-            {count} {count === 1 ? "item" : "items"}
-          </span>
-        ) : null}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => openWindow({ forcedListId: listId, title: name })}
-          >
-            <PanelRight className="h-3.5 w-3.5" />
-            Open in window
-          </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <a href={href} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-3.5 w-3.5" />
-              New tab
-            </a>
-          </Button>
-        </div>
-      </div>
-
-      {summary.alreadyExisted ? (
-        <p className="text-xs text-muted-foreground">
-          A list with this name already existed — showing the current version.
-        </p>
-      ) : null}
-
-      {/* The real list, rendered with the canonical components — capped + scrollable */}
-      <div className="max-h-[440px] overflow-y-auto rounded-lg border border-border bg-card p-2">
+    <EntityCard
+      icon={ListChecks}
+      accent="violet"
+      title={name}
+      subtitle={
+        count != null
+          ? `${count} ${count === 1 ? "item" : "items"}${summary.alreadyExisted ? " · already existed" : ""}`
+          : "Picklist"
+      }
+      actions={actions}
+    >
+      <div className="max-h-[440px] overflow-y-auto p-2">
         {loading && !list ? (
           <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -122,15 +113,9 @@ export function PicklistInline({ entry }: ToolRendererProps) {
           <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
             <AlertTriangle className="h-5 w-5 text-warning" />
             <span>{summary.message ?? "Couldn't load this list's items."}</span>
-            <Button asChild variant="outline" size="sm" className="mt-1 gap-1.5">
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3.5 w-3.5" />
-                Open in new tab
-              </a>
-            </Button>
           </div>
         )}
       </div>
-    </div>
+    </EntityCard>
   );
 }

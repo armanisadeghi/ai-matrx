@@ -9,7 +9,7 @@ import type { ParsedDictEntry } from "./parseDictionary";
  */
 export function DictEntryList({ entries }: { entries: ParsedDictEntry[] }) {
   return (
-    <div className="divide-y divide-border rounded-lg border border-border bg-card">
+    <div className="divide-y divide-border">
       {entries.map((e, i) => (
         <div key={i} className="px-3 py-2">
           <div className="flex items-baseline gap-2">

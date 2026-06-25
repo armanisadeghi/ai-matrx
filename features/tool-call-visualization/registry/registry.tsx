@@ -417,6 +417,7 @@ export const toolRendererRegistry: ToolRegistry = {
   picklist: {
     toolName: "picklist",
     displayName: "Picklist",
+    chrome: "card",
     phaseLabels: {
       running: "Building picklist",
       complete: "Picklist ready",
@@ -453,6 +454,7 @@ export const toolRendererRegistry: ToolRegistry = {
   task: {
     toolName: "task",
     displayName: "Task",
+    chrome: "card",
     phaseLabels: {
       running: "Updating task",
       complete: "Updated task",
@@ -500,6 +502,7 @@ export const toolRendererRegistry: ToolRegistry = {
   document: {
     toolName: "document",
     displayName: "Document",
+    chrome: "card",
     phaseLabels: {
       running: "Working on document",
       complete: "Document ready",
@@ -521,6 +524,7 @@ export const toolRendererRegistry: ToolRegistry = {
   dataset: {
     toolName: "dataset",
     displayName: "Dataset",
+    chrome: "card",
     phaseLabels: {
       running: "Working on dataset",
       complete: "Dataset ready",
@@ -548,6 +552,7 @@ export const toolRendererRegistry: ToolRegistry = {
   usertable_create: {
     toolName: "usertable_create",
     displayName: "Table",
+    chrome: "card",
     phaseLabels: {
       running: "Creating table",
       complete: "Created table",
@@ -562,6 +567,7 @@ export const toolRendererRegistry: ToolRegistry = {
   workbook: {
     toolName: "workbook",
     displayName: "Workbook",
+    chrome: "card",
     phaseLabels: {
       running: "Working on workbook",
       complete: "Workbook ready",
@@ -580,6 +586,7 @@ export const toolRendererRegistry: ToolRegistry = {
   dictionary: {
     toolName: "dictionary",
     displayName: "Dictionary",
+    chrome: "card",
     phaseLabels: {
       running: "Updating dictionary",
       complete: "Updated dictionary",
