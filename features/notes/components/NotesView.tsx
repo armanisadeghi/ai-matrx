@@ -23,7 +23,15 @@ import {
   History,
   RefreshCw,
   X,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
+import { usePanelRef, type Layout, type OnPanelResize } from "react-resizable-panels";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useParams, useSearchParams } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -98,9 +106,12 @@ export interface NotesViewConfig {
 export interface NotesViewProps {
   config?: NotesViewConfig;
   className?: string;
+  /** Persisted sidebar/main split (percentages), read from the cookie by the
+   *  server layout so the first paint matches — see app/(core)/notes/layout.tsx. */
+  sidebarLayout?: Layout;
 }
 
-export function NotesView({ config, className }: NotesViewProps) {
+export function NotesView({ config, className, sidebarLayout }: NotesViewProps) {
   const dispatch = useAppDispatch();
   const { id: userId } = useAppSelector(selectUser);
   const isMobile = useIsMobile();
@@ -110,6 +121,32 @@ export function NotesView({ config, className }: NotesViewProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const singleNote = config?.singleNote ?? null;
+
+  // ── Resizable + collapsible left sidebar (react-resizable-panels v4) ──
+  // The library owns the size; we mirror only the collapsed BOOLEAN for the
+  // toggle icon, and persist the split to a cookie the server layout reads.
+  const sidebarPanelRef = usePanelRef();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    const panel = sidebarPanelRef.current;
+    if (!panel) return;
+    if (panel.isCollapsed()) panel.expand();
+    else panel.collapse();
+  };
+
+  const trackSidebarCollapse: OnPanelResize = (next, _id, prev) => {
+    if (prev === undefined) return;
+    const wasCollapsed = prev.asPercentage === 0;
+    const isCollapsed = next.asPercentage === 0;
+    if (wasCollapsed !== isCollapsed) setSidebarCollapsed(isCollapsed);
+  };
+
+  const persistShellLayout = (layout: Layout) => {
+    document.cookie =
+      `panels:notes-shell=${encodeURIComponent(JSON.stringify(layout))}` +
+      `; path=/; max-age=31536000; SameSite=Lax`;
+  };
 
   // ── URL param hydration: read ?tabs= and ?active= on mount ────────
   const searchParams = useSearchParams();
@@ -393,6 +430,81 @@ export function NotesView({ config, className }: NotesViewProps) {
         : "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
     );
 
+  // Main editor column — shared by the sidebar-shown (resizable panel) and the
+  // sidebar-hidden (full-width) layouts. h-full/w-full so it fills either one.
+  const mainArea = (
+    <div className="flex h-full w-full min-w-0 min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        {/* Layer 4: Tab bar (top) */}
+        {showTabs && !singleNote && <NoteTabBar instanceId={instanceId} />}
+
+        {/* Presence indicator */}
+        {activeTabId && activeNoteEditedByOthers && (
+          <div className="flex items-center gap-2 px-4 py-1 bg-amber-500/10 border-b border-amber-500/20 shrink-0">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+            </span>
+            <span className="text-[0.6875rem] text-amber-700 dark:text-amber-300">
+              Another user is editing this note
+            </span>
+          </div>
+        )}
+        {othersActive && !activeNoteEditedByOthers && (
+          <div className="flex items-center gap-2 px-4 py-0.5 bg-blue-500/5 border-b border-blue-500/10 shrink-0">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+            </span>
+            <span className="text-[0.625rem] text-blue-600/70 dark:text-blue-400/70">
+              Other users are active in notes
+            </span>
+          </div>
+        )}
+
+        {/* Layer 1: Content editor (fills available space) */}
+        {activeTabId ? (
+          splitNoteId ? (
+            /* ── Split view: two editors side-by-side ─────────── */
+            <div className="flex-1 flex min-h-0">
+              <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                <NoteContentEditor
+                  noteId={activeTabId}
+                  actionsSurfaceId={`note-detail-${activeTabId}`}
+                />
+              </div>
+              <div className="w-px bg-border shrink-0" />
+              <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                <div className="flex items-center justify-between px-2 py-0.5 border-b border-border bg-muted/30 shrink-0">
+                  <span className="text-[0.625rem] font-medium truncate text-muted-foreground">
+                    {splitNoteLabel ?? "Split Note"}
+                  </span>
+                  <button
+                    onClick={() => dispatch(closeSplit(instanceId))}
+                    className="flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    title="Close split"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                <NoteContentEditor noteId={splitNoteId} />
+              </div>
+            </div>
+          ) : (
+            <NoteContentEditor
+              noteId={activeTabId}
+              actionsSurfaceId={`note-detail-${activeTabId}`}
+            />
+          )
+        ) : (
+          <FolderQuickPick instanceId={instanceId} />
+        )}
+
+        {/* Layer 2: Metadata bar (bottom — folder, tags, status) */}
+        {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
+      </div>
+    </div>
+  );
+
   // ── Render ─────────────────────────────────────────────────────────
   return (
     <NotesInstanceProvider value={instanceId}>
@@ -403,6 +515,22 @@ export function NotesView({ config, className }: NotesViewProps) {
           {/* ── Header center: View mode buttons (portaled into shell header) */}
           <PageHeader>
             <div className="matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5">
+              {showSidebar && !singleNote && (
+                <>
+                  <button
+                    className={cn(
+                      "flex items-center gap-1 px-2.5 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5",
+                      "text-[var(--shell-nav-text)] hover:text-[var(--shell-nav-text-hover)]",
+                    )}
+                    onClick={toggleSidebar}
+                    title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                    aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                  >
+                    {sidebarCollapsed ? <PanelLeft /> : <PanelLeftClose />}
+                  </button>
+                  <div className="w-px h-4 bg-border/30 mx-0.5" />
+                </>
+              )}
               {activeTabId && (
                 <>
                   <button
@@ -482,90 +610,52 @@ export function NotesView({ config, className }: NotesViewProps) {
             </div>
           </PageHeader>
 
-          {/* Layer 5: Sidebar */}
-          {showSidebar && !singleNote && (
-            <div className="w-[280px] shrink-0 border-r border-border flex flex-col min-h-0 max-lg:hidden">
-              <NoteSidebar instanceId={instanceId} />
-            </div>
+          {/* Layer 4/5: collapsible + resizable sidebar | main editor column.
+              react-resizable-panels v4 owns the size; cookie persists the split
+              (read server-side in app/(core)/notes/layout.tsx for a flash-free
+              first paint). Sidebar hidden (singleNote / showSidebar=false) →
+              just the main area, no group. */}
+          {showSidebar && !singleNote ? (
+            <ResizablePanelGroup
+              id="notes-shell"
+              orientation="horizontal"
+              defaultLayout={sidebarLayout}
+              onLayoutChanged={persistShellLayout}
+              className="min-h-0 flex-1"
+            >
+              <ResizablePanel
+                id="notes-sidebar"
+                panelRef={sidebarPanelRef}
+                collapsible
+                collapsedSize={0}
+                defaultSize="220px"
+                minSize="180px"
+                maxSize="42%"
+                onResize={trackSidebarCollapse}
+                style={{ overflow: "hidden", height: "100%" }}
+              >
+                <div className="flex h-full flex-col min-h-0 border-r border-border">
+                  <NoteSidebar instanceId={instanceId} />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                disabled={sidebarCollapsed}
+                className={cn(
+                  sidebarCollapsed && "pointer-events-none opacity-0",
+                )}
+              />
+              <ResizablePanel
+                id="notes-main"
+                minSize="40%"
+                style={{ overflow: "hidden", height: "100%" }}
+              >
+                {mainArea}
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            mainArea
           )}
-
-          {/* Main content area */}
-          <div className="flex-1 flex min-w-0 min-h-0">
-            {/* Editor column */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0">
-              {/* Layer 4: Tab bar (top) */}
-              {showTabs && !singleNote && (
-                <NoteTabBar instanceId={instanceId} />
-              )}
-
-              {/* Presence indicator */}
-              {activeTabId && activeNoteEditedByOthers && (
-                <div className="flex items-center gap-2 px-4 py-1 bg-amber-500/10 border-b border-amber-500/20 shrink-0">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
-                  </span>
-                  <span className="text-[0.6875rem] text-amber-700 dark:text-amber-300">
-                    Another user is editing this note
-                  </span>
-                </div>
-              )}
-              {othersActive && !activeNoteEditedByOthers && (
-                <div className="flex items-center gap-2 px-4 py-0.5 bg-blue-500/5 border-b border-blue-500/10 shrink-0">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
-                  </span>
-                  <span className="text-[0.625rem] text-blue-600/70 dark:text-blue-400/70">
-                    Other users are active in notes
-                  </span>
-                </div>
-              )}
-
-              {/* Layer 1: Content editor (fills available space) */}
-              {activeTabId ? (
-                splitNoteId ? (
-                  /* ── Split view: two editors side-by-side ─────────── */
-                  <div className="flex-1 flex min-h-0">
-                    {/* Left pane — active tab. Actions feed the header bar. */}
-                    <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                      <NoteContentEditor
-                        noteId={activeTabId}
-                        actionsSurfaceId={`note-detail-${activeTabId}`}
-                      />
-                    </div>
-                    {/* Resize divider */}
-                    <div className="w-px bg-border shrink-0" />
-                    {/* Right pane — split note */}
-                    <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                      <div className="flex items-center justify-between px-2 py-0.5 border-b border-border bg-muted/30 shrink-0">
-                        <span className="text-[0.625rem] font-medium truncate text-muted-foreground">
-                          {splitNoteLabel ?? "Split Note"}
-                        </span>
-                        <button
-                          onClick={() => dispatch(closeSplit(instanceId))}
-                          className="flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                          title="Close split"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <NoteContentEditor noteId={splitNoteId} />
-                    </div>
-                  </div>
-                ) : (
-                  <NoteContentEditor
-                    noteId={activeTabId}
-                    actionsSurfaceId={`note-detail-${activeTabId}`}
-                  />
-                )
-              ) : (
-                <FolderQuickPick instanceId={instanceId} />
-              )}
-
-              {/* Layer 2: Metadata bar (bottom — folder, tags, status) */}
-              {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
-            </div>
-          </div>
 
           {/* Version history — resizable MatrxDynamic panel (desktop) / Drawer (mobile) */}
           {activeTabId && (
