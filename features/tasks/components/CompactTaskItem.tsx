@@ -39,11 +39,11 @@ export default function CompactTaskItem({
   const getPriorityColor = (priority: string | null) => {
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800";
+        return "bg-destructive/10 text-destructive border-destructive/30";
       case "medium":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+        return "bg-warning/10 text-warning border-warning/30";
       case "low":
-        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800";
+        return "bg-success/10 text-success border-success/30";
       default:
         return "";
     }
@@ -173,7 +173,7 @@ export default function CompactTaskItem({
             target="_blank"
             rel="noopener noreferrer"
             title="Open task in full page (cmd+click from anywhere)"
-            className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <ExternalLink size={13} />
           </Link>

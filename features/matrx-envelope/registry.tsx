@@ -51,6 +51,7 @@ import {
   getReferenceResolver,
   referenceFallbackLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
+import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
 
 export interface EnvelopeRendererProps {
   envelope: MatrxEnvelope;
@@ -266,3 +267,9 @@ const ReferenceRenderer: EnvelopeRenderer = ({ envelope }) => {
 };
 
 registerEnvelopeRenderer("reference", ReferenceRenderer);
+
+registerEnvelopeRenderer(
+  "output_directive",
+  CreateProjectWithTasksRenderer,
+  "create_project_with_tasks",
+);

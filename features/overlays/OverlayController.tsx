@@ -73,6 +73,10 @@ const StateViewerWindow = lazyOverlay(
   () => import("@/components/admin/state-analyzer/StateViewerWindow"),
   { ssr: false },
 );
+const AudioControlWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/AudioControlWindow"),
+  { ssr: false },
+);
 const AudioDevicesWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/AudioDevicesWindow"),
   { ssr: false },
@@ -787,6 +791,9 @@ export default function OverlayController() {
     ),
     adminStateAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "adminStateAnalyzerWindow"),
+    ),
+    audioControlWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "audioControlWindow"),
     ),
     audioDevices: useAppSelector((s) => selectIsOverlayOpen(s, "audioDevices")),
     favoritesManagerWindow: useAppSelector((s) =>
@@ -3516,6 +3523,20 @@ export default function OverlayController() {
               typeof data?.initialSelectedConversationId === "string"
                 ? data.initialSelectedConversationId
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* audioControlWindow */}
+      {(() => {
+        const isOpen = isOpenById.audioControlWindow;
+        if (!isOpen) return null;
+        return (
+          <AudioControlWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "audioControlWindow" }))
             }
           />
         );

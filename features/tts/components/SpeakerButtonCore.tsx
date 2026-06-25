@@ -6,12 +6,15 @@
  * Shape never changes — one button, always.
  */
 
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useCallback } from 'react';
-import { Volume2TapButton, PauseTapButton } from '@/components/icons/tap-buttons';
-import { useCartesiaSpeaker } from '../hooks/useCartesiaSpeaker';
-import type { SpeakerVariant } from '../types';
+import React, { useEffect, useRef, useCallback } from "react";
+import {
+  Volume2TapButton,
+  PauseTapButton,
+} from "@/components/icons/tap-buttons";
+import { useTtsSpeak } from "@/features/audio/playback/useTtsSpeak";
+import type { SpeakerVariant } from "../types";
 
 export interface SpeakerButtonCoreProps {
   text: string;
@@ -30,8 +33,11 @@ export default function SpeakerButtonCore({
   className,
   disabled = false,
 }: SpeakerButtonCoreProps) {
-  const { isLoading, isPlaying, isPaused, speak, pause, resume } =
-    useCartesiaSpeaker({ processMarkdown });
+  const { speak, status, pause, resume } = useTtsSpeak({ processMarkdown });
+
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+  const isLoading = status === "loading" || status === "queued";
 
   const autoStartFired = useRef(false);
 
@@ -39,14 +45,14 @@ export default function SpeakerButtonCore({
     if (!autoStart || autoStartFired.current) return;
     autoStartFired.current = true;
     speak(text);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClick = useCallback(async () => {
     if (disabled || isLoading) return;
     if (isPlaying) await pause();
     else if (isPaused) await resume();
-    else await speak(text);
+    else speak(text);
   }, [disabled, isLoading, isPlaying, isPaused, text, speak, pause, resume]);
 
   if (isPlaying) {
@@ -66,7 +72,7 @@ export default function SpeakerButtonCore({
       variant={variant}
       onClick={handleClick}
       disabled={disabled || isLoading}
-      ariaLabel={isLoading ? 'Connecting…' : isPaused ? 'Resume' : 'Play audio'}
+      ariaLabel={isLoading ? "Connecting…" : isPaused ? "Resume" : "Play audio"}
       className={className}
     />
   );

@@ -35,7 +35,7 @@
 
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useId, useRef, useCallback, useState } from "react";
 import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
@@ -49,6 +49,10 @@ import {
   TTS_STREAMING_BUFFER_SEC,
 } from "@/lib/cartesia/config";
 import { installAudioContextSinkRouting } from "@/features/audio/audioOutputSink";
+import {
+  claimPlayback,
+  releasePlayback,
+} from "@/features/audio/playback/playbackLock";
 
 export type SpeakerPhase =
   | "idle"
@@ -104,6 +108,12 @@ export function useCartesiaStreamingSpeaker({
   const mountedRef = useRef(true);
   /** AbortController for the current speak session. */
   const sessionRef = useRef<AbortController | null>(null);
+
+  // App-wide playback lock: this streaming speaker is one OUTPUT path among
+  // several (the unified playbackQueue, xAI, podcast). We claim while busy and
+  // release when idle so two voices can never play at once — start-always-wins.
+  const playbackId = useId();
+  const stopRef = useRef<() => void>(() => {});
 
   // Custom Dictionary pronunciation pairs, resolved once per stream/speak.
   const pronunciationsRef = useRef<{ from: string; to: string }[]>([]);
@@ -191,12 +201,29 @@ export function useCartesiaStreamingSpeaker({
       if (playerRef.current && hasPlayedRef.current) {
         playerRef.current.stop().catch(() => {});
       }
+      releasePlayback(playbackId);
     };
-  }, []);
+  }, [playbackId]);
 
-  const setPhaseIfMounted = useCallback((p: SpeakerPhase) => {
-    if (mountedRef.current) setPhase(p);
-  }, []);
+  const setPhaseIfMounted = useCallback(
+    (p: SpeakerPhase) => {
+      if (!mountedRef.current) return;
+      setPhase(p);
+      // Single funnel for playback-lock ownership: any busy/active phase claims
+      // the lock (start-always-wins — stops the queue or other speakers);
+      // idle/error releases it. `paused` keeps the lock (we still own output).
+      if (p === "idle" || p === "error") {
+        releasePlayback(playbackId);
+      } else {
+        claimPlayback({
+          id: playbackId,
+          label: "Read-aloud",
+          stop: () => stopRef.current(),
+        });
+      }
+    },
+    [playbackId],
+  );
 
   /**
    * Fetches a token, opens the WebSocket, and ensures a WebPlayer exists.
@@ -620,6 +647,9 @@ export function useCartesiaStreamingSpeaker({
     }
     setPhaseIfMounted("idle");
   }, [setPhaseIfMounted]);
+
+  // Keep the playback-lock takeover handle pointed at the latest stop().
+  stopRef.current = stop;
 
   const isLoading =
     phase === "fetching-token" || phase === "connecting" || phase === "sending";

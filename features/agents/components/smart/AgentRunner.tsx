@@ -71,6 +71,42 @@ export function AgentRunner({
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
+
+  // [Track AgentRunner Commit] TEMP — non-invasive render audit. Logs in a
+  // useEffect (NOT render body) so it does not defeat React Compiler memoization.
+  // Reports WHICH subscribed value changed since the last commit — or
+  // "PARENT-DRIVEN (no subscribed value changed)" when nothing changed, which
+  // means a parent re-render (not this component's own subscription) drove it.
+  const __commitCount = useRef(0);
+  const __prev = useRef<Record<string, unknown>>({});
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    __commitCount.current++;
+    const cur: Record<string, unknown> = {
+      conversationId,
+      autoRun,
+      allowChat,
+      needsPreExecution,
+      shouldShowInput,
+      title,
+      status,
+      isExecuting,
+      hasUserInput,
+      showVariablePanel,
+    };
+    const changed = Object.keys(cur).filter(
+      (k) => cur[k] !== __prev.current[k],
+    );
+    __prev.current = cur;
+    const what =
+      __commitCount.current === 1
+        ? "MOUNT"
+        : changed.length === 0
+          ? "PARENT-DRIVEN (no subscribed value changed)"
+          : `changed: ${changed.join(", ")}`;
+    console.log(`[Track AgentRunner Commit] #${__commitCount.current} ${what}`);
+  });
+
   // ── Auto-run: fire execution once when conditions are met ──────────────────
   useEffect(() => {
     if (autoRunFiredRef.current) return;

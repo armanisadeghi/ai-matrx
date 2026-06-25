@@ -286,13 +286,13 @@ export default function TaskDetailsPanel({
   const getPriorityColor = (p: string | null) => {
     switch (p) {
       case "high":
-        return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+        return "bg-destructive/10 text-destructive";
       case "medium":
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400";
+        return "bg-warning/10 text-warning";
       case "low":
-        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+        return "bg-success/10 text-success";
       default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -459,7 +459,7 @@ export default function TaskDetailsPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Assignee */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+          <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
             <User size={14} />
             Assignee
           </label>
@@ -473,7 +473,7 @@ export default function TaskDetailsPanel({
 
         {/* Due Date */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+          <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
             <Calendar size={14} />
             Due Date
           </label>
@@ -487,7 +487,7 @@ export default function TaskDetailsPanel({
 
         {/* Context — org, scopes, project (compact) */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <label className="text-xs font-semibold text-muted-foreground">
             Context
           </label>
           <TaskContextPicker taskId={task.id} taskTitle={task.title} />
@@ -495,7 +495,7 @@ export default function TaskDetailsPanel({
 
         {/* Priority */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+          <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
             <Flag size={14} />
             Priority
           </label>
@@ -516,17 +516,17 @@ export default function TaskDetailsPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="high">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-destructive/10 text-destructive">
                   High
                 </span>
               </SelectItem>
               <SelectItem value="medium">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-warning/10 text-warning">
                   Medium
                 </span>
               </SelectItem>
               <SelectItem value="low">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
                   Low
                 </span>
               </SelectItem>
@@ -536,7 +536,7 @@ export default function TaskDetailsPanel({
 
         {/* Task ID */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
+          <label className="text-xs font-semibold text-muted-foreground mb-1 block">
             Task ID
           </label>
           <div className="flex items-center gap-2">
@@ -546,7 +546,7 @@ export default function TaskDetailsPanel({
               title="Copy task ID"
             >
               {idCopied ? (
-                <Check size={11} className="text-green-500 flex-shrink-0" />
+                <Check size={11} className="text-success flex-shrink-0" />
               ) : (
                 <Copy size={11} className="flex-shrink-0" />
               )}
@@ -566,7 +566,7 @@ export default function TaskDetailsPanel({
 
         {/* Labels */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">
+          <label className="text-xs font-semibold text-muted-foreground mb-2 block">
             Labels
           </label>
           <TaskLabels
@@ -581,7 +581,7 @@ export default function TaskDetailsPanel({
         {/* Description */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+            <label className="text-xs font-semibold text-muted-foreground">
               Description
             </label>
             <button
@@ -620,7 +620,7 @@ export default function TaskDetailsPanel({
 
         {/* Subtasks */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 block">
+          <label className="text-xs font-semibold text-muted-foreground mb-2 block">
             Subtasks{" "}
             {totalSubtasks > 0 && `(${completedSubtasks}/${totalSubtasks})`}
           </label>
@@ -666,14 +666,17 @@ export default function TaskDetailsPanel({
 
         {/* Activity / Comments */}
         <div>
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+          <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
             <MessageSquare size={14} />
             Activity {comments.length > 0 && `(${comments.length})`}
           </label>
 
           {isLoadingComments ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 size={20} className="animate-spin text-gray-400" />
+              <Loader2
+                size={20}
+                className="animate-spin text-muted-foreground"
+              />
             </div>
           ) : comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">

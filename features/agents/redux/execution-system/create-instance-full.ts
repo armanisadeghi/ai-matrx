@@ -44,6 +44,14 @@ export interface CreateInstanceFullPayload {
   initialAgentVersionId?: string | null;
   isEphemeral?: boolean;
 
+  /**
+   * When set, the conversation-focus slice points this surface's focus at the
+   * new conversation IN THE SAME COMMIT — so creation + focus are one atomic
+   * store mutation (one render), not two. Omit for create paths that manage
+   * focus themselves (autoclear split, etc.).
+   */
+  surfaceKey?: string;
+
   // ── Per-slice init bundles — omit a bundle to skip that slice's init ─────────
   /** Omit for manual mode (Agent Builder reads agent.settings live). */
   overrides?: { baseSettings?: Partial<FeLlmParams> };

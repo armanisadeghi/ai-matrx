@@ -294,11 +294,14 @@ export function useAgentLauncher(
       return;
     }
 
-    // Create branch: set focus to the known id SYNCHRONOUSLY up-front (so the
-    // consumer is already pointed at the right conversation before the async
-    // create resolves), then launch with that same id threaded through.
-    dispatch(setFocus({ surfaceKey, conversationId: targetId }));
-
+    // Create branch: launch with the known id threaded through. We deliberately
+    // do NOT dispatch setFocus here — `createInstanceFull` sets this surface's
+    // focus IN THE SAME COMMIT as the instance creation (see conversation-focus
+    // extraReducer), so creation + focus are one atomic store mutation / one
+    // render. A separate setFocus would land a beat earlier and cost one wasted
+    // "PARENT-DRIVEN" runner re-render. The hook already returns `targetId`
+    // synchronously via the minted-id ref, so the consumer has the id from the
+    // first render regardless.
     launchAgent(agentId!, {
       surfaceKey,
       conversationId: targetId,

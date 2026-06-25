@@ -13,8 +13,7 @@
  * for the window-panel UI; consumers drive it through `useAudioPlayback`.
  */
 
-import { cartesiaAdapter } from "./adapters/cartesiaAdapter";
-import { groqAdapter } from "./adapters/groqAdapter";
+import { claimPlayback, releasePlayback } from "./playbackLock";
 import type {
   ActivePlayback,
   PlaybackAdapter,
@@ -24,10 +23,34 @@ import type {
   PlaybackSnapshot,
 } from "./types";
 
-const adapters: Record<PlaybackProvider, PlaybackAdapter> = {
-  cartesia: cartesiaAdapter,
-  groq: groqAdapter,
-};
+/** This queue's identity in the app-wide playback lock. */
+const QUEUE_HOLDER_ID = "playback-queue";
+
+// Adapters are loaded lazily on first use so the heavy provider SDKs (Cartesia
+// WebSocket client, etc.) stay OUT of the app shell — this module is imported by
+// the always-mounted AudioPlaybackHost. Nothing TTS loads until the first
+// `speak`. Cached after first load (engage once, stay engaged).
+const adapterCache = new Map<PlaybackProvider, PlaybackAdapter>();
+
+async function getAdapter(
+  provider: PlaybackProvider,
+): Promise<PlaybackAdapter> {
+  const cached = adapterCache.get(provider);
+  if (cached) return cached;
+  let adapter: PlaybackAdapter;
+  switch (provider) {
+    case "cartesia":
+      adapter = (await import("./adapters/cartesiaAdapter")).cartesiaAdapter;
+      break;
+    case "groq":
+      adapter = (await import("./adapters/groqAdapter")).groqAdapter;
+      break;
+    default:
+      throw new Error(`Unknown playback provider: ${provider}`);
+  }
+  adapterCache.set(provider, adapter);
+  return adapter;
+}
 
 type Listener = (snapshot: PlaybackSnapshot) => void;
 
@@ -72,6 +95,15 @@ async function startItem(id: string): Promise<void> {
   const item = items.find((i) => i.id === id);
   if (!item) return;
 
+  // Claim app-wide playback BEFORE producing audio — this stops any other
+  // playback path (streaming auto-voice, etc.) so two voices can never overlap.
+  // Re-claiming with our own id (item→item within the queue) is a no-op refresh.
+  claimPlayback({
+    id: QUEUE_HOLDER_ID,
+    label: "Playback queue",
+    stop: forcePreemptFromLock,
+  });
+
   // Take over anything currently active.
   if (active) {
     const prev = active;
@@ -88,10 +120,11 @@ async function startItem(id: string): Promise<void> {
   patch(id, { status: "loading", error: undefined });
   notify();
 
-  const adapter = adapters[item.provider];
   const stale = () => token !== runToken;
 
   try {
+    const adapter = await getAdapter(item.provider);
+    if (stale()) return;
     const handle = await adapter.start(
       item,
       {
@@ -142,15 +175,37 @@ async function startItem(id: string): Promise<void> {
   }
 }
 
-/** Move to the next queued item, or go idle. */
+/** Move to the next queued item, or go idle (releasing the playback lock). */
 async function advance(): Promise<void> {
   const next = items.find((i) => i.status === "queued");
   if (next) {
     await startItem(next.id);
   } else {
     currentId = null;
+    releasePlayback(QUEUE_HOLDER_ID);
     notify();
   }
+}
+
+/**
+ * Called by the playback lock when ANOTHER path (e.g. streaming auto-voice)
+ * takes over. Stop our audio and drop the queue — the user deliberately started
+ * something else. Does NOT touch the lock (it already cleared us).
+ */
+function forcePreemptFromLock(): void {
+  runToken += 1;
+  if (active) {
+    const prev = active;
+    active = null;
+    try {
+      void prev.stop();
+    } catch {
+      /* noop */
+    }
+  }
+  items = [];
+  currentId = null;
+  notify();
 }
 
 export interface EnqueueResult {
@@ -243,6 +298,7 @@ export async function clearPlayback(): Promise<void> {
   }
   items = [];
   currentId = null;
+  releasePlayback(QUEUE_HOLDER_ID);
   notify();
 }
 

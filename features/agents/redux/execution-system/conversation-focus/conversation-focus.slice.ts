@@ -24,6 +24,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 
 export interface SurfaceFocusEntry {
   display: string;
@@ -115,6 +116,20 @@ const conversationFocusSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    // Atomic creation: when an instance is created WITH a surfaceKey, point that
+    // surface's focus at it IN THE SAME COMMIT as the instance creation. Without
+    // this, focus was a separate dispatch landing a beat before the instance,
+    // producing one wasted "PARENT-DRIVEN" re-render of the runner per launch.
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { surfaceKey, conversationId } = action.payload;
+      if (!surfaceKey) return;
+      state.bySurface[surfaceKey] = {
+        display: conversationId,
+        input: conversationId,
+      };
+      state.lastSurfaceKey = surfaceKey;
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       const conversationId = action.payload;
       for (const key of Object.keys(state.bySurface)) {

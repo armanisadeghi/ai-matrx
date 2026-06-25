@@ -159,6 +159,7 @@ import {
   clearUserInput,
   markInputPersisted,
 } from "../instance-user-input/instance-user-input.slice";
+import { isInputDraftProtected } from "../instance-user-input/input-draft-protection";
 import { clearAllResources } from "../instance-resources/instance-resources.slice";
 import { resetUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -1958,9 +1959,27 @@ export async function processStream({
   // retries keep the draft), and resources/variables must survive for the
   // retry to resend them.
   if (streamFailure === null) {
-    dispatch(clearUserInput(conversationId));
-    dispatch(clearAllResources(conversationId));
-    dispatch(resetUserVariableValues(conversationId));
+    // DATA-LOSS GUARD (the product invariant in input-draft-protection.ts):
+    // the composer flips to the NEXT message the instant the user submits, so by
+    // stream-end they may have spent minutes composing it WHILE this response
+    // streamed. If the composer now holds a live next-message draft, this
+    // success cleanup must NOT touch ANY of the input-area state — not the text
+    // (clearUserInput would scream + skip), and crucially NOT the attachments or
+    // variables (clearAllResources / resetUserVariableValues have NO guard and
+    // would silently destroy the next message's files/values). The send-time
+    // clear (markInputPersisted on reservation, or send-time markInputSubmitted)
+    // already cleared THIS turn's input; this block only needs to run when the
+    // composer is still empty / on the just-sent text.
+    const inputEntry =
+      getState().instanceUserInput.byConversationId[conversationId];
+    const hasLiveNextDraft = inputEntry
+      ? isInputDraftProtected(inputEntry)
+      : false;
+    if (!hasLiveNextDraft) {
+      dispatch(clearUserInput(conversationId));
+      dispatch(clearAllResources(conversationId));
+      dispatch(resetUserVariableValues(conversationId));
+    }
 
     // ── Artifact materialization ───────────────────────────────────────────
     // Push every render-block in the just-committed assistant turn(s) into

@@ -73,6 +73,7 @@ import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHos
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 import { AudioOutputHost } from "@/providers/AudioOutputHost";
+import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
 import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
@@ -176,6 +177,15 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   Cartesia SDK is next/dynamic — nothing TTS
                                   loads on the server. See providers/AudioOutputHost. */}
                                   <AudioOutputHost />
+                                  {/* App-root mirror of the single audio
+                                  playback QUEUE (features/audio/playback). Keeps
+                                  Redux in sync with the framework-free queue
+                                  singleton so Speaker buttons + the playback
+                                  window-panel render one shared queue. Imports
+                                  only the queue's subscribe API — provider SDKs
+                                  (Cartesia/Groq) load lazily on first speak, not
+                                  in the app shell. */}
+                                  <AudioPlaybackHost />
                                   {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed

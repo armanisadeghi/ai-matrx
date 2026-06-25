@@ -296,9 +296,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   if (loading && projects.length === 0) {
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          Loading tasks...
-        </div>
+        <div className="text-sm text-muted-foreground">Loading tasks...</div>
       </div>
     );
   }
@@ -308,7 +306,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
       {/* Collapsible Sidebar */}
       <div
         className={cn(
-          "flex-shrink-0 transition-all duration-300 ease-in-out border-r border-zinc-200 dark:border-zinc-800 bg-background flex flex-col",
+          "flex-shrink-0 transition-all duration-300 ease-in-out border-r border-border bg-background flex flex-col",
           sidebarOpen ? "w-48" : "w-0 border-r-0 overflow-hidden",
         )}
       >
@@ -455,7 +453,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
             className="bg-background"
           />
 
-          <div className="ml-auto pl-2 border-l border-zinc-200 dark:border-zinc-800">
+          <div className="ml-auto pl-2 border-l border-border">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -566,17 +564,17 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                               None
                             </SelectItem>
                             <SelectItem value="high" className="text-xs">
-                              <span className="text-red-600 dark:text-red-400 font-medium">
+                              <span className="text-destructive font-medium">
                                 High
                               </span>
                             </SelectItem>
                             <SelectItem value="medium" className="text-xs">
-                              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                              <span className="text-warning font-medium">
                                 Medium
                               </span>
                             </SelectItem>
                             <SelectItem value="low" className="text-xs">
-                              <span className="text-green-600 dark:text-green-400 font-medium">
+                              <span className="text-success font-medium">
                                 Low
                               </span>
                             </SelectItem>
@@ -589,7 +587,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
               </div>
 
               {/* Toolbar group — search + actions (header duplicates kept for now) */}
-              <div className="px-2 pb-2 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="px-2 pb-2 border-b border-border">
                 <QuickTasksToolbarGroup
                   searchQuery={searchQuery}
                   onSearchChange={(q) => dispatch(setSearchQuery(q))}
@@ -611,7 +609,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
               <ScrollArea className="flex-1">
                 <div className="p-1">
                   {filteredTasks.length === 0 ? (
-                    <div className="text-center text-xs text-zinc-500 dark:text-zinc-400 py-4">
+                    <div className="text-center text-xs text-muted-foreground py-4">
                       {projects.length === 0
                         ? "Create a project to get started"
                         : "No tasks found"}
@@ -639,7 +637,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
             </div>
           ) : (
             /* Full Task Details View */
-            <div className="h-full bg-zinc-50 dark:bg-zinc-900">
+            <div className="h-full bg-muted/30">
               <TaskDetailsPanel
                 task={selectedTask}
                 onClose={() => setSelectedTaskId(null)}

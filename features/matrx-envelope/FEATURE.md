@@ -37,7 +37,8 @@ render through the SAME live chip renderer.
 - `registry.tsx` — the **renderer registry** (mirrors the backend shape registry):
   `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
   (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
-  (`ReferenceChip`, one per item) reading FLAT ids + display hints; per-type `chipIcon`. Add
+  (`ReferenceChip`, one per item); `output_directive:create_project_with_tasks` → optimistic
+  project card + task list with DB polling (see `directives/createProjectWithTasks/`). Add
   a renderer = one register call.
 - `referenceFence.ts` — the **reference-fence serializer + reader**:
   `buildReferenceFence({type,items})` / `buildPicklistItemFence(...)` emit the canonical
@@ -100,11 +101,19 @@ render through the SAME live chip renderer.
   reference fence (FLAT items) instead of the legacy `picklist_ref` envelope. The value is a fence
   STRING (single = one item; multi = N items + any "Other" free-text lines) → persists to
   `value_text`. The FE-controlled direct/override `variables` path is live.
-- Next: renderers for `secret` / `output_directive`-receipt-in-content if needed; the
+- Done: **`output_directive:create_project_with_tasks` renderer.** Optimistic project +
+  task card from envelope items; polls Supabase at 0s / 2s / 5s by slug (or name); resolves
+  to clickable project (`ItemDetailWindow` + route) and tasks (`taskEditorWindow`). Bare
+  JSON envelopes (`matrx_version` root) classify as `matrx` blocks via `detectJsonBlockType`.
+- Next: renderers for `secret` / other `output_directive` types if needed; the
   reference-insert authoring picker; a table/cell authoring picker emitting the flat fence.
 
 ## Change Log
 
+- 2026-06-24 — **`create_project_with_tasks` envelope renderer.** New
+  `directives/createProjectWithTasks/` (optimistic card, 3-poll DB resolve, click-to-open).
+  Registered in `registry.tsx`. Bare structured-output JSON with `matrx_version` now
+  classifies as block type `matrx` in `detectJsonBlockType`.
 - 2026-06-20 — **Unified Matrx References (full alignment).** Purified `ReferenceItem` to the
   FLAT per-type model + `REFERENCE_TYPES` 7-type taxonomy (dropped `purpose`/`slot`/`ref`/`display`;
   `ReferencePurpose` `@deprecated`). New `legacyTranslate.ts` (loud hard-cut) + `bookmarkToReference.ts`.

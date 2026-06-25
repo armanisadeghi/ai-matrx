@@ -131,6 +131,13 @@ interface CreateManualInstanceArgs {
    */
   initialAgentVersionId?: string | null;
   agentType?: AgentType;
+  /**
+   * When set, the new conversation is focused on this surface IN THE SAME COMMIT
+   * as creation (via createInstanceFull → conversation-focus extraReducer), so
+   * the managed launcher needn't dispatch a separate setFocus (which caused one
+   * wasted runner re-render per launch).
+   */
+  surfaceKey?: string;
   autoClearConversation?: boolean;
   showAutoClearToggle?: boolean;
   apiEndpointMode?: ApiEndpointMode;
@@ -167,6 +174,7 @@ export const createManualInstance = createAsyncThunk<
     conversationId: providedConversationId,
     initialAgentVersionId = null,
     agentType,
+    surfaceKey,
     autoClearConversation = false,
     showAutoClearToggle,
     apiEndpointMode = "manual",
@@ -211,6 +219,7 @@ export const createManualInstance = createAsyncThunk<
       agentType: resolvedAgentType,
       origin: "manual" as InstanceOrigin,
       sourceFeature,
+      ...(surfaceKey ? { surfaceKey } : {}),
       ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
       ...(isEphemeral !== undefined ? { isEphemeral } : {}),
       // Manual mode (Agent Builder) reads agent.settings LIVE at submit time and

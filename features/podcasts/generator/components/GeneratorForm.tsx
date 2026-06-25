@@ -108,6 +108,9 @@ interface GeneratorFormProps {
   onShowCreated: (show: PcShow) => void;
   onGenerate: (body: PodcastGenerateRequest) => void;
   busy: boolean;
+  initialTopic?: string;
+  initialFormat?: PodcastFormat;
+  initialAgentLabel?: string;
 }
 
 const SECTION_LABEL =
@@ -186,16 +189,19 @@ export function GeneratorForm({
   onShowCreated,
   onGenerate,
   busy,
+  initialTopic = "",
+  initialFormat = "educational",
+  initialAgentLabel,
 }: GeneratorFormProps) {
   const [sourceKind, setSourceKind] = useState<PodcastSourceKind>("topic");
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialTopic);
   const [urls, setUrls] = useState<string[]>([""]);
   /** Editable text resolved from a `resolve` source (website/note/YouTube/audio). */
   const [resolvedText, setResolvedText] = useState("");
   /** True while a resolve source is fetching/cleaning — blocks Generate. */
   const [resolverBusy, setResolverBusy] = useState(false);
   const [language, setLanguage] = useState<PodcastLanguageCode>(DEFAULT_LANGUAGE);
-  const [format, setFormat] = useState<PodcastFormat>("educational");
+  const [format, setFormat] = useState<PodcastFormat>(initialFormat);
   const [theme, setTheme] = useState("");
   const [hostCount, setHostCount] = useState(HOST_COUNT_DEFAULT);
   /** Per-host drafts (name / gender / voice). Untouched fields fall back to the
@@ -218,7 +224,11 @@ export function GeneratorForm({
    *  down to One or Skip for fast, cheap test runs. */
   const [imageMode, setImageMode] = useState<MediaLimitMode>("all");
   const [videoMode, setVideoMode] = useState<MediaLimitMode>("all");
-  const [prepMessage, setPrepMessage] = useState("");
+  const [prepMessage, setPrepMessage] = useState(
+    initialAgentLabel
+      ? `Entryway selected agent profile: ${initialAgentLabel}.`
+      : "",
+  );
   const [firstShowInfo, setFirstShowInfo] = useState("");
 
   const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;

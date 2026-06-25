@@ -17,6 +17,17 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D16 — Scribe (and other direct `executeInstance` senders) don't split the composer onto a new conversation, so the success-path `clearUserInput` fires the smart-input draft protection
+**Severity: low — the draft is PRESERVED by the protection (no data loss); the symptom is a loud `console.error` ("[smart-input/PROTECTED] clearUserInput tried to clear a live composer draft…") whenever the user types a next-message draft while the assistant is streaming.**
+
+**What.** The canonical chat/agents send path (`smart-execute.thunk.ts`) calls `splitInputIntoNewConversation` with a `surfaceKey` + `autoClear`, decoupling the STREAMING conversation from the COMPOSER: the stream's success-path cleanup (`process-stream.ts` → `clearUserInput(conversationId)` + `clearAllResources` + `resetUserVariableValues`) targets the OLD streaming id, while the composer keeps its live next-message draft on a freshly-minted id. Scribe's `useStudioAssistant.send` (`features/transcript-studio/hooks/useStudioAssistant.ts`) calls `executeInstance` DIRECTLY, skipping `smartExecute`, so it never splits — input + display share ONE conversationId. When the user types a new draft while the turn streams, the success-path `clearUserInput` lands on that live draft; `isInputDraftProtected` catches it, preserves the text, and `reportInputDraftViolation` screams (per the "loud recovery" doctrine — the recovery firing means the proactive split didn't run). Other direct callers (war-room agent tools, transcription-cleanup) are in the same class.
+
+**Why.** Direct senders predate / bypass the `smartExecute` + `surfaceKey` split mechanism; `executeInstance` only retro-marks `lastSubmittedText` (so a no-typing send clears cleanly) but cannot decouple the shared conversationId.
+
+**The fence / fix (not yet built).** Route scribe's `send` (and the other direct callers) through `smartExecute` with a stable `surfaceKey` so `splitInputIntoNewConversation` runs and the composer is decoupled before streaming — same proactive layer chat uses. Needs a per-screen `surfaceKey` for scribe and verification that the scribe conversation/working-doc lifecycle tolerates the new-id mint.
+
+**What's open.** The whole fix. Touch points: `features/transcript-studio/hooks/useStudioAssistant.ts`, `features/agents/redux/execution-system/thunks/smart-execute.thunk.ts`, `features/agents/redux/execution-system/thunks/create-instance.thunk.ts` (`splitInputIntoNewConversation`), `features/agents/redux/execution-system/instance-user-input/input-draft-protection.ts`.
+
 ### D15 — War Room agent file access is frontend client-delegated; the generic platform primitives are not built
 **Severity: low — the War Room thread agent now reads attached-file extractions + searches RAG (shipped), but via war-room-specific wiring, not reusable server tools.**
 
