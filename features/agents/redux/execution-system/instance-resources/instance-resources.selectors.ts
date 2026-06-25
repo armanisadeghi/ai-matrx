@@ -86,6 +86,25 @@ export const selectInstanceResources = (conversationId: string) =>
   );
 
 /**
+ * True when the composer holds an attachment that is NOT part of the last
+ * submitted message — i.e. a live next-message draft attachment (pasted image,
+ * file) the user added while the previous response was still streaming. Such
+ * resources are SACRED and must never be cleared by a stream/conversation event.
+ * Mirrors `isInputDraftProtected` (text) for the resources slice. Used to gate
+ * stream-end variable resets so a next-message draft is preserved whole.
+ */
+export const selectHasUnsentResources =
+  (conversationId: string) =>
+  (state: RootState): boolean => {
+    const resources = state.instanceResources.byConversationId[conversationId];
+    if (!resources) return false;
+    const ids = Object.keys(resources);
+    if (ids.length === 0) return false;
+    const submitted = state.instanceResources.submittedIds[conversationId] ?? [];
+    return ids.some((id) => !submitted.includes(id));
+  };
+
+/**
  * A single resource by ID.
  */
 export const selectResource =

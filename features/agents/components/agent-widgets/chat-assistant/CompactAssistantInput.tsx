@@ -33,9 +33,11 @@ import { ArrowUp, Mic, Braces, CornerDownLeft } from "lucide-react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
 
-// Resource picker
+// Resource picker + paste-image attach
 import { SmartAgentResourcePickerButton } from "../../inputs/resources/SmartAgentResourcePickerButton";
 import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
+import { usePasteImageResource } from "../../inputs/resources/usePasteImageResource";
+import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 
 import { toast } from "sonner";
 
@@ -129,6 +131,12 @@ export function CompactAssistantInput({
     if (isRecording) stopRecording();
     else if (!isTranscribing) startRecording();
   }, [isRecording, isTranscribing, startRecording, stopRecording]);
+
+  // ── Paste image / screenshot ────────────────────────────────────────────────
+  // Same canonical paste→upload→attach flow as every other composer, so pasting
+  // a screenshot here attaches it (it previously did nothing in this widget).
+  const handlePasteImage = usePasteImageResource(conversationId);
+  useClipboardPaste({ textareaRef, onPasteImage: handlePasteImage });
 
   return (
     <div className="shrink-0 border-t border-border/40 bg-muted/10">

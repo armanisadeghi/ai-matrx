@@ -45,6 +45,19 @@
 // IF YOU NEED TO CLEAR ON A NEW TURN: don't clear the shared draft. Split the
 // input onto a fresh conversationId (see `splitInputIntoNewConversation`) so the
 // stream cleanup targets the OLD streaming id and the composer keeps its draft.
+//
+// SAME INVARIANT, OTHER COMPOSER STATE (text is not the only sacred thing):
+//   - ATTACHMENTS (pasted images, files, any resource) are protected by a
+//     submitted-snapshot in the resources slice: `markResourcesSubmitted`
+//     records the ids being sent; `clearSubmittedResources` removes ONLY those.
+//     Anything attached after submit (a next-message draft) is, by construction,
+//     never in the snapshot and so can never be cleared by a stream event. Use
+//     `clearSubmittedResources` — NEVER `clearAllResources` — on any
+//     stream/conversation cleanup path. (`clearAllResources` is for explicit
+//     user "clear attachments" UI only.) See instance-resources.slice.ts.
+//   - VARIABLES are reset on stream-end only when no pending draft exists at all
+//     (`!isInputDraftProtected(text) && !selectHasUnsentResources`).
+// Net: text + attachments + variables — the WHOLE composer — survive a stream.
 // ============================================================================
 
 import type { InstanceUserInputState } from "@/features/agents/types/instance.types";

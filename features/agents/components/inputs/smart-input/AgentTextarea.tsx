@@ -24,7 +24,6 @@ import React, {
 } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "sonner";
 import {
   selectUserInputText,
   selectInputCharCount,
@@ -37,12 +36,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
-import { fileIdToMediaRef } from "@/features/files";
-import {
-  addResource,
-  setResourcePreview,
-} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "@/features/agents/hooks/useInstanceInputUndoRedo";
 import {
   smartExecute,
@@ -144,9 +138,6 @@ export function AgentTextarea({
   const showExpand =
     !singleRow && (isExpanded || (isSubmitting ? 0 : charCount) > 80);
 
-  // ── File upload ─────────────────────────────────────────────────────────────
-  const { upload } = useFileUpload();
-
   const handleSend = useCallback(() => {
     if (disableSend) return;
     if (isExecuting) {
@@ -157,48 +148,11 @@ export function AgentTextarea({
   }, [disableSend, isExecuting, conversationId, surfaceKey, dispatch]);
 
   // ── Paste image ─────────────────────────────────────────────────────────────
-  const handlePasteImage = useCallback(
-    async (file: File) => {
-      try {
-        const normalized = await upload(
-          { kind: "file", file },
-          {
-            folderPath: composeLegacyFolderPath(uploadBucket, uploadPath),
-            visibility: "private",
-            createShareLink: true,
-            shareLinkPermissionLevel: "read",
-          },
-        );
-        // Prefer the cld_files UUID — backend resolves much faster.
-        const source = normalized.fileId
-          ? fileIdToMediaRef(normalized.fileId, file.type)
-          : normalized.url
-            ? { url: normalized.url, mime_type: file.type }
-            : null;
-        if (!source) return;
-        const resourceId = `res_${Date.now()}_paste`;
-        dispatch(
-          addResource({
-            conversationId,
-            blockType: "image",
-            source,
-            resourceId,
-          }),
-        );
-        dispatch(
-          setResourcePreview({
-            conversationId,
-            resourceId,
-            preview: file.name,
-          }),
-        );
-      } catch (err) {
-        const reason = err instanceof Error ? err.message : "Upload failed";
-        toast.error(`Couldn't upload pasted image: ${reason}`);
-      }
-    },
-    [conversationId, dispatch, upload, uploadBucket, uploadPath],
-  );
+  // Canonical paste→upload→attach flow, shared by every composer.
+  const handlePasteImage = usePasteImageResource(conversationId, {
+    uploadBucket,
+    uploadPath,
+  });
 
   useClipboardPaste({
     textareaRef,

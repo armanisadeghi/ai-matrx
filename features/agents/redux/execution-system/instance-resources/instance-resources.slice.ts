@@ -33,10 +33,22 @@ import { createInstanceFull } from "../create-instance-full";
 
 export interface InstanceResourcesState {
   byConversationId: Record<string, Record<string, ManagedResource>>;
+  /**
+   * Per-conversation snapshot of the resource ids that belonged to the LAST
+   * submitted message — the resources equivalent of the input slice's
+   * `lastSubmittedText`. Captured at submit (`markResourcesSubmitted`); consumed
+   * by `clearSubmittedResources`, which removes ONLY these ids. Any resource the
+   * user attaches AFTER submit (composing the next message while the response
+   * streams) is, by construction, NOT in this set — so it can never be cleared
+   * by a stream/conversation event. This is the data-loss guard for attachments
+   * (pasted images, files), parallel to input-draft-protection.ts for text.
+   */
+  submittedIds: Record<string, string[]>;
 }
 
 const initialState: InstanceResourcesState = {
   byConversationId: {},
+  submittedIds: {},
 };
 
 // =============================================================================
@@ -66,6 +78,7 @@ const instanceResourcesSlice = createSlice({
       action: PayloadAction<{ conversationId: string }>,
     ) {
       state.byConversationId[action.payload.conversationId] = {};
+      state.submittedIds[action.payload.conversationId] = [];
     },
 
     /**
@@ -242,26 +255,69 @@ const instanceResourcesSlice = createSlice({
       }
     },
 
-    /** Remove all resources from an instance (keep the registry entry). Used after send. */
+    /**
+     * Snapshot the resources that belong to the message being submitted RIGHT
+     * NOW (parallel to the input slice's `markInputSubmitted`). Records every
+     * current resource id as "sent"; `clearSubmittedResources` later removes
+     * exactly these and nothing else. Call this at send time.
+     */
+    markResourcesSubmitted(state, action: PayloadAction<string>) {
+      const conversationId = action.payload;
+      const resources = state.byConversationId[conversationId];
+      state.submittedIds[conversationId] = resources
+        ? Object.keys(resources)
+        : [];
+    },
+
+    /**
+     * Clear ONLY the resources that were part of the last submitted message
+     * (the `submittedIds` snapshot). Resources attached AFTER that submit — the
+     * user's next-message draft (pasted images, files) — are left untouched.
+     * This is the SACRED-DRAFT-safe replacement for `clearAllResources` on every
+     * stream/conversation cleanup path. Idempotent: an empty/absent snapshot is
+     * a no-op.
+     */
+    clearSubmittedResources(state, action: PayloadAction<string>) {
+      const conversationId = action.payload;
+      const resources = state.byConversationId[conversationId];
+      const submitted = state.submittedIds[conversationId];
+      if (resources && submitted) {
+        for (const id of submitted) {
+          delete resources[id];
+        }
+      }
+      state.submittedIds[conversationId] = [];
+    },
+
+    /**
+     * Remove ALL resources from an instance unconditionally (keep the registry
+     * entry). For EXPLICIT user/UI "clear attachments" actions only — NEVER from
+     * a stream/conversation event (use `clearSubmittedResources`, which protects
+     * the next-message draft). See input-draft-protection.ts for the invariant.
+     */
     clearAllResources(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
       if (entry) {
         state.byConversationId[action.payload] = {};
       }
+      state.submittedIds[action.payload] = [];
     },
 
     removeInstanceResources(state, action: PayloadAction<string>) {
       delete state.byConversationId[action.payload];
+      delete state.submittedIds[action.payload];
     },
   },
 
   extraReducers: (builder) => {
     builder.addCase(createInstanceFull, (state, action) => {
       state.byConversationId[action.payload.conversationId] = {};
+      state.submittedIds[action.payload.conversationId] = [];
     });
 
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
+      delete state.submittedIds[action.payload];
     });
   },
 });
@@ -276,6 +332,8 @@ export const {
   updateResourceOptions,
   removeResource,
   reorderResources,
+  markResourcesSubmitted,
+  clearSubmittedResources,
   clearAllResources,
   removeInstanceResources,
 } = instanceResourcesSlice.actions;

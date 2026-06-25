@@ -65,6 +65,7 @@ import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { markInputSubmitted } from "../instance-user-input/instance-user-input.slice";
+import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
 import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
@@ -295,6 +296,15 @@ export const executeInstance = createAsyncThunk<
             userValues: submittedUserValues,
           }),
         );
+      }
+
+      // Snapshot the attachments being sent so the downstream cleanup clears
+      // ONLY these — never an attachment the user adds afterward while composing
+      // the next message. Runs for EVERY send (smartExecute + direct callers);
+      // never for retry (no input/attachments are sent). Parallel to
+      // markInputSubmitted above; see instance-resources.slice + process-stream.
+      if (!retry) {
+        dispatch(markResourcesSubmitted(conversationId));
       }
       // We pull the text from the assembled payload below so the optimistic
       // user message includes any editor-resource XML appended in
