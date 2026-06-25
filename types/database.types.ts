@@ -6870,6 +6870,7 @@ export type Database = {
           color: string | null
           context_scope_ids: Json
           created_at: string
+          created_by: string | null
           description: string | null
           icon: string | null
           id: string
@@ -6880,7 +6881,9 @@ export type Database = {
           project_id: string | null
           title: string
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           active_tile_id?: string | null
@@ -6889,6 +6892,7 @@ export type Database = {
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
+          created_by?: string | null
           description?: string | null
           icon?: string | null
           id?: string
@@ -6899,7 +6903,9 @@ export type Database = {
           project_id?: string | null
           title?: string
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           active_tile_id?: string | null
@@ -6908,6 +6914,7 @@ export type Database = {
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
+          created_by?: string | null
           description?: string | null
           icon?: string | null
           id?: string
@@ -6918,7 +6925,9 @@ export type Database = {
           project_id?: string | null
           title?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -7072,19 +7081,23 @@ export type Database = {
           context_organization_id: string | null
           context_scope_ids: Json | null
           created_at: string
+          created_by: string | null
           flavor: string
           id: string
           is_deleted: boolean
           is_hidden: boolean
           is_pinned: boolean
           note_id: string | null
+          organization_id: string | null
           position: number
           project_id: string | null
           session_id: string
           task_id: string | null
           title: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           active_tab?: string
@@ -7093,19 +7106,23 @@ export type Database = {
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
+          created_by?: string | null
           flavor?: string
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           note_id?: string | null
+          organization_id?: string | null
           position?: number
           project_id?: string | null
           session_id: string
           task_id?: string | null
           title?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           active_tab?: string
@@ -7114,19 +7131,23 @@ export type Database = {
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
+          created_by?: string | null
           flavor?: string
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           note_id?: string | null
+          organization_id?: string | null
           position?: number
           project_id?: string | null
           session_id?: string
           task_id?: string | null
           title?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
