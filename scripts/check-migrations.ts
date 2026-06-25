@@ -43,14 +43,6 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
 const MIGRATIONS_DIR = resolve(ROOT, "migrations");
-// Stray migration dirs that exist outside the canonical migrations/. We don't track
-// them (yet) — we just warn so they get consolidated. See CLAUDE.md.
-const STRAY_DIRS = [
-  "features/artifacts/migrations",
-  "features/transcripts/migrations",
-  "database/migrations",
-];
-
 const C = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
@@ -212,9 +204,7 @@ async function main(): Promise<number> {
     else if (ledger.get(f) !== sum) drifted.push(f);
   }
 
-  // Clean: every tracked migration is recorded and unchanged. Stay quiet —
-  // success is the silent default. (Stray-dir notes are housekeeping, not drift;
-  // they only surface alongside a real finding below.)
+  // Clean: every tracked migration is recorded and unchanged. Stay quiet.
   if (pending.length === 0 && drifted.length === 0) return 0;
 
   // Two valid fixes for BOTH states below: apply via the Supabase MCP
@@ -252,22 +242,6 @@ async function main(): Promise<number> {
         `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,
       );
     console.log(`  ${fix}`);
-  }
-
-  const strayNotes = STRAY_DIRS.map((d) => ({
-    d,
-    n: listSql(resolve(ROOT, d)).length,
-  })).filter((x) => x.n > 0);
-  if (strayNotes.length) {
-    const total = strayNotes.reduce((s, x) => s + x.n, 0);
-    console.log();
-    console.log(
-      `${TAG.warn}${total} stray .sql outside the migrations/ directory — consider consolidating`,
-    );
-    for (const x of strayNotes)
-      console.log(
-        `  ${C.white}- ${x.d}${C.reset} ${C.yellow}(${x.n})${C.reset}`,
-      );
   }
 
   return pending.length && strict ? 1 : 0;
