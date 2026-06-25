@@ -58,9 +58,13 @@ export function SurfacesAdminShell({
 
       <div className="h-full overflow-hidden">
         {isMobile ? (
-          <MobileStack agent={agent} />
+          <MobileStack agent={agent} basePath={basePath} />
         ) : (
-          <DesktopResizable agent={agent} defaultLayout={defaultLayout} />
+          <DesktopResizable
+            agent={agent}
+            defaultLayout={defaultLayout}
+            basePath={basePath}
+          />
         )}
       </div>
     </PanelControlProvider>
@@ -70,9 +74,11 @@ export function SurfacesAdminShell({
 function DesktopResizable({
   agent,
   defaultLayout,
+  basePath,
 }: {
   agent: AgentDefinition;
   defaultLayout: Layout | undefined;
+  basePath: string;
 }) {
   return (
     <ClientGroup
@@ -92,7 +98,7 @@ function DesktopResizable({
         defaultSize="12%"
         minSize="4%"
       >
-        <SurfacesListColumn agentId={agent.id} />
+        <SurfacesListColumn agentId={agent.id} basePath={basePath} />
       </RegisteredPanel>
       <Handle hideWhenCollapsed={["surfaces-list", "agent"]} />
 
@@ -142,14 +148,20 @@ function DesktopResizable({
   );
 }
 
-function MobileStack({ agent }: { agent: AgentDefinition }) {
+function MobileStack({
+  agent,
+  basePath,
+}: {
+  agent: AgentDefinition;
+  basePath: string;
+}) {
   // Simple vertical stack. Each section gets a min-height so it's
   // recognisable but doesn't dominate the screen. The page is not
   // designed FOR mobile — just functional ON it.
   return (
     <div className="h-full overflow-auto">
       <div className="min-h-[320px] border-b border-border">
-        <SurfacesListColumn agentId={agent.id} />
+        <SurfacesListColumn agentId={agent.id} basePath={basePath} />
       </div>
       <div className="min-h-[280px] border-b border-border">
         <AgentColumn agent={agent} />

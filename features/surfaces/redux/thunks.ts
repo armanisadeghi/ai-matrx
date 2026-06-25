@@ -11,8 +11,11 @@ import {
   listAgentSurfaceBindings,
   upsertAgentSurfaceBinding,
   deleteAgentSurfaceBinding,
+  bulkUpsertAgentSurfaceBindings,
   type AgentSurfaceBinding,
   type ScopeInput,
+  type BulkUpsertBindingInput,
+  type BulkUpsertResult,
 } from "@/features/surfaces/services/agent-surface-bindings.service";
 import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
 import {
@@ -148,4 +151,22 @@ export const deleteAgentSurfaceBindingThunk = createAsyncThunk<
 >("agentSurfaceBindings/delete", async ({ bindingId }, { dispatch }) => {
   await deleteAgentSurfaceBinding(bindingId);
   dispatch(removeBinding(bindingId));
+});
+
+/**
+ * Batch upsert bindings across many surfaces for one agent. Each surface is an
+ * independent single-row write (see the service), so the slice is kept in sync
+ * by dispatching the existing `upsertBinding` reducer for every row that saved.
+ * Returns the full result so the caller can report partial failures.
+ */
+export const bulkUpsertAgentSurfaceBindingsThunk = createAsyncThunk<
+  BulkUpsertResult,
+  { agentId: string; bindings: BulkUpsertBindingInput[] },
+  ThunkApi
+>("agentSurfaceBindings/bulkUpsert", async (args, { dispatch }) => {
+  const result = await bulkUpsertAgentSurfaceBindings(args);
+  for (const binding of result.succeeded) {
+    dispatch(upsertBinding(binding));
+  }
+  return result;
 });
