@@ -17,6 +17,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D15 — `userPreferencesSlice.resetToLoadedPreferences` drops the `sandbox` module
+**Severity: low — pre-existing, spotted while wiring the directive apply-policy setting (2026-06-24).**
+
+The `sandbox` preference module is present in the type, `defaultUserPreferences`, and the rehydrate handler, but the `resetToLoadedPreferences` reducer's per-module copy list omits it — so a reset silently loses the user's sandbox prefs. Unrelated to the directive work; not touched. Fix: add `sandbox` to that reducer's module copy list (mirror the other modules). File: `lib/redux/preferences/userPreferencesSlice.ts`.
+
 ### D14 — War Room: live audio-session recording does NOT survive a tab-switch; agent sees only the active session's transcript
 **Severity: medium — recording data persists (no data loss), but the live capture/UI drops when the user switches a tile's tab, and the thread agent can't read a tile's non-active recordings.**
 
