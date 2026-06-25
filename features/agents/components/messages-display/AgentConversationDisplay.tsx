@@ -31,7 +31,12 @@ import {
   selectLatestRequestId,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
-import { MarkdownContextMenuProvider } from "@/features/context-menu-v2/markdown/MarkdownContextMenuProvider";
+// Universal v3 context menu — the SAME menu everywhere. ONE read-only instance
+// serves the whole transcript: `resolveContextOnOpen` resolves the per-message /
+// per-block context from cheap DOM tags (`data-message-id`, `data-mtx-ctx`) on
+// right-click, so blocks stay free (just tags) instead of mounting a menu each.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { resolveMarkdownContext } from "@/features/context-menu-v2/markdown/resolveMarkdownContext";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 import {
   isWarRoomTileAgentSurface,
@@ -371,6 +376,12 @@ export function AgentConversationDisplay({
     );
   }, [surfaceKey, conversationId, messages.length, assistantGroupCount, phase]);
 
+  // Single-instance delegation: the ONE menu resolves the right-clicked
+  // message / block from the DOM at open time. Pure DOM reads (no React/Redux),
+  // so it costs nothing until the user actually right-clicks.
+  const resolveMenuContext = (target: HTMLElement | null) =>
+    resolveMarkdownContext(target, conversationId);
+
   if (displayGroups.length === 0) {
     return <AgentEmptyMessageDisplay conversationId={conversationId} />;
   }
@@ -382,7 +393,16 @@ export function AgentConversationDisplay({
   const spacingClass = compact ? "space-y-2 pb-2" : "space-y-6 pb-24";
 
   return (
-    <MarkdownContextMenuProvider conversationId={conversationId}>
+    <NonEditableContextMenu
+      sourceFeature="assistant-message"
+      surfaceName="matrx-user/assistant-message"
+      enableFloatingIcon={false}
+      // Content blocks are insert-into-an-editor items — meaningless on
+      // read-only rendered output, so hide that submenu here.
+      placementMode={{ "content-block": "hide" }}
+      contextData={{ conversationId }}
+      resolveContextOnOpen={resolveMenuContext}
+    >
       <div className={`${spacingClass} p-2 scrollbar-hide`}>
         {displayGroups.map((group) => {
           if (group.kind === "user") {
@@ -429,6 +449,6 @@ export function AgentConversationDisplay({
           );
         })}
       </div>
-    </MarkdownContextMenuProvider>
+    </NonEditableContextMenu>
   );
 }

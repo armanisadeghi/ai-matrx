@@ -74,23 +74,15 @@ import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayNa
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 import TextArrayInput from "@/components/official/TextArrayInput";
-import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "@/features/research/agent-context/buildResearchContextData";
 
-// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
-// never lands in the SSR/server chunk; loads only when this client surface
-// mounts. Single-tier dynamic — never nest.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — lightweight shell, imported statically;
+// MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 type Mode = "manual" | "template" | "ai";
 
@@ -2240,9 +2232,8 @@ export default function ResearchInitForm() {
                   <label className="text-sm font-medium text-foreground">
                     Subject
                   </label>
-                  <UnifiedAgentContextMenu
+                  <EditableContextMenu
                     {...RESEARCH_CONTEXT_MENU_PROPS}
-                    isEditable
                     getTextarea={() => subjectRef.current}
                     getApplicationScope={getSubjectApplicationScope}
                     onTextReplace={setSubjectDescription}
@@ -2262,7 +2253,7 @@ export default function ResearchInitForm() {
                       className="text-base text-foreground"
                       wrapperClassName="w-full"
                     />
-                  </UnifiedAgentContextMenu>
+                  </EditableContextMenu>
                 </div>
 
                 <div className="rounded-xl bg-violet-500/5 border border-violet-500/15 p-4 space-y-2">

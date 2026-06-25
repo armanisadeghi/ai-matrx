@@ -1,14 +1,14 @@
 /**
  * CodeEditorContextMenu
  *
- * Integrates `UnifiedAgentContextMenu` with the EMBEDDED Monaco editor (agent
+ * Integrates the universal v3 `EditableContextMenu` with the EMBEDDED Monaco editor (agent
  * builder, prompt-app editor, notes, `SmallCodeEditor`). The new `/code`
  * workspace uses `features/code/agent-context/CodeWorkspaceContextMenu` — both
  * emit the SAME `matrx-user/code-editor` scope through the shared
  * `buildCodeWorkspaceContextData`, so a Shortcut or bound agent works
  * identically in either surface.
  *
- * Editable region of the surface: passes `isEditable` + wires
+ * Editable region of the surface: uses the editable wrapper + wires
  * `onTextReplace` / `onTextInsertBefore` / `onTextInsertAfter` so agent output
  * applies in place via Monaco's `executeEdits`.
  */
@@ -16,7 +16,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import type { editor } from 'monaco-editor';
 import {
   buildCodeWorkspaceContextData,
@@ -28,14 +27,9 @@ import type { EditorDiagnostic } from '@/features/code/redux/diagnosticsSlice';
 import { formatEditorSurroundContext } from '@/utils/format-editor-surround-context';
 import type { ApplicationScope } from '@/features/agents/utils/scope-mapping';
 
-// Dynamic — keeps UnifiedAgentContextMenu out of the code-editor bundle.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import('@/features/context-menu-v2').then((mod) => ({
-      default: mod.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from '@/features/context-menu-v3/EditableContextMenu';
 
 interface CodeEditorContextMenuProps {
     children: React.ReactNode;
@@ -239,7 +233,7 @@ export function CodeEditorContextMenu({
 
     return (
         <div className={className}>
-            <UnifiedAgentContextMenu
+            <EditableContextMenu
                 {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
                 contextData={getContextData()}
                 getApplicationScope={getApplicationScope}
@@ -248,7 +242,7 @@ export function CodeEditorContextMenu({
                 onTextInsertAfter={handleTextInsertAfter}
             >
                 {children}
-            </UnifiedAgentContextMenu>
+            </EditableContextMenu>
         </div>
     );
 }

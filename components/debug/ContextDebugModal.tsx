@@ -16,11 +16,28 @@ interface ContextDebugModalProps {
   isOpen: boolean;
   onClose: () => void;
   contextData: {
-    selection: string;
-    content: string;
-    context: string;
-    [key: string]: any; // Custom variables
+    // Typed loosely on purpose: `context` (and occasionally `content` /
+    // `selection`) can arrive as a structured object — the baseline `context`
+    // value is allowed to be a JSON blob, not just a string. `asDisplayString`
+    // below renders any shape safely.
+    selection: unknown;
+    content: unknown;
+    context: unknown;
+    [key: string]: unknown; // Custom variables
   };
+}
+
+/**
+ * Render any scope value as a display string — objects become pretty JSON so a
+ * non-string value (e.g. a `{language, filePath, …}` context blob) never reaches
+ * the DOM as a raw React child and crashes the dialog with "Objects are not
+ * valid as a React child". Mirrors the Custom Variables stringify below.
+ */
+function asDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
 }
 
 export function ContextDebugModal({
@@ -31,9 +48,9 @@ export function ContextDebugModal({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const standardScopes = {
-    selection: contextData.selection || "",
-    content: contextData.content || "",
-    context: contextData.context || "",
+    selection: asDisplayString(contextData.selection),
+    content: asDisplayString(contextData.content),
+    context: asDisplayString(contextData.context),
   };
 
   const customVariables = Object.entries(contextData)

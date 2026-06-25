@@ -24,19 +24,10 @@ import {
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
-import dynamic from "next/dynamic";
 
-// Dynamic — keeps UnifiedAgentContextMenu + its hooks out of the initial
-// message-builder bundle.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then(
-      (mod) => ({
-        default: mod.UnifiedAgentContextMenu,
-      }),
-    ),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
 import { MessageItemButtons } from "@/features/agents/components/builder/message-builders/MessageItemButtons";
 import {
@@ -617,7 +608,7 @@ export function MessageItem({
 
   // Surface scope for `matrx-user/agent-builder`. Agent-level values come from
   // the hook; `content` is the message text being edited. Top-level keys flow
-  // through UnifiedAgentContextMenu into the ApplicationScope.
+  // through EditableContextMenu into the ApplicationScope.
   const contextMenuData = useMemo(
     () => ({
       ...buildAgentScope(),
@@ -709,13 +700,11 @@ export function MessageItem({
             )}
           </div>
         ) : isEditing ? (
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             sourceFeature="agent-builder"
             surfaceName="matrx-user/agent-builder"
             getTextarea={() => textareaRef.current}
             contextData={contextMenuData as unknown as Record<string, unknown>}
-            enabledPlacements={["ai-action", "content-block", "quick-action"]}
-            isEditable={true}
             enableFloatingIcon={true}
             onTextReplace={handleTextReplace}
             onTextInsertBefore={handleTextInsertBefore}
@@ -749,7 +738,7 @@ export function MessageItem({
               className="w-full bg-transparent border-none outline-none text-xs text-foreground placeholder:text-muted-foreground p-0 resize-none overflow-hidden leading-normal"
               style={{ minHeight: "80px", lineHeight: "1.5" }}
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         ) : (
           <div
             className="text-xs text-muted-foreground whitespace-pre-wrap cursor-text leading-normal"

@@ -72,24 +72,9 @@ const NoteConflictWindow = dynamic(
 
 import { createNotesEditorExtraSections } from "@/features/notes/agent-context/notesEditorExtraSections";
 
-// Canonical agent context menu (the SAME one /chat uses — one menu everywhere).
-// Heavy (MenuBody + modals + hooks + Radix), so code-split via
-// next/dynamic({ ssr: false }) per the surface-pro-rollout skill: it stays out
-// of the /notes route chunk, loads only when this surface mounts, and fetches
-// only when opened. A BARE dynamic() would null-render its children while the
-// chunk loads and collapse the editor's flex layout (the historical
-// "layout-breaking null state"); the `loading` fallback reserves the exact flex
-// box so the body never collapses during the brief client load.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  {
-    ssr: false,
-    loading: () => <div className="flex-1 flex flex-col min-h-0 min-w-0" />,
-  },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 interface NoteContentEditorProps {
   noteId: string;
@@ -571,7 +556,7 @@ export function NoteContentEditor({
         />
       )}
 
-      <UnifiedAgentContextMenu
+      <EditableContextMenu
         {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
         extraSections={notesExtras}
         getTextarea={() => textareaRef.current}
@@ -649,7 +634,7 @@ export function NoteContentEditor({
               />
             )}
         </div>
-      </UnifiedAgentContextMenu>
+      </EditableContextMenu>
 
       <MoveNoteDialog
         open={moveDialogOpen}

@@ -59,15 +59,12 @@ const TuiEditorContent = dynamic(
   },
 );
 
-// CRITICAL: Dynamic import to prevent loading on routes that don't use notes
-// This prevents UnifiedAgentContextMenu and all its hooks from bundling into every route
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2").then((mod) => ({
-      default: mod.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrappers are the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+// Editable surfaces (plain / wysiwyg / markdown editors) use EditableContextMenu;
+// the read-only preview uses NonEditableContextMenu.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 type EditorMode = "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
 
@@ -690,7 +687,7 @@ export function NoteEditor({
       <div className="flex-1 relative overflow-hidden bg-textured">
         {/* Editor Content with Unified Context Menu */}
         {editorMode === "plain" && (
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getTextarea={() => textareaRef.current}
             getApplicationScope={getApplicationScope}
@@ -769,11 +766,11 @@ export function NoteEditor({
               wrapperClassName="absolute inset-0 w-full h-full"
               className="w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50dvh] shadow-none"
             />
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         )}
 
         {editorMode === "wysiwyg" && (
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
@@ -812,11 +809,11 @@ export function NoteEditor({
                 className="w-full h-full"
               />
             </div>
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         )}
 
         {editorMode === "markdown" && (
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
@@ -854,7 +851,7 @@ export function NoteEditor({
                 className="w-full h-full"
               />
             </div>
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
         )}
 
         {editorMode === "matrx-split" && (
@@ -868,9 +865,8 @@ export function NoteEditor({
         )}
 
         {editorMode === "preview" && (
-          <UnifiedAgentContextMenu
+          <NonEditableContextMenu
             {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
-            isEditable={false}
             getApplicationScope={getApplicationScope}
             contextData={contextData}
           >
@@ -894,7 +890,7 @@ export function NoteEditor({
                 )}
               </div>
             </ScrollArea>
-          </UnifiedAgentContextMenu>
+          </NonEditableContextMenu>
         )}
       </div>
     </div>

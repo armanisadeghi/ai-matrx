@@ -7,18 +7,18 @@
  * history `TripleDiffView`, the live `RenderPreviewView`) so right-click still
  * offers agent shortcuts + bound agents over the displayed code.
  *
- * Read-only by contract: `isEditable={false}` and NO text-replace callbacks.
- * It deliberately omits `getApplicationScope` so `UnifiedAgentContextMenu`
- * captures the user's live DOM text selection at launch (the diff text the
- * user highlighted) and floors `selection` / `text_before` / `text_after`
- * from it — while `contextData` still carries the active file's body + the
- * declared SurfaceValues so file-level bindings resolve.
+ * Read-only by contract: uses the `NonEditableContextMenu` wrapper (which
+ * presets `isEditable: false`) and provides NO text-replace callbacks. It
+ * deliberately omits `getApplicationScope` so the menu captures the user's live
+ * DOM text selection at launch (the diff text the user highlighted) and floors
+ * `selection` / `text_before` / `text_after` from it — while `contextData`
+ * still carries the active file's body + the declared SurfaceValues so
+ * file-level bindings resolve.
  *
  * The editable Monaco region uses `CodeWorkspaceContextMenu` instead.
  */
 
 import React from "react";
-import dynamic from "next/dynamic";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveTab, selectCodeTabs } from "../redux/tabsSlice";
 import {
@@ -31,13 +31,9 @@ import {
   summarizeOpenTabs,
 } from "./buildCodeWorkspaceContextData";
 
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2").then((mod) => ({
-      default: mod.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface CodeReadonlyContextMenuProps {
   children: React.ReactNode;
@@ -74,13 +70,12 @@ export function CodeReadonlyContextMenu({
 
   return (
     <div className={className}>
-      <UnifiedAgentContextMenu
+      <NonEditableContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
-        isEditable={false}
         contextData={contextData}
       >
         {children}
-      </UnifiedAgentContextMenu>
+      </NonEditableContextMenu>
     </div>
   );
 }

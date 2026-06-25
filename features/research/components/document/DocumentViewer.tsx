@@ -31,23 +31,18 @@ import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
-import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
 } from "../../agent-context/buildResearchContextData";
 
-// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
-// never lands in the SSR/server chunk; loads only when this client surface
-// mounts. Single-tier dynamic — never nest.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. This surface is the
+// read-only assembled document, so it uses the NonEditable wrapper (Copy / AI
+// Actions / Export / Convert still work via the DOM-content fallback). The
+// wrapper is the lightweight shell (imported statically); MenuContent
+// lazy-loads on first open.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export default function DocumentViewer() {
   const { topicId, topic, progress, refresh } = useTopicContext();
@@ -429,9 +424,8 @@ export default function DocumentViewer() {
         {/* Markdown Content — uses live streaming text while generating, DB
             content after. Wrapped in the read-only research surface menu so a
             right-click offers agent actions on the document the user reads. */}
-        <UnifiedAgentContextMenu
+        <NonEditableContextMenu
           {...RESEARCH_CONTEXT_MENU_PROPS}
-          isEditable={false}
           getApplicationScope={getDocumentApplicationScope}
           contextData={documentContextData}
         >
@@ -474,7 +468,7 @@ export default function DocumentViewer() {
               {displayContent}
             </ReactMarkdown>
           </article>
-        </UnifiedAgentContextMenu>
+        </NonEditableContextMenu>
 
         {/* Content actions — copy, TTS, full-screen viewer, save to notes/code/tasks, HTML preview, email, print. */}
         {!stream.isStreaming && document.content && (

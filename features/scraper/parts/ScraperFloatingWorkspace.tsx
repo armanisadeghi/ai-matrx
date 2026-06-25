@@ -9,7 +9,6 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -62,13 +61,12 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
 
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrappers are the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+// The URL / keyword config inputs are editable → EditableContextMenu; the
+// read-only scraped-results region → NonEditableContextMenu.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 type WorkspaceMode = "web" | "url" | "batch";
 
@@ -534,7 +532,7 @@ export function ScraperFloatingWorkspace({
 
       {mode === "url" && (
         <div className="flex flex-col flex-1 min-h-0">
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...SCRAPER_CONTEXT_MENU_PROPS}
             getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
@@ -567,7 +565,7 @@ export function ScraperFloatingWorkspace({
                 {quickApi.isLoading ? "Scraping…" : "Scrape"}
               </Button>
             </div>
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
           <ScrapedSidebarList
             results={scrapedResults}
             scrapeStates={scrapeStates}
@@ -583,7 +581,7 @@ export function ScraperFloatingWorkspace({
 
       {mode === "batch" && (
         <div className="flex flex-col flex-1 min-h-0">
-          <UnifiedAgentContextMenu
+          <EditableContextMenu
             {...SCRAPER_CONTEXT_MENU_PROPS}
             getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
@@ -625,7 +623,7 @@ export function ScraperFloatingWorkspace({
                 {batchApi.isLoading ? "Working…" : "Search + scrape"}
               </Button>
             </div>
-          </UnifiedAgentContextMenu>
+          </EditableContextMenu>
           <ScrapedSidebarList
             results={scrapedResults}
             scrapeStates={scrapeStates}
@@ -666,9 +664,8 @@ export function ScraperFloatingWorkspace({
         />
       )}
       {showScrapeMain && (
-        <UnifiedAgentContextMenu
+        <NonEditableContextMenu
           {...SCRAPER_CONTEXT_MENU_PROPS}
-          isEditable={false}
           contextData={contextData}
           extraSections={presentationalExtras}
         >
@@ -690,7 +687,7 @@ export function ScraperFloatingWorkspace({
               }
             />
           </div>
-        </UnifiedAgentContextMenu>
+        </NonEditableContextMenu>
       )}
     </>
   );

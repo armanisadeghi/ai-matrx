@@ -19,7 +19,7 @@
  * studio_session_settings.custom_slots. Auto-run: source=raw slots fire
  * alongside Clean; source=clean slots fire when the cleaned result lands.
  *
- * Context menu — every pane is wrapped in UnifiedAgentContextMenu with
+ * Context menu — every pane is wrapped in the v3 EditableContextMenu with
  * surfaceName "matrx-user/transcripts-cleanup", so internal + user shortcuts
  * work over selections (textarea selection is captured by the menu itself)
  * and surface value-mappings drive variable resolution.
@@ -84,7 +84,6 @@ import {
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import dynamic from "next/dynamic";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
@@ -130,16 +129,10 @@ import {
   makeSlotDocKind,
 } from "../hooks/useCleanupSession";
 
-// Heavy client-only menu — code-split via next/dynamic({ ssr: false }) so it
-// never lands in the SSR/server chunk; loads only when this client surface
-// mounts. Single-tier dynamic — never nest.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+// All three panes (Transcript / Clean / Custom) are editable textareas.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 const OVERLAY_ID = "transcriptionCleanupPage" as const;
 
@@ -745,8 +738,8 @@ export default function CleanupPad({
   scopeStateRef.current = scopeRenderState;
 
   /** Emits every value declared in `transcriptsCleanupManifest` except the
-   * selection family (`selection` / `text_before` / `text_after`), which
-   * `UnifiedAgentContextMenu` captures itself at trigger time. Reads live refs
+   * selection family (`selection` / `text_before` / `text_after`), which the
+   * v3 context menu captures itself at trigger time. Reads live refs
    * at call time and delegates to the shared pure builder so the page and any
    * demo emit one identical shape. */
   const buildScope = useCallback(() => {
@@ -1977,7 +1970,7 @@ export default function CleanupPad({
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <UnifiedAgentContextMenu
+        <EditableContextMenu
           {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => transcriptTaRef.current}
           getApplicationScope={transcriptGetScope}
@@ -2009,7 +2002,7 @@ export default function CleanupPad({
               "focus-visible:outline-none focus-visible:ring-0",
             )}
           />
-        </UnifiedAgentContextMenu>
+        </EditableContextMenu>
         {isLoadingSession && <PaneLoadingVeil label="Loading transcript…" />}
       </div>
     </div>
@@ -2069,7 +2062,7 @@ export default function CleanupPad({
         </div>
       </div>
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <UnifiedAgentContextMenu
+        <EditableContextMenu
           {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => cleanTaRef.current}
           getApplicationScope={cleanGetScope}
@@ -2097,7 +2090,7 @@ export default function CleanupPad({
               cleanAi.phase === "error" && "text-destructive",
             )}
           />
-        </UnifiedAgentContextMenu>
+        </EditableContextMenu>
         <StreamPulseBorder
           running={cleanPulse.running}
           doneFlash={cleanPulse.doneFlash}
@@ -2279,7 +2272,7 @@ export default function CleanupPad({
       {customTopBand}
       {customToolbar}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <UnifiedAgentContextMenu
+        <EditableContextMenu
           {...TRANSCRIPTS_CLEANUP_CONTEXT_MENU_PROPS}
           getTextarea={() => customTaRef.current}
           getApplicationScope={customGetScope}
@@ -2307,7 +2300,7 @@ export default function CleanupPad({
               activeAi.phase === "error" && "text-destructive",
             )}
           />
-        </UnifiedAgentContextMenu>
+        </EditableContextMenu>
         <StreamPulseBorder
           running={customPulse.running}
           doneFlash={customPulse.doneFlash}

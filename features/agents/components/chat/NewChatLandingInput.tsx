@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { ArrowUp, CircleStop } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -40,16 +39,9 @@ import {
 } from "./agent-context/buildChatContextData";
 import { cn } from "@/lib/utils";
 
-// Right-click agent menu over the composer draft. Lazy (ssr:false) — the menu
-// pulls the shortcuts/quick-actions machinery that has no business on the
-// /chat/new first paint, and it only matters once the user interacts.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 interface NewChatLandingInputProps {
   /** Default-agent conversation bound to this input — same Redux state the
@@ -312,7 +304,7 @@ export function NewChatLandingInput({
             right-click menu is the affordance, and voice/copy already live in
             the controls. This composer stays a bespoke ChatGPT-style pill
             (NOT ProTextarea) by design — see FEATURE.md. */}
-        <UnifiedAgentContextMenu
+        <EditableContextMenu
           {...CHAT_CONTEXT_MENU_PROPS}
           enableFloatingIcon={false}
           getTextarea={() => textareaRef.current}
@@ -344,7 +336,7 @@ export function NewChatLandingInput({
             )}
             style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
           />
-        </UnifiedAgentContextMenu>
+        </EditableContextMenu>
 
         {/* Trailing — mic + send */}
         <div

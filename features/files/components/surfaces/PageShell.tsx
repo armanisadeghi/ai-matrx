@@ -26,7 +26,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   useGroupRef,
@@ -141,16 +140,9 @@ import {
 import { TopBar } from "./desktop/TopBar";
 import type { CloudFilesSection } from "./desktop/section";
 
-// Heavy client component (agent launcher + modals) — code-split, browser-only.
-// Wraps the read-only preview pane so a right-click offers Files-bound agent
-// actions about the active file with the live browser scope.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
+// Universal v3 context menu — lightweight shell, imported statically;
+// MenuContent lazy-loads on first open.
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export interface PageShellProps {
   /** Initial selection (for deep-linked routes). */
@@ -921,7 +913,7 @@ function PageShellDesktop({
                  * replace callbacks — the preview is presentational. The
                  * `asChild` trigger clones onto this wrapper div (PreviewPane
                  * is a plain component, not ref-forwarding). */}
-                <UnifiedAgentContextMenu
+                <NonEditableContextMenu
                   {...FILES_CONTEXT_MENU_PROPS}
                   getApplicationScope={getFilesApplicationScope}
                   contextData={filesContextData}
@@ -934,7 +926,7 @@ function PageShellDesktop({
                       onToggleMaximize={togglePreviewMaximize}
                     />
                   </div>
-                </UnifiedAgentContextMenu>
+                </NonEditableContextMenu>
               </ResizablePanel>
             </>
           )}

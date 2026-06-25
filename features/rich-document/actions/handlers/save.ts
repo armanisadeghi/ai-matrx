@@ -5,7 +5,7 @@
 // because it hard-coded `entity_type: "cx_message"`; we generalize via
 // a source → entity_type map so any source can produce a task.
 
-import { FileText, Save, FileCode, CheckSquare, BookText } from "lucide-react";
+import { FileText, Save, FileCode, FileDown, CheckSquare, BookText } from "lucide-react";
 import { toast } from "sonner";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -231,8 +231,8 @@ registerAction({
 
 registerAction({
   id: "save-as-file",
-  label: "Save as file",
-  icon: FileCode,
+  label: "Download as Markdown",
+  icon: FileDown,
   iconColor: "text-rose-500 dark:text-rose-400",
   category: "save",
   supportedSources: "*",
@@ -252,9 +252,9 @@ registerAction({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("File saved!");
+      toast.success("Downloaded as Markdown");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to save file"));
+      toast.error(getErrorMessage(error, "Failed to download file"));
     }
   },
 });

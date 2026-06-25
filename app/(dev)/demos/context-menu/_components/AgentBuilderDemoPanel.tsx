@@ -7,13 +7,13 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   AGENT_BUILDER_CONTEXT_MENU_PROPS,
   buildAgentBuilderContextData,
 } from "@/features/agents/agent-context/buildAgentBuilderContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
-import type { UnifiedAgentContextMenuProps } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import type { EditableContextMenuProps } from "@/features/context-menu-v3/types";
 import {
   DEMO_AGENT_BUILDER_SCOPE,
   DEMO_AGENT_FIELD_INITIAL,
@@ -21,20 +21,12 @@ import {
 } from "../_fixtures/agent-builder-demo";
 import { DemoProTextarea } from "./DemoProTextarea";
 
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  { ssr: false },
-);
-
 export interface AgentBuilderDemoPanelProps {
   title: string;
   description: React.ReactNode;
   initialContent?: string;
   focusedField?: string;
-  menuOverrides?: Partial<UnifiedAgentContextMenuProps>;
+  menuOverrides?: Partial<EditableContextMenuProps>;
   minHeightClass?: string;
 }
 
@@ -107,7 +99,7 @@ export function AgentBuilderDemoPanel({
         <h2 className="text-sm font-semibold">{title}</h2>
         <div className="text-[11px] text-muted-foreground">{description}</div>
       </header>
-      <UnifiedAgentContextMenu
+      <EditableContextMenu
         {...AGENT_BUILDER_CONTEXT_MENU_PROPS}
         getTextarea={() => textareaRef.current}
         getApplicationScope={getApplicationScope}
@@ -136,7 +128,7 @@ export function AgentBuilderDemoPanel({
           spellCheck={false}
           minHeightClass={minHeightClass}
         />
-      </UnifiedAgentContextMenu>
+      </EditableContextMenu>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import dynamic from "next/dynamic";
 import { NoteEditorCore } from "@/features/notes/components/NoteEditorCore";
 import type { ContentSource } from "@/features/rich-document/types";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
@@ -13,21 +12,9 @@ import {
   type WorkingDocumentSurfaceContext,
 } from "./workingDocumentSurface";
 
-// Canonical agent context menu (the SAME one /chat and /notes use — one menu
-// everywhere). Heavy (MenuBody + modals + Radix), so code-split per the
-// surface-pro-rollout pattern in NoteContentEditor: a BARE dynamic() would
-// null-render its children while the chunk loads and collapse the editor's flex
-// layout, so the `loading` fallback reserves the exact box.
-const UnifiedAgentContextMenu = dynamic(
-  () =>
-    import("@/features/context-menu-v2/UnifiedAgentContextMenu").then((m) => ({
-      default: m.UnifiedAgentContextMenu,
-    })),
-  {
-    ssr: false,
-    loading: () => <div className="h-full min-h-0 flex flex-col" />,
-  },
-);
+// Universal v3 context menu — the SAME menu everywhere. The wrapper is the
+// lightweight shell (imported statically); MenuContent lazy-loads on first open.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 interface WorkingDocumentEditorProps {
   conversationId: string;
@@ -132,7 +119,7 @@ export function WorkingDocumentEditor({
   const menuProps = workingDocumentContextMenuProps(kind);
 
   return (
-    <UnifiedAgentContextMenu
+    <EditableContextMenu
       {...menuProps}
       getTextarea={() => textareaRef.current}
       getApplicationScope={getApplicationScope}
@@ -162,6 +149,6 @@ export function WorkingDocumentEditor({
           previewActionsVariant="none"
         />
       </div>
-    </UnifiedAgentContextMenu>
+    </EditableContextMenu>
   );
 }
