@@ -112,7 +112,7 @@ export function ArtifactResultBar({
         type="button"
         onClick={open}
         className={cn(
-          "group/bar flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-left shadow-sm transition-all hover:bg-accent/40 hover:shadow-md",
+          "group/bar flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xl border border-border/70 bg-card/70 px-3 py-2 text-left shadow-sm transition-all hover:bg-accent/40 hover:shadow-md",
           meta.hoverBorder,
         )}
         title="Open"
@@ -149,7 +149,7 @@ export function ArtifactResultBar({
         title={peekExpanded ? "Hide details" : "Show details"}
         aria-label={peekExpanded ? "Hide details" : "Show details"}
         aria-expanded={peekExpanded}
-        className="grid w-9 shrink-0 place-items-center rounded-xl border border-border/70 bg-card/40 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+        className="grid w-9 shrink-0 cursor-pointer place-items-center rounded-xl border border-border/70 bg-card/40 text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
       >
         {peekExpanded ? (
           <ChevronDown className="size-4" />

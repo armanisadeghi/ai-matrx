@@ -13,7 +13,10 @@
 ## Tools (use these, don't reinvent)
 - **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/SKILL.md`) — the per-table recipe.
 - **`platform.retrofit_entity(table, token, strategy, owner_col, parent_table, parent_fk, legacy_trigger)`** — the one audited additive routine. strategy = `personal` | `parent` | `keep`. Self-verifies 0-null-org.
-- **Rename pattern:** `ALTER TABLE RENAME` + `CREATE VIEW old WITH (security_invoker=true) AS SELECT * FROM new` + repoint `entity_types`.
+- **Rename pattern — 3 MANDATORY steps (a rename is NOT done after step 1):**
+  1. DB: `ALTER TABLE RENAME` + `CREATE VIEW old WITH (security_invoker=true) AS SELECT * FROM new` + repoint `entity_types`.
+  2. **⚠️ IMMEDIATELY regenerate aidream's DB layer (via subagent) — skipping this caused a server outage 2026-06-24.** In `/Users/armanisadeghi/code/aidream`: `uv run db/generate.py`, then fix broken model/manager **imports** (the generated code does `import db.managers.<table>` and references class names by table → a rename breaks the import and the backend won't start; **compat views do NOT save this** — they only cover runtime SQL, not Python import graphs), then verify `uv run python -c "import db.models"` exits 0. See [compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md).
+  3. FE types: `pnpm db-types`.
 
 ## The gates (do NOT cross without the user)
 - **PITR unconfirmed** → no column drops, no `NOT NULL`, no table-drops. Everything to date is additive/reversible.
