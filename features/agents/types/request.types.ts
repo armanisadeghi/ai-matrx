@@ -734,6 +734,18 @@ export interface PendingToolCall {
 // =============================================================================
 
 /**
+ * USER-layer overrides on the request — the highest-priority leg of the
+ * backend's apply-policy cascade (agent → surface → user). Mirrors the
+ * backend `UserOverrides` object. Sent only when a field is explicitly set;
+ * an omitted `user` (or omitted field) lets the backend resolve from the
+ * surface / agent / default below it.
+ */
+export interface UserOverrides {
+  /** User's chosen output-directive apply policy. See `ApplyPolicy`. */
+  apply_policy?: import("./tool-injection.types").ApplyPolicy;
+}
+
+/**
  * Assembled snake_case wire payload for POST /ai/agents/{agent_id}.
  * Built by assembleRequest() from all instance slices + appContextSlice.
  * Scope fields are snapshotted at execution time.
@@ -743,6 +755,8 @@ export interface PendingToolCall {
  * and `sandbox` fields. See `features/agents/types/tool-injection.types.ts`.
  */
 export interface AssembledAgentStartRequest {
+  /** USER-layer overrides (apply policy, …). See `UserOverrides`. */
+  user?: UserOverrides;
   user_input?: string | MessagePart[];
   variables?: Record<string, unknown>;
   config_overrides?: Record<string, unknown>;
@@ -802,6 +816,8 @@ export interface AssembledAgentStartRequest {
  * Assembled snake_case wire payload for POST /ai/conversations/{conversation_id}.
  */
 export interface AssembledConversationRequest {
+  /** USER-layer overrides (apply policy, …). See `UserOverrides`. */
+  user?: UserOverrides;
   /**
    * Omitted on a retry (`retry: true`). On a normal continuation it carries
    * the user's turn. Exactly one of `user_input` / `retry` must be present —

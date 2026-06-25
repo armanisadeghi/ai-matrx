@@ -22,7 +22,10 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { AssembledAgentStartRequest } from "@/features/agents/types/request.types";
+import type {
+  AssembledAgentStartRequest,
+  UserOverrides,
+} from "@/features/agents/types/request.types";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { Json } from "@/types/database.types";
@@ -216,7 +219,27 @@ export function assembleRequest(
     }
   }
 
+  // USER-layer output-directive apply policy. The user's preference is the
+  // highest-priority leg of the backend cascade (agent → surface → user).
+  // "default" means "don't send" — let the backend resolve its own default
+  // (`ask` → approval card). Any other value flows through on every turn.
+  const userOverrides = buildUserOverrides(state);
+  if (userOverrides) request.user = userOverrides;
+
   return request;
+}
+
+/**
+ * Builds the USER-layer overrides object from user preferences. Returns
+ * `undefined` when nothing is set (so we omit the `user` field entirely and
+ * let the backend resolve from the surface / agent / default cascade).
+ */
+function buildUserOverrides(state: RootState): UserOverrides | undefined {
+  const applyPolicy = state.userPreferences.assistant.directiveApplyPolicy;
+  if (applyPolicy && applyPolicy !== "default") {
+    return { apply_policy: applyPolicy };
+  }
+  return undefined;
 }
 
 // =============================================================================
@@ -567,6 +590,9 @@ export const executeInstance = createAsyncThunk<
           }),
           ...(payload.client && { client: payload.client }),
           ...(payload.sandbox && { sandbox: payload.sandbox }),
+          // USER-layer apply policy — re-sent every turn so a mid-conversation
+          // preference change applies immediately (omitted when "default").
+          ...(payload.user && { user: payload.user }),
           // Latest active scope selections — re-sent every turn so a
           // mid-conversation scope switch applies immediately.
           ...(payload.scope_ids?.length && { scope_ids: payload.scope_ids }),

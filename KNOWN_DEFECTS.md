@@ -17,6 +17,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D17 — `userPreferencesSlice.resetToLoadedPreferences` drops the `sandbox` module
+**Severity: low — pre-existing, spotted while wiring the directive apply-policy setting (2026-06-24).**
+
+The `sandbox` preference module is present in the type, `defaultUserPreferences`, and the rehydrate handler, but the `resetToLoadedPreferences` reducer's per-module copy list omits it — so a reset silently loses the user's sandbox prefs. Unrelated to the directive work; not touched. Fix: add `sandbox` to that reducer's module copy list (mirror the other modules). File: `lib/redux/preferences/userPreferencesSlice.ts`.
+
 ### D16 — Scribe (and other direct `executeInstance` senders) don't split the composer onto a new conversation, so the success-path `clearUserInput` fires the smart-input draft protection
 **Severity: low — the draft is PRESERVED by the protection (no data loss); the symptom is a loud `console.error` ("[smart-input/PROTECTED] clearUserInput tried to clear a live composer draft…") whenever the user types a next-message draft while the assistant is streaming.**
 

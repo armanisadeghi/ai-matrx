@@ -44,6 +44,7 @@ export const defaultUserPreferences: UserPreferences = {
     memoryLevel: 0,
     preferredProvider: "default",
     preferredModel: "default",
+    directiveApplyPolicy: "default",
   },
   email: {
     primaryEmail: "",
