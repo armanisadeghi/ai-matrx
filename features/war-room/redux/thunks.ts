@@ -1187,15 +1187,73 @@ export const attachConversationToTile =
     }
   };
 
-// ── Thread portability (move / import between rooms) ───────────────────
-// A thread (tile) and its resources are a portable unit: its assignments are
-// keyed by the tile id (container_id), so MOVING a thread is just re-pointing
-// its session_id — every resource travels with it. IMPORTING copies the thread
-// + its assignment rows into another room, leaving the original intact. This is
-// how a user spins up a fresh room and pulls a still-relevant thread across as
-// the old room winds down.
+// ── Attach EXISTING resources (the attach-existing counterparts of the
+//    create-new thunks above) — link a resource the user already owns to a
+//    thread, instead of minting a new one. Each writes an entity→thread edge via
+//    the same createAssignment chokepoint. (Files/documents/conversations already
+//    attach-existing above; these add notes + tasks.) ────────────────────────
 
-/** Move a thread into another room (re-point session_id; resources travel along). */
+/** Attach an EXISTING note (notes.id) to a tile and make it the active note. The
+ *  counterpart of addNoteToTile (which mints a new note). The caller is expected
+ *  to have the note hydrated in the notes slice (a picker selecting it does). */
+export const attachExistingNoteToTile =
+  (tileId: string, noteId: string) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "note",
+        entityId: noteId,
+        makeActive: true,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+      );
+      return true;
+    } catch (err) {
+      reportWarRoomError("attachExistingNoteToTile", err, {
+        toast: "Couldn't attach the note",
+      });
+      return false;
+    }
+  };
+
+/** Attach an EXISTING task (ctx_tasks.id) to a tile and make it the active task.
+ *  The counterpart of createTileTask (which mints a new task). Hydrates the task
+ *  into the agent-context slice so the Task tab renders it immediately. */
+export const attachExistingTaskToTile =
+  (tileId: string, taskId: string) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(tileId),
+        entityType: "task",
+        entityId: taskId,
+        makeActive: true,
+      });
+      dispatch(
+        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+      );
+      void dispatch(hydrateTileTasks([taskId]));
+      return true;
+    } catch (err) {
+      reportWarRoomError("attachExistingTaskToTile", err, {
+        toast: "Couldn't attach the task",
+      });
+      return false;
+    }
+  };
+
+// ── Thread portability (move / import between rooms) ───────────────────
+// A thread (tile) and its resources are a portable unit: its content assignments
+// are keyed by the tile id (container_id), so they travel automatically. MOVING a
+// thread re-points its room membership — both the `thread → war_room` association
+// edge (the unified-model mechanism, also the basis for the future Unassigned
+// holding area) AND `tile.session_id` (which stays the RLS source until it's
+// dropped post-deploy), kept in lockstep. IMPORTING copies the thread + its
+// assignment rows into another room, leaving the original intact.
+
+/** Move a thread into another room (re-point membership edge + session_id; resources travel along). */
 export const moveThreadToRoom =
   (tileId: string, targetSessionId: string) =>
   async (
@@ -1210,6 +1268,15 @@ export const moveThreadToRoom =
       const updated = await service.updateTile(tileId, {
         session_id: targetSessionId,
       });
+      // Repoint the thread→war_room membership edge in lockstep. Best-effort: the
+      // move already landed via session_id; a failed edge repoint is loud, not fatal.
+      try {
+        await assoc.moveThreadMembership(tileId, fromSessionId, targetSessionId);
+      } catch (edgeErr) {
+        reportWarRoomError("moveThreadToRoom:membership", edgeErr, {
+          toast: false,
+        });
+      }
       dispatch(
         tileSessionChanged({
           id: tileId,
