@@ -6,7 +6,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
-import { DEFAULT_SESSION_TITLE } from "./constants";
+import { DEFAULT_SESSION_TITLE, UNASSIGNED_ROOM_TITLE } from "./constants";
 import type {
   CreateSessionInput,
   CreateTileInput,
@@ -140,6 +140,30 @@ export async function updateSession(
     throw error;
   }
   return data;
+}
+
+/**
+ * Get-or-create the user's single "Unassigned threads" HOLDING ROOM. Threads
+ * removed from a room land here until moved into another. Identified by the
+ * reserved title (UNASSIGNED_ROOM_TITLE); the oldest match wins if several exist.
+ * Reuses createSession (real org + canvas anchor).
+ */
+export async function ensureUnassignedRoom(): Promise<WarRoomSession> {
+  const userId = requireUserId();
+  const { data: existing, error } = await supabase
+    .from(SESSIONS)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("title", UNASSIGNED_ROOM_TITLE)
+    .eq("is_deleted", false)
+    .order("created_at", { ascending: true })
+    .limit(1);
+  if (error) {
+    console.error("[war-room] ensureUnassignedRoom lookup failed:", error);
+    throw error;
+  }
+  if (existing && existing.length > 0) return existing[0];
+  return createSession({ title: UNASSIGNED_ROOM_TITLE });
 }
 
 /** Bump last_opened_at so the room sorts to the top of /all. Fire-and-forget. */

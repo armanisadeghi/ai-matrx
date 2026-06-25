@@ -1311,6 +1311,34 @@ export const moveThreadToRoom =
   };
 
 /**
+ * Remove a thread from its current room — it lands in the user's "Unassigned
+ * threads" HOLDING room (get-or-create'd) until moved into another. This is the
+ * holding-area mechanism: from /all the user opens "Unassigned threads" to see
+ * every loose thread and move each into a real room (the same "Move to room").
+ */
+export const removeThreadFromRoom =
+  (tileId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<boolean> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return false;
+    try {
+      const holding = await service.ensureUnassignedRoom();
+      // Register the holding room so the move's optimistic bucket update lands.
+      dispatch(sessionUpserted(holding));
+      if (tile.session_id === holding.id) return true; // already unassigned
+      return await dispatch(moveThreadToRoom(tileId, holding.id));
+    } catch (err) {
+      reportWarRoomError("removeThreadFromRoom", err, {
+        toast: "Couldn't remove the thread from its room",
+      });
+      return false;
+    }
+  };
+
+/**
  * Import a COPY of a thread into another room: duplicate the tile (its identity)
  * and copy its assignment rows onto the new tile, leaving the source untouched.
  * Returns the new tile id (null on failure).
