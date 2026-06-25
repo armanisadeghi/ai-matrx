@@ -12,7 +12,7 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **14** (cx ×10, agx ×4) |
+| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **19** (cx ×10, agx ×4, prompt ×5) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
@@ -48,7 +48,7 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 
 | Group | Tables | R | O | L | | Group | Tables | R | O | L |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **cx** | 21 | **3** | 4 | 3 | | ui | 6 | 0 | 2 | 0 |
+| **cx** | 21 | **10** | 4 | 3 | | ui | 6 | 0 | 2 | 0 |
 | ctx | 24 | 0 | 6 | 10 | | kg | 6 | 0 | 5 | 0 |
 | scrape | 25 | 0 | 0 | 0 | | app | 6 | 0 | 1 | 1 |
 | cld | 18 | 0 | 7 | 0 | | ai | 6 | 0 | 1 | 1 |
@@ -56,14 +56,14 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | tool | 14 | 0 | 0 | 0 | | pc | 5 | 0 | 0 | 0 |
 | rs | 12 | 0 | 0 | 1 | | flashcard | 5 | 0 | 2 | 2 |
 | wf | 12 | 0 | 3 | 3 | | sch | 4 | 0 | 0 | 2* |
-| prompt | 12 | 0 | 2 | 3 | | wc | 4 | 0 | 1 | 1* |
+| prompt | 12 | **5** | 2 | 3 | | wc | 4 | 0 | 1 | 1* |
 | udt | 10 | 0 | 3 | 3 | | page | 4 | 0 | 1 | 1 |
 | studio | 9 | 0 | 1 | 1 | | audio | 4 | 0 | 0 | 0 |
 | system | 9 | 0 | 1 | 0 | | code | 4 | 0 | 3 | 3* |
 | sms | 9 | 0 | 0 | 0 | | organization | 3 | 0 | 3 | 0 |
 | file | 7 | 0 | 0 | 0 | | agent | 3 | 0 | 0 | 0 |
 | wbx | 7 | 0 | 0 | 0 | | cmp | 3 | 0 | 1 | 1 |
-| **agx** | 7 | 0 | 4 | 4 | | dict | 3 | 0 | 2 | 0 |
+| **agx** | 7 | **4** | 4 | 4 | | dict | 3 | 0 | 2 | 0 |
 | canvas | 7 | 0 | 1 | 1 | | dm | 3 | 0 | 0 | 0 |
 | note | 6 | 0 | 0 | 0 | | feedback | 3 | 0 | 0 | 0 |
 | skl | 6 | 0 | 3 | 4 | | admin | 3 | 0 | 0 | 0 |
@@ -153,4 +153,5 @@ Admin dashboards (both Next.js) audited: **do not read** these columns. Python a
 - **2026-06-24 (later)** — `platform.retrofit_entity` routine built + validated. `cx_agent_memory` retrofitted. **`agx` group fully delegated + done (4/4 Base-1)** via the routine. Established the **system tenant** (decision #9) — hardened the routine through two real edge cases (ownerless rows → system org; `created_by` NULL = system). **8 tables retrofitted.**
   - **Open follow-up:** `agx_agent` / `agx_agent_templates` carry bespoke `version`-snapshot triggers (`trg_agx_*` → `agx_version`); `_touch_row` also bumps `version` on UPDATE → reconcile the double-bump when `agx_version` gets its Base-3 treatment.
   - **Files to reconcile (lead bookkeeping):** routine file → final v3; `platform_system_org_tenant.sql`; `agx_entities_retrofit.sql` (uncomment the 3 now-applied calls); ledger each.
+- **2026-06-24 (cont.2)** — **`prompt` group delegated + done** (5 Base-1: `prompt_actions`/`apps`/`builtins`/`shortcuts`/`templates`; 6 logs + 1 lookup skipped) via a subagent + the routine. **19 tables retrofitted.** Delegation-brief lesson: point subagents at the `SKILL.md` **file**, not "invoke the skill" (the latter no-op'd once). The bespoke version-snapshot double-bump (`_touch_row` + a feature trigger) now spans `agx_agent`/`templates` + `prompt_apps`/`builtins` — reconcile in the Base-3 `*_versions` pass.
 - **2026-06-24 (cont.)** — Routine + system-org files reconciled + ledgered. **cx batch 2** retrofitted via the routine (`cx_agent_plan` / `cx_observational_memory` / `cx_tool_call` / `cx_user_request` / `cx_user_todo` / `cx_working_documents`). **14 tables retrofitted.** Remaining cx: Base-3 logs (`cx_request`/`_snapshot`/`cx_tool_trace`/`_observational_memory_event`/`cx_pending_injection` → ledger pass), `cx_conversation_documents` (join), `cx_user_usage_summary` (special), `cx_agent_task` (**deferred** — `created_by` enum needs a consumer audit before rename), + 3 planned-empty (keep). Remaining file debt: agx system-row uncomment + `cx_agent_memory` file.
