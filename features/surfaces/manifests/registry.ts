@@ -44,6 +44,8 @@ import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 import { ragSearchManifest } from "./rag-search.manifest";
 import { workingDocumentManifest } from "./working-document.manifest";
 import { scratchpadManifest } from "./scratchpad.manifest";
+import { warRoomThreadManifest } from "./war-room-thread.manifest";
+import { warRoomManifest } from "./war-room.manifest";
 
 /**
  * Manifests exactly as authored. Do NOT consume directly — generic baselines
@@ -75,6 +77,8 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   ragSearchManifest,
   workingDocumentManifest,
   scratchpadManifest,
+  warRoomThreadManifest,
+  warRoomManifest,
 ];
 
 /**
