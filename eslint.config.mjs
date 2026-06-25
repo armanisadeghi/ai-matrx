@@ -509,6 +509,12 @@ const contextMenuV3StaticImportBan = [
         message:
             "Do not statically import MenuContent — it's the heavy v3 layer and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
     },
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value='@/features/context-menu-v3/components/MobileMenuContent'] > ImportDefaultSpecifier",
+        message:
+            "Do not statically import MobileMenuContent — it's the heavy mobile v3 layer and must stay behind the shell's next/dynamic({ ssr: false }) boundary. Render a surface menu via EditableContextMenu / NonEditableContextMenu from @/features/context-menu-v3 instead.",
+    },
 ];
 
 // Heavy-core "*Impl" components are split behind a thin dynamic wrapper (the
