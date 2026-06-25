@@ -3,10 +3,32 @@
 import { useMemo } from "react";
 import { Table2, PanelRight, ExternalLink, Maximize2 } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
-import { parseDataset } from "./parseDataset";
+import { parseDataset, type ParsedDatasetField } from "./parseDataset";
 import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
+import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
 
 const MAX_FIELD_CHIPS = 12;
+
+function DatasetFieldPeek({ f }: { f: ParsedDatasetField }) {
+  return (
+    <div className="space-y-1">
+      {f.type ? (
+        <div>
+          <span className="text-muted-foreground">Type:</span>{" "}
+          <span className="font-mono">{f.type}</span>
+        </div>
+      ) : null}
+      {f.displayName && f.displayName !== f.name ? (
+        <div>
+          <span className="text-muted-foreground">Display:</span> {f.displayName}
+        </div>
+      ) : null}
+      {!f.type && !(f.displayName && f.displayName !== f.name) ? (
+        <div className="text-muted-foreground">Column</div>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Inline renderer for `dataset` / `usertable_create` — a polished entity card
@@ -67,15 +89,20 @@ export function DatasetInline({
           {shownFields.length ? (
             <div className="flex flex-wrap gap-1.5">
               {shownFields.map((f) => (
-                <span
+                <PartPeekPopover
                   key={f.name}
-                  className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]"
+                  header={f.name}
+                  body={<DatasetFieldPeek f={f} />}
                 >
-                  <span className="font-medium text-foreground">{f.name}</span>
-                  {f.type ? (
-                    <span className="font-mono text-muted-foreground">{f.type}</span>
-                  ) : null}
-                </span>
+                  <span className="inline-flex cursor-default items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted">
+                    <span className="font-medium text-foreground">{f.name}</span>
+                    {f.type ? (
+                      <span className="font-mono text-muted-foreground">
+                        {f.type}
+                      </span>
+                    ) : null}
+                  </span>
+                </PartPeekPopover>
               ))}
               {moreFields > 0 ? (
                 <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] text-muted-foreground">

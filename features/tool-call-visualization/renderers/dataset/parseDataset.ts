@@ -11,6 +11,7 @@ import { resultAsObject, getArg } from "../_shared";
 export interface ParsedDatasetField {
   name: string;
   type: string | null;
+  displayName: string | null;
 }
 
 export interface ParsedDataset {
@@ -48,6 +49,7 @@ export function parseDataset(entry: ToolLifecycleEntry): ParsedDataset {
           return {
             name: asStr(o.field_name) ?? asStr(o.display_name) ?? "",
             type: asStr(o.data_type),
+            displayName: asStr(o.display_name),
           };
         })
         .filter((f) => f.name)
