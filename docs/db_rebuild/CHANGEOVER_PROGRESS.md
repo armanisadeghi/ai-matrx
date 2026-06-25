@@ -12,7 +12,7 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **38** (cx ×10, rs ×10, agx ×4, prompt ×5, note ×5, canvas ×2, ctx-wr ×2) |
+| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **45** (cx ×10, rs ×10, udt ×7, agx ×4, prompt ×5, note ×5, canvas ×2, ctx-wr ×2) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
@@ -57,7 +57,7 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | rs | 12 | **10** | 0 | 1 | | flashcard | 5 | 0 | 2 | 2 |
 | wf | 12 | 0 | 3 | 3 | | sch | 4 | 0 | 0 | 2* |
 | prompt | 12 | **5** | 2 | 3 | | wc | 4 | 0 | 1 | 1* |
-| udt | 10 | 0 | 3 | 3 | | page | 4 | 0 | 1 | 1 |
+| udt | 10 | **7** | 3 | 3 | | page | 4 | 0 | 1 | 1 |
 | studio | 9 | 0 | 1 | 1 | | audio | 4 | 0 | 0 | 0 |
 | system | 9 | 0 | 1 | 0 | | code | 4 | 0 | 3 | 3* |
 | sms | 9 | 0 | 0 | 0 | | organization | 3 | 0 | 3 | 0 |
