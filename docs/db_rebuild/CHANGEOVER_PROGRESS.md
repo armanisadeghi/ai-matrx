@@ -12,13 +12,13 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **45** (cx ×10, rs ×10, udt ×7, agx ×4, prompt ×5, note ×5, canvas ×2, ctx-wr ×2) |
+| **Retrofitted** (standard base cols + `_stamp_actor`) | **54** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×2, ctx-wr ×2) — 53 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
 | Registered in `platform.entity_types` | 18 |
 
-**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — IN PROGRESS (cx + ctx war-room)** · 4 Schema reorg/rename ⏳ · 5 Litter drops ⏳
+**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — IN PROGRESS (54 tables: cx/rs/udt/skl/agx/prompt/studio/note/canvas/ctx-wr)** · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
 
 ---
 
@@ -39,6 +39,8 @@ Per **Base-1** table, additive first, then gated: **(1)** standard columns (`org
 7. **RLS read model:** org-first `has_org_access(org_id)` already returns **every** org the user belongs to → no "active org" required to see data; active-org is an optional UI filter. Writes must stamp `org_id`.
 8. **Tracking discipline:** one migration file per table (or per small batch) in `migrations/`, applied via Supabase MCP, self-verifying, recorded in `_schema_migrations`, and reflected here.
 9. **System tenant:** ownerless global/builtin/system rows (e.g. builtin agents, system templates) are **owned by the canonical `Matrx System` org** (`organizations.is_system=true`, id `39c38960-…`, no members → invisible in users' org lists) and stay visible to everyone via the `is_public` RLS branch. Keeps `org_id NOT NULL` universal with no special-casing. `retrofit_entity`'s `personal` strategy falls back to it for `user_id IS NULL` rows; `created_by` is left **NULL = system actor** (valid per standard). (A `Matrx Library` tenant also exists for the shared-knowledge corpus.)
+10. **VARCHAR-`version` collision:** a table whose existing `version` is a VARCHAR semver (e.g. `skl_definitions`, live-consumed by `features/skills/` + aidream `SkillRowWire.version:str`) keeps its own `*_updated_at` trigger and gets `_stamp_actor` **only** — NOT `_touch_row` (whose `version := OLD.version+1` crashes on varchar). Int-version standardization (rename → `version_label` + add standard int `version`) is deferred to a cross-repo repoint pass. (Analog of the `created_by_kind` collision, #3.) Such tables count as retrofitted but do NOT appear in the `_touch_row` count.
+11. **Child entity tokens:** children retrofitted via `retrofit_entity(...,'parent',...)` are passed descriptive tokens that may not be registered in `platform.entity_types` (the routine ignores `p_token` in Step-1, so it's harmless now). **ALL retrofitted child tokens MUST be registered in `entity_types` before the deferred RLS/history pass** (`apply_rls`/`_version_capture` consume the token). Sweep + register in one pass right before that phase.
 
 ---
 
@@ -58,7 +60,7 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | wf | 12 | 0 | 3 | 3 | | sch | 4 | 0 | 0 | 2* |
 | prompt | 12 | **5** | 2 | 3 | | wc | 4 | 0 | 1 | 1* |
 | udt | 10 | **7** | 3 | 3 | | page | 4 | 0 | 1 | 1 |
-| studio | 9 | 0 | 1 | 1 | | audio | 4 | 0 | 0 | 0 |
+| studio | 9 | **4** | 1 | 1 | | audio | 4 | 0 | 0 | 0 |
 | system | 9 | 0 | 1 | 0 | | code | 4 | 0 | 3 | 3* |
 | sms | 9 | 0 | 0 | 0 | | organization | 3 | 0 | 3 | 0 |
 | file | 7 | 0 | 0 | 0 | | agent | 3 | 0 | 0 | 0 |
@@ -66,7 +68,7 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | **agx** | 7 | **4** | 4 | 4 | | dict | 3 | 0 | 2 | 0 |
 | canvas | 7 | **2** | 1 | 1 | | dm | 3 | 0 | 0 | 0 |
 | note | 6 | **5** | 0 | 0 | | feedback | 3 | 0 | 0 | 0 |
-| skl | 6 | 0 | 3 | 4 | | admin | 3 | 0 | 0 | 0 |
+| skl | 6 | **5** | 3 | 4 | | admin | 3 | 0 | 0 | 0 |
 | | | | | | | pdf | 3 | 0 | 1 | 0 |
 | | | | | | | scope | 3 | 0 | 3 | 0 |
 
