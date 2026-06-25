@@ -1298,6 +1298,16 @@ export function getToolGlyph(toolName: string | null): ToolGlyphSpec {
   return DEFAULT_GLYPH;
 }
 
+/**
+ * Shell chrome for a tool — "card" self-heads (the InlineComponent renders its
+ * own header + menu, so the shell drops the fold line once complete), "line"
+ * (default) uses the slim collapsible verb-phrase row.
+ */
+export function getToolChrome(toolName: string | null): "line" | "card" {
+  if (!toolName) return "line";
+  return toolRendererRegistry[toolName]?.chrome ?? "line";
+}
+
 export function getToolDisplayName(toolName: string | null): string {
   if (!toolName) return "Tool";
   // (1) In-code registry wins — it's the canonical renderer for the 10%.

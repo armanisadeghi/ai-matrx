@@ -129,6 +129,22 @@ const ToolCallVisualizationInner: React.FC<{
         ? "never-open"
         : toolMode;
 
+  // Glossy per-tool glyph for the folded line. Card chrome: a self-headed entity
+  // card — once the tool COMPLETES the shell renders the InlineComponent
+  // directly (no fold line / chevron / hover icons); while streaming it keeps
+  // the slim row so there's a working indicator.
+  const glyph = getToolGlyph(headerTool?.toolName ?? null);
+  const HeaderInline =
+    headerTool && headerTool.status !== "error"
+      ? getInlineRenderer(headerTool.toolName)
+      : null;
+  const cardMode =
+    getToolChrome(headerTool?.toolName ?? null) === "card" &&
+    allTerminal &&
+    phase !== "error" &&
+    entries.length === 1 &&
+    !!HeaderInline;
+
   // Expand state is DERIVED, not effect-synced (avoids cascading setState-in-
   // effect). Three inputs combine:
   //   1. userChoice — the user's explicit toggle. Once set it STICKS and wins.
@@ -340,12 +356,29 @@ const ToolCallVisualizationInner: React.FC<{
           peekExpanded={isExpanded}
           onTogglePeek={toggleExpand}
         />
+      ) : cardMode && headerTool && HeaderInline ? (
+        // Self-headed entity card — no fold line; the card's own header carries
+        // the name + "Open in" menu. createElement (not JSX) since the component
+        // is resolved at runtime from the registry.
+        React.createElement(HeaderInline, {
+          entry: headerTool,
+          events: headerTool.events,
+          onOpenOverlay: handleOpenOverlay,
+          onOpenWindowPanel: handleOpenWindowPanel,
+          toolGroupId: headerTool.callId,
+          isPersisted,
+          conversationId,
+          requestId,
+        })
       ) : (
         <button
           type="button"
           onClick={toggleExpand}
           className="flex w-full items-center gap-1.5 text-left"
         >
+          {/* Glossy per-tool glyph — gives the folded line a unique app-style
+              icon instead of a flat one. */}
+          <ToolGlyph icon={glyph.icon} accent={glyph.accent} size="sm" />
           {/* Label + subtitle — SAME font/size as body markdown text, just dimmer,
             so the tool call reads as part of the response, not a separate box. */}
         <span className="flex min-w-0 items-center gap-1.5">
@@ -431,7 +464,7 @@ const ToolCallVisualizationInner: React.FC<{
           (renderers bring their own cards). Animates open/closed via the
           grid-rows trick. Mounted once it has ever been opened so the close can
           animate (and live renderers keep their state). */}
-      {hasEverExpanded && (
+      {!cardMode && hasEverExpanded && (
         <div
           className={cn(
             "grid transition-[grid-template-rows,opacity] duration-500 ease-in-out",
