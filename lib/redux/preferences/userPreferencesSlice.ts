@@ -63,6 +63,17 @@ export interface TextToSpeechPreferences {
   processMarkdown: boolean;
 }
 
+/**
+ * User-level output-directive apply policy.
+ *   - `default` — don't send the field; let the backend resolve its own
+ *     default (`ask` → approval card).
+ *   - `auto`    — apply agent actions immediately.
+ *   - `ask`     — always show an approval card.
+ *   - `off`     — never apply agent actions.
+ * The three non-`default` values map 1:1 to the backend `UserOverrides.apply_policy`.
+ */
+export type DirectiveApplyPolicy = "default" | "auto" | "ask" | "off";
+
 export interface AssistantPreferences {
   alwaysActive: boolean;
   alwaysWatching: boolean;
@@ -72,6 +83,12 @@ export interface AssistantPreferences {
   memoryLevel: number;
   preferredProvider: AIProvider;
   preferredModel: string;
+  /**
+   * User-layer override for what happens when an agent emits an output
+   * directive (create a task / project / note, etc.). Flowed to the backend
+   * `UserOverrides.apply_policy` on every turn when not `"default"`.
+   */
+  directiveApplyPolicy: DirectiveApplyPolicy;
 }
 
 // Suggested preferences for email management (you can adjust or remove as needed)
@@ -500,6 +517,7 @@ export const initializeUserPreferencesState = (
       memoryLevel: 0,
       preferredProvider: "default",
       preferredModel: "default",
+      directiveApplyPolicy: "default",
     },
     email: {
       primaryEmail: "",

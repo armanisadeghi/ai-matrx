@@ -30,6 +30,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
+import type { UserOverrides } from "@/features/agents/types/request.types";
 
 import { generateRequestId } from "../utils/ids";
 import { resolveBackendForConversation } from "./resolve-base-url";
@@ -170,6 +171,15 @@ export const resumeInstance = createAsyncThunk<
           ? { ...(ambient ?? {}), ...(chipContext ?? {}) }
           : undefined;
 
+      // USER-layer apply policy — keep the resumed loop's directive handling
+      // aligned with the user's preference (highest-priority cascade leg).
+      // "default" → omit (let the backend resolve its own default).
+      const applyPolicy = state.userPreferences.assistant.directiveApplyPolicy;
+      const userOverrides: UserOverrides | undefined =
+        applyPolicy && applyPolicy !== "default"
+          ? { apply_policy: applyPolicy }
+          : undefined;
+
       const body: Record<string, unknown> = {
         user_request_id: userRequestId,
         ...(context && { context }),
@@ -178,6 +188,7 @@ export const resumeInstance = createAsyncThunk<
           tools_replace: injection.tools_replace,
         }),
         ...(injection.client && { client: injection.client }),
+        ...(userOverrides && { user: userOverrides }),
         ...(debug && { debug: true }),
       };
       // ResumeRequest does NOT declare a top-level `sandbox` (unlike the

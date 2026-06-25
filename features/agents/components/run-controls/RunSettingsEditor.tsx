@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, FileText } from "lucide-react";
+import { Brain, FileText, Wand2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import type { DirectiveApplyPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   setBuilderAdvancedSettings,
   setReuseConversationId,
@@ -79,6 +88,9 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
     selectIsMemoryEnabledForConversation(conversationId),
   );
   const isMemoryDegraded = useAppSelector(selectMemoryDegraded(conversationId));
+  const directiveApplyPolicy = useAppSelector(
+    (s) => s.userPreferences.assistant.directiveApplyPolicy,
+  );
   const [sysModalOpen, setSysModalOpen] = useState(false);
 
   const openMemoryInspector = () =>
@@ -179,6 +191,54 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
             Configure instruction fields
           </Button>
         )}
+
+        <Separator className="!my-1.5" />
+
+        {/* User-level output-directive apply policy. Persists to user
+            preferences and flows to the backend `user.apply_policy` (USER
+            layer, highest priority) on every turn when not "Default". */}
+        <div className="flex items-center justify-between py-1 gap-3">
+          <Label
+            htmlFor={`apply-policy-${conversationId}`}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0"
+          >
+            <Wand2 className="w-3 h-3" />
+            Agent actions
+          </Label>
+          <Select
+            value={directiveApplyPolicy}
+            onValueChange={(value) =>
+              dispatch(
+                setPreference({
+                  module: "assistant",
+                  preference: "directiveApplyPolicy",
+                  value: value as DirectiveApplyPolicy,
+                }),
+              )
+            }
+          >
+            <SelectTrigger
+              id={`apply-policy-${conversationId}`}
+              className="h-6 w-[11rem] text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default" className="text-xs">
+                Ask first (default)
+              </SelectItem>
+              <SelectItem value="auto" className="text-xs">
+                Apply automatically
+              </SelectItem>
+              <SelectItem value="ask" className="text-xs">
+                Always ask first
+              </SelectItem>
+              <SelectItem value="off" className="text-xs">
+                Never apply
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <Separator className="!my-1.5" />
 

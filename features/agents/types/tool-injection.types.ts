@@ -80,7 +80,25 @@ export interface ClientCapabilityPayloads {
  * of `capabilities`; the backend validates each payload against the
  * capability's schema and emits a single aggregated 422 if anything fails.
  */
+/**
+ * Output-directive apply policy. The backend resolves a single effective value
+ * through a cascade — agent → surface → user (user wins) — to decide what
+ * happens when an agent emits an output directive:
+ *   - `auto` → apply the side effect immediately
+ *   - `ask`  → show an approval card (the backend default)
+ *   - `off`  → suppress the directive entirely
+ * It rides on TWO request layers: `ClientContext.apply_policy` (the SURFACE
+ * layer) and `UserOverrides.apply_policy` (the USER layer, highest priority).
+ */
+export type ApplyPolicy = "auto" | "ask" | "off";
+
 export interface ClientContext {
+  /**
+   * Surface-layer override of the output-directive apply policy. Lower
+   * priority than the user layer (`UserOverrides.apply_policy`). Omitted →
+   * the backend falls through to the user / agent / default cascade.
+   */
+  apply_policy?: ApplyPolicy;
   /**
    * DB-registered surface name (one row in `public.ui_surface`). The server
    * resolves it to a default tool set via `tool_resolve_for_request` +
