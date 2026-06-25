@@ -26,9 +26,14 @@ render through the SAME live chip renderer.
 
 - `envelope.ts` — the contract: `isMatrxEnvelope` (detect by `matrx_version`),
   `MatrxEnvelope`, the FLAT per-type `ReferenceItem` union + `REFERENCE_TYPES` / `ReferenceType`,
-  the `directive_apply.*` receipt events + `isDirectiveApplyEvent`, and
-  `buildEnvelopeOutputSchema` (mirrors aidream's schema-gen). `ReferencePurpose` is
-  `@deprecated` (kept only to type the legacy-translation input).
+  the `directive_apply.*` receipt events (incl. `DirectiveProposed` / `DirectiveApplyBlocked`) +
+  `isDirectiveApplyEvent` / `isDirectiveProposed`, and `buildEnvelopeOutputSchema` (mirrors
+  aidream's schema-gen). `ReferencePurpose` is `@deprecated` (kept only to type the
+  legacy-translation input).
+- `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
+  (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
+- `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
+  Approve → `confirmDirective` (`features/action-catalog/service.ts`) → `POST /actions/confirm`.
 - `legacyTranslate.ts` — the **loud HARD-CUT seam**. `translateLegacyReferenceItem(raw,type)`
   flattens an old nested item (`{purpose,ref:{…},display:{…}}`) and
   `translateLegacyPicklistRef(env)` flattens the legacy `picklist_ref` object; both fire a
@@ -80,7 +85,17 @@ render through the SAME live chip renderer.
   → `BlockRenderer` `case "matrx"` → `MatrxEnvelopeBlock`. Round-trip in
   `assemble-cx-content-blocks.ts`.
 - Directive receipts: `process-stream.ts` routes `directive_apply.*` data events →
-  `sonner` toasts (`isDirectiveApplyEvent`).
+  `sonner` toasts (`isDirectiveApplyEvent`). The `directive_apply.completed`/`.failed`
+  receipts toast; `directive_apply.proposed` (the `ask` apply policy) is handled below.
+- **Proposed directives (`ask` policy):** when the backend resolves a directive's apply
+  policy to `ask`, it streams `directive_apply.proposed` (carrying the round-tripped
+  envelope + `proposal_id`). `process-stream.ts` enqueues it into `state/proposedDirectivesSlice.ts`;
+  `components/ProposedDirectivesZone.tsx` (mounted beside the chat input in
+  `AgentConversationColumn`) renders an Approve/Decline card. Approve POSTs the envelope to
+  `POST /actions/confirm` via `features/action-catalog/service.ts::confirmDirective` (runs as
+  the user, RLS; idempotent by `proposal_id`); Decline dismisses. NOT the `pendingAsks`
+  rail — a proposed directive is a terminal side effect, not a suspended tool call. Backend
+  cascade (agent → surface → user, default `ask`): aidream `services/output_directives/`.
 - Schema-proposal (a separate `schema_proposal` json block, NOT an envelope): see
   `features/agents/components/schema-proposal/` — agent's `{name,schema}` output →
   "Apply to an agent".
@@ -105,6 +120,12 @@ render through the SAME live chip renderer.
 
 ## Change Log
 
+- 2026-06-24 — **Proposed directives (`ask` apply policy).** Added `DirectiveProposed` +
+  `DirectiveApplyBlocked` to `envelope.ts` (+ `isDirectiveProposed`); `state/proposedDirectivesSlice.ts`
+  (the per-conversation inbox); `components/ProposedDirectivesZone.tsx` (Approve/Decline card,
+  mounted beside the chat input). `process-stream.ts` routes `directive_apply.proposed` →
+  `proposeDirective`. Approve applies via `confirmDirective` → `POST /actions/confirm`. Pairs
+  with the backend apply-policy cascade (aidream `services/output_directives/`).
 - 2026-06-20 — **Unified Matrx References (full alignment).** Purified `ReferenceItem` to the
   FLAT per-type model + `REFERENCE_TYPES` 7-type taxonomy (dropped `purpose`/`slot`/`ref`/`display`;
   `ReferencePurpose` `@deprecated`). New `legacyTranslate.ts` (loud hard-cut) + `bookmarkToReference.ts`.
