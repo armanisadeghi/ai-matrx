@@ -95,6 +95,15 @@ export interface ConversationHistorySidebarProps {
   activeConversationId?: string | null;
   /** Called when a row is clicked. Required for interactivity. */
   onOpenConversation?: (conv: ConversationListItem) => void;
+  /**
+   * Open the clicked conversation IN PLACE instead of navigating to its route.
+   * For self-contained surfaces (drawers, embedded panels) where the click
+   * should load the conversation locally via `onOpenConversation` and NOT route
+   * the whole page away. Default false — a plain click navigates to `/chat/<id>`
+   * (the standalone /chat route + search popover, which both want navigation).
+   * Modifier/middle-click and "Open in new tab" / "Copy link" stay unaffected.
+   */
+  openInPlace?: boolean;
 
   /** Default grouping when the scope is first created. Default: "date". */
   defaultGrouping?: HistoryGrouping;
@@ -356,6 +365,7 @@ const DenseView: React.FC<
   surfaceId,
   activeConversationId,
   onOpenConversation,
+  openInPlace = false,
   surfaceKey,
   emptyState,
   headerSlot,
@@ -461,6 +471,7 @@ const DenseView: React.FC<
                 conv={conv}
                 active={conv.conversationId === activeConversationId}
                 onOpen={onOpenConversation}
+                openInPlace={openInPlace}
                 isFavorite={isFavoriteResolved(conv.conversationId)}
                 onToggleFavorite={onToggleFavoriteResolved}
                 resolveHref={resolveHref}
@@ -487,6 +498,7 @@ const DenseView: React.FC<
                   conv={conv}
                   active={conv.conversationId === activeConversationId}
                   onOpen={onOpenConversation}
+                  openInPlace={openInPlace}
                   isFavorite={isFavoriteResolved(conv.conversationId)}
                   onToggleFavorite={onToggleFavoriteResolved}
                   resolveHref={resolveHref}
@@ -513,6 +525,7 @@ const DenseView: React.FC<
                   conv={conv}
                   active={conv.conversationId === activeConversationId}
                   onOpen={onOpenConversation}
+                  openInPlace={openInPlace}
                   isFavorite={isFavoriteResolved(conv.conversationId)}
                   onToggleFavorite={onToggleFavoriteResolved}
                   resolveHref={resolveHref}
@@ -565,6 +578,7 @@ const ConsumerView: React.FC<
   surfaceId,
   activeConversationId,
   onOpenConversation,
+  openInPlace = false,
   headerSlot,
   topSlot,
   initialSearchOpen = false,
@@ -681,6 +695,7 @@ const ConsumerView: React.FC<
                 conv={conv}
                 active={conv.conversationId === activeConversationId}
                 onOpen={onOpenConversation}
+                openInPlace={openInPlace}
                 resolveHref={resolveHref}
               />
             ))}
@@ -836,6 +851,7 @@ interface RowProps {
   conv: ConversationListItem;
   active: boolean;
   onOpen?: (conv: ConversationListItem) => void;
+  openInPlace?: boolean;
   isFavorite: boolean;
   onToggleFavorite?: (conv: ConversationListItem) => void;
   resolveHref: (conv: ConversationListItem) => string;
@@ -847,6 +863,7 @@ const Row: React.FC<RowProps> = ({
   conv,
   active,
   onOpen,
+  openInPlace = false,
   isFavorite,
   onToggleFavorite,
   resolveHref,
@@ -900,6 +917,7 @@ const Row: React.FC<RowProps> = ({
       active={active}
       href={resolveHref(conv)}
       onOpen={onOpen ? () => onOpen(conv) : undefined}
+      openInPlace={openInPlace}
       leading={<StreamingDot conversationId={conv.conversationId} />}
       secondaryLabel={meta || undefined}
       trailing={trailing}
@@ -950,8 +968,9 @@ const ConsumerRow: React.FC<{
   conv: ConversationListItem;
   active: boolean;
   onOpen?: (conv: ConversationListItem) => void;
+  openInPlace?: boolean;
   resolveHref: (conv: ConversationListItem) => string;
-}> = ({ conv, active, onOpen, resolveHref }) => {
+}> = ({ conv, active, onOpen, openInPlace = false, resolveHref }) => {
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
   const isStreaming = useAppSelector(selectIsStreaming(conv.conversationId));
@@ -963,6 +982,7 @@ const ConsumerRow: React.FC<{
       active={active}
       href={resolveHref(conv)}
       onOpen={onOpen ? () => onOpen(conv) : undefined}
+      openInPlace={openInPlace}
       menu={() =>
         buildConversationMenu({
           conversationId: conv.conversationId,

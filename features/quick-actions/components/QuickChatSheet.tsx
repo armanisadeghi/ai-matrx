@@ -267,6 +267,7 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
               surfaceId="chat"
               activeConversationId={conversationId}
               onOpenConversation={handleOpenConversation}
+              openInPlace
               excludeSourceFeatures={["voice-agent"]}
             />
           </div>

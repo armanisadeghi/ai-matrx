@@ -79,6 +79,7 @@ export function ItemRow({
   disabled = false,
   href,
   onOpen,
+  openInPlace = false,
   menu,
   rename,
   size = "md",
@@ -185,9 +186,12 @@ export function ItemRow({
         onClick={(e) => {
           // Modifier / middle-click: native <a> opens a new tab/window.
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+          // `openInPlace`: handle the click in-app and keep the page put. The
+          // href stays for new-tab / copy-link affordances above.
+          if (openInPlace) e.preventDefault();
           onOpen?.();
-          // When `onOpen` is set it is for side effects only (close a popover,
-          // etc.) — navigation stays on the Link href.
+          // Without `openInPlace`, `onOpen` is a side effect only (close a
+          // popover, etc.) — navigation stays on the Link href.
         }}
         onDoubleClick={
           allowDoubleClick

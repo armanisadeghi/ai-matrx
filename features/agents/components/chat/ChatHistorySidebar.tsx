@@ -27,6 +27,12 @@ export interface ChatHistorySidebarProps {
   activeConversationId?: string | null;
   /** Called when a row is clicked. */
   onOpenConversation?: (conv: ConversationListItem) => void;
+  /**
+   * Open the clicked conversation IN PLACE via `onOpenConversation` instead of
+   * routing the page to `/chat/<id>`. For drawers / embedded panels that host
+   * the conversation themselves. Default false (the standalone /chat route).
+   */
+  openInPlace?: boolean;
   /** Optional header rendered above the list (toggle + picker + new chat). */
   headerSlot?: React.ReactNode;
   /** Optional surface rendered between header and list (e.g. pinned agents). */
@@ -52,6 +58,7 @@ export function ChatHistorySidebar({
   scopeId,
   activeConversationId,
   onOpenConversation,
+  openInPlace = false,
   headerSlot,
   topSlot,
   surfaceId = "chat",
@@ -68,6 +75,7 @@ export function ChatHistorySidebar({
       surfaceId={surfaceId}
       activeConversationId={activeConversationId}
       onOpenConversation={onOpenConversation}
+      openInPlace={openInPlace}
       headerSlot={headerSlot}
       topSlot={topSlot}
       excludeSourceFeatures={excludeSourceFeatures}

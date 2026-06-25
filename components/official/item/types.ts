@@ -244,6 +244,16 @@ export interface ItemRowProps {
   href?: string;
   /** Click mode — renders a <button> primary. Ignored while renaming. */
   onOpen?: () => void;
+  /**
+   * Only meaningful alongside `href`. By default a plain click navigates to
+   * `href` and `onOpen` runs as a side effect (close a popover, etc.). When
+   * `true`, a plain left-click instead calls `onOpen` and PREVENTS navigation —
+   * for self-contained surfaces (drawers, embedded panels) that open the target
+   * in place rather than routing the page away. The `href` is kept so
+   * modifier/middle-click still opens it in a new tab and "Copy link" still
+   * works. Default false.
+   */
+  openInPlace?: boolean;
   /** Kebab + right-click menu. Omit for menu-less rows. */
   menu?: ItemMenuConfigInput;
   /** Inline rename. Enables double-click + the `intent: "rename"` contract. */

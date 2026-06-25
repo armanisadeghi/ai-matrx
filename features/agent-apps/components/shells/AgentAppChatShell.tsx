@@ -272,6 +272,7 @@ function ChatShellLayout({
               scopeId={`agent-app:${appId}:${historyView}`}
               agentIds={agentIds}
               activeConversationId={activeConversationId}
+              openInPlace
               onOpenConversation={(conv) =>
                 void dispatch(
                   loadConversation({

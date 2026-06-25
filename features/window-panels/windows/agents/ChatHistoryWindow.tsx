@@ -175,6 +175,7 @@ function ChatHistoryListSidebarBound({ b }: { b: ChatHistoryBrowser }) {
       surfaceId="history-window"
       activeConversationId={b.selectedId}
       onOpenConversation={b.handleSelect}
+      openInPlace
       defaultGrouping={b.initialGroupBy}
       getConversationHref={b.getConversationHref}
       surfaceKey={SURFACE_KEY}

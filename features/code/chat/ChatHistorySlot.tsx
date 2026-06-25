@@ -160,6 +160,7 @@ export const ChatHistorySlot: React.FC<ChatHistorySlotProps> = ({
           agentIds={filteredAgentIds}
           activeConversationId={activeConversationId}
           onOpenConversation={openConversation}
+          openInPlace
           defaultGrouping={defaultGrouping}
           pageSize={pageSize}
           isFavorite={isFavorite}
