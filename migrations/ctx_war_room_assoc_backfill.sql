@@ -64,14 +64,30 @@ where a.target_type in ('thread','war_room')
            or (a.source_type = 'file' and w.entity_type = 'user_file'))
   );
 
--- 2) Membership edges: thread -> war_room (the mobility mechanism).
+-- 2) Membership edges: thread -> war_room (the mobility mechanism). LIVE tiles in
+--    LIVE rooms only — never seed an edge for a soft-deleted thread/room (that
+--    would surface a deleted thread as a live member once reads move onto the edge).
 insert into platform.associations (source_type, source_id, target_type, target_id, org_id, metadata, created_by)
 select 'thread', t.id, 'war_room', t.session_id, t.organization_id,
        jsonb_build_object('membership', true),
        coalesce(t.created_by, t.user_id)
 from public.ctx_war_room_tiles t
 where t.session_id is not null and t.organization_id is not null
+  and t.is_deleted = false
+  and exists (select 1 from public.ctx_war_room_sessions s
+              where s.id = t.session_id and s.is_deleted = false)
 on conflict (source_type, source_id, target_type, target_id) do nothing;
+
+-- 2b) Purge ORPHANED edges — any war-room edge (membership / content / scope)
+--     touching a soft-deleted or missing tile/room, in EITHER direction. The
+--     deployed app's softDeleteTile/softDeleteSession don't clean edges, so this
+--     self-heals on the pre-deploy re-run; post-cutover the frontend keeps it
+--     clean at delete time via assoc_remove_for_entity (assoc_remove_for_entity_rpc.sql).
+delete from platform.associations a
+where (a.source_type = 'thread'   and not exists (select 1 from public.ctx_war_room_tiles t    where t.id = a.source_id and t.is_deleted = false))
+   or (a.target_type = 'thread'   and not exists (select 1 from public.ctx_war_room_tiles t    where t.id = a.target_id and t.is_deleted = false))
+   or (a.source_type = 'war_room' and not exists (select 1 from public.ctx_war_room_sessions s where s.id = a.source_id and s.is_deleted = false))
+   or (a.target_type = 'war_room' and not exists (select 1 from public.ctx_war_room_sessions s where s.id = a.target_id and s.is_deleted = false));
 
 -- 3) Self-verify (whole migration rolls back on failure).
 do $$

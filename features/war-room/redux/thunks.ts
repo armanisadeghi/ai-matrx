@@ -250,6 +250,14 @@ export const deleteSession =
     dispatch(sessionRemoved(id));
     try {
       await service.softDeleteSession(id);
+      // Purge the room's association edges (its content + the membership edges of
+      // its threads + its scope edges) so none are orphaned — best-effort,
+      // loud-not-fatal (the room is already deleted).
+      void assoc
+        .purgeContainerEdges(roomRef(id))
+        .catch((edgeErr) =>
+          reportWarRoomError("deleteSession:purgeEdges", edgeErr, { toast: false }),
+        );
       toast.success("War Room deleted");
     } catch (err) {
       if (prior) dispatch(sessionUpserted(prior));
@@ -1022,6 +1030,13 @@ export const deleteTile =
     dispatch(tileRemoved({ id, sessionId }));
     try {
       await service.softDeleteTile(id);
+      // Purge the thread's association edges (membership + content + scopes) so
+      // none are orphaned — best-effort, loud-not-fatal (the tile is already gone).
+      void assoc
+        .purgeContainerEdges(threadRef(id))
+        .catch((edgeErr) =>
+          reportWarRoomError("deleteTile:purgeEdges", edgeErr, { toast: false }),
+        );
     } catch {
       toast.error("Couldn't remove the tile");
     }

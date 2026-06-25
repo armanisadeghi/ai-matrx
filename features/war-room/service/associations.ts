@@ -451,3 +451,20 @@ export async function moveThreadMembership(
   });
   if (isScopesRpcErr(added)) throw new WarRoomAssocError(added.error);
 }
+
+/**
+ * Purge EVERY association edge touching a container (both directions) — its
+ * content edges (entity → container, as target), its membership edge
+ * (thread → war_room, as source), and its reversed context-scope edges (as
+ * source). Call when a thread/room is soft-deleted so no edge is orphaned: a
+ * dangling `thread → war_room` membership edge would otherwise surface a deleted
+ * thread as a live member the moment room reads move off `session_id` onto the
+ * edge ("no edge = unassigned").
+ */
+export async function purgeContainerEdges(ref: ContainerRef): Promise<void> {
+  const res = await associationsService.removeForEntity(
+    containerTargetType(ref.type),
+    ref.id,
+  );
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+}

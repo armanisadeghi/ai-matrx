@@ -28090,6 +28090,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      assoc_remove_for_entity: {
+        Args: { p_id: string; p_type: string }
+        Returns: undefined
+      }
       assoc_set_targets: {
         Args: {
           p_org_id?: string

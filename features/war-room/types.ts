@@ -4,7 +4,7 @@
 // alias them directly (snake_case) rather than maintaining a parallel mapped
 // shape. See features/war-room/FEATURE.md.
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 // ── Raw DB row aliases ────────────────────────────────────────────────
 export type WarRoomSession =
@@ -21,37 +21,36 @@ export type WarRoomTileInsert =
 export type WarRoomTileUpdate =
   Database["public"]["Tables"]["ctx_war_room_tiles"]["Update"];
 
-export type WarRoomTileAudioSession =
-  Database["public"]["Tables"]["ctx_war_room_tile_audio_sessions"]["Row"];
-export type WarRoomTileAudioSessionInsert =
-  Database["public"]["Tables"]["ctx_war_room_tile_audio_sessions"]["Insert"];
+// ── Associations — the unified `platform.associations` model ───────────
+// War-room relationships are EDGES in `platform.associations`, reconstructed
+// into this shape by service/associations.ts. This is NOT a table row: the old
+// per-type link tables (ctx_war_room_tile_audio_sessions/_notes/_attachments)
+// and the transitional `ctx_war_room_assignments` table are being dropped. A
+// container (room = session, thread = tile) holds ANY resource type, M2M; the
+// Redux bucket `assignmentsByContainer` is keyed by container, and selectors +
+// reducers read exactly the fields below.
 
-export type WarRoomTileNote =
-  Database["public"]["Tables"]["ctx_war_room_tile_notes"]["Row"];
-export type WarRoomTileNoteInsert =
-  Database["public"]["Tables"]["ctx_war_room_tile_notes"]["Insert"];
-
-// Polymorphic attachment link (entity_type ∈ {'user_file','document'}). One row
-// per file/doc linked to a tile; the linked entity lives in cld_files /
-// udt_documents and is hydrated client-side for display.
-export type WarRoomTileAttachment =
-  Database["public"]["Tables"]["ctx_war_room_tile_attachments"]["Row"];
-export type WarRoomTileAttachmentInsert =
-  Database["public"]["Tables"]["ctx_war_room_tile_attachments"]["Insert"];
-
-/** The two entity kinds an attachment row can point at. */
-export type TileAttachmentEntityType = "user_file" | "document";
-
-// ── Associations (the polymorphic M2M model) ──────────────────────────
-// One table — ctx_war_room_assignments — replaces the tile FK columns
-// (task_id/note_id/project_id) AND the three link tables. A container (a room =
-// session, or a thread = tile) holds ANY resource type, M2M. Shaped like
-// ctx_scope_assignments so the platform-wide relationship refactor absorbs it.
-// See features/war-room/service/associations.ts + migrations/ctx_war_room_assignments.sql.
-export type WarRoomAssignment =
-  Database["public"]["Tables"]["ctx_war_room_assignments"]["Row"];
-export type WarRoomAssignmentInsert =
-  Database["public"]["Tables"]["ctx_war_room_assignments"]["Insert"];
+/** A war-room association, reconstructed from a `platform.associations` edge. */
+export interface WarRoomAssignment {
+  id: string;
+  /** The container vocabulary: 'room' | 'thread'. */
+  container_type: string;
+  container_id: string;
+  /** The held resource type (war-room vocabulary: 'note' | 'task' | 'project' |
+   *  'conversation' | 'studio_session' | 'user_file' | 'document'). */
+  entity_type: string;
+  entity_id: string;
+  /** Gallery order within its type — carried in the edge metadata. */
+  position: number | null;
+  /** The focused member of a single-active type — carried in the edge metadata. */
+  is_active: boolean | null;
+  label: string | null;
+  metadata: Json | null;
+  /** Not carried on the edge (the RPC owns created_by); present for shape parity, read nowhere. */
+  user_id: string | null;
+  created_by: string | null;
+  created_at: string | null;
+}
 
 /** A container that can hold resources: a whole room, or one thread (tile). */
 export type WarRoomContainerType = "room" | "thread";
