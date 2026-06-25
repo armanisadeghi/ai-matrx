@@ -364,16 +364,17 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
 
 async function handleRebuild(
   kind: DeriveKind,
-  run: (k: DeriveKind) => Promise<unknown>,
+  run: (k: DeriveKind, opts?: { reset?: boolean }) => Promise<unknown>,
 ) {
   const meta = KIND_META[kind];
   const ok = await confirm({
     title: `Rebuild ${meta.label.toLowerCase()}?`,
-    description:
-      "This replaces the existing output for this representation. The operation is idempotent.",
+    description: meta.costly
+      ? "This CLEARS the existing output and re-runs AI over the entire document — it re-spends Processing Units on every section. (If a run was interrupted, use Build instead: it resumes and only fills in what's missing, for free on the parts already done.)"
+      : "This clears and rebuilds the existing output. Idempotent.",
     confirmLabel: "Rebuild",
   });
-  if (ok) void run(kind);
+  if (ok) void run(kind, { reset: true });
 }
 
 // ---------------------------------------------------------------------------

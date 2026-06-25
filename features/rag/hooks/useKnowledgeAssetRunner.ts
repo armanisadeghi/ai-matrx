@@ -90,7 +90,7 @@ export interface UseKnowledgeAssetRunner {
   anyRunning: boolean;
   /** True while runAll() is walking the sequence. */
   buildingAll: boolean;
-  run: (kind: DeriveKind) => Promise<OpStatus>;
+  run: (kind: DeriveKind, opts?: { reset?: boolean }) => Promise<OpStatus>;
   runAll: () => Promise<void>;
   cancel: (kind: DeriveKind) => void;
   refresh: () => Promise<void>;
@@ -182,7 +182,10 @@ export function useKnowledgeAssetRunner(
   // ----- run one op ------------------------------------------------------
 
   const run = useCallback(
-    async (kind: DeriveKind): Promise<OpStatus> => {
+    async (
+      kind: DeriveKind,
+      opts: { reset?: boolean } = {},
+    ): Promise<OpStatus> => {
       if (!processedDocumentId) return "idle";
       // Guard: don't double-run the same op.
       if (abortMap.current.has(kind)) return "running";
@@ -211,6 +214,7 @@ export function useKnowledgeAssetRunner(
       try {
         for await (const ev of runDeriveStream(processedDocumentId, kind, {
           signal: ac.signal,
+          reset: opts.reset,
         })) {
           if (ac.signal.aborted && ev.event !== "derive.cancelled") break;
           switch (ev.event) {

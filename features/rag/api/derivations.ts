@@ -292,11 +292,15 @@ export type DeriveStreamEvent =
 export async function* runDeriveStream(
   processedDocumentId: string,
   kind: DeriveKind,
-  opts: { signal?: AbortSignal } = {},
+  opts: { signal?: AbortSignal; reset?: boolean } = {},
 ): AsyncGenerator<DeriveStreamEvent, void, void> {
-  const url = `${resolveBaseUrl()}/rag/library/${encodeURIComponent(
-    processedDocumentId,
-  )}/derive/${encodeURIComponent(kind)}`;
+  // reset=true forces a clean rebuild (clears the set, then rebuilds). Omitted
+  // (the default) RESUMES — already-done sections are skipped server-side, so a
+  // re-run after an interruption never re-pays for completed work.
+  const url =
+    `${resolveBaseUrl()}/rag/library/${encodeURIComponent(
+      processedDocumentId,
+    )}/derive/${encodeURIComponent(kind)}` + (opts.reset ? "?reset=true" : "");
 
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
   const response = await fetch(url, {
