@@ -41,6 +41,19 @@ Declared SurfaceValues live in `features/surfaces/manifests/` (one manifest per 
 
 ---
 
+## Inspecting the contract (admin) — the values inspector
+
+Right-click → Admin Tools → **Context Values** opens the `surfaceContextInspector`
+overlay (`features/overlays/components/SurfaceContextInspectorOverlay.tsx`): the
+surface's full declared contract (`getManifest().values`, each with its
+Always/Sometimes flag) laid against the LIVE resolved scope. Every declared key
+always shows; a value shows when the surface supplied one. A value the surface
+declared **Always** but failed to supply renders RED — the fastest way to catch a
+surface breaking its own manifest. Undeclared scope keys (present but not in the
+manifest, so not bindable by name) get their own section. This is the canonical
+way to verify a surface honors its value contract — available to any admin (no
+debug-mode toggle required).
+
 ## Public API — two wrappers, one shell
 
 Import the wrapper **statically** (it's the lightweight shell; no per-consumer `dynamic()` — that's v3's whole point):
@@ -68,7 +81,7 @@ The menu is a thin consumer of existing platform systems. **Do not recreate any 
 - **Compare** → `useOpenDiffViewerWindow` + `diffCompareSlice`.
 - **Quick Actions** → `useQuickActions` (existing overlays).
 - **Find/Replace** → `findReplace` overlay (callback-aware opener carries the target element + `onReplace`). **AI result display is the launcher's job** (`launchShortcut` `displayMode`) — there is no separate result overlay.
-- **Inspect Context (admin)** → `adminStateAnalyzer` overlay. Delete confirms via `confirm()` (`ConfirmDialogHost`), never a browser dialog.
+- **Context Values (admin)** → the `surfaceContextInspector` overlay (below). The raw Redux state analyzer (`adminStateAnalyzer`) is a separate debug-mode item. Delete confirms via `confirm()` (`ConfirmDialogHost`), never a browser dialog.
 
 ---
 
@@ -78,9 +91,29 @@ The unified-menu thunk (`fetchUnifiedMenu`) has a Redux `scopeLoaded` condition 
 
 ---
 
+## Default agents — honored on every surface
+
+Beyond a surface's own bound agents, the menu always surfaces the platform
+**default-contract** agents (`agx_agent_surface` rows on `matrx-default/*`),
+deduped against the surface's own, as one "Default agents" group. This honors a
+user's (or the system's) defaults everywhere — including bare/undeclared
+surfaces — so generic agents (clean-up, "help with this", summarize) need no
+per-surface wiring. Qualification (`qualifyingDefaultSurfaces`):
+
+- `matrx-default/default` (5-value contract) — every surface.
+- `matrx-default/basic-content-display` (2-value) — every surface.
+- `matrx-default/basic-editor` (4-value) — editable surfaces only.
+
+The merge + dedupe live in `surface-bound-agents.service.ts` (one query, cached),
+so EVERY consumer — the right-click menu AND `ProTextarea`'s "…" menu — inherits
+defaults identically; a surface-bound agent is never shown twice. The "Agents"
+submenu renders even with no `surfaceName` (defaults still apply).
+
 ## v1 features restored
 
 The hard-won pieces are carried over (and improved): the floating selection icon (`components/FloatingSelectionIcon.tsx`, enterprise `TextSelect` icon), the selection preview bar (generalized — shows the resolved **content** when there's no manual selection, so the user always sees what the menu will act on), and the macOS-safe selection capture/restore (`utils/selection-tracking.ts`).
+
+**Undo/Redo** light up on any editable surface even with no history wiring: when the surface supplies no `onUndo`/`onRedo`, the menu falls back to the field's native browser undo stack (`document.execCommand` — the only programmatic trigger for a textarea's built-in history). A surface that owns a richer history still passes `onUndo`/`onRedo`/`canUndo`/`canRedo` to override.
 
 ---
 
@@ -111,4 +144,6 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 - `2026-06-24` — v3 built. Inert shell + lazy MenuContent + value-resolution core with the no-fake-menu guards (content self-resolution + loud dev diagnostics) and the always-present baseline + surface-value passthrough contract. Reuses rich-document (Copy-as/Export/Convert), context-assignment (Attach To), sharing (Share), the unified-menu + bound-agents fetch (deduped — bound-agents service gained a cache), Compare, Quick Actions. Registered `findReplace` + `contextAssignment` overlays; AI result display left to the launcher (no redundant overlay). Restored the floating icon (TextSelect), generalized selection/content preview bar, and macOS-safe selection capture. v2 frozen.
 - `2026-06-24` — Demo is the rollout reference: `/demos/context-menu/canonical` rebuilt all-v3 (bare / editable / read-only display + agents / notes / code surface wirings); v2 snapshot preserved at `/demos/context-menu/canonical-v2`. Agent + Code demo panels migrated to v3. Renamed the rich-document download action to **"Download as Markdown"** (`FileDown` icon) — it always blobs `.md`. Print already correct via reuse (`printMarkdownContent`, no heavy-dep import). Open: dual-destination save (local + cloud `SaveAsDialog`), HTML/CSV/Excel conversion modules, broader capability pull-in from the assistant action menu.
 - `2026-06-24` — Production rollout COMPLETE + `context-menu-v3` skill added. All ~20 v2 render-consumers migrated to Editable/NonEditableContextMenu (incl. `AgentConversationDisplay` replacing `MarkdownContextMenuProvider` with inlined v3 + preserved `resolveContextOnOpen`, plus 3 audit-missed consumers found by grep verification: research init/synthesis, files preview). v2 menu component has no production consumers. Remaining v2-deletion blockers documented in the migration section.
+- `2026-06-25` — Added the **Surface Context Values inspector** (`surfaceContextInspector` overlay): admin "Context Values" lays the surface's declared contract (Always/Sometimes) against the live resolved scope and flags any "Always" value the surface failed to supply (loud red). "Inspect Context" previously opened the raw Redux state analyzer — that's now a separate "Redux State" debug item; the values inspector is what verifies a surface honors its contract.
+- `2026-06-25` — Default-contract agents now honored on EVERY surface (incl. bare/undeclared): the menu merges `matrx-default/{default,basic-content-display,basic-editor}` bindings — deduped — into a "Default agents" group (`surface-bound-agents.service.ts`, shared with `ProTextarea`). The agents submenu renders without a `surfaceName` (was hidden) and is relabeled "Agents". Added a native Undo/Redo fallback on editable surfaces so basic editors offer undo with no surface wiring.
 - `2026-06-25` — Killed a cross-menu crash class. "Inspect Context" rendered the menu's `context` scope value raw, so any surface whose `context` is a structured object (code editor: `{language, filePath, lineCount, …}`) threw *"Objects are not valid as a React child"* via `DialogContent`. Fixed at the source — `components/debug/ContextDebugModal.tsx` now JSON-stringifies non-string standard-scope values (matching its Custom Variables branch) — and hardened the shared a11y primitive `lib/react/treeContainsComponent.ts` to SKIP a non-renderable child + scream in dev instead of throwing a misleading trace (it had been the deceptive crash site for every dialog). v3 was never affected: v3's "Inspect Context" opens the global state viewer, not this modal. The crash only appears on the still-live **v2** menu (footer `C1V1`) — a stale checkout tell.

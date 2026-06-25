@@ -306,7 +306,10 @@ export const ProTextarea = React.forwardRef<
       sections: boundAgentSections,
       loading: boundAgentsLoading,
       refresh: refreshBoundAgents,
-    } = useSurfaceBoundAgents(boundAgentsEnabled ? surfaceName : null);
+    } = useSurfaceBoundAgents(boundAgentsEnabled ? surfaceName : null, {
+      isEditable: true,
+      includeDefaults: boundAgentsEnabled,
+    });
     const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
     const cleanupSurfaceAgentId =
       cleanupSurfaceRoles.roles.clean?.effectiveAgentId ?? null;

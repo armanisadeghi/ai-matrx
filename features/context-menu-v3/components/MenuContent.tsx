@@ -92,6 +92,7 @@ import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
 import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
+import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
 import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
@@ -269,7 +270,7 @@ export default function MenuContent(props: MenuContentProps) {
     sections: boundAgentSections,
     loading: boundAgentsLoading,
     refresh: refreshBoundAgents,
-  } = useSurfaceBoundAgents(surfaceName);
+  } = useSurfaceBoundAgents(surfaceName, { isEditable });
 
   const { launchShortcut, launchAgent } = useAgentLauncher();
   const {
@@ -285,6 +286,7 @@ export default function MenuContent(props: MenuContentProps) {
   const openContextAssignment = useOpenContextAssignment();
   const openShareModalWindow = useOpenShareModalWindow();
   const openStateViewer = useOpenStateViewerOverlay();
+  const openSurfaceInspector = useOpenSurfaceContextInspector();
   const entity = props.entity;
 
   const hasCompareBase = useAppSelector(selectHasCompareBase);
@@ -300,7 +302,9 @@ export default function MenuContent(props: MenuContentProps) {
   // never refetches. A double fetch is structurally impossible.
   useEffect(() => {
     void refresh();
-    if (surfaceName) void refreshBoundAgents();
+    // Default-contract agents (matrx-default/*) apply even with no surfaceName,
+    // so always fetch — a bare/undeclared surface still gets its default agents.
+    void refreshBoundAgents();
   }, []);
 
   // Assemble the scope the menu acts on. Stable for this open (the shell
@@ -456,6 +460,32 @@ export default function MenuContent(props: MenuContentProps) {
       });
     }
   };
+
+  // Native per-field Undo/Redo. When the surface provides no richer history
+  // (`onUndo`/`onRedo`), an editable field still gets the browser's built-in
+  // undo stack — "offer undo" without standing up a history system. There is no
+  // non-deprecated API to trigger a textarea's native undo, so `execCommand` is
+  // the intentional (and only) mechanism here.
+  const editableElement: HTMLTextAreaElement | HTMLInputElement | null = (() => {
+    const fromRange =
+      selectionRange?.type === "editable" ? selectionRange.element : null;
+    const el = fromRange ?? getTextarea?.() ?? null;
+    return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
+      ? el
+      : null;
+  })();
+  const canNativeUndo = Boolean(isEditable && editableElement);
+  const runNativeEdit = (command: "undo" | "redo") => {
+    if (!editableElement) return;
+    editableElement.focus();
+    try {
+      document.execCommand(command);
+    } catch (err) {
+      console.error(`[ContextMenuV3] native ${command} failed`, err);
+    }
+  };
+  const handleUndo = () => (onUndo ? onUndo() : runNativeEdit("undo"));
+  const handleRedo = () => (onRedo ? onRedo() : runNativeEdit("redo"));
 
   // Compare — reuses the existing diff-viewer window + compare-base slice.
   const compareContent = (): { content: string; label: string } => {
@@ -643,8 +673,18 @@ export default function MenuContent(props: MenuContentProps) {
     });
   };
 
-  // Inspect Context (admin) → the canonical state inspector overlay.
-  const handleInspect = () => {
+  // Inspect the live surface value contract (admin) — the surface's declared
+  // SurfaceValues laid against the resolved scope, with Always/Sometimes flags
+  // and loud contract-violation highlighting. This is the surface-debugging
+  // tool; the raw Redux state analyzer below is a separate thing.
+  const handleInspectValues = () => {
+    openSurfaceInspector({
+      surfaceName: surfaceName ?? null,
+      scope,
+      isEditable: Boolean(isEditable),
+    });
+  };
+  const handleInspectState = () => {
     openStateViewer();
   };
 
@@ -918,7 +958,7 @@ export default function MenuContent(props: MenuContentProps) {
       <Separator />
 
       {/* History (Undo / Redo / View History / Compare) */}
-      <Item onSelect={() => onUndo?.()} disabled={!onUndo || !canUndo}>
+      <Item onSelect={handleUndo} disabled={onUndo ? !canUndo : !canNativeUndo}>
         <Undo2 className="h-4 w-4 mr-2 text-sky-500" />
         Undo
         {undoHint && (
@@ -927,7 +967,7 @@ export default function MenuContent(props: MenuContentProps) {
           </span>
         )}
       </Item>
-      <Item onSelect={() => onRedo?.()} disabled={!onRedo || !canRedo}>
+      <Item onSelect={handleRedo} disabled={onRedo ? !canRedo : !canNativeUndo}>
         <Redo2 className="h-4 w-4 mr-2 text-sky-500" />
         Redo
         {redoHint && (
@@ -1020,16 +1060,15 @@ export default function MenuContent(props: MenuContentProps) {
 
       {/* Dynamic, data-driven placements (from the single fetch). */}
       {renderPlacementSubmenu(PLACEMENT_TYPES.AI_ACTION)}
-      {Boolean(surfaceName) &&
-        resolvedPlacementMode["bound-agent"] !== "hide" && (
-          <BoundAgentsMenuSection
-            variant={variant}
-            loading={boundAgentsLoading}
-            sections={boundAgentSections}
-            onSelect={(entry) => void handleBoundAgentExecute(entry)}
-            disabled={resolvedPlacementMode["bound-agent"] === "disable"}
-          />
-        )}
+      {resolvedPlacementMode["bound-agent"] !== "hide" && (
+        <BoundAgentsMenuSection
+          variant={variant}
+          loading={boundAgentsLoading}
+          sections={boundAgentSections}
+          onSelect={(entry) => void handleBoundAgentExecute(entry)}
+          disabled={resolvedPlacementMode["bound-agent"] === "disable"}
+        />
+      )}
       {renderPlacementSubmenu(PLACEMENT_TYPES.CONTENT_BLOCK)}
       {renderPlacementSubmenu(PLACEMENT_TYPES.USER_TOOL)}
       {renderPlacementSubmenu(PLACEMENT_TYPES.ORGANIZATION_TOOL)}
@@ -1119,13 +1158,20 @@ export default function MenuContent(props: MenuContentProps) {
                 )}
                 {isDebugMode ? "Disable" : "Enable"} Debug Mode
               </Item>
+              <Item
+                onSelect={handleInspectValues}
+                className="text-amber-600 dark:text-amber-400"
+              >
+                <Bug className="h-4 w-4 mr-2" />
+                Context Values
+              </Item>
               {isDebugMode && (
                 <Item
-                  onSelect={handleInspect}
+                  onSelect={handleInspectState}
                   className="text-amber-600 dark:text-amber-400"
                 >
-                  <Bug className="h-4 w-4 mr-2" />
-                  Inspect Context
+                  <Database className="h-4 w-4 mr-2" />
+                  Redux State
                 </Item>
               )}
               <Separator />
