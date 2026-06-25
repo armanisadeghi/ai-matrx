@@ -30,6 +30,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   FloatingSelectionIcon,
   shouldRenderFloatingIcon,
@@ -76,6 +78,13 @@ const MenuContent = dynamic(() => import("./components/MenuContent"), {
   loading: () => <MenuContentSkeleton />,
 });
 
+// The mobile renderer — a 70dvh bottom-sheet drill-down. Same lazy boundary as
+// MenuContent; only one of the two is rendered (the shell picks by viewport).
+const MobileMenuContent = dynamic(
+  () => import("./components/MobileMenuContent"),
+  { ssr: false, loading: () => <MenuContentSkeleton /> },
+);
+
 export function ContextMenuV3({
   children,
   sourceFeature,
@@ -121,10 +130,20 @@ export function ContextMenuV3({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [showFloatingIcon, setShowFloatingIcon] = useState(false);
+  const isMobile = useIsMobile();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
+  // Mobile long-press → bottom sheet (no right-click on touch).
+  const longPressTimer = useRef<number | null>(null);
+  const touchStart = useRef<{
+    x: number;
+    y: number;
+    target: HTMLElement;
+    container: HTMLElement;
+  } | null>(null);
   // Per-invocation context resolved by `resolveContextOnOpen` (single-instance
   // delegation). State, not a ref — it's written only at right-click (which
   // re-renders to open the menu anyway), and the lazy MenuContent must read it
@@ -232,8 +251,9 @@ export function ContextMenuV3({
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
+  // Shared capture — populates selection/content state from a right-click target
+  // OR a long-press target (mobile). Does not open anything; the caller does.
+  const captureContext = (target: HTMLElement, containerEl: HTMLElement) => {
     let captured = capturedSelection.current;
     if (!captured || !captured.text) {
       captured =
@@ -262,9 +282,8 @@ export function ContextMenuV3({
       });
       // Fallback content = the whole field, so Copy/AI work even with no selection.
       setFallbackContent(target.value ?? "");
-      setMenuOpen(true);
     } else {
-      let containerElement = e.currentTarget as HTMLElement;
+      let containerElement = containerEl;
       if (!containerElement.hasAttribute("data-radix-context-menu-trigger")) {
         const trigger = containerElement.querySelector(
           "[data-radix-context-menu-trigger]",
@@ -283,8 +302,12 @@ export function ContextMenuV3({
       // Fallback content = the right-clicked subtree's text — the net that
       // makes a read-only surface copyable with zero wiring (kills "fake menu").
       setFallbackContent(extractElementText(containerElement));
-      setMenuOpen(true);
     }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    captureContext(e.target as HTMLElement, e.currentTarget as HTMLElement);
+    setMenuOpen(true);
   };
 
   const handleMenuClose = () => {
@@ -338,6 +361,75 @@ export function ContextMenuV3({
     setDropdownOpen(true);
   };
 
+  // ── Mobile triggers (no right-click on touch) ─────────────────────────────
+  const clearLongPress = () => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (!t) return;
+    touchStart.current = {
+      x: t.clientX,
+      y: t.clientY,
+      target: e.target as HTMLElement,
+      container: e.currentTarget as HTMLElement,
+    };
+    clearLongPress();
+    longPressTimer.current = window.setTimeout(() => {
+      const info = touchStart.current;
+      if (!info) return;
+      captureContext(info.target, info.container);
+      setSheetOpen(true);
+    }, 480);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const info = touchStart.current;
+    const t = e.touches[0];
+    if (!info || !t) return;
+    // A drag means the user is scrolling or selecting — not a long-press.
+    if (Math.abs(t.clientX - info.x) > 10 || Math.abs(t.clientY - info.y) > 10)
+      clearLongPress();
+  };
+  const handleTouchEnd = () => clearLongPress();
+
+  // Floating selection icon → bottom sheet (the selection-driven mobile path).
+  const handleOpenFloatingMobile = (
+    e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectionLocked.current = true;
+    const sel = window.getSelection();
+    const container =
+      sel && sel.rangeCount > 0
+        ? (sel.getRangeAt(0).commonAncestorContainer.parentElement ?? null)
+        : null;
+    setSelectedText(sel?.toString().trim() || selectedText);
+    setSelectionRange({
+      type: "non-editable",
+      element: null,
+      start: 0,
+      end: 0,
+      range: sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null,
+      containerElement: container,
+    });
+    setFallbackContent(extractElementText(container));
+    setSheetOpen(true);
+  };
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open) {
+      selectionLocked.current = false;
+      capturedSelection.current = null;
+      setShowFloatingIcon(false);
+      setSelectionRect(null);
+    }
+  };
+
   // ── The single prop bag handed to the lazy MenuContent ───────────────────
   const menuContentProps: Omit<MenuContentProps, "variant"> = {
     sourceFeature,
@@ -384,6 +476,63 @@ export function ContextMenuV3({
       {menuVersion}
     </div>
   );
+
+  // ── Mobile: a 70dvh bottom-sheet drill-down (long-press / floating icon) ──
+  if (isMobile) {
+    return (
+      <>
+        {/* display:contents → no layout box, but still receives bubbled touch
+            events from the wrapped children (preserves the surface's layout). */}
+        <div
+          style={{ display: "contents" }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            captureContext(
+              e.target as HTMLElement,
+              e.currentTarget as HTMLElement,
+            );
+            setSheetOpen(true);
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+        >
+          {children}
+        </div>
+
+        {enableFloatingIcon &&
+          shouldRenderFloatingIcon(
+            selectionRect,
+            showFloatingIcon,
+            sheetOpen,
+          ) && (
+            <FloatingSelectionIcon
+              selectionRect={selectionRect}
+              visible={showFloatingIcon}
+              dropdownOpen={sheetOpen}
+              onOpen={handleOpenFloatingMobile}
+              onDismiss={() => setShowFloatingIcon(false)}
+            />
+          )}
+
+        <Drawer open={sheetOpen} onOpenChange={handleSheetOpenChange}>
+          <DrawerContent className="flex h-[70dvh] flex-col p-0">
+            <DrawerTitle className="sr-only">Context menu</DrawerTitle>
+            {sheetOpen && (
+              <div className="min-h-0 flex-1">
+                <MobileMenuContent
+                  {...menuContentProps}
+                  onClose={() => setSheetOpen(false)}
+                />
+              </div>
+            )}
+            {footer}
+          </DrawerContent>
+        </Drawer>
+      </>
+    );
+  }
 
   return (
     <>
