@@ -33,7 +33,7 @@ function orderedGroups(
     );
 }
 
-export function PicklistInline({ entry, onOpenOverlay }: ToolRendererProps) {
+export function PicklistInline({ entry, onOpenOverlay , expanded, onToggleExpanded }: ToolRendererProps) {
   const summary = useMemo(() => parsePicklist(entry), [entry]);
   const listId = summary.listId;
   const { list, loading } = usePicklistDetail(listId);
@@ -79,6 +79,8 @@ export function PicklistInline({ entry, onOpenOverlay }: ToolRendererProps) {
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={ListChecks}
       accent="violet"
       title={name}

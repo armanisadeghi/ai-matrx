@@ -16,6 +16,8 @@ export function WorkbookInline({
   entry,
   onOpenWindowPanel,
   onOpenOverlay,
+  expanded,
+  onToggleExpanded,
 }: ToolRendererProps) {
   const wb = useMemo(() => parseWorkbook(entry), [entry]);
   if (!wb.id && !wb.name) return null;
@@ -47,6 +49,8 @@ export function WorkbookInline({
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={Sheet}
       accent="green"
       title={name}

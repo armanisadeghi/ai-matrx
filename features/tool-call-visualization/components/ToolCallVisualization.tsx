@@ -40,6 +40,7 @@ import {
 } from "../registry/registry";
 import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
@@ -67,6 +68,9 @@ export interface ToolCallVisualizationProps {
 }
 
 // ─── Shell implementation ─────────────────────────────────────────────────────
+
+/** Fallback when there's no live request to check latest-activity against. */
+const SELECT_LATEST_TRUE = () => true;
 
 const ToolCallVisualizationInner: React.FC<{
   entries: ToolLifecycleEntry[];
@@ -174,6 +178,19 @@ const ToolCallVisualizationInner: React.FC<{
 
   const isExpanded = userChoice ?? autoExpanded;
   const toggleExpand = () => setUserChoice(!isExpanded);
+
+  // Card-chrome collapse: a card OPENS the moment it completes (it's the latest
+  // activity in the turn) and auto-collapses the instant the next thing starts
+  // (it's no longer the latest). A user click overrides and sticks. A
+  // persisted/reloaded card mounts collapsed (it's old). No 3s timer — the card
+  // tracks real stream position, not a clock.
+  const isLatest = useAppSelector(
+    headerTool && requestId
+      ? selectIsLatestToolActivity(requestId, headerTool.callId)
+      : SELECT_LATEST_TRUE,
+  );
+  const cardOpen = userChoice ?? (isPersisted ? false : isLatest);
+  const toggleCard = () => setUserChoice(!cardOpen);
 
   // Mount the body once it has EVER been open, so the collapse can animate and a
   // live renderer keeps its state. A persisted/never-opened tool never mounts its
@@ -369,6 +386,8 @@ const ToolCallVisualizationInner: React.FC<{
           isPersisted,
           conversationId,
           requestId,
+          expanded: cardOpen,
+          onToggleExpanded: toggleCard,
         })
       ) : (
         <button

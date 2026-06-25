@@ -20,6 +20,8 @@ export function DocumentInline({
   entry,
   onOpenWindowPanel,
   onOpenOverlay,
+  expanded,
+  onToggleExpanded,
 }: ToolRendererProps) {
   const doc = useMemo(() => parseDocument(entry), [entry]);
   if (!doc.id && !doc.text) return null;
@@ -46,6 +48,8 @@ export function DocumentInline({
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={FileText}
       accent="slate"
       title={title}

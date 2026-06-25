@@ -21,7 +21,7 @@ function statusKind(status: string | null | undefined): "done" | "doing" | "open
   return "open";
 }
 
-export function TaskInline({ entry, onOpenOverlay }: ToolRendererProps) {
+export function TaskInline({ entry, onOpenOverlay , expanded, onToggleExpanded }: ToolRendererProps) {
   const parsed = useMemo(() => parseSingleTask(entry), [entry]);
   const taskId = parsed.id;
   const { task } = useEnsureTaskLoaded(taskId ?? "");
@@ -61,6 +61,8 @@ export function TaskInline({ entry, onOpenOverlay }: ToolRendererProps) {
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={SquareCheckBig}
       accent={kind === "done" ? "green" : "blue"}
       title={title}

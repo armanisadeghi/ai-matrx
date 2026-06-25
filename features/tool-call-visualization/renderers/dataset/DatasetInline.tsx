@@ -17,6 +17,8 @@ export function DatasetInline({
   entry,
   onOpenWindowPanel,
   onOpenOverlay,
+  expanded,
+  onToggleExpanded,
 }: ToolRendererProps) {
   const ds = useMemo(() => parseDataset(entry), [entry]);
   if (!ds.id && !ds.name) return null;
@@ -49,6 +51,8 @@ export function DatasetInline({
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={Table2}
       accent="cyan"
       title={name}

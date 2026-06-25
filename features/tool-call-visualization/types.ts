@@ -91,6 +91,16 @@ export interface ToolRendererProps {
    * renderers fall back to `entry.status`.
    */
   requestId?: string;
+
+  /**
+   * Card-chrome only. The shell's collapse state for the card body + a toggle.
+   * The shell opens the card on completion and auto-collapses it when the next
+   * thing in the turn starts (it's no longer the latest activity); the user can
+   * click the header to override. `EntityCard` consumes these; line-chrome
+   * renderers ignore them.
+   */
+  expanded?: boolean;
+  onToggleExpanded?: () => void;
 }
 
 /**

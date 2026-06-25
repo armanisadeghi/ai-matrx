@@ -15,7 +15,7 @@ import { EntityCard, type EntityAction } from "../_shared-entity/EntityCard";
  */
 const MAX_INLINE = 8;
 
-export function DictionaryInline({ entry, onOpenOverlay }: ToolRendererProps) {
+export function DictionaryInline({ entry, onOpenOverlay , expanded, onToggleExpanded }: ToolRendererProps) {
   const { entries, level } = useMemo(() => parseDictionary(entry), [entry]);
   if (!entries.length) return null;
 
@@ -36,6 +36,8 @@ export function DictionaryInline({ entry, onOpenOverlay }: ToolRendererProps) {
 
   return (
     <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
       icon={BookText}
       accent="amber"
       title="Dictionary"
