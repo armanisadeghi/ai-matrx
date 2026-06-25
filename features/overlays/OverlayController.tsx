@@ -510,6 +510,10 @@ const FindReplaceOverlay = lazyOverlay(
   () => import("@/features/overlays/components/FindReplaceOverlay"),
   { ssr: false },
 );
+const SurfaceContextInspectorOverlay = lazyOverlay(
+  () => import("@/features/overlays/components/SurfaceContextInspectorOverlay"),
+  { ssr: false },
+);
 const ContextAssignmentWindow = lazyOverlay(
   () =>
     import(
@@ -872,6 +876,9 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
     findReplace: useAppSelector((s) => selectIsOverlayOpen(s, "findReplace")),
+    surfaceContextInspector: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "surfaceContextInspector"),
+    ),
     itemDetailWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "itemDetailWindow"),
     ),
@@ -1108,6 +1115,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     findReplace: useAppSelector((s) =>
       selectOverlayData(s, "findReplace"),
+    ) as Record<string, unknown> | null,
+    surfaceContextInspector: useAppSelector((s) =>
+      selectOverlayData(s, "surfaceContextInspector"),
     ) as Record<string, unknown> | null,
     itemDetailWindow: useAppSelector((s) =>
       selectOverlayData(s, "itemDetailWindow"),
@@ -4096,6 +4106,35 @@ export default function OverlayController() {
                 ? data.callbackGroupId
                 : null
             }
+          />
+        );
+      })()}
+
+      {/* surfaceContextInspector */}
+      {(() => {
+        const isOpen = isOpenById.surfaceContextInspector;
+        const data = dataById.surfaceContextInspector as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <SurfaceContextInspectorOverlay
+            isOpen
+            onClose={() =>
+              dispatch(
+                closeOverlay({ overlayId: "surfaceContextInspector" }),
+              )
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string" ? data.surfaceName : null
+            }
+            scope={
+              data?.scope && typeof data.scope === "object"
+                ? (data.scope as Record<string, unknown>)
+                : {}
+            }
+            isEditable={data?.isEditable === true}
           />
         );
       })()}

@@ -565,6 +565,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  surfaceContextInspector: {
+    label: "Surface Context Values",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   streamDebug: {
     label: "Stream Debug",
     instanceMode: "singleton",

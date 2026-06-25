@@ -92,6 +92,7 @@ import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
 import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
+import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
 import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
@@ -285,6 +286,7 @@ export default function MenuContent(props: MenuContentProps) {
   const openContextAssignment = useOpenContextAssignment();
   const openShareModalWindow = useOpenShareModalWindow();
   const openStateViewer = useOpenStateViewerOverlay();
+  const openSurfaceInspector = useOpenSurfaceContextInspector();
   const entity = props.entity;
 
   const hasCompareBase = useAppSelector(selectHasCompareBase);
@@ -671,8 +673,18 @@ export default function MenuContent(props: MenuContentProps) {
     });
   };
 
-  // Inspect Context (admin) → the canonical state inspector overlay.
-  const handleInspect = () => {
+  // Inspect the live surface value contract (admin) — the surface's declared
+  // SurfaceValues laid against the resolved scope, with Always/Sometimes flags
+  // and loud contract-violation highlighting. This is the surface-debugging
+  // tool; the raw Redux state analyzer below is a separate thing.
+  const handleInspectValues = () => {
+    openSurfaceInspector({
+      surfaceName: surfaceName ?? null,
+      scope,
+      isEditable: Boolean(isEditable),
+    });
+  };
+  const handleInspectState = () => {
     openStateViewer();
   };
 
@@ -1146,13 +1158,20 @@ export default function MenuContent(props: MenuContentProps) {
                 )}
                 {isDebugMode ? "Disable" : "Enable"} Debug Mode
               </Item>
+              <Item
+                onSelect={handleInspectValues}
+                className="text-amber-600 dark:text-amber-400"
+              >
+                <Bug className="h-4 w-4 mr-2" />
+                Context Values
+              </Item>
               {isDebugMode && (
                 <Item
-                  onSelect={handleInspect}
+                  onSelect={handleInspectState}
                   className="text-amber-600 dark:text-amber-400"
                 >
-                  <Bug className="h-4 w-4 mr-2" />
-                  Inspect Context
+                  <Database className="h-4 w-4 mr-2" />
+                  Redux State
                 </Item>
               )}
               <Separator />
