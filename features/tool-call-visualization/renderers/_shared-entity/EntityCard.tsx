@@ -129,7 +129,7 @@ export function EntityCard({
                     e.stopPropagation();
                     hoverAct.onSelect?.();
                   }}
-                  className="absolute inset-0 flex w-full items-center gap-1 truncate text-left font-medium text-primary opacity-0 transition-opacity hover:underline group-hover/eh:opacity-100"
+                  className="absolute inset-0 flex w-full items-center gap-1 truncate text-left font-medium text-primary opacity-0 transition-opacity pointer-events-none hover:underline group-hover/eh:pointer-events-auto group-hover/eh:opacity-100"
                 >
                   {hoverAct.icon ? <hoverAct.icon className="h-3 w-3 shrink-0" /> : null}
                   <span className="truncate">{hoverAct.label}</span>
