@@ -13,7 +13,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 | Public episode/show | `/podcast/[slug]` (slug or UUID) | `app/(core)/podcast/[slug]/page.tsx` → `features/podcasts/components/player/{PodcastEpisodePage,PodcastShowPage}.tsx` |
 | Studio dashboard | `/podcast/studio` | `features/podcasts/studio/components/StudioDashboard.tsx` |
 | Create | `/podcast/studio/create` | `CreateView.tsx` → `generator/components/GeneratorForm.tsx` |
-| Entryway prefill | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/matrx-entry-demo`; pre-fills the source topic, format, and selected agent profile note before run creation |
+| Entryway prefill | `/podcast/studio/create?topic=...&format=...&agent=...` | Used by `/demos/matrx-entry`; pre-fills the source topic, format, and selected agent profile note before run creation |
 | Live run | `/podcast/studio/run/[id]` | `StudioRunView.tsx` → `studio/runs/useStudioRun.ts` |
 | **Manage show (owner)** | `/podcast/studio/show/[showId]` | `studio/components/ShowManageClient.tsx` — owner-facing show settings: cover/title/description/author, RSS distribution (`rss_settings`), feed URL + submit helpers, episodes list |
 | **Upload episode (owner)** | dialog (Studio dashboard + manage page) | `studio/components/UploadEpisodeDialog.tsx` — non-AI "upload your own audio/video" episode creation via `useFileUpload` |
@@ -87,7 +87,7 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
-- 2026-06-24 — **Matrx entryway prefill.** `/podcast/studio/create` now accepts `topic`, `format`, and `agent` query params from the new `/matrx-entry-demo` route. `CreateView` validates the format param against `PodcastFormat`, and `GeneratorForm` seeds the topic textarea, selected format, and advanced agent-profile note so submit still uses the existing `pc_studio_runs` creation + live run handoff.
+- 2026-06-24 — **Matrx entryway prefill.** `/podcast/studio/create` now accepts `topic`, `format`, and `agent` query params from the new `/demos/matrx-entry` route. `CreateView` validates the format param against `PodcastFormat`, and `GeneratorForm` seeds the topic textarea, selected format, and advanced agent-profile note so submit still uses the existing `pc_studio_runs` creation + live run handoff.
 - 2026-06-17 — **Live voice catalog (Supabase `public.voices`) + Run Truth inspector.**
   Voices now come from one Supabase table (read directly, RLS-scoped) with public
   CDN `sample_url`s — `generator/voiceCatalog.ts` (`fetchVoices` + cache) +

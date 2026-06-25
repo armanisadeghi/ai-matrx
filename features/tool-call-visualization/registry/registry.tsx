@@ -1,12 +1,42 @@
 "use client";
 
 import React from "react";
-import { CheckCircle, AlertTriangle } from "lucide-react";
+import {
+  CheckCircle,
+  AlertTriangle,
+  ListChecks,
+  List,
+  SquareCheckBig,
+  ListTodo,
+  FileText,
+  Table2,
+  Sheet,
+  BookText,
+  NotebookPen,
+  Globe,
+  Telescope,
+  Newspaper,
+  Search,
+  Database,
+  Brain,
+  Layers,
+  Gauge,
+  TrendingUp,
+  SquareTerminal,
+  Disc3,
+  Folder,
+  MapPin,
+  LayoutGrid,
+  MousePointerClick,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
 
 import type {
+  ToolAccent,
   ToolOverlayTabSpec,
   ToolPhaseLabels,
   ToolRegistry,
@@ -1183,6 +1213,89 @@ export function getToolDisplayMode(
   if (dbMode) return dbMode;
   if (RESULT_IS_PURPOSE_TOOLS.has(toolName)) return "stay-open";
   return "auto";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tool glyphs — a unique GLOSSY icon + accent per tool (or tool family), so the
+// folded line and entity cards read like app icons, not flat line icons.
+// Resolution: registry entry icon/accent → this map → family prefix → default.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ToolGlyphSpec {
+  icon: LucideIcon;
+  accent: ToolAccent;
+}
+
+const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
+  // entity tools
+  picklist: { icon: ListChecks, accent: "violet" },
+  get_user_lists: { icon: List, accent: "violet" },
+  task: { icon: SquareCheckBig, accent: "blue" },
+  tasks: { icon: ListTodo, accent: "blue" },
+  user_todos: { icon: ListTodo, accent: "blue" },
+  update_plan: { icon: ListTodo, accent: "primary" },
+  document: { icon: FileText, accent: "slate" },
+  dataset: { icon: Table2, accent: "cyan" },
+  usertable_create: { icon: Table2, accent: "cyan" },
+  workbook: { icon: Sheet, accent: "green" },
+  dictionary: { icon: BookText, accent: "amber" },
+  note: { icon: NotebookPen, accent: "amber" },
+  // web / search / research
+  web: { icon: Globe, accent: "blue" },
+  web_search: { icon: Globe, accent: "blue" },
+  web_search_v1: { icon: Globe, accent: "blue" },
+  core_web_search: { icon: Globe, accent: "blue" },
+  web_read: { icon: FileText, accent: "blue" },
+  fetch_url_as_markdown: { icon: Globe, accent: "blue" },
+  research_web: { icon: Telescope, accent: "violet" },
+  news_get_headlines: { icon: Newspaper, accent: "rose" },
+  rag_search: { icon: Search, accent: "cyan" },
+  // data / sql / ctx / memory
+  sql: { icon: Database, accent: "green" },
+  db_query: { icon: Database, accent: "green" },
+  db_schema: { icon: Database, accent: "green" },
+  data: { icon: Database, accent: "green" },
+  data_action: { icon: Database, accent: "green" },
+  memory: { icon: Brain, accent: "violet" },
+  ctx_get: { icon: Layers, accent: "primary" },
+  ctx_batch: { icon: Layers, accent: "primary" },
+  ctx_patch: { icon: Layers, accent: "primary" },
+  context: { icon: Layers, accent: "primary" },
+  context_patch: { icon: Layers, accent: "primary" },
+  // seo
+  seo_check_meta_tags_batch: { icon: Gauge, accent: "green" },
+  seo_check_meta_titles: { icon: Gauge, accent: "green" },
+  seo_check_meta_descriptions: { icon: Gauge, accent: "green" },
+  seo_get_keyword_data: { icon: TrendingUp, accent: "green" },
+  // misc
+  shell_execute: { icon: SquareTerminal, accent: "slate" },
+  shell_python: { icon: SquareTerminal, accent: "slate" },
+  random_wheel: { icon: Disc3, accent: "rose" },
+};
+
+const TOOL_GLYPH_PREFIXES: Array<[RegExp, ToolGlyphSpec]> = [
+  [/^fs_/, { icon: Folder, accent: "slate" }],
+  [/^travel_/, { icon: MapPin, accent: "cyan" }],
+  [/^war_room_/, { icon: LayoutGrid, accent: "primary" }],
+  [
+    /(click_element|navigate|^tabs$|tab_groups|screenshot|type_into|^find$|find_text|get_active_tab|^computer$|cdp_|browser_|evaluate_javascript|execute_javascript|read_page|read_active_page|get_page|query_elements|press_keys|select_dropdown|form_input|submit_form|wait_for|switch_to_tab|inspect_element|get_element|get_tab|list_open_tabs|read_console|load_browser)/,
+    { icon: MousePointerClick, accent: "blue" },
+  ],
+];
+
+const DEFAULT_GLYPH: ToolGlyphSpec = { icon: Wrench, accent: "slate" };
+
+/** The glossy glyph (icon + accent) for a tool — never null. */
+export function getToolGlyph(toolName: string | null): ToolGlyphSpec {
+  if (!toolName) return DEFAULT_GLYPH;
+  const reg = toolRendererRegistry[toolName];
+  if (reg?.icon) return { icon: reg.icon, accent: reg.accent ?? "slate" };
+  const direct = TOOL_GLYPHS[toolName];
+  if (direct) return direct;
+  for (const [re, spec] of TOOL_GLYPH_PREFIXES) {
+    if (re.test(toolName)) return spec;
+  }
+  return DEFAULT_GLYPH;
 }
 
 export function getToolDisplayName(toolName: string | null): string {

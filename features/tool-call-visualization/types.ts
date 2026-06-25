@@ -21,8 +21,20 @@
  */
 
 import type React from "react";
+import type { LucideIcon } from "lucide-react";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import type { ToolEventPayload } from "@/types/python-generated/stream-events";
+
+/** Accent palette for a tool's glossy glyph (see `ToolGlyph`). */
+export type ToolAccent =
+  | "primary"
+  | "blue"
+  | "violet"
+  | "cyan"
+  | "green"
+  | "amber"
+  | "rose"
+  | "slate";
 
 /**
  * Props passed to every tool renderer component (inline + overlay).
@@ -132,6 +144,23 @@ export interface ToolRenderer {
 
   /** Human-readable display name. */
   displayName: string;
+
+  /**
+   * Glossy glyph for the folded tool line + the entity-card header (rendered
+   * via `ToolGlyph`). Gives each tool a unique, colored, app-style icon instead
+   * of a flat one. Falls back to a per-family default in `getToolGlyph`.
+   */
+  icon?: LucideIcon;
+  accent?: ToolAccent;
+
+  /**
+   * Shell chrome. "line" (default) = the slim collapsible verb-phrase row.
+   * "card" = a self-headed entity card: once the tool completes, the shell
+   * renders the InlineComponent DIRECTLY with no fold line / chevron / hover
+   * icons — the component's own header (`EntityCard`) carries the name +
+   * "Open in" menu. While still streaming it shows the slim row.
+   */
+  chrome?: "line" | "card";
 
   /**
    * Optional verb-phrase labels for the slim row. When omitted, the shell

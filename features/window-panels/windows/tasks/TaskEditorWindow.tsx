@@ -1,8 +1,33 @@
 "use client";
 
-import { CheckSquare, ListTodo, Loader2 } from "lucide-react";
-import TaskEditor from "@/features/tasks/components/TaskEditor";
+// TaskEditorWindow — the floating, single-task editor window.
+//
+// COMPOSITION ROOT: hoists the shared task-edit state via useTaskEditorController,
+// provides it to the subtree, and maps the canonical task window chrome onto
+// WindowPanel SLOTS — instead of the old anti-pattern (long name dumped into the
+// header `title` + a checkmark icon, no header controls, and the embedded
+// TaskEditor rendering the name a SECOND time in the body).
+//
+//   header titleNode → <TaskWindowBreadcrumb>  (compact project/type context)
+//   actionsRight     → <TaskHeaderActions>      (save/discard + copy + delete …)
+//   footer (bar)     → <TaskMetadataFooter>     (priority/due vitals + save status)
+//   body             → <TaskTitleBand> hero + <TaskEditorBody> (content only)
+//
+// `title` (string) still carries the real task name so the tray / window-manager
+// identity is meaningful; `titleNode` overrides the header bar with the short
+// breadcrumb so a long name never sprawls across the header.
+
+import { Loader2 } from "lucide-react";
 import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { useTaskEditorController } from "@/features/tasks/components/editor/useTaskEditorController";
+import { TaskEditorControllerProvider } from "@/features/tasks/components/editor/TaskEditorControllerContext";
+import { TaskEditorBody } from "@/features/tasks/components/editor/TaskEditorBody";
+import {
+  TaskTitleBand,
+  TaskWindowBreadcrumb,
+  TaskHeaderActions,
+  TaskMetadataFooter,
+} from "@/features/tasks/components/editor/TaskWindowChrome";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 const OVERLAY_ID = "taskEditorWindow";
@@ -19,43 +44,45 @@ export default function TaskEditorWindow({
   onClose,
   instanceId,
 }: TaskEditorWindowProps) {
-  const { task, loading, missing } = useEnsureTaskLoaded(taskId);
+  const { loading, missing } = useEnsureTaskLoaded(taskId);
+  const controller = useTaskEditorController(taskId);
   const offset = (hashCode(taskId) % 6) * 28;
-  const isSubtask = Boolean(task?.parent_task_id);
-  const title = task?.title || "Task";
-  const Icon = isSubtask ? CheckSquare : ListTodo;
+  const ready = !loading && !missing && !!controller.task;
 
   return (
-    <WindowPanel
-      id={`task-editor-${instanceId}`}
-      title={title}
-      titleNode={
-        <span className="flex min-w-0 items-center gap-1.5">
-          <Icon className="size-3.5 shrink-0 text-primary" />
-          <span className="truncate">{title}</span>
-        </span>
-      }
-      onClose={onClose}
-      overlayId={OVERLAY_ID}
-      width={460}
-      height={560}
-      minWidth={340}
-      minHeight={320}
-      initialRect={{ x: 120 + offset, y: 96 + offset }}
-      bodyClassName="p-0"
-    >
-      {loading ? (
-        <div className="grid h-full place-items-center">
-          <Loader2 className="size-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : missing ? (
-        <div className="grid h-full place-items-center px-6 text-center text-xs text-muted-foreground">
-          Task not found
-        </div>
-      ) : (
-        <TaskEditor taskId={taskId} embedded key={taskId} />
-      )}
-    </WindowPanel>
+    <TaskEditorControllerProvider value={controller}>
+      <WindowPanel
+        id={`task-editor-${instanceId}`}
+        title={controller.effective.title || "Task"}
+        titleNode={ready ? <TaskWindowBreadcrumb /> : undefined}
+        actionsRight={ready ? <TaskHeaderActions /> : undefined}
+        footer={ready ? <TaskMetadataFooter /> : undefined}
+        footerVariant="bar"
+        onClose={onClose}
+        overlayId={OVERLAY_ID}
+        width={520}
+        height={640}
+        minWidth={380}
+        minHeight={380}
+        initialRect={{ x: 120 + offset, y: 96 + offset }}
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      >
+        {loading ? (
+          <div className="grid h-full place-items-center">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : missing ? (
+          <div className="grid h-full place-items-center px-6 text-center text-xs text-muted-foreground">
+            Task not found
+          </div>
+        ) : (
+          <div className="flex h-full min-h-0 flex-col">
+            <TaskTitleBand />
+            <TaskEditorBody />
+          </div>
+        )}
+      </WindowPanel>
+    </TaskEditorControllerProvider>
   );
 }
 

@@ -18,7 +18,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
 - `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `outputs` (**Outputs Studio** — content engine: generate podcast/blog/slides/SEO from the report), `media`, `costs`, `settings`, `agents`, `tasks`.
-- `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/matrx-entry-demo` for the new workflow entryway handoff.
+- `/research/topics/new?mode=ai&topic=...` — AI-assisted creation with the subject prefilled; used by `/demos/matrx-entry` for the new workflow entryway handoff.
 - Admin surface: `app/(admin)/administration/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
 
 **Hooks** (`features/research/hooks/`)
@@ -96,7 +96,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
-- `2026-06-24` — **Matrx entryway prefill.** `/research/topics/new?mode=ai&topic=...` now seeds the AI subject textarea as well as the draft topic name, allowing the new `/matrx-entry-demo` route to hand users into the existing research project-selection and AI topic-shaping flow without creating a parallel pipeline.
+- `2026-06-24` — **Matrx entryway prefill.** `/research/topics/new?mode=ai&topic=...` now seeds the AI subject textarea as well as the draft topic name, allowing the new `/demos/matrx-entry` route to hand users into the existing research project-selection and AI topic-shaping flow without creating a parallel pipeline.
 - `2026-06-23` — **Surface agent wiring (`matrx-user/research`).** New `agent-context/buildResearchContextData.ts` (pure `createResearchScope` mapper — baselines `content`/`selection`/`context` + customs `topic_*`/`autonomy_level`/`keyword_list`/`source_count`/`included_source_count`/`analysis_count`/`current_synthesis_text`/`synthesis_documents`) + `RESEARCH_CONTEXT_MENU_PROPS` + `createResearchExtraSections(handlers)`. `UnifiedAgentContextMenu` mounted on the AI-mode Subject query (editable, `ProTextarea` gains `surfaceName` + `getApplicationScope`), the `DocumentViewer` document, and each `SynthesisList` synthesis body (read-only). `getApplicationScope` is a plain fn reading the live DOM selection. No manifest/DB change (every value pre-declared).
 - `2026-06-21` — **Research header back nav.** `/research/topics/new` and `/research/topics` shell headers now left-align the back control with a visible label ("Back to Topics" / "Research") instead of a lone centered chevron in the glass header center slot.
 - `2026-06-21` — **Topic init wizard — keyword chips.** Manual/template keywords (`TextArrayInput` default) and AI streaming/review keyword pills now use solid `bg-primary text-primary-foreground` instead of the broken `bg-gradient-radial` chip style (light text on no background in light mode). AI review keyword rows use solid `bg-muted` rows instead of translucent violet tints.

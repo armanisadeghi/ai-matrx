@@ -201,9 +201,26 @@ esac
 
 NEW_TAG="v${NEW_VERSION}"
 
-# ── Check tag doesn't already exist ──────────────────────────────────────────
-if git rev-parse "$NEW_TAG" &>/dev/null; then
-    fail "Tag $NEW_TAG already exists. Resolve manually or choose a different bump type."
+# ── Find the first free version ──────────────────────────────────────────────
+# package.json can lag behind the tags (e.g. someone bumped tags by hand, or a
+# prior release pushed a tag but its package.json commit never landed locally).
+# Rather than fail, keep bumping the patch number until we hit a version whose
+# tag does not exist yet. We always advance the PATCH component for the search
+# (even on minor/major) so the base bump is preserved and we never collide.
+git fetch --tags "$REMOTE" 2>/dev/null || true
+SEARCH_BUMPS=0
+while git rev-parse "$NEW_TAG" &>/dev/null; do
+    IFS='.' read -r N_MAJOR N_MINOR N_PATCH <<< "$NEW_VERSION"
+    NEW_VERSION="${N_MAJOR}.${N_MINOR}.$((N_PATCH + 1))"
+    NEW_TAG="v${NEW_VERSION}"
+    SEARCH_BUMPS=$((SEARCH_BUMPS + 1))
+    if [[ $SEARCH_BUMPS -gt 10000 ]]; then
+        fail "Could not find a free version tag after 10000 attempts. Something is wrong."
+    fi
+done
+
+if [[ $SEARCH_BUMPS -gt 0 ]]; then
+    warn "Existing tag(s) ahead of package.json — advanced to first free version ${NEW_VERSION} (skipped ${SEARCH_BUMPS} taken tag(s))."
 fi
 
 # ── Build commit message ─────────────────────────────────────────────────────

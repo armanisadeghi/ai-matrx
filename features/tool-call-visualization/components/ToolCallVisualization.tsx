@@ -35,7 +35,10 @@ import {
   getToolPhaseLabel,
   getHeaderSubtitle,
   getToolDisplayMode,
+  getToolGlyph,
+  getToolChrome,
 } from "../registry/registry";
+import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { prefetchToolRenderer } from "../db-renderer/toolRendererCache";
 import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
