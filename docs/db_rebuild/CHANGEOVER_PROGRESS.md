@@ -12,13 +12,13 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_stamp_actor`) | **54** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×2, ctx-wr ×2) — 53 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
+| **Retrofitted** (standard base cols + `_stamp_actor`) | **57** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×2, flashcard ×2, aga ×1, ctx-wr ×2) — 56 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
 | Registered in `platform.entity_types` | 18 |
 
-**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — IN PROGRESS (54 tables: cx/rs/udt/skl/agx/prompt/studio/note/canvas/ctx-wr)** · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
+**Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — 57 tables done, PAUSED** pending user OK (after prod-error review confirmed the changeover is clean — see [compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md)) · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
 
 ---
 
@@ -54,9 +54,9 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | ctx | 24 | **2** | 7 | 10 | | kg | 6 | 0 | 5 | 0 |
 | scrape | 25 | 0 | 0 | 0 | | app | 6 | 0 | 1 | 1 |
 | cld | 18 | 0 | 7 | 0 | | ai | 6 | 0 | 1 | 1 |
-| user | 16 | 0 | 0 | 0 | | **aga** | 6 | 0 | 1 | 2 |
+| user | 16 | 0 | 0 | 0 | | **aga** | 6 | **1** | 1 | 2 |
 | tool | 14 | 0 | 0 | 0 | | pc | 5 | 0 | 0 | 0 |
-| rs | 12 | **10** | 0 | 1 | | flashcard | 5 | 0 | 2 | 2 |
+| rs | 12 | **10** | 0 | 1 | | flashcard | 5 | **2** | 2 | 2 |
 | wf | 12 | 0 | 3 | 3 | | sch | 4 | 0 | 0 | 2* |
 | prompt | 12 | **5** | 2 | 3 | | wc | 4 | 0 | 1 | 1* |
 | udt | 10 | **7** | 3 | 3 | | page | 4 | 0 | 1 | 1 |
