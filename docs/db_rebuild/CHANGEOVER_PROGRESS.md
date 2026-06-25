@@ -12,7 +12,7 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **3** |
+| **Retrofitted** (standard base cols + `_touch_row`/`_stamp_actor`) | **8** (cx ×4, agx ×4) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
@@ -38,6 +38,7 @@ Per **Base-1** table, additive first, then gated: **(1)** standard columns (`org
 6. **Drops:** every drop gated on (a) consumer audit incl. **both** Next.js admin dashboards **and** the Python admin, (b) **PITR/backup**, (c) **move-to-graveyard** for whole tables (never `DROP TABLE`).
 7. **RLS read model:** org-first `has_org_access(org_id)` already returns **every** org the user belongs to → no "active org" required to see data; active-org is an optional UI filter. Writes must stamp `org_id`.
 8. **Tracking discipline:** one migration file per table (or per small batch) in `migrations/`, applied via Supabase MCP, self-verifying, recorded in `_schema_migrations`, and reflected here.
+9. **System tenant:** ownerless global/builtin/system rows (e.g. builtin agents, system templates) are **owned by the canonical `Matrx System` org** (`organizations.is_system=true`, id `39c38960-…`, no members → invisible in users' org lists) and stay visible to everyone via the `is_public` RLS branch. Keeps `org_id NOT NULL` universal with no special-casing. `retrofit_entity`'s `personal` strategy falls back to it for `user_id IS NULL` rows; `created_by` is left **NULL = system actor** (valid per standard). (A `Matrx Library` tenant also exists for the shared-knowledge corpus.)
 
 ---
 
@@ -149,3 +150,6 @@ Admin dashboards (both Next.js) audited: **do not read** these columns. Python a
 ## Change log
 
 - **2026-06-24** — Tracker created. Waves 0–2 complete. `cx_conversation` / `cx_message` / `cx_artifact` retrofitted (additive). Conversation-favorites repoint landed. Enterprise-grade decisions logged. Schema exported (434 tables / ~40 groups).
+- **2026-06-24 (later)** — `platform.retrofit_entity` routine built + validated. `cx_agent_memory` retrofitted. **`agx` group fully delegated + done (4/4 Base-1)** via the routine. Established the **system tenant** (decision #9) — hardened the routine through two real edge cases (ownerless rows → system org; `created_by` NULL = system). **8 tables retrofitted.**
+  - **Open follow-up:** `agx_agent` / `agx_agent_templates` carry bespoke `version`-snapshot triggers (`trg_agx_*` → `agx_version`); `_touch_row` also bumps `version` on UPDATE → reconcile the double-bump when `agx_version` gets its Base-3 treatment.
+  - **Files to reconcile (lead bookkeeping):** routine file → final v3; `platform_system_org_tenant.sql`; `agx_entities_retrofit.sql` (uncomment the 3 now-applied calls); ledger each.
