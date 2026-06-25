@@ -27,6 +27,7 @@ import {
 } from "@/features/scopes/service/rpcResult";
 import type {
   AssociationEdge,
+  AssociationTargetEdge,
   AssociationTargetType,
   ScopesRpcResult,
 } from "@/features/scopes/types";
@@ -58,6 +59,31 @@ function toEdge(row: AssocForEntityRow): AssociationEdge {
   };
 }
 
+// Shape of one `assoc_for_targets` row (snake_case, straight from PG).
+interface AssocForTargetsRow {
+  id: string;
+  target_id: string;
+  source_type: string;
+  source_id: string;
+  label: string | null;
+  metadata: Json;
+  org_id: string | null;
+  created_at: string;
+}
+
+function toTargetEdge(row: AssocForTargetsRow): AssociationTargetEdge {
+  return {
+    id: row.id,
+    targetId: row.target_id,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    label: row.label ?? null,
+    metadata: (row.metadata ?? {}) as Json,
+    orgId: row.org_id ?? null,
+    createdAt: row.created_at,
+  };
+}
+
 // ─── service ────────────────────────────────────────────────────────
 
 export const associationsService = {
@@ -82,6 +108,37 @@ export const associationsService = {
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as AssocForEntityRow[];
       return ok({ edges: rows.map(toEdge) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — BATCH: every INCOMING edge for many targets, one round-trip.
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Every edge whose target is one of `targetIds` (all the same `targetType`),
+   * org-filtered by RLS inside the RPC. The batch counterpart of `listForEntity`
+   * — for loading the members of MANY containers at once (e.g. a War Room room
+   * plus all its threads) without N per-entity round-trips. Each row carries
+   * `targetId` so callers can group results back by container.
+   */
+  async listForTargets(
+    targetType: string,
+    targetIds: string[],
+  ): Promise<ScopesRpcResult<{ edges: AssociationTargetEdge[] }>> {
+    try {
+      requireUserId();
+      const ids = Array.from(new Set(targetIds));
+      if (ids.length === 0) return ok({ edges: [] });
+      const { data, error } = await supabase.rpc("assoc_for_targets", {
+        p_target_type: targetType,
+        p_target_ids: ids,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as AssocForTargetsRow[];
+      return ok({ edges: rows.map(toTargetEdge) });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

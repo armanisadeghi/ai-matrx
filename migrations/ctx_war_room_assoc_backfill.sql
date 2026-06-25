@@ -5,7 +5,8 @@
 --
 -- ** RE-RUN this migration immediately before the branch deploy ** to capture any
 --    attachments created in ctx_war_room_assignments while testing the live app
---    (ON CONFLICT DO NOTHING makes re-running a safe no-op for existing edges).
+--    (content edges ON CONFLICT DO UPDATE re-stamp is_active/position/label from
+--    the source row, so re-running self-heals; membership edges DO NOTHING).
 --
 -- Mapping (war-room vocabulary -> platform.associations):
 --   * source = the attached entity; target = the container (member -> container).
@@ -38,7 +39,30 @@ select
   coalesce(a.metadata, '{}'::jsonb) || jsonb_build_object('is_active', a.is_active, 'position', a.position),
   coalesce(a.created_by, a.user_id)
 from public.ctx_war_room_assignments a
-on conflict (source_type, source_id, target_type, target_id) do nothing;
+on conflict (source_type, source_id, target_type, target_id) do update
+  -- Re-stamp is_active/position/label from the source-of-truth row. Earlier
+  -- partial mirrors left ~99 edges with BARE metadata; DO NOTHING would skip
+  -- them forever and the active-pointer (active note/task/audio) would silently
+  -- fall back to first-by-position. DO UPDATE makes the re-run self-heal them.
+  set metadata = excluded.metadata,
+      label    = coalesce(excluded.label, platform.associations.label);
+
+-- 1b) Drop STALE orphan content edges — war-room edges with NO source-of-truth
+--     row in ctx_war_room_assignments (artifacts of an earlier partial mirror of
+--     since-removed links). The deployed app reads only ctx_war_room_assignments,
+--     so these are invisible to users today; left in place they would surface as
+--     PHANTOM attachments (and an un-stamped studio_session could hijack the
+--     active-audio pointer). Membership + reversed ->scope edges are exempt.
+delete from platform.associations a
+where a.target_type in ('thread','war_room')
+  and not (a.source_type = 'thread' and a.target_type = 'war_room')   -- keep membership
+  and not exists (
+    select 1 from public.ctx_war_room_assignments w
+    where w.entity_id    = a.source_id
+      and w.container_id = a.target_id
+      and (w.entity_type = a.source_type
+           or (a.source_type = 'file' and w.entity_type = 'user_file'))
+  );
 
 -- 2) Membership edges: thread -> war_room (the mobility mechanism).
 insert into platform.associations (source_type, source_id, target_type, target_id, org_id, metadata, created_by)

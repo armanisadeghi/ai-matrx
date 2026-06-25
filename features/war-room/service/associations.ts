@@ -1,65 +1,237 @@
 // features/war-room/service/associations.ts
 //
-// The single Supabase chokepoint for War Room ASSOCIATIONS — the polymorphic
-// M2M table (ctx_war_room_assignments) that replaces the tile FK columns
-// (task_id/note_id/project_id) AND the three link tables (notes / audio_sessions
-// / attachments). A container (room = session, thread = tile) holds ANY resource
-// type, M2M. Shaped like ctx_scope_assignments so the imminent platform-wide
-// relationship refactor absorbs it trivially.
+// War Room ASSOCIATIONS — the MAPPER between the war-room vocabulary and the
+// platform-wide unified edge `platform.associations`.
 //
-// React → Supabase directly (no Next.js middle tier); RLS enforces access.
-// Every mutation is loud on failure (throws) — callers wrap with reportWarRoomError.
+// A container (room = session, thread = tile) holds ANY resource type, M2M. In
+// the unified model a "container holds entity" link is the edge
+//     source = entity   →   target = container
+// (member → container). The container is the TARGET; the resource is the SOURCE.
+// `room` maps to the registry token `war_room`; `thread` maps to `thread`.
+//
+// `platform.associations` is NOT PostgREST-exposed, so the browser reaches it
+// ONLY through the public SECURITY-DEFINER `assoc_*` RPCs — and per doctrine the
+// SOLE chokepoint for those RPCs is `features/scopes/service/associationsService`.
+// This file therefore NEVER touches the edge table directly: it calls the
+// canonical service and maps its rows back to the war-room `WarRoomAssignment`
+// shape so every selector/reducer over `assignmentsByContainer` is untouched.
+//
+// War-room specifics ride in the edge `metadata`: `is_active` (the focused member
+// of a single-active type) and `position` (gallery order). `assoc_add` OVERWRITES
+// metadata on conflict, so re-adding an edge updates these in place — that is how
+// single-active demotion and active-pointer flips are done, idempotently.
+//
+// React → Supabase directly (no Next.js middle tier); RLS enforces access. Every
+// mutation is loud on failure (throws) — callers wrap with reportWarRoomError.
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import type {
+  AssociationTargetEdge,
+  AssociationTargetType,
+  ScopesRpcError,
+} from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 import {
   SINGLE_ACTIVE_ENTITY_TYPES,
   type ContainerRef,
   type WarRoomAssignment,
   type WarRoomAssignmentEntityType,
+  type WarRoomContainerType,
 } from "../types";
 
-const ASSIGNMENTS = "ctx_war_room_assignments";
+// ── Vocabulary mapping ────────────────────────────────────────────────
 
-/** All assignment rows for a set of containers (room + its threads), one query. */
+/** war-room container → the `platform.associations` target token. */
+const CONTAINER_TARGET: Record<WarRoomContainerType, AssociationTargetType> = {
+  room: "war_room",
+  thread: "thread",
+};
+function containerTargetType(type: WarRoomContainerType): AssociationTargetType {
+  return CONTAINER_TARGET[type];
+}
+
+/**
+ * War-room entity vocabulary ↔ the canonical `platform.associations` source
+ * token. Only `user_file` differs — the platform/registry token for a `cld_files`
+ * row is `file` (verified against `platform.entity_types`); everything else
+ * passes through. The backfill mapped `user_file → file`, so writes MUST match or
+ * a re-attach would create a second, divergent edge.
+ */
+function entityToSource(t: string): string {
+  return t === "user_file" ? "file" : t;
+}
+function sourceToEntity(t: string): WarRoomAssignmentEntityType {
+  return (t === "file" ? "user_file" : t) as WarRoomAssignmentEntityType;
+}
+
+/**
+ * The platform SOURCE tokens a war-room container actually HOLDS as content. Used
+ * to filter the incoming edges of a container: querying a `war_room` target also
+ * returns the `thread → war_room` membership edges of its child threads, which are
+ * NOT content assignments and must never enter an assignment bucket. These are
+ * platform tokens (note `file`, not `user_file`) because they match the edge's raw
+ * `source_type`.
+ */
+const CONTENT_SOURCE_TYPES: ReadonlySet<string> = new Set([
+  "project",
+  "task",
+  "note",
+  "conversation",
+  "studio_session",
+  "file",
+  "document",
+]);
+
+/** A thrown error that preserves the canonical RPC's error code for callers. */
+class WarRoomAssocError extends Error {
+  readonly code?: string;
+  constructor(e: ScopesRpcError) {
+    super(e.message || "association RPC failed");
+    this.name = "WarRoomAssocError";
+    this.code = e.code;
+  }
+}
+
+function isPlainObject(v: Json | null | undefined): v is Record<string, Json> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Merge a metadata patch onto an existing (possibly null/array) jsonb value. */
+function mergeMeta(base: Json | null | undefined, patch: Record<string, Json>): Json {
+  return { ...(isPlainObject(base) ? base : {}), ...patch };
+}
+
+function metaNumber(md: Json, key: string, fallback: number): number {
+  if (isPlainObject(md) && typeof md[key] === "number") return md[key] as number;
+  return fallback;
+}
+function metaBool(md: Json, key: string, fallback: boolean): boolean {
+  if (isPlainObject(md) && typeof md[key] === "boolean") return md[key] as boolean;
+  return fallback;
+}
+
+/** Reconstruct a `WarRoomAssignment` row from one incoming platform edge. */
+function edgeToAssignment(
+  edge: AssociationTargetEdge,
+  containerType: WarRoomContainerType,
+): WarRoomAssignment {
+  const md = edge.metadata ?? {};
+  return {
+    id: edge.id,
+    container_type: containerType,
+    container_id: edge.targetId,
+    entity_type: sourceToEntity(edge.sourceType),
+    entity_id: edge.sourceId,
+    position: metaNumber(md, "position", 0),
+    is_active: metaBool(md, "is_active", true),
+    label: edge.label,
+    metadata: edge.metadata,
+    // user_id / created_by aren't carried on the edge and no selector reads them.
+    user_id: null,
+    created_by: null,
+    created_at: edge.createdAt,
+  } as WarRoomAssignment;
+}
+
+function byPosition(a: WarRoomAssignment, b: WarRoomAssignment): number {
+  const pa = a.position ?? 0;
+  const pb = b.position ?? 0;
+  if (pa !== pb) return pa - pb;
+  return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+}
+
+function isContentEdge(edge: AssociationTargetEdge): boolean {
+  return CONTENT_SOURCE_TYPES.has(edge.sourceType);
+}
+
+/**
+ * Resolve the org that an edge into this container must carry. The container's
+ * own `organization_id` is authoritative; a NULL org (a tile minted before
+ * org-on-create, say) falls back to the user's personal org. We NEVER write a
+ * NULL-org edge — `platform.associations` fails closed, so a NULL org would make
+ * the link invisible.
+ */
+async function resolveContainerOrgId(ref: ContainerRef): Promise<string> {
+  const table = ref.type === "room" ? "ctx_war_room_sessions" : "ctx_war_room_tiles";
+  const { data, error } = await supabase
+    .from(table)
+    .select("organization_id")
+    .eq("id", ref.id)
+    .maybeSingle();
+  if (error) {
+    console.error("[war-room] resolveContainerOrgId failed:", error);
+    throw error;
+  }
+  const orgId = data?.organization_id ?? null;
+  if (orgId) return orgId;
+
+  const userId = requireUserId();
+  const { data: personal, error: e2 } = await supabase.rpc(
+    "ensure_personal_organization",
+    { p_user_id: userId },
+  );
+  if (e2 || !personal) {
+    console.error("[war-room] resolveContainerOrgId: personal-org fallback failed:", e2);
+    throw e2 ?? new Error("Could not resolve an organization for the war-room container");
+  }
+  return personal as string;
+}
+
+// ── Reads ─────────────────────────────────────────────────────────────
+
+/** All assignment rows for a set of containers (room + its threads), batched. */
 export async function listAssignmentsForContainers(
   refs: ContainerRef[],
 ): Promise<WarRoomAssignment[]> {
-  const ids = Array.from(new Set(refs.map((r) => r.id)));
-  if (ids.length === 0) return [];
-  const { data, error } = await supabase
-    .from(ASSIGNMENTS)
-    .select("*")
-    .in("container_id", ids)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true });
+  if (refs.length === 0) return [];
+  const threadIds = refs.filter((r) => r.type === "thread").map((r) => r.id);
+  const roomIds = refs.filter((r) => r.type === "room").map((r) => r.id);
 
-  if (error) {
-    console.error("[war-room] listAssignmentsForContainers failed:", error);
-    throw error;
+  // One RPC per container type (1-2 round-trips total), run in parallel.
+  const [threadRes, roomRes] = await Promise.all([
+    threadIds.length > 0
+      ? associationsService.listForTargets("thread", threadIds)
+      : null,
+    roomIds.length > 0
+      ? associationsService.listForTargets("war_room", roomIds)
+      : null,
+  ]);
+
+  const out: WarRoomAssignment[] = [];
+  if (threadRes) {
+    if (isScopesRpcErr(threadRes)) throw new WarRoomAssocError(threadRes.error);
+    for (const e of threadRes.data.edges) {
+      if (isContentEdge(e)) out.push(edgeToAssignment(e, "thread"));
+    }
   }
-  return data ?? [];
+  if (roomRes) {
+    if (isScopesRpcErr(roomRes)) throw new WarRoomAssocError(roomRes.error);
+    for (const e of roomRes.data.edges) {
+      if (isContentEdge(e)) out.push(edgeToAssignment(e, "room"));
+    }
+  }
+  return out.sort(byPosition);
 }
 
 /** Assignment rows for one container. */
 export async function listAssignmentsForContainer(
   ref: ContainerRef,
 ): Promise<WarRoomAssignment[]> {
-  const { data, error } = await supabase
-    .from(ASSIGNMENTS)
-    .select("*")
-    .eq("container_type", ref.type)
-    .eq("container_id", ref.id)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("[war-room] listAssignmentsForContainer failed:", error);
-    throw error;
-  }
-  return data ?? [];
+  const res = await associationsService.listForTargets(
+    containerTargetType(ref.type),
+    [ref.id],
+  );
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  return res.data.edges
+    .filter(isContentEdge)
+    .map((e) => edgeToAssignment(e, ref.type))
+    .sort(byPosition);
 }
+
+// ── Writes ────────────────────────────────────────────────────────────
 
 interface CreateAssignmentInput {
   ref: ContainerRef;
@@ -74,8 +246,8 @@ interface CreateAssignmentInput {
 /**
  * Attach a resource to a container. For single-active types (task/project/note/
  * studio_session) `makeActive` (default true) demotes the prior active one. The
- * UNIQUE (container, entity_type, entity_id) constraint makes re-attaching the
- * same resource idempotent — callers tolerate the 23505 conflict.
+ * UNIQUE (source,target) edge makes re-attaching the same resource idempotent —
+ * it updates the edge's metadata in place rather than erroring.
  */
 export async function createAssignment(
   input: CreateAssignmentInput,
@@ -84,41 +256,78 @@ export async function createAssignment(
   const { ref, entityType, entityId } = input;
   const single = SINGLE_ACTIVE_ENTITY_TYPES.has(entityType);
   const makeActive = input.makeActive ?? true;
+  const targetType = containerTargetType(ref.type);
 
-  // Position = count of same-type rows already in this container.
   const existing = await listAssignmentsForContainer(ref);
+  const already = existing.find(
+    (a) => a.entity_type === entityType && a.entity_id === entityId,
+  );
+  // True no-op ONLY when nothing would change: already linked, already in the
+  // desired active state, same label, and no metadata override passed. If a new
+  // label/metadata or an activation IS requested, fall through to the upsert so
+  // it actually applies (assoc_add coalesces label, overwrites metadata).
+  if (already) {
+    const wantActive = single ? makeActive : true;
+    const activeMatches = (already.is_active ?? true) === wantActive;
+    const labelMatches = (input.label ?? null) === (already.label ?? null);
+    const metaProvided =
+      isPlainObject(input.metadata) && Object.keys(input.metadata).length > 0;
+    if (activeMatches && labelMatches && !metaProvided) return already;
+  }
+
+  const orgId = await resolveContainerOrgId(ref);
   const sameType = existing.filter((a) => a.entity_type === entityType);
+  const position = already?.position ?? sameType.length;
+  const isActive = single ? makeActive : true;
 
-  if (single && makeActive && sameType.length > 0) {
-    await supabase
-      .from(ASSIGNMENTS)
-      .update({ is_active: false })
-      .eq("container_type", ref.type)
-      .eq("container_id", ref.id)
-      .eq("entity_type", entityType);
+  // Demote prior active siblings of a single-active type (assoc_add overwrites
+  // metadata on conflict, so this updates each existing edge in place).
+  if (single && makeActive) {
+    const demote = sameType.filter((a) => a.is_active && a.entity_id !== entityId);
+    await Promise.all(
+      demote.map((a) =>
+        associationsService.add({
+          sourceType: entityToSource(a.entity_type),
+          sourceId: a.entity_id,
+          targetType,
+          targetId: ref.id,
+          orgId,
+          label: a.label ?? undefined,
+          metadata: mergeMeta(a.metadata, { is_active: false }),
+        }),
+      ),
+    );
   }
 
-  const { data, error } = await supabase
-    .from(ASSIGNMENTS)
-    .insert({
-      container_type: ref.type,
-      container_id: ref.id,
-      entity_type: entityType,
-      entity_id: entityId,
-      user_id: userId,
-      position: sameType.length,
-      is_active: single ? makeActive : true,
-      label: input.label ?? null,
-      metadata: input.metadata ?? null,
-    })
-    .select("*")
-    .single();
+  const metadata: Json = mergeMeta(
+    isPlainObject(input.metadata) ? input.metadata : {},
+    { is_active: isActive, position },
+  );
+  const res = await associationsService.add({
+    sourceType: entityToSource(entityType),
+    sourceId: entityId,
+    targetType,
+    targetId: ref.id,
+    orgId,
+    label: input.label ?? undefined,
+    metadata,
+  });
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
 
-  if (error) {
-    console.error("[war-room] createAssignment failed:", error);
-    throw error;
-  }
-  return data;
+  return {
+    id: res.data.id,
+    container_type: ref.type,
+    container_id: ref.id,
+    entity_type: entityType,
+    entity_id: entityId,
+    position,
+    is_active: isActive,
+    label: input.label ?? null,
+    metadata,
+    user_id: userId,
+    created_by: userId,
+    created_at: new Date().toISOString(),
+  } as WarRoomAssignment;
 }
 
 /** Mark one resource as the active member of its type within the container. */
@@ -127,33 +336,27 @@ export async function setActiveAssignment(
   entityType: WarRoomAssignmentEntityType,
   entityId: string,
 ): Promise<void> {
-  await supabase
-    .from(ASSIGNMENTS)
-    .update({ is_active: false })
-    .eq("container_type", ref.type)
-    .eq("container_id", ref.id)
-    .eq("entity_type", entityType);
-
-  const { error } = await supabase
-    .from(ASSIGNMENTS)
-    .update({ is_active: true })
-    .eq("container_type", ref.type)
-    .eq("container_id", ref.id)
-    .eq("entity_type", entityType)
-    .eq("entity_id", entityId);
-
-  if (error) {
-    console.error("[war-room] setActiveAssignment failed:", error);
-    throw error;
-  }
-}
-
-/** Remove one assignment row by id. */
-export async function removeAssignment(id: string): Promise<void> {
-  const { error } = await supabase.from(ASSIGNMENTS).delete().eq("id", id);
-  if (error) {
-    console.error("[war-room] removeAssignment failed:", error);
-    throw error;
+  const targetType = containerTargetType(ref.type);
+  const orgId = await resolveContainerOrgId(ref);
+  const sameType = (await listAssignmentsForContainer(ref)).filter(
+    (a) => a.entity_type === entityType,
+  );
+  // Re-write is_active on every same-type edge (chosen → true, the rest → false).
+  const results = await Promise.all(
+    sameType.map((a) =>
+      associationsService.add({
+        sourceType: entityToSource(a.entity_type),
+        sourceId: a.entity_id,
+        targetType,
+        targetId: ref.id,
+        orgId,
+        label: a.label ?? undefined,
+        metadata: mergeMeta(a.metadata, { is_active: a.entity_id === entityId }),
+      }),
+    ),
+  );
+  for (const r of results) {
+    if (isScopesRpcErr(r)) throw new WarRoomAssocError(r.error);
   }
 }
 
@@ -163,74 +366,46 @@ export async function removeAssignmentByEntity(
   entityType: WarRoomAssignmentEntityType,
   entityId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from(ASSIGNMENTS)
-    .delete()
-    .eq("container_type", ref.type)
-    .eq("container_id", ref.id)
-    .eq("entity_type", entityType)
-    .eq("entity_id", entityId);
-  if (error) {
-    console.error("[war-room] removeAssignmentByEntity failed:", error);
-    throw error;
-  }
-}
-
-/**
- * Move EVERY assignment from one container to another (thread portability:
- * move a thread's resources into a different room/thread, or re-home a thread).
- * Re-points container_type + container_id. Returns the moved rows.
- */
-export async function moveContainerAssignments(
-  from: ContainerRef,
-  to: ContainerRef,
-): Promise<WarRoomAssignment[]> {
-  const { data, error } = await supabase
-    .from(ASSIGNMENTS)
-    .update({ container_type: to.type, container_id: to.id })
-    .eq("container_type", from.type)
-    .eq("container_id", from.id)
-    .select("*");
-  if (error) {
-    console.error("[war-room] moveContainerAssignments failed:", error);
-    throw error;
-  }
-  return data ?? [];
+  const res = await associationsService.remove({
+    sourceType: entityToSource(entityType),
+    sourceId: entityId,
+    targetType: containerTargetType(ref.type),
+    targetId: ref.id,
+  });
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
 }
 
 /**
  * Copy every assignment of one container onto another (thread IMPORT: duplicate
  * a thread's resource links into a new room without removing the originals).
- * Idempotent via the UNIQUE constraint.
+ * Idempotent via the unique edge.
  */
 export async function copyContainerAssignments(
   from: ContainerRef,
   to: ContainerRef,
 ): Promise<WarRoomAssignment[]> {
-  const userId = requireUserId();
   const source = await listAssignmentsForContainer(from);
   if (source.length === 0) return [];
-  const rows = source.map((a) => ({
-    container_type: to.type,
-    container_id: to.id,
-    entity_type: a.entity_type,
-    entity_id: a.entity_id,
-    user_id: userId,
-    position: a.position,
-    is_active: a.is_active,
-    label: a.label,
-    metadata: a.metadata,
-  }));
-  const { data, error } = await supabase
-    .from(ASSIGNMENTS)
-    .upsert(rows, {
-      onConflict: "container_type,container_id,entity_type,entity_id",
-      ignoreDuplicates: true,
-    })
-    .select("*");
-  if (error) {
-    console.error("[war-room] copyContainerAssignments failed:", error);
-    throw error;
+  const orgId = await resolveContainerOrgId(to);
+  const targetType = containerTargetType(to.type);
+  const copied: WarRoomAssignment[] = [];
+  for (const a of source) {
+    const res = await associationsService.add({
+      sourceType: entityToSource(a.entity_type),
+      sourceId: a.entity_id,
+      targetType,
+      targetId: to.id,
+      orgId,
+      label: a.label ?? undefined,
+      metadata: a.metadata ?? {},
+    });
+    if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+    copied.push({
+      ...a,
+      id: res.data.id,
+      container_type: to.type,
+      container_id: to.id,
+    });
   }
-  return data ?? [];
+  return copied;
 }
