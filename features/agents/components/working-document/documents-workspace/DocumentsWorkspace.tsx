@@ -45,6 +45,8 @@ function kindLabel(kind: WorkingDocumentKind): string {
 interface DocumentsWorkspaceProps {
   /** The active conversation — its working + scratch are the base tabs. */
   conversationId: string;
+  /** Which base tab is active on mount. Defaults to the working document. */
+  initialKind?: WorkingDocumentKind;
   /** Host page context carried into each current-conversation tab's surface. */
   surfaceContext?: WorkingDocumentSurfaceContext;
   /** Show the recent-docs rail by default. */
@@ -54,6 +56,7 @@ interface DocumentsWorkspaceProps {
 
 export function DocumentsWorkspace({
   conversationId,
+  initialKind = "working",
   surfaceContext,
   defaultRailOpen = false,
   className,
@@ -63,7 +66,7 @@ export function DocumentsWorkspace({
     { conversationId, kind: "scratch", closable: false },
   ]);
   const [activeKey, setActiveKey] = useState(() =>
-    tabKey({ conversationId, kind: "working" }),
+    tabKey({ conversationId, kind: initialKind }),
   );
   const [railOpen, setRailOpen] = useState(defaultRailOpen);
 
@@ -102,12 +105,22 @@ export function DocumentsWorkspace({
 
   const active = tabs.find((t) => tabKey(t) === activeKey) ?? tabs[0];
 
+  // What the rail needs to render attach/detach/swap state: which docs are open
+  // (so it can mark them active + offer Detach), and which of those can close
+  // (the conversation's own working + scratch are permanent, never detachable).
+  const openKeys = new Set(tabs.map(tabKey));
+  const closableKeys = new Set(tabs.filter((t) => t.closable).map(tabKey));
+
   return (
     <div className={cn("flex h-full min-h-0", className)}>
       {railOpen && (
         <DocumentsListRail
           currentConversationId={conversationId}
+          activeKey={activeKey}
+          openKeys={openKeys}
+          closableKeys={closableKeys}
           onOpen={openDoc}
+          onDetach={closeTab}
           onCollapse={() => setRailOpen(false)}
         />
       )}

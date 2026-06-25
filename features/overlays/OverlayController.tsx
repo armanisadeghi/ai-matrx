@@ -3869,7 +3869,7 @@ export default function OverlayController() {
           >
             <DocumentsWorkspace
               conversationId={conversationId}
-              defaultRailOpen={false}
+              defaultRailOpen
               className="h-full"
             />
           </SidePanelSurface>

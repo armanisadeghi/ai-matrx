@@ -95,7 +95,9 @@ export function ArtifactResultBar({
           type: "working_document",
           data: { conversationId, kind: "working" },
           metadata: {
-            title,
+            // The Canvas pane title is the neutral container label; the
+            // workspace's tab strip names each doc, so this never repeats it.
+            title: "Documents",
             conversationId,
             sourceMessageId: `wd:${conversationId}:working`,
           },

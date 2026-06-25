@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
   Pencil,
   Search,
+  Unlink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ItemRow } from "@/components/official/item/ItemRow";
@@ -35,11 +36,23 @@ export interface DocumentsRailSelection {
   title: string;
 }
 
+function railTabKey(conversationId: string, kind: WorkingDocumentKind): string {
+  return `${conversationId}:${kind}`;
+}
+
 interface DocumentsListRailProps {
   /** The conversation whose docs pin to the top. */
   currentConversationId?: string;
-  /** Open a document as a tab. */
+  /** The currently-viewed tab key (`conversationId:kind`) — highlighted. */
+  activeKey?: string;
+  /** Tab keys currently open in the workspace (marked as attached). */
+  openKeys?: Set<string>;
+  /** Open tab keys that can be detached (the conversation's own docs can't). */
+  closableKeys?: Set<string>;
+  /** Open a document as a tab (attach / swap to it). */
   onOpen: (sel: DocumentsRailSelection) => void;
+  /** Detach (close) an open document tab by its key. */
+  onDetach?: (key: string) => void;
   /** Collapse the rail. */
   onCollapse?: () => void;
   className?: string;
@@ -47,7 +60,11 @@ interface DocumentsListRailProps {
 
 export function DocumentsListRail({
   currentConversationId,
+  activeKey,
+  openKeys,
+  closableKeys,
   onOpen,
+  onDetach,
   onCollapse,
   className,
 }: DocumentsListRailProps) {
@@ -142,7 +159,10 @@ export function DocumentsListRail({
         )}
         {ordered.map((d) => {
           const isScratch = d.kind === "scratch";
-          const isCurrent = d.conversationId === currentConversationId;
+          const key = railTabKey(d.conversationId!, d.kind);
+          const isOpen = openKeys?.has(key) ?? false;
+          const isActive = activeKey != null && key === activeKey;
+          const canDetach = (closableKeys?.has(key) ?? false) && !!onDetach;
           const label =
             d.title?.trim() || (isScratch ? "Scratchpad" : "Working document");
           const open = () =>
@@ -156,7 +176,7 @@ export function DocumentsListRail({
             <ItemRow
               key={d.id}
               size="sm"
-              active={isCurrent}
+              active={isActive}
               label={label}
               leading={
                 isScratch ? (
@@ -164,6 +184,15 @@ export function DocumentsListRail({
                 ) : (
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                 )
+              }
+              trailing={
+                isOpen ? (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-primary"
+                    title="Attached"
+                    aria-label="Attached"
+                  />
+                ) : undefined
               }
               onOpen={open}
               rename={{
@@ -184,12 +213,19 @@ export function DocumentsListRail({
                 sections: [
                   {
                     items: [
-                      {
-                        id: "open",
-                        label: "Open",
-                        icon: PanelLeftOpen,
-                        onSelect: open,
-                      },
+                      isOpen
+                        ? {
+                            id: "swap",
+                            label: "Switch to",
+                            icon: PanelLeftOpen,
+                            onSelect: open,
+                          }
+                        : {
+                            id: "open",
+                            label: "Attach",
+                            icon: PanelLeftOpen,
+                            onSelect: open,
+                          },
                       {
                         id: "rename",
                         label: "Rename",
@@ -197,6 +233,17 @@ export function DocumentsListRail({
                         intent: "rename",
                         onSelect: () => {},
                       },
+                      ...(canDetach
+                        ? [
+                            {
+                              id: "detach",
+                              label: "Detach",
+                              icon: Unlink,
+                              tone: "destructive" as const,
+                              onSelect: () => onDetach?.(key),
+                            },
+                          ]
+                        : []),
                     ],
                   },
                 ],

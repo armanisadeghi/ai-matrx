@@ -45,14 +45,15 @@ const CodeEditErrorCanvas = dynamic(
   { ssr: false },
 );
 // Live working document / scratchpad editor rendered INSIDE the Canvas shell.
-// Heavy (NoteEditorCore + RichDocument + the agent context menu), so it stays
-// out of the canvas base chunk until a document item actually opens. Header off
-// — CanvasPane supplies the single clean header; the panel is just the editor.
-const WorkingDocumentPanel = dynamic(
+// Heavy (NoteEditorCore + RichDocument + the agent context menu + the doc list),
+// so it stays out of the canvas base chunk until a document item actually opens.
+// CanvasPane supplies the single "Documents" header; the workspace owns its tab
+// strip + list + editor.
+const DocumentsWorkspace = dynamic(
   () =>
     import(
-      "@/features/agents/components/working-document/WorkingDocumentPanel"
-    ).then((m) => ({ default: m.WorkingDocumentPanel })),
+      "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace"
+    ).then((m) => ({ default: m.DocumentsWorkspace })),
   { ssr: false },
 );
 
@@ -109,8 +110,11 @@ export function getDefaultTitle(type: string): string {
     mermaid: "Diagram",
     code_preview: "Code Preview",
     code_edit_error: "Code Edit Error",
-    working_document: "Working document",
-    scratchpad: "Scratchpad",
+    // Both render the multi-document DocumentsWorkspace, whose tab strip names
+    // each doc (Working document / Scratchpad) — so the pane title is the
+    // neutral container label, never a third repeat of the tab.
+    working_document: "Documents",
+    scratchpad: "Documents",
   };
   return titles[type] || "Canvas View";
 }
@@ -160,16 +164,16 @@ function renderContent(content: CanvasContent): React.ReactNode {
   switch (type) {
     case "working_document":
     case "scratchpad":
-      // `data` is a pointer { conversationId, kind }. The panel reads the live
-      // document from Redux and self-persists. CanvasPane owns the header, so
-      // the panel renders chrome-free.
+      // `data` is a pointer { conversationId, kind }. The multi-document
+      // workspace reads live docs from Redux + the DB and self-persists: a
+      // document list (attach / detach / swap) + the Working document /
+      // Scratchpad tabs + the active editor. CanvasPane owns the "Documents"
+      // container title; the tab strip names each doc (no nested repeat).
       return (
-        <WorkingDocumentPanel
+        <DocumentsWorkspace
           conversationId={data.conversationId}
-          kind={type === "scratchpad" ? "scratch" : "working"}
-          showHeader={false}
-          showOpenInWindow={false}
-          showEnableToggle={false}
+          initialKind={type === "scratchpad" ? "scratch" : "working"}
+          defaultRailOpen
           className="h-full"
         />
       );
