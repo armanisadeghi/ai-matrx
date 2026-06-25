@@ -269,7 +269,7 @@ export default function MenuContent(props: MenuContentProps) {
     sections: boundAgentSections,
     loading: boundAgentsLoading,
     refresh: refreshBoundAgents,
-  } = useSurfaceBoundAgents(surfaceName);
+  } = useSurfaceBoundAgents(surfaceName, { isEditable });
 
   const { launchShortcut, launchAgent } = useAgentLauncher();
   const {
@@ -300,7 +300,9 @@ export default function MenuContent(props: MenuContentProps) {
   // never refetches. A double fetch is structurally impossible.
   useEffect(() => {
     void refresh();
-    if (surfaceName) void refreshBoundAgents();
+    // Default-contract agents (matrx-default/*) apply even with no surfaceName,
+    // so always fetch — a bare/undeclared surface still gets its default agents.
+    void refreshBoundAgents();
   }, []);
 
   // Assemble the scope the menu acts on. Stable for this open (the shell
@@ -456,6 +458,32 @@ export default function MenuContent(props: MenuContentProps) {
       });
     }
   };
+
+  // Native per-field Undo/Redo. When the surface provides no richer history
+  // (`onUndo`/`onRedo`), an editable field still gets the browser's built-in
+  // undo stack — "offer undo" without standing up a history system. There is no
+  // non-deprecated API to trigger a textarea's native undo, so `execCommand` is
+  // the intentional (and only) mechanism here.
+  const editableElement: HTMLTextAreaElement | HTMLInputElement | null = (() => {
+    const fromRange =
+      selectionRange?.type === "editable" ? selectionRange.element : null;
+    const el = fromRange ?? getTextarea?.() ?? null;
+    return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
+      ? el
+      : null;
+  })();
+  const canNativeUndo = Boolean(isEditable && editableElement);
+  const runNativeEdit = (command: "undo" | "redo") => {
+    if (!editableElement) return;
+    editableElement.focus();
+    try {
+      document.execCommand(command);
+    } catch (err) {
+      console.error(`[ContextMenuV3] native ${command} failed`, err);
+    }
+  };
+  const handleUndo = () => (onUndo ? onUndo() : runNativeEdit("undo"));
+  const handleRedo = () => (onRedo ? onRedo() : runNativeEdit("redo"));
 
   // Compare — reuses the existing diff-viewer window + compare-base slice.
   const compareContent = (): { content: string; label: string } => {
@@ -918,7 +946,7 @@ export default function MenuContent(props: MenuContentProps) {
       <Separator />
 
       {/* History (Undo / Redo / View History / Compare) */}
-      <Item onSelect={() => onUndo?.()} disabled={!onUndo || !canUndo}>
+      <Item onSelect={handleUndo} disabled={onUndo ? !canUndo : !canNativeUndo}>
         <Undo2 className="h-4 w-4 mr-2 text-sky-500" />
         Undo
         {undoHint && (
@@ -927,7 +955,7 @@ export default function MenuContent(props: MenuContentProps) {
           </span>
         )}
       </Item>
-      <Item onSelect={() => onRedo?.()} disabled={!onRedo || !canRedo}>
+      <Item onSelect={handleRedo} disabled={onRedo ? !canRedo : !canNativeUndo}>
         <Redo2 className="h-4 w-4 mr-2 text-sky-500" />
         Redo
         {redoHint && (
@@ -1020,16 +1048,15 @@ export default function MenuContent(props: MenuContentProps) {
 
       {/* Dynamic, data-driven placements (from the single fetch). */}
       {renderPlacementSubmenu(PLACEMENT_TYPES.AI_ACTION)}
-      {Boolean(surfaceName) &&
-        resolvedPlacementMode["bound-agent"] !== "hide" && (
-          <BoundAgentsMenuSection
-            variant={variant}
-            loading={boundAgentsLoading}
-            sections={boundAgentSections}
-            onSelect={(entry) => void handleBoundAgentExecute(entry)}
-            disabled={resolvedPlacementMode["bound-agent"] === "disable"}
-          />
-        )}
+      {resolvedPlacementMode["bound-agent"] !== "hide" && (
+        <BoundAgentsMenuSection
+          variant={variant}
+          loading={boundAgentsLoading}
+          sections={boundAgentSections}
+          onSelect={(entry) => void handleBoundAgentExecute(entry)}
+          disabled={resolvedPlacementMode["bound-agent"] === "disable"}
+        />
+      )}
       {renderPlacementSubmenu(PLACEMENT_TYPES.CONTENT_BLOCK)}
       {renderPlacementSubmenu(PLACEMENT_TYPES.USER_TOOL)}
       {renderPlacementSubmenu(PLACEMENT_TYPES.ORGANIZATION_TOOL)}

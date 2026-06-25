@@ -56,7 +56,7 @@ export function BoundAgentsMenuSection({
         className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
       >
         <Bot className="h-4 w-4 mr-2 text-indigo-500" />
-        Bound Agents
+        Agents
         {loading && (
           <Loader2 className="h-3 w-3 animate-spin ml-auto opacity-50" />
         )}
@@ -68,7 +68,7 @@ export function BoundAgentsMenuSection({
           </div>
         ) : !hasAgents ? (
           <div className="px-2 py-2 text-xs text-muted-foreground italic">
-            No agents bound to this surface
+            No agents available
           </div>
         ) : (
           sections.map((section, sectionIdx) => (
