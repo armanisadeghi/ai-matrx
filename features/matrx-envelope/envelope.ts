@@ -67,11 +67,35 @@ export interface DirectiveApplyCompleted {
   applied: number;
   failed: number;
 }
+/**
+ * A model-emitted directive whose resolved apply policy is `ask` — NOT applied.
+ * The client renders an approve/decline card and, on accept, POSTs `envelope`
+ * back to `/actions/confirm`. Idempotent by `proposal_id`. See the backend
+ * cascade: aidream services/output_directives/policy.py + confirm.py.
+ */
+export interface DirectiveProposed {
+  kind: "directive_apply.proposed";
+  type: string;
+  proposal_id: string;
+  item_count: number;
+  verb: string | null;
+  noun: string | null;
+  summary: string | null;
+  envelope: MatrxEnvelope;
+}
+/** A directive suppressed by the cascade (`off`, or `ask` with no human). */
+export interface DirectiveApplyBlocked {
+  kind: "directive_apply.blocked";
+  type: string;
+  reason: string;
+}
 export type DirectiveApplyEvent =
   | DirectiveApplyStarted
   | DirectiveItemApplied
   | DirectiveItemFailed
-  | DirectiveApplyCompleted;
+  | DirectiveApplyCompleted
+  | DirectiveProposed
+  | DirectiveApplyBlocked;
 
 export function isDirectiveApplyEvent(
   value: unknown,
@@ -82,7 +106,19 @@ export function isDirectiveApplyEvent(
     k === "directive_apply.started" ||
     k === "directive_apply.item" ||
     k === "directive_apply.failed" ||
-    k === "directive_apply.completed"
+    k === "directive_apply.completed" ||
+    k === "directive_apply.proposed" ||
+    k === "directive_apply.blocked"
+  );
+}
+
+export function isDirectiveProposed(
+  value: unknown,
+): value is DirectiveProposed {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { kind?: unknown }).kind === "directive_apply.proposed"
   );
 }
 

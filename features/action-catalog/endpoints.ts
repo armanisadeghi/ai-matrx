@@ -11,4 +11,6 @@ export const ENDPOINTS_ACTIONS = {
   catalog: "/actions/catalog" as const,
   /** POST — run ONE `verb:noun` action as the user (authed; RLS). */
   execute: "/actions/execute" as const,
+  /** POST — apply a directive the agent proposed under `ask`, on user accept (authed). */
+  confirm: "/actions/confirm" as const,
 } as const;

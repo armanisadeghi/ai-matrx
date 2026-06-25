@@ -14,9 +14,12 @@ import { ENDPOINTS_ACTIONS } from "@/features/action-catalog/endpoints";
 import {
   isActionApplyResult,
   isActionCatalog,
+  isDirectiveConfirmResult,
   type ActionApplyResult,
   type ActionCatalog,
   type ActionExecuteRequest,
+  type DirectiveConfirmRequest,
+  type DirectiveConfirmResult,
 } from "@/features/action-catalog/types";
 
 const trimRoot = (baseUrl: string): string =>
@@ -97,6 +100,53 @@ export async function executeAction(
   const payload: unknown = await response.json();
   if (!isActionApplyResult(payload)) {
     throw new Error(`Execute response was malformed (missing type / applied / receipts) from ${url}`);
+  }
+  return payload;
+}
+
+/**
+ * Apply a directive an agent PROPOSED under the `ask` policy, once the user
+ * accepts it (the approve button on a `directive_apply.proposed` card). AUTHED —
+ * the write runs as the user (RLS) on the server. `body` is the round-tripped
+ * envelope the proposal carried; idempotent by `proposal_id` (a double-accept is
+ * a no-op). Throws a structured Error on a missing base / no session / non-2xx /
+ * malformed payload. Same JWT path as `executeAction` — never writes Supabase.
+ */
+export async function confirmDirective(
+  baseUrl: string | undefined,
+  body: DirectiveConfirmRequest,
+): Promise<DirectiveConfirmResult> {
+  if (!baseUrl) {
+    throw new Error("No backend base URL configured (apiConfigSlice / NEXT_PUBLIC_BACKEND_URL_*).");
+  }
+  const { data, error } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (error || !token) {
+    throw new Error("Not signed in — confirming an action needs an authenticated session.");
+  }
+  const url = `${trimRoot(baseUrl)}${ENDPOINTS_ACTIONS.confirm}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`;
+    try {
+      const err: unknown = await response.json();
+      if (err && typeof err === "object" && "detail" in err) {
+        detail = String((err as { detail: unknown }).detail);
+      }
+    } catch {
+      /* non-JSON error body — keep the status line */
+    }
+    throw new Error(`Confirm failed: ${detail}`);
+  }
+
+  const payload: unknown = await response.json();
+  if (!isDirectiveConfirmResult(payload)) {
+    throw new Error(`Confirm response was malformed (missing type / proposal_id / receipts) from ${url}`);
   }
   return payload;
 }

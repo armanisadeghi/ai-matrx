@@ -8,6 +8,7 @@ import { AgentConversationDisplay } from "../messages-display/AgentConversationD
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
+import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
@@ -270,6 +271,7 @@ export function AgentConversationColumn({
               column. The chat input itself stays fully interactive: answering
               cards and typing into the input are independent actions. */}
           <PendingAsksZone conversationId={displayId} />
+          <ProposedDirectivesZone conversationId={displayId} />
 
           {!hideInput && (
             <SmartAgentInput

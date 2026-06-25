@@ -94,3 +94,57 @@ export function isActionApplyResult(value: unknown): value is ActionApplyResult 
     Array.isArray(v.receipts)
   );
 }
+
+// ── Confirm (ask policy) — mirrors POST /actions/confirm ─────────────────────
+
+/**
+ * Apply a directive an agent PROPOSED under the `ask` policy, once the user
+ * accepts. The body is the round-tripped envelope from the
+ * `directive_apply.proposed` stream event. Matches the backend
+ * `DirectiveConfirmRequest`.
+ */
+export interface DirectiveConfirmRequest {
+  matrx_version: number;
+  kind: "output_directive";
+  type: string;
+  items: Record<string, unknown>[];
+  proposal_id?: string | null;
+  force?: boolean;
+}
+
+/** One confirmed item's receipt — the `directive_apply.*` stream shapes. */
+export interface DirectiveConfirmReceipt {
+  kind: "directive_apply.item" | "directive_apply.failed";
+  type: string;
+  index: number;
+  status?: "applied" | "already_applied";
+  resource_kind?: string;
+  resource_ids?: string[];
+  summary?: string;
+  error?: string;
+  fault?: "agent" | "processor";
+}
+
+/** The confirm response — counts + per-item receipts. Matches `DirectiveConfirmResult`. */
+export interface DirectiveConfirmResult {
+  type: string;
+  proposal_id: string;
+  applied: number;
+  failed: number;
+  receipts: DirectiveConfirmReceipt[];
+}
+
+/** Runtime guard for the confirm response. */
+export function isDirectiveConfirmResult(
+  value: unknown,
+): value is DirectiveConfirmResult {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.type === "string" &&
+    typeof v.proposal_id === "string" &&
+    typeof v.applied === "number" &&
+    typeof v.failed === "number" &&
+    Array.isArray(v.receipts)
+  );
+}
