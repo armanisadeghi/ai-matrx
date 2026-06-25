@@ -19,6 +19,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { InstanceUserInputState } from "@/features/agents/types/instance.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 import {
   isInputDraftProtected,
   reportInputDraftViolation,
@@ -382,6 +383,25 @@ const instanceUserInputSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    // Atomic creation — mirrors initInstanceUserInput's default entry shape.
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { conversationId, userInput } = action.payload;
+      state.byConversationId[conversationId] = {
+        conversationId,
+        text: userInput?.text ?? "",
+        messageParts: null,
+        submissionPhase: "idle",
+        lastSubmittedText: userInput?.lastSubmittedText ?? "",
+        lastSubmittedUserValues: { ...(userInput?.lastSubmittedUserValues ?? {}) },
+        originalSubmittedText: userInput?.originalSubmittedText,
+        originalSubmittedUserValues: userInput?.originalSubmittedUserValues
+          ? { ...userInput.originalSubmittedUserValues }
+          : undefined,
+        _undoPast: [],
+        _undoFuture: [],
+      };
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
     });

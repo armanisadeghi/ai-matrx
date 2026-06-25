@@ -1120,6 +1120,21 @@ button.shell-nav-flyout-item {
   margin-top: calc(-1 * var(--shell-header-h));
 }
 
+/* Admin tree compatibility — the `/administration/*` pages predate this shell
+   and were authored for the old ResponsiveLayout: a 2.5rem (`h-10`) header with
+   content BELOW it (`<main className="pt-10">`), and ~30 pages hardcode
+   `h-[calc(100dvh-2.5rem)]`. Two scoped rules reproduce that exactly so the
+   whole admin tree drops in with zero per-page edits:
+     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit.
+     2. Cancel `.shell-main`'s negative pull so content sits under the header
+        instead of scrolling behind it. */
+.shell-root[data-pathname^="/administration"] {
+  --shell-header-h: 2.5rem;
+}
+.shell-root[data-pathname^="/administration"] .shell-main {
+  margin-top: 0;
+}
+
 /* Ultra-thin auto-hiding scrollbar (global for shell) */
 .shell-main,
 .shell-main * {

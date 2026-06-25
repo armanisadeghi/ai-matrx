@@ -36,7 +36,7 @@ import {
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import type {
-  ScopeAssignmentEntityType,
+  EntityType,
   ScopeTypeNode,
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
@@ -76,7 +76,7 @@ type CommonProps = {
 
 type UncontrolledProps = CommonProps & {
   /** Entity being tagged. */
-  entityType: ScopeAssignmentEntityType;
+  entityType: EntityType;
   entityId: string;
   /** Optional callback invoked after a successful save. */
   onAfterSave?: (scopeIds: string[]) => void;

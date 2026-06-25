@@ -346,6 +346,68 @@ flowchart TD
 
 ---
 
+## The unified association edge — `platform.associations`
+
+The canonical **"associate ANY entity to ANY entity"** primitive, owned by this module. It replaces scattered `project_id`/`task_id` FK tagging and per-feature M2M tables (`ctx_scope_assignments`, `ctx_task_associations`, …) with **one polymorphic edge table**. Read this before adding any "tag / link / attach this to that" relationship anywhere in the app — extend the edge, never spin up a new M2M table or FK column.
+
+`platform.associations(source_type, source_id, target_type, target_id, org_id, label, metadata, created_by, created_at)`. A `source_type` is free text (any token may be a source); a **`target_type` is CHECK-constrained to 8 tokens**: `scope`, `scope_type`, `project`, `task`, `context_item`, `thread`, `war_room`, `category`. The entity vocabulary is driven by `platform.entity_types` — `AssociationTargetType` (8 CHECK-constrained targets) and the single `EntityType` union in `types.ts` mirror the registry 1:1. `EntityType` = 15 canonical registry tokens + 3 app entity types (`agent_app`, `agent_surface_binding`, `page_extraction_job`), registered via `migrations/platform_entity_types_app_tokens.sql`.
+
+### The primitive (all under `features/scopes/`)
+
+| Layer | What |
+|---|---|
+| **Service** | `service/associationsService.ts` — the **SOLE chokepoint** for the `assoc_*` RPCs. No other file may call them. Returns `ScopesRpcResult`, never throws. |
+| **Hook** | `hooks/useAssociations({ type, id }) → { edges, status, add, remove, setTargets, reload }` — the public API UI consumes. Components never touch the slice, thunks, or service directly. (`useEntityRelationships` is an alias.) |
+| **Component** | `components/associations/EntityAssociator.tsx` — the reusable panel; fed `sourceType` + `sourceId`, renders an entity's durable relationships (both directions) as chips + per-target-type "Add". Reuses the scope-tree pickers. |
+| **Redux** | `redux/scopesSlice.ts` `associationsByKey` cache (keyed `${type}:${id}`); `redux/thunks/associations.ts` (load/add/remove/setTargets); `redux/selectors/associations.ts` `selectAssociationsFor`. |
+
+`assoc_for_entity(p_type, p_id)` returns **both directions** in one round-trip — `direction` is relative to the queried entity (`outgoing` = it is the source; `incoming` = it is the target). `EntityAssociator` lets you detach only `outgoing` edges (this entity authored them); `incoming` are read-only.
+
+### Data path — PUBLIC SECURITY-DEFINER RPCs
+
+`authenticated` has **no direct grant** on `platform.*`, so every read/write goes through four SECURITY-DEFINER RPCs (org-filtered inside the function): `assoc_for_entity` (read, both directions), `assoc_add` (idempotent single edge), `assoc_remove`, `assoc_set_targets` (replace-semantics for one target type, the set-counterpart of `setEntityScopes`). Migrations: `migrations/assoc_public_rpcs.sql`, `migrations/assoc_m2m_mirror_triggers.sql`.
+
+### Transition contract — old tables are MIRRORED, not yet dropped
+
+Reads can move to `platform.associations` **now**; the column/table drops are a later destructive wave. Until then, triggers keep the edge in sync with the legacy storage:
+
+- **33 FK mirrors** + the 2 new M2M mirrors (`ctx_scope_assignments`, `ctx_task_associations` via `platform._mirror_m2m_to_assoc`) replicate every legacy `project_id`/`task_id` write and M2M row into `platform.associations`.
+- **War Room writes associations directly** (no mirror) — it is already native to the edge.
+- **One entity vocabulary** (reconciled 2026-06-24): the `ctx_scope_assignments` path and association code share the single `EntityType` union — the divergent `ScopeAssignmentEntityType` subset is deleted. `EntityType` carries the 15 registry tokens + the 3 live app entity types (`agent_app`, `agent_surface_binding`, `page_extraction_job`); the dead `agent_shortcut`/`project_resource` tokens were dropped.
+
+### The invariant — durable association ≠ active working context
+
+> **Association thunks NEVER write `appContextSlice`.** A durable edge is a stored relationship; it is NOT the user's active working context (Surface A owns `appContextSlice`). An `EntityAssociator` on a surface must never change the sidebar's active context — the same load-bearing rule that governs Surface B tagging.
+
+---
+
+## The canonical taxonomy — `platform.categories`
+
+The canonical **faceted category** primitive, owned by this module. **One table**, partitioned by `dimension` (the facet — `agent-shortcut`, `skill`, `industry`, `context-item`, …), replacing the fragmented per-feature category systems (`shortcut_categories`, `skl_categories`, the hardcoded `INDUSTRY_CATEGORIES` / `DEFAULT_CATEGORIES` arrays). Read this before adding any "category / tag list / picklist of groupings" anywhere — **add a `dimension`, never a new category table or hardcoded array.** Known facets are enumerated in `features/scopes/categoryDimensions.ts` (`CATEGORY_DIMENSIONS`).
+
+`platform.categories(id, org_id, dimension, name, slug, parent_id, is_system, color, icon, position)`. `org_id IS NULL` = **system / global** category (visible to everyone); a non-null `org_id` = org-owned. `dimension` is free text — a new facet needs **no migration**.
+
+### The primitive (all under `features/scopes/`)
+
+| Layer | What |
+|---|---|
+| **Service** | `service/categoriesService.ts` — the **SOLE chokepoint** for the `cat_*` RPCs. No other file may call them. Returns `ScopesRpcResult`, never throws. |
+| **Hook** | `hooks/useCategories({ dimension }) → { categories, status, create, reload }` — the public API UI consumes. Components never touch the slice, thunks, or service directly. |
+| **Redux** | `redux/scopesSlice.ts` `categoriesByDimension` cache (keyed by `dimension`); `redux/thunks/categories.ts` (load/create); `redux/selectors/categories.ts` `selectCategoriesFor`. |
+| **Types** | `PlatformCategory` / `CategoriesEntry` / `CategoryDimension` in `types.ts`. |
+
+### Category is the noun; association is the verb
+
+**ASSIGNING a category to an entity is NOT a category concern — it reuses the association edge.** `category` is already a valid `AssociationTargetType`, so tagging is `useAssociations(...).add({ targetType: 'category', targetId })`. There is **no category-assignment table** and never will be. `categoriesService` owns the category nouns; `associationsService` owns the assignment edges.
+
+### Data path — PUBLIC SECURITY-DEFINER RPCs (read + create only)
+
+`authenticated` has **no direct grant** on `platform.*`. The live surface is **two** RPCs (migration `migrations/user_state_and_category_rpcs.sql`): `cat_list(p_dimension?)` (system + my-org, org-filtered by `iam.has_org_access`) and `cat_create(p_dimension, p_name, p_org_id, …)` (org category only — forces `is_system=false`, so **system seeds are a migration**, never a client write).
+
+> **No mutation surface yet.** There is no `cat_update` / `cat_delete` / `cat_reparent`. Read-only dimensions (the hardcoded arrays) migrate **now**; the stateful editors (`skl_categories`, `shortcut_categories` — they rename / recolor / reparent / delete) need those RPCs **first**.
+
+---
+
 ## Redux shape
 
 One canonical tree slice plus two sidecars. Replaces eight existing slices.
@@ -530,10 +592,14 @@ selectContradictions({ entityType?, entityId? })   // returns Array<{ typeId, gl
 - `useTemplates()` — read templates.
 - `useResolvedContext({ entityType?, entityId? })` — read the merged bundle for an entity-bound action.
 - `useContradictions({ entityType?, entityId? })` — read collision list.
+- `useAssociations({ type, id })` — read + mutate an entity's `platform.associations` edges (both directions). See §"The unified association edge".
+- `useCategories({ dimension })` — read + create categories in one facet of `platform.categories`. See §"The canonical taxonomy".
 
 ### Service
 
 - `features/scopes/service/scopesService.ts` — the **only** file allowed to call `supabase.from('ctx_*')`. ESLint rule enforces. All other code goes through Redux thunks or hooks.
+- `features/scopes/service/associationsService.ts` — the **only** file allowed to call the `assoc_*` RPCs (`platform.associations`). Same chokepoint discipline.
+- `features/scopes/service/categoriesService.ts` — the **only** file allowed to call the `cat_*` RPCs (`platform.categories`). Same chokepoint discipline.
 
 ### Slices
 
@@ -597,9 +663,11 @@ Lives under `features/scopes/components/templates/`.
 - `<TemplateDetail templateId />`
 - `<ApplyTemplateFlow templateId orgId />`
 
-### Final picker shape — explicitly deferred
+### Associations panel (SHIPPED) + final scope-picker shape
 
-The decision of whether to merge `<ActiveScopePicker />` and `<EntityScopeTagger />` into one configurable picker, or keep them split, is **deferred until Phase 3 ships and we see both in real use**. The non-negotiable rule is the same regardless: **Surface B never writes to `appContextSlice`**.
+The universal "link any entity to any entity" UI is **built**: `<EntityAssociator />` (see §"The unified association edge"). It is the canonical home for durable cross-entity relationships and reuses the scope-tree pickers rather than inventing new ones.
+
+Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (Surface A) and `<EntityScopeTagger />` (Surface B) into one configurable picker, or keep them split. The non-negotiable rule is the same for all three — **Surface B and association panels never write to `appContextSlice`**.
 
 ---
 
@@ -658,7 +726,8 @@ The decision of whether to merge `<ActiveScopePicker />` and `<EntityScopeTagger
 
 ## Invariants & gotchas
 
-- **Global context is ONLY written by Surface A components.** Surface B is locked out at the import path via ESLint.
+- **Global context is ONLY written by Surface A components** (`features/scopes/components/active-context/**`). Enforced, not just documented: `appContextWriteSyntaxRestrictions` (`eslint.config.mjs`, modeled on the scopesService chokepoint) bans importing the `appContextSlice` write actions (`setOrganization`/`setScopeSelections`/`setProject`/`setTask`/`setConversation`/`setFullContext`/`clearContext`) anywhere else. A legitimate Surface-A writer living outside that folder (`useHierarchyReduxBridge`, `useContextScope`, `BoundVariableChips`, `TasksContextSidebar`, the logout reset) carries a justified `// eslint-disable-next-line no-restricted-syntax`. Every other surface persists a durable association instead.
+- **Association writes NEVER touch `appContextSlice`.** A durable `platform.associations` edge is a stored relationship, not the active working context. All edge writes go through `useAssociations` → `associationsService` → the `assoc_*` RPCs; new "tag / link X to Y" UI extends the edge, never a fresh M2M table or FK column.
 - **One scope per scope_type in active context.** Multiple selections on the same type are rejected at the reducer (idempotent replace).
 - **Across-type selection is fully additive.** Never silently clear other dimensions.
 - **Cross-org snap is automatic and silent.** A scope from org B → active org becomes B. No confirm. Document it; never gate it.
@@ -671,7 +740,7 @@ The decision of whether to merge `<ActiveScopePicker />` and `<EntityScopeTagger
 - **Templates are read-only catalog.** Mutations on `ctx_templates` happen elsewhere (seed scripts, admin-only).
 - **`max_assignments_per_entity` is a hint, not a hard limit at the DB layer.** Surface B enforces in UI; the server validates in RPCs.
 - **The "Personal" pseudo-org sentinel** continues to live in `appContextSlice` per the existing rule in `features/agent-context/FEATURE.md` (see "Personal-projects sentinel"). The sentinel is storable in Redux / passable in UI props; the API boundary strips it. Carry forward unchanged.
-- **`ctx_scope_assignments.entity_type` is a string.** Define an enum in `features/scopes/types.ts` (`'note' | 'task' | 'agent' | 'agent_app' | 'agent_shortcut' | 'project_resource' | 'conversation' | ...`) and use it. Free-form strings are how the old code got into trouble.
+- **One entity vocabulary — `EntityType`.** Both `ctx_scope_assignments.entity_type` and `platform.associations.source_type` are free-text DB columns; the single `EntityType` union (`features/scopes/types.ts`) is the app-side guard that stops callers inventing tokens. There is NO separate `ScopeAssignmentEntityType` (deleted). New entity types are added to `platform.entity_types` FIRST, then mirrored into `EntityType` — never the reverse.
 
 ---
 
@@ -814,6 +883,10 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 
 ## Change log
 
+- `2026-06-24` — claude: **`appContextSlice` writes ESLint-enforced + entity vocabulary unified.** (1) The "global context is written by Surface A ONLY" invariant is now enforced, not just convention: `appContextWriteSyntaxRestrictions` (`eslint.config.mjs`, modeled on the scopesService chokepoint) bans importing the slice's write actions (`setOrganization`/`setScopeSelections`/`setProject`/`setTask`/`setConversation`/`setFullContext`/`clearContext`) outside `features/scopes/components/active-context/**` (+ the slice file). The 5 legitimate Surface-A writers outside that folder carry a justified `eslint-disable-next-line` (`useHierarchyReduxBridge`, `useContextScope`, `BoundVariableChips`, `TasksContextSidebar`, `AuthSessionWatcher`); none were the durable-association anti-pattern. (2) **One entity vocabulary:** deleted the divergent `ScopeAssignmentEntityType`; all ~17 callsites use the canonical `EntityType`, now 15 registry tokens + 3 app entity types (`agent_app`/`agent_surface_binding`/`page_extraction_job`), dead `agent_shortcut`/`project_resource` dropped. Registry parity: `migrations/platform_entity_types_app_tokens.sql` (registers the 3 in `platform.entity_types`).
+
+- `2026-06-24` — claude: **The unified association edge shipped** — `platform.associations` (one polymorphic `source→target` table, target CHECK-constrained to 8 tokens, driven by `platform.entity_types`/15) replaces scattered `project_id`/`task_id` FK tagging + per-feature M2M tables. New FE primitive under `features/scopes/`: `service/associationsService.ts` (sole `assoc_*` chokepoint), `hooks/useAssociations`, `components/associations/EntityAssociator.tsx`, `scopesSlice.associationsByKey` + `redux/thunks/selectors/associations`, plus `EntityType`/`AssociationTargetType`/`AssociationEdge`/`AssociationsEntry` in `types.ts`. FE data path = four PUBLIC SECURITY-DEFINER RPCs (`assoc_for_entity`/`assoc_add`/`assoc_remove`/`assoc_set_targets` — `authenticated` has no direct `platform.*` grant); migrations `assoc_public_rpcs.sql` + `assoc_m2m_mirror_triggers.sql`. **Transition contract:** old M2M tables + FK columns are MIRRORED into the edge by triggers (33 FK + 2 M2M via `_mirror_m2m_to_assoc`), so reads can move now; drops are a later destructive wave. War Room writes the edge directly. `ContextAssignmentField`'s project/task tagging now persists real edges via `setTargets` (was a dead stub). **Invariant:** association thunks never write `appContextSlice`. New §"The unified association edge"; reconciled the "final picker shape — deferred" note (relationship UI is now `EntityAssociator`). Also this changeover (FE swap pending, documented at the consuming features): `platform.user_entity_state` (favorites/pins/hidden/recency; RPCs `ues_set`/`ues_list`/`ues_get_bulk`/`ues_touch`) and `platform.categories` (faceted by `dimension`; RPCs `cat_list`/`cat_create`; assignment reuses `assoc_add(target_type='category')`).
+
 - `2026-06-19` — claude: **`ActiveContextLayersPanel`** — read-only display of the selected context (`active-context/ActiveContextLayersPanel.tsx`). For each active scope it shows the scope's context items + current values (reuses the `ScopeDetailView` data pattern: `useContextValues` + `scopesService.listContextItems`); org/project render a compact card with a manage link; a selected task embeds the native `TaskEditor`. Pure Surface-A read (no dispatch). Wired into the `RunControlsMenu` Context tab beneath `ActiveContextPanel` (picker `sectionHeight` trimmed to 220, tab now scrolls). Closes the gap where selected context layers showed nothing of what they carried.
 
 - `2026-06-18` — claude: **Org home folded into the universal header.** `ScopesRouteHeader` now also renders on the org home itself (`/organizations/[orgId]`, `segs.length === 0`): ← · Organizations icon · **Company** with the org switcher, and the same Edit / Delete tap-target group in the header-right slot — Edit → `/organizations/[orgId]/settings`, Delete → guarded `confirm()` + `deleteOrganization` (owner-only, non-personal, redirects to `/organizations`; the type-the-name danger zone in settings still exists). `OrgWorkspace` switched to `h-dvh` + `px-* pt-12 pb-12` and dropped its inline Back + "Manage" buttons (now header actions); "Contribute" stays inline.
@@ -859,6 +932,7 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 - `2026-05-16` — composer: full-repo type-check pass. Exported a new `isScopesRpcErr<T>()` type guard from `features/scopes/types.ts` and routed every consumer through it (`ensureScopeTree`, `ensureEntityScopes`, `setEntityScopes`, `ensureContextValues`, `ensureOrphanProjects`, `ensureScopeTasks`, `ensureTemplates`, `useEntitiesByScopes`). The repo runs with `strictNullChecks: false`, which breaks TS's default discriminated-union narrowing on boolean `ok` discriminants — the helper restores correct `data` / `error` narrowing without flipping the global strict setting. Also re-pointed three legacy `features/agent-context` editors at the canonical two-arg `useContextItemValue(itemId, scopeId)` / `useContextVersionHistory(itemId, scopeId)` signatures (those call sites were passing `itemId` only and silently fetching with `undefined` scope), and swapped four `DynamicIcon` callsites in scopes/tasks UIs off the unsupported `style={{ color }}` prop onto the canonical `color` prop. Repo-wide `tsc --noEmit` is now zero-error.
 - `2026-05-16` — composer: Redux selector stability — `ActiveScopePicker` / `EntityTargetPicker` no longer pass a fresh `[]` from `useAppSelector` when there is no task level; `tasksForLevel` is `undefined` until a level exists, with `?? []` only inside `useMemo` / handlers. Eliminates *"returned a different result with the same parameters"* / unnecessary rerenders.
 - `2026-05-16` — composer: sidebar picker bug fixes. Two issues addressed: (1) `scopesService.getScopeTree` was relying on `organization_members.SELECT` RLS to filter rows, but that policy is `qual = true` — so every org_members row in every org the user belongs to was being returned, producing one duplicate-org-row per co-member (e.g. 1 + 3 + 3 = 7 phantom org rows in the picker's "Organization" flyout for a user with 3 orgs that had 1, 3, and 3 total members). The fetch now passes `.eq("user_id", userId)` explicitly. `scopesSlice.treeFetchFulfilled` also dedups `organizationIds` via a `Set` for defense-in-depth so a future regression upstream can never reintroduce visible duplicates. (2) `ActiveScopePicker` redesigned to put scope-type rows (the actual work-defining items — kids, clients, departments, projects) at the TOP of the expanded picker, flattened across every org the user belongs to via `selectAllScopeTypesFlat`. Org / Project / Task rows moved below as drill-downs. Selecting a scope from any org now auto-promotes that org into the active context (Surface A invariant preserved — the picker is the canonical Surface A writer). Same-named scope types across orgs get an "Org" suffix only when collision happens (`scopeTypeRowLabel`). Multi-select-across-types continues to work as before via `setScopeSelections`; the cardinality contract (one scope per type) is unchanged.
+- `2026-06-24` — categories: canonical `platform.categories` primitive lands (foundation, purely additive). New §"The canonical taxonomy — `platform.categories`" documents it. `service/categoriesService.ts` (sole `cat_list`/`cat_create` chokepoint, untyped-rpc bridge until `db-types` regenerates, returns `ScopesRpcResult`, never throws); `categoriesByDimension` cache + `categoriesFetch{Pending,Fulfilled,Rejected}`/`categoryCreated` actions on `scopesSlice`; `redux/thunks/categories.ts` (`loadCategories`/`createCategory`, deduped); `redux/selectors/categories.ts` (`selectCategoriesFor`); `hooks/useCategories.ts`; `PlatformCategory`/`CategoriesEntry`/`CategoryDimension` types; `categoryDimensions.ts` (`CATEGORY_DIMENSIONS`). Replaces the fragmented `shortcut_categories` / `skl_categories` / hardcoded `INDUSTRY_CATEGORIES`+`DEFAULT_CATEGORIES` systems — migration is dimension-by-dimension. **Category assignment reuses the association edge** (`assoc_add targetType='category'`), no assignment table. RPC surface is **read+create only**: read-only dimensions migrate now; the stateful editors need `cat_update`/`cat_delete`/`cat_reparent` first.
 - `2026-05-16` — composer: React Compiler conformance pass. Migrated every `useMemo(makeSelectX, [])` in the scopes module to the inline-function form `useMemo(() => makeSelectX(), [])` (`useEntityScopes`, `useContextValues`, `ActiveScopePicker`, `ActiveScopeChips`, `EntityTargetPicker`, `EntityScopeTagger`, `TaskScopeTags`) so the `react-hooks/use-memo` rule passes. Rewrote the `ActiveScopePicker` "collapsed icon" branch from a component-during-render (`(props) => <DynamicIcon ... />` inside `useMemo`) to a discriminated `{ kind: 'lucide' | 'dynamic' }` descriptor — components must never be created during render. Replaced two `useMemo` blocks in `ScopeDetailView` with React-Compiler-friendly IIFEs (the typed-callback form was preventing the Compiler from preserving memoization). Rewrote `ScopesManager`'s "auto-expand on org change" effect onto the React 19 canonical `useState`-during-render pattern (`if (lastOrgId !== org.id) { setLastOrgId; setCollapsed; }`). Replaced the "reset state on disabled" effect branch in `useEntitiesByScopes` with a derived-return at the call site (no setState in effect for the disabled case) and added a single justified `react-hooks/set-state-in-effect` disable on the legitimate async-fetch subscription path. Removed two dead back-compat re-exports (`Folder` from `TaskScopeTags`, `ScopeNode` from `ContradictionBanner`) flagged by `no-barrel-files`. Full ESLint run across `features/scopes/**`, `features/tasks/components/TaskScopeTags.tsx`, the migrated `features/agent-context/components/*` editors, and `app/(a)/{scopes,agent-context}/**` is now zero-error, zero-warning; repo-wide `tsc --noEmit` is still zero-error.
 
 ---

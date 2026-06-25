@@ -340,45 +340,42 @@ export const TASK_LABEL_OPTIONS = [
   {
     value: "bug",
     label: "Bug",
-    color: "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+    color: "bg-destructive/10 text-destructive",
   },
   {
     value: "feature",
     label: "Feature",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
+    color: "bg-primary/10 text-primary",
   },
   {
     value: "improvement",
     label: "Improvement",
-    color:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400",
+    color: "bg-secondary/10 text-secondary",
   },
   {
     value: "docs",
     label: "Docs",
-    color: "bg-sky-100 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400",
+    color: "bg-info/10 text-info",
   },
   {
     value: "design",
     label: "Design",
-    color: "bg-pink-100 text-pink-700 dark:bg-pink-900/20 dark:text-pink-400",
+    color: "bg-accent-2/10 text-accent-2",
   },
   {
     value: "research",
     label: "Research",
-    color:
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400",
+    color: "bg-warning/10 text-warning",
   },
   {
     value: "question",
     label: "Question",
-    color:
-      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",
+    color: "bg-accent-3/10 text-accent-3",
   },
   {
     value: "blocked",
     label: "Blocked",
-    color: "bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400",
+    color: "bg-destructive/15 text-destructive",
   },
 ] as const;
 

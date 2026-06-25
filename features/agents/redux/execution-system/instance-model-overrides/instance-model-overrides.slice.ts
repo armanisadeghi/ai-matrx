@@ -21,6 +21,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { InstanceModelOverrideState } from "@/features/agents/types/instance.types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
 // State
@@ -158,6 +159,20 @@ const instanceModelOverridesSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    // Atomic creation. Manual mode omits `overrides` (Agent Builder reads
+    // agent.settings live) — skip seeding so it stays uninit, matching the
+    // legacy `if (apiEndpointMode !== "manual")` guard in createManualInstance.
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { conversationId, overrides } = action.payload;
+      if (!overrides) return;
+      state.byConversationId[conversationId] = {
+        conversationId,
+        baseSettings: overrides.baseSettings ?? {},
+        overrides: {},
+        removals: [],
+      };
+    });
+
     // Auto-cleanup when instance is destroyed
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];

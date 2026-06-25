@@ -15,7 +15,7 @@ import {
   StopTapButton,
 } from "@/components/icons/tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
-import { useCartesiaSpeaker } from "../hooks/useCartesiaSpeaker";
+import { useTtsSpeak } from "@/features/audio/playback/useTtsSpeak";
 
 interface Props {
   text: string;
@@ -32,8 +32,13 @@ export default function SpeakerCompactGroupCore({
   className,
   disabled = false,
 }: Props) {
-  const { isLoading, isPlaying, isPaused, speak, pause, resume, stop } =
-    useCartesiaSpeaker({ processMarkdown });
+  const { speak, status, itemId, pause, resume, remove } = useTtsSpeak({
+    processMarkdown,
+  });
+
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+  const isLoading = status === "loading" || status === "queued";
 
   const autoStartFired = useRef(false);
 
@@ -47,8 +52,12 @@ export default function SpeakerCompactGroupCore({
   const handleToggle = useCallback(async () => {
     if (isPlaying) await pause();
     else if (isPaused) await resume();
-    else await speak(text);
+    else speak(text);
   }, [isPlaying, isPaused, text, speak, pause, resume]);
+
+  const stop = useCallback(() => {
+    if (itemId) void remove(itemId);
+  }, [itemId, remove]);
 
   const toggleDisabled = disabled || isLoading;
   const stopDisabled = disabled || (!isPlaying && !isPaused);

@@ -1,17 +1,20 @@
 // Editable Project Name Component
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Edit2, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef, useEffect } from "react";
+import { Check, X, Edit2, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface EditableProjectNameProps {
   name: string;
   onSave: (newName: string) => Promise<void>;
 }
 
-export default function EditableProjectName({ name, onSave }: EditableProjectNameProps) {
+export default function EditableProjectName({
+  name,
+  onSave,
+}: EditableProjectNameProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,7 +29,7 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
 
   const handleSave = async () => {
     const trimmedName = editedName.trim();
-    
+
     if (!trimmedName) {
       setEditedName(name);
       setIsEditing(false);
@@ -43,7 +46,7 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
       await onSave(trimmedName);
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to save project name:', error);
+      console.error("Failed to save project name:", error);
       setEditedName(name);
     } finally {
       setIsSaving(false);
@@ -56,10 +59,10 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSave();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       e.preventDefault();
       handleCancel();
     }
@@ -67,7 +70,10 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-1 w-full" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="flex items-center gap-1 w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Input
           ref={inputRef}
           type="text"
@@ -84,7 +90,11 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
           disabled={isSaving || !editedName.trim()}
           className="h-8 w-8 p-0"
         >
-          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+          {isSaving ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Check size={14} />
+          )}
         </Button>
         <Button
           size="sm"
@@ -107,7 +117,7 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
           e.stopPropagation();
           setIsEditing(true);
         }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400"
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary rounded hover:bg-accent"
         title="Edit project name"
       >
         <Edit2 size={12} />
@@ -115,4 +125,3 @@ export default function EditableProjectName({ name, onSave }: EditableProjectNam
     </div>
   );
 }
-

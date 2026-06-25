@@ -49,7 +49,7 @@ Three tiers so we only fetch what's needed:
 - **Tier 3 — Tab activates:** `thread_tab_fetch(thread_id, tab)` where tab ∈ {project, tasks, notes, transcripts, chat, files} → fully fetch + resolve that resource type (e.g. transcripts tab → studio_session resolver returning clean text + cld_file id; files tab → file records + extracted content).
 All three read `platform.associations` (+ the per-resource resolvers) and respect `iam.has_org_access`. The resolvers are where "associate to top-level, derive content" (§4) lives.
 
-## 7. Open confirmations
-- Canonical file table: `cld_files` vs `user_files` (§5).
-- Token `war_room` vs `room` (I chose `war_room`; your rewrite sets the standard).
-- Keep all five legacy war-room tables live during transition, retire in cleanup (assumed yes).
+## 7. Status of earlier open items
+- ✅ **RESOLVED — canonical file table is `cld_files`.** `user_files` was empty and has been dropped; the `file` token and `get_task_associations` now point at `cld_files`.
+- ✅ **APPLIED — war-room edges live.** All five legacy mechanisms backfilled into `platform.associations`; the five legacy tables remain live and retire in cleanup.
+- 🟡 Token `war_room` vs `room` — `war_room` chosen; confirm during the rewrite.

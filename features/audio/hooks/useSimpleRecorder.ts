@@ -7,13 +7,14 @@
 
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useId } from 'react';
 import { getErrorSolution } from '../utils/microphone-diagnostics';
 import { acquireMicStream, releaseMicStream } from '@/features/audio/micStream';
 import {
   getSharedAudioContext,
   resumeSharedAudioContext,
 } from '@/features/audio/audioContext';
+import { claimCapture, releaseCapture } from '@/features/audio/captureLock';
 
 export interface UseSimpleRecorderProps {
   onRecordingComplete?: (blob: Blob) => void;
@@ -29,6 +30,12 @@ export function useSimpleRecorder({
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
+
+  // Stable id for the app-wide capture lock (one live capture, anywhere).
+  const captureId = useId();
+  // Set when another recorder takes over via the lock — the imminent
+  // MediaRecorder.onstop must DISCARD (never auto-deliver a half-recorded blob).
+  const takenOverRef = useRef(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -93,7 +100,9 @@ export function useSimpleRecorder({
 
     chunksRef.current = [];
     setAudioLevel(0);
-  }, []);
+    // Drop the capture lock (id-guarded — a no-op if we were already taken over).
+    releaseCapture(captureId);
+  }, [captureId]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -104,6 +113,27 @@ export function useSimpleRecorder({
 
   const startRecording = useCallback(async () => {
     try {
+      // Claim the app-wide capture lock (start-always-wins). If anything else is
+      // capturing — a dictation session, another raw recorder — it is stopped
+      // first so two captures can never overlap. Our `stop` discards: a takeover
+      // means the user deliberately started something else, so we never
+      // auto-deliver this recorder's half-finished blob.
+      takenOverRef.current = false;
+      claimCapture({
+        id: captureId,
+        label: 'Audio recorder',
+        stop: () => {
+          takenOverRef.current = true;
+          if (
+            mediaRecorderRef.current &&
+            mediaRecorderRef.current.state !== 'inactive'
+          ) {
+            mediaRecorderRef.current.stop();
+          }
+          setIsRecording(false);
+          setIsPaused(false);
+        },
+      });
       // Acquire the SHARED mic stream (applies the user's chosen device + keeps
       // the OS grant warm — no per-recording re-prompt). Never stop its tracks.
       const stream = await acquireMicStream({
@@ -165,6 +195,13 @@ export function useSimpleRecorder({
 
       // Handle recording stop
       mediaRecorder.onstop = () => {
+        // Discard on takeover — don't deliver a half-recorded blob the user
+        // abandoned by starting another capture.
+        if (takenOverRef.current) {
+          takenOverRef.current = false;
+          cleanup();
+          return;
+        }
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setAudioBlob(blob);
         onRecordingComplete?.(blob);
@@ -190,7 +227,7 @@ export function useSimpleRecorder({
       onError?.(errorSolution.message, errorSolution.code);
       cleanup();
     }
-  }, [cleanup, onRecordingComplete, onError]);
+  }, [cleanup, onRecordingComplete, onError, captureId]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

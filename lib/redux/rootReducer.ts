@@ -63,6 +63,7 @@ import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import warRoomReducer from "@/features/war-room/redux/slice";
 import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
+import audioPlaybackReducer from "@/lib/redux/slices/audioPlaybackSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
@@ -246,6 +247,7 @@ export const slimReducerMap = {
   // War Room master-agent live-watch layer (ephemeral UI; features/war-room)
   warRoomWatch: warRoomWatchReducer,
   recordings: recordingsReducer,
+  audioPlayback: audioPlaybackReducer,
   codeFiles: codeFilesReducer,
 
   // New VSCode-style workspace (features/code) ----------------------------

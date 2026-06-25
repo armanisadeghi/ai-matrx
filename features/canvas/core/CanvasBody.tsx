@@ -109,6 +109,8 @@ export function getDefaultTitle(type: string): string {
     mermaid: "Diagram",
     code_preview: "Code Preview",
     code_edit_error: "Code Edit Error",
+    working_document: "Working document",
+    scratchpad: "Scratchpad",
   };
   return titles[type] || "Canvas View";
 }

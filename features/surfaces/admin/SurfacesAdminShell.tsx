@@ -8,7 +8,7 @@ import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPan
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import { SurfacesAdminHeader } from "./SurfacesAdminHeader";
+import { SurfacesAgentHeaderControls } from "./SurfacesAgentHeaderControls";
 import { SurfacesListColumn } from "./columns/SurfacesListColumn";
 import { AgentColumn } from "./columns/AgentColumn";
 import { BindingColumn } from "./columns/BindingColumn";
@@ -34,24 +34,35 @@ export function SurfacesAdminShell({
   agent,
   backHref,
   defaultLayout,
+  basePath = "/agents",
 }: {
   agent: AgentDefinition;
   backHref: string;
   defaultLayout: Layout | undefined;
+  /** Base path for the shared agent header's mode tabs. `/agents` for the core
+   *  surface; the admin route passes its system-agents base. */
+  basePath?: string;
 }) {
   const isMobile = useIsMobile();
 
   return (
     <PanelControlProvider>
       <PageSpecificHeader>
-        <SurfacesAdminHeader agentName={agent.name} backHref={backHref} />
+        <SurfacesAgentHeaderControls
+          agentId={agent.id}
+          agentName={agent.name}
+          backHref={backHref}
+          basePath={basePath}
+        />
       </PageSpecificHeader>
 
-      {isMobile ? (
-        <MobileStack agent={agent} />
-      ) : (
-        <DesktopResizable agent={agent} defaultLayout={defaultLayout} />
-      )}
+      <div className="h-full overflow-hidden">
+        {isMobile ? (
+          <MobileStack agent={agent} />
+        ) : (
+          <DesktopResizable agent={agent} defaultLayout={defaultLayout} />
+        )}
+      </div>
     </PanelControlProvider>
   );
 }
@@ -64,72 +75,70 @@ function DesktopResizable({
   defaultLayout: Layout | undefined;
 }) {
   return (
-    <div className="h-full overflow-hidden">
-      <ClientGroup
-        id="surfaces-admin-root"
+    <ClientGroup
+      id="surfaces-admin-root"
+      groupKey={GROUP_KEY}
+      cookieName={SURFACES_ADMIN_COOKIE}
+      orientation="horizontal"
+      defaultLayout={defaultLayout}
+      className="h-full w-full"
+    >
+      <RegisteredPanel
+        registerAs="surfaces-list"
         groupKey={GROUP_KEY}
-        cookieName={SURFACES_ADMIN_COOKIE}
-        orientation="horizontal"
-        defaultLayout={defaultLayout}
-        className="h-full w-full"
+        id="surfaces-list"
+        collapsible
+        collapsedSize="0%"
+        defaultSize="12%"
+        minSize="4%"
       >
-        <RegisteredPanel
-          registerAs="surfaces-list"
-          groupKey={GROUP_KEY}
-          id="surfaces-list"
-          collapsible
-          collapsedSize="0%"
-          defaultSize="12%"
-          minSize="4%"
-        >
-          <SurfacesListColumn agentId={agent.id} />
-        </RegisteredPanel>
-        <Handle hideWhenCollapsed={["surfaces-list", "agent"]} />
+        <SurfacesListColumn agentId={agent.id} />
+      </RegisteredPanel>
+      <Handle hideWhenCollapsed={["surfaces-list", "agent"]} />
 
-        <RegisteredPanel
-          registerAs="agent"
-          groupKey={GROUP_KEY}
-          id="agent"
-          collapsible
-          collapsedSize="0%"
-          defaultSize="11%"
-          minSize="4%"
-        >
-          <AgentColumn agent={agent} />
-        </RegisteredPanel>
-        <Handle hideWhenCollapsed={["agent"]} />
+      <RegisteredPanel
+        registerAs="agent"
+        groupKey={GROUP_KEY}
+        id="agent"
+        collapsible
+        collapsedSize="0%"
+        defaultSize="11%"
+        minSize="4%"
+      >
+        <AgentColumn agent={agent} />
+      </RegisteredPanel>
+      <Handle hideWhenCollapsed={["agent"]} />
 
-        <Panel id="binding" minSize="10%">
-          <BindingColumn agent={agent} />
-        </Panel>
-        <Handle hideWhenCollapsed={["surface-details"]} />
+      <Panel id="binding" minSize="10%">
+        <BindingColumn agent={agent} />
+      </Panel>
+      <Handle hideWhenCollapsed={["surface-details"]} />
 
-        <RegisteredPanel
-          registerAs="surface-details"
-          groupKey={GROUP_KEY}
-          id="surface-details"
-          collapsible
-          collapsedSize="0%"
-          defaultSize="18%"
-          minSize="4%"
-        >
-          <SurfaceDetailsColumn agent={agent} />
-        </RegisteredPanel>
-        <Handle hideWhenCollapsed={["surface-details", "playground"]} />
+      <RegisteredPanel
+        registerAs="surface-details"
+        groupKey={GROUP_KEY}
+        id="surface-details"
+        collapsible
+        collapsedSize="0%"
+        defaultSize="18%"
+        minSize="4%"
+      >
+        <SurfaceDetailsColumn agent={agent} />
+      </RegisteredPanel>
+      <Handle hideWhenCollapsed={["surface-details", "playground"]} />
 
-        <RegisteredPanel
-          registerAs="playground"
-          groupKey={GROUP_KEY}
-          id="playground"
-          collapsible
-          collapsedSize="0%"
-          defaultSize="16%"
-          minSize="4%"
-        >
-          <PlaygroundColumn />
-        </RegisteredPanel>
-      </ClientGroup>
-    </div>
+      <RegisteredPanel
+        registerAs="playground"
+        groupKey={GROUP_KEY}
+        id="playground"
+        collapsible
+        collapsedSize="0%"
+        defaultSize="16%"
+        minSize="4%"
+      >
+        <PlaygroundColumn />
+      </RegisteredPanel>
+    </ClientGroup>
   );
 }
 

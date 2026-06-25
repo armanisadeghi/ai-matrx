@@ -32,7 +32,7 @@ import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { markKgSuggestionAccepted } from "@/features/kg-suggestions/service/kgSuggestionsService";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   kgSourceKindToEntityType,
@@ -74,7 +74,7 @@ function errMessage(err: unknown): string {
 
 /** Tag one source to the scope additively (preserve its existing scopes). */
 async function tagSourceToScope(
-  entityType: ScopeAssignmentEntityType,
+  entityType: EntityType,
   sourceId: string,
   scopeId: string,
 ): Promise<boolean> {
@@ -134,7 +134,7 @@ export function useHeavyHitterAccept() {
         skippedCount = 1;
       } else {
         const tagged = await tagSourceToScope(
-          entityType as ScopeAssignmentEntityType,
+          entityType as EntityType,
           row.source_id,
           scopeId,
         );

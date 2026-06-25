@@ -93,12 +93,12 @@ export default function TaskContent(): JSX.Element {
         <main className="flex-1 overflow-y-auto p-4 bg-textured">
           <div className="mx-auto max-w-4xl space-y-3 animate-pulse">
             {/* Add task form skeleton */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border-border p-3">
+            <div className="bg-card rounded-lg border border-border p-3">
               <div className="space-y-2">
-                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-10 bg-muted rounded" />
                 <div className="flex gap-2">
-                  <div className="h-9 flex-1 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-9 w-9 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-9 flex-1 bg-muted rounded" />
+                  <div className="h-9 w-9 bg-muted rounded" />
                 </div>
               </div>
             </div>
@@ -107,13 +107,13 @@ export default function TaskContent(): JSX.Element {
             {[...Array(5)].map((_, index) => (
               <div
                 key={index}
-                className="bg-white dark:bg-gray-800 rounded-lg border-border p-3"
+                className="bg-card rounded-lg border border-border p-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="w-5 h-5 bg-muted rounded" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                    <div className="h-5 bg-muted rounded w-3/4" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
                   </div>
                 </div>
               </div>
@@ -177,7 +177,7 @@ export default function TaskContent(): JSX.Element {
         {/* Add Task Form - Show when viewing tasks */}
         {canShowTasks && (
           <div className="mb-3 mx-auto max-w-4xl">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border-border p-3 shadow-sm">
+            <div className="bg-card rounded-lg border border-border p-3 shadow-sm">
               <div className="space-y-2">
                 <ProInput
                   ref={quickAddInputRef}
@@ -214,7 +214,7 @@ export default function TaskContent(): JSX.Element {
                       />
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 flex-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground flex-1">
                       <Folder size={14} />
                       <span>
                         {projects.find((p) => p.id === activeProject)?.name}
@@ -227,7 +227,7 @@ export default function TaskContent(): JSX.Element {
                   <div className="space-y-2 pt-2 border-t border-border">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                           <Calendar size={12} />
                           Due Date
                         </label>
@@ -240,7 +240,7 @@ export default function TaskContent(): JSX.Element {
                       </div>
 
                       <div className="space-y-1 md:col-span-2">
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                           <FileText size={12} />
                           Description
                         </label>
@@ -261,7 +261,7 @@ export default function TaskContent(): JSX.Element {
                     <button
                       type="button"
                       onClick={() => setShowAdvanced(false)}
-                      className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
+                      className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                     >
                       <ChevronUp size={12} />
                       Hide
@@ -278,14 +278,14 @@ export default function TaskContent(): JSX.Element {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center max-w-md">
               <div className="mb-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-4">
-                  <FolderPlus className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+                  <FolderPlus className="w-10 h-10 text-primary" />
                 </div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              <h3 className="text-2xl font-semibold text-foreground mb-3">
                 Welcome to Tasks!
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">
+              <p className="text-muted-foreground mb-8">
                 Get organized by creating your first project, or switch to "All
                 Tasks" to create standalone tasks.
               </p>
@@ -338,9 +338,9 @@ export default function TaskContent(): JSX.Element {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center max-w-md">
               <div className="mb-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/20 mb-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
                   <svg
-                    className="w-10 h-10 text-blue-500 dark:text-blue-400"
+                    className="w-10 h-10 text-primary"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -354,10 +354,10 @@ export default function TaskContent(): JSX.Element {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-3">
+              <h3 className="text-2xl font-semibold text-foreground mb-3">
                 Select a project
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 Choose a project from the sidebar to view and manage its tasks
               </p>
             </div>

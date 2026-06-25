@@ -90,11 +90,31 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
 ];
 
 export const COMMUNICATION_ITEMS: OverlayMenuItemConfig[] = [
-  { overlayId: "announcements", icon: "Megaphone", label: "Announcements", requiresAuth: false },
-  { overlayId: "feedbackDialog", icon: "Bug", label: "Submit Feedback", requiresAuth: false },
+  {
+    overlayId: "announcements",
+    icon: "Megaphone",
+    label: "Announcements",
+    requiresAuth: false,
+  },
+  {
+    overlayId: "feedbackDialog",
+    icon: "Bug",
+    label: "Submit Feedback",
+    requiresAuth: false,
+  },
 ];
 
 export const SETTINGS_ITEMS: OverlayMenuItemConfig[] = [
-  { overlayId: "userPreferences", icon: "Settings", label: "Preferences", requiresAuth: false },
-  { overlayId: "audioDevices", icon: "Mic", label: "Audio devices", requiresAuth: false },
+  {
+    overlayId: "userPreferences",
+    icon: "Settings",
+    label: "Preferences",
+    requiresAuth: false,
+  },
+  {
+    overlayId: "audioControlWindow",
+    icon: "AudioLines",
+    label: "Audio",
+    requiresAuth: false,
+  },
 ];

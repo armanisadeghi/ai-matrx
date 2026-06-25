@@ -15,7 +15,7 @@ import {
   StopTapButton,
 } from "@/components/icons/tap-buttons";
 import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
-import { useCartesiaSpeaker } from "../hooks/useCartesiaSpeaker";
+import { useTtsSpeak } from "@/features/audio/playback/useTtsSpeak";
 
 interface Props {
   text: string;
@@ -35,8 +35,14 @@ export default function SpeakerGroupCore({
   disabled = false,
   dictionarySurfaceKey,
 }: Props) {
-  const { isLoading, isPlaying, isPaused, speak, pause, resume, stop } =
-    useCartesiaSpeaker({ processMarkdown, dictionarySurfaceKey });
+  const { speak, status, itemId, pause, resume, remove } = useTtsSpeak({
+    processMarkdown,
+    dictionarySurfaceKey,
+  });
+
+  const isPlaying = status === "playing";
+  const isPaused = status === "paused";
+  const isLoading = status === "loading" || status === "queued";
 
   const autoStartFired = useRef(false);
 
@@ -52,7 +58,11 @@ export default function SpeakerGroupCore({
 
   const handlePlay = async () => {
     if (isPaused) await resume();
-    else await speak(text);
+    else speak(text);
+  };
+
+  const stop = () => {
+    if (itemId) void remove(itemId);
   };
 
   return (

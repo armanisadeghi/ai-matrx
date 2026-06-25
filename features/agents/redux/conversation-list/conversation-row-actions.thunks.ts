@@ -23,6 +23,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   patchConversation,
   renameConversation as renameConversationListItem,
@@ -163,12 +165,16 @@ export const setConversationFavorite = createAsyncThunk<
       patchConversationInScopes({ conversationId, patch: { isFavorite } }),
     );
 
-    const { error } = await supabase
-      .from("cx_conversation")
-      .update({ is_favorite: isFavorite })
-      .eq("id", conversationId);
+    // Canonical store is `platform.user_entity_state` (via the `ues_*` RPC
+    // chokepoint), NOT the soon-to-be-dropped `cx_conversation.is_favorite`
+    // column. `setFavorite` returns a ScopesRpcResult and never throws.
+    const result = await favoritesService.setFavorite(
+      "conversation",
+      conversationId,
+      isFavorite,
+    );
 
-    if (error) {
+    if (isScopesRpcErr(result)) {
       dispatch(
         patchConversation({
           conversationId,
@@ -181,7 +187,7 @@ export const setConversationFavorite = createAsyncThunk<
           patch: { isFavorite: previous },
         }),
       );
-      return rejectWithValue({ message: error.message });
+      return rejectWithValue({ message: result.error.message });
     }
 
     return { conversationId, isFavorite };

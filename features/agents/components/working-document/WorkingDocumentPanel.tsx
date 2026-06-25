@@ -84,7 +84,7 @@ export function WorkingDocumentPanel({
     onChange,
     flush,
     setEnabled,
-    openAsWindow,
+    openInCanvas,
   } = useWorkingDocument(conversationId, kind);
 
   const { before, after, hasUnseenChange, markSeen } = useWorkingDocChanges(
@@ -186,9 +186,9 @@ export function WorkingDocumentPanel({
               {showOpenInWindow && (
                 <button
                   type="button"
-                  onClick={openAsWindow}
-                  aria-label="Open as window"
-                  title="Open as window"
+                  onClick={openInCanvas}
+                  aria-label="Open in Canvas"
+                  title="Open in Canvas"
                   className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
                 >
                   <Maximize2 className="h-4 w-4" />

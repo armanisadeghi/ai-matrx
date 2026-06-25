@@ -281,6 +281,7 @@ export const launchAgentExecution = createAsyncThunk<
     config,
     onConversationCreated,
     conversationId: providedConversationId,
+    surfaceKey,
   } = options;
 
   // ── Read all config/runtime values from the nested bundles ────────────────
@@ -568,6 +569,7 @@ export const launchAgentExecution = createAsyncThunk<
         ...(providedConversationId
           ? { conversationId: providedConversationId }
           : {}),
+        ...(surfaceKey ? { surfaceKey } : {}),
         sourceFeature,
         autoClearConversation,
         showAutoClearToggle,

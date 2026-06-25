@@ -650,9 +650,6 @@ function KeywordEditor({
   onReorder,
 }: KeywordEditorProps) {
   const [draft, setDraft] = useState("");
-  // Track keywords that arrived during this session so we stagger their
-  // appearance on first render only.
-  const seenIds = useRef<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -694,15 +691,13 @@ function KeywordEditor({
         >
           <ul className="space-y-1.5">
             {rows.map((row, i) => {
-              const isFirstRender = !seenIds.current.has(row.localId);
-              if (isFirstRender) seenIds.current.add(row.localId);
               return (
                 <SortableKeywordRow
                   key={row.localId}
                   row={row}
                   overQuota={i >= maxKeywords}
-                  animate={isFirstRender}
-                  delayMs={isFirstRender ? i * 50 : 0}
+                  animate
+                  delayMs={i * 50}
                   onRename={(next) => onRename(row, next)}
                   onRemove={() => onRemove(row)}
                 />
@@ -776,10 +771,6 @@ function SortableKeywordRow({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.value);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (!editing) setDraft(row.value);
-  }, [row.value, editing]);
 
   const startEdit = () => {
     setDraft(row.value);
@@ -1244,7 +1235,9 @@ export default function ResearchInitForm() {
   // ── Form state ────────────────────────────────────────────────────────────
   const [topicName, setTopicName] = useState(searchParams.get("topic") ?? "");
   const [description, setDescription] = useState("");
-  const [subjectDescription, setSubjectDescription] = useState(""); // AI: subject_name_or_description
+  const [subjectDescription, setSubjectDescription] = useState(
+    searchParams.get("topic") ?? "",
+  ); // AI: subject_name_or_description
   const [additionalInstructions, setAdditionalInstructions] = useState(""); // AI: user_input
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] =

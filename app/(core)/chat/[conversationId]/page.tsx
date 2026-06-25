@@ -56,6 +56,7 @@ export default async function ChatConversationPage({
         <ChatRunHeader
           activeAgentId={seed.agentId}
           initialAgentName={seed.agentName ?? undefined}
+          conversationId={conversationId}
         />
       </PageHeader>
       <ChatRoomClient agentId={seed.agentId} conversationId={conversationId} />

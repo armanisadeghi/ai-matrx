@@ -1,6 +1,7 @@
 import { getAgent } from "@/lib/agents/data";
 import { AgentBuilderPage } from "@/features/agents/components/builder/AgentBuilderPage";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 
 export const metadata = { title: "System Agent Builder | Admin" };
 
@@ -15,16 +16,18 @@ export default async function AdminSystemAgentBuildPage({
   const agent = await getAgent(id);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <AgentHeader
-        agentId={id}
-        agentName={agent.name}
-        backHref={ADMIN_BASE_PATH}
-        basePath={ADMIN_BASE_PATH}
-      />
-      <div className="flex-1 overflow-hidden">
+    <>
+      <PageHeader>
+        <AgentHeader
+          agentId={id}
+          agentName={agent.name}
+          backHref={ADMIN_BASE_PATH}
+          basePath={ADMIN_BASE_PATH}
+        />
+      </PageHeader>
+      <div className="h-full overflow-hidden">
         <AgentBuilderPage agentId={id} />
       </div>
-    </div>
+    </>
   );
 }

@@ -26,9 +26,9 @@ import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-
 import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 
-const ENTITY_TYPE: ScopeAssignmentEntityType = "agent_app";
+const ENTITY_TYPE: EntityType = "agent_app";
 
 interface AgentAppHierarchyCascadeProps {
   appId: string;

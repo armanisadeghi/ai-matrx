@@ -11,6 +11,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import type { AppThunk, RootState } from "@/lib/redux/store";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ConversationListItem } from "./conversation-list.types";
 import { conversationListCacheKey } from "./conversation-list.types";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -83,7 +85,10 @@ export function mapRpcRowToConversationListItem(
     updatedAt: row.updated_at,
     status: row.status,
     messageCount: row.message_count,
-    isFavorite: row.is_favorite ?? false,
+    // Favorite state is canonical in `platform.user_entity_state`, NOT the
+    // soon-to-be-dropped `cx_conversation.is_favorite` column. Default false
+    // here; `applyFavoritesFromUes` overlays the real value after load.
+    isFavorite: false,
     // Agent-scoped RPC does NOT project `exclude_from_kg` yet — default
     // false; the menu toggle writes through, and the next direct read
     // (sidebar / history scope) reconciles to the true value.
@@ -99,6 +104,40 @@ export function mapRpcRowToConversationListItem(
 /** @deprecated Kept under the legacy name for grep-compatibility. */
 export const mapRpcRowToAgentConversationListItem =
   mapRpcRowToConversationListItem;
+
+/**
+ * Overlay canonical favorite state from `platform.user_entity_state` onto a
+ * freshly-loaded list of conversation rows. The DB column is being retired, so
+ * the list/RPC reads no longer carry a trustworthy `isFavorite`; this bulk read
+ * (one `ues_get_bulk` round-trip) sources it from the system of record.
+ *
+ * Returns a NEW array with each item's `isFavorite` set true iff its
+ * user_entity_state row has the favorite flag. On RPC failure it logs loudly
+ * and returns the input unchanged (favorites simply render unset rather than
+ * blocking the list).
+ */
+export async function applyFavoritesFromUes(
+  items: ConversationListItem[],
+): Promise<ConversationListItem[]> {
+  if (items.length === 0) return items;
+  const ids = items.map((i) => i.conversationId);
+  const result = await favoritesService.getBulk("conversation", ids);
+  if (isScopesRpcErr(result)) {
+    console.error(
+      "[conversationList] favorites bulk read failed — rendering favorites unset",
+      result.error,
+    );
+    return items;
+  }
+  const favoriteIds = new Set(
+    result.data.items.filter((s) => s.isFavorite).map((s) => s.entityId),
+  );
+  return items.map((item) =>
+    favoriteIds.has(item.conversationId)
+      ? { ...item, isFavorite: true }
+      : item,
+  );
+}
 
 // ── Thunks ───────────────────────────────────────────────────────────────────
 
@@ -131,7 +170,9 @@ export const fetchAgentConversationsNormalized = createAsyncThunk<
     }
 
     const rows = data ?? [];
-    const conversations = rows.map(mapRpcRowToConversationListItem);
+    const conversations = await applyFavoritesFromUes(
+      rows.map(mapRpcRowToConversationListItem),
+    );
 
     dispatch(
       setAgentCacheSuccess({
@@ -214,7 +255,7 @@ export const fetchGlobalConversations = createAsyncThunk<
     const { data, error } = await supabase
       .from("cx_conversation")
       .select(
-        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite, exclude_from_kg",
+        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg",
       )
       .is("deleted_at", null)
       .eq("is_ephemeral", false)
@@ -227,7 +268,10 @@ export const fetchGlobalConversations = createAsyncThunk<
     }
 
     const rows = data ?? [];
-    const items: ConversationListItem[] = rows.map((row) => ({
+    // Favorite state is canonical in `platform.user_entity_state`, not the
+    // (soon-to-be-dropped) `cx_conversation.is_favorite` column — default false
+    // here, then overlay the real flag via `applyFavoritesFromUes`.
+    const mapped: ConversationListItem[] = rows.map((row) => ({
       conversationId: row.id as string,
       title: (row.title ?? null) as string | null,
       description: (row.description ?? null) as string | null,
@@ -235,13 +279,14 @@ export const fetchGlobalConversations = createAsyncThunk<
       createdAt: row.created_at as string,
       status: row.status as string,
       messageCount: (row.message_count ?? 0) as number,
-      isFavorite: (row.is_favorite ?? false) as boolean,
+      isFavorite: false,
       excludeFromKg: (row.exclude_from_kg ?? false) as boolean,
       agentId: (row.initial_agent_id ?? null) as string | null,
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,
       sourceFeature: (row.source_feature ?? undefined) as string | undefined,
     }));
+    const items = await applyFavoritesFromUes(mapped);
 
     const hasMore = items.length === limit;
     dispatch(setGlobalListSuccess({ items, hasMore, replace }));

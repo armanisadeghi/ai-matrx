@@ -40,8 +40,7 @@ import {
   X as XIcon,
   Loader2,
   AlertTriangle,
-  ChevronDown,
-  ChevronRight,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,8 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { AnimatedKpiCard, type KpiTone } from "./AnimatedKpiCard";
-import { DerivativeChunkList } from "./ChunkList";
-import { TableRowsViewer } from "./TableRowsViewer";
+import { DerivativeResultsDialog } from "./DerivativeResultsDialog";
 import {
   DERIVE_KINDS,
   fetchEstimate,
@@ -91,6 +89,10 @@ interface KindMeta {
   tone: KpiTone;
   /** One-line description shown on the card. */
   blurb: string;
+  /** True for ops that spend real LLM money (vision / summaries / Q&A). These
+   *  ALWAYS confirm cost before running — even if the estimate hasn't loaded —
+   *  so an expensive run can never start blind. Deterministic ops omit it. */
+  costly?: boolean;
 }
 
 export const KIND_META: Record<DeriveKind, KindMeta> = {
@@ -125,6 +127,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "figures",
     tone: "info",
     blurb: "Vision-caption every figure so images become searchable.",
+    costly: true,
   },
   section_summary: {
     label: "Section summaries",
@@ -133,6 +136,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "sections",
     tone: "success",
     blurb: "Summarize each section for high-level retrieval.",
+    costly: true,
   },
   synthetic_qa: {
     label: "Synthetic Q&A",
@@ -141,6 +145,7 @@ export const KIND_META: Record<DeriveKind, KindMeta> = {
     unit: "Q&A pairs",
     tone: "warning",
     blurb: "Generate question/answer pairs that match how users ask.",
+    costly: true,
   },
 };
 
@@ -408,8 +413,38 @@ function RepresentationCard({
   const failed = op.status === "failed";
   const derivativeId = rollup?.derivative_id ?? null;
 
-  // Results expander — only meaningful once content exists.
-  const [expanded, setExpanded] = useState(false);
+  // --- Cost gate -----------------------------------------------------------
+  // A "costly" op (vision / summaries / Q&A) ALWAYS confirms before running —
+  // it must NEVER fail open. If the estimate loaded we show the exact units; if
+  // it didn't (slow scan / network), we still gate with a clear warning rather
+  // than letting an expensive run start blind. Deterministic ops just run.
+  const isCostly = meta.costly === true;
+  const estimateLoading = estimating && !estimate;
+  const estUnits = estimate ? costToUnits(estimate.cost_usd) : 0;
+  const costLabel = estUnits > 0 ? ` · ${formatUnits(estUnits)}` : "";
+
+  const handleBuild = async () => {
+    if (isCostly) {
+      const items = estimate?.items ?? 0;
+      const scope = items
+        ? `over ${items.toLocaleString()} ${estimate?.unit ?? meta.unit} `
+        : "";
+      const costPhrase =
+        estUnits > 0
+          ? `about ${formatUnits(estUnits)}`
+          : "Processing Units — we couldn't compute an exact estimate right now";
+      const ok = await confirm({
+        title: `Build ${meta.label.toLowerCase()}?`,
+        description: `This runs AI ${scope}and will cost ${costPhrase}. (Processing Units, not money.)`,
+        confirmLabel: estUnits > 0 ? `Build${costLabel}` : "Build anyway",
+      });
+      if (!ok) return;
+    }
+    onRun();
+  };
+
+  // Full-screen results viewer — only meaningful once content exists.
+  const [resultsOpen, setResultsOpen] = useState(false);
 
   const pct =
     op.total > 0 ? Math.min(100, Math.round((op.current / op.total) * 100)) : 0;
@@ -533,47 +568,40 @@ function RepresentationCard({
             Rebuild
           </Button>
         ) : (
-          <Button size="sm" onClick={onRun} className="h-7 flex-1 text-[10px]">
+          <Button
+            size="sm"
+            onClick={handleBuild}
+            disabled={estimateLoading}
+            className="h-7 flex-1 text-[10px]"
+          >
             <Play className="h-3 w-3 mr-1" />
-            Build
+            {estimateLoading ? "Estimating cost…" : `Build${costLabel}`}
           </Button>
         )}
       </div>
 
-      {/* Results expander — the KEY fix. "Table rows: 62" → click to SEE the 62
-          rows and WHERE they came from (page numbers on each ChunkCard). */}
+      {/* Results — open the FULL-SCREEN viewer (no more card-in-a-card). For
+          table_row this is the real grid of every row with search + page
+          provenance; for other kinds, the chunk list. */}
       {built && derivativeId && (
         <>
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
-            aria-expanded={expanded}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setResultsOpen(true)}
+            className="mt-2 h-7 w-full text-[10px]"
           >
-            {expanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
-            )}
-            {expanded
-              ? "Hide results"
-              : `View ${chunkCount.toLocaleString()} ${meta.unit}`}
-          </button>
-          {expanded && (
-            <div className="mt-2 max-h-80 overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-1.5">
-              {kind === "table_row" ? (
-                <TableRowsViewer
-                  derivativeId={derivativeId}
-                  expectedTotal={chunkCount}
-                />
-              ) : (
-                <DerivativeChunkList
-                  derivativeId={derivativeId}
-                  expectedTotal={chunkCount}
-                />
-              )}
-            </div>
-          )}
+            <ExternalLink className="h-3 w-3 mr-1" />
+            View {chunkCount.toLocaleString()} {meta.unit}
+          </Button>
+          <DerivativeResultsDialog
+            open={resultsOpen}
+            onOpenChange={setResultsOpen}
+            kind={kind}
+            derivativeId={derivativeId}
+            title={meta.label}
+            total={chunkCount}
+          />
         </>
       )}
 

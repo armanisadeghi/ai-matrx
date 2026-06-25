@@ -26,6 +26,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { destroyInstance } from "../conversations/conversations.slice";
+import { createInstanceFull } from "../create-instance-full";
 import type { Json } from "@/types/database.types";
 import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
@@ -580,6 +581,13 @@ const messagesSlice = createSlice({
   },
 
   extraReducers: (builder) => {
+    builder.addCase(createInstanceFull, (state, action) => {
+      const { conversationId, messages } = action.payload;
+      const mode = messages?.apiEndpointMode ?? "agent";
+      const entry = getOrCreate(state, conversationId, mode);
+      entry.apiEndpointMode = mode;
+    });
+
     builder.addCase(destroyInstance, (state, action) => {
       delete state.byConversationId[action.payload];
     });

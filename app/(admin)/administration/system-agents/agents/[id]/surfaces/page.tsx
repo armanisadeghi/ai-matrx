@@ -22,6 +22,7 @@ export default async function AdminSystemAgentSurfacesPage({
     <SurfacesAdminShell
       agent={agent}
       backHref={`${ADMIN_BASE_PATH}/${id}`}
+      basePath={ADMIN_BASE_PATH}
       defaultLayout={defaultLayout}
     />
   );

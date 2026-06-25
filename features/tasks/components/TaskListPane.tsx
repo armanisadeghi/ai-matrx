@@ -337,7 +337,7 @@ function TaskRow({
         title={task.completed ? "Mark incomplete" : "Mark complete"}
       >
         {task.completed ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-success" />
         ) : (
           <CircleDashed className="w-3.5 h-3.5" />
         )}
@@ -359,9 +359,9 @@ function TaskRow({
             <span
               className={cn(
                 "shrink-0 w-1.5 h-1.5 rounded-full mt-1.5",
-                task.priority === "high" && "bg-red-500",
-                task.priority === "medium" && "bg-amber-500",
-                task.priority === "low" && "bg-green-500",
+                task.priority === "high" && "bg-destructive",
+                task.priority === "medium" && "bg-warning",
+                task.priority === "low" && "bg-success",
               )}
               title={`${task.priority} priority`}
             />

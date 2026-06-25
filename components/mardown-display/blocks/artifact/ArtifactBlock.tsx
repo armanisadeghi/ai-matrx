@@ -2,6 +2,8 @@
 
 import React, { Suspense, lazy, useMemo } from "react";
 import { Maximize2 } from "lucide-react";
+import { ArtifactVersionHistory } from "@/features/canvas/components/ArtifactVersionHistory";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
@@ -180,16 +182,24 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
                         </span>
                     )}
                 </div>
-                {isCanvasAvailable && (
-                    <button
-                        onClick={handleOpenCanvas}
-                        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
-                        title="Open in canvas"
-                        aria-label="Open in canvas"
-                    >
-                        <Maximize2 className="h-3.5 w-3.5" />
-                    </button>
-                )}
+                <div className="flex shrink-0 items-center gap-0.5">
+                    {isMaterializedArtifactId(artifactId) && (
+                        <ArtifactVersionHistory
+                            canvasItemId={artifactId}
+                            triggerClassName="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 data-[state=open]:opacity-100"
+                        />
+                    )}
+                    {isCanvasAvailable && (
+                        <button
+                            onClick={handleOpenCanvas}
+                            className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
+                            title="Open in canvas"
+                            aria-label="Open in canvas"
+                        >
+                            <Maximize2 className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Content — routes to the real renderer by type. Full width, no chrome. */}

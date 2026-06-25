@@ -25,10 +25,6 @@ export function AgentRunWrapper({
 }: AgentRunWrapperProps) {
   const surfaceKey = `${sourceFeature}:${agentId}`;
 
-  if (typeof window !== "undefined") {
-    console.log(`[Track AgentRunWrapper Render] surfaceKey=${surfaceKey}`);
-  }
-
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,
@@ -59,6 +55,18 @@ export function AgentRunWrapper({
       onRunComplete();
     }
   }, [status, onRunComplete]);
+
+  // [Track AgentRunWrapper Commit] TEMP — non-invasive render audit (useEffect,
+  // not render body) so React Compiler memoization is preserved.
+  const __wrapCommit = useRef(0);
+  useEffect(() => {
+    __wrapCommit.current++;
+    if (typeof window !== "undefined") {
+      console.log(
+        `[Track AgentRunWrapper Commit] #${__wrapCommit.current} id=${conversationId ?? "(null)"}`,
+      );
+    }
+  });
 
   return (
     <AgentRunner conversationId={conversationId} surfaceKey={surfaceKey} />

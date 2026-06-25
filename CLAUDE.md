@@ -107,6 +107,8 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 **"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store.
 
+**Shell:** `(core)` and `(admin)` both render the one modern shell — `AppShell` (`features/shell/components/AppShell.tsx`): full sidebar + header + `#shell-header-center`. Don't fork a separate admin layout (the old `ResponsiveLayout` is gone from `(admin)`). Admin pins the header to its legacy 2.5rem with content **below** it (not scrolling behind) via a scoped `.shell-main` rule in `styles/shell.css` — that's why admin pages keep `h-[calc(100dvh-2.5rem)]`. `(transitional)`/`(legacy)` still use `ResponsiveLayout`.
+
 **Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
 
 **Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`.

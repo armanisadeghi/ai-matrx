@@ -1,10 +1,13 @@
-import {useState, useCallback, useRef, useEffect} from 'react';
+import {useState, useCallback, useRef, useEffect, useId} from 'react';
 import {useToast} from "@/components/ui/use-toast";
 import {FlashcardData} from "@/types/flashcards.types";
 import {useDynamicVoiceAiProcessing} from "@/hooks/ai/useDynamicVoiceAiProcessing";
 import {ApiName, Assistant} from "@/types/voice/voiceAssistantTypes";
 import {getFlashcardSet} from '@/app/(transitional)/flashcard/app-data';
 import {getAssistant} from "@/constants/voice-assistants";
+import {acquireMicStream, releaseMicStream} from "@/features/audio/micStream";
+import {getSharedAudioContext, resumeSharedAudioContext} from "@/features/audio/audioContext";
+import {claimCapture, releaseCapture} from "@/features/audio/captureLock";
 
 interface SessionState {
     isActive: boolean;
@@ -117,10 +120,36 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
     const audioChunks = useRef<Blob[]>([]);
     const startSound = useRef<HTMLAudioElement | undefined>(undefined);
     const endSound = useRef<HTMLAudioElement | undefined>(undefined);
-    const audioContext = useRef<AudioContext | null>(null);
+    // Analyser lives on the SHARED AudioContext (never created/closed here — iOS
+    // caps live contexts, so the whole app shares one). We only own the analyser
+    // + the source node we connect into it, and disconnect those.
     const analyser = useRef<AnalyserNode | null>(null);
+    const analyserSource = useRef<MediaStreamAudioSourceNode | null>(null);
     const animationFrame = useRef<number | undefined>(undefined);
     const timerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    // Whether we hold a ref on the shared mic singleton — keeps acquire/release
+    // balanced exactly once across stop / pause / cleanup / takeover.
+    const micHeldRef = useRef(false);
+    // Stable id for the app-wide capture lock (one live capture, anywhere).
+    const captureId = useId();
+    // Latest stopSession — the capture lock ends the whole fast-fire session
+    // cleanly when another recorder takes the mic (no broken half-state).
+    const stopSessionRef = useRef<(preserveResults?: boolean) => Promise<void>>(
+        async () => {}
+    );
+
+    /** Release our hold on the shared mic singleton (NEVER stop its tracks — the
+     *  singleton owns the device) and disconnect the analyser source. */
+    const releaseMic = useCallback(() => {
+        if (analyserSource.current) {
+            try { analyserSource.current.disconnect(); } catch { /* ignore */ }
+            analyserSource.current = null;
+        }
+        if (micHeldRef.current) {
+            releaseMicStream();
+            micHeldRef.current = false;
+        }
+    }, []);
 
     const {
         submit,
@@ -149,40 +178,33 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
                 cancelAnimationFrame(animationFrame.current);
                 animationFrame.current = undefined;
             }
-            
-            // Close audio context
-            if (audioContext.current && audioContext.current.state !== 'closed') {
-                await audioContext.current.close().catch(err => {
-                    console.warn('Error closing audio context:', err);
-                });
-            }
-            
-            // Stop media recorder and tracks
+
+            // Stop media recorder — but NEVER stop the device tracks (they belong
+            // to the shared mic singleton; stopping them kills every other holder
+            // and defeats the warm-grant keepalive).
             if (mediaRecorder.current) {
                 if (mediaRecorder.current.state === 'recording') {
                     mediaRecorder.current.stop();
                 }
-                if (mediaRecorder.current.stream) {
-                    mediaRecorder.current.stream.getTracks().forEach(track => {
-                        try {
-                            track.stop();
-                        } catch (err) {
-                            console.warn('Error stopping track:', err);
-                        }
-                    });
-                }
                 mediaRecorder.current = null;
             }
-            
+
+            // Disconnect (don't close — the context is shared) the analyser.
+            if (analyser.current) {
+                try { analyser.current.disconnect(); } catch { /* ignore */ }
+                analyser.current = null;
+            }
+            // Release our singleton hold + the capture lock.
+            releaseMic();
+            releaseCapture(captureId);
+
             // Reset refs and state
-            audioContext.current = null;
-            analyser.current = null;
             audioChunks.current = [];
             setAudioLevel(0);
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
-    }, []);
+    }, [releaseMic, captureId]);
 
     const stopSession = useCallback(async (preserveResults: boolean = true) => {
         try {
@@ -223,6 +245,8 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
             });
         }
     }, [cleanup, toast, settings.secondsPerCard, results.length]);
+    // Keep the capture-lock takeover handle pointed at the latest stopSession.
+    stopSessionRef.current = stopSession;
 
     const moveToNextCard = useCallback(async () => {
         const currentIndex = sessionState.currentCardIndex;
@@ -324,22 +348,38 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
         }
         
         try {
-            // Request microphone access
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                }
+            // Claim the app-wide capture lock (start-always-wins). If anything
+            // else holds the mic — a dictation session, a voice message — it is
+            // stopped first; if WE get taken over, end the fast-fire session
+            // cleanly rather than leaving a broken half-state.
+            claimCapture({
+                id: captureId,
+                label: "Flashcard practice",
+                stop: () => { void stopSessionRef.current(true); },
             });
-            
-            // Set up audio context for visualization
-            if (!audioContext.current || audioContext.current.state === 'closed') {
-                audioContext.current = new AudioContext();
-                analyser.current = audioContext.current.createAnalyser();
-                analyser.current.fftSize = 256;
-                const source = audioContext.current.createMediaStreamSource(stream);
-                source.connect(analyser.current);
+
+            // Shared mic singleton (chosen device + warm grant; never stopped here).
+            const stream = await acquireMicStream({
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+            });
+            micHeldRef.current = true;
+
+            // Audio-level meter on the SHARED AudioContext (never closed; only
+            // resumed). Rebuild the analyser source each card.
+            await resumeSharedAudioContext();
+            const ctx = getSharedAudioContext();
+            if (ctx) {
+                if (!analyser.current) {
+                    analyser.current = ctx.createAnalyser();
+                    analyser.current.fftSize = 256;
+                }
+                if (analyserSource.current) {
+                    try { analyserSource.current.disconnect(); } catch { /* ignore */ }
+                }
+                analyserSource.current = ctx.createMediaStreamSource(stream);
+                analyserSource.current.connect(analyser.current);
             }
             
             // Create media recorder with best available format
@@ -438,7 +478,7 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
             
             await stopSession();
         }
-    }, [handleRecordingComplete, stopSession, toast]);
+    }, [handleRecordingComplete, stopSession, toast, captureId]);
 
     const stopRecording = useCallback(async () => {
         if (mediaRecorder.current?.state === 'recording') {
@@ -447,18 +487,16 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
             
             // Stop recording
             mediaRecorder.current.stop();
-            
-            // Stop all tracks
-            if (mediaRecorder.current.stream) {
-                mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
-            }
-            
+
+            // Release our hold on the shared mic (NEVER stop its tracks).
+            releaseMic();
+
             setSessionState(prev => ({...prev, isRecording: false}));
             
             // Immediately move to next card (don't wait for processing)
             await moveToNextCard();
         }
-    }, [moveToNextCard]);
+    }, [moveToNextCard, releaseMic]);
 
     const startSession = useCallback((customSettings?: Partial<FastFireSettings>) => {
         if (allFlashcardsRef.current.length === 0) {
@@ -517,14 +555,14 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
         // Save current state before pausing
         setSessionState(prev => ({...prev, isPaused: true}));
         
-        // Stop recording if active
+        // Stop recording if active — release the singleton, never stop tracks.
         if (mediaRecorder.current?.state === 'recording') {
             mediaRecorder.current.stop();
-            mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+            releaseMic();
         }
         
         // Timer cleanup happens in useEffect
-    }, []);
+    }, [releaseMic]);
 
     const resumeSession = useCallback(() => {
         // Resume with current timer values preserved

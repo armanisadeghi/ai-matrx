@@ -51,7 +51,7 @@ export default function GamePageClient() {
                     width={engine.width}
                     height={engine.height}
                     {...engine.pointerProps}
-                    className="w-full rounded-xl border border-border bg-background touch-none select-none"
+                    className="h-auto w-full rounded-xl border border-border bg-background touch-none select-none"
                 />
 
                 {engine.status === 'ready' && (
@@ -66,8 +66,9 @@ export default function GamePageClient() {
                 )}
 
                 {engine.status === 'gameover' && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                        <p className="text-2xl font-bold text-white">Final Score: {engine.finalScore}</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+                        <p className="text-3xl font-bold text-white">Game Over</p>
+                        <p className="mb-4 text-xl font-semibold text-white/90">Final Score: {engine.finalScore}</p>
                         <button
                             onClick={engine.startGame}
                             className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3 text-lg font-semibold text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"

@@ -1,10 +1,10 @@
-import React from 'react';
-import { useAppSelector } from '@/lib/redux/hooks';
+import React from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectShowAllProjects,
   selectActiveProject,
-} from '@/features/tasks/redux/taskUiSlice';
-import { selectProjects } from '@/features/tasks/redux/selectors';
+} from "@/features/tasks/redux/taskUiSlice";
+import { selectProjects } from "@/features/tasks/redux/selectors";
 
 export default function TaskHeader() {
   const showAllProjects = useAppSelector(selectShowAllProjects);
@@ -12,12 +12,12 @@ export default function TaskHeader() {
   const projects = useAppSelector(selectProjects);
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b border-border p-4">
-      <h1 className="text-xl font-semibold text-gray-800 dark:text-white">
+    <header className="bg-card border-b border-border p-4">
+      <h1 className="text-xl font-semibold text-foreground">
         {showAllProjects
-          ? 'All Tasks'
+          ? "All Tasks"
           : projects.find((project) => project.id === activeProject)?.name ||
-            'Tasks'}
+            "Tasks"}
       </h1>
     </header>
   );

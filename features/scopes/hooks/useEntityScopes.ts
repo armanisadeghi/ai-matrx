@@ -20,11 +20,11 @@ import { ensureEntityScopes } from "@/features/scopes/redux/thunks/ensureEntityS
 import { setEntityScopes as setEntityScopesThunk } from "@/features/scopes/redux/thunks/setEntityScopes";
 import type {
   EntityScopesEntry,
-  ScopeAssignmentEntityType,
+  EntityType,
 } from "@/features/scopes/types";
 
 export interface UseEntityScopesArgs {
-  entityType: ScopeAssignmentEntityType;
+  entityType: EntityType;
   entityId: string | null;
   /** Pass the org id so the project tree gets patched on `setScopes`. */
   organizationId?: string | null;

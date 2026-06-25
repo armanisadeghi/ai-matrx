@@ -12,8 +12,10 @@ import {
   ZoomOutIcon,
   XIcon,
   CopyIcon,
+  PencilIcon,
 } from "lucide-react";
 import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -28,6 +30,9 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
   // recovered file_id instead of rendering a broken image. For non-owned URLs
   // this is a transparent passthrough.
   const { src, onError: handleImageError } = useRemintableSrc(srcProp);
+  // Our own media has a recoverable file_id → offer the "Edit" escape hatch
+  // (open the real image editor); external/unknown URLs simply don't show it.
+  const editableFileId = fileIdFromUserFilesUrl(src);
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -190,6 +195,21 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
         >
           <ShareIcon className="w-4 h-4" />
         </button>
+        {editableFileId && (
+          <button
+            onClick={() =>
+              window.open(
+                `/images/edit/${editableFileId}`,
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+            className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"
+            title="Edit image"
+          >
+            <PencilIcon className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={handleExpand}
           className="text-white bg-black/40 hover:bg-black/60 p-2 rounded-full transition-all duration-200"

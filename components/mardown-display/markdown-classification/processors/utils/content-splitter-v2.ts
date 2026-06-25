@@ -23,6 +23,7 @@
  * Legacy V1 parser available in content-splitter.ts for rollback if needed.
  */
 
+import { isMatrxEnvelope } from "@/features/matrx-envelope/envelope";
 import { getMetadataFromText } from "@/features/rich-text-editor/utils/patternUtils";
 import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
 import type { MissingBlockType } from "@/types/python-generated/missing-types";
@@ -210,11 +211,25 @@ function extractFirstJsonKey(content: string): string | null {
   return match ? match[1] : null;
 }
 
+export type DetectedJsonBlockType = keyof typeof JSON_BLOCK_PATTERNS | "matrx";
+
 export function detectJsonBlockType(
   content: string,
-): keyof typeof JSON_BLOCK_PATTERNS | null {
+): DetectedJsonBlockType | null {
+  const trimmed = content.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (isMatrxEnvelope(parsed)) return "matrx";
+    } catch {
+      // Partial stream — fall through to first-key heuristic.
+    }
+  }
+
   const firstKey = extractFirstJsonKey(content);
   if (!firstKey) return null;
+
+  if (firstKey === "matrx_version") return "matrx";
 
   for (const [type, pattern] of Object.entries(JSON_BLOCK_PATTERNS)) {
     if (pattern.rootKey === firstKey) {
@@ -244,8 +259,25 @@ function containsPlaceholderText(content: string): boolean {
 
 function validateJsonBlock(
   content: string,
-  type: keyof typeof JSON_BLOCK_PATTERNS,
+  type: DetectedJsonBlockType,
 ): StreamingState {
+  if (type === "matrx") {
+    let trimmed = content.trim();
+    trimmed = trimmed.replace(/```+\s*$/, "").trim();
+    try {
+      const parsed: unknown = JSON.parse(trimmed);
+      if (isMatrxEnvelope(parsed)) {
+        return { isComplete: true, shouldShow: true };
+      }
+    } catch {
+      // Still streaming the envelope shell.
+    }
+    return {
+      isComplete: false,
+      shouldShow: extractFirstJsonKey(trimmed) === "matrx_version",
+    };
+  }
+
   // Aggressively clean content - remove trailing backticks, whitespace, etc.
   let trimmed = content.trim();
 

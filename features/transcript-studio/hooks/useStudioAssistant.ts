@@ -248,6 +248,9 @@ export function useStudioAssistant(
         dispatch(setUserInputText({ conversationId, text }));
       }
       refreshContext();
+      // `executeInstance` records the submitted text for draft-protection
+      // (markInputSubmitted) centrally — direct senders like this no longer
+      // need to do it themselves. See execute-instance.thunk.ts.
       await dispatch(executeInstance({ conversationId }));
     },
     [conversationId, dispatch, refreshContext],

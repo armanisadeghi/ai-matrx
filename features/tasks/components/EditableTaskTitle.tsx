@@ -1,10 +1,10 @@
 // Editable Task Title Component
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Check, X, Edit2, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef, useEffect } from "react";
+import { Check, X, Edit2, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface EditableTaskTitleProps {
   title: string;
@@ -13,11 +13,11 @@ interface EditableTaskTitleProps {
   onToggleComplete: () => void;
 }
 
-export default function EditableTaskTitle({ 
-  title, 
-  completed, 
+export default function EditableTaskTitle({
+  title,
+  completed,
   onSave,
-  onToggleComplete 
+  onToggleComplete,
 }: EditableTaskTitleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
@@ -34,7 +34,7 @@ export default function EditableTaskTitle({
 
   const handleSave = async () => {
     const trimmedTitle = editedTitle.trim();
-    
+
     if (!trimmedTitle) {
       setEditedTitle(title); // Reset to original
       setIsEditing(false);
@@ -51,7 +51,7 @@ export default function EditableTaskTitle({
       await onSave(trimmedTitle);
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to save title:', error);
+      console.error("Failed to save title:", error);
       setEditedTitle(title); // Reset on error
     } finally {
       setIsSaving(false);
@@ -64,10 +64,10 @@ export default function EditableTaskTitle({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSave();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       e.preventDefault();
       handleCancel();
     }
@@ -115,9 +115,7 @@ export default function EditableTaskTitle({
     <div className="flex items-center gap-2 flex-1 group">
       <span
         className={`flex-1 ${
-          completed 
-            ? 'line-through text-gray-400 dark:text-gray-500' 
-            : 'text-gray-800 dark:text-gray-200'
+          completed ? "line-through text-muted-foreground" : "text-foreground"
         }`}
       >
         {title}
@@ -127,7 +125,7 @@ export default function EditableTaskTitle({
           e.stopPropagation();
           setIsEditing(true);
         }}
-        className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+        className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary rounded hover:bg-accent"
         title="Edit title"
       >
         <Edit2 size={14} />
@@ -135,4 +133,3 @@ export default function EditableTaskTitle({
     </div>
   );
 }
-

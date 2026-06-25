@@ -68,7 +68,7 @@
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
-import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
+import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
@@ -86,7 +86,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
-import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
   AlertDialog,
@@ -98,7 +97,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
 
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
@@ -207,17 +205,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
-    const [showTroubleshooting, setShowTroubleshooting] = useState(false);
-    const [showTranscriptionWarning, setShowTranscriptionWarning] =
-      useState(false);
-    const [lastError, setLastError] = useState<{
-      message: string;
-      code: string;
-    } | null>(null);
     const internalRef = useRef<HTMLInputElement>(null);
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
-    const closeRequestedRef = useRef(false);
-    const preRecordingValueRef = useRef("");
 
     useEffect(() => {
       const checkAudioAvailability = async () => {
@@ -249,80 +238,35 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       }
     }, []);
 
-    const handleTranscriptionComplete = useCallback(
-      (result: TranscriptionResult) => {
-        if (result.success && result.text) {
-          const base = preRecordingValueRef.current;
-          const newValue =
-            appendTranscript && base
-              ? `${base}${base.endsWith(" ") ? "" : " "}${result.text}`
-              : result.text;
-          pushToInput(newValue);
-          onTranscriptionComplete?.(result.text);
-        }
-      },
-      [appendTranscript, onTranscriptionComplete, pushToInput],
-    );
-
-    const handleTranscriptionError = useCallback(
-      (error: string, errorCode?: string) => {
-        console.error("Transcription error:", error, errorCode);
-
-        setLastError({ message: error, code: errorCode || "UNKNOWN_ERROR" });
-
-        toast.error("Voice input failed", {
-          description: error,
-          duration: 10000,
-          action: {
-            label: "Get Help",
-            onClick: () => setShowTroubleshooting(true),
-          },
-        });
-
-        onTranscriptionError?.(error);
-      },
-      [onTranscriptionError],
-    );
-
+    // Voice-to-text rides the ONE shared recorder via the reusable
+    // `useMicField` primitive (start-always-wins, one-at-a-time, survives
+    // navigation, crash-safe). Single-line input joins with a space.
+    // Destructured into the original local names so the JSX below is unchanged.
     const {
       isRecording,
       isTranscribing,
       audioLevel,
       liveTranscript,
-      startRecording,
-      stopRecording,
-    } = useRecordAndTranscribe({
-      onTranscriptionComplete: handleTranscriptionComplete,
-      onError: handleTranscriptionError,
-      autoTranscribe: true,
-      streaming: true,
-    });
-
-    useEffect(() => {
-      if (!isRecording && !isTranscribing) return;
-      if (!liveTranscript) return;
-      const base = preRecordingValueRef.current;
-      const newValue =
-        appendTranscript && base
-          ? `${base}${base.endsWith(" ") ? "" : " "}${liveTranscript}`
-          : liveTranscript;
-      pushToInput(newValue);
-    }, [
-      liveTranscript,
-      isRecording,
-      isTranscribing,
+      handleVoiceClick,
+      requestClose: handleCloseRequest,
+      showTroubleshooting,
+      setShowTroubleshooting,
+      showProtectionDialog: showTranscriptionWarning,
+      setShowProtectionDialog: setShowTranscriptionWarning,
+      lastError,
+      confirmClose,
+      cancelClose,
+    } = useMicField({
+      instanceId: inputId,
+      getValue: () => inputRef.current?.value ?? String(value ?? ""),
+      writeValue: pushToInput,
       appendTranscript,
-      pushToInput,
-    ]);
-
-    const handleCloseRequest = useCallback(() => {
-      if (protectTranscription && (isRecording || isTranscribing)) {
-        closeRequestedRef.current = true;
-        setShowTranscriptionWarning(true);
-      } else {
-        onRequestClose?.();
-      }
-    }, [isRecording, isTranscribing, protectTranscription, onRequestClose]);
+      join: (base, text) => `${base}${base.endsWith(" ") ? "" : " "}${text}`,
+      protect: protectTranscription,
+      onRequestClose,
+      onTranscriptionComplete,
+      onTranscriptionError,
+    });
 
     useEffect(() => {
       const el = inputRef.current;
@@ -330,17 +274,6 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       (el as ProInputElement).requestClose = handleCloseRequest;
       (el as ProInputElement).isTranscribing = () => isTranscribing;
     }, [handleCloseRequest, isTranscribing]);
-
-    useEffect(() => {
-      if (
-        !isRecording &&
-        !isTranscribing &&
-        closeRequestedRef.current &&
-        showTranscriptionWarning
-      ) {
-        closeRequestedRef.current = false;
-      }
-    }, [isRecording, isTranscribing, showTranscriptionWarning]);
 
     const handleCopy = async () => {
       const inputValue = inputRef?.current?.value || String(value || "");
@@ -361,15 +294,6 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         target: { value: "" },
       } as React.ChangeEvent<HTMLInputElement>);
     }, [onClear, pushToInput, onChange]);
-
-    const handleVoiceClick = useCallback(async () => {
-      if (isRecording) {
-        stopRecording();
-      } else if (!isTranscribing) {
-        preRecordingValueRef.current = inputRef.current?.value || "";
-        await startRecording();
-      }
-    }, [isRecording, isTranscribing, startRecording, stopRecording]);
 
     const valueAsString = String(value ?? "");
     const hasContent = valueAsString.trim().length > 0;
@@ -712,33 +636,18 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             <AlertDialogFooter>
               {isRecording || isTranscribing ? (
                 <>
-                  <AlertDialogCancel
-                    onClick={() => {
-                      setShowTranscriptionWarning(false);
-                      closeRequestedRef.current = false;
-                    }}
-                  >
+                  <AlertDialogCancel onClick={cancelClose}>
                     Cancel & Wait
                   </AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => {
-                      setShowTranscriptionWarning(false);
-                      closeRequestedRef.current = false;
-                      onRequestClose?.();
-                    }}
+                    onClick={confirmClose}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     {isRecording ? "Stop Recording" : "End Transcription"}
                   </AlertDialogAction>
                 </>
               ) : (
-                <AlertDialogAction
-                  onClick={() => {
-                    setShowTranscriptionWarning(false);
-                    closeRequestedRef.current = false;
-                    onRequestClose?.();
-                  }}
-                >
+                <AlertDialogAction onClick={confirmClose}>
                   Close
                 </AlertDialogAction>
               )}

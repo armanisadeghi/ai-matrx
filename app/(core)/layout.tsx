@@ -1,8 +1,6 @@
-import "@/styles/shell.css";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
 import {
   getAdminStatus,
@@ -14,16 +12,8 @@ import type { InitialReduxState } from "@/types/reduxTypes";
 // is deleted in this PR. The Redux preloaded state below carries the user data;
 // `lib/sync/identity::attachStore` (called from StoreProvider) wires the
 // reactive identity source so non-React consumers see the current state.
-import Sidebar from "@/features/shell/components/sidebar/Sidebar";
-import Header from "@/features/shell/components/header/Header";
-import MobileDock from "@/features/shell/components/dock/MobileDock";
-import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
-import GlassPortal from "@/features/shell/components/GlassPortal";
-import NavActiveSync from "@/features/shell/components/NavActiveSync";
-import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
-import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
-import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import type { UserData } from "@/utils/userDataMapper";
 import type { Metadata } from "next";
 
@@ -101,35 +91,14 @@ export default async function AppLayout({
   }
 
   return (
-    <Providers initialReduxState={initialReduxState}>
-      <div className="shell-root" data-pathname={pathname}>
-        <input
-          type="checkbox"
-          id="shell-sidebar-toggle"
-          aria-hidden="true"
-          defaultChecked={sidebarExpanded}
-        />
-        <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
-        <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
-
-        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
-        <Header userData={userData} isAuthenticated={isAuthenticated} />
-
-        <main className="shell-main">{children}</main>
-
-        <MobileSideSheet isAuthenticated={isAuthenticated} />
-      </div>
-
-      <GlassPortal>
-        <MobileDock isAuthenticated={isAuthenticated} />
-      </GlassPortal>
-
-      <NavActiveSync />
-      <VisualViewportSync />
-      <ShellSidebarCookieSync />
-      <DeferredIslands />
-    </Providers>
+    <AppShell
+      initialReduxState={initialReduxState}
+      userData={userData}
+      isAuthenticated={isAuthenticated}
+      pathname={pathname}
+      sidebarExpanded={sidebarExpanded}
+    >
+      {children}
+    </AppShell>
   );
 }

@@ -13,21 +13,21 @@ import { scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
 const inFlight = new Map<string, Promise<void>>();
 
 export function entityScopesKey(
-  entityType: ScopeAssignmentEntityType,
+  entityType: EntityType,
   entityId: string,
 ): string {
   return `${entityType}:${entityId}`;
 }
 
 export function ensureEntityScopes(
-  entityType: ScopeAssignmentEntityType,
+  entityType: EntityType,
   entityId: string,
   opts: { refresh?: boolean } = {},
 ): AppThunk<Promise<void>> {

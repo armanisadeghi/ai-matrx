@@ -64,6 +64,7 @@ import {
 import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { markInputSubmitted } from "../instance-user-input/instance-user-input.slice";
 import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
@@ -266,6 +267,35 @@ export const executeInstance = createAsyncThunk<
       const userInputEntry =
         state.instanceUserInput.byConversationId[conversationId];
       const userMessageParts = userInputEntry?.messageParts ?? undefined;
+
+      // ── Draft-protection: record what THIS send is submitting ──────────────
+      // The stream's clear-on-send paths (`markInputPersisted` on user-request
+      // reservation, `clearUserInput` on stream end) only clear the composer
+      // when its text still equals `lastSubmittedText`; otherwise they treat it
+      // as a live next-message draft and refuse (loudly), per
+      // input-draft-protection.ts. The canonical path (smartExecute) sets that
+      // via `markInputSubmitted` before calling us, leaving submissionPhase
+      // "pending". DIRECT callers (transcript-studio `send`, war-room agent
+      // tools, transcription-cleanup, …) don't — so the message they just sent
+      // looks like an unsubmitted draft: it never clears and every send screams
+      // a false violation. Mark it here for any caller that hasn't (phase still
+      // "idle"). No-op for smartExecute (phase already "pending") → zero impact
+      // on the canonical chat. Skipped for retry (no input is sent).
+      if (
+        !retry &&
+        userInputEntry?.submissionPhase === "idle" &&
+        (userInputEntry.text ?? "").length > 0
+      ) {
+        const submittedUserValues =
+          state.instanceVariableValues.byConversationId[conversationId]
+            ?.userValues ?? {};
+        dispatch(
+          markInputSubmitted({
+            conversationId,
+            userValues: submittedUserValues,
+          }),
+        );
+      }
       // We pull the text from the assembled payload below so the optimistic
       // user message includes any editor-resource XML appended in
       // assembleRequest. Without this, the optimistic bubble would show only

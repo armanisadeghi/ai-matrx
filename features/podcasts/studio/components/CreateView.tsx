@@ -9,14 +9,17 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Podcast, ArrowLeft, LogIn, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { GeneratorForm } from "@/features/podcasts/generator/components/GeneratorForm";
-import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types";
+import type {
+  PodcastFormat,
+  PodcastGenerateRequest,
+} from "@/features/podcasts/generator/types";
 import { studioRunsService } from "@/features/podcasts/studio/runs/service";
 import { stashPendingStart } from "@/features/podcasts/studio/runs/pendingStart";
 
@@ -24,8 +27,22 @@ export function CreateView() {
   const { isAuthenticated } = useApiAuth();
   const { shows, registerShow } = useMyPodcasts();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
+
+  const initialTopic = searchParams.get("topic") ?? "";
+  const formatParam = searchParams.get("format");
+  const initialFormat: PodcastFormat =
+    formatParam === "news" ||
+    formatParam === "entertainment" ||
+    formatParam === "interview" ||
+    formatParam === "debate" ||
+    formatParam === "panel" ||
+    formatParam === "storytelling"
+      ? formatParam
+      : "educational";
+  const initialAgentLabel = searchParams.get("agent") ?? undefined;
 
   if (!isAuthenticated) {
     return (
@@ -95,6 +112,9 @@ export function CreateView() {
           onShowCreated={registerShow}
           onGenerate={handleGenerate}
           busy={busy}
+          initialTopic={initialTopic}
+          initialFormat={initialFormat}
+          initialAgentLabel={initialAgentLabel}
         />
       </div>
     </div>

@@ -8,10 +8,24 @@
 // values) cross a server→client boundary.
 
 import "./notes.css";
+import { cookies } from "next/headers";
+import type { Layout } from "react-resizable-panels";
 import { NotesView } from "@/features/notes/components/NotesView";
 import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
+
+/** Read the persisted notes sidebar/main split so the first paint matches the
+ *  user's last layout (no resize flash). Written client-side by NotesView. */
+async function readSidebarLayout(): Promise<Layout | undefined> {
+  const raw = (await cookies()).get("panels:notes-shell")?.value;
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(decodeURIComponent(raw)) as Layout;
+  } catch {
+    return undefined;
+  }
+}
 
 export const metadata = createRouteMetadata("/notes", {
   title: "Notes",
@@ -50,13 +64,15 @@ export default async function NotesV2Layout({
     return <NotesLanding />;
   }
 
+  const sidebarLayout = await readSidebarLayout();
+
   return (
     <div
       className="notes-root h-full overflow-hidden relative z-0"
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
-      <NotesView className="h-full" />
+      <NotesView className="h-full" sidebarLayout={sidebarLayout} />
       <div style={{ display: "none" }}>{children}</div>
     </div>
   );

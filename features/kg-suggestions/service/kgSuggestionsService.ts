@@ -28,7 +28,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import {
   isScopesRpcErr,
-  type ScopeAssignmentEntityType,
+  type EntityType,
 } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
 import {
@@ -387,13 +387,13 @@ export async function acceptAssociationSuggestion(
     throw new Error(`A ${row.source_kind} can't be tagged to a scope yet.`);
   }
   const current = await scopesService.getEntityScopes(
-    entityType as ScopeAssignmentEntityType,
+    entityType as EntityType,
     row.source_id,
   );
   if (isScopesRpcErr(current)) throw new Error(current.error.message);
   const next = Array.from(new Set([...current.data.scope_ids, scopeId]));
   const written = await scopesService.setEntityScopes(
-    entityType as ScopeAssignmentEntityType,
+    entityType as EntityType,
     row.source_id,
     next,
   );

@@ -16,6 +16,10 @@
 
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
+  AssociationEdge,
+  AssociationsEntry,
+  CategoriesEntry,
+  PlatformCategory,
   EntityScopesEntry,
   OrgNode,
   OrphanBucket,
@@ -103,6 +107,26 @@ export interface ScopesState {
    * `setEntityScopes`. The local-vs-global resolver reads from here.
    */
   entityScopesByKey: Record<string, EntityScopesEntry>;
+
+  /**
+   * Per-entity association edges (the unified `platform.associations` graph),
+   * keyed by `<entityType>:<entityId>`. Each entry holds EVERY edge touching
+   * the entity in BOTH directions. Populated lazily by `loadAssociations`;
+   * kept fresh by the association write thunks (which reload both endpoints).
+   * This is the canonical attach/detach cache — durable relationships, NOT
+   * active context (appContextSlice is never written from here).
+   */
+  associationsByKey: Record<string, AssociationsEntry>;
+
+  /**
+   * The canonical faceted taxonomy (`platform.categories`), keyed by
+   * `dimension` (the facet — `agent-shortcut`, `skill`, `industry`, …). Each
+   * entry holds every category visible to the caller (system + their orgs) for
+   * that facet. Populated lazily by `loadCategories`; kept fresh by
+   * `createCategory`. The sibling of `associationsByKey`: this caches the
+   * category NOUNS, that caches the assignment EDGES.
+   */
+  categoriesByDimension: Record<string, CategoriesEntry>;
 }
 
 const initialState: ScopesState = {
@@ -115,6 +139,8 @@ const initialState: ScopesState = {
   tasksById: {},
   orphanProjectsByOrg: {},
   entityScopesByKey: {},
+  associationsByKey: {},
+  categoriesByDimension: {},
 };
 
 const scopesSlice = createSlice({
@@ -340,6 +366,121 @@ const scopesSlice = createSlice({
         status: "ready",
         scope_ids: action.payload.scope_ids,
         fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+
+    // ─── Associations (unified platform.associations cache) ──────
+    associationsFetchPending(state, action: PayloadAction<{ key: string }>) {
+      const prev = state.associationsByKey[action.payload.key];
+      state.associationsByKey[action.payload.key] = {
+        status: "loading",
+        edges: prev?.edges ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: null,
+      };
+    },
+    associationsFetchFulfilled(
+      state,
+      action: PayloadAction<{ key: string; edges: AssociationEdge[] }>,
+    ) {
+      state.associationsByKey[action.payload.key] = {
+        status: "ready",
+        edges: action.payload.edges,
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+    associationsFetchRejected(
+      state,
+      action: PayloadAction<{ key: string; error: string }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      state.associationsByKey[action.payload.key] = {
+        status: "error",
+        edges: prev?.edges ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: action.payload.error,
+      };
+    },
+    /** Optimistic/echoed single-edge add — pushed only if not already present. */
+    associationAdded(
+      state,
+      action: PayloadAction<{ key: string; edge: AssociationEdge }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      const edges = prev?.edges ?? [];
+      if (edges.some((e) => e.id === action.payload.edge.id)) return;
+      state.associationsByKey[action.payload.key] = {
+        status: "ready",
+        edges: [...edges, action.payload.edge],
+        fetchedAt: prev?.fetchedAt ?? Date.now(),
+        error: null,
+      };
+    },
+    /** Single-edge remove by association id. */
+    associationRemoved(
+      state,
+      action: PayloadAction<{ key: string; associationId: string }>,
+    ) {
+      const prev = state.associationsByKey[action.payload.key];
+      if (!prev) return;
+      prev.edges = prev.edges.filter(
+        (e) => e.id !== action.payload.associationId,
+      );
+    },
+
+    // ─── Categories (canonical platform.categories cache) ────────
+    categoriesFetchPending(
+      state,
+      action: PayloadAction<{ dimension: string }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "loading",
+        categories: prev?.categories ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: null,
+      };
+    },
+    categoriesFetchFulfilled(
+      state,
+      action: PayloadAction<{
+        dimension: string;
+        categories: PlatformCategory[];
+      }>,
+    ) {
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "ready",
+        categories: action.payload.categories,
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+    categoriesFetchRejected(
+      state,
+      action: PayloadAction<{ dimension: string; error: string }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "error",
+        categories: prev?.categories ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: action.payload.error,
+      };
+    },
+    /** Echoed single-category insert — pushed only if not already present. */
+    categoryCreated(
+      state,
+      action: PayloadAction<{ dimension: string; category: PlatformCategory }>,
+    ) {
+      const prev = state.categoriesByDimension[action.payload.dimension];
+      const categories = prev?.categories ?? [];
+      if (categories.some((c) => c.id === action.payload.category.id)) return;
+      state.categoriesByDimension[action.payload.dimension] = {
+        status: "ready",
+        categories: [...categories, action.payload.category],
+        fetchedAt: prev?.fetchedAt ?? Date.now(),
         error: null,
       };
     },

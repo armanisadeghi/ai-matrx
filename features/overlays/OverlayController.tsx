@@ -45,7 +45,7 @@ import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
 import type { ContentEditorSeedDocument } from "@/features/window-panels/windows/content-editors/useOpenContentEditorWindow";
 import type { HierarchyCreationWindowData } from "@/features/window-panels/windows/context-scopes/HierarchyCreationWindow";
 import type { ScopeEditWindowData } from "@/features/window-panels/windows/context-scopes/ScopeEditWindow";
-import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
@@ -71,6 +71,10 @@ const StateViewerOverlay = lazyOverlay(
 );
 const StateViewerWindow = lazyOverlay(
   () => import("@/components/admin/state-analyzer/StateViewerWindow"),
+  { ssr: false },
+);
+const AudioControlWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/AudioControlWindow"),
   { ssr: false },
 );
 const AudioDevicesWindow = lazyOverlay(
@@ -787,6 +791,9 @@ export default function OverlayController() {
     ),
     adminStateAnalyzerWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "adminStateAnalyzerWindow"),
+    ),
+    audioControlWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "audioControlWindow"),
     ),
     audioDevices: useAppSelector((s) => selectIsOverlayOpen(s, "audioDevices")),
     favoritesManagerWindow: useAppSelector((s) =>
@@ -3521,6 +3528,20 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* audioControlWindow */}
+      {(() => {
+        const isOpen = isOpenById.audioControlWindow;
+        if (!isOpen) return null;
+        return (
+          <AudioControlWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "audioControlWindow" }))
+            }
+          />
+        );
+      })()}
+
       {/* audioDevices */}
       {(() => {
         const isOpen = isOpenById.audioDevices;
@@ -4166,7 +4187,7 @@ export default function OverlayController() {
             : null;
         if (!rawSubject) return null;
         const subject = {
-          entityType: rawSubject.entityType as ScopeAssignmentEntityType,
+          entityType: rawSubject.entityType as EntityType,
           entityId:
             typeof rawSubject.entityId === "string" ? rawSubject.entityId : "",
           title: typeof rawSubject.title === "string" ? rawSubject.title : "",

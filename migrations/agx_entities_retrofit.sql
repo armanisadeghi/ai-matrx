@@ -1,0 +1,52 @@
+-- agx_entities_retrofit.sql
+-- DB changeover, Wave 3 — ADDITIVE base-retrofit (Step 1 only) for the agx_* Base-1 entities.
+-- Applied 2026-06-24 via the validated registry-driven routine platform.retrofit_entity(...).
+--
+-- ADDITIVE / non-breaking. For each table the routine: adds the standard columns
+-- (organization_id if absent, created_by, updated_by, updated_at, version — reusing any
+-- existing version/updated_at anchor), drops the legacy <table>_updated_at trigger BEFORE
+-- the backfill, backfills created_by = user_id and organization_id from each owner's
+-- PERSONAL org, attaches the shared platform._touch_row + platform._stamp_actor triggers,
+-- and self-verifies 0 null-org / 0 null-created_by (the whole call rolls back on failure).
+--
+-- Owner column = user_id for all four (none had a pre-existing created_by, so NO collision
+-- and NO created_by->created_by_kind rename was needed on any of them).
+--
+-- DEFERRED to separate, gated steps (NOT in this migration):
+--   * org-first RLS flip (iam.apply_rls(...,'entity') + drop legacy policies)
+--   * history capture (platform._version_capture) — agx_agent / agx_agent_templates already
+--     carry their own bespoke version-snapshot triggers (-> agx_version); left untouched here.
+--   * organization_id NOT NULL
+--   * DROP project_id / task_id litter (drop the _mirror_proj / _mirror_task triggers first,
+--     after the consumer repoint + PITR). Those mirror triggers are intentionally left in place.
+--
+-- Idempotent / re-runnable: the routine is add-column-if-not-exists, drop-trigger-if-exists,
+-- and backfills only NULLs, so re-applying the OK calls below is a no-op.
+
+-- == APPLIED ==
+
+-- agx_agent_templates (~10 rows): owner=user_id, legacy trigger set_agx_agent_templates_updated_at.
+-- Result: retrofit_entity(agx_agent_templates) OK — orgcol=organization_id strategy=personal null_org=0
+select platform.retrofit_entity('agx_agent_templates', 'agent_template', 'personal', 'user_id', null, null, 'set_agx_agent_templates_updated_at');
+
+-- == BLOCKED (left commented; see note below) ==
+-- The three tables below contain agent_type='builtin', ownerless (user_id IS NULL) SYSTEM/GLOBAL
+-- rows that have no owner and thus no personal org to inherit. With the 'personal' strategy the
+-- routine's final 0-null-org assertion RAISES and rolls the whole call back (verified — each table
+-- left completely unchanged). These are NOT user business objects; assigning them an org is an
+-- ownership-policy decision for the lead (no canonical "system org" convention exists yet on
+-- public.organizations). Per the changeover process: STOP, do not force. Re-enable each call once
+-- the ownerless-system-row org source is decided (e.g. a designated platform/system org, or a
+-- 'system' org strategy added to platform.retrofit_entity).
+--
+--   agx_agent (~576 rows, 82 ownerless builtin):
+--     -> RAISES: retrofit_entity(agx_agent): 82 null-org rows remain
+--   select platform.retrofit_entity('agx_agent', 'agent', 'personal', 'user_id', null, null, 'set_agx_agent_updated_at');
+--
+--   agx_shortcut (~205 rows, 30 ownerless):
+--     -> RAISES: retrofit_entity(agx_shortcut): 30 null-org rows remain
+--   select platform.retrofit_entity('agx_shortcut', 'agent_shortcut', 'personal', 'user_id', null, null, 'set_agx_shortcut_updated_at');
+--
+--   agx_agent_surface (~26 rows, 4 ownerless-without-org; no legacy *_updated_at trigger, so null):
+--     -> RAISES: retrofit_entity(agx_agent_surface): 4 null-org rows remain
+--   select platform.retrofit_entity('agx_agent_surface', 'agent_surface_binding', 'personal', 'user_id', null, null, null);

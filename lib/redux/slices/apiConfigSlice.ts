@@ -111,9 +111,67 @@ interface ApiConfigState {
   recentCalls: ApiCallLogEntry[];
 }
 
+// ── Persistence ─────────────────────────────────────────────────────────────
+// The active server is an admin/dev choice that must SURVIVE reloads — losing
+// "localhost" on every refresh and silently snapping back to production is a
+// real footgun. SSR-safe: no-op on the server, lazy-read on the client.
+const PERSIST_KEY = "matrx.apiConfig.v1";
+
+function loadPersistedServer(): {
+  activeServer: ServerEnvironment;
+  customUrl: string | null;
+} {
+  const fallback = { activeServer: "production" as ServerEnvironment, customUrl: null };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(PERSIST_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as {
+      activeServer?: ServerEnvironment;
+      customUrl?: string | null;
+    };
+    const valid: ServerEnvironment[] = [
+      "production",
+      "development",
+      "ec2",
+      "staging",
+      "localhost",
+      "gpu",
+      "custom",
+    ];
+    return {
+      activeServer:
+        parsed.activeServer && valid.includes(parsed.activeServer)
+          ? parsed.activeServer
+          : "production",
+      customUrl:
+        typeof parsed.customUrl === "string" ? parsed.customUrl : null,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistServer(
+  activeServer: ServerEnvironment,
+  customUrl: string | null,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      PERSIST_KEY,
+      JSON.stringify({ activeServer, customUrl }),
+    );
+  } catch {
+    /* quota / privacy mode — non-fatal */
+  }
+}
+
+const _persisted = loadPersistedServer();
+
 const initialState: ApiConfigState = {
-  activeServer: "production",
-  customUrl: null,
+  activeServer: _persisted.activeServer,
+  customUrl: _persisted.customUrl,
   health: buildDefaultHealth(),
   recentCalls: [],
 };
@@ -271,11 +329,13 @@ const apiConfigSlice = createSlice({
       if (action.payload !== "custom") {
         state.customUrl = null;
       }
+      persistServer(state.activeServer, state.customUrl);
     },
 
     setCustomUrl: (state, action: PayloadAction<string>) => {
       state.activeServer = "custom";
       state.customUrl = action.payload;
+      persistServer(state.activeServer, state.customUrl);
     },
 
     setServerHealthChecking: (

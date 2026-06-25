@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
+import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { cn } from "@/lib/utils";
 import type { ToolArtifact, ToolArtifactKind } from "../registry/toolArtifact";
@@ -77,7 +77,7 @@ export function ArtifactResultBar({
   const liveTitle = useAppSelector(
     selectWorkingDocTitle(conversationId ?? ""),
   );
-  const openPanel = useOpenWorkingDocumentPanel();
+  const canvas = useCanvas();
   const openNotes = useOpenNotesWindow();
 
   const meta = KIND_META[artifact.kind];
@@ -88,7 +88,19 @@ export function ArtifactResultBar({
 
   function open() {
     if (artifact.kind === "working_document") {
-      if (conversationId) openPanel({ conversationId, title });
+      // Park the final version in the Canvas — the unified live workspace —
+      // not a one-off sidebar. Deduped so reopening reuses the same item.
+      if (conversationId) {
+        canvas.open({
+          type: "working_document",
+          data: { conversationId, kind: "working" },
+          metadata: {
+            title,
+            conversationId,
+            sourceMessageId: `wd:${conversationId}:working`,
+          },
+        });
+      }
     } else if (artifact.kind === "note" && artifact.id) {
       openNotes({ initialNoteId: artifact.id, title });
     }

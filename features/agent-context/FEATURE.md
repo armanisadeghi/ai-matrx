@@ -177,6 +177,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 - **Broker values are read, not mutated, during invocation.** Writes happen through dedicated RPC paths.
 - **`appContext` is the top-level client truth.** Keep it narrow — it rides on every API call.
 - **Scope CRUD does not live here.** Pickers, taggers, slices, services for scope are in [`features/scopes/`](../scopes/FEATURE.md). The single most repeated bug in the old code was a "context picker" that secretly mutated `appContextSlice`; that's structurally impossible in the new module because Surface B never touches it.
+- **Durable cross-entity relationships do not live here either.** Any "this entity is linked to that entity" edge lives in the unified `platform.associations` table via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs) — not in a broker, a slot, or `appContextSlice`. Resolution still consumes scope *data*; it does not own entity relationships.
 - **Anything not declared as variable or slot** is reachable via tool call only, never injection.
 - **Server stamps scope on the conversation** at first-turn time. Subsequent turns inherit.
 - **Do not create per-feature scope state.** Use `appContextSlice` + broker resolution + `selectResolvedContext` — scattered scope state breaks the mental model.
@@ -244,6 +245,7 @@ Until Phase 5 lands:
 
 ## Change log
 
+- `2026-06-24` — claude: pointer added — durable cross-entity relationships now live in the unified `platform.associations` edge via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs), not in brokers, slots, or `appContextSlice`. One invariant line; full model in the scopes doc.
 - `2026-05-16` — composer: narrowed scope of this doc. All scope CRUD content moved to [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Updated cross-links. Updated `appContextSlice` location (lib). Updated broker hierarchy table to use "Scope" as the level name (was "Workspace"). Added explicit deprecation pointers for everything to be deleted in Phase 5 of the scopes rebuild.
 - `2026-05-01` — codex: documented `PERSONAL_PSEUDO_ORG_ID` sentinel rules; `get_user_full_context` now returns a virtual Personal org so personal projects appear in the nav tree; `lib/api/call-api.ts → resolveScope` strips the sentinel before any backend call.
 - `2026-04-22` — claude: initial combined FEATURE.md for agent-context + brokers.

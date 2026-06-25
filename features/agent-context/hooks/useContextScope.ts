@@ -3,6 +3,9 @@
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+// Surface A: the /agent-context pages' working-scope navigator, dual-sourced
+// URL <-> appContext. Explicit active-context selection — never entity tagging.
+// eslint-disable-next-line no-restricted-syntax -- Surface A: agent-context working-scope navigator
 import {
   selectOrganizationId,
   selectProjectId,

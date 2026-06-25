@@ -14,6 +14,10 @@ import {
 // without the browser Supabase env — from blowing up at import time.
 import { AIProvider } from "@/lib/ai/aiChat.types";
 import { MatrxRecordId } from "@/types/entityTypes";
+// Favorites speak the canonical entity vocabulary. `FavoriteKind` is defined
+// ONCE in features/scopes/types.ts (`EntityType | "nav"`) and re-exported below
+// so `FavoriteItem.kind` and existing importers stay stable — no parallel union.
+import type { FavoriteKind } from "@/features/scopes/types";
 
 // Define types for each module's preferences
 export interface DisplayPreferences {
@@ -394,24 +398,11 @@ export interface AudioDevicePreferences {
   audioOutputDeviceLabel: string;
 }
 
-/**
- * What kind of thing a favorite points at. Drives the icon fallback and lets
- * background validation route to the right "does this still exist?" check.
- * `nav` = a static app-area destination (e.g. "Research", "PDF Extractor");
- * the rest are user-owned records.
- */
-export type FavoriteKind =
-  | "nav"
-  | "agent"
-  | "conversation"
-  | "note"
-  | "file"
-  | "app"
-  | "task"
-  | "transcript"
-  | "scope"
-  | "podcast"
-  | "other";
+// `FavoriteKind` ("what a favorite points at") is the canonical
+// `EntityType | "nav"`, imported above from features/scopes/types.ts and used
+// by `FavoriteItem.kind` below. `nav` = a static app-area destination (e.g.
+// "Research"); every other token is an `EntityType` whose per-user favorite
+// state lives in `platform.user_entity_state`.
 
 /**
  * A single pinned favorite. Stored as a self-contained *reference* — not a bare

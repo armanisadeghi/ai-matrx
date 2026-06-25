@@ -188,7 +188,7 @@ export default function TaskItem({
                 handleCopyTask(e);
               }}
               disabled={isOperating}
-              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               title="Copy task"
             >
               <Copy size={14} />
@@ -205,7 +205,7 @@ export default function TaskItem({
                 );
               }}
               disabled={isOperating}
-              className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               title="Delete task"
             >
               <Trash2 size={14} />
@@ -216,7 +216,7 @@ export default function TaskItem({
                 dispatch(toggleTaskExpand(task.id));
               }}
               disabled={isOperating}
-              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               title={isExpanded ? "Hide details" : "Show details"}
             >
               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

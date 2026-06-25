@@ -1,30 +1,32 @@
 "use client";
 
 import {
-  ChevronLeftTapButton,
   PanelLeftTapButton,
   RobotTapButton,
   ViewTapButton,
   TestTubeTapButton,
 } from "@/components/icons/tap-buttons";
 import { usePanelControls } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
+import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 
 /**
- * Header controls for the surfaces admin shell. Lives inside the page header
- * slot (injected via `PageSpecificHeader`, so it works under both the shell
- * `#shell-header-center` and the new-layout `#page-specific-header-content`
- * hosts) and reads panel state through the cross-portal `PanelControlProvider`.
+ * Shell header for `/agents/[id]/surfaces` (and the admin twin).
  *
- * The five panels are: surfaces · agent · binding · surface-details ·
- * playground. The center (binding) is the non-collapsible filler — no
- * toggle for it, matching the mac-mail reference layout.
+ * Combines the common `AgentHeader` with the four collapsible column toggles.
+ * Toggles live in the header row — same mac-mail / tasks pattern — so the
+ * panel group below can be full-height with only `pt-[var(--shell-header-h)]`
+ * on each column. Putting toggles in the page body breaks that model.
  */
-export function SurfacesAdminHeader({
+export function SurfacesAgentHeaderControls({
+  agentId,
   agentName,
   backHref,
+  basePath = "/agents",
 }: {
+  agentId: string;
   agentName: string;
   backHref: string;
+  basePath?: string;
 }) {
   const { toggle, isCollapsed } = usePanelControls();
 
@@ -34,13 +36,9 @@ export function SurfacesAdminHeader({
   const playgroundCollapsed = isCollapsed("playground");
 
   return (
-    <div className="flex items-center justify-between w-full min-w-0 gap-0 p-0">
-      <div className="flex items-center gap-0">
-        <ChevronLeftTapButton
-          href={backHref}
-          variant="transparent"
-          ariaLabel="Back"
-        />
+    <div className="flex items-center w-full min-w-0 gap-0 p-0">
+      {/* Left column toggles — desktop only; mobile uses the stacked fallback. */}
+      <div className="hidden lg:flex items-center shrink-0">
         <PanelLeftTapButton
           onClick={() => toggle("surfaces-list")}
           variant={surfacesCollapsed ? "transparent" : "glass"}
@@ -55,16 +53,16 @@ export function SurfacesAdminHeader({
         />
       </div>
 
-      <div className="flex items-center gap-3 min-w-0">
-        <h1 className="text-sm font-medium text-foreground truncate">
-          {agentName}
-        </h1>
-        <span className="text-xs text-muted-foreground truncate hidden sm:inline">
-          Surfaces
-        </span>
+      <div className="flex-1 min-w-0">
+        <AgentHeader
+          agentId={agentId}
+          agentName={agentName}
+          backHref={backHref}
+          basePath={basePath}
+        />
       </div>
 
-      <div className="flex items-center gap-0">
+      <div className="hidden lg:flex items-center shrink-0">
         <ViewTapButton
           onClick={() => toggle("surface-details")}
           variant={detailsCollapsed ? "transparent" : "glass"}

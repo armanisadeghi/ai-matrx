@@ -35,6 +35,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  audioControlWindow: {
+    label: "Audio",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   audioDevices: {
     label: "Audio Devices",
     instanceMode: "singleton",

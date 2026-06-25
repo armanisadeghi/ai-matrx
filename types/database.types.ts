@@ -6865,6 +6865,8 @@ export type Database = {
       ctx_war_room_sessions: {
         Row: {
           active_tile_id: string | null
+          anchor_id: string | null
+          anchor_type: string | null
           color: string | null
           context_scope_ids: Json
           created_at: string
@@ -6882,6 +6884,8 @@ export type Database = {
         }
         Insert: {
           active_tile_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string | null
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
@@ -6899,6 +6903,8 @@ export type Database = {
         }
         Update: {
           active_tile_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string | null
           color?: string | null
           context_scope_ids?: Json
           created_at?: string
@@ -7061,6 +7067,8 @@ export type Database = {
       ctx_war_room_tiles: {
         Row: {
           active_tab: string
+          anchor_id: string | null
+          anchor_type: string | null
           context_organization_id: string | null
           context_scope_ids: Json | null
           created_at: string
@@ -7080,6 +7088,8 @@ export type Database = {
         }
         Insert: {
           active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string | null
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
@@ -7099,6 +7109,8 @@ export type Database = {
         }
         Update: {
           active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string | null
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
@@ -28010,6 +28022,50 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      assoc_add: {
+        Args: {
+          p_label?: string
+          p_metadata?: Json
+          p_org_id?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
+      assoc_for_entity: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          created_at: string
+          direction: string
+          id: string
+          label: string
+          metadata: Json
+          org_id: string
+          other_id: string
+          other_type: string
+        }[]
+      }
+      assoc_remove: {
+        Args: {
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: undefined
+      }
+      assoc_set_targets: {
+        Args: {
+          p_org_id?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_ids: string[]
+          p_target_type: string
+        }
+        Returns: undefined
+      }
       associate_with_task: {
         Args: {
           p_entity_id: string
@@ -28090,6 +28146,33 @@ export type Database = {
       can_read_processed_document: {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
+      }
+      cat_create: {
+        Args: {
+          p_color?: string
+          p_dimension: string
+          p_icon?: string
+          p_name: string
+          p_org_id: string
+          p_parent_id?: string
+          p_slug?: string
+        }
+        Returns: string
+      }
+      cat_list: {
+        Args: { p_dimension?: string }
+        Returns: {
+          color: string
+          dimension: string
+          icon: string
+          id: string
+          is_system: boolean
+          name: string
+          org_id: string
+          parent_id: string
+          position: number
+          slug: string
+        }[]
       }
       check_builtin_drift: {
         Args: { p_builtin_id?: string }
@@ -32316,6 +32399,42 @@ export type Database = {
       udt_validate_row: {
         Args: { p_data: Json; p_prior: Json; p_table_id: string }
         Returns: Json
+      }
+      ues_get_bulk: {
+        Args: { p_entity_ids: string[]; p_entity_type: string }
+        Returns: {
+          entity_id: string
+          is_favorite: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          last_viewed_at: string
+        }[]
+      }
+      ues_list: {
+        Args: { p_kind?: string }
+        Returns: {
+          entity_id: string
+          entity_type: string
+          is_favorite: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          last_viewed_at: string
+          updated_at: string
+        }[]
+      }
+      ues_set: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_is_favorite?: boolean
+          p_is_hidden?: boolean
+          p_is_pinned?: boolean
+        }
+        Returns: undefined
+      }
+      ues_touch: {
+        Args: { p_entity_id: string; p_entity_type: string }
+        Returns: undefined
       }
       update_all_bucket_tree_structures: { Args: never; Returns: Json }
       update_all_trending_scores: { Args: never; Returns: undefined }

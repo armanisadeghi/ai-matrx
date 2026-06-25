@@ -279,7 +279,7 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   `ctx_scope_assignments` chokepoint. No parallel scope-create or tagging path
   was introduced.
 - **Source-kind mapping.** `kgSourceKindToEntityType` maps RAG source kinds to
-  taggable `ScopeAssignmentEntityType`s (`note`→note, `task`→task,
+  taggable `EntityType`s (`note`→note, `task`→task,
   `project`→project, `conversation`→conversation, `cld_file`→file). Untaggable
   kinds (`transcript`, `scraped`, `code_file`, `repository`, `library_doc`) are
   counted and reported in the toast — never silently dropped.
@@ -329,7 +329,7 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   every list key, so a note chip and the global drawer update together. Don't
   add a parallel per-surface cache.
 - **The chip `filter` is keyed on `source_kind`/`source_id`, NOT
-  `ScopeAssignmentEntityType`.** A suggestion's source (transcript, scraped,
+  `EntityType`.** A suggestion's source (transcript, scraped,
   cld_file, …) is broader than the set of taggable entities; coupling to the
   narrower union would wrongly exclude sources.
 - **Global drawer is overlay-system, not a parallel render tree.** It is

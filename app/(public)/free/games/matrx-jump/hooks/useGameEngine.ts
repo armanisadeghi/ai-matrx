@@ -283,15 +283,12 @@ const drawScene = (
     ctx.fillStyle = '#f8fafc';
     ctx.fillText(scoreText, 19, 27);
 
-    // Pre-game / game-over wash + title (the action buttons are real DOM, on top).
+    // Pre-game / game-over dim wash. All title/score text is rendered as real
+    // DOM in the overlay on top — keeping it off the canvas avoids font overlap
+    // and stays crisp + theme-aware.
     if (status !== 'playing') {
         ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
         ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = '#f8fafc';
-        ctx.textAlign = 'center';
-        ctx.font = '700 34px system-ui, -apple-system, sans-serif';
-        ctx.fillText(status === 'gameover' ? 'Game Over' : 'Matrx Jump', W / 2, H / 2 - 28);
-        ctx.textAlign = 'left';
     }
 };
 
