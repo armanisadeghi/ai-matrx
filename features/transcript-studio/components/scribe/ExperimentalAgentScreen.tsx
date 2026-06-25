@@ -44,6 +44,15 @@ interface ExperimentalAgentScreenProps {
   sessionId: string;
   /** War Room grid tiles — shrink the bottom voice control row. */
   compact?: boolean;
+  /**
+   * Reveal the REAL chat input permanently (the full `SmartAgentInput` — its
+   * `ConversationContextRail` with working document + scratchpad + context
+   * layers + attachments, the textarea, resource chips, run controls). War Room
+   * passes this so its agent tab IS the chat surface (working doc + scratchpad +
+   * context never hidden), while Scribe stays voice-first (the input collapses
+   * behind the keyboard toggle). Drives the real component via a prop — no fork.
+   */
+  revealInput?: boolean;
 }
 
 /** The finished turn: transcript + assembled audio + length, carried to the chooser. */
@@ -65,6 +74,7 @@ function formatClock(totalSec: number): string {
 export function ExperimentalAgentScreen({
   sessionId,
   compact,
+  revealInput = false,
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -317,7 +327,7 @@ export function ExperimentalAgentScreen({
           surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
-          hideInput={!inputOpen}
+          hideInput={!inputOpen && !revealInput}
           smartInputProps={{ sendButtonVariant: "blue" }}
         />
       </div>

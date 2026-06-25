@@ -199,16 +199,15 @@ export default function TileAgentPanel({
     dispatch(
       setClientTools({
         conversationId,
-        // Plus the read-only war-room-master-tools members (no tile binding, no
-        // HITL — they route to the read dispatcher by name): war_room_read_thread
-        // reads ANOTHER thread's chain by its tile id; war_room_read_file reads
-        // an attached file's extracted TEXT by its file id. Both targets are
-        // listed in the inline `war_room` block (siblings + the <files> manifest).
-        tools: [
-          ...WAR_ROOM_TOOL_NAMES,
-          "war_room_read_thread",
-          "war_room_read_file",
-        ],
+        // Plus the read-only war_room_read_thread (no tile binding, no HITL —
+        // routes to the read dispatcher by name) to read ANOTHER thread's chain
+        // by its tile id. NOTE: war_room_read_file is intentionally NOT armed —
+        // reading an attached file's extracted text is SERVER-side data and was
+        // wrongly a client-delegated tool, which HARD-SUSPENDS the agent loop
+        // (the conversation "stops") to round-trip server data through React.
+        // File reading now happens server-side via the agent's data tools (see
+        // the war-room-thread surface defaults + the aidream file-extraction read).
+        tools: [...WAR_ROOM_TOOL_NAMES, "war_room_read_thread"],
       }),
     );
     return () => {
@@ -243,9 +242,17 @@ export default function TileAgentPanel({
       <AssistantAgentBar sessionId={sessionId} compact={compact} />
       <WorkingDocumentHeader sessionId={sessionId} compact={compact} />
 
-      {/* The Agent+ conversation + voice controls fill the rest. */}
+      {/* The Agent+ conversation + voice controls fill the rest. `revealInput`
+          shows the REAL chat SmartAgentInput (its ConversationContextRail —
+          working document + scratchpad + context layers + attachments — plus the
+          textarea / resource chips / run controls), so the War Room agent tab IS
+          the chat surface, not a stripped voice-only fork. */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <ExperimentalAgentScreen sessionId={sessionId} compact={compact} />
+        <ExperimentalAgentScreen
+          sessionId={sessionId}
+          compact={compact}
+          revealInput
+        />
       </div>
     </div>
   );
