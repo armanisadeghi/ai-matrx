@@ -172,13 +172,16 @@ export function DocumentsWorkspace({
           </div>
         </div>
 
-        {/* Active document — the existing panel, header off (the tab strip is the chrome). */}
+        {/* Active document — the existing panel. The header keeps its action
+            toolbar but DROPS its title: the tab strip already names the doc, so
+            showing it again would be a third nested "Working document" heading. */}
         <div className="min-h-0 flex-1">
           <WorkingDocumentPanel
             key={tabKey(active)}
             conversationId={active.conversationId}
             kind={active.kind}
             showHeader
+            showHeaderTitle={false}
             showOpenInWindow={false}
             showEnableToggle
             surfaceContext={

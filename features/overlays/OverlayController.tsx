@@ -3854,13 +3854,12 @@ export default function OverlayController() {
         const conversationId =
           typeof data?.conversationId === "string" ? data.conversationId : null;
         if (!conversationId) return null;
-        const title =
-          typeof data?.title === "string" && data.title
-            ? data.title
-            : "Working document";
+        // Container title is "Documents" — NOT the doc title. The workspace's tab
+        // strip already names each doc (Working document / Scratchpad); repeating
+        // it here would be a redundant nested heading.
         return (
           <SidePanelSurface
-            title={title}
+            title="Documents"
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "workingDocumentPanel" }))
             }

@@ -56,6 +56,12 @@ interface WorkingDocumentPanelProps {
   showEnableToggle?: boolean;
   showHeader?: boolean;
   /**
+   * Show the title + subtitle in the header. Off when an outer chrome (e.g. the
+   * DocumentsWorkspace tab strip) already names the document — keeps the action
+   * toolbar but drops the redundant title to avoid nested duplicate headings.
+   */
+  showHeaderTitle?: boolean;
+  /**
    * Host page context carried into the document SURFACE — the conversation's
    * context + scope selections — so agents launched from the highlight→agent
    * menu see what the chat agent sees. The host (chat, war-room, the window)
@@ -71,6 +77,7 @@ export function WorkingDocumentPanel({
   showOpenInWindow = true,
   showEnableToggle = true,
   showHeader = true,
+  showHeaderTitle = true,
   surfaceContext,
 }: WorkingDocumentPanelProps) {
   const {
@@ -147,26 +154,32 @@ export function WorkingDocumentPanel({
       )}
       {showHeader && (
         <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium text-foreground">
-              {title || docTitleFallback}
-            </span>
-            <span className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-              {isScratch ? (
-                "Private to you — the agent can read it, but never edits it"
-              ) : isBound ? (
-                <>
-                  <Link2 className="h-3 w-3 shrink-0" />
-                  <span className="truncate">
-                    Synced to note{binding.label ? ` · ${binding.label}` : ""}
-                  </span>
-                </>
-              ) : (
-                "Auto-saved to this conversation"
-              )}
-            </span>
-          </div>
+          {showHeaderTitle ? (
+            <>
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-medium text-foreground">
+                  {title || docTitleFallback}
+                </span>
+                <span className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                  {isScratch ? (
+                    "Private to you — the agent can read it, but never edits it"
+                  ) : isBound ? (
+                    <>
+                      <Link2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        Synced to note{binding.label ? ` · ${binding.label}` : ""}
+                      </span>
+                    </>
+                  ) : (
+                    "Auto-saved to this conversation"
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
 
           {enabled && kind === "working" && (
             <WorkingDocumentViewControls conversationId={conversationId} />

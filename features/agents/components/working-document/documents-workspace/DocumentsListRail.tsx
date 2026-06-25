@@ -10,10 +10,20 @@
  */
 
 import { useEffect, useState } from "react";
-import { FileText, Loader2, Lock, PanelLeftClose, Search } from "lucide-react";
+import {
+  FileText,
+  Loader2,
+  Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Pencil,
+  Search,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ItemRow } from "@/components/official/item/ItemRow";
 import {
   listRecentUserDocuments,
+  updateCxWorkingDocumentTitle,
   type CxWorkingDocumentSummary,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
@@ -133,40 +143,65 @@ export function DocumentsListRail({
         {ordered.map((d) => {
           const isScratch = d.kind === "scratch";
           const isCurrent = d.conversationId === currentConversationId;
+          const label =
+            d.title?.trim() || (isScratch ? "Scratchpad" : "Working document");
+          const open = () =>
+            onOpen({
+              conversationId: d.conversationId!,
+              kind: d.kind,
+              documentId: d.id,
+              title: d.title,
+            });
           return (
-            <button
+            <ItemRow
               key={d.id}
-              type="button"
-              onClick={() =>
-                onOpen({
-                  conversationId: d.conversationId!,
-                  kind: d.kind,
-                  documentId: d.id,
-                  title: d.title,
-                })
-              }
-              className={cn(
-                "mb-0.5 flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent",
-                isCurrent && "ring-1 ring-inset ring-border",
-              )}
-            >
-              <span className="flex items-center gap-1.5">
-                {isScratch ? (
-                  <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />
+              size="sm"
+              active={isCurrent}
+              label={label}
+              leading={
+                isScratch ? (
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                 ) : (
-                  <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
-                )}
-                <span className="truncate text-xs font-medium text-foreground">
-                  {d.title?.trim() ||
-                    (isScratch ? "Scratchpad" : "Working document")}
-                </span>
-              </span>
-              {d.preview && (
-                <span className="truncate pl-[18px] text-[11px] text-muted-foreground">
-                  {d.preview}
-                </span>
-              )}
-            </button>
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                )
+              }
+              onOpen={open}
+              rename={{
+                value: label,
+                onCommit: async (next: string) => {
+                  const trimmed = next.trim();
+                  if (!trimmed || trimmed === label) return;
+                  await updateCxWorkingDocumentTitle(d.id, trimmed);
+                  setDocs(
+                    (prev) =>
+                      prev?.map((x) =>
+                        x.id === d.id ? { ...x, title: trimmed } : x,
+                      ) ?? prev,
+                  );
+                },
+              }}
+              menu={{
+                sections: [
+                  {
+                    items: [
+                      {
+                        id: "open",
+                        label: "Open",
+                        icon: PanelLeftOpen,
+                        onSelect: open,
+                      },
+                      {
+                        id: "rename",
+                        label: "Rename",
+                        icon: Pencil,
+                        intent: "rename",
+                        onSelect: () => {},
+                      },
+                    ],
+                  },
+                ],
+              }}
+            />
           );
         })}
       </div>
