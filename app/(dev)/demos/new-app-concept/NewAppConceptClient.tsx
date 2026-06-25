@@ -2,13 +2,15 @@
 
 // app/(dev)/demos/new-app-concept/NewAppConceptClient.tsx
 //
-// Concept demo: a single adaptive "What are we creating today?" entryway.
+// Concept demo: a single adaptive creation composer.
 //
-// The three composer slots (topic / format / agent) are NOT static fields —
-// each opens a different *kind* of picker, and all three reconfigure when the
-// user picks a workflow at the bottom (Brainstorm / Research / Plan / Write /
-// Podcast). Selecting "Podcast" fills the format dropdown with podcast formats,
-// relabels the left slot to "Enter Topic", and swaps the agent list.
+// The shape is a NORMAL AI chat input — a real text area is the primary element
+// — expanded a little at the bottom to hold a compact control strip. That strip
+// (add-source, format dropdown, agent dropdown, send) stays well under ~35-40%
+// of the box height, and its dropdowns open as SMALL popovers. All of it
+// reconfigures when the user picks a workflow below (Brainstorm / Research /
+// Plan / Write / Podcast): the input's label/placeholder, the format options,
+// and the agent options all swap.
 //
 // Two handoffs are LIVE today and route into the real product flows:
 //   • Podcast  → /podcast/studio/create  (reads topic / format / agent params)
@@ -68,12 +70,12 @@ interface AgentOption {
 interface WorkflowConfig {
   id: WorkflowId;
   label: string;
-  /** Label shown above the left (topic) slot — changes per workflow. */
+  /** Eyebrow above the input — changes per workflow ("Enter Topic", …). */
   inputLabel: string;
   placeholder: string;
   sample: string;
   icon: LucideIcon;
-  /** Decorative accent for the workflow card + topic header bubble. */
+  /** Decorative accent for the workflow card. */
   iconBubble: string;
   formats: FormatOption[];
   agents: AgentOption[];
@@ -209,7 +211,6 @@ export function NewAppConceptClient() {
       ReturnType<typeof initialSelection>
     >;
   });
-  const [topicOpen, setTopicOpen] = useState(true);
   const [activeNav, setActiveNav] = useState("Projects");
   const [isPending, startTransition] = useTransition();
 
@@ -226,11 +227,6 @@ export function NewAppConceptClient() {
       ...prev,
       [workflowId]: { ...prev[workflowId], ...patch },
     }));
-  };
-
-  const handleWorkflowSelect = (next: WorkflowId) => {
-    setWorkflowId(next);
-    setTopicOpen(true);
   };
 
   const submit = () => {
@@ -277,157 +273,140 @@ export function NewAppConceptClient() {
             What are we creating today?
           </h1>
 
-          <div className="mt-10 w-full max-w-5xl rounded-2xl border border-border bg-card p-5 shadow-[0_24px_80px_rgba(15,23,42,0.10)] dark:shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-            <div className="mb-6 text-lg font-medium text-muted-foreground">
-              Describe what you want to create
+          {/* The composer — a normal AI input. Text area is the primary element;
+              the control strip below it stays small (well under ~40% height). */}
+          <div className="mt-10 w-full max-w-3xl rounded-3xl border border-border bg-card p-2.5 shadow-[0_20px_70px_rgba(15,23,42,0.10)] focus-within:border-primary/40 dark:shadow-[0_20px_70px_rgba(0,0,0,0.35)]">
+            <div className="px-3 pt-2.5">
+              <label
+                htmlFor="concept-input"
+                className="mb-1 block text-xs font-medium text-muted-foreground"
+              >
+                {config.inputLabel}
+              </label>
+              <Textarea
+                id="concept-input"
+                value={selection.value}
+                onChange={(event) => updateSelection({ value: event.target.value })}
+                placeholder={config.placeholder}
+                autoGrow
+                minHeight={92}
+                maxHeight={240}
+                wrapperClassName="bg-transparent"
+                className="resize-none border-0 bg-transparent px-0 py-0 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
             </div>
-            <div className="grid items-stretch gap-4 lg:grid-cols-[56px_minmax(220px,1.2fr)_minmax(240px,1.2fr)_minmax(220px,0.9fr)_56px]">
+
+            <div className="flex items-center gap-2 px-2 pb-1.5 pt-1.5">
               {/* Add source — illustrative in this concept */}
               <button
                 type="button"
                 onClick={() =>
                   toast.info("Add a source — files, URLs, and notes plug in here.")
                 }
-                className="flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-background text-primary shadow-sm transition hover:border-primary/40 hover:bg-accent"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-primary"
                 aria-label="Add source"
               >
-                <Plus className="h-6 w-6" />
+                <Plus className="h-4 w-4" />
               </button>
 
-              {/* SLOT 1 — Topic: opens an inline text area below */}
-              <button
-                type="button"
-                onClick={() => setTopicOpen((open) => !open)}
-                aria-expanded={topicOpen}
-                className="flex min-h-14 items-center justify-between rounded-xl border border-border bg-background px-5 text-left shadow-sm transition hover:border-primary/40 hover:bg-accent/60"
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium text-muted-foreground">
-                    {config.inputLabel}
-                  </span>
-                  <span className="block truncate text-base font-semibold text-foreground">
-                    {selection.value || config.placeholder}
-                  </span>
-                </span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                    topicOpen && "rotate-180",
-                  )}
-                />
-              </button>
-
-              {/* SLOT 2 — Format: opens a grid popover of format tiles */}
+              {/* Format — small dropdown popover */}
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="grid min-h-14 grid-cols-[96px_1fr_auto] overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:border-primary/40 hover:bg-accent/60"
+                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
                   >
-                    <span className="flex items-center justify-center border-r border-border bg-primary/5 text-primary">
-                      <ActiveIcon className="h-7 w-7" />
+                    <ActiveIcon className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="max-w-[160px] truncate font-medium text-foreground">
+                      {format.label}
                     </span>
-                    <span className="min-w-0 px-5 py-3">
-                      <span className="block text-sm font-medium text-muted-foreground">
-                        Pick a Format
-                      </span>
-                      <span className="block truncate text-base font-semibold text-foreground">
-                        {format.label}
-                      </span>
-                    </span>
-                    <span className="flex items-center pr-4 text-muted-foreground">
-                      <ChevronDown className="h-4 w-4" />
-                    </span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[min(520px,calc(100vw-2rem))] rounded-2xl border-border bg-popover p-3 shadow-2xl">
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {config.formats.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => updateSelection({ formatId: item.id })}
-                        className={cn(
-                          "rounded-xl border p-3 text-left transition",
-                          item.id === selection.formatId
-                            ? "border-primary/50 bg-primary/10 text-foreground"
-                            : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:bg-accent/60 hover:text-foreground",
-                        )}
-                      >
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-semibold text-foreground">
-                            {item.label}
-                          </span>
-                          {item.id === selection.formatId && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </span>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          {item.helper}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* SLOT 3 — Agent: opens a list popover of agent profiles */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="grid min-h-14 grid-cols-[72px_1fr_auto] overflow-hidden rounded-xl border border-border bg-background text-left shadow-sm transition hover:border-primary/40 hover:bg-accent/60"
-                  >
-                    <span className="flex items-center justify-center border-r border-border bg-primary/5 text-primary">
-                      <Cpu className="h-7 w-7" />
-                    </span>
-                    <span className="min-w-0 px-4 py-3">
-                      <span className="block text-sm font-medium text-muted-foreground">
-                        Agent
-                      </span>
-                      <span className="block truncate text-base font-semibold text-foreground">
-                        {agent.label}
-                      </span>
-                    </span>
-                    <span className="flex items-center pr-4 text-muted-foreground">
-                      <ChevronDown className="h-4 w-4" />
-                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  align="end"
-                  className="w-[min(390px,calc(100vw-2rem))] rounded-2xl border-border bg-popover p-2 shadow-2xl"
+                  align="start"
+                  className="w-64 rounded-xl border-border bg-popover p-1.5 shadow-xl"
                 >
-                  <div className="space-y-1">
-                    {config.agents.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => updateSelection({ agentId: item.id })}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-xl p-3 text-left transition",
-                          item.id === selection.agentId
-                            ? "bg-primary/10 text-foreground"
-                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                        )}
-                      >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-primary">
-                          <Cpu className="h-4 w-4" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center justify-between gap-2 text-sm font-semibold text-foreground">
-                            {item.label}
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                              {item.speed}
-                            </span>
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted-foreground">
-                            {item.helper}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
+                  <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Format
                   </div>
+                  {config.formats.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => updateSelection({ formatId: item.id })}
+                      className={cn(
+                        "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition",
+                        item.id === selection.formatId
+                          ? "bg-primary/10"
+                          : "hover:bg-accent",
+                      )}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium text-foreground">
+                          {item.label}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {item.helper}
+                        </span>
+                      </span>
+                      {item.id === selection.formatId && (
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      )}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+
+              {/* Agent — small dropdown popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 min-w-0 items-center gap-2 rounded-xl border border-border bg-background px-2.5 text-sm shadow-sm transition hover:border-primary/40 hover:bg-accent"
+                  >
+                    <Cpu className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="max-w-[140px] truncate font-medium text-foreground">
+                      {agent.label}
+                    </span>
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-72 rounded-xl border-border bg-popover p-1.5 shadow-xl"
+                >
+                  <div className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Agent
+                  </div>
+                  {config.agents.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => updateSelection({ agentId: item.id })}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition",
+                        item.id === selection.agentId
+                          ? "bg-primary/10"
+                          : "hover:bg-accent",
+                      )}
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-primary">
+                        <Cpu className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2 text-sm font-medium text-foreground">
+                          <span className="truncate">{item.label}</span>
+                          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                            {item.speed}
+                          </span>
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {item.helper}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
                 </PopoverContent>
               </Popover>
 
@@ -436,62 +415,12 @@ export function NewAppConceptClient() {
                 size="icon"
                 onClick={submit}
                 disabled={isPending}
-                className="h-14 w-14 rounded-xl"
-                aria-label="Submit workflow"
+                className="ml-auto h-9 w-9 shrink-0 rounded-xl"
+                aria-label="Submit"
               >
-                <ArrowUp className="h-6 w-6" />
+                <ArrowUp className="h-4 w-4" />
               </Button>
             </div>
-
-            {topicOpen && (
-              <div className="mt-4 rounded-2xl border border-border bg-muted/40 p-3">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 px-1">
-                    <span
-                      className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-lg",
-                        config.iconBubble,
-                      )}
-                    >
-                      <ActiveIcon className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <div className="text-sm font-semibold text-foreground">
-                        {config.inputLabel}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        This picker becomes the primary prompt for{" "}
-                        {config.label.toLowerCase()}.
-                      </div>
-                    </div>
-                  </div>
-                  <Textarea
-                    value={selection.value}
-                    onChange={(event) => updateSelection({ value: event.target.value })}
-                    placeholder={config.placeholder}
-                    autoGrow
-                    minHeight={112}
-                    maxHeight={220}
-                    wrapperClassName="rounded-xl bg-transparent"
-                    className="rounded-xl border-border bg-background text-base text-foreground shadow-sm placeholder:text-muted-foreground"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    {[config.sample, "Patient-friendly overview", "Expert debate"].map(
-                      (sample) => (
-                        <button
-                          key={sample}
-                          type="button"
-                          onClick={() => updateSelection({ value: sample })}
-                          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
-                        >
-                          {sample}
-                        </button>
-                      ),
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="mt-12 text-center text-lg font-semibold text-foreground/80">
@@ -507,7 +436,7 @@ export function NewAppConceptClient() {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => handleWorkflowSelect(id)}
+                  onClick={() => setWorkflowId(id)}
                   className={cn(
                     "flex h-36 w-32 flex-col items-center justify-center gap-4 rounded-xl border border-border bg-card text-foreground shadow-sm transition hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg",
                     index % 2 === 0 ? "rotate-[-2deg]" : "rotate-[1.5deg]",
