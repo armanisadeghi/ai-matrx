@@ -97,7 +97,19 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
         .eq("id", fileId)
         .is("deleted_at", null)
         .maybeSingle();
-      if (error || !data) return;
+      // Loud recovery: a query ERROR (RLS/permission denial, schema/connection
+      // failure) must scream — masking it as a silent "File not found" hides
+      // real defects (e.g. an unapplied canonical RLS pass on a files.* table).
+      // A clean `!data` is a legitimate not-found and stays quiet.
+      if (error) {
+        console.error(
+          "[files] deep-link self-heal FAILED to fetch file (RLS/permission or DB error, NOT a real 'not found'):",
+          fileId,
+          error,
+        );
+        return;
+      }
+      if (!data) return;
       console.warn(
         "[files] deep-link self-heal hydrated file missing from store:",
         fileId,

@@ -13,6 +13,12 @@ Concise, append-only record of **frontend/app** cutover work that is shipped, so
 - **notes visibility expand (FE aligned).** `notes` gained the `visibility` enum column → added `visibility` to the 3 NoteRecord construction sites (default `private`).
 - **cx_conversation:** kept `is_public`/`user_id` live (DB hasn't dropped them) → FE not broken; mirror reads still present (strip when you drop the columns).
 
+## Live verification (port 3007, real data, admin session)
+- **WORKS:** file browser (real folders + recents via `get_user_file_tree`), folder nav, side-panel file viewer, **chat** (canonicalized `cx_conversation`, real messages load). **`files` schema exposure CONFIRMED** (403s, not 404/PGRST106, prove PostgREST resolves it).
+- **BROKEN — KNOWN_DEFECTS D18 (DB lane):** `files.share_links` + `files.file_versions` return **403 to the owner** — canonical RLS pass not applied (1–2 policies vs 5 on `files.files`/`folders`). Cascades to full-page `/files/f/[id]` "File not found". Fix = `iam.apply_rls` v2 on those two.
+- **FE fix shipped:** `SingleFileShell` no longer silently swallows the fetch error (loud-recovery) — surfaces RLS/403 instead of a misleading "not found".
+- **Not a cutover issue:** PDF byte download fails via the Python backend (`server.app.matrxserver.com`), separate.
+
 ## Flags for the DB / your side
 - **PostgREST must expose the `files` schema** (`db-schemas` setting) for `.schema('files')` to resolve at runtime — DB-config side.
 - **File resource token has two names floating:** canonical `entity_types`/DB-registry token is `file`, but the FE permissions registry + `shareKey` still use `cld_files` (resolves today via `resolve_shareable_resource` table_name match). Reconcile to `file` when canonicalizing the other roots.

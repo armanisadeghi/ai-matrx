@@ -17,6 +17,23 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D18 — `files.share_links` + `files.file_versions` deny SELECT to the owner (RLS gap) → full-page file detail shows "File not found"
+**Severity: medium — owner cannot open the full-page file viewer route `/files/f/[fileId]`; side-panel viewer (from `/files` Recents) still works. Found during the files-schema cutover QA, 2026-06-26.**
+
+**What.** After the `cld_* → files` schema move, two satellite tables in the `files` schema deny SELECT to the authenticated **owner**. Live evidence (admin@admin.com, user `87a6e699-…`, dev port 3007):
+- `GET https://db.matrxserver.com/rest/v1/share_links → 403`
+- `GET https://db.matrxserver.com/rest/v1/file_versions → 403`
+
+Both tables exist, RLS is ON, grants to `authenticated` are full — but the SELECT policies are wrong/missing: `files.share_links` has only **1** policy, `files.file_versions` **2**, vs. `files.files`/`files.folders` which have **5** each and read fine. A **403** (not 404 / PGRST106) proves the `files` schema IS exposed in PostgREST — this is purely an RLS policy gap, almost certainly the canonical `iam.apply_rls` v2 not (re)applied to these two tables after the rename.
+
+**Why it happened.** The retrofit/RLS pass applied canonical owner+has_access policies to `files.files`/`folders` but missed the two satellites.
+
+**Impact.** `/files/f/[fileId]` (`SingleFileShell`) renders "File not found" for a file the user owns (row verified present, `deleted_at` null, `created_by` = the user; `get_user_file_tree` returns it; `permissions` reads 200). The same file opens fine in the side-panel viewer, so the `files.files` row reads — the detail shell's versions + share-link reads are what 403. Compounded by D-class swallow below.
+
+**The fence / fix.** Apply `iam.apply_rls` v2 to `files.share_links` and `files.file_versions` so owner/has_access SELECT is granted, matching `files.files`/`folders`. Then re-verify `/files/f/[fileId]` loads and the Share tab reads current visibility.
+
+**What's open.** The RLS fix (DB), plus a related FE swallow: `features/files/components/surfaces/single-file/SingleFileShell.tsx:100` does `if (error || !data) return;` on the deep-link self-heal `filesDb` read — a real error is silently swallowed (violates the loud-recovery doctrine; the `console.warn` only fires on success). Make it scream on `error`.
+
 ### D17 — `userPreferencesSlice.resetToLoadedPreferences` drops the `sandbox` module
 **Severity: low — pre-existing, spotted while wiring the directive apply-policy setting (2026-06-24).**
 
