@@ -57,6 +57,14 @@ import { CustomComponentConfigurator } from "@/features/agents/components/variab
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import {
+  FeedConfigEditor,
+  feedTypeMeta,
+  feedTypeTone,
+  asFeedConfig,
+  type FeedType,
+  type FeedConfig,
+} from "./parts/FeedConfigEditor";
 import type { Database as DB } from "@/types/database.types";
 import type {
   SystemContextCategory,
@@ -396,7 +404,7 @@ export default function SystemContextPage() {
       </div>
 
       {editing && (
-        <EditValueDialog
+        <EditItemDialog
           item={editing}
           onClose={() => setEditing(null)}
           onSaved={async () => {
@@ -524,11 +532,10 @@ function CategoryBlock({
             <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-2 font-medium">Key</th>
               <th className="px-4 py-2 font-medium">Name</th>
+              <th className="px-4 py-2 font-medium">Feed</th>
               <th className="px-4 py-2 font-medium">Type</th>
-              <th className="px-4 py-2 font-medium">Component</th>
-              <th className="px-4 py-2 font-medium">Value</th>
+              <th className="px-4 py-2 font-medium">Output</th>
               <th className="px-4 py-2 font-medium">Sensitivity</th>
-              <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium text-right">Actions</th>
             </tr>
           </thead>
@@ -567,6 +574,9 @@ function CategoryBlock({
                   )}
                 </td>
                 <td className="px-4 py-2 align-top">
+                  <FeedCell item={it} />
+                </td>
+                <td className="px-4 py-2 align-top">
                   <span
                     className={`inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ${valueTypeTone(
                       it.value_type,
@@ -575,29 +585,8 @@ function CategoryBlock({
                     {it.value_type}
                   </span>
                 </td>
-                <td className="px-4 py-2 align-top text-xs text-muted-foreground">
-                  {it.component_type ? (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-foreground">
-                      {it.component_type}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
                 <td className="px-4 py-2 align-top">
-                  {it.is_computed ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                      <Clock className="h-3 w-3" /> Computed
-                    </span>
-                  ) : it.current_value === null ? (
-                    <span className="text-xs italic text-muted-foreground">
-                      not set
-                    </span>
-                  ) : (
-                    <code className="block max-w-[220px] truncate font-mono text-xs text-foreground">
-                      {it.current_value}
-                    </code>
-                  )}
+                  <OutputCell item={it} />
                 </td>
                 <td className="px-4 py-2 align-top">
                   <span
@@ -608,9 +597,6 @@ function CategoryBlock({
                   >
                     {it.sensitivity}
                   </span>
-                </td>
-                <td className="px-4 py-2 align-top text-xs text-muted-foreground">
-                  {it.status}
                 </td>
                 <td className="px-4 py-2 align-top text-right">
                   <div className="flex items-center justify-end gap-1">
@@ -629,7 +615,6 @@ function CategoryBlock({
                           variant="outline"
                           className="h-7 px-2"
                           onClick={() => onEdit(it)}
-                          disabled={!it.scope_id}
                         >
                           <Pencil className="mr-1 h-3 w-3" /> Edit
                         </Button>
@@ -669,6 +654,66 @@ function CategoryBlock({
   );
 }
 
+// The Feed cell — how the item is populated, with live status.
+function FeedCell({ item }: { item: SystemContextItem }) {
+  const meta = feedTypeMeta(item.feed_type);
+  const Icon = meta.icon;
+  const cfg = asFeedConfig(item.feed_config);
+  const datasetName =
+    typeof cfg.data_store_name === "string" ? cfg.data_store_name : null;
+  return (
+    <div className="space-y-0.5">
+      <span
+        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${feedTypeTone(
+          item.feed_type,
+        )}`}
+      >
+        <Icon className="h-3 w-3" /> {meta.label}
+      </span>
+      {item.feed_type === "dataset" && datasetName && (
+        <div className="max-w-[180px] truncate text-[11px] text-muted-foreground">
+          → {datasetName}
+        </div>
+      )}
+      {item.feed_status && item.feed_type !== "manual" && (
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          {item.feed_status}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The Output cell — the value (or what stands in for it per feed type).
+function OutputCell({ item }: { item: SystemContextItem }) {
+  if (item.is_computed) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+        <Clock className="h-3 w-3" /> Computed
+      </span>
+    );
+  }
+  if (item.feed_type === "dataset") {
+    return (
+      <span className="text-[11px] italic text-muted-foreground">
+        queried live (no stored value)
+      </span>
+    );
+  }
+  if (item.current_value === null) {
+    return (
+      <span className="text-xs italic text-muted-foreground">
+        {item.feed_type === "manual" ? "not set" : "awaiting feed"}
+      </span>
+    );
+  }
+  return (
+    <code className="block max-w-[220px] truncate font-mono text-xs text-foreground">
+      {item.current_value}
+    </code>
+  );
+}
+
 // Initial editor value: structured (parsed) for JSON/media custom components,
 // raw string otherwise.
 function initialEditorValue(item: SystemContextItem): unknown {
@@ -699,7 +744,9 @@ function isMediaComponentType(t: string | undefined): boolean {
   );
 }
 
-function EditValueDialog({
+// Edit the DEFINITION + FEED of an item (not just a value). For manual feeds it
+// also edits the value; other feeds edit only the definition/feed config.
+function EditItemDialog({
   item,
   onClose,
   onSaved,
@@ -708,6 +755,13 @@ function EditValueDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
+  const [displayName, setDisplayName] = useState(item.display_name);
+  const [description, setDescription] = useState(item.description);
+  const [sensitivity, setSensitivity] = useState<Sensitivity>(item.sensitivity);
+  const [feedType, setFeedType] = useState<FeedType>(item.feed_type);
+  const [feedConfig, setFeedConfig] = useState<FeedConfig>(
+    asFeedConfig(item.feed_config),
+  );
   const [value, setValue] = useState<unknown>(() => initialEditorValue(item));
   const [saving, setSaving] = useState(false);
 
@@ -715,32 +769,47 @@ function EditValueDialog({
     (item.custom_component as VariableCustomComponent | null) ?? undefined;
 
   async function save() {
-    if (!item.scope_id) {
-      toast.error("This item has no scope to write to.");
-      return;
-    }
     setSaving(true);
     try {
-      const valueColumns = buildScopeValuePayload(value, item.value_type);
-      const res = await fetch("/api/admin/system-context", {
-        method: "POST",
+      // 1. The definition + feed.
+      const patchRes = await fetch("/api/admin/system-context", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "set_value",
           itemId: item.id,
-          scopeId: item.scope_id,
-          valueType: item.value_type,
-          valueColumns,
+          display_name: displayName,
+          description,
+          sensitivity,
+          feed_type: feedType,
+          feed_config: feedConfig,
         }),
       });
-      if (!res.ok) {
-        const { error } = await res
-          .json()
-          .catch(() => ({ error: res.statusText }));
+      if (!patchRes.ok) {
+        const { error } = await patchRes.json().catch(() => ({ error: patchRes.statusText }));
         toast.error(`Save failed: ${error}`);
         return;
       }
-      toast.success(`Updated value for ${item.key}.`);
+      // 2. Manual feeds also carry a value (new versioned row).
+      if (feedType === "manual" && item.scope_id) {
+        const valueColumns = buildScopeValuePayload(value, item.value_type);
+        const vRes = await fetch("/api/admin/system-context", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "set_value",
+            itemId: item.id,
+            scopeId: item.scope_id,
+            valueType: item.value_type,
+            valueColumns,
+          }),
+        });
+        if (!vRes.ok) {
+          const { error } = await vRes.json().catch(() => ({ error: vRes.statusText }));
+          toast.error(`Saved definition, but value failed: ${error}`);
+          return;
+        }
+      }
+      toast.success(`Updated ${item.key}.`);
       await onSaved();
     } finally {
       setSaving(false);
@@ -749,45 +818,79 @@ function EditValueDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Edit value
+            Edit
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
               {item.key}
             </code>
           </DialogTitle>
           <DialogDescription>
-            {item.display_name} ·{" "}
-            <span className="font-medium">{item.value_type}</span> in{" "}
-            <span className="font-medium">{item.scope_type_label}</span>. Saving
-            inserts a new current version (the previous value is retained in
-            history).
+            Edit the definition and how it&apos;s populated
+            {feedType === "manual" ? ", including its value" : ""}. In{" "}
+            <span className="font-medium">{item.scope_type_label}</span>.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 py-2">
-          <ItemValueField
-            valueType={item.value_type}
-            customComponent={customComponent}
-            variableName={item.display_name || item.key}
-            value={value}
-            onChange={setValue}
-          />
+        <div className="space-y-3 py-1">
+          <Field label="Display name">
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          </Field>
+          <Field label="Description" hint="Optional.">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
+          </Field>
+          <Field label="Sensitivity">
+            <Select value={sensitivity} onValueChange={(v) => setSensitivity(v as Sensitivity)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SENSITIVITY_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <div className="rounded-md border border-border bg-muted/30 p-3">
+            <FeedConfigEditor
+              feedType={feedType}
+              onFeedTypeChange={setFeedType}
+              feedConfig={feedConfig}
+              onFeedConfigChange={setFeedConfig}
+            />
+          </div>
+
+          {feedType === "manual" && (
+            <Field
+              label="Value"
+              hint={
+                item.scope_id
+                  ? "Saving inserts a new current version (history retained)."
+                  : "No scope to write to."
+              }
+            >
+              <ItemValueField
+                valueType={item.value_type}
+                customComponent={customComponent}
+                variableName={displayName || item.key}
+                value={value}
+                onChange={setValue}
+              />
+            </Field>
+          )}
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={saving}
-          >
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
             {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-            Save value
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -967,8 +1070,11 @@ function AddItemDialog({
     VariableCustomComponent | undefined
   >(undefined);
   const [value, setValue] = useState<unknown>("");
+  const [feedType, setFeedType] = useState<FeedType>("dataset");
+  const [feedConfig, setFeedConfig] = useState<FeedConfig>({});
   const [saving, setSaving] = useState(false);
 
+  const isManual = feedType === "manual";
   const keyValid = key === "" || /^[a-z0-9_]+$/.test(key);
 
   async function save() {
@@ -977,9 +1083,11 @@ function AddItemDialog({
     if (!keyValid)
       return toast.error("Key may only use lowercase letters, numbers, underscores.");
     if (!displayName.trim()) return toast.error("A display name is required.");
+    if (feedType === "dataset" && !feedConfig.data_store_id)
+      return toast.error("Pick a knowledge resource for the dataset feed.");
 
     const hasValue =
-      value != null && !(typeof value === "string" && value.trim() === "");
+      isManual && value != null && !(typeof value === "string" && value.trim() === "");
     setSaving(true);
     try {
       const res = await fetch("/api/admin/system-context", {
@@ -990,10 +1098,12 @@ function AddItemDialog({
           scopeTypeId,
           key: key.trim().toLowerCase(),
           display_name: displayName.trim(),
-          value_type: valueType,
+          value_type: isManual ? valueType : "string",
           sensitivity,
           description: description.trim(),
-          custom_component: customComponent ?? null,
+          custom_component: isManual ? (customComponent ?? null) : null,
+          feed_type: feedType,
+          feed_config: isManual ? {} : feedConfig,
           valueColumns: hasValue
             ? buildScopeValuePayload(value, valueType)
             : undefined,
@@ -1015,10 +1125,11 @@ function AddItemDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add System context item</DialogTitle>
+          <DialogTitle>Add System context resource</DialogTitle>
           <DialogDescription>
-            A reusable, platform-wide value. Agents can bind a variable or context
-            slot to it; ambient/computed keys are reserved.
+            A reusable, platform-wide resource. Define what it is, then choose how
+            it stays populated — link a dataset, run an agent, hit an API, scrape
+            the web, or (rarely) set a value by hand.
           </DialogDescription>
         </DialogHeader>
 
@@ -1060,71 +1171,87 @@ function AddItemDialog({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Value type">
-              <Select
-                value={valueType}
-                onValueChange={(v) => setValueType(v as ValueType)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VALUE_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Sensitivity">
-              <Select
-                value={sensitivity}
-                onValueChange={(v) => setSensitivity(v as Sensitivity)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SENSITIVITY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
+          <Field label="Sensitivity">
+            <Select
+              value={sensitivity}
+              onValueChange={(v) => setSensitivity(v as Sensitivity)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SENSITIVITY_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
           <Field label="Description" hint="Optional.">
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              placeholder="What this value represents and where it's used."
+              placeholder="What this resource represents and where it's used."
             />
           </Field>
 
+          {/* The feed — how this resource is populated. */}
           <div className="rounded-md border border-border bg-muted/30 p-3">
-            <div className="mb-2 text-xs font-medium text-muted-foreground">
-              Input component (how the value is authored)
-            </div>
-            <CustomComponentConfigurator
-              value={customComponent}
-              onChange={setCustomComponent}
+            <FeedConfigEditor
+              feedType={feedType}
+              onFeedTypeChange={setFeedType}
+              feedConfig={feedConfig}
+              onFeedConfigChange={setFeedConfig}
             />
           </div>
 
-          <Field label="Initial value" hint="Optional — you can set it later.">
-            <ItemValueField
-              valueType={valueType}
-              customComponent={customComponent}
-              variableName={displayName || key || "value"}
-              value={value}
-              onChange={setValue}
-            />
-          </Field>
+          {/* Manual feeds author a value with a real input component. */}
+          {isManual && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Value type">
+                  <Select
+                    value={valueType}
+                    onValueChange={(v) => setValueType(v as ValueType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALUE_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              <div className="rounded-md border border-border bg-muted/30 p-3">
+                <div className="mb-2 text-xs font-medium text-muted-foreground">
+                  Input component (how the value is authored)
+                </div>
+                <CustomComponentConfigurator
+                  value={customComponent}
+                  onChange={setCustomComponent}
+                />
+              </div>
+
+              <Field label="Initial value" hint="Optional — you can set it later.">
+                <ItemValueField
+                  valueType={valueType}
+                  customComponent={customComponent}
+                  variableName={displayName || key || "value"}
+                  value={value}
+                  onChange={setValue}
+                />
+              </Field>
+            </>
+          )}
         </div>
 
         <DialogFooter>

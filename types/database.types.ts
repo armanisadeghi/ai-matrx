@@ -31708,7 +31708,13 @@ export type Database = {
         | "pink"
         | "rose"
         | "Bot"
-      context_feed_type: "manual" | "computed" | "api" | "agent" | "dataset"
+      context_feed_type:
+        | "manual"
+        | "computed"
+        | "api"
+        | "agent"
+        | "dataset"
+        | "web"
       context_fetch_hint:
         | "always"
         | "on_demand"
@@ -32460,7 +32466,14 @@ export const Constants = {
         "rose",
         "Bot",
       ],
-      context_feed_type: ["manual", "computed", "api", "agent", "dataset"],
+      context_feed_type: [
+        "manual",
+        "computed",
+        "api",
+        "agent",
+        "dataset",
+        "web",
+      ],
       context_fetch_hint: [
         "always",
         "on_demand",

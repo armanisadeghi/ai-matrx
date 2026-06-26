@@ -38,6 +38,7 @@ const COMPUTED_KEYS = new Set<string>([
 type ValueType = Database["public"]["Enums"]["context_value_type"];
 type Sensitivity = Database["public"]["Enums"]["context_sensitivity"];
 type ItemStatus = Database["public"]["Enums"]["context_item_status"];
+type FeedType = Database["public"]["Enums"]["context_feed_type"];
 
 interface ItemValueRow {
   scope_id: string;
@@ -68,6 +69,11 @@ export interface SystemContextItem {
   scope_id: string | null;
   current_value: string | null;
   is_computed: boolean;
+  // The feed — how this item's value is populated (the authored thing).
+  feed_type: FeedType;
+  feed_config: Json;
+  feed_status: string | null;
+  last_fed_at: string | null;
 }
 
 export interface SystemContextCategory {
@@ -319,7 +325,7 @@ export async function GET() {
   const { data: items, error: itemError } = await admin
     .from("ctx_context_items")
     .select(
-      "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id",
+      "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id, feed_type, feed_config, feed_status, last_fed_at",
     )
     .in("scope_type_id", scopeTypeIds)
     .order("sort_order", { ascending: true })
@@ -378,6 +384,10 @@ export async function GET() {
         ? null
         : coerceValue(it.value_type, valueRow),
       is_computed,
+      feed_type: it.feed_type,
+      feed_config: it.feed_config,
+      feed_status: it.feed_status,
+      last_fed_at: it.last_fed_at,
     };
   });
 
@@ -424,8 +434,11 @@ type CreateItemBody = {
   sensitivity?: Sensitivity;
   description?: string;
   custom_component?: Json | null;
-  // Initial value: either a raw string (coerced by value_type) or pre-routed
-  // value_* columns built client-side from the item's component.
+  // The feed — how this item is populated. Defaults to 'manual'.
+  feed_type?: FeedType;
+  feed_config?: Json;
+  // Initial value (manual feeds only): either a raw string (coerced by
+  // value_type) or pre-routed value_* columns built client-side.
   value?: string | null;
   valueColumns?: Record<string, unknown>;
 };
@@ -556,6 +569,7 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
   }
 
   const organizationId = await resolveSystemOrgId(admin);
+  const feedType: FeedType = body.feed_type ?? "manual";
 
   const { data: item, error: itemErr } = await admin
     .from("ctx_context_items")
@@ -569,6 +583,11 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       custom_component: body.custom_component ?? null,
       status: "active",
       source_type: "manual",
+      feed_type: feedType,
+      feed_config: body.feed_config ?? {},
+      // A non-manual feed hasn't run yet; mark it pending so the UI tells the
+      // truth (the executor populates the value later).
+      feed_status: feedType === "manual" ? null : "pending",
     })
     .select("id")
     .single();
@@ -580,10 +599,11 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     );
   }
 
-  // Seed the initial value if one was supplied.
+  // Seed the initial value if one was supplied (manual feeds only — other
+  // feeds produce their value through their executor, not a typed seed).
   const hasColumns =
     body.valueColumns != null && Object.keys(body.valueColumns).length > 0;
-  if (hasColumns || (body.value != null && body.value !== "")) {
+  if (feedType === "manual" && (hasColumns || (body.value != null && body.value !== ""))) {
     const scopeId = await ensureScopeForType(
       admin,
       organizationId,
@@ -673,6 +693,8 @@ export async function PATCH(request: NextRequest) {
     sensitivity?: Sensitivity;
     custom_component?: Json | null;
     is_active?: boolean;
+    feed_type?: FeedType;
+    feed_config?: Json;
   } | null;
 
   if (!body?.itemId) {
@@ -686,6 +708,12 @@ export async function PATCH(request: NextRequest) {
   if (body.sensitivity !== undefined) patch.sensitivity = body.sensitivity;
   if (body.custom_component !== undefined) patch.custom_component = body.custom_component;
   if (body.is_active !== undefined) patch.is_active = body.is_active;
+  if (body.feed_type !== undefined) {
+    patch.feed_type = body.feed_type;
+    // Re-mark feed status when the feed changes: manual has no executor.
+    patch.feed_status = body.feed_type === "manual" ? null : "pending";
+  }
+  if (body.feed_config !== undefined) patch.feed_config = body.feed_config;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

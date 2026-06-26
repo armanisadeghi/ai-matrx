@@ -1,0 +1,11 @@
+-- Add 'web' to the context feed taxonomy.
+--
+-- A 'web' feed populates a context value by fetching/scraping web page(s) and
+-- extracting content — including via user-defined, reusable extraction PATTERNS
+-- captured in the matrx-extend Chrome plugin (ShowcaseView: AI Extract / List
+-- Pattern / saved Patterns) run through our scraper. Distinct enough from a raw
+-- 'api' call to warrant its own type. feed_config carries {url|pattern_id,
+-- extraction, ...}.
+--
+-- Idempotent: ADD VALUE IF NOT EXISTS is a no-op when 'web' already exists.
+alter type public.context_feed_type add value if not exists 'web';
