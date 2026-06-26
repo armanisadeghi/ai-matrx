@@ -175,7 +175,7 @@ export const CloudFolders = {
    * Backend "generations" registry root — every AI generation (image,
    * video, audio/TTS) the server materializes lands under
    * `generations/<images|video|audio>/...`. Backend-owned; mirrors the
-   * server's `cld_is_system_path()` (which treats `system-files` AND
+   * server's `is_system_path()` (which treats `system-files` AND
    * `generations` as system). Never shown in the user tree.
    */
   GENERATIONS: "generations",
@@ -302,7 +302,7 @@ export function isHiddenFolder(folderPath: string): boolean {
  *    folders. ~3–4 rows per uploaded image, ~10k+ for active accounts.
  *  - `generations` / `generations/...` — the backend AI-generation
  *    registry root (image/video/audio output). Mirrors the server's
- *    `cld_is_system_path()`, which treats BOTH `system-files` and
+ *    `is_system_path()`, which treats BOTH `system-files` and
  *    `generations` as system; the tree RPC already drops these, this is
  *    the FE-side parity guard at every other tree boundary.
  *  - `.matrx-tmp` / `.matrx-tmp/...` — ephemeral staging the user

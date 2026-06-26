@@ -31,7 +31,7 @@
  *
  * What this module does NOT do:
  *   • Touch `supabase.from("cld_*")` directly. Reads happen via the
- *     SECURITY DEFINER tree RPC (`cld_get_user_file_tree`) and
+ *     SECURITY DEFINER tree RPC (`get_user_file_tree`) and
  *     supabase realtime. Writes happen via the Python backend.
  *   • Block on folder lookups. The backend handles folder creation
  *     atomically as part of upload.

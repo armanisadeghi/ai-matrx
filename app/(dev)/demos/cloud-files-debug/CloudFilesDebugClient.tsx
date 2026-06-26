@@ -325,7 +325,7 @@ export function CloudFilesDebugClient() {
 
   const onTree = useCallback(() => {
     if (!userId) return;
-    // Cloud-files exposes the tree as a Supabase RPC (cld_get_user_file_tree),
+    // Cloud-files exposes the tree as a Supabase RPC (get_user_file_tree),
     // not a Python /files/* endpoint. Test it via the supabase-js client so
     // the user sees whether reads work even if the Python server is down.
     void (async () => {

@@ -3,7 +3,7 @@
  *
  * Folder CRUD against the Python REST backend. Listing also goes through
  * REST here for parity with the contract; supabase-js reads remain the
- * preferred path for the live tree (`cld_get_user_file_tree`).
+ * preferred path for the live tree (`get_user_file_tree`).
  *
  * Backend contract: features/files/cloud_files_frontend.md §6 (Folders)
  * plus the Python team's P-6 (folder CRUD) deliverables.

@@ -119,10 +119,10 @@ type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
 // ---------------------------------------------------------------------------
 
 /**
- * Loads the full tree for the current user via the cld_get_user_file_tree
+ * Loads the full tree for the current user via the get_user_file_tree
  * RPC. Normalizes into filesById / foldersById / tree.
  */
-// `cld_get_user_file_tree` server-side cap (`p_limit := LEAST(GREATEST(p_limit, 1), 5000);`).
+// `get_user_file_tree` server-side cap (`p_limit := LEAST(GREATEST(p_limit, 1), 5000);`).
 // Passing anything > 5000 silently clamps. The FE pages via `p_offset`
 // to recover the full tree for power users (users with >5k files).
 const TREE_PAGE_SIZE = 5000;
@@ -331,7 +331,7 @@ export const loadFolderContents = createAsyncThunk<
   if (filesRes.error) throw filesRes.error;
   if (foldersRes.error) throw foldersRes.error;
 
-  // Drop backend-owned variant rows. Unlike `cld_get_user_file_tree`
+  // Drop backend-owned variant rows. Unlike `get_user_file_tree`
   // which excludes them server-side (migration 012), this codepath
   // queries `cld_files` / `cld_folders` directly so we filter on the
   // wire. See `isSystemPath` in `utils/folder-conventions.ts`.

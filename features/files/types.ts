@@ -315,7 +315,7 @@ export interface CloudShareLink {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Tree RPC types — cld_get_user_file_tree
+// 5. Tree RPC types — get_user_file_tree
 // ---------------------------------------------------------------------------
 //
 // The Supabase-generated type is `Json` — we hand-type the expected shape
