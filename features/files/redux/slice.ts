@@ -25,8 +25,6 @@ import type {
   CloudFolderFieldSnapshot,
   CloudFolderRecord,
   CloudShareLink,
-  CloudUserGroup,
-  CloudUserGroupMember,
   AccessFilter,
   ChipFilter,
   ColumnFilters,
@@ -220,8 +218,6 @@ const initialState: CloudFilesState = {
   versionsByFileId: {},
   permissionsByResourceId: {},
   shareLinksByResourceId: {},
-  groupsById: {},
-  groupMembersByGroupId: {},
 
   tree: {
     rootFolderIds: [],
@@ -549,24 +545,6 @@ const slice = createSlice({
           resourceId
         ].filter((l) => l.shareToken !== shareToken);
       }
-    },
-
-    // ---- Groups ------------------------------------------------------------
-    upsertGroups(state, action: PayloadAction<CloudUserGroup[]>) {
-      for (const group of action.payload) {
-        state.groupsById[group.id] = group;
-      }
-    },
-
-    upsertGroupMembers(
-      state,
-      action: PayloadAction<{
-        groupId: string;
-        members: CloudUserGroupMember[];
-      }>,
-    ) {
-      state.groupMembersByGroupId[action.payload.groupId] =
-        action.payload.members;
     },
 
     // ---- Tree --------------------------------------------------------------
@@ -1101,14 +1079,12 @@ export const {
   markFolderSaved,
   rollbackFolderOptimisticUpdate,
   removeFolder,
-  // versions / permissions / shares / groups
+  // versions / permissions / shares
   upsertVersionsForFile,
   upsertPermissionsForResource,
   removePermissionForResource,
   upsertShareLinksForResource,
   removeShareLink,
-  upsertGroups,
-  upsertGroupMembers,
   // tree
   setTreeStatus,
   replaceTree,

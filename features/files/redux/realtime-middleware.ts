@@ -212,14 +212,18 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         },
         (payload) => handleVersionPayload(payload),
       )
-      // Permissions — grantee_id filter (things granted TO this user).
+      // Permissions — canonical grant store `public.permissions`. Filtered to
+      // grants made TO this user; the handler additionally guards
+      // `resource_type === 'file'` since this table holds grants for every
+      // resource type. (org-grant rows have no granted_to_user_id, so they
+      // won't arrive on this channel — the share panel reload picks them up.)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "cld_file_permissions",
-          filter: `grantee_id=eq.${userId}`,
+          table: "permissions",
+          filter: `granted_to_user_id=eq.${userId}`,
         },
         (payload) => handlePermissionPayload(payload),
       )
@@ -467,6 +471,11 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     dispatch(touchRealtime());
     const newRow = payload.new as unknown as CloudFilePermissionRow | undefined;
     const oldRow = payload.old as unknown as CloudFilePermissionRow | undefined;
+    // `public.permissions` holds grants for every resource type; only react to
+    // file grants. (DELETE payloads may only carry the replica-identity cols —
+    // if resource_type is absent we fall through on resourceId presence.)
+    const resourceType = newRow?.resource_type ?? oldRow?.resource_type;
+    if (resourceType && resourceType !== "file") return;
     const resourceId = newRow?.resource_id ?? oldRow?.resource_id;
     if (!resourceId) return;
 

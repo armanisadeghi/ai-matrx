@@ -19,12 +19,7 @@ import type {
   CloudShareLink,
   CloudShareLinkRow,
   CloudTreeRow,
-  CloudUserGroup,
-  CloudUserGroupMember,
-  CloudUserGroupMemberRow,
-  CloudUserGroupRow,
   FileRecordApi,
-  GranteeType,
   MediaRef,
   PermissionLevel,
   ResourceType,
@@ -43,12 +38,21 @@ function toPermissionLevel(raw: string | null | undefined): PermissionLevel {
   return raw === "write" || raw === "admin" ? raw : "read";
 }
 
-function toResourceType(raw: string | null | undefined): ResourceType {
-  return raw === "folder" ? "folder" : "file";
+/**
+ * Canonical `public.permissions.permission_level` enum is `viewer < editor <
+ * admin`. The file domain has always spoken `read < write < admin`. Translate
+ * at the read boundary so the rest of the file feature is untouched.
+ */
+function canonicalLevelToFileLevel(
+  raw: string | null | undefined,
+): PermissionLevel {
+  if (raw === "admin") return "admin";
+  if (raw === "editor") return "write";
+  return "read"; // 'viewer' and anything unexpected
 }
 
-function toGranteeType(raw: string | null | undefined): GranteeType {
-  return raw === "group" ? "group" : "user";
+function toResourceType(raw: string | null | undefined): ResourceType {
+  return raw === "folder" ? "folder" : "file";
 }
 
 function toMetadataObject(raw: unknown): Record<string, unknown> {
@@ -220,19 +224,36 @@ export function dbRowToCloudFileVersion(
 // Permissions
 // ---------------------------------------------------------------------------
 
+/**
+ * Map a canonical `public.permissions` row (resource_type='file') into the
+ * file domain's grant shape.
+ *
+ * `public.permissions` distinguishes user vs. org grants by which FK column is
+ * set (`granted_to_user_id` / `granted_to_organization_id`) rather than the
+ * legacy `grantee_type`/`grantee_id` pair — collapse that back to the domain's
+ * grantee shape here.
+ *
+ * NOTE — grant expiry: `public.permissions` has no `expires_at` column, so the
+ * domain's `expiresAt` is always null on this path. The legacy cld_ file-grant
+ * table had `expires_at` (unused in practice — 0 rows set it). If file grants
+ * ever need to expire, the DB owner must add `expires_at` to
+ * `public.permissions` (canonical). Logged as a cutover GAP.
+ */
 export function dbRowToCloudFilePermission(
   row: CloudFilePermissionRow,
 ): CloudFilePermission {
+  const isOrgGrant = row.granted_to_organization_id != null;
   return {
     id: row.id,
     resourceId: row.resource_id,
     resourceType: toResourceType(row.resource_type),
-    granteeId: row.grantee_id,
-    granteeType: toGranteeType(row.grantee_type),
-    permissionLevel: toPermissionLevel(row.permission_level),
-    grantedBy: row.granted_by,
-    grantedAt: row.granted_at,
-    expiresAt: row.expires_at,
+    granteeId:
+      row.granted_to_user_id ?? row.granted_to_organization_id ?? "",
+    granteeType: isOrgGrant ? "group" : "user",
+    permissionLevel: canonicalLevelToFileLevel(row.permission_level),
+    grantedBy: row.created_by,
+    grantedAt: row.created_at ?? new Date().toISOString(),
+    expiresAt: null,
   };
 }
 
@@ -254,32 +275,6 @@ export function dbRowToCloudShareLink(row: CloudShareLinkRow): CloudShareLink {
     maxUses: row.max_uses,
     useCount: row.use_count,
     isActive: row.is_active,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Groups
-// ---------------------------------------------------------------------------
-
-export function dbRowToCloudUserGroup(row: CloudUserGroupRow): CloudUserGroup {
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    name: row.name,
-    createdAt: row.created_at,
-  };
-}
-
-export function dbRowToCloudUserGroupMember(
-  row: CloudUserGroupMemberRow,
-): CloudUserGroupMember {
-  return {
-    id: row.id,
-    groupId: row.group_id,
-    userId: row.user_id,
-    role: row.role,
-    addedBy: row.added_by,
-    addedAt: row.added_at,
   };
 }
 

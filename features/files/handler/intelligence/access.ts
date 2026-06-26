@@ -8,7 +8,10 @@
  * Order of checks:
  *   1. owner_id === current user → owned (full caps)
  *   2. visibility === "public" OR public CDN URL → public (read-only)
- *   3. cld_file_permissions row matches user → shared (level-derived caps)
+ *   3. canonical `public.permissions` grant matches user → shared
+ *      (level-derived caps). Grants are loaded into Redux via `loadPermissions`
+ *      and passed in here; the authoritative server-side check is
+ *      `iam.has_access('file', fileId, level)` / `public.has_permission(...)`.
  *   4. file.organizationId is in user's active orgs → check org-level grant
  *   5. share_token is non-revoked → public (read-only by token)
  *   6. external URL → external (read-only, no caps over the file itself)

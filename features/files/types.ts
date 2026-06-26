@@ -79,9 +79,8 @@ export interface MediaRef {
 // These are the authoritative shapes for reads via supabase-js. Always use
 // these (not hand-rolled shapes) to track schema changes automatically.
 //
-// Note on table naming: The Python team's doc uses `cld_file_share_links`
-// and `cld_file_groups`. The actual DB tables are `cld_share_links` and
-// `cld_user_groups` / `cld_user_group_members`. See for_python/REQUESTS.md.
+// Note on table naming: The Python team's doc uses `cld_file_share_links`;
+// the actual DB table is `cld_share_links`. See for_python/REQUESTS.md.
 
 type CloudTables = Database["public"]["Tables"];
 
@@ -94,11 +93,13 @@ export type CloudFolderInsert = CloudTables["cld_folders"]["Insert"];
 export type CloudFolderUpdate = CloudTables["cld_folders"]["Update"];
 
 export type CloudFileVersionRow = CloudTables["cld_file_versions"]["Row"];
-export type CloudFilePermissionRow = CloudTables["cld_file_permissions"]["Row"];
+/**
+ * File-permission grants live in the CANONICAL grant store `public.permissions`
+ * (resource_type='file'), NOT in the legacy cld_ file-permission duplicate
+ * (graveyarded in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
+ */
+export type CloudFilePermissionRow = CloudTables["permissions"]["Row"];
 export type CloudShareLinkRow = CloudTables["cld_share_links"]["Row"];
-export type CloudUserGroupRow = CloudTables["cld_user_groups"]["Row"];
-export type CloudUserGroupMemberRow =
-  CloudTables["cld_user_group_members"]["Row"];
 
 // ---------------------------------------------------------------------------
 // 3. API (REST) types — from Python OpenAPI schemas
@@ -113,9 +114,6 @@ export type ShareLinkResolveResponse =
   components["schemas"]["ShareLinkResolveResponse"];
 export type GrantPermissionRequest =
   components["schemas"]["GrantPermissionRequest"];
-export type CreateGroupRequest = components["schemas"]["CreateGroupRequest"];
-export type AddGroupMemberRequest =
-  components["schemas"]["AddGroupMemberRequest"];
 export type SignedUrlResponse = components["schemas"]["SignedUrlResponse"];
 
 // ---------------------------------------------------------------------------
@@ -310,22 +308,6 @@ export interface CloudShareLink {
   maxUses: number | null;
   useCount: number;
   isActive: boolean;
-}
-
-export interface CloudUserGroup {
-  id: string;
-  ownerId: string;
-  name: string;
-  createdAt: string;
-}
-
-export interface CloudUserGroupMember {
-  id: string;
-  groupId: string;
-  userId: string;
-  role: string;
-  addedBy: string | null;
-  addedAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -689,8 +671,6 @@ export interface CloudFilesState {
   versionsByFileId: Record<string, CloudFileVersion[]>;
   permissionsByResourceId: Record<string, CloudFilePermission[]>;
   shareLinksByResourceId: Record<string, CloudShareLink[]>;
-  groupsById: Record<string, CloudUserGroup>;
-  groupMembersByGroupId: Record<string, CloudUserGroupMember[]>;
 
   tree: TreeState;
   selection: SelectionState;

@@ -400,9 +400,13 @@ export const loadPermissions = createAsyncThunk<
   ThunkApi
 >("cloudFiles/loadPermissions", async ({ resourceId }, { dispatch }) => {
   if (isVirtualResourceId(resourceId)) return;
+  // Canonical grant store is `public.permissions` (resource_type='file'),
+  // NOT the legacy cld_ file-permission duplicate. RLS returns the rows the
+  // caller is allowed to see (own grants / grants to them / org / public).
   const { data, error } = await supabase
-    .from("cld_file_permissions")
+    .from("permissions")
     .select("*")
+    .eq("resource_type", "file")
     .eq("resource_id", resourceId);
   if (error) throw pgErrorToError(error);
   const permissions: CloudFilePermission[] = (data ?? []).map(
@@ -765,7 +769,7 @@ export const uploadFiles = createAsyncThunk<
   //   1. `folderPath` arg — passed directly (the Python backend
   //      auto-creates the hierarchy server-side; the browser never has to
   //      query `cld_folders` via supabase-js, which avoids the
-  //      well-known RLS recursion bug on `cld_file_permissions`).
+  //      well-known RLS recursion bug on the legacy file-permission table).
   //   2. `parentFolderId` — look up the folder in slice state (works when
   //      the folder is already loaded from the tree RPC or realtime).
   //   3. Empty prefix — file lands at root.

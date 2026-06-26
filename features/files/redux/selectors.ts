@@ -26,8 +26,6 @@ import type {
   CloudFolder,
   CloudFolderRecord,
   CloudShareLink,
-  CloudUserGroup,
-  CloudUserGroupMember,
   PermissionLevel,
   RagStatus,
   TreeChildren,
@@ -39,7 +37,6 @@ export const EMPTY_CLOUD_FILE_PERMISSIONS: CloudFilePermission[] = [];
 export const EMPTY_CLOUD_SHARE_LINKS: CloudShareLink[] = [];
 const EMPTY_CLOUD_FILE_VERSIONS: CloudFileVersion[] = [];
 const EMPTY_PENDING_REQUEST_IDS: string[] = [];
-const EMPTY_CLOUD_USER_GROUP_MEMBERS: CloudUserGroupMember[] = [];
 
 /** Re-export for consumers that import cloud-files selectors from one module. */
 export { EMPTY_TREE_CHILDREN };
@@ -394,8 +391,9 @@ export const selectPermissionsForResource = createSelector(
 
 /**
  * Returns the highest permission the given user has on the given file.
- * Ownership returns 'admin'; otherwise derives from cld_file_permissions
- * where grantee_id matches. Caller must provide userId.
+ * Ownership returns 'admin'; otherwise derives from the canonical
+ * `public.permissions` grants (mapped into the slice) where the grantee
+ * matches. Caller must provide userId.
  */
 export const selectEffectivePermissionForFile = createSelector(
   [
@@ -443,26 +441,6 @@ export const selectActiveShareLinksForResource = createSelector(
     const active = links.filter((l) => l.isActive);
     return active.length ? active : EMPTY_CLOUD_SHARE_LINKS;
   },
-);
-
-// ---------------------------------------------------------------------------
-// Groups
-// ---------------------------------------------------------------------------
-
-export const selectAllGroupsArray = createSelector(
-  [selectSlice],
-  (slice): CloudUserGroup[] => Object.values(slice.groupsById),
-);
-
-export const selectGroupById = createSelector(
-  [selectSlice, (_s: StateWithCloudFiles, id: string) => id],
-  (slice, id): CloudUserGroup | undefined => slice.groupsById[id],
-);
-
-export const selectGroupMembers = createSelector(
-  [selectSlice, (_s: StateWithCloudFiles, groupId: string) => groupId],
-  (slice, groupId): CloudUserGroupMember[] =>
-    slice.groupMembersByGroupId[groupId] ?? EMPTY_CLOUD_USER_GROUP_MEMBERS,
 );
 
 // ---------------------------------------------------------------------------

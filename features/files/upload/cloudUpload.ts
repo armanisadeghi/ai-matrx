@@ -102,7 +102,7 @@ export interface CloudUploadOptions {
   createShareLink?: boolean;
   /**
    * Share-link permission. Note: `admin` is only valid on direct
-   * `cld_file_permissions` grants — share links accept `read` / `write`.
+   * `public.permissions` grants — share links accept `read` / `write`.
    */
   shareLinkPermissionLevel?: "read" | "write";
   shareLinkExpiresAt?: string | null;

@@ -223,9 +223,12 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     isPublicColumn: null,
     displayLabel: "File",
     urlPathTemplate: "/files/f/{id}",
-    // cld_files RLS enforces its OWN model (cld_user_has_permission_grant +
-    // cld_file_permissions / cld_share_links), NOT the generic has_permission().
-    // A row in `permissions` would NOT grant cloud-file access — false is honest.
+    // Files resolve access via the canonical resolver `iam.has_access('file',…)`
+    // (owner + grant + org + share-link), and file grants now live in the
+    // canonical `public.permissions` store (resource_type='file'). This flag
+    // tracks whether the table's RLS calls the grant-only `public.has_permission`
+    // helper directly; cld_files RLS still uses its own resolver path plus
+    // `cld_share_links`, so a bare `permissions` row is not the whole story.
     rlsUsesHasPermission: false,
   },
   prompt_actions: {
