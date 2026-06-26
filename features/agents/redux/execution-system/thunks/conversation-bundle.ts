@@ -54,11 +54,6 @@ export interface CxConversationBundle {
 
 export interface CxConversationRow {
   id: string;
-  /**
-   * @deprecated DEPRECATED on cx_conversation — RLS no longer reads it and the
-   * DB will drop it. Use {@link created_by} for ownership.
-   */
-  user_id: string;
   /** Canonical owner — trigger-stamped `cx_conversation.created_by`. */
   created_by: string | null;
   title: string | null;
@@ -82,11 +77,6 @@ export interface CxConversationRow {
   task_id: string | null;
   /** Per-conversation sandbox override (power-user pin). NULL → user-active. */
   sandbox_instance_id: string | null;
-  /**
-   * @deprecated DEPRECATED on cx_conversation — RLS no longer reads it and the
-   * DB will drop it. Use {@link visibility} for sharing/access state.
-   */
-  is_public: boolean;
   /** Canonical access-control dimension — `cx_conversation.visibility`. */
   visibility: ConversationVisibility;
   is_ephemeral: boolean;

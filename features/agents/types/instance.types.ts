@@ -159,14 +159,9 @@ export interface ExecutionInstance {
 
   // ── Identity mirrors (cx_conversation columns) ──────────────────────────
   /**
-   * @deprecated Use {@link createdBy} for ownership. `cx_conversation.user_id`
-   * is no longer read by RLS and will be dropped by the DB. Kept only for any
-   * legacy reader that hasn't migrated; ownership logic MUST read `createdBy`.
-   */
-  userId?: string;
-  /**
-   * Canonical owner — `cx_conversation.created_by` (trigger-stamped). Equal to
-   * `userId` today; this is the field ownership/edit decisions must read.
+   * Canonical owner — `cx_conversation.created_by` (trigger-stamped). This is
+   * the field ownership/edit decisions must read. (The old `user_id` column was
+   * dropped from `cx_conversation` in favor of `created_by`.)
    */
   createdBy?: string | null;
   /** Canonical DB column name for the agent that started this conversation. */
@@ -199,12 +194,6 @@ export interface ExecutionInstance {
    *             Client sends the full accumulated history from `messages/`.
    */
   isEphemeral?: boolean;
-  /**
-   * @deprecated Use {@link visibility}. `cx_conversation.is_public` is no longer
-   * read by RLS and will be dropped by the DB. Sharing state is now the
-   * `visibility` enum (`private < internal < link < public`).
-   */
-  isPublic?: boolean;
   /**
    * Canonical sharing/access-control dimension — `cx_conversation.visibility`.
    * RLS enforces this via `iam.has_access`. `'public'` ⇒ shared with anyone.

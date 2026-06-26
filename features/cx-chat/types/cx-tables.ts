@@ -25,7 +25,8 @@ export type CxConversationStatus = "active" | "completed" | "archived";
 /**
  * Canonical access-control dimension for a conversation — the `platform.visibility`
  * enum that `cx_conversation.visibility` (and every other Base-retrofit table) uses.
- * RLS reads this column via `iam.has_access`; `is_public`/`user_id` are DEPRECATED.
+ * RLS reads this column via `iam.has_access`. The old `is_public`/`user_id`
+ * columns were dropped from `cx_conversation` (ownership is now `created_by`).
  * Ordering is `private < internal < link < public`.
  *
  * Derived from the generated row of a table that already carries the enum literal,

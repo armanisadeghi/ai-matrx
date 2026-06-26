@@ -83,8 +83,8 @@ export async function POST(request: Request) {
 
         const modelId = last_model_id ?? ai_model_id;
 
+        // Ownership (`created_by`) is trigger-stamped from auth.uid(); never set manually.
         const newConversation = await createCxConversation({
-            user_id: user.id,
             title: title || null,
             system_instruction: system_instruction || null,
             last_model_id: modelId || null,

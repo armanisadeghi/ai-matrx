@@ -325,7 +325,8 @@ export async function fetchConversations(
     })
     .range(offset, offset + perPage - 1);
 
-  if (filters.user_id) query = query.eq("user_id", filters.user_id);
+  // cx_conversation ownership is `created_by` (the `user_id` column was dropped).
+  if (filters.user_id) query = query.eq("created_by", filters.user_id);
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.search)
     query = query.or(buildSearchOr(filters.search, ["title"]));

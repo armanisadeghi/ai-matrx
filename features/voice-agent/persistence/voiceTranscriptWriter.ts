@@ -105,7 +105,9 @@ export async function ensureConversation(
 
   const insert: CxConversationInsert = {
     id: conversationId,
-    user_id: user.id,
+    // Canonical ownership column (replaces the dropped `user_id`). The
+    // `_stamp_actor` trigger also defaults this from auth.uid() on insert.
+    created_by: user.id,
     is_ephemeral: false,
     status: "active",
     source_app: PERSISTENCE_SOURCE_APP,

@@ -85,8 +85,6 @@ interface CreateInstanceArgs {
   projectId?: string | null;
   taskId?: string | null;
   isEphemeral?: boolean;
-  /** @deprecated Use {@link visibility}. */
-  isPublic?: boolean;
   /** Canonical access-control dimension — `cx_conversation.visibility`. */
   visibility?: ConversationVisibility;
   apiEndpointMode?: ApiEndpointMode;
@@ -117,7 +115,6 @@ function applyCreateInstance(
     projectId,
     taskId,
     isEphemeral,
-    isPublic,
     visibility,
     apiEndpointMode,
     reuseConversationId,
@@ -154,7 +151,6 @@ function applyCreateInstance(
     ...(projectId !== undefined ? { projectId } : {}),
     ...(taskId !== undefined ? { taskId } : {}),
     ...(isEphemeral !== undefined ? { isEphemeral } : {}),
-    ...(isPublic !== undefined ? { isPublic } : {}),
     ...(visibility !== undefined ? { visibility } : {}),
     ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
     ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),

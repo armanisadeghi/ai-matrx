@@ -43,8 +43,6 @@ import {
 interface ForkBundle {
   conversation: {
     id: string;
-    /** @deprecated Use `created_by`. */
-    user_id: string;
     created_by: string | null;
     title: string | null;
     description: string | null;
@@ -63,8 +61,6 @@ interface ForkBundle {
     organization_id: string | null;
     project_id: string | null;
     task_id: string | null;
-    /** @deprecated Use `visibility`. */
-    is_public: boolean;
     visibility: ConversationVisibility;
     is_ephemeral: boolean;
     source_app: string;
@@ -139,7 +135,6 @@ export const forkConversation = createAsyncThunk<
         sourceFeature: conv.source_feature as never,
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
-        userId: conv.user_id,
         createdBy: conv.created_by,
         initialAgentId: conv.initial_agent_id,
         initialAgentVersionId: conv.initial_agent_version_id,
@@ -151,7 +146,6 @@ export const forkConversation = createAsyncThunk<
         projectId: conv.project_id,
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
-        isPublic: conv.is_public,
         visibility: conv.visibility,
         title: conv.title,
         description: conv.description,

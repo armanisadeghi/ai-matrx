@@ -6611,7 +6611,6 @@ export type Database = {
           initial_agent_version_id: string | null
           is_ephemeral: boolean
           is_favorite: boolean
-          is_public: boolean
           keywords: string[] | null
           last_context_breakdown: Json | null
           last_model_id: string | null
@@ -6632,7 +6631,6 @@ export type Database = {
           title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           variables: Json
           version: number
           visibility: "private" | "internal" | "link" | "public"
@@ -6654,7 +6652,6 @@ export type Database = {
           initial_agent_version_id?: string | null
           is_ephemeral?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           keywords?: string[] | null
           last_context_breakdown?: Json | null
           last_model_id?: string | null
@@ -6675,7 +6672,6 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           variables?: Json
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
@@ -6697,7 +6693,6 @@ export type Database = {
           initial_agent_version_id?: string | null
           is_ephemeral?: boolean
           is_favorite?: boolean
-          is_public?: boolean
           keywords?: string[] | null
           last_context_breakdown?: Json | null
           last_model_id?: string | null
@@ -6718,7 +6713,6 @@ export type Database = {
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           variables?: Json
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
@@ -6853,7 +6847,7 @@ export type Database = {
       }
       cx_media: {
         Row: {
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           deleted_at: string | null
           file_size_bytes: number | null
@@ -6866,7 +6860,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           deleted_at?: string | null
           file_size_bytes?: number | null
@@ -6879,7 +6873,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           deleted_at?: string | null
           file_size_bytes?: number | null
@@ -7025,7 +7019,7 @@ export type Database = {
           buffered_reflection_input_tokens: number
           buffered_reflection_tokens: number
           config: Json | null
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           created_by: string | null
           current_task: string | null
@@ -7058,7 +7052,7 @@ export type Database = {
           buffered_reflection_input_tokens?: number
           buffered_reflection_tokens?: number
           config?: Json | null
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           created_by?: string | null
           current_task?: string | null
@@ -7091,7 +7085,7 @@ export type Database = {
           buffered_reflection_input_tokens?: number
           buffered_reflection_tokens?: number
           config?: Json | null
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           created_by?: string | null
           current_task?: string | null
@@ -7137,7 +7131,7 @@ export type Database = {
       cx_observational_memory_event: {
         Row: {
           completed_at: string | null
-          conversation_id: string | null
+          conversation_id: string
           cost: number
           created_at: string
           duration_ms: number | null
@@ -7157,7 +7151,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
-          conversation_id?: string | null
+          conversation_id: string
           cost?: number
           created_at?: string
           duration_ms?: number | null
@@ -7177,7 +7171,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
-          conversation_id?: string | null
+          conversation_id?: string
           cost?: number
           created_at?: string
           duration_ms?: number | null
@@ -7633,7 +7627,7 @@ export type Database = {
         Row: {
           args: Json | null
           call_id: string | null
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           duration_ms: number | null
           err_msg: string | null
@@ -7653,7 +7647,7 @@ export type Database = {
         Insert: {
           args?: Json | null
           call_id?: string | null
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           duration_ms?: number | null
           err_msg?: string | null
@@ -7673,7 +7667,7 @@ export type Database = {
         Update: {
           args?: Json | null
           call_id?: string | null
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           duration_ms?: number | null
           err_msg?: string | null
@@ -7936,7 +7930,7 @@ export type Database = {
       cx_working_documents: {
         Row: {
           content: string
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           created_by: string | null
           id: string
@@ -7950,7 +7944,7 @@ export type Database = {
         }
         Insert: {
           content?: string
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           created_by?: string | null
           id?: string
@@ -7964,7 +7958,7 @@ export type Database = {
         }
         Update: {
           content?: string
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           created_by?: string | null
           id?: string
