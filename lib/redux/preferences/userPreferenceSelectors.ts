@@ -21,6 +21,7 @@ import type {
   AgentContextPreferences,
   MermaidPreferences,
   AudioDevicePreferences,
+  OrganizationPreferences,
   FavoritesPreferences,
   FavoriteItem,
 } from "@/lib/redux/preferences/userPreferencesSlice";
@@ -148,6 +149,21 @@ export const selectMermaidPreferences = createSelector(
 export const selectAudioDevicePreferences = createSelector(
   selectUserPreferences,
   (state): AudioDevicePreferences => state.audioDevices,
+);
+
+export const selectOrganizationPreferences = createSelector(
+  selectUserPreferences,
+  (state): OrganizationPreferences => state.organization,
+);
+
+/**
+ * The user's default active organization id (or null if none chosen). Read by
+ * the active-org bootstrap at startup to auto-select an org, and by the org
+ * pickers to reflect/toggle the "Set as default" switch.
+ */
+export const selectDefaultOrganizationId = createSelector(
+  selectOrganizationPreferences,
+  (org): string | null => org.defaultOrganizationId,
 );
 
 // Per-property selectors so unrelated preference changes don't re-render a

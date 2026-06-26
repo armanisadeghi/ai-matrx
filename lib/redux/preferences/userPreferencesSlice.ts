@@ -320,6 +320,18 @@ export interface AgentContextPreferences {
   taskId: string | null;
 }
 
+export interface OrganizationPreferences {
+  /**
+   * The user's DEFAULT active organization. When set, the active-org bootstrap
+   * auto-selects it at startup (across devices) so the user is never left
+   * without an org and never re-prompted. `null` = no default chosen yet → the
+   * header reminder nudges the user to pick one. The single durable source of
+   * truth for "which org am I in by default" — see activeOrgBootstrap +
+   * features/organizations/hooks/useDefaultOrganization.
+   */
+  defaultOrganizationId: string | null;
+}
+
 export type ThinkingMode = "none" | "simple" | "deep";
 
 export interface PromptsPreferences {
@@ -485,6 +497,7 @@ export interface UserPreferences {
   mermaid: MermaidPreferences;
   conversationFilters: ConversationFilterPreferences;
   audioDevices: AudioDevicePreferences;
+  organization: OrganizationPreferences;
 }
 
 // Add state interface for async operations
@@ -712,6 +725,10 @@ export const initializeUserPreferencesState = (
       audioOutputDeviceId: "",
       audioOutputDeviceLabel: "",
     },
+    organization: {
+      // null = no default chosen → header reminder nudges the user.
+      defaultOrganizationId: null,
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -769,6 +786,10 @@ export const initializeUserPreferencesState = (
     audioDevices: {
       ...defaultPreferences.audioDevices,
       ...preferences.audioDevices,
+    },
+    organization: {
+      ...defaultPreferences.organization,
+      ...preferences.organization,
     },
   };
 
@@ -865,6 +886,9 @@ const userPreferencesSlice = createSlice({
         };
         state.audioDevices = {
           ...state._meta.loadedPreferences.audioDevices,
+        };
+        state.organization = {
+          ...state._meta.loadedPreferences.organization,
         };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
@@ -994,6 +1018,11 @@ const userPreferencesSlice = createSlice({
           ...state.audioDevices,
           ...loaded.audioDevices,
         };
+      if (loaded.organization)
+        state.organization = {
+          ...state.organization,
+          ...loaded.organization,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -1063,6 +1092,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "mermaid",
   "conversationFilters",
   "audioDevices",
+  "organization",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

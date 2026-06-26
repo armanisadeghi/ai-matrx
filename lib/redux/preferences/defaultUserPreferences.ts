@@ -203,4 +203,9 @@ export const defaultUserPreferences: UserPreferences = {
     audioOutputDeviceId: "",
     audioOutputDeviceLabel: "",
   },
+  // null = no default org chosen → header reminder nudges the user. Keep in
+  // sync with the in-slice defaults at userPreferencesSlice.ts.
+  organization: {
+    defaultOrganizationId: null,
+  },
 };

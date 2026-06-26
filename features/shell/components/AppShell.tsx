@@ -22,6 +22,7 @@ import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
+import ActiveOrgBootstrap from "@/features/shell/components/ActiveOrgBootstrap";
 import type { UserData } from "@/utils/userDataMapper";
 import type { InitialReduxState } from "@/types/reduxTypes";
 
@@ -76,6 +77,7 @@ export default function AppShell({
       <NavActiveSync />
       <VisualViewportSync />
       <ShellSidebarCookieSync />
+      {isAuthenticated && <ActiveOrgBootstrap />}
       <DeferredIslands />
     </Providers>
   );

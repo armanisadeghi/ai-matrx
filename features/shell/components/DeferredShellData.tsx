@@ -73,9 +73,10 @@ export default function DeferredShellData() {
 
         dispatch(setUser(userData));
 
-        // Hydrate active-org state: record the personal org (API fallback)
-        // and restore the last-used org. Fire-and-forget — never blocks the
-        // rest of shell hydration.
+        // Hydrate active-org state: record the personal org (API fallback) and
+        // resolve the active org (default → only-org → nudge). Fire-and-forget
+        // — never blocks the rest of shell hydration. (The live core/admin
+        // shell triggers this via the ActiveOrgBootstrap island.)
         void dispatch(bootstrapActiveOrganization());
 
         if (shellData.preferences_exists && shellData.preferences) {

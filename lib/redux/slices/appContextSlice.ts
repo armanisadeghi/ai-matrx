@@ -67,6 +67,15 @@ export interface AppContextState {
 
   /** Currently active conversation */
   conversation_id: string | null;
+
+  /**
+   * True once the active-org bootstrap has run to completion (whether or not it
+   * selected an org). The UI gates the "no org" cues (red avatar ring + the
+   * drop-down reminder) on this so they only appear after we genuinely know the
+   * user has no org — never as a flash during boot before the default/personal
+   * org has had a chance to resolve. Set only by bootstrapActiveOrganization.
+   */
+  orgBootstrapResolved: boolean;
 }
 
 const initialState: AppContextState = {
@@ -79,6 +88,7 @@ const initialState: AppContextState = {
   task_id: null,
   task_name: null,
   conversation_id: null,
+  orgBootstrapResolved: false,
 };
 
 const appContextSlice = createSlice({
@@ -137,6 +147,14 @@ const appContextSlice = createSlice({
       state.conversation_id = action.payload;
     },
     /**
+     * Mark the active-org bootstrap as complete. Set once at hydration by
+     * bootstrapActiveOrganization (after it has tried default → single-org →
+     * give up) so the "no org" UI cues stop suppressing themselves.
+     */
+    setOrgBootstrapResolved: (state, action: PayloadAction<boolean>) => {
+      state.orgBootstrapResolved = action.payload;
+    },
+    /**
      * Set multiple context fields at once without cascading resets.
      * Use this when restoring a full saved context (e.g. page reload,
      * deep-link navigation) where all values are already known.
@@ -176,6 +194,7 @@ export const {
   setProject,
   setTask,
   setConversation,
+  setOrgBootstrapResolved,
   setFullContext,
   clearContext,
 } = appContextSlice.actions;
@@ -214,6 +233,26 @@ export const selectEffectiveOrganizationId = (
 export const selectHasExplicitOrganization = (
   state: StateWithAppContext,
 ): boolean => state.appContext.organization_id != null;
+
+/**
+ * True once the active-org bootstrap has finished resolving. Gate the "no org"
+ * UI cues (red avatar ring + drop-down reminder) on this so they never flash
+ * during boot before the default/personal org has had a chance to load.
+ */
+export const selectOrgBootstrapResolved = (
+  state: StateWithAppContext,
+): boolean => state.appContext.orgBootstrapResolved;
+
+/**
+ * True when the UI should actively nudge the user to choose an org: the
+ * bootstrap has resolved AND no org is explicitly selected. The single source
+ * of truth for showing the red avatar ring and the header reminder peek.
+ */
+export const selectShouldPromptForOrganization = (
+  state: StateWithAppContext,
+): boolean =>
+  state.appContext.orgBootstrapResolved &&
+  state.appContext.organization_id == null;
 
 export const selectScopeSelectionsContext = (
   state: StateWithAppContext,

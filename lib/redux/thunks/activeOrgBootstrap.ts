@@ -6,77 +6,78 @@
 // valid org riding along on API calls, even before they explicitly pick one.
 //
 // Two pieces:
-//   1. bootstrapActiveOrganization() — run once at shell hydration
-//      (DeferredShellData). Loads the user's orgs, records their PERSONAL org
-//      id (the soft-enforcement fallback), and restores the LAST org they used
-//      (from localStorage) if they're still a member. It does NOT auto-select
-//      the personal org — leaving organization_id null is the signal the UI
-//      uses to nudge the user (red ring on the avatar) to choose one.
+//   1. bootstrapActiveOrganization() — run once at shell hydration by the
+//      ActiveOrgBootstrap island (features/shell/components/ActiveOrgBootstrap).
+//      Loads the user's orgs, records their PERSONAL org id (the soft-
+//      enforcement API fallback), then resolves the active org with this
+//      precedence:
+//        a. the user's DEFAULT org preference (cross-device, durable) — if they
+//           are still a member;
+//        b. otherwise, if they belong to exactly ONE org, that org (silent —
+//           there is nothing to choose, so no nudge);
+//        c. otherwise leave organization_id null on purpose — the signal the
+//           UI uses to nudge the user (red avatar ring + drop-down reminder)
+//           to pick one and optionally set it as their default.
+//      Either way it marks the bootstrap RESOLVED so the "no org" cues stop
+//      suppressing themselves (selectShouldPromptForOrganization).
 //   2. chooseActiveOrganization({id,name}) — the compliant wrapper UI surfaces
-//      call to switch orgs. Persistence to localStorage is handled centrally
-//      by the StoreProvider subscription, so this only dispatches.
+//      call to switch orgs.
 //
-// Why the eslint-disable below: setOrganization / setPersonalOrganization are
-// appContextSlice WRITE actions, gated to Surface-A active-context components
-// (eslint.config.mjs `appContextWriteSyntaxRestrictions`). This module is a
-// legitimate Surface-A writer that lives outside active-context/** — the same
-// sanctioned exception the canonical useHierarchyReduxBridge and the
-// logout-reset watcher use. Setting the global active org IS the job here.
+// The default org is the SINGLE durable source of truth for "which org am I in"
+// — there is no separate localStorage "last org" mechanism. The default is read
+// straight from the `user_preferences` row at startup (authoritative — no race
+// with the client-side preferences sync hydration); want to be restored to an
+// org next session? Set it as your default (one switch in the picker).
+//
+// Why the eslint-disable below: setOrganization is an appContextSlice WRITE
+// action, gated to Surface-A active-context components (eslint.config.mjs
+// `appContextWriteSyntaxRestrictions`). This module is a legitimate Surface-A
+// writer that lives outside active-context/** — the same sanctioned exception
+// the canonical useHierarchyReduxBridge and the logout-reset watcher use.
+// Setting the global active org IS the job here.
 
 // eslint-disable-next-line no-restricted-syntax -- Surface A: canonical active-org bootstrap + switcher
 import {
   setOrganization,
   setPersonalOrganization,
+  setOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
+import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { getUserOrganizations } from "@/features/organizations/service";
+import { getUserId } from "@/utils/auth/getUserId";
+import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 
-/** localStorage key for the last explicitly-selected active org. */
-export const LAST_ORG_STORAGE_KEY = "matrx:lastOrg";
-
-interface PersistedOrg {
-  id: string;
-  name: string | null;
-}
-
-/** Read the last-used org from localStorage. Never throws. */
-export function readLastOrg(): PersistedOrg | null {
-  if (typeof window === "undefined") return null;
+/**
+ * Read the user's default-org preference straight from `user_preferences`.
+ * Authoritative + race-free: it does not depend on the client-side preferences
+ * sync engine having hydrated yet. Never throws — returns null on any failure
+ * (no default → the nudge path).
+ */
+async function readDefaultOrgIdFromDb(): Promise<string | null> {
   try {
-    const raw = window.localStorage.getItem(LAST_ORG_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<PersistedOrg>;
-    if (parsed && typeof parsed.id === "string" && parsed.id.length > 0) {
-      return {
-        id: parsed.id,
-        name: typeof parsed.name === "string" ? parsed.name : null,
-      };
-    }
+    const userId = getUserId();
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("preferences")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const prefs = data.preferences as {
+      organization?: { defaultOrganizationId?: string | null };
+    } | null;
+    return prefs?.organization?.defaultOrganizationId ?? null;
   } catch {
-    // Malformed persisted value — ignore, treat as no last org.
-  }
-  return null;
-}
-
-/** Persist (or clear) the last-used org. Never throws. */
-export function writeLastOrg(org: PersistedOrg | null): void {
-  if (typeof window === "undefined") return;
-  try {
-    if (org && org.id) {
-      window.localStorage.setItem(LAST_ORG_STORAGE_KEY, JSON.stringify(org));
-    } else {
-      window.localStorage.removeItem(LAST_ORG_STORAGE_KEY);
-    }
-  } catch {
-    // Storage unavailable (private mode / quota) — non-fatal.
+    return null;
   }
 }
 
 /**
  * Hydrate active-org state. Records the personal org id (API fallback) and
- * restores the last-used org if still valid. Safe to call once per session
- * after auth resolves. Never throws — a failure leaves state at its defaults
- * (no org) and the soft-enforcement reminder shows.
+ * auto-selects the user's default org (or their only org). Safe to call once
+ * per session after auth resolves. Never throws — a failure still marks the
+ * bootstrap resolved so the UI doesn't hang on suppressed cues.
  */
 export const bootstrapActiveOrganization =
   () => async (dispatch: AppDispatch, getState: () => RootState) => {
@@ -89,31 +90,54 @@ export const bootstrapActiveOrganization =
       const personal = orgs.find((o) => o.isPersonal) ?? orgs[0];
       dispatch(setPersonalOrganization(personal?.id ?? null));
 
-      // Only restore a last org if nothing is already actively selected.
-      const current = getState().appContext.organization_id;
-      if (current) return;
+      // Respect an org that is already actively selected (e.g. a deep-link or a
+      // restored full context beat us here).
+      if (getState().appContext.organization_id) return;
 
-      const last = readLastOrg();
-      if (last) {
-        const match = orgs.find((o) => o.id === last.id);
+      // a. Default org preference (durable, cross-device, read authoritatively
+      //    from the DB).
+      const preferredOrgId = await readDefaultOrgIdFromDb();
+      if (preferredOrgId) {
+        const match = orgs.find((o) => o.id === preferredOrgId);
         if (match) {
           dispatch(setOrganization({ id: match.id, name: match.name }));
           return;
         }
-        // User is no longer a member of the persisted org — clear it.
-        writeLastOrg(null);
+        // Default points at an org the user is no longer a member of — clear
+        // the stale preference so it stops being retried, then fall through.
+        dispatch(
+          setPreference({
+            module: "organization",
+            preference: "defaultOrganizationId",
+            value: null,
+          }),
+        );
       }
-      // No valid last org: leave organization_id null on purpose so the UI
-      // nudges the user to choose one (personal org still rides along on API
-      // calls via selectEffectiveOrganizationId).
+
+      // b. Exactly one org → auto-select it. There is nothing to choose, so
+      //    suppressing the nudge here is correct, not a shortcut.
+      if (orgs.length === 1) {
+        const only = orgs[0];
+        dispatch(setOrganization({ id: only.id, name: only.name }));
+        return;
+      }
+
+      // c. Multiple orgs, no default: leave organization_id null on purpose so
+      //    the UI nudges the user to choose one (personal org still rides along
+      //    on API calls via selectEffectiveOrganizationId).
     } catch (err) {
       console.error("[activeOrgBootstrap] failed to hydrate active org", err);
+    } finally {
+      // Resolved either way — the UI gates its "no org" cues on this so they
+      // never flash before we know the user genuinely has no org.
+      dispatch(setOrgBootstrapResolved(true));
     }
   };
 
 /**
- * Switch the active organization from a UI surface. The StoreProvider
- * subscription persists the change to localStorage, so this just dispatches.
+ * Switch the active organization from a UI surface. Just dispatches — the
+ * active org is the global working context; durable cross-session restore is
+ * the job of the default-org preference, not this switcher.
  */
 export const chooseActiveOrganization =
   (org: { id: string | null; name?: string | null }) =>
