@@ -70,6 +70,32 @@ function dbRowToEntry(row: DbRegistryRow): ShareableResourceEntry {
   };
 }
 
+/**
+ * The 8 DB-mirrored fields. The TS registry may carry FE-only routing fields
+ * (`schemaName` / `physicalTable`, e.g. for `file` / `folder` after the 2026
+ * `files`-schema move) that the DB `shareable_resource_registry` doesn't have.
+ * Per-row exact-match comparison must therefore look ONLY at the DB fields and
+ * tolerate FE-only extras.
+ */
+const DB_MIRRORED_KEYS = [
+  "resourceType",
+  "tableName",
+  "idColumn",
+  "ownerColumn",
+  "isPublicColumn",
+  "displayLabel",
+  "urlPathTemplate",
+  "rlsUsesHasPermission",
+] as const satisfies readonly (keyof ShareableResourceEntry)[];
+
+function pickDbFields(entry: ShareableResourceEntry): ShareableResourceEntry {
+  const picked: Record<string, unknown> = {};
+  for (const key of DB_MIRRORED_KEYS) {
+    picked[key] = entry[key];
+  }
+  return picked as unknown as ShareableResourceEntry;
+}
+
 describe("shareable_resource_registry: TS ↔ DB parity", () => {
   const dbRows = loadDbSnapshot();
   const tsKeys = RESOURCE_TYPES.slice().sort();
@@ -93,13 +119,33 @@ describe("shareable_resource_registry: TS ↔ DB parity", () => {
           dbRow.resource_type as keyof typeof SHAREABLE_RESOURCE_REGISTRY
         ];
       expect(tsEntry).toBeDefined();
-      expect(tsEntry).toEqual(dbRowToEntry(dbRow));
+      expect(pickDbFields(tsEntry)).toEqual(dbRowToEntry(dbRow));
     },
   );
 
-  it("every entry has a non-empty url_path_template containing {id}", () => {
+  it("every entry has a non-empty url_path_template", () => {
     for (const entry of Object.values(SHAREABLE_RESOURCE_REGISTRY)) {
-      expect(entry.urlPathTemplate).toMatch(/\{id\}/);
+      expect(entry.urlPathTemplate.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every per-instance entry's url_path_template contains {id}", () => {
+    // Most registry entries deep-link to a specific record and MUST carry the
+    // {id} placeholder. A few DB rows are list/settings surfaces with no
+    // per-record route (scraper_preset → /scraper?tab=presets,
+    // scraper_schedule → /scraper?tab=schedules,
+    // user_analysis_preferences → /settings/analysis). Those legitimately have
+    // no {id} in the DB registry (the source of truth). We derive the
+    // expectation from the DB snapshot so the TS mirror is held to exactly the
+    // same {id} contract the DB declares — never weaker, never stronger.
+    for (const dbRow of dbRows) {
+      const entry =
+        SHAREABLE_RESOURCE_REGISTRY[
+          dbRow.resource_type as keyof typeof SHAREABLE_RESOURCE_REGISTRY
+        ];
+      if (dbRow.url_path_template.includes("{id}")) {
+        expect(entry.urlPathTemplate).toMatch(/\{id\}/);
+      }
     }
   });
 
