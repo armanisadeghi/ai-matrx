@@ -1,4 +1,4 @@
-> 🟡 **GOVERNS THE DESTRUCTIVE WAVES (3–5).** The non-destructive foundation (entity_types, associations + mirror triggers, canonical RLS, history, categories/user_entity_state) was already applied directly on prod — see `db-first-cut-execution-plan.md`. **PITR is now ON.** So Waves 0–2 are done on prod; this plan's "rehearse-first" discipline + the **move-to-graveyard** safety (§4) apply to the remaining base-retrofit (Wave 3), schema rename (Wave 4), and cleanup/drops (Wave 5).
+> 🟡 **GOVERNS THE DESTRUCTIVE WAVES (3–5).** The non-destructive foundation (entity_types, associations + mirror triggers, canonical RLS, history, categories/user_entity_state) was already applied directly on prod — see `official/db-status.md` + `CHANGEOVER_PROGRESS.md`. **PITR is now ON.** So Waves 0–2 are done on prod; this plan's "rehearse-first" discipline + the **move-to-graveyard** safety (§4) apply to the remaining base-retrofit (Wave 3), schema rename (Wave 4), and cleanup/drops (Wave 5).
 
 # Staging & Cutover Plan — the big rebuild
 

@@ -2,7 +2,7 @@
 
 > **The single source of truth for the rebuild's execution.** Updated continuously by the lead **and** delegated subagents. Goal: carry **every** table to *done* — additive retrofit → org-first RLS → litter cleanup → schema reorg — however long it takes (a day or a month). A table is *done* only when it meets the standard, is **verified live**, and is recorded here **and** in `public._schema_migrations`.
 >
-> **Process + per-table recipe:** the **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/`). **Standard:** `db-core-standards-and-automation.md`. **RLS/safety:** `db-rls-safety-fields-categorization.md`. **Cutover safety:** `db-staging-and-cutover-plan.md`. **Index:** `README-ctx-association (1).md`.
+> **Process + per-table recipe:** the **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/`). **Standard:** `db-core-standards-and-automation.md`. **RLS:** `db-canonical-rls.md` (+ sweep `db-canonical-rls-sweep-todo.md`). **Cutover safety:** `db-staging-and-cutover-plan.md`. **Live docs index:** `README.md` → `official/` + `CUTOVER_HANDOFF.md`.
 
 **Last updated:** 2026-06-24 · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
 

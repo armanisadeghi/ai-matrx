@@ -1,6 +1,6 @@
 # DB Core Standards & Automation — Canonical Spec
 
-> The master spec. Finalizes the column standards, the **unified RLS system**, the **unified versioning/history system**, the **entity_types registry**, and the **automation** (triggers + cron) that makes all of it run untouched. Grounded in the real engine already in your DB (`permissions` + `has_permission`, the task RLS, `organization_members`, `ctx_project_members`). Companion: `db-base-standards-review-and-integration.md` (rationale), `db-staging-and-cutover-plan.md` (how we ship it).
+> The master spec. Finalizes the column standards, the **unified RLS system**, the **unified versioning/history system**, the **entity_types registry**, and the **automation** (triggers + cron) that makes all of it run untouched. Grounded in the real engine already in your DB (`permissions` + `has_permission`, the task RLS, `organization_members`, `ctx_project_members`). Companion: `db-staging-and-cutover-plan.md` (how we ship it).
 
 ---
 
