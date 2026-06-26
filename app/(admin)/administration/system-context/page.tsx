@@ -3,16 +3,21 @@
 // System Context — Super Admin only.
 //
 // The (admin) layout already requires Super Admin and the
-// /api/admin/system-context route re-checks server-side. This page is the
-// management surface for platform-wide "System Context Items": typed, reusable
-// values that resolve for EVERY user with no scope selection (their scope types
-// carry is_system=true in the member-less "Matrx System" org).
+// /api/admin/system-context route re-checks server-side. This is the control
+// plane for platform-wide "System Context resources" that resolve for EVERY
+// user with no scope selection (their scope types carry is_system=true in the
+// member-less "Matrx System" org).
 //
-// Three product classes (only Class 1 exists today, page grows into 2 & 3):
-//   1. Ambient / computed — current_date, current_user_id, … (server computes
-//      per request; read-only here, shown as "Computed").
-//   2. Curated globals — stored values refreshed by jobs. None yet.
-//   3. Industry datasets — scraped/structured platform data. None yet.
+// A resource is a DEFINITION + a FEED — the value is the feed's output, not the
+// authored thing. Feeds (see parts/FeedConfigEditor.tsx):
+//   - dataset  — points at a RAG data store; agents query it (LIVE: the AMA
+//     Guides). Resolves to a pointer via resolve_full_context loop 4c.
+//   - manual   — a typed value (rare; the component-aware editor). LIVE.
+//   - computed — code/expression at resolution (the ambient current_* keys are
+//     reserved computes in matrx_ai.context_engine; user-defined code later).
+//   - agent / api / web — definition captured now; executor lands later
+//     (feed_status='pending', honestly labeled in the UI).
+// "Preview agent context" shows exactly what an agent receives globally.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
