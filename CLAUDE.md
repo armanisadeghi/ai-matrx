@@ -33,11 +33,13 @@ The five anti-patterns this kills (local types, recreated components, parallel R
 
 Always use the latest stable release of every package — no deprecated APIs.
 
-### Data flow — there is no Next.js middle tier
+### Data flow — there is no Next.js middle tier, and Python is not a DB gateway
 
-- **Reads/writes:** React client → Supabase directly. Do NOT route data ops through Next.js API routes or Server Actions.
+- **Reads/writes:** React client → Supabase directly (RLS + auth-checked `SECURITY DEFINER` RPCs are the authorization layer). Do NOT route data ops through Next.js API routes or Server Actions.
   - *Exception:* admin-only operations gated by a secret token.
-- **Compute ("the brain"):** Python backend at `https://server.app.matrxserver.com`. React calls it directly for all complex server work.
+- **Never call the Python backend for work the browser can do directly against Postgres.** Search, metadata reads, counts, listings, soft-delete/rename/restore markers, tag/permission/share-link CRUD — all pure UI↔DB — go **direct via supabase-js** (RLS-filtered table reads, or an `auth.uid()`-checked `SECURITY DEFINER` RPC). Python *exposes* these as REST **only for consumers without Supabase access** (the extension, external clients). Our FE has Supabase, so routing them through Python is pure waste — two extra hops through a slow, agent-saturated server. **A direct call that returns the same rows is always the canonical path.**
+- **Compute ("the brain"):** Python backend at `https://server.app.matrxserver.com`. React calls it directly — but ONLY when the request genuinely needs the server: file **bytes** (S3/AWS), URL **signing** (secret), heavy **processing**, or an **auth/anon boundary** the browser can't cross. Never for a plain DB read/write.
+- **One canonical path per operation.** If two surfaces reach the same data two ways (one direct, one via Python REST), that's a bug — collapse to the direct path.
 - **Next.js API routes never sit between React and Python.** That's an unnecessary network hop. Reserve API routes for true Next.js-only concerns (secret-token admin RPCs, webhooks, OG images, the agent feedback MCP/REST surface).
 - **Python microservices** beyond the main backend only when TS hits a real capability wall (heavy PDF/OCR, bulk stats, local NLP at scale, advanced media). Sit them behind the Python backend, never behind Next.js.
 
