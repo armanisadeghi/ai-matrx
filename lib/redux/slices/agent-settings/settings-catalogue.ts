@@ -28,6 +28,7 @@
  */
 
 import type { ControlDefinition } from "./types";
+import { UI_GATE_KEYS } from "./ui-gates";
 
 // ── Group identity ─────────────────────────────────────────────────────────────
 
@@ -158,6 +159,10 @@ const CATCHALL_EXCLUDED = new Set<string>([
   "model_id",
   "model", // chosen via the dedicated model picker, never a generic settings row
   "multi_speaker", // edited via the Voice editor alongside tts_voice
+  // Model-gated UI flags live in the ui_gates column + UiGatesEditor, never as
+  // settings rows — even when the model declares them as controls (e.g. every
+  // model now declares `tools` for the tool-support capability).
+  ...UI_GATE_KEYS,
 ]);
 
 // ── Row building ────────────────────────────────────────────────────────────────

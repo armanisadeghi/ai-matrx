@@ -41,6 +41,23 @@ export const UI_GATE_KEYS = [
 
 export type UiGateKey = (typeof UI_GATE_KEYS)[number];
 
+/**
+ * The gates a USER toggles per-agent (the chat-attachment affordances).
+ *
+ * `tools` is intentionally **excluded**: tool support is a MODEL capability
+ * (resolved from `ai_model.controls.tools` via `supportsTools` in
+ * `useModelControls`), not a per-agent UI gate. `tools` remains in
+ * `UI_GATE_KEYS` so any legacy `ui_gates.tools` value is still recognized and
+ * stripped before the API call — it is just never offered as an editable toggle.
+ */
+export const UI_GATE_EDITABLE_KEYS = [
+  "image_urls",
+  "file_urls",
+  "youtube_videos",
+] as const satisfies readonly UiGateKey[];
+
+export type UiGateEditableKey = (typeof UI_GATE_EDITABLE_KEYS)[number];
+
 const UI_GATE_KEY_SET: ReadonlySet<string> = new Set(UI_GATE_KEYS);
 
 /** True when `key` is a model-gated UI flag (belongs in ui_gates, not settings). */

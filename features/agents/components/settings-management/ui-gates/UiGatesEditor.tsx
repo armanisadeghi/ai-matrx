@@ -13,7 +13,7 @@
  * gate keys from settings, so writing them there silently no-ops).
  */
 
-import { FileText, Image as ImageIcon, Wrench, Youtube } from "lucide-react";
+import { FileText, Image as ImageIcon, Youtube } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
@@ -21,8 +21,8 @@ import { selectAgentUiGates } from "@/features/agents/redux/agent-definition/sel
 import { setAgentUiGates } from "@/features/agents/redux/agent-definition/slice";
 import type { NormalizedControls } from "@/features/agents/hooks/useModelControls";
 import {
-  UI_GATE_KEYS,
-  type UiGateKey,
+  UI_GATE_EDITABLE_KEYS,
+  type UiGateEditableKey,
 } from "@/lib/redux/slices/agent-settings/ui-gates";
 
 interface UiGatesEditorProps {
@@ -32,14 +32,9 @@ interface UiGatesEditorProps {
 }
 
 const GATE_META: Record<
-  UiGateKey,
-  { label: string; description: string; Icon: typeof Wrench }
+  UiGateEditableKey,
+  { label: string; description: string; Icon: typeof ImageIcon }
 > = {
-  tools: {
-    label: "Tools",
-    description: "Let this agent call tools / functions.",
-    Icon: Wrench,
-  },
   image_urls: {
     label: "Image URLs",
     description: "Offer the image-URL attachment input in chat.",
@@ -60,7 +55,7 @@ const GATE_META: Record<
 /** True when the model's controls declare a control for this gate key. */
 function modelDeclaresGate(
   controls: NormalizedControls | null,
-  key: UiGateKey,
+  key: UiGateEditableKey,
 ): boolean {
   if (!controls) return false;
   const control = (controls as unknown as Record<string, unknown>)[key];
@@ -78,7 +73,7 @@ export function UiGatesEditor({
   const dispatch = useAppDispatch();
   const uiGates = useAppSelector((state) => selectAgentUiGates(state, agentId));
 
-  const offeredKeys = UI_GATE_KEYS.filter((key) =>
+  const offeredKeys = UI_GATE_EDITABLE_KEYS.filter((key) =>
     modelDeclaresGate(normalizedControls, key),
   );
 
@@ -86,7 +81,7 @@ export function UiGatesEditor({
   // strictly model-gated and out of the way for models that support none.
   if (offeredKeys.length === 0) return null;
 
-  const setGate = (key: UiGateKey, next: boolean) => {
+  const setGate = (key: UiGateEditableKey, next: boolean) => {
     dispatch(
       setAgentUiGates({
         id: agentId,
