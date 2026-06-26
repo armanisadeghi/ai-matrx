@@ -38,7 +38,7 @@ Re-check live policy first; many currently carry **legacy-named** or **v1 inline
 - [ ] `public.cx_conversation` (conversation) — has `is_public` + `visibility`; ensure `is_public`→`visibility` backfilled (rulebook) so the resolver reads the right tier before regenerating.
 - [ ] `public.notes` (note), `public.prompts` (prompt), `public.studio_sessions` (studio_session), `public.transcripts` (transcript)
 - [ ] `public.aga_apps` (agent_app), `public.agx_agent` (agent), `public.agx_agent_surface` (agent_surface_binding)
-- [ ] `public.ctx_tasks` (task) — has `assignee_id` + `is_public`. **Decision needed:** assignee access is not expressed in `iam.has_access` today; regenerating with v2 drops the assignee branch. Either (a) add an assignee concept to the resolver, or (b) grant assignees via `permissions`. Resolve before applying or task assignees lose access.
+- [ ] `public.ctx_tasks` (task) — has `assignee_id` + `is_public`. **DECIDED: assignment = a `public.permissions` grant** (canonical, generalizes to anything assignable; `has_access` already honors it — no resolver/policy special-case). Before regenerating: backfill `permissions` (editor) from existing `assignee_id`, wire the assign write-path to upsert/revoke the grant, then `assignee_id` is denormalized display only. Also `is_public`→`visibility`.
 - [ ] `public.page_extraction_jobs` (page_extraction_job) — likely `ledger`/service; confirm who inserts.
 
 ## TIER B — needs a DB change before v2 (verify live; flux may have already fixed)
@@ -52,7 +52,7 @@ At last check these lacked `created_by`; minutes later several had gained it (ac
 - [ ] `runtime.global_origin` (global_origin) — confirm variant (likely service/ledger).
 
 ## CROSS-CUTTING (do alongside the sweep)
-- [ ] **Fix `platform._stamp_actor`** to fall back to `(select auth.uid())` so `created_by` auto-stamps over PostgREST (today it only reads `app.user_id`, which PostgREST never sets — inserts work only because clients pass `created_by`). One-line change; makes the canonical insert robust everywhere. **Touches every retrofitted table — coordinate.**
+- [x] **`platform._stamp_actor` falls back to `(select auth.uid())`** (2026-06-26, `platform_stamp_actor_authuid_fallback.sql`) — `created_by`/`updated_by` now auto-stamp over PostgREST; backend `app.user_id` path unchanged. Verified live (insert omitting `created_by` stamps + passes RLS).
 - [ ] **Add `thread → war_room` containment edge** to `platform.entity_relationships` (missing) for War Room sharing.
 - [ ] **anon / public-read decision** — canonical policies are `TO authenticated`; decide the public/share read path (see `db-canonical-rls.md` gaps).
 - [ ] **Drift cron** (rulebook §9.5) — weekly assert every governed table's live policies equal `iam.apply_rls`'s output; scream on divergence so no table drifts back to hand-written.
