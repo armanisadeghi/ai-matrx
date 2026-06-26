@@ -2,8 +2,9 @@
  * features/files/hooks/useStorageQuota.ts
  *
  * Fetch the authenticated user's account tier + current storage usage
- * from `GET /files/usage`. Powers `StorageQuotaChip` in the cloud-files
- * sidebar and any future "tier-blocked" warnings.
+ * **directly** via the `get_usage_status` RPC (canonical path — no Python hop).
+ * Powers `StorageQuotaChip` in the cloud-files sidebar and any future
+ * "tier-blocked" warnings.
  *
  * Refresh strategy:
  *   - One-shot fetch on first mount per session (deliberate — quotas are
@@ -25,7 +26,7 @@ import {
   selectAuthReady,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
-import * as Files from "@/features/files/api/files";
+import { getUsageStatusDirect } from "@/features/files/api/direct";
 import type { StorageUsageResponse } from "@/features/files/types";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -134,7 +135,7 @@ export function useStorageQuota(
       setLoading(true);
       setError(null);
       try {
-        const { data: resp } = await Files.getStorageUsage({
+        const resp = await getUsageStatusDirect(userId, {
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
