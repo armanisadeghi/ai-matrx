@@ -74,18 +74,21 @@ function cardStyle(variant: Variant, i: number, n: number, active: boolean): CSS
       return {
         transform: `translateY(${i % 2 === 0 ? -10 : 10}px) rotate(${i % 2 === 0 ? -2 : 1.5}deg)`,
       };
+    // Sides lift UP; outer corners rise so the overlapping cards nest into a
+    // clean arc (left card tilts CW, right card CCW).
     case "fan-up":
       return {
-        transform: `translateY(${Math.abs(offset) * -16}px) rotate(${offset * 8}deg)`,
+        transform: `translateY(${Math.abs(offset) * -8}px) rotate(${-offset * 7.5}deg)`,
         transformOrigin: "center bottom",
-        marginLeft: i === 0 ? 0 : -12,
+        marginLeft: i === 0 ? 0 : -16,
         zIndex: active ? 20 : 10 - Math.abs(offset),
       };
+    // Mirror: center high, sides come DOWN; outer corners drop into a clean arch.
     case "fan-down":
       return {
-        transform: `translateY(${Math.abs(offset) * 16}px) rotate(${-offset * 8}deg)`,
+        transform: `translateY(${Math.abs(offset) * 8}px) rotate(${offset * 7.5}deg)`,
         transformOrigin: "center top",
-        marginLeft: i === 0 ? 0 : -12,
+        marginLeft: i === 0 ? 0 : -16,
         zIndex: active ? 20 : 10 - Math.abs(offset),
       };
     case "spotlight":
