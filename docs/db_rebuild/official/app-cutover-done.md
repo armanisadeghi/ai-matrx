@@ -19,7 +19,12 @@ Concise, append-only record of **frontend/app** cutover work that is shipped, so
 - **FE fix shipped:** `SingleFileShell` no longer silently swallows the fetch error (loud-recovery) — surfaces RLS/403 instead of a misleading "not found".
 - **Not a cutover issue:** PDF byte download fails via the Python backend (`server.app.matrxserver.com`), separate.
 
+- **Registry parity restored (40/40)** + **pre-commit hook fixed.** TS `SHAREABLE_RESOURCE_REGISTRY` now mirrors all 40 DB rows (was 20 — pre-existing drift the honest snapshot regen exposed); parity test 45/45. Fixed `check-doctrine` `execSync` ENOBUFS (no `maxBuffer`) that was silently aborting commits on the large types diff.
+
+**→ Files/notes cutover CLOSED on the FE.** (Remaining: D18 RLS = DB agent, reported done; browser spot-check pending.)
+
 ## Flags for the DB / your side
+- **Registry data-quality (from parity sync):** `folder` `url_path_template` (`/files/folder/{id}`) ≠ live route (`/files/folders/`); `wf_trigger` template has two `{id}` but the consumer replaces only the first; 3 list/settings rows have no `{id}` (fine). Reconcile in the DB registry.
 - **PostgREST must expose the `files` schema** (`db-schemas` setting) for `.schema('files')` to resolve at runtime — DB-config side.
 - **File resource token has two names floating:** canonical `entity_types`/DB-registry token is `file`, but the FE permissions registry + `shareKey` still use `cld_files` (resolves today via `resolve_shareable_resource` table_name match). Reconcile to `file` when canonicalizing the other roots.
 - **`types/database.types.ts` is stale for `cx_conversation`** (missing `visibility`; FE worked around with a derived type). Regenerate `pnpm db-types` when convenient (held off — concurrent sessions).
