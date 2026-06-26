@@ -12,6 +12,18 @@
         "PORT": "3001",
         "NEXT_DISTDIR": ".next-preview"
       }
+    },
+    {
+      "name": "next-dev-cutover-qa",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 3007,
+      "autoPort": true,
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3007",
+        "NEXT_DISTDIR": ".next-preview-cutoverqa"
+      }
     }
   ]
 }

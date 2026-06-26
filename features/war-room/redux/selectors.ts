@@ -287,12 +287,12 @@ export const selectThreadAnchorType =
     return "canvas";
   };
 
-/** UI flavor for tile components — maps anchor `canvas` → picker `thread`. */
+/** UI picker value — maps anchor `canvas` → picker `canvas`. */
 export const selectThreadPickerOption =
   (threadId: string | null) =>
   (state: RootState): import("../types").ThreadPickerOption => {
     const anchor = selectThreadAnchorType(threadId)(state);
-    if (anchor === "canvas") return "thread";
+    if (anchor === "canvas") return "canvas";
     return anchor;
   };
 

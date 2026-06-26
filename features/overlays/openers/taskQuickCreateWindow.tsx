@@ -16,14 +16,27 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
+import type {
+  TaskPrePopulate,
+  TaskSourceInput,
+} from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 
 const OVERLAY_ID = "taskQuickCreateWindow" as const;
 
+type TaskQuickCreateSavedHandler = (taskId: string) => void;
+let savedHandler: TaskQuickCreateSavedHandler | null = null;
+
+/** Called by TaskQuickCreateWindow when a task is saved. */
+export function emitTaskQuickCreateSaved(taskId: string) {
+  savedHandler?.(taskId);
+  savedHandler = null;
+}
+
 export interface OpenTaskQuickCreateWindowOptions {
-  /** TODO: tighten to `TaskSourceInput` once that type is imported. */
-  source?: unknown;
-  /** TODO: tighten to `TaskPrePopulate` once that type is imported. */
-  prePopulate?: unknown;
+  source?: TaskSourceInput;
+  prePopulate?: TaskPrePopulate;
+  /** One-shot — fired when the user saves a new task, then cleared. */
+  onSaved?: TaskQuickCreateSavedHandler;
 }
 
 export interface TaskQuickCreateWindowHandle {
@@ -33,7 +46,10 @@ export interface TaskQuickCreateWindowHandle {
 export function useOpenTaskQuickCreateWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
-    (opts: OpenTaskQuickCreateWindowOptions = {}): TaskQuickCreateWindowHandle => {
+    (
+      opts: OpenTaskQuickCreateWindowOptions = {},
+    ): TaskQuickCreateWindowHandle => {
+      savedHandler = opts.onSaved ?? null;
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -44,7 +60,10 @@ export function useOpenTaskQuickCreateWindow() {
         }),
       );
       return {
-        close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })),
+        close: () => {
+          savedHandler = null;
+          dispatch(closeOverlay({ overlayId: OVERLAY_ID }));
+        },
       };
     },
     [dispatch],
@@ -56,7 +75,9 @@ export function useOpenTaskQuickCreateWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function TaskQuickCreateWindowController(props: OpenTaskQuickCreateWindowOptions): null {
+export function TaskQuickCreateWindowController(
+  props: OpenTaskQuickCreateWindowOptions,
+): null {
   const open = useOpenTaskQuickCreateWindow();
   useEffect(() => {
     const handle = open(props);

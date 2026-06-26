@@ -101,6 +101,11 @@ import {
   selectActiveServer,
   selectEndpointOverrideConfig,
 } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectOrganizationId,
+  selectProjectId,
+  selectTaskId,
+} from "@/lib/redux/slices/appContextSlice";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
   createRequest,
@@ -416,6 +421,17 @@ export async function assembleManualRequest(
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
 
+  // Global active context scope — org / project / task. Mirrors what callApi
+  // and execute-instance already send so the Builder's manual path is not the
+  // odd one out (org-id enforcement is coming app-wide). Only fields that are
+  // actually set ride the wire; absent ones are omitted.
+  const organization_id = selectOrganizationId(state) ?? undefined;
+  const project_id = selectProjectId(state) ?? undefined;
+  const task_id = selectTaskId(state) ?? undefined;
+  if (organization_id) request.organization_id = organization_id;
+  if (project_id) request.project_id = project_id;
+  if (task_id) request.task_id = task_id;
+
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
 
@@ -656,6 +672,19 @@ export const executeManualInstance = createAsyncThunk<
           );
         }
       }
+
+      // TEMP DEBUG (org-id verification) — remove once org-id enforcement
+      // ships. Shows exactly what the Builder's manual path is POSTing,
+      // including whether organization_id rode along.
+      console.log("[Matrx ➜ POST] manual/chat", {
+        url,
+        organization_id: payload.organization_id ?? "(none — not set)",
+        project_id: payload.project_id ?? null,
+        task_id: payload.task_id ?? null,
+        ai_model_id: payload.ai_model_id,
+        agent_id: payload.agent_id,
+        payload,
+      });
 
       // Final resolved target for the Builder's /ai/manual call — base URL was
       // resolved by resolveBackendForConversation (incl. sandbox/EC2 override)

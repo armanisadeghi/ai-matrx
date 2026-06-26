@@ -86,8 +86,8 @@ export function roomRef(roomId: string): ContainerRef {
 export const SINGLE_ACTIVE_ENTITY_TYPES: ReadonlySet<WarRoomAssignmentEntityType> =
   new Set(["task", "project", "note", "studio_session"]);
 
-/** Quick-add flavor picker vocabulary (maps to thread anchor_type). */
-export type ThreadPickerOption = "thread" | "task" | "project";
+/** Quick-add picker vocabulary (maps to thread anchor_type). */
+export type ThreadPickerOption = "canvas" | "task" | "project";
 
 // ── Thread tabs ───────────────────────────────────────────────────────
 export type ThreadTab =

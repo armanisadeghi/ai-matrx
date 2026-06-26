@@ -2,10 +2,9 @@
 
 // features/war-room/components/thread/ThreadAnchorBadge.tsx
 //
-// A compact flavor marker for a tile header. Renders NOTHING for the default
-// 'thread' flavor (the common case stays clean), and a quiet pill for task /
-// project tiles so the kind reads at a glance next to the title. Flavor is
-// orthogonal to the tab-derived accent rail (threadKind), so this is its own thing.
+// A compact flavor marker for a tile header. Renders NOTHING for canvas
+// threads (the common case stays clean), and a quiet pill for task /
+// project threads so the kind reads at a glance next to the title.
 
 import { FolderKanban, ListChecks } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -20,7 +19,7 @@ export function ThreadAnchorBadge({
   className?: string;
 }) {
   const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
-  if (flavor === "thread") return null;
+  if (flavor === "canvas") return null;
   const isProject = flavor === "project";
   const Icon = isProject ? FolderKanban : ListChecks;
   return (

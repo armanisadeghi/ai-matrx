@@ -52,6 +52,8 @@ import {
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { resolveBackendForConversation } from "./resolve-base-url";
+import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
+import { selectEndpointOverrideConfig } from "@/lib/redux/slices/apiConfigSlice";
 import {
   createRequest,
   setRequestStatus,
@@ -544,6 +546,11 @@ export const executeInstance = createAsyncThunk<
       let url: string;
       let routedPayload: Record<string, unknown>;
 
+      // Endpoint-path override registry (API version + per-path overrides,
+      // e.g. the /v2 spine). Applied to the canonical path templates below;
+      // base URL / server selection (incl. localhost / sandbox) is untouched.
+      const overrideConfig = selectEndpointOverrideConfig(state);
+
       // Ephemeral turn 2+ was handled via the early short-circuit above.
       // Here we only need to inject `is_new:false, store:false` into the
       // turn-1 agent payload when ephemeral — the server then streams
@@ -565,7 +572,11 @@ export const executeInstance = createAsyncThunk<
 
       if (isContinuation) {
         // Turn 2+: POST /ai/conversations/{conversationId}
-        url = `${baseUrl}/ai/conversations/${conversationId}`;
+        const convPath = resolveEndpointPath(
+          "/ai/conversations/{conversation_id}",
+          overrideConfig,
+        ).replace("{conversation_id}", encodeURIComponent(conversationId));
+        url = `${baseUrl}${convPath}`;
         // Continuation only needs user_input, config_overrides, context,
         // tools, client, stream. Admin flags (block_mode, snapshot) are
         // forwarded so each turn honors the latest toggle value, not just
@@ -620,7 +631,11 @@ export const executeInstance = createAsyncThunk<
         // Ephemeral → is_new:false, store:false (server streams without writing).
         const pinnedVersionId = instance.initialAgentVersionId ?? null;
         const targetId = pinnedVersionId ?? instance.agentId;
-        url = `${baseUrl}/ai/agents/${targetId}`;
+        const agentPath = resolveEndpointPath(
+          "/ai/agents/{agent_id}",
+          overrideConfig,
+        ).replace("{agent_id}", encodeURIComponent(targetId));
+        url = `${baseUrl}${agentPath}`;
         routedPayload = {
           ...payload,
           conversation_id: conversationId,
@@ -647,6 +662,23 @@ export const executeInstance = createAsyncThunk<
 
       // Record the true submit moment — this is t=0 for all client timing.
       const submitAt = performance.now();
+
+      // TEMP DEBUG (org-id verification) — remove once org-id enforcement
+      // ships. Shows exactly what the agent / conversation path is POSTing,
+      // including whether organization_id rode along.
+      console.log(
+        `[Matrx ➜ POST] ${isContinuation ? "conversation" : "agent"}`,
+        {
+          url,
+          organization_id:
+            (routedPayload.organization_id as string | undefined) ??
+            "(none — not set)",
+          project_id: (routedPayload.project_id as string | undefined) ?? null,
+          task_id: (routedPayload.task_id as string | undefined) ?? null,
+          conversationId,
+          payload: routedPayload,
+        },
+      );
 
       // Fire the API call + drive the stream through the shared runner. All
       // routing telemetry, heartbeat/abort wiring, status transitions,

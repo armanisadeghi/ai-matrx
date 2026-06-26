@@ -5630,12 +5630,18 @@ export type Database = {
           depends_on: string[]
           description: string
           display_name: string
+          feed_config: Json
+          feed_error: string | null
+          feed_status: string | null
+          feed_type: Database["public"]["Enums"]["context_feed_type"]
           fetch_hint: Database["public"]["Enums"]["context_fetch_hint"]
           id: string
           is_active: boolean
           key: string
+          last_fed_at: string | null
           last_verified_at: string | null
           next_review_at: string | null
+          refresh_task_id: string | null
           review_interval_days: number | null
           scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
@@ -5659,12 +5665,18 @@ export type Database = {
           depends_on?: string[]
           description?: string
           display_name: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
           fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
           id?: string
           is_active?: boolean
           key: string
+          last_fed_at?: string | null
           last_verified_at?: string | null
           next_review_at?: string | null
+          refresh_task_id?: string | null
           review_interval_days?: number | null
           scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
@@ -5688,12 +5700,18 @@ export type Database = {
           depends_on?: string[]
           description?: string
           display_name?: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
           fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
           id?: string
           is_active?: boolean
           key?: string
+          last_fed_at?: string | null
           last_verified_at?: string | null
           next_review_at?: string | null
+          refresh_task_id?: string | null
           review_interval_days?: number | null
           scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
@@ -31606,6 +31624,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_container_ids: {
+        Args: { p_container_type: string; p_role_filter?: string[] }
+        Returns: string[]
+      }
       user_form_profile_append_to_array: {
         Args: { p_column: string; p_item: Json; p_user_id: string }
         Returns: Json
@@ -31686,6 +31708,7 @@ export type Database = {
         | "pink"
         | "rose"
         | "Bot"
+      context_feed_type: "manual" | "computed" | "api" | "agent" | "dataset"
       context_fetch_hint:
         | "always"
         | "on_demand"
@@ -32437,6 +32460,7 @@ export const Constants = {
         "rose",
         "Bot",
       ],
+      context_feed_type: ["manual", "computed", "api", "agent", "dataset"],
       context_fetch_hint: [
         "always",
         "on_demand",

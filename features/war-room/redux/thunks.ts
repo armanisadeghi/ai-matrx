@@ -126,7 +126,7 @@ async function hydrateThreadAssignmentsFromRpc(
 }
 
 function flavorToAnchor(
-  flavor: "thread" | "task" | "project",
+  flavor: "canvas" | "task" | "project",
   projectId?: string | null,
 ): Pick<WarRoomThreadUpdate, "anchor_type" | "anchor_id"> {
   if (flavor === "project" && projectId) {
@@ -724,6 +724,12 @@ export const createThreadTask =
           assignment: taskAssignment,
         }),
       );
+      if (thread.anchor_type === "task" && !thread.anchor_id) {
+        const updated = await service.updateThread(threadId, {
+          anchor_id: taskId,
+        });
+        dispatch(threadUpserted(updated));
+      }
       const noteIds = selectNoteIdsForThread(threadId)(getState());
       await Promise.all(
         noteIds.map((noteId) =>

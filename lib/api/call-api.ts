@@ -898,6 +898,18 @@ export function callApi<
     const headers = applyTestHeaders(auth.headers, config._testOverrides);
     maybeLogRequest(url, config.method, headers, body, config._testOverrides);
 
+    // TEMP DEBUG (org-id verification) — remove once org-id enforcement ships.
+    // Shows exactly what every callApi-routed request is sending, including
+    // whether organization_id was injected from the active context scope.
+    const _debugBody = body as Record<string, unknown> | undefined;
+    console.log(`[Matrx ➜ ${config.method}] ${config.path}`, {
+      url,
+      organization_id: _debugBody?.organization_id ?? "(none — not set)",
+      project_id: _debugBody?.project_id ?? null,
+      task_id: _debugBody?.task_id ?? null,
+      body,
+    });
+
     // Short-circuit for mock responses (testing only)
     if (config._testOverrides?.mockResponse !== undefined) {
       return { data: config._testOverrides.mockResponse };

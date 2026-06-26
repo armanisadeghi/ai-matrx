@@ -192,9 +192,15 @@ export function ThreadCanvasTab({
   async function handleCreateDoc(title: string) {
     setBusy(true);
     try {
-      const doc = await createDocument({ title: title.trim() || "Untitled" });
+      const result = await createDocument({
+        name: title.trim() || "Untitled",
+      });
+      if (!result.success) {
+        toast.error("Couldn't create the document");
+        return;
+      }
       await dispatch(
-        attachCanvasResourceToThread(threadId, "document", doc.id),
+        attachCanvasResourceToThread(threadId, "document", result.data.id),
       );
       setNewDocOpen(false);
     } catch {
@@ -408,8 +414,10 @@ function CanvasResourceRow({
   useEffect(() => {
     if (entityType !== "document") return;
     let cancelled = false;
-    void getDocument(row.entity_id).then((doc) => {
-      if (!cancelled) setDocTitle(doc?.title ?? "Document");
+    void getDocument(row.entity_id).then((res) => {
+      if (!cancelled && res.success) {
+        setDocTitle(res.data.document_name?.trim() || "Document");
+      }
     });
     return () => {
       cancelled = true;
@@ -425,7 +433,7 @@ function CanvasResourceRow({
         : entityType === "note"
           ? note?.label
           : entityType === "user_file"
-            ? fileMeta.file?.name
+            ? fileMeta.file?.meta.fileName
             : entityType === "document"
               ? docTitle
               : null) ||
@@ -465,7 +473,7 @@ function CanvasResourceRow({
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted/60 text-muted-foreground">
             {entityType === "user_file" &&
-            fileMeta.file?.mime?.startsWith("image/") ? (
+            fileMeta.file?.meta.mime?.startsWith("image/") ? (
               <InlineMediaRef ref={row.entity_id} size="sm" rounded="md" />
             ) : (
               <Icon className="size-4" />
@@ -538,10 +546,18 @@ function DocumentPickerDialog({
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
     setLoading(true);
     void listAccessibleDocuments()
-      .then(setDocs)
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (!cancelled) setDocs(res.success ? res.data : []);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   return (
@@ -558,7 +574,7 @@ function DocumentPickerDialog({
             <CommandGroup heading="Documents">
               {docs.map((d) => (
                 <CommandItem key={d.id} onSelect={() => onPick(d)}>
-                  {d.title?.trim() || "Untitled document"}
+                  {d.document_name?.trim() || "Untitled document"}
                 </CommandItem>
               ))}
             </CommandGroup>

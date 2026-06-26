@@ -37,7 +37,7 @@ import {
   setPathOverride,
   clearApiOverrides,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { ENDPOINTS, SPINE_V2_PATH_OVERRIDES } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
@@ -103,6 +103,21 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const apiVersion = useAppSelector(selectApiVersion);
   const pathOverrides = useAppSelector(selectPathOverrides);
   const globalManualOverride = pathOverrides[ENDPOINTS.ai.manual] ?? "";
+  const spineOn = Object.entries(SPINE_V2_PATH_OVERRIDES).every(
+    ([canonical, replacement]) => pathOverrides[canonical] === replacement,
+  );
+  const toggleSpine = (on: boolean) => {
+    for (const [canonical, replacement] of Object.entries(
+      SPINE_V2_PATH_OVERRIDES,
+    )) {
+      dispatch(
+        setPathOverride({
+          canonicalPath: canonical,
+          replacement: on ? replacement : "",
+        }),
+      );
+    }
+  };
   const [sysModalOpen, setSysModalOpen] = useState(false);
 
   const openMemoryInspector = () =>
@@ -319,6 +334,24 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
               <Route className="w-3 h-3" />
               API routing (test)
             </div>
+
+            {/* One-switch repoint of all three chat surfaces onto the v2
+                runtime-execution spine (chat + agents + conversations). */}
+            <SettingRow
+              id={`spine-v2-${conversationId}`}
+              label="Run on v2 spine (all chat surfaces)"
+              checked={spineOn}
+              onChange={toggleSpine}
+            />
+            <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
+              Repoints <code className="font-mono">/ai/manual</code>,{" "}
+              <code className="font-mono">/ai/agents/*</code> and{" "}
+              <code className="font-mono">/ai/conversations/*</code> to their{" "}
+              <code className="font-mono">/ai/v2/*</code> siblings app-wide.
+              Same body, same server. Persists across reloads.
+            </p>
+
+            <Separator className="!my-1.5" />
 
             {/* Per-conversation manual route override — the primary
                 "test THIS run against a different route" control. */}

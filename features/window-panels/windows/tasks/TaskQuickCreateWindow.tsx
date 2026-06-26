@@ -8,6 +8,7 @@ import type {
   TaskSourceInput,
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
 import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreatePanel";
+import { emitTaskQuickCreateSaved } from "@/features/overlays/openers/taskQuickCreateWindow";
 
 export interface TaskQuickCreateWindowProps {
   isOpen: boolean;
@@ -61,11 +62,9 @@ function TaskQuickCreateWindowInner({
     ? `${BASE_WINDOW_ID}-${instanceId}`
     : BASE_WINDOW_ID;
 
-  const handleSaved = (_taskId: string, action: PostSaveAction) => {
-    // Close on explicit nav/open actions; leave open if the user hits Done
-    // so they can glance at the confirmation before dismissing.
-    if (action !== "none") onClose();
-    else onClose();
+  const handleSaved = (taskId: string, _action: PostSaveAction) => {
+    emitTaskQuickCreateSaved(taskId);
+    onClose();
   };
 
   const title = source ? "Create task from source" : "Create task";

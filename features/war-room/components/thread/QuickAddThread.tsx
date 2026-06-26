@@ -6,39 +6,19 @@
 // One inline composer shared by every New-thread affordance in the room (the
 // Grid cell + the Stage rail), so the create flow lives in exactly one place.
 //
-// Flow (keyboard-first — focus is the whole point):
-//   idle  → click the trigger → AUTO-FOCUSED name field.
-//   name  · Enter            → Create (default): persist the thread, RESET the
-//                              field, stay open + refocused for the next add.
-//         · Shift/Cmd+Enter  → Create and Open: create, then stageTile(newId).
-//         · Tab              → reveal + focus the description textarea.
-//         · Escape           → collapse back to idle.
-//   desc  (ProTextarea, multi-line) — plain Enter inserts a newline.
-//         · Tab              → move focus to the Save button (Tab-then-Enter).
-//         · Cmd/Ctrl+Enter   → explicit Save (Create, stay).
-//   Save button · Enter/click → Create with name+description.
+// Three anchor modes (segmented picker):
+//   • canvas  — freeform resource hub (Canvas tab).
+//   • task    — anchored to an existing or newly created task (Task tab).
+//   • project — anchored to a project (Project tab).
 //
-// FLAVOR (Epic Phase 5): a thread is created as one of three flavors —
-//   • thread  (default) — the generic multi-tab tile.
-//   • task    — task-anchored (opens on the Task tab).
-//   • project — bound to an existing project (its Task tab lists the project's
-//               tasks). Choosing a project that conflicts with the room's
-//               project raises the ProjectConflictDialog (the invariant: a room
-//               and its threads never hold conflicting projects).
-//
-// "Create" stays put (ready for the next quick-add); "Create and Open" jumps
-// into the fresh thread via the room view's stageTile(). Threads = tiles, so
-// creation reuses the createTile thunk; an entered description is persisted onto
-// the tile's note by reusing addNoteToThread + the notes update API.
+// "Create" stays put for rapid adds; "Create & open" stages the new thread.
 
 import { useRef, useState } from "react";
 import {
   Plus,
   Loader2,
   ArrowRight,
-  Check,
-  CornerDownLeft,
-  SquareStack,
+  LayoutGrid,
   ListChecks,
   FolderKanban,
 } from "lucide-react";
@@ -46,6 +26,7 @@ import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addNoteToThread,
+  attachExistingTaskToThread,
   createThread,
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
@@ -53,6 +34,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
+import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
 
 /** How the collapsed trigger reads — matches the two NewThread shells. */
 export type QuickAddVariant = "card" | "rail";
@@ -60,27 +42,11 @@ export type QuickAddVariant = "card" | "rail";
 const FLAVOR_OPTIONS: {
   value: ThreadPickerOption;
   label: string;
-  icon: typeof SquareStack;
-  hint: string;
+  icon: typeof LayoutGrid;
 }[] = [
-  {
-    value: "thread",
-    label: "Canvas",
-    icon: SquareStack,
-    hint: "Freeform resource hub",
-  },
-  {
-    value: "task",
-    label: "Task",
-    icon: ListChecks,
-    hint: "Anchored to a task",
-  },
-  {
-    value: "project",
-    label: "Project",
-    icon: FolderKanban,
-    hint: "Bound to a project",
-  },
+  { value: "canvas", label: "Canvas", icon: LayoutGrid },
+  { value: "task", label: "Task", icon: ListChecks },
+  { value: "project", label: "Project", icon: FolderKanban },
 ];
 
 export function QuickAddThread({
@@ -100,17 +66,17 @@ export function QuickAddThread({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [showDescription, setShowDescription] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Flavor + project selection.
-  const [flavor, setFlavor] = useState<ThreadPickerOption>("thread");
+  const [flavor, setFlavor] = useState<ThreadPickerOption>("canvas");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
+  const [taskName, setTaskName] = useState<string | null>(null);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
-  const saveRef = useRef<HTMLButtonElement>(null);
+  const createRef = useRef<HTMLButtonElement>(null);
 
   function open() {
     setEditing(true);
@@ -120,21 +86,35 @@ export function QuickAddThread({
   function resetFields() {
     setName("");
     setDescription("");
-    setShowDescription(false);
+  }
+
+  function resetAnchors() {
+    setProjectId(null);
+    setProjectName(null);
+    setTaskId(null);
+    setTaskName(null);
   }
 
   function collapse() {
     setEditing(false);
     resetFields();
-    setFlavor("thread");
-    setProjectId(null);
-    setProjectName(null);
+    resetAnchors();
+    setFlavor("canvas");
+  }
+
+  function onFlavorChange(next: ThreadPickerOption) {
+    setFlavor(next);
+    resetAnchors();
   }
 
   async function create(mode: "stay" | "open") {
     if (busy) return;
     if (flavor === "project" && !projectId) {
       toast.error("Choose a project for this thread first");
+      return;
+    }
+    if (flavor === "task" && !taskId) {
+      toast.error("Choose a task for this thread first");
       return;
     }
     await doCreate(mode);
@@ -152,47 +132,55 @@ export function QuickAddThread({
           position: nextPosition,
           title:
             trimmedName ||
-            (flavor === "project" ? (projectName ?? undefined) : undefined),
+            (flavor === "project"
+              ? (projectName ?? undefined)
+              : flavor === "task"
+                ? (taskName ?? undefined)
+                : undefined),
           projectId: flavor === "project" ? projectId : undefined,
+          taskId: flavor === "task" ? taskId : undefined,
           anchorType:
             flavor === "project"
               ? "project"
               : flavor === "task"
                 ? "task"
                 : "canvas",
-          activeTab: flavor === "thread" ? undefined : "task",
+          activeTab: "task",
         }),
       );
       if (!thread?.id) return;
 
-      // Optional description → persist onto the tile's note (reuses the note
-      // flow: create + link + activate, then write the description as content).
-      if (trimmedDescription) {
-        const noteId = await dispatch(addNoteToThread(thread.id, sessionId));
-        if (noteId) {
-          await updateNote(noteId, { content: trimmedDescription }).catch(
-            () => {},
-          );
-        }
+      if (flavor === "task" && taskId) {
+        await dispatch(attachExistingTaskToThread(thread.id, taskId));
       }
 
-      if (mode === "open") {
-        onOpen?.(thread.id);
-        collapse();
-      } else {
-        // Stay put: clear the name/description but keep the flavor + project
-        // selection sticky for rapid same-type adds; re-arm the name field.
-        resetFields();
-        requestAnimationFrame(() => nameRef.current?.focus());
-      }
+      await finishCreate(mode, thread.id, trimmedDescription);
     } finally {
       setBusy(false);
     }
   }
 
-  function revealDescription() {
-    setShowDescription(true);
-    requestAnimationFrame(() => descRef.current?.focus());
+  async function finishCreate(
+    mode: "stay" | "open",
+    threadId: string,
+    trimmedDescription: string,
+  ) {
+    if (trimmedDescription) {
+      const noteId = await dispatch(addNoteToThread(threadId, sessionId));
+      if (noteId) {
+        await updateNote(noteId, { content: trimmedDescription }).catch(
+          () => {},
+        );
+      }
+    }
+
+    if (mode === "open") {
+      onOpen?.(threadId);
+      collapse();
+    } else {
+      resetFields();
+      requestAnimationFrame(() => nameRef.current?.focus());
+    }
   }
 
   function onNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -203,7 +191,7 @@ export function QuickAddThread({
     }
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      revealDescription();
+      descRef.current?.focus();
       return;
     }
     if (e.key === "Escape") {
@@ -215,7 +203,7 @@ export function QuickAddThread({
   function onDescKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      saveRef.current?.focus();
+      createRef.current?.focus();
       return;
     }
     if (e.key === "Escape") {
@@ -223,6 +211,13 @@ export function QuickAddThread({
       collapse();
     }
   }
+
+  const namePlaceholder =
+    flavor === "project"
+      ? "Name (optional — defaults to project)…"
+      : flavor === "task"
+        ? "Name (optional — defaults to task)…"
+        : "Name this thread…";
 
   // ── Collapsed trigger ──────────────────────────────────────────────
   if (!editing) {
@@ -273,8 +268,6 @@ export function QuickAddThread({
         variant === "card" && "h-full min-h-0 justify-center",
       )}
     >
-      {/* Flavor selector — segmented, compact. Default 'thread' preserves the
-          fast path (Enter creates a thread). */}
       <div
         role="group"
         aria-label="Thread type"
@@ -287,10 +280,9 @@ export function QuickAddThread({
             <button
               key={opt.value}
               type="button"
-              onClick={() => setFlavor(opt.value)}
+              onClick={() => onFlavorChange(opt.value)}
               disabled={busy}
               aria-pressed={active}
-              title={opt.hint}
               className={cn(
                 "inline-flex flex-1 items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -306,35 +298,32 @@ export function QuickAddThread({
         })}
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="grid place-items-center size-5 shrink-0 text-primary">
-          {busy ? (
-            <Loader2 className="size-3 animate-spin" />
-          ) : (
-            <Plus className="size-3.5" />
-          )}
-        </span>
-        <input
-          ref={nameRef}
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={onNameKeyDown}
-          disabled={busy}
-          placeholder={
-            flavor === "project"
-              ? "Name (optional — defaults to project)…"
-              : "Name this thread…"
-          }
-          aria-label="New thread name"
-          className={cn(
-            "min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground/70",
-            "focus-visible:outline-none disabled:opacity-60",
-          )}
-        />
-      </div>
+      <input
+        ref={nameRef}
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={onNameKeyDown}
+        disabled={busy}
+        placeholder={namePlaceholder}
+        aria-label="New thread name"
+        className={cn(
+          "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium text-foreground placeholder:text-muted-foreground/70",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60",
+        )}
+        style={{ fontSize: "16px" }}
+      />
 
-      {/* Project picker — only for the project flavor. Flat across orgs. */}
+      {flavor === "task" ? (
+        <WarRoomTaskPicker
+          value={taskId}
+          onSelect={(id, title) => {
+            setTaskId(id);
+            setTaskName(title);
+          }}
+        />
+      ) : null}
+
       {flavor === "project" ? (
         <WarRoomProjectPicker
           value={projectId}
@@ -345,81 +334,69 @@ export function QuickAddThread({
         />
       ) : null}
 
-      {showDescription ? (
-        <ProTextarea
-          ref={descRef}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={onDescKeyDown}
-          onSubmit={() => void create("stay")}
-          submitOnCmdEnter
-          showCopyButton={false}
+      <ProTextarea
+        ref={descRef}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        onKeyDown={onDescKeyDown}
+        onSubmit={() => void create("stay")}
+        submitOnCmdEnter
+        showCopyButton={false}
+        disabled={busy}
+        autoGrow
+        minHeight={64}
+        maxHeight={160}
+        placeholder="Description"
+        aria-label="New thread description"
+        wrapperClassName="w-full"
+        className="text-sm"
+      />
+
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={collapse}
           disabled={busy}
-          autoGrow
-          minHeight={64}
-          maxHeight={160}
-          placeholder="Add a description (optional)"
-          aria-label="New thread description"
-          wrapperClassName="w-full"
-          className="text-sm"
-        />
-      ) : null}
-
-      {/* Action row — Create is the default (Enter); Create and Open secondary. */}
-      <div className="flex items-center justify-between gap-2">
-        {showDescription ? (
-          <span className="hidden items-center gap-1 text-[11px] text-muted-foreground @xs:flex">
-            <CornerDownLeft className="size-3" />
-            Tab to Save
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={revealDescription}
-            disabled={busy}
-            className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
-          >
-            + Description
-          </button>
-        )}
-
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => void create("open")}
-            disabled={busy}
-            title="Create and open this thread on the Stage"
-            className={cn(
-              "inline-flex items-center gap-1 rounded-lg border border-border bg-transparent px-2 py-1 text-[12px] font-medium text-muted-foreground transition-all",
-              "hover:border-primary/40 hover:text-foreground",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              "disabled:opacity-60 disabled:pointer-events-none",
-            )}
-          >
-            <ArrowRight className="size-3.5" />
-            Create &amp; open
-          </button>
-          <button
-            ref={saveRef}
-            type="button"
-            onClick={() => void create("stay")}
-            disabled={busy}
-            title="Create (Enter) — stay here for the next thread"
-            className={cn(
-              "inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[12px] font-semibold text-primary-foreground transition-all",
-              "hover:bg-primary/90",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card",
-              "disabled:opacity-60 disabled:pointer-events-none",
-            )}
-          >
-            {busy ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Check className="size-3.5" />
-            )}
-            Create
-          </button>
-        </div>
+          className={cn(
+            "inline-flex items-center rounded-lg border border-border bg-transparent px-2.5 py-1 text-[12px] font-medium text-muted-foreground transition-all",
+            "hover:border-border hover:text-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            "disabled:opacity-60 disabled:pointer-events-none",
+          )}
+        >
+          Cancel
+        </button>
+        <button
+          ref={createRef}
+          type="button"
+          onClick={() => void create("stay")}
+          disabled={busy}
+          title="Create — stay here for the next thread"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[12px] font-semibold text-primary-foreground transition-all",
+            "hover:bg-primary/90",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card",
+            "disabled:opacity-60 disabled:pointer-events-none",
+          )}
+        >
+          {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          Create
+        </button>
+        <button
+          type="button"
+          onClick={() => void create("open")}
+          disabled={busy}
+          title="Create and open this thread on the Stage"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-lg border border-border bg-transparent px-2 py-1 text-[12px] font-medium text-muted-foreground transition-all",
+            "hover:border-primary/40 hover:text-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            "disabled:opacity-60 disabled:pointer-events-none",
+          )}
+        >
+          <ArrowRight className="size-3.5" />
+          Create &amp; open
+        </button>
       </div>
     </div>
   );
