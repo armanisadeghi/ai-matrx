@@ -19,6 +19,7 @@ import {
   Lock,
   Mic,
   AudioLines,
+  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -43,6 +44,7 @@ export const MENU_ICON_REGISTRY = {
   Lock,
   Mic,
   AudioLines,
+  Building2,
 } as const;
 
 export type MenuIconKey = keyof typeof MENU_ICON_REGISTRY;

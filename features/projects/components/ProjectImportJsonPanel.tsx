@@ -5,26 +5,21 @@
  *
  * The chrome-less "paste a project JSON and create the whole tree" experience —
  * the third entry method alongside Manual and Use AI. The user pastes the same
- * payload the agent backend emits, hits **Validate** to see a structured report
- * (errors / warnings / a name + task/subtask rollup), then **Create** to write
- * the project + tasks + subtasks in one transaction via the
- * `create_project_from_json` RPC.
+ * payload the agent backend emits, gets live JSON + contract validation via
+ * `ProJsonTextarea`, then **Create** to write the project + tasks + subtasks in
+ * one transaction via the `create_project_from_json` RPC.
  *
  * Wrapped by `ProjectCreatePanel`; never forked per surface.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileCheck2,
-  Info,
-  Loader2,
-  Upload,
-} from "lucide-react";
+import { CheckCircle2, FileCheck2, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ProJsonTextarea,
+  type ProJsonValidationState,
+} from "@/components/official/ProJsonTextarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
@@ -37,6 +32,11 @@ import {
   validateProjectJson,
   type ProjectJsonValidation,
 } from "../importJson";
+import {
+  PROJECT_JSON_ALLOWED_TOP_LEVEL_KEYS,
+  projectJsonSchema,
+  projectJsonValidators,
+} from "../projectJsonProJson";
 import { OrgSelector, type OrgContext } from "./ProjectFormCore";
 
 const PLACEHOLDER = `{
@@ -78,9 +78,8 @@ export function ProjectImportJsonPanel({
   const { orgs, isLoading: orgsLoading } = useNavTree();
 
   const [raw, setRaw] = useState("");
-  const [validation, setValidation] = useState<ProjectJsonValidation | null>(
-    null,
-  );
+  const [jsonValidation, setJsonValidation] =
+    useState<ProJsonValidationState | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const resolveInitialOrg = (): OrgContext => {
@@ -108,19 +107,23 @@ export function ProjectImportJsonPanel({
       });
   }, [orgs, initialOrgId]);
 
-  // Re-validating on every keystroke is cheap (pure, local) but noisy; only
-  // surface the report once the user has asked for it, then keep it live.
-  const [hasValidated, setHasValidated] = useState(false);
-  const liveValidation = useMemo(
-    () => (hasValidated ? validateProjectJson(raw) : null),
-    [raw, hasValidated],
+  const projectValidation = useMemo(
+    () => (raw.trim() ? validateProjectJson(raw) : null),
+    [raw],
   );
-  const effective = liveValidation ?? validation;
+
+  const canCreate =
+    !!projectValidation?.valid &&
+    !!jsonValidation?.isValid &&
+    !jsonValidation.isEmpty &&
+    !isCreating;
 
   const handleValidate = () => {
     const result = validateProjectJson(raw);
-    setValidation(result);
-    setHasValidated(true);
+    if (!raw.trim()) {
+      toast.error("Paste project JSON first.");
+      return;
+    }
     if (result.valid) {
       toast.success("Valid project JSON", {
         description: `${result.summary?.taskCount ?? 0} task(s), ${result.summary?.subtaskCount ?? 0} subtask(s) ready.`,
@@ -131,9 +134,7 @@ export function ProjectImportJsonPanel({
   };
 
   const handleCreate = async () => {
-    const result = effective ?? validateProjectJson(raw);
-    setValidation(result);
-    setHasValidated(true);
+    const result = projectValidation ?? validateProjectJson(raw);
     if (!result.valid || !result.payload) {
       toast.error("Fix the validation errors before creating.");
       return;
@@ -171,36 +172,45 @@ export function ProjectImportJsonPanel({
     }
   };
 
-  const canCreate = !!effective?.valid && !isCreating;
-
-  const getJsonApplicationScope = useCallback((): ApplicationScope => {
-    const context = {
-      surface: "project-create",
-      mode: "paste-json",
-      selected_organization_id: selectedOrg?.id,
-      selected_organization_name: selectedOrg?.name || undefined,
-      selected_organization_slug: selectedOrg?.slug || undefined,
-      org_locked: orgLocked,
-      json_is_valid: effective?.valid,
-      json_errors: effective?.errors ?? [],
-      json_warnings: effective?.warnings ?? [],
-      json_task_count: effective?.summary?.taskCount,
-      json_subtask_count: effective?.summary?.subtaskCount,
-    };
-    const scope = createProjectsScope({
-      context,
-      active_project_name: effective?.summary?.name || undefined,
-      active_project_description: effective?.payload?.description || undefined,
-      active_organization_id: selectedOrg?.id,
-      active_organization_name: selectedOrg?.name || undefined,
-    });
-    scope.content = raw;
-    return scope;
-  }, [effective, orgLocked, raw, selectedOrg]);
+  const getJsonApplicationScope = useCallback(
+    (state: ProJsonValidationState): ApplicationScope => {
+      const contract = validateProjectJson(state.text);
+      const context = {
+        surface: "project-create",
+        mode: "paste-json",
+        selected_organization_id: selectedOrg?.id,
+        selected_organization_name: selectedOrg?.name || undefined,
+        selected_organization_slug: selectedOrg?.slug || undefined,
+        org_locked: orgLocked,
+        json_is_valid: state.isValid && contract.valid,
+        json_errors: state.errors,
+        json_warnings: state.warnings,
+        json_issues: state.issues,
+        json_task_count: contract.summary?.taskCount,
+        json_subtask_count: contract.summary?.subtaskCount,
+        project_contract_valid: contract.valid,
+        project_contract_errors: contract.errors,
+        project_contract_warnings: contract.warnings,
+      };
+      const scope = createProjectsScope({
+        context,
+        active_project_name: contract.summary?.name || undefined,
+        active_project_description: contract.payload?.description || undefined,
+        active_organization_id: selectedOrg?.id,
+        active_organization_name: selectedOrg?.name || undefined,
+      });
+      scope.content = state.text;
+      scope.json_text = state.text;
+      scope.json_valid = state.isValid && contract.valid;
+      scope.json_parsed = state.isJson ? state.parsed : null;
+      return scope;
+    },
+    [orgLocked, selectedOrg],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         {/* Owner */}
         <div className="space-y-2">
           <Label>Owner</Label>
@@ -214,75 +224,72 @@ export function ProjectImportJsonPanel({
           />
         </div>
 
-        {/* JSON input */}
+        {/* JSON input — ProJsonTextarea: schema, live validation, format, agents */}
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="project-json">Project JSON</Label>
             <span className="text-xs text-muted-foreground">
-              Paste the agent payload
+              Live validation · Format · Agent actions
             </span>
           </div>
-          <ProTextarea
+          <ProJsonTextarea
             id="project-json"
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             placeholder={PLACEHOLDER}
-            spellCheck={false}
             disabled={isCreating}
-            className={cn(
-              "h-full min-h-[260px] flex-1 resize-none font-mono text-xs",
-              isMobile && "text-base",
-            )}
+            schema={projectJsonSchema}
+            rootType="object"
+            allowedTopLevelKeys={PROJECT_JSON_ALLOWED_TOP_LEVEL_KEYS}
+            validators={projectJsonValidators}
+            onValidationChange={setJsonValidation}
+            showValidationPanel
+            showFormatButton
+            autoGrow
+            minHeight={260}
+            maxHeight={isMobile ? 320 : 420}
+            className={cn(isMobile && "text-base")}
             wrapperClassName="flex min-h-0 flex-1"
             surfaceName="matrx-user/projects"
             getApplicationScope={getJsonApplicationScope}
           />
-        </div>
 
-        {/* Validation report */}
-        {effective && (
-          <div className="max-h-36 shrink-0 space-y-2 overflow-y-auto">
-            {effective.valid && effective.summary && (
-              <div className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-xs">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
-                <div className="text-foreground">
-                  <span className="font-medium">{effective.summary.name}</span>
-                  {" — "}
-                  {effective.summary.taskCount} task(s),{" "}
-                  {effective.summary.subtaskCount} subtask(s)
-                </div>
-              </div>
-            )}
-
-            {effective.errors.length > 0 && (
-              <ul className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
-                {effective.errors.map((err, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-2 text-xs text-destructive"
-                  >
-                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span>{err}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {effective.warnings.length > 0 && (
-              <ul className="space-y-1 rounded-md border border-border bg-muted px-3 py-2">
-                {effective.warnings.map((warn, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-2 text-xs text-muted-foreground"
-                  >
-                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span>{warn}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              <span className="font-semibold text-foreground">Parsed:</span>{" "}
+              {jsonValidation?.isJson ? "yes" : "no"}
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              <span className="font-semibold text-foreground">
+                JSON errors:
+              </span>{" "}
+              {jsonValidation?.errors.length ?? 0}
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              <span className="font-semibold text-foreground">Warnings:</span>{" "}
+              {jsonValidation?.warnings.length ?? 0}
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              <span className="font-semibold text-foreground">Contract:</span>{" "}
+              {projectValidation?.valid ? "ready" : "pending"}
+            </div>
           </div>
-        )}
+
+          {projectValidation?.valid && projectValidation.summary && (
+            <div className="flex items-start gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-xs">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
+              <div className="text-foreground">
+                <span className="font-medium">
+                  {projectValidation.summary.name}
+                </span>
+                {" — "}
+                {projectValidation.summary.taskCount} task(s),{" "}
+                {projectValidation.summary.subtaskCount} subtask(s) ready to
+                import
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Actions */}

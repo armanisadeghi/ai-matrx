@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { invalidateAgentCache } from "@/features/agents/redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { useOpenAgentSettingsWindow } from "@/features/overlays/openers/agentSettingsWindow";
 import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
@@ -41,6 +42,7 @@ import {
   Upload,
   ExternalLink,
   FileChartColumn,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
@@ -95,6 +97,7 @@ const THIS_AGENT_ITEMS: MenuItem[] = [
   { label: "Matrx Agent Optimizer", icon: Atom },
   { label: "Find Usages", icon: Search },
   { label: "Drift Report", icon: FileChartColumn },
+  { label: "Refresh Server Cache", icon: RotateCcw },
 ];
 
 // Actions that produce something new from this agent
@@ -209,6 +212,7 @@ export function AgentOptionsMenu({
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [isRefreshingCache, setIsRefreshingCache] = useState(false);
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const openSettings = useOpenAgentSettingsWindow();
@@ -322,6 +326,26 @@ export function AgentOptionsMenu({
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const adminItems = isSuperAdmin ? ADMIN_ITEMS : [];
 
+  const runRefreshServerCache = useCallback(async () => {
+    setIsRefreshingCache(true);
+    try {
+      const result = await dispatch(invalidateAgentCache({ agentId })).unwrap();
+      if (result.cleared) {
+        toast.success(
+          "Server cache cleared. The next run will load the latest agent definition.",
+        );
+      } else {
+        toast.error("Server did not confirm cache clearance.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to refresh server cache.",
+      );
+    } finally {
+      setIsRefreshingCache(false);
+    }
+  }, [agentId, dispatch]);
+
   const handleDesktopItemClick = async (label: string) => {
     console.log("[AGENT OPTIONS MENU] Clicked item:", label);
     if (label === "Edit Agent Info") {
@@ -410,6 +434,9 @@ export function AgentOptionsMenu({
       // delegate to the shared `runDuplicate` orchestrator.
       setOpen(false);
       void runDuplicate();
+    } else if (label === "Refresh Server Cache") {
+      setOpen(false);
+      void runRefreshServerCache();
     } else if (label === "Convert to Template") {
       console.log(
         "[AGENT OPTIONS MENU] Converting to template, Agent ID:",
@@ -488,6 +515,8 @@ export function AgentOptionsMenu({
               agentId={agentId}
               basePath={basePath}
               onTriggerDuplicate={runDuplicate}
+              onTriggerRefreshCache={runRefreshServerCache}
+              isRefreshingCache={isRefreshingCache}
             />
           </DrawerContent>
         </Drawer>
@@ -532,11 +561,16 @@ export function AgentOptionsMenu({
             return (
               <DropdownMenuItem
                 key={label}
+                disabled={label === "Refresh Server Cache" && isRefreshingCache}
                 onClick={() => handleDesktopItemClick(label)}
                 className={cn(soon && "text-muted-foreground")}
               >
                 <Icon className="w-4 h-4 mr-2 text-muted-foreground" />
-                <span className="flex-1">{label}</span>
+                <span className="flex-1">
+                  {label === "Refresh Server Cache" && isRefreshingCache
+                    ? "Refreshing..."
+                    : label}
+                </span>
                 {soon && <SoonBadge />}
               </DropdownMenuItem>
             );
@@ -659,6 +693,8 @@ function MobileMenuContent({
   agentId,
   basePath,
   onTriggerDuplicate,
+  onTriggerRefreshCache,
+  isRefreshingCache,
 }: {
   onClose: () => void;
   agentId: string;
@@ -667,6 +703,8 @@ function MobileMenuContent({
    *  immediately after invoking this; the parent's outcome dialog takes
    *  over from there. */
   onTriggerDuplicate: () => Promise<void>;
+  onTriggerRefreshCache: () => Promise<void>;
+  isRefreshingCache: boolean;
 }) {
   const [variationsOpen, setVariationsOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -751,6 +789,9 @@ function MobileMenuContent({
       // `onTriggerDuplicate` owns the dispatch + dialog lifecycle.
       onClose();
       void onTriggerDuplicate();
+    } else if (label === "Refresh Server Cache") {
+      onClose();
+      void onTriggerRefreshCache();
     } else if (label === "Convert to Template") {
       setIsBusy(true);
       try {
@@ -800,13 +841,18 @@ function MobileMenuContent({
             <button
               key={label}
               onClick={() => handleItem(label)}
+              disabled={label === "Refresh Server Cache" && isRefreshingCache}
               className={cn(
                 "flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-muted/50 active:bg-muted/70 transition-colors",
                 soon ? "text-muted-foreground" : "text-foreground",
               )}
             >
               <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="flex-1 text-left">{label}</span>
+              <span className="flex-1 text-left">
+                {label === "Refresh Server Cache" && isRefreshingCache
+                  ? "Refreshing..."
+                  : label}
+              </span>
               {soon && <SoonBadge />}
             </button>
           );

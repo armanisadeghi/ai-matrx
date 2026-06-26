@@ -7,6 +7,7 @@ import { MessagesMenuItem } from "./MessagesMenuItem";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
 import { SignOutMenuItem } from "./SignOutMenuItem";
 import { UserProfileHeader } from "./UserProfileHeader";
+import UserMenuOrgSection from "./UserMenuOrgSection";
 import { MenuGroup } from "./MenuGroup";
 import {
   QUICK_ACCESS_ITEMS,
@@ -33,6 +34,10 @@ export default function UserMenuPanel({ userData }: UserMenuPanelProps) {
   return (
     <div className={USER_MENU_PANEL_CLASS}>
       <UserProfileHeader userData={userData} />
+
+      {divider}
+
+      <UserMenuOrgSection />
 
       {divider}
 

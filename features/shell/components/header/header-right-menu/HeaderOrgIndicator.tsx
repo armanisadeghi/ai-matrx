@@ -1,12 +1,13 @@
 "use client";
 
-// HeaderOrgIndicator — the active-organization control next to the user
-// avatar. Part of the org-enforcement rollout: it makes the current org
-// always visible and one click to switch.
+// HeaderOrgIndicator — the soft-enforcement NUDGE only. It renders in the
+// header ONLY when no org is explicitly selected (a red "Select organization"
+// pill + switcher). Once an org is chosen it disappears entirely — most UIs
+// have no room for a persistent org chip; the selected org is shown/switched
+// inside the user-menu dropdown instead (UserMenuOrgSection).
 //
-// Soft enforcement: when no org is EXPLICITLY selected the control turns red
-// to nudge the user to pick one (the personal org still rides along on API
-// calls via selectEffectiveOrganizationId — see activeOrgBootstrap).
+// The personal org still rides along on API calls while none is chosen, via
+// selectEffectiveOrganizationId — see activeOrgBootstrap.
 
 import { useState } from "react";
 import { Building2, Check } from "lucide-react";
@@ -18,7 +19,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
-  selectOrganizationName,
   selectHasExplicitOrganization,
 } from "@/lib/redux/slices/appContextSlice";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
@@ -29,7 +29,6 @@ export default function HeaderOrgIndicator() {
   const [open, setOpen] = useState(false);
 
   const activeOrgId = useAppSelector(selectOrganizationId);
-  const activeOrgName = useAppSelector(selectOrganizationName);
   const hasExplicit = useAppSelector(selectHasExplicitOrganization);
   const { organizations, loading } = useUserOrganizations();
 
@@ -38,34 +37,21 @@ export default function HeaderOrgIndicator() {
     setOpen(false);
   };
 
+  // Once an org is selected, the header chip is gone — the org lives in the
+  // user-menu dropdown. We only render the red nudge while none is chosen.
+  if (hasExplicit) return null;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={
-            hasExplicit
-              ? `Organization: ${activeOrgName}`
-              : "No organization selected — choose one"
-          }
-          title={
-            hasExplicit
-              ? (activeOrgName ?? "Organization")
-              : "No organization selected"
-          }
-          className={[
-            "flex max-w-[180px] items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-            hasExplicit
-              ? "border-border bg-card text-foreground hover:bg-accent"
-              : "border-red-500 text-red-600 dark:text-red-400 hover:bg-red-500/10",
-          ].join(" ")}
+          aria-label="No organization selected — choose one"
+          title="No organization selected"
+          className="flex max-w-[180px] items-center gap-1.5 rounded-full border border-red-500 px-2.5 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/10 dark:text-red-400"
         >
           <Building2 size={14} strokeWidth={1.75} className="shrink-0" />
-          <span className="truncate">
-            {hasExplicit
-              ? (activeOrgName ?? "Organization")
-              : "Select organization"}
-          </span>
+          <span className="truncate">Select organization</span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-1" align="end" sideOffset={8}>

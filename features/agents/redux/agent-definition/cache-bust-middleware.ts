@@ -34,11 +34,10 @@
  */
 
 import type { Middleware } from "@reduxjs/toolkit";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import {
-  selectAccessToken,
-  selectFingerprintId,
-} from "@/lib/redux/slices/userSlice";
+  postInvalidateAgentCache,
+  resolveAgentCacheBustBackend,
+} from "./agent-cache-bust-request";
 
 // ---------------------------------------------------------------------------
 // Action matching
@@ -93,27 +92,16 @@ async function bustAgentCache(
   agentId: string,
   headers: Record<string, string>,
 ): Promise<void> {
-  // Matches the OpenAPI route `invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post`.
-  // `is_version` query param is omitted — Builder saves always mutate the
-  // live `agx_agent` row, never a version snapshot (the default is false).
-  const url = `${baseUrl}/ai/agents/${encodeURIComponent(agentId)}/invalidate-cache`;
-
+  // `is_version` is omitted — Builder saves always mutate the live
+  // `agx_agent` row, never a version snapshot (the default is false).
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
+    await postInvalidateAgentCache(baseUrl, agentId, headers, {
       keepalive: true,
     });
-    if (!response.ok && process.env.NODE_ENV !== "production") {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[agent cache-bust] ${agentId} → ${response.status} ${response.statusText}`,
-      );
-    }
   } catch (err) {
     if (process.env.NODE_ENV !== "production") {
       // eslint-disable-next-line no-console
-      console.warn(`[agent cache-bust] ${agentId} → network error`, err);
+      console.warn(`[agent cache-bust] ${agentId} →`, err);
     }
   }
 }
@@ -147,51 +135,35 @@ export const agentCacheBustMiddleware: Middleware =
 
       // Resolve URL + auth at fire-time so server toggles / token refresh
       // take effect immediately.
-      const state = storeApi.getState();
-      const baseUrl = selectResolvedBaseUrl(state);
-      if (!baseUrl) return;
-
-      const trimmedBase = baseUrl.endsWith("/")
-        ? baseUrl.slice(0, -1)
-        : baseUrl;
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      const accessToken = selectAccessToken(state);
-      const fingerprintId = selectFingerprintId(state);
-      if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
-      } else if (fingerprintId) {
-        headers["X-Fingerprint-ID"] = fingerprintId;
-      }
+      const backend = resolveAgentCacheBustBackend(storeApi.getState());
+      if (!backend) return;
 
       inFlight.add(agentId);
-      void bustAgentCache(trimmedBase, agentId, headers).finally(() => {
-        inFlight.delete(agentId);
-        if (pendingAfterFlight.delete(agentId)) {
-          // A trigger arrived while we were in-flight — fire one more pass.
-          // Re-enter the debounce path so any further triggers still coalesce.
-          const followup = setTimeout(() => {
-            debounceTimers.delete(agentId);
-            const s = storeApi.getState();
-            const b = selectResolvedBaseUrl(s);
-            if (!b) return;
-            const tb = b.endsWith("/") ? b.slice(0, -1) : b;
-            const h: Record<string, string> = {
-              "Content-Type": "application/json",
-            };
-            const t = selectAccessToken(s);
-            const f = selectFingerprintId(s);
-            if (t) h["Authorization"] = `Bearer ${t}`;
-            else if (f) h["X-Fingerprint-ID"] = f;
-            inFlight.add(agentId);
-            void bustAgentCache(tb, agentId, h).finally(() => {
-              inFlight.delete(agentId);
-            });
-          }, DEBOUNCE_MS);
-          debounceTimers.set(agentId, followup);
-        }
-      });
+      void bustAgentCache(backend.baseUrl, agentId, backend.headers).finally(
+        () => {
+          inFlight.delete(agentId);
+          if (pendingAfterFlight.delete(agentId)) {
+            // A trigger arrived while we were in-flight — fire one more pass.
+            // Re-enter the debounce path so any further triggers still coalesce.
+            const followup = setTimeout(() => {
+              debounceTimers.delete(agentId);
+              const followupBackend = resolveAgentCacheBustBackend(
+                storeApi.getState(),
+              );
+              if (!followupBackend) return;
+              inFlight.add(agentId);
+              void bustAgentCache(
+                followupBackend.baseUrl,
+                agentId,
+                followupBackend.headers,
+              ).finally(() => {
+                inFlight.delete(agentId);
+              });
+            }, DEBOUNCE_MS);
+            debounceTimers.set(agentId, followup);
+          }
+        },
+      );
     }, DEBOUNCE_MS);
 
     debounceTimers.set(agentId, timer);
