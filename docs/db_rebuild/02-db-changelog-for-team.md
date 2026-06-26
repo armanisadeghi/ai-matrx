@@ -5,6 +5,16 @@ All changes are live, applied via migrations, PITR-backed. Service role bypasses
 
 ---
 
+## 0. RLS is now generated — `iam.apply_rls` v2 (2026-06-26)
+
+There is now **one canonical RLS generator** — `iam.apply_rls(schema, table, token, variant)` — and one resolver, `iam.has_access`. **Stop hand-writing table policies.** To govern a table: `SELECT iam.apply_rls(...)` (it drops all existing policies and recreates the canonical set). Full mechanism + policy SQL: [`db-canonical-rls.md`](./db-canonical-rls.md); per-table sweep: [`db-canonical-rls-sweep-todo.md`](./db-canonical-rls-sweep-todo.md).
+
+**Bug it fixed:** any policy of the form `iam.has_access(token, id, 'viewer')` as the *only* SELECT branch broke `INSERT … RETURNING` (i.e. supabase-js `.insert().select()`) with `42501` — the resolver re-reads the row by id and can't see the in-flight row. v2 leads with `created_by = (select auth.uid())` (read off the NEW row) so owner creates pass. **Applied to `wr_sessions` + `wr_threads`** (War Room create was failing). If you hand-wrote `has_access`-only policies on any table, regenerate it via `apply_rls`.
+
+**Action:** if you're about to write a `CREATE POLICY`, don't — call `iam.apply_rls` instead.
+
+---
+
 ## 1. Access resolver: org-admin oversight (cross-cutting)
 `iam.has_access(type, id, level)` now grants **org owners/admins read-only (`viewer`) access to any row in their org, regardless of visibility**.
 - Owners → unchanged (full access to their own rows).

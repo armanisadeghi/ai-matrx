@@ -1,6 +1,8 @@
 # Canonical Access Model — The Rulebook (agents must not diverge)
 
 > Access is **generated from two registries**, never hand-written per table. If you find yourself writing a one-off exception for a specific table, you are doing it wrong — change the registry instead.
+>
+> **This doc = what access *means*. For how it's *enforced* on every table (the `iam.apply_rls` generator, the exact policy SQL, the onboarding procedure), see [`db-canonical-rls.md`](./db-canonical-rls.md).**
 
 ## 0. Canonical truth (no exceptions)
 These tables are the ONLY source of truth; no feature may keep its own:
@@ -62,9 +64,9 @@ A single SECURITY DEFINER function that implements §4 by reading the registries
 - **Org is the universal root** — resolved by `has_org_access(org_id)` on every row; the `project→organization` edge is documentation, not an extra generated hop.
 - **Denormalized `conversation_id`** on tool_call/artifact lets composition defer in one hop; the logical parent is still the message.
 
-## 9. Next build (real updates, after this registry foundation)
-1. Add `visibility platform.visibility` column to every governed entity table (base retrofit); default it from `entity_types.default_visibility` via trigger at insert.
-2. Build `iam.has_access` (§6) + the containment helpers.
-3. `apply_rls` v2 — generate policies from the registries (§5); re-apply per table.
-4. Python access module — thin wrapper calling `iam.has_access`; no reimplemented logic.
-5. Drift cron (weekly) — assert each table's live policy matches its declared `default_visibility`/relationships; flag divergence.
+## 9. Build status
+1. ✅ `visibility` column + insert-default on governed tables (base retrofit, ongoing per table).
+2. ✅ `iam.has_access` (§6) + containment/org helpers live.
+3. ✅ **`iam.apply_rls` v2 — BUILT** (2026-06-26). The single generator; emits owner-short-circuit + `has_access`-delegating policies from the registries. See [`db-canonical-rls.md`](./db-canonical-rls.md). Per-table re-apply tracked in [`db-canonical-rls-sweep-todo.md`](./db-canonical-rls-sweep-todo.md).
+4. ⏳ Python access module — thin wrapper calling `iam.has_access`; no reimplemented logic.
+5. ⏳ Drift cron (weekly) — assert each table's live policy matches `iam.apply_rls`'s output; flag divergence.

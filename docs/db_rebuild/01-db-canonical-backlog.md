@@ -7,6 +7,8 @@
 **Explicitly OUT of scope (per Arman — dying/overhaul, do not touch):**
 `ai_runs` (going away soon), `ai_model`, `ai_provider`, `ai_model_endpoint`, `ai_endpoint`, `ai_model_pricing` (pricing/catalog overhaul incoming).
 
+> **RLS is now generated, not hand-written.** One generator (`iam.apply_rls` v2) + one resolver (`iam.has_access`) — see [`db-canonical-rls.md`](./db-canonical-rls.md). The per-table re-apply sweep (and the "RLS cosmetic" rescope below — v2 emits `TO authenticated` + `(select auth.uid())` automatically) is tracked in [`db-canonical-rls-sweep-todo.md`](./db-canonical-rls-sweep-todo.md). Do not author table policies by hand.
+
 ---
 
 ## P0 — Active targets
