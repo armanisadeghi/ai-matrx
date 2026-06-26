@@ -1,6 +1,6 @@
-# Render Blocks — Master Handover (SVG · Charts · Slide Decks · Forms)
+# Render Blocks — Master Handover (SVG · Charts · Slide Decks · Forms · Map · Stats · Diff)
 
-**Date:** 2026-06-25 · **Author:** Claude (Opus 4.8) · **Status:** All four verticals **shipped, live-verified, committed** to `main`. DB packs applied + verified. This doc exists so nothing is lost if context is wiped — read it before continuing render-block work.
+**Date:** 2026-06-25 · **Author:** Claude (Opus 4.8) · **Status:** Seven verticals **shipped + committed** to `main`. DB packs applied + verified. This doc exists so nothing is lost if context is wiped — read it before continuing render-block work.
 
 > Companion doc: `docs/handoffs/MERMAID_RENDER_BLOCK_HANDOFF.md` (mermaid was the first render block + the paving for the skill/pack pattern). This doc covers everything built **after** that: the SVG, Chart, enhanced Slide-Deck (+ presets + Unsplash), and Forms verticals — plus the unified-artifact architecture they now ride on.
 
@@ -16,8 +16,13 @@ Four new/upgraded render blocks, each shipped as a **full pack** (render block +
 | **Charts** | ` ```chart ` fence (JSON spec) | `ChartArtifact → ChartBlock` (recharts via `next/dynamic ssr:false`) | `data-charts` / "Chart Builder (sample)" | ✅ yes (registry) |
 | **Slide decks** | `{presentation:{slides,theme}}` JSON | `PresentationArtifact → Slideshow → SlideView` | `slide-decks` / "Deck Builder (sample)" | ✅ yes |
 | **Forms** | `<questionnaire>` tag (section markdown) | `QuestionnaireArtifact → QuestionnaireRenderer` | `interactive-forms` / "Form Builder (sample)" | ✅ yes (generic persistence) |
+| **Map** | ` ```map ` fence (JSON `{markers,center?,zoom?}`) | `MapArtifact → MapBlock → MapCanvas` (leaflet via `next/dynamic ssr:false`, OSM tiles, no key) | `interactive-maps` / "Map Maker (sample)" | ✅ yes (registry) |
+| **Stats** | ` ```stats ` fence (JSON `{stats:[{label,value,change?,trend?}]}`) | `StatsArtifact → StatsBlock` (light, no lib) | `stat-cards` / "Stat Reporter (sample)" | ✅ yes (registry) |
+| **Diff** | ` ```diff ` fence (JSON `{old,new,split?}`) | `DiffArtifact → DiffBlock → DiffCanvas` (react-diff-viewer-continued via `next/dynamic ssr:false`) | `code-diffs` / "Diff Reviewer (sample)" | ✅ yes (registry) |
 
 Plus two slide-deck enhancements: a **preset/template library** (10 named looks + live picker) and **Unsplash auto-fill** (slides with `imagePrompt` get sourced imagery).
+
+> **Map/Stats/Diff (added 2026-06-25)** rode the unified architecture with zero new infrastructure: the streaming-promotion path is now generalized (any `SPECIAL_CODE_LANGUAGES` entry auto-promotes), so wiring each was just register-in-both-registries + a thin `*Artifact` wrapper + the block component + a pack. Dev demo: `/demos/blocks/visual-blocks`.
 
 ---
 
@@ -87,6 +92,9 @@ ArtifactRender → the per-type renderer (lazy) → wraps the real block compone
 | `slide-decks` | `baee889a-ff81-4755-bea3-879bc7b2e931` |
 | `interactive-forms` | `be6f1297-d821-42af-8fc3-cfeaaf1cbfbd` |
 | `mermaid-diagrams` | `a79122d6-cd9f-4235-8ca2-ac386473f09d` |
+| `interactive-maps` | `9916558b-dd84-4955-b8c6-52a9cc0d7aa6` |
+| `stat-cards` | `9d40080c-e36c-4821-836d-4a925912d343` |
+| `code-diffs` | `c1a9b2b6-ad08-4ce9-ac06-f25f2c8e4e37` |
 
 **Render defs (`skl_render_definitions.block_id`):** `mermaid`, `svg`, `chart`, `presentation`, `questionnaire`.
 
@@ -97,6 +105,9 @@ ArtifactRender → the per-type renderer (lazy) → wraps the real block compone
 | Chart Builder (sample) | `f0db58a9-0ac7-4393-af0d-8b1786d91772` |
 | Deck Builder (sample) | `2cfe03bf-7ff8-46cb-9518-3f0817fbbfaf` |
 | Form Builder (sample) | `b2d86144-7b2c-4583-92f4-e598ba3f27d1` |
+| Map Maker (sample) | `46aeec4b-53fc-4314-9645-1ab279c4dfc9` |
+| Stat Reporter (sample) | `de1724db-014a-406c-809b-edcd62743629` |
+| Diff Reviewer (sample) | `bfdb33e7-e9a2-4f31-8156-c93f997f9403` |
 
 **Content blocks (13):** `svg-illustration`, `svg-diagram`, `svg-infographic` (Illustrations) · `chart-any`, `chart-bar`, `chart-line`, `chart-pie` (Charts) · `deck-fancy`, `deck-deluxe`, `deck-from-research` (Presentations) · `form-questionnaire`, `form-survey`, `form-intake` (Forms).
 
