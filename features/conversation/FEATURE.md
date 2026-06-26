@@ -138,6 +138,7 @@ Every chat/conversation surface — legacy and new — must support:
 
 ## Change log
 
+- `2026-06-26` — claude: **conversation sharing/ownership moved onto canonical `cx_conversation` columns.** `is_public`→`visibility` (`platform.visibility` enum, RLS-enforced via `iam.has_access`) and `user_id`→`created_by` (trigger-stamped owner). Sharing read/write for conversations now writes the `visibility` column directly (owner-UPDATE RLS) instead of the deprecated-`is_public` `make_resource_*` RPCs; ownership reads use `created_by`. Canonical `ConversationVisibility` type + helpers in `features/cx-chat/types/cx-tables.ts`. Full detail in `features/agents/components/chat/FEATURE.md` Change Log (the live `/chat` doc).
 - `2026-05-23` — claude: corrected the migration table + intro + invariants — the LIVE `/chat` route is active in prod at `app/(a)/chat/` on the `features/agents/` execution-system (NOT the unbuilt `ConversationShell`, which this doc previously implied was the only chat tree). Linked its new authoritative doc `features/agents/components/chat/FEATURE.md`.
 - `2026-04-22` — claude: initial combined FEATURE.md covering unified conversation + legacy chat surfaces.
 

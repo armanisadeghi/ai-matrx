@@ -15,6 +15,13 @@
  *   get_resource_permissions()    — list all grants with user/org details (owner-only)
  *   is_resource_owner()           — check ownership for any table
  *
+ * Canonical-visibility resources (see VISIBILITY_ENUM_RESOURCE_TYPES, e.g.
+ * `cx_conversation`): the row carries the `platform.visibility` enum
+ * (`private < internal < link < public`) read by RLS via `iam.has_access`, and
+ * the legacy `is_public` column is deprecated/ignored. For these, public toggle
+ * read/write goes DIRECTLY to the `visibility` column (owner-only via the
+ * owner-UPDATE RLS policy), NOT the `make_resource_*` RPCs.
+ *
  * Visibility model (two tiers only):
  *   - Private: accessible only to owner + explicit user/org grants + hierarchy members
  *   - Public:  is_public = true on the resource row — readable by anyone including unauthenticated
@@ -91,6 +98,65 @@ export interface ResourceVisibility {
 }
 
 /**
+ * Resource types whose row carries the canonical `platform.visibility` enum
+ * (`private < internal < link < public`) instead of the legacy `is_public`
+ * boolean. RLS reads `visibility` (via `iam.has_access`) for these; `is_public`
+ * is deprecated and ignored. The owner-UPDATE RLS policy lets the owner write
+ * `visibility` directly — so for these types we bypass the `make_resource_*`
+ * RPCs (which only touch the now-ignored `is_public` column) and read/write the
+ * `visibility` column directly. Public read works via the public-SELECT policy.
+ *
+ * Other resource types still flow through the registry + RPCs unchanged.
+ */
+const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>(["cx_conversation"]);
+
+function usesVisibilityEnum(resourceType: ResourceType): boolean {
+  return VISIBILITY_ENUM_RESOURCE_TYPES.has(resourceType);
+}
+
+/**
+ * Direct read/write of a `visibility`-enum resource's row. Owner-only writes are
+ * enforced by RLS (`cx_conv_update`: `created_by = auth.uid()`), so a non-owner
+ * UPDATE silently affects zero rows — surfaced as an error by the callers below.
+ */
+async function setVisibilityColumn(
+  resourceType: ResourceType,
+  resourceId: string,
+  visibility: "private" | "internal" | "link" | "public",
+): Promise<ShareActionResult> {
+  const entry = getShareableResource(resourceType);
+  const tableName = entry?.tableName ?? resourceType;
+  const idColumn = entry?.idColumn ?? "id";
+  const client = supabase as unknown as {
+    from: (t: string) => {
+      update: (patch: Record<string, unknown>) => {
+        eq: (
+          k: string,
+          v: string,
+        ) => {
+          select: (col: string) => Promise<{ data: unknown[] | null; error: unknown }>;
+        };
+      };
+    };
+  };
+  const { data, error } = await client
+    .from(tableName)
+    .update({ visibility })
+    .eq(idColumn, resourceId)
+    .select("id");
+  if (error) {
+    return { success: false, error: errMessage(error) };
+  }
+  if (!data || data.length === 0) {
+    return {
+      success: false,
+      error: "Not allowed — only the owner can change visibility.",
+    };
+  }
+  return { success: true };
+}
+
+/**
  * Fetch is_public directly from the resource row.
  * Single cheap query — safe to call from list-item components like ShareButton.
  *
@@ -105,6 +171,31 @@ export async function getResourceVisibility(
 ): Promise<ResourceVisibility> {
   try {
     const entry = getShareableResource(resourceType);
+    // Canonical `visibility`-enum resources: "public" ⇒ isPublic. The legacy
+    // `is_public` column is no longer read by RLS, so reading it would lie.
+    if (usesVisibilityEnum(resourceType)) {
+      const tableName = entry?.tableName ?? resourceType;
+      const idColumn = entry?.idColumn ?? "id";
+      const visClient = supabase as unknown as {
+        from: (t: string) => {
+          select: (col: string) => {
+            eq: (
+              k: string,
+              v: string,
+            ) => {
+              maybeSingle: <T>() => Promise<{ data: T | null; error: unknown }>;
+            };
+          };
+        };
+      };
+      const { data, error } = await visClient
+        .from(tableName)
+        .select("visibility")
+        .eq(idColumn, resourceId)
+        .maybeSingle<Record<string, string | null>>();
+      if (error || !data) return { isPublic: false };
+      return { isPublic: data["visibility"] === "public" };
+    }
     if (!entry || !entry.isPublicColumn) {
       return { isPublic: false };
     }
@@ -248,6 +339,17 @@ export async function makePublic(
   try {
     const { resourceType, resourceId } = options;
 
+    // Canonical `visibility`-enum resources write `visibility = 'public'`
+    // directly (owner-only via RLS). The `make_resource_public` RPC only sets
+    // the deprecated `is_public`, which RLS no longer reads.
+    if (usesVisibilityEnum(resourceType)) {
+      const res = await setVisibilityColumn(resourceType, resourceId, "public");
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to make public" };
+      }
+      return { success: true, message: "Resource is now public" };
+    }
+
     const { data, error } = await supabase.rpc("make_resource_public", {
       p_resource_type: resourceType,
       p_resource_id: resourceId,
@@ -277,6 +379,16 @@ export async function makePrivate(
   resourceId: string,
 ): Promise<ShareActionResult> {
   try {
+    // Canonical `visibility`-enum resources write `visibility = 'private'`
+    // directly (owner-only via RLS); the RPC only touches deprecated `is_public`.
+    if (usesVisibilityEnum(resourceType)) {
+      const res = await setVisibilityColumn(resourceType, resourceId, "private");
+      if (!res.success) {
+        return { success: false, error: res.error || "Failed to make private" };
+      }
+      return { success: true, message: "Resource is now private" };
+    }
+
     const { data, error } = await supabase.rpc("make_resource_private", {
       p_resource_type: resourceType,
       p_resource_id: resourceId,
@@ -500,6 +612,12 @@ export async function isResourceOwner(
     const entry = getShareableResource(resourceType);
     if (!entry) return false;
 
+    // Canonical `visibility`-enum resources own via `created_by` (trigger-stamped,
+    // RLS-canonical), not the deprecated `user_id` the registry still names.
+    const ownerColumn = usesVisibilityEnum(resourceType)
+      ? "created_by"
+      : entry.ownerColumn;
+
     const client = supabase as unknown as {
       from: (t: string) => {
         select: (col: string) => {
@@ -520,13 +638,13 @@ export async function isResourceOwner(
     ] = await Promise.all([
       client
         .from(entry.tableName)
-        .select(entry.ownerColumn)
+        .select(ownerColumn)
         .eq(entry.idColumn, resourceId)
         .maybeSingle<Record<string, string | null>>(),
       supabase.auth.getUser(),
     ]);
 
-    return !!user && !!row && row[entry.ownerColumn] === user.id;
+    return !!user && !!row && row[ownerColumn] === user.id;
   } catch {
     return false;
   }

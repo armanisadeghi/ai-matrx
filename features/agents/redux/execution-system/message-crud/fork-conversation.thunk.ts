@@ -22,6 +22,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
+import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import { hydrateConversation } from "../conversations/conversations.slice";
 import { hydrateMessages } from "../messages/messages.slice";
 import { setFocus } from "../conversation-focus/conversation-focus.slice";
@@ -42,7 +43,9 @@ import {
 interface ForkBundle {
   conversation: {
     id: string;
+    /** @deprecated Use `created_by`. */
     user_id: string;
+    created_by: string | null;
     title: string | null;
     description: string | null;
     keywords: string[] | null;
@@ -60,7 +63,9 @@ interface ForkBundle {
     organization_id: string | null;
     project_id: string | null;
     task_id: string | null;
+    /** @deprecated Use `visibility`. */
     is_public: boolean;
+    visibility: ConversationVisibility;
     is_ephemeral: boolean;
     source_app: string;
     source_feature: string;
@@ -135,6 +140,7 @@ export const forkConversation = createAsyncThunk<
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
         userId: conv.user_id,
+        createdBy: conv.created_by,
         initialAgentId: conv.initial_agent_id,
         initialAgentVersionId: conv.initial_agent_version_id,
         lastModelId: conv.last_model_id,
@@ -146,6 +152,7 @@ export const forkConversation = createAsyncThunk<
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
         isPublic: conv.is_public,
+        visibility: conv.visibility,
         title: conv.title,
         description: conv.description,
         keywords: conv.keywords,

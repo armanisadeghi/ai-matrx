@@ -26,6 +26,7 @@ import { SOURCE_APP } from "@/features/agents/types/instance.types";
 import { generateConversationId } from "../utils/ids";
 import { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 import { createInstanceFull } from "../create-instance-full";
 
 // =============================================================================
@@ -84,7 +85,10 @@ interface CreateInstanceArgs {
   projectId?: string | null;
   taskId?: string | null;
   isEphemeral?: boolean;
+  /** @deprecated Use {@link visibility}. */
   isPublic?: boolean;
+  /** Canonical access-control dimension — `cx_conversation.visibility`. */
+  visibility?: ConversationVisibility;
   apiEndpointMode?: ApiEndpointMode;
   reuseConversationId?: boolean;
   builderAdvancedSettings?: ConversationRecord["builderAdvancedSettings"];
@@ -114,6 +118,7 @@ function applyCreateInstance(
     taskId,
     isEphemeral,
     isPublic,
+    visibility,
     apiEndpointMode,
     reuseConversationId,
     builderAdvancedSettings,
@@ -150,6 +155,7 @@ function applyCreateInstance(
     ...(taskId !== undefined ? { taskId } : {}),
     ...(isEphemeral !== undefined ? { isEphemeral } : {}),
     ...(isPublic !== undefined ? { isPublic } : {}),
+    ...(visibility !== undefined ? { visibility } : {}),
     ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
     ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),
     ...(builderAdvancedSettings !== undefined

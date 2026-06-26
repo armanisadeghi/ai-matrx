@@ -187,6 +187,7 @@ export const loadConversation = createAsyncThunk<
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
         userId: conv.user_id,
+        createdBy: conv.created_by,
         initialAgentId: conv.initial_agent_id,
         initialAgentVersionId: conv.initial_agent_version_id,
         lastModelId: conv.last_model_id,
@@ -198,6 +199,7 @@ export const loadConversation = createAsyncThunk<
         taskId: conv.task_id,
         isEphemeral: conv.is_ephemeral,
         isPublic: conv.is_public,
+        visibility: conv.visibility,
         title: conv.title,
         description: conv.description,
         keywords: conv.keywords,
@@ -270,7 +272,10 @@ export const loadConversation = createAsyncThunk<
     // just-hydrated raw artifact to its render-by-id form and REMOUNT it,
     // wiping any in-session interaction state. The DB ends up holding the
     // canonical `<artifact id>` text; the NEXT fresh load renders it by id.
-    if (authedUserId && conv.user_id === authedUserId) {
+    // Ownership read from the canonical `created_by` column (trigger-stamped),
+    // not the deprecated `user_id`. A viewer must never mint canvas_items rows
+    // for someone else's conversation.
+    if (authedUserId && conv.created_by === authedUserId) {
       void reconcileMessagesArtifacts(
         messageRecords
           .filter(

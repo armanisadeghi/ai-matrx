@@ -108,8 +108,10 @@ export async function getUserChatHistory(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cx_conversation")
+    // Ownership is `created_by` (canonical, trigger-stamped); `user_id` is
+    // deprecated and slated for drop. RLS also gates this query by visibility.
     .select("id, title, status, message_count, created_at, updated_at")
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .is("deleted_at", null)
     .neq("status", "archived")
     .order("updated_at", { ascending: false })

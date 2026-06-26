@@ -17,6 +17,7 @@ import type { ApplicationScope } from "./scope.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
+import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
 
 // =============================================================================
 // Completion Stats — re-exported from auto-generated stream-events.ts
@@ -157,7 +158,17 @@ export interface ExecutionInstance {
   updatedAt: string;
 
   // ── Identity mirrors (cx_conversation columns) ──────────────────────────
+  /**
+   * @deprecated Use {@link createdBy} for ownership. `cx_conversation.user_id`
+   * is no longer read by RLS and will be dropped by the DB. Kept only for any
+   * legacy reader that hasn't migrated; ownership logic MUST read `createdBy`.
+   */
   userId?: string;
+  /**
+   * Canonical owner — `cx_conversation.created_by` (trigger-stamped). Equal to
+   * `userId` today; this is the field ownership/edit decisions must read.
+   */
+  createdBy?: string | null;
   /** Canonical DB column name for the agent that started this conversation. */
   initialAgentId?: string | null;
   /** Agent version that started this conversation (pinned for shortcuts/apps). */
@@ -188,7 +199,17 @@ export interface ExecutionInstance {
    *             Client sends the full accumulated history from `messages/`.
    */
   isEphemeral?: boolean;
+  /**
+   * @deprecated Use {@link visibility}. `cx_conversation.is_public` is no longer
+   * read by RLS and will be dropped by the DB. Sharing state is now the
+   * `visibility` enum (`private < internal < link < public`).
+   */
   isPublic?: boolean;
+  /**
+   * Canonical sharing/access-control dimension — `cx_conversation.visibility`.
+   * RLS enforces this via `iam.has_access`. `'public'` ⇒ shared with anyone.
+   */
+  visibility?: ConversationVisibility;
 
   // ── Sidebar-list fields (replaces cxConversations.items entries) ────────
   title?: string | null;
