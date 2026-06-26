@@ -2,9 +2,14 @@
 //
 // "Compare …" actions for the canonical diff system (components/diff). All
 // three open the headless DiffViewer in a movable window:
-//   - compare-with-clipboard : current content  ↔  clipboard text
+//   - compare-with-clipboard : current content (base) ↔ clipboard text (incoming)
 //   - set-compare-base       : pin current content as the comparison base
 //   - compare-with-base      : pinned base       ↔  current content
+//
+// Clipboard compare direction: the current content is the OLD baseline and the
+// clipboard is the NEW incoming version (the user is about to paste over what
+// they have). So text only in the clipboard reads as an addition; text only in
+// the current content reads as a removal. Users can flip this in the viewer.
 //
 // History comparison is handled by the enhanced Edit-history dialog
 // (per-version "Compare" buttons), not a separate menu item.
@@ -64,10 +69,10 @@ registerAction({
         instanceId,
         data: {
           windowInstanceId: instanceId,
-          original: clipboardText,
-          modified: ctx.content,
-          originalLabel: "Clipboard",
-          modifiedLabel: sourceLabel(ctx.source),
+          original: ctx.content,
+          modified: clipboardText,
+          originalLabel: sourceLabel(ctx.source),
+          modifiedLabel: "Clipboard",
           title: "Compare with clipboard",
           engine: "auto",
           language: null,

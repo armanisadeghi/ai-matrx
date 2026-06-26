@@ -61,7 +61,7 @@ inline views. One computation produces both representations.
 components/diff/
   DiffViewer.tsx              # ⭐ canonical headless core (engine router)
   text/
-    TextDiff.tsx              # light core: inline + split + highlight, word-level, toolbar
+    TextDiff.tsx              # light core: inline + split + highlight, word-level, Swap toggle, GitHub-style colors
     AnimatedDiffReveal.tsx    # single-pane human reader; animates a known edit landing
     useDiffReveal.ts          # paced "fill the replacement in" reveal for a known before→after
     engine/
@@ -84,7 +84,15 @@ components/diff/
   registers `compare-with-clipboard`, `set-compare-base`, `compare-with-base`
   under the **Compare** submenu (`variants/shared/menuStructure.ts`). These
   appear on every RichDocument content surface (notes, agent messages,
-  prompt results, tool overlays, …).
+  prompt results, tool overlays, …). The context menus carry the same actions:
+  `features/context-menu-v3/components/{MenuContent,MobileMenuContent}.tsx` and
+  legacy `features/context-menu-v2/UnifiedAgentContextMenu.tsx`.
+- **Clipboard compare direction (invariant):** current content is the
+  **original** (baseline the user has now); the clipboard is the **modified**
+  (incoming version about to be pasted). So clipboard-only text reads as an
+  **addition**, current-only text as a **removal**. All four callsites above
+  follow this; never flip it back to clipboard-as-original. The viewer's **Swap**
+  toggle lets the user reverse it per-view.
 - **History compare:** `EditHistoryDialog` now has a per-version
   *Compare with current* button that opens the diff window (Restore kept).
 - **Working-doc "what the agent last changed":**
@@ -158,6 +166,22 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 
 ## Change Log
 
+- 2026-06-26 — Clipboard compare direction fix + legible diff colors + Swap
+  toggle. **Direction:** clipboard compare was backwards (clipboard as
+  original/old, current as modified/new) — fixed at all four callsites
+  (`rich-document/actions/handlers/compare.ts`, context-menu-v3
+  `MenuContent`/`MobileMenuContent`, context-menu-v2 `UnifiedAgentContextMenu`):
+  current content is now the baseline, clipboard the incoming version.
+  **Colors:** `TextDiff` reds/greens were near-invisible (`*-50` in light,
+  `*-950` in dark) — replaced with a GitHub-style palette in `LINE_BG` / `WORD_BG`
+  / `GUTTER` constants (light `*-100` line + `*-300` word; dark bright hue at low
+  opacity `*-500/15` line + `*-500/40` word). Split view now tints **per side**
+  (`splitTint`): old column red, new column green on modified rows, instead of
+  one muddy amber across both. These are deliberate raw `green/red-*` (the
+  universal diff convention), NOT the `success`/`destructive` tokens used by the
+  structured adapters and `AnimatedDiffReveal` — do not "tokenize" them.
+  **Swap:** added a Swap toggle to the `TextDiff` toolbar (all three views) that
+  flips original↔modified and their labels.
 - 2026-06-11 — Created canonical diff system: light text engine with
   word-level highlighting, headless `DiffViewer`, Monaco `CodeDiff`,
   `DiffViewerWindow`, `diffCompareSlice`, RichDocument Compare actions, and

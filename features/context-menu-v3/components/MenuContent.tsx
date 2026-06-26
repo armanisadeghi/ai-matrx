@@ -507,11 +507,13 @@ export default function MenuContent(props: MenuContentProps) {
       toast({ title: "Clipboard is empty" });
       return;
     }
+    // Current content is the baseline (old); the clipboard is the incoming
+    // version the user is about to paste (new). Clipboard-only text => addition.
     openDiffWindow({
-      original: clip,
-      modified: content,
-      originalLabel: "Clipboard",
-      modifiedLabel: label,
+      original: content,
+      modified: clip,
+      originalLabel: label,
+      modifiedLabel: "Clipboard",
       title: "Compare with clipboard",
       engine: "light",
     });

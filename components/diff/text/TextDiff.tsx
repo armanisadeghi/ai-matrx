@@ -9,10 +9,22 @@
 // modal, sheet, or any region of a page — it fills its container.
 
 import { useMemo, useState } from "react";
-import { Columns2, Rows3, WrapText, Hash, Highlighter } from "lucide-react";
+import {
+  Columns2,
+  Rows3,
+  WrapText,
+  Hash,
+  Highlighter,
+  ArrowLeftRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeTextDiff, summarizeTextDiff } from "./engine/computeTextDiff";
-import type { DiffCell, TextDiffOptions, WordSegment } from "./engine/types";
+import type {
+  DiffCell,
+  DiffRow,
+  TextDiffOptions,
+  WordSegment,
+} from "./engine/types";
 
 // "highlight" is the reader's view: a SINGLE-PANE rendering of the *new*
 // document (the after) with only the added/changed regions tinted inline — no
@@ -42,6 +54,30 @@ export interface TextDiffProps {
   className?: string;
 }
 
+// GitHub-style diff palette \u2014 the de-facto enterprise standard, legible in
+// both light and dark. Three intensities per color, layered:
+//   LINE_BG  \u2014 the whole changed line, the faintest tint.
+//   WORD_BG  \u2014 the exact changed words, layered on top of LINE_BG so the edit
+//              pops out of the line.
+//   GUTTER   \u2014 the +/- markers and other foreground accents.
+// Reds = removed (old-only), greens = added (new-only). Dark mode uses a bright
+// hue at low opacity (green-500/15) rather than a near-black 950 shade, which
+// is what made the previous scheme invisible.
+const LINE_BG = {
+  added: "bg-green-100 dark:bg-green-500/15",
+  removed: "bg-red-100 dark:bg-red-500/15",
+} as const;
+
+const WORD_BG = {
+  added: "bg-green-300 dark:bg-green-500/40",
+  removed: "bg-red-300 dark:bg-red-500/40",
+} as const;
+
+const GUTTER = {
+  added: "text-green-700 dark:text-green-400",
+  removed: "text-red-700 dark:text-red-400",
+} as const;
+
 function renderSegments(
   cell: DiffCell,
   side: "left" | "right",
@@ -61,9 +97,7 @@ function renderSegments(
         key={i}
         className={cn(
           "rounded-[2px]",
-          side === "left"
-            ? "bg-red-300/60 dark:bg-red-500/40"
-            : "bg-green-300/60 dark:bg-green-500/40",
+          side === "left" ? WORD_BG.removed : WORD_BG.added,
         )}
       >
         {seg.value}
@@ -72,10 +106,25 @@ function renderSegments(
   });
 }
 
-const ROW_TINT = {
-  added: "bg-green-50 dark:bg-green-950/40",
-  removed: "bg-red-50 dark:bg-red-950/40",
-  modified: "bg-amber-50/60 dark:bg-amber-950/20",
+// Per-side tint for the split (side-by-side) view: the OLD column reads red on
+// removed/modified rows, the NEW column reads green on added/modified rows \u2014
+// the way every modern side-by-side diff works. Absent cells (a line that
+// exists only on the other side) get a neutral fill so the gap is obvious.
+function splitTint(row: DiffRow, side: "left" | "right"): string {
+  const cell = side === "left" ? row.left : row.right;
+  if (cell.content === null) return "bg-muted/40";
+  if (side === "left" && (row.type === "removed" || row.type === "modified"))
+    return LINE_BG.removed;
+  if (side === "right" && (row.type === "added" || row.type === "modified"))
+    return LINE_BG.added;
+  return "";
+}
+
+// Tint for the inline (unified) view, keyed by the line's own type. Inline
+// never emits "modified" \u2014 a change becomes a removed line then an added line.
+const INLINE_BG = {
+  added: LINE_BG.added,
+  removed: LINE_BG.removed,
   unchanged: "",
 } as const;
 
@@ -97,7 +146,7 @@ function renderHighlightLine(
   }
   if (!segments || segments.length === 0) {
     return (
-      <span className="rounded-[2px] bg-success/15 dark:bg-success/25">
+      <span className="rounded-[2px] bg-green-100 dark:bg-green-500/15">
         {content === "" ? " " : content}
       </span>
     );
@@ -106,10 +155,7 @@ function renderHighlightLine(
     if (seg.type === "removed") return null;
     if (seg.type === "unchanged") return <span key={i}>{seg.value}</span>;
     return (
-      <span
-        key={i}
-        className="rounded-[2px] bg-success/20 dark:bg-success/30"
-      >
+      <span key={i} className={cn("rounded-[2px]", WORD_BG.added)}>
         {seg.value}
       </span>
     );
@@ -151,9 +197,19 @@ export function TextDiff({
   const [internalWrap, setInternalWrap] = useState(wrapProp ?? false);
   const wrap = wrapProp ?? internalWrap;
 
+  // Swap which side is the baseline (old) vs. the incoming version (new).
+  // Lets the user flip the comparison without re-opening it — e.g. clipboard
+  // compare defaults to "current ↔ clipboard" but can be flipped to
+  // "clipboard ↔ current".
+  const [swapped, setSwapped] = useState(false);
+  const effOriginal = swapped ? modified : original;
+  const effModified = swapped ? original : modified;
+  const effOriginalLabel = swapped ? modifiedLabel : originalLabel;
+  const effModifiedLabel = swapped ? originalLabel : modifiedLabel;
+
   const result = useMemo(
-    () => computeTextDiff(original, modified, diffOptions),
-    [original, modified, diffOptions],
+    () => computeTextDiff(effOriginal, effModified, diffOptions),
+    [effOriginal, effModified, diffOptions],
   );
 
   const whitespace = wrap
@@ -209,6 +265,22 @@ export function TextDiff({
               Inline
             </button>
           </div>
+
+          {/* Swap baseline ↔ incoming. Applies to every view. */}
+          <button
+            type="button"
+            onClick={() => setSwapped((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1 px-2 h-7 rounded-md border border-border transition-colors",
+              swapped
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent",
+            )}
+            title={`Swap sides — currently comparing ${effOriginalLabel} → ${effModifiedLabel}`}
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            Swap
+          </button>
 
           {/* Line numbers + wrap are line-grid concepts; the highlight view is
               flowing prose, so they don't apply there. */}
@@ -292,67 +364,59 @@ export function TextDiff({
                   colSpan={2}
                   className="text-left font-medium px-2 py-1 border-b border-r border-border"
                 >
-                  {originalLabel}
+                  {effOriginalLabel}
                 </th>
                 <th
                   colSpan={2}
                   className="text-left font-medium px-2 py-1 border-b border-border"
                 >
-                  {modifiedLabel}
+                  {effModifiedLabel}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {result.rows.map((row, i) => (
-                <tr key={i}>
-                  <td
-                    className={cn(
-                      "align-top px-1 border-r border-border/40",
-                      ROW_TINT[
-                        row.left.content === null ? "unchanged" : row.type
-                      ],
-                      row.left.content === null && "bg-muted/30",
-                    )}
-                  >
-                    <LineNumber n={row.left.lineNumber} show={lineNumbers} />
-                  </td>
-                  <td
-                    className={cn(
-                      "align-top pr-3 pl-1 border-r border-border w-1/2",
-                      ROW_TINT[
-                        row.left.content === null ? "unchanged" : row.type
-                      ],
-                      row.left.content === null && "bg-muted/20",
-                      whitespace,
-                    )}
-                  >
-                    {renderSegments(row.left, "left")}
-                  </td>
-                  <td
-                    className={cn(
-                      "align-top px-1 border-r border-border/40",
-                      ROW_TINT[
-                        row.right.content === null ? "unchanged" : row.type
-                      ],
-                      row.right.content === null && "bg-muted/30",
-                    )}
-                  >
-                    <LineNumber n={row.right.lineNumber} show={lineNumbers} />
-                  </td>
-                  <td
-                    className={cn(
-                      "align-top pr-3 pl-1 w-1/2",
-                      ROW_TINT[
-                        row.right.content === null ? "unchanged" : row.type
-                      ],
-                      row.right.content === null && "bg-muted/20",
-                      whitespace,
-                    )}
-                  >
-                    {renderSegments(row.right, "right")}
-                  </td>
-                </tr>
-              ))}
+              {result.rows.map((row, i) => {
+                const leftTint = splitTint(row, "left");
+                const rightTint = splitTint(row, "right");
+                return (
+                  <tr key={i}>
+                    <td
+                      className={cn(
+                        "align-top px-1 border-r border-border/40",
+                        leftTint,
+                      )}
+                    >
+                      <LineNumber n={row.left.lineNumber} show={lineNumbers} />
+                    </td>
+                    <td
+                      className={cn(
+                        "align-top pr-3 pl-1 border-r border-border w-1/2",
+                        leftTint,
+                        whitespace,
+                      )}
+                    >
+                      {renderSegments(row.left, "left")}
+                    </td>
+                    <td
+                      className={cn(
+                        "align-top px-1 border-r border-border/40",
+                        rightTint,
+                      )}
+                    >
+                      <LineNumber n={row.right.lineNumber} show={lineNumbers} />
+                    </td>
+                    <td
+                      className={cn(
+                        "align-top pr-3 pl-1 w-1/2",
+                        rightTint,
+                        whitespace,
+                      )}
+                    >
+                      {renderSegments(row.right, "right")}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (
@@ -360,7 +424,7 @@ export function TextDiff({
             {result.inline.map((line, i) => (
               <div
                 key={i}
-                className={cn("flex items-start", ROW_TINT[line.type])}
+                className={cn("flex items-start", INLINE_BG[line.type])}
               >
                 {lineNumbers && (
                   <>
@@ -375,9 +439,8 @@ export function TextDiff({
                 <span
                   className={cn(
                     "select-none shrink-0 w-4 text-center",
-                    line.type === "added" &&
-                      "text-green-600 dark:text-green-400",
-                    line.type === "removed" && "text-red-600 dark:text-red-400",
+                    line.type === "added" && GUTTER.added,
+                    line.type === "removed" && GUTTER.removed,
                     line.type === "unchanged" && "text-transparent",
                   )}
                 >
