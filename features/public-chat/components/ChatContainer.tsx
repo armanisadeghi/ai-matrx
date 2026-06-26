@@ -535,7 +535,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
                       openOverlay({
                         overlayId: "shareModal",
                         data: {
-                          resourceType: "cx_conversation",
+                          resourceType: "conversation",
                           resourceId: shareConversationId!,
                           resourceName: conversationTitle,
                           isOwner: true,

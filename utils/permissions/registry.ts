@@ -143,8 +143,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/workflows/{id}",
     rlsUsesHasPermission: true,
   },
-  cx_conversation: {
-    resourceType: "cx_conversation",
+  conversation: {
+    resourceType: "conversation",
     tableName: "cx_conversation",
     idColumn: "id",
     ownerColumn: "user_id",
@@ -203,8 +203,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/documents/{id}",
     rlsUsesHasPermission: true,
   },
-  transcripts: {
-    resourceType: "transcripts",
+  transcript: {
+    resourceType: "transcript",
     tableName: "transcripts",
     idColumn: "id",
     ownerColumn: "user_id",

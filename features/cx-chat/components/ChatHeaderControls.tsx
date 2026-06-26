@@ -117,7 +117,7 @@ export default function ChatHeaderControls() {
         <ShareModal
           isOpen={isShareOpen}
           onClose={() => setIsShareOpen(false)}
-          resourceType="cx_conversation"
+          resourceType="conversation"
           resourceId={conversationId}
           resourceName="Chat"
           isOwner={true}

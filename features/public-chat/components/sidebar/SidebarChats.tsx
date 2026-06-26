@@ -300,7 +300,7 @@ function ConversationItem({
                       openOverlay({
                         overlayId: "shareModal",
                         data: {
-                          resourceType: "cx_conversation",
+                          resourceType: "conversation",
                           resourceId: item.id,
                           resourceName: item.title || "Untitled Chat",
                           isOwner: true,

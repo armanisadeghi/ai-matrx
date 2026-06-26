@@ -53,5 +53,17 @@ The sharing RPC `make_resource_public` flips the resource row's `is_public`, but
 - `apply_rls` v2.1 emits the canonical anon `pub_read` policy (`visibility='public'`, checklist #5); re-applied to `notes`, `wr_sessions`, `wr_threads`.
 - `notes` registry `rls_uses_has_permission=true` is correct **once step 1 re-keys its 4 grants** (today those grants are ignored — the flag overstates reality until the token matches).
 
-## Recommendation
-Execute steps 1–4 as the next move (it fixes live-broken sharing on agents/conversations/notes), then the `is_public`→`visibility` reconciliation. Access-sensitive (re-keys grant data + touches the stable share RPCs) → confirm direction, then I verify each type live.
+## DONE — 2026-06-26 (`sharing_token_unification.sql`, verified live)
+
+Steps 1–4 shipped as a **structural** fix that can't resurface, instead of a brittle re-key:
+- **`has_permission` is now token-agnostic** — it resolves the passed token through the registry and matches grants stored under EITHER the canonical token OR the table_name. So no policy/RPC/grant can ever be "the wrong form" again. (Proof: a note shared with grant stored as `notes` is now visible to the grantee via `has_access('note')` — was 0, now 1; both `has_permission('note')` and `has_permission('notes')` = true; non-grantee still 0.)
+- **Fixed the one wrong `has_access` literal** — `cx_conv_select` `'cx_conversation'` → `'conversation'` (was dead: no `entity_types` row for that token).
+- **Registry aligned** to the entity token — `cx_conversation`→`conversation`, `transcripts`→`transcript`.
+- **Validation trigger** accepts either registered form.
+- **Structural guard** — `shareable_resource_registry.resource_type` MUST equal `entity_types.token` for governed tables (trigger; verified it blocks drift). The two registries can no longer diverge.
+
+## Remaining (now LOW-risk — normalization removed the urgency)
+- **Physical re-key** of grant rows + share-RPC `store/match` to the canonical token (cleanliness; correctness already handled). 6 RPCs: `share_resource_with_user/org`, `revoke_resource_access`, `revoke_resource_org_access`, `update_permission_level`, `get_resource_permissions`.
+- **`is_public` → `visibility`** — `make_resource_public/private` must set `visibility` (the access driver) where the column exists; registry `owner_column` `user_id`→`created_by`, `is_public_column` retired.
+- **Retire bespoke share storage** → `note_shares` table + `shared_with` jsonb (`notes`/`flashcard_data`/`flashcard_sets`) into `public.permissions`, then graveyard.
+- **TS mirror** — `utils/permissions/registry.ts` + parity snapshot updated for the 2 renamed tokens (code cutover).

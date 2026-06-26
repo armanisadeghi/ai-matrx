@@ -374,7 +374,7 @@ function ConversationItem({
         <ShareModal
           isOpen={isShareOpen}
           onClose={() => setIsShareOpen(false)}
-          resourceType="cx_conversation"
+          resourceType="conversation"
           resourceId={item.id}
           resourceName={item.title || "Untitled Chat"}
           isOwner={true}

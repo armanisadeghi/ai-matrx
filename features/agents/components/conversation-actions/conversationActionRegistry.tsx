@@ -172,7 +172,7 @@ export function buildConversationMenu(
                 openOverlay({
                   overlayId: "shareModal",
                   data: {
-                    resourceType: "cx_conversation",
+                    resourceType: "conversation",
                     resourceId: ctx.conversationId,
                     resourceName: displayTitle(ctx.title),
                     isOwner: ctx.isOwner,
