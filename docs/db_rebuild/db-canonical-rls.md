@@ -65,7 +65,7 @@ The owner branch reads `created_by` **directly off the NEW row** (like `deleted_
 1. Register it in `platform.entity_types` (token, schema, table, `is_component`, `default_visibility`). Component? add its `composition` edge to `platform.entity_relationships`.
 2. Ensure the base columns exist (`created_by`, `organization_id`, `visibility`, `version`, `deleted_at` where applicable) via the base retrofit — `iam.apply_rls` **raises loudly** if a standard entity lacks `created_by`/`organization_id`, rather than emitting a broken policy.
 3. `SELECT iam.apply_rls(schema, table, token, variant);`
-4. **Verify live** as a real authenticated user (not service role): an `INSERT … RETURNING` must succeed for the owner, and a *different* user must NOT see the row.
+4. **Verify** — `select iam.verify_canonical_ok('<schema>','<table>','<token>')` must return `true` (detailed per-checklist rows: `select * from iam.verify_canonical(...)`). It's a structural gate (no data mutation, safe as a drift cron) that encodes every bug we hit: missing owner short-circuit, wrong `has_access` token, registry-token mismatch, legacy `is_public`/`is_deleted`/`user_id`. For a brand-new owner, also spot-check live: an authenticated `INSERT … RETURNING` succeeds and a *different* user sees 0.
 
 ---
 
