@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
@@ -112,8 +113,8 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
         );
         const healthyCldIds = new Set<string>();
         if (cldSourceIds.length > 0) {
-          const { data: cldRows } = await supabase
-            .from("cld_files")
+          const { data: cldRows } = await filesDb(supabase)
+            .from("files")
             .select("id, deleted_at")
             .in("id", cldSourceIds)
             .is("deleted_at", null);

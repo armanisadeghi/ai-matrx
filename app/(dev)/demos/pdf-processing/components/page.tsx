@@ -24,6 +24,7 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
 import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
@@ -90,8 +91,8 @@ export default function PdfComponentsBenchPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void supabase
-      .from("cld_files")
+    void filesDb(supabase)
+      .from("files")
       .select("id, file_name, size_bytes")
       .eq("mime_type", "application/pdf")
       .is("deleted_at", null)

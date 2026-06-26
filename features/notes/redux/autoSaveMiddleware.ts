@@ -157,6 +157,10 @@ export const autoSaveMiddleware: Middleware =
               tags: recordAfterLabel.tags,
               metadata: recordAfterLabel.metadata,
               position: recordAfterLabel.position ?? 0,
+              // Persist the record's visibility (defaults to 'private' at
+              // record creation) — the DB column defaults to 'internal', so
+              // omitting it would silently make the note org-visible.
+              visibility: recordAfterLabel.visibility,
             })
             .select("updated_at")
             .single();

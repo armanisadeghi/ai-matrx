@@ -177,18 +177,18 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     channel = supabase
       .channel(`cloud-files:${userId}`)
       // Files — NO owner filter. We rely on Realtime RLS authorization (same
-      // pattern as cld_file_versions / cld_share_links below) so the user
+      // pattern as files.file_versions / files.share_links below) so the user
       // receives changes to every file they can SELECT: their own AND files
-      // shared WITH them. A column filter on owner_id would silently drop
-      // shared-with-me updates (the row's owner_id is someone else's id).
+      // shared WITH them. A column filter on created_by would silently drop
+      // shared-with-me updates (the row's created_by is someone else's id).
       // handleFilePayload upserts/dedups by id and honors the request ledger,
       // so receiving a shared file's change is safe and idempotent.
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cld_files",
+          schema: "files",
+          table: "files",
         },
         (payload) => handleFilePayload(payload),
       )
@@ -197,18 +197,18 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cld_folders",
+          schema: "files",
+          table: "folders",
         },
         (payload) => handleFolderPayload(payload),
       )
-      // Versions — no owner filter (FK to cld_files; RLS enforces).
+      // Versions — no owner filter (FK to files.files; RLS enforces).
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cld_file_versions",
+          schema: "files",
+          table: "file_versions",
         },
         (payload) => handleVersionPayload(payload),
       )
@@ -232,8 +232,8 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cld_share_links",
+          schema: "files",
+          table: "share_links",
         },
         (payload) => handleShareLinkPayload(payload),
       )

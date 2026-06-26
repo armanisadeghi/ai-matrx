@@ -6,13 +6,14 @@ import { FolderOpen, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const SELECT_COLS = "id, file_name, mime_type, size_bytes, updated_at";
 
 const fetchOwned = async (orgId: string) => {
-  const res = await supabase
-    .from("cld_files")
+  const res = await filesDb(supabase)
+    .from("files")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .is("deleted_at", null)
@@ -69,8 +70,12 @@ export default function OrgFilesPage() {
       ) : (
         <OrgResourceList
           orgId={resolvedOrgId}
-          resourceType="cld_files"
-          tableName="cld_files"
+          // Canonical permissions key after the 2026 file-system
+          // canonicalization (was `cld_files`). Owned rows hydrate via
+          // `ownedQuery` (filesDb → files.files); `tableName` is the
+          // `permissions.resource_type` join key.
+          resourceType="file"
+          tableName="file"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}

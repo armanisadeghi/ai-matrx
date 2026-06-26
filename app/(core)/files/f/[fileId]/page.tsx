@@ -17,6 +17,7 @@
 
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { filesDb } from "@/features/files/filesDb";
 import { SingleFileShell } from "@/features/files/components/surfaces/single-file/SingleFileShell";
 
 interface PageProps {
@@ -27,8 +28,8 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
   const { fileId } = await params;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("cld_files")
+  const { data, error } = await filesDb(supabase)
+    .from("files")
     .select("id")
     .eq("id", fileId)
     .is("deleted_at", null)

@@ -19,6 +19,7 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
+import { filesDb } from "@/features/files/filesDb";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
 
@@ -175,8 +176,8 @@ async function resolveMaxSandboxes(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<number> {
-  const { data: account } = await supabase
-    .from("cld_user_account")
+  const { data: account } = await filesDb(supabase)
+    .from("user_account")
     .select("tier_id, custom_limits")
     .eq("user_id", userId)
     .maybeSingle();
@@ -190,8 +191,8 @@ async function resolveMaxSandboxes(
     return customLimits.max_sandboxes;
   }
   const tierId = account?.tier_id ?? "free";
-  const { data: tier } = await supabase
-    .from("cld_account_tiers")
+  const { data: tier } = await filesDb(supabase)
+    .from("account_tiers")
     .select("features")
     .eq("id", tierId)
     .maybeSingle();

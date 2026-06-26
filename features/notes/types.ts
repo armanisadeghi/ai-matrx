@@ -100,6 +100,7 @@ export type CreateNoteInput = Pick<
     | "metadata"
     | "position"
     | "is_public"
+    | "visibility"
 >;
 
 export type UpdateNoteInput = Pick<
@@ -115,6 +116,7 @@ export type UpdateNoteInput = Pick<
     | "metadata"
     | "position"
     | "is_public"
+    | "visibility"
 >;
 
 export interface FolderGroup {

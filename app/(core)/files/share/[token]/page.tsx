@@ -12,6 +12,7 @@
 
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { filesDb } from "@/features/files/filesDb";
 
 interface PageProps {
   params: Promise<{ token: string }>;
@@ -21,8 +22,8 @@ export default async function AuthedSharePage({ params }: PageProps) {
   const { token } = await params;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("cld_share_links")
+  const { data, error } = await filesDb(supabase)
+    .from("share_links")
     .select(
       "resource_id, resource_type, is_active, expires_at, max_uses, use_count",
     )
@@ -48,8 +49,8 @@ export default async function AuthedSharePage({ params }: PageProps) {
 
   if (data.resource_type === "folder") {
     // Resolve folder id → path so the deep-link page can land there.
-    const { data: folder } = await supabase
-      .from("cld_folders")
+    const { data: folder } = await filesDb(supabase)
+      .from("folders")
       .select("folder_path")
       .eq("id", data.resource_id)
       .maybeSingle();

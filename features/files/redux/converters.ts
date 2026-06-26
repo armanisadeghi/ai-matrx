@@ -30,8 +30,21 @@ import type {
 // Narrowing helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Map a DB / RPC visibility value to the file domain's `Visibility` shape.
+ *
+ * The 2026 restructure switched `files.files`/`files.folders.visibility` to the
+ * canonical `platform.visibility` enum (`private < internal < link < public`),
+ * where the old free-text `'shared'` value is now `'link'`. The file domain
+ * still speaks `public | private | shared`, so translate at the read boundary:
+ *   - `'link'`     → `'shared'` (the new name for the old shared value)
+ *   - `'public'`   → `'public'`
+ *   - everything else (`'private'`, `'internal'`, unknown) → `'private'`
+ */
 function toVisibility(raw: string | null | undefined): Visibility {
-  return raw === "public" || raw === "shared" ? raw : "private";
+  if (raw === "public") return "public";
+  if (raw === "link" || raw === "shared") return "shared";
+  return "private";
 }
 
 function toPermissionLevel(raw: string | null | undefined): PermissionLevel {
@@ -69,7 +82,9 @@ function toMetadataObject(raw: unknown): Record<string, unknown> {
 export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
   return {
     id: row.id,
-    ownerId: row.owner_id,
+    // `files.files` is canonical now: owner lives in `created_by` (trigger-
+    // stamped), not the old `owner_id`. Domain keeps the `ownerId` field name.
+    ownerId: row.created_by,
     filePath: row.file_path,
     storageUri: row.storage_uri,
     fileName: row.file_name,
@@ -186,7 +201,8 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
 export function dbRowToCloudFolder(row: CloudFolderRow): CloudFolder {
   return {
     id: row.id,
-    ownerId: row.owner_id,
+    // Canonical `files.folders`: owner is `created_by`, not `owner_id`.
+    ownerId: row.created_by,
     folderPath: row.folder_path,
     folderName: row.folder_name,
     parentId: row.parent_id,

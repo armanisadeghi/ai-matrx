@@ -87,11 +87,12 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
     void (async () => {
       if (selectFileById(store.getState(), fileId)) return;
       const { supabase } = await import("@/utils/supabase/client");
+      const { filesDb } = await import("@/features/files/filesDb");
       const { dbRowToCloudFile } =
         await import("@/features/files/redux/converters");
       const { upsertFile } = await import("@/features/files/redux/slice");
-      const { data, error } = await supabase
-        .from("cld_files")
+      const { data, error } = await filesDb(supabase)
+        .from("files")
         .select("*")
         .eq("id", fileId)
         .is("deleted_at", null)

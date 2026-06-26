@@ -77,7 +77,8 @@ async function resolveFileReferenceValue(
 ): Promise<string | undefined> {
   if (!ref.file_id) return undefined;
   const { data, error } = await supabase
-    .from("cld_files")
+    .schema("files")
+    .from("files")
     .select("file_name, mime_type")
     .eq("id", ref.file_id)
     .maybeSingle();

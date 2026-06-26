@@ -334,7 +334,7 @@ export function CloudFilesDebugClient() {
       const startMs = performance.now();
       setRunning((r) => ({ ...r, tree: true }));
       try {
-        const { data, error } = await supabase.rpc("cld_get_user_file_tree", {
+        const { data, error } = await supabase.rpc("get_user_file_tree", {
           p_user_id: userId,
         });
         const durationMs = Math.round(performance.now() - startMs);
@@ -343,7 +343,7 @@ export function CloudFilesDebugClient() {
           ts,
           durationMs,
           method: "RPC",
-          url: "supabase://rpc/cld_get_user_file_tree",
+          url: "supabase://rpc/get_user_file_tree",
           requestId: "—",
           status: error ? "error" : "success",
           httpStatus: null,
@@ -610,7 +610,7 @@ export function CloudFilesDebugClient() {
                 running={!!running.tree}
                 onClick={onTree}
                 icon={<FolderTree className="h-3.5 w-3.5" />}
-                label="RPC cld_get_user_file_tree"
+                label="RPC get_user_file_tree"
                 hint="Reads the full tree via Supabase RPC. Bypasses Python."
                 disabled={!userId}
               />

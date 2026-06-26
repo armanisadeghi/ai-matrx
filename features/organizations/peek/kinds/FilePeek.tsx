@@ -16,6 +16,7 @@ import React from "react";
 import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -46,8 +47,8 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("cld_files")
+      const { data } = await filesDb(supabase)
+        .from("files")
         .select("file_name, mime_type, size_bytes, created_at")
         .eq("id", id)
         .is("deleted_at", null)

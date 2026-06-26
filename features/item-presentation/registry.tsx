@@ -135,8 +135,10 @@ async function fetchRow(
   id: string,
   cols: string,
   map: (row: Record<string, unknown>) => EnrichedItem,
+  schema?: string,
 ): Promise<EnrichedItem> {
-  const { data, error } = await supabase
+  const db = schema ? supabase.schema(schema) : supabase;
+  const { data, error } = await db
     .from(table)
     .select(cols)
     .eq("id", id)
@@ -508,7 +510,7 @@ async function enrichFile(
 ): Promise<EnrichedItem> {
   return fetchRow(
     supabase,
-    "cld_files",
+    "files",
     id,
     "file_name, mime_type, size_bytes",
     (r) => ({
@@ -520,6 +522,7 @@ async function enrichFile(
           : null,
       ].filter(Boolean) as EnrichedItem["details"],
     }),
+    "files",
   );
 }
 

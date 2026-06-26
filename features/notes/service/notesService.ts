@@ -136,6 +136,9 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       tags: input.tags || [],
       metadata: input.metadata || {},
       position: input.position || 0,
+      // Private by default — the `notes.visibility` enum DB default is
+      // 'internal' (org-visible), so set it explicitly on create.
+      visibility: input.visibility ?? "private",
       // Associations were silently dropped before — a note created with a
       // task_id / org / project now actually persists those links.
       task_id: input.task_id ?? null,

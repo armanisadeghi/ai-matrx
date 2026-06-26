@@ -71,7 +71,10 @@ export function useOrgContributableItems(
       try {
         const table = entry.table!;
         const titleCol = entry.titleColumn!;
-        let q = supabase
+        const db = (
+          entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+        ) as typeof supabase;
+        let q = db
           .from(table as never)
           .select(`id, ${titleCol}`)
           .eq("user_id", userId)

@@ -23,6 +23,7 @@ import type { CloudFilesState } from "@/features/files/types";
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 import * as Files from "@/features/files/api/files";
@@ -151,7 +152,7 @@ export const loadUserFileTree = createAsyncThunk<
   // same connection.
   const rows: ReturnType<typeof parseCloudTreeRows> = [];
   for (let page = 0; page < TREE_MAX_PAGES; page += 1) {
-    const { data, error } = await supabase.rpc("cld_get_user_file_tree", {
+    const { data, error } = await supabase.rpc("get_user_file_tree", {
       p_user_id: userId,
       p_limit: TREE_PAGE_SIZE,
       p_offset: page * TREE_PAGE_SIZE,
@@ -316,13 +317,13 @@ export const loadFolderContents = createAsyncThunk<
   // — `cld_*` tables don't know about them and would 22P02 on the synthetic id.
   if (folderId.startsWith("vfs:")) return;
   const [filesRes, foldersRes] = await Promise.all([
-    supabase
-      .from("cld_files")
+    filesDb(supabase)
+      .from("files")
       .select("*")
       .eq("parent_folder_id", folderId)
       .is("deleted_at", null),
-    supabase
-      .from("cld_folders")
+    filesDb(supabase)
+      .from("folders")
       .select("*")
       .eq("parent_id", folderId)
       .is("deleted_at", null),
@@ -382,8 +383,8 @@ export const loadFileVersions = createAsyncThunk<
   ThunkApi
 >("cloudFiles/loadFileVersions", async ({ fileId }, { dispatch }) => {
   if (isVirtualResourceId(fileId)) return;
-  const { data, error } = await supabase
-    .from("cld_file_versions")
+  const { data, error } = await filesDb(supabase)
+    .from("file_versions")
     .select("*")
     .eq("file_id", fileId)
     .order("version_number", { ascending: false });
@@ -421,8 +422,8 @@ export const loadShareLinks = createAsyncThunk<
   ThunkApi
 >("cloudFiles/loadShareLinks", async ({ resourceId }, { dispatch }) => {
   if (isVirtualResourceId(resourceId)) return;
-  const { data, error } = await supabase
-    .from("cld_share_links")
+  const { data, error } = await filesDb(supabase)
+    .from("share_links")
     .select("*")
     .eq("resource_id", resourceId)
     .eq("is_active", true);
@@ -719,8 +720,8 @@ export const ensureFolderPath = createAsyncThunk<
 
     // Not in local state — fall back to a DB lookup (another device may have
     // created it). This is the path that also handles races on first use.
-    const { data: existingRow } = await supabase
-      .from("cld_folders")
+    const { data: existingRow } = await filesDb(supabase)
+      .from("folders")
       .select("*")
       .eq("folder_path", accumulatedPath)
       .is("deleted_at", null)

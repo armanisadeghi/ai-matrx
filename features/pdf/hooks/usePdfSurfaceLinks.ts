@@ -18,6 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 import type { PdfSurfaceLinkIds } from "@/features/pdf/surfaces/registry";
 
 const TTL_MS = 60_000;
@@ -51,8 +52,8 @@ async function resolveIds(opts: {
   let processedDocumentId = opts.processedDocumentId ?? null;
 
   if (fileId && !processedDocumentId) {
-    const { data: bridge } = await supabase
-      .from("cld_files")
+    const { data: bridge } = await filesDb(supabase)
+      .from("files")
       .select("canonical_processed_document_id")
       .eq("id", fileId)
       .maybeSingle();

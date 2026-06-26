@@ -82,24 +82,28 @@ export interface MediaRef {
 // Note on table naming: The Python team's doc uses `cld_file_share_links`;
 // the actual DB table is `cld_share_links`. See for_python/REQUESTS.md.
 
-type CloudTables = Database["public"]["Tables"];
+// Cloud-files tables live in the dedicated `files` schema (the `cld_` prefix
+// was dropped in the 2026 DB restructure). Permissions are the exception —
+// they live in the canonical `public.permissions` grant store.
+type FilesTables = Database["files"]["Tables"];
+type PublicTables = Database["public"]["Tables"];
 
-export type CloudFileRow = CloudTables["cld_files"]["Row"];
-export type CloudFileInsert = CloudTables["cld_files"]["Insert"];
-export type CloudFileUpdate = CloudTables["cld_files"]["Update"];
+export type CloudFileRow = FilesTables["files"]["Row"];
+export type CloudFileInsert = FilesTables["files"]["Insert"];
+export type CloudFileUpdate = FilesTables["files"]["Update"];
 
-export type CloudFolderRow = CloudTables["cld_folders"]["Row"];
-export type CloudFolderInsert = CloudTables["cld_folders"]["Insert"];
-export type CloudFolderUpdate = CloudTables["cld_folders"]["Update"];
+export type CloudFolderRow = FilesTables["folders"]["Row"];
+export type CloudFolderInsert = FilesTables["folders"]["Insert"];
+export type CloudFolderUpdate = FilesTables["folders"]["Update"];
 
-export type CloudFileVersionRow = CloudTables["cld_file_versions"]["Row"];
+export type CloudFileVersionRow = FilesTables["file_versions"]["Row"];
 /**
  * File-permission grants live in the CANONICAL grant store `public.permissions`
  * (resource_type='file'), NOT in the legacy cld_ file-permission duplicate
  * (graveyarded in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
  */
-export type CloudFilePermissionRow = CloudTables["permissions"]["Row"];
-export type CloudShareLinkRow = CloudTables["cld_share_links"]["Row"];
+export type CloudFilePermissionRow = PublicTables["permissions"]["Row"];
+export type CloudShareLinkRow = FilesTables["share_links"]["Row"];
 
 // ---------------------------------------------------------------------------
 // 3. API (REST) types — from Python OpenAPI schemas

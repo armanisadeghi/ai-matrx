@@ -131,6 +131,12 @@ export interface OrgResourceEntry {
    * lives in another schema); only shared grants are counted.
    */
   table: string | null;
+  /**
+   * Non-`public` Postgres schema `table` lives in, if any. supabase-js reaches it
+   * via `.schema(schemaName)`. Omitted ⇒ `public`. (Set for files after the 2026
+   * restructure moved them to the `files` schema.)
+   */
+  schemaName?: string;
   hasOrgColumn: boolean;
   /** When set, owned-count excludes rows where this boolean column is true. */
   archivedColumn?: string;
@@ -281,9 +287,14 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "source",
     icon: FileText,
     description: "Documents and uploads the team works from.",
-    table: "cld_files",
+    // Physical table is `files.files` after the 2026 restructure; queried via
+    // `.schema("files")`. `shareKey` stays the canonical permissions key.
+    table: "files",
+    schemaName: "files",
     hasOrgColumn: true,
-    shareKey: "cld_files",
+    // Canonical permissions key after the 2026 file-system canonicalization:
+    // `'file'` (sent as `p_resource_type` to the share RPCs). Was `'cld_files'`.
+    shareKey: "file",
     titleColumn: "file_name",
     orgRoute: "files",
     scopeable: true,

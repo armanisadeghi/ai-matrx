@@ -298,6 +298,10 @@ const notesAdapter: VirtualSourceAdapter = {
         label: args.name,
         content: args.content ?? "",
         folder_name: folderName,
+        // Notes are private by default. The `notes.visibility` enum column
+        // (2026 canonicalization) defaults to `'internal'` at the DB; set it
+        // explicitly so a new note isn't silently org-visible.
+        visibility: "private",
       })
       .select("id, label, updated_at")
       .maybeSingle();

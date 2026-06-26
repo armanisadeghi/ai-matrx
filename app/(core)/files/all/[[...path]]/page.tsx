@@ -14,6 +14,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { filesDb } from "@/features/files/filesDb";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { PageShell } from "@/features/files/components/surfaces/PageShell";
 import { readSidebarModeCookie } from "@/features/files/utils/server-cookies";
@@ -48,8 +49,8 @@ export default async function CloudFilesDeepLinkPage({
 
   let initialFolderId: string | null = null;
   if (folderPath) {
-    const { data } = await supabase
-      .from("cld_folders")
+    const { data } = await filesDb(supabase)
+      .from("folders")
       .select("id")
       .eq("folder_path", folderPath)
       .is("deleted_at", null)

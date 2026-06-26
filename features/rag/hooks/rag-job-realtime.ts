@@ -55,8 +55,8 @@ export function subscribeToFileRagJob(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cld_file_rag_jobs",
+          schema: "files",
+          table: "file_rag_jobs",
           filter: `file_id=eq.${fileId}`,
         },
         () => {

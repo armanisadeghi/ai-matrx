@@ -10,6 +10,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { filesDb } from "@/features/files/filesDb";
 import { StudioShell } from "@/features/file-analysis/studio/StudioShell";
 
 interface PageProps {
@@ -20,8 +21,8 @@ export default async function AnalysisStudioPage({ params }: PageProps) {
   const { fileId } = await params;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("cld_files")
+  const { data, error } = await filesDb(supabase)
+    .from("files")
     .select("id, mime_type")
     .eq("id", fileId)
     .is("deleted_at", null)

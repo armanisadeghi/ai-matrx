@@ -108,7 +108,16 @@ export interface ResourceVisibility {
  *
  * Other resource types still flow through the registry + RPCs unchanged.
  */
-const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>(["cx_conversation"]);
+const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>([
+  "cx_conversation",
+  // The 2026 file-system canonicalization moved `files.files`/`files.folders`
+  // onto the `platform.visibility` enum read by `iam.has_access` RLS. The
+  // owner-UPDATE policy lets the owner write `visibility` directly, so public
+  // toggles go straight to the column (via `.schema('files')`) — never the
+  // `make_resource_*` RPCs, which only touch the now-ignored `is_public`.
+  "file",
+  "folder",
+]);
 
 function usesVisibilityEnum(resourceType: ResourceType): boolean {
   return VISIBILITY_ENUM_RESOURCE_TYPES.has(resourceType);
@@ -125,9 +134,12 @@ async function setVisibilityColumn(
   visibility: "private" | "internal" | "link" | "public",
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
-  const tableName = entry?.tableName ?? resourceType;
+  const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
   const idColumn = entry?.idColumn ?? "id";
-  const client = supabase as unknown as {
+  const base = supabase as unknown as {
+    schema: (s: string) => unknown;
+  };
+  const scoped = (entry?.schemaName ? base.schema(entry.schemaName) : supabase) as unknown as {
     from: (t: string) => {
       update: (patch: Record<string, unknown>) => {
         eq: (
@@ -139,7 +151,7 @@ async function setVisibilityColumn(
       };
     };
   };
-  const { data, error } = await client
+  const { data, error } = await scoped
     .from(tableName)
     .update({ visibility })
     .eq(idColumn, resourceId)
@@ -174,9 +186,10 @@ export async function getResourceVisibility(
     // Canonical `visibility`-enum resources: "public" ⇒ isPublic. The legacy
     // `is_public` column is no longer read by RLS, so reading it would lie.
     if (usesVisibilityEnum(resourceType)) {
-      const tableName = entry?.tableName ?? resourceType;
+      const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
       const idColumn = entry?.idColumn ?? "id";
-      const visClient = supabase as unknown as {
+      const visBase = supabase as unknown as { schema: (s: string) => unknown };
+      const visClient = (entry?.schemaName ? visBase.schema(entry.schemaName) : supabase) as unknown as {
         from: (t: string) => {
           select: (col: string) => {
             eq: (
@@ -199,7 +212,8 @@ export async function getResourceVisibility(
     if (!entry || !entry.isPublicColumn) {
       return { isPublic: false };
     }
-    const client = supabase as unknown as {
+    const pubBase = supabase as unknown as { schema: (s: string) => unknown };
+    const client = (entry.schemaName ? pubBase.schema(entry.schemaName) : supabase) as unknown as {
       from: (t: string) => {
         select: (col: string) => {
           eq: (
@@ -212,7 +226,7 @@ export async function getResourceVisibility(
       };
     };
     const { data, error } = await client
-      .from(entry.tableName)
+      .from(entry.physicalTable ?? entry.tableName)
       .select(entry.isPublicColumn)
       .eq(entry.idColumn, resourceId)
       .maybeSingle<Record<string, boolean | null>>();
@@ -613,12 +627,18 @@ export async function isResourceOwner(
     if (!entry) return false;
 
     // Canonical `visibility`-enum resources own via `created_by` (trigger-stamped,
-    // RLS-canonical), not the deprecated `user_id` the registry still names.
+    // RLS-canonical), not the deprecated `user_id`/`owner_id` columns. The
+    // registry's `ownerColumn` is already `created_by` for file/folder, but keep
+    // the explicit guard so any other enum resource added later is covered too.
     const ownerColumn = usesVisibilityEnum(resourceType)
       ? "created_by"
       : entry.ownerColumn;
 
-    const client = supabase as unknown as {
+    // Resolve the real physical table + schema (file/folder live in `files.*`,
+    // not `public`, and their `tableName` is the RLS key, not the table name).
+    const tableName = entry.physicalTable ?? entry.tableName;
+    const base = supabase as unknown as { schema: (s: string) => unknown };
+    const client = (entry.schemaName ? base.schema(entry.schemaName) : supabase) as unknown as {
       from: (t: string) => {
         select: (col: string) => {
           eq: (
@@ -637,7 +657,7 @@ export async function isResourceOwner(
       },
     ] = await Promise.all([
       client
-        .from(entry.tableName)
+        .from(tableName)
         .select(ownerColumn)
         .eq(entry.idColumn, resourceId)
         .maybeSingle<Record<string, string | null>>(),

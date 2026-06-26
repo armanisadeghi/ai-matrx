@@ -343,6 +343,9 @@ export const createNewNote = createAsyncThunk<
       tags: input.tags ?? [],
       metadata: {},
       position: 0,
+      // Private by default — the `notes.visibility` enum DB default is
+      // 'internal' (org-visible), so set it explicitly on create.
+      visibility: input.visibility ?? "private",
       ...(input.organization_id && { organization_id: input.organization_id }),
       ...(input.project_id && { project_id: input.project_id }),
       ...(input.task_id && { task_id: input.task_id }),
@@ -423,6 +426,9 @@ export const copyNote = createAsyncThunk<Note, string>(
         tags: record.tags ?? [],
         metadata: {},
         position: 0,
+        // A duplicate is private by default — don't inherit a shared
+        // visibility, and don't fall through to the DB 'internal' default.
+        visibility: "private",
       })
       .select()
       .single();

@@ -308,6 +308,9 @@ export function useWorkspaceNotesRedux() {
           content: record.content,
           folder_name: record.folder_name,
           tags: record.tags,
+          // Private by default — the `notes.visibility` enum DB default is
+          // 'internal' (org-visible), so set it explicitly on create.
+          visibility: "private",
         })
         .select()
         .single();
@@ -350,6 +353,9 @@ export function useWorkspaceNotesRedux() {
           label: "New Note",
           content: "",
           folder_name: folder || "Draft",
+          // Private by default — the `notes.visibility` enum DB default is
+          // 'internal' (org-visible), so set it explicitly on create.
+          visibility: "private",
         })
         .select()
         .single();

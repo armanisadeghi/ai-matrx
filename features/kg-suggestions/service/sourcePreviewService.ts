@@ -22,6 +22,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 
 /** Source kinds we can pop into a floating window panel from the decision UI. */
 export type SourceOpenableKind = "note";
@@ -191,8 +192,8 @@ export async function resolveSourceTitle(
         // cloud file row.
         const doc = await fetchProcessedDocument(kind, id);
         if (doc?.name?.trim()) return doc.name.trim();
-        const { data } = await supabase
-          .from("cld_files")
+        const { data } = await filesDb(supabase)
+          .from("files")
           .select("file_name")
           .eq("id", id)
           .is("deleted_at", null)
@@ -563,8 +564,8 @@ async function loadConversation(id: string): Promise<SourcePreviewDoc> {
 
 async function loadFile(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("cld_file", id);
-  const { data } = await supabase
-    .from("cld_files")
+  const { data } = await filesDb(supabase)
+    .from("files")
     .select("file_name, mime_type, size_bytes, created_at")
     .eq("id", id)
     .is("deleted_at", null)

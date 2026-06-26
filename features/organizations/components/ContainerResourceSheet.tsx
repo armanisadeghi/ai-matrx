@@ -53,7 +53,10 @@ export function ContainerResourceSheet({
       setQuery("");
       const titleCol = entry.titleColumn ?? "id";
       try {
-        let q = supabase
+        const db = (
+          entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+        ) as typeof supabase;
+        let q = db
           .from(entry.table as never)
           .select(`id, ${titleCol}`)
           .eq(column as never, value)

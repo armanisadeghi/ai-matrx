@@ -56,10 +56,13 @@ export function useOrgSharedItems(
         sharePath ? sharePath.urlPathTemplate.replace("{id}", id) : null;
 
       try {
+        const db = (
+          entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+        ) as typeof supabase;
         // 1) Org-owned rows.
         const ownedById = new Map<string, OrgSharedItem>();
         if (entry.table && entry.hasOrgColumn) {
-          let q = supabase
+          let q = db
             .from(entry.table as never)
             .select(`id, ${titleCol}`)
             .eq("organization_id", orgId)
@@ -88,7 +91,7 @@ export function useOrgSharedItems(
             .map((g) => g.resourceId)
             .filter((id) => !ownedById.has(id));
           if (sharedIds.length > 0 && entry.table) {
-            const { data } = await supabase
+            const { data } = await db
               .from(entry.table as never)
               .select(`id, ${titleCol}`)
               .in("id", sharedIds);

@@ -81,7 +81,10 @@ export function useContainerInventory({
             return [entry.key, null] as const;
           }
           try {
-            let q = supabase
+            const db = (
+              entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+            ) as typeof supabase;
+            let q = db
               .from(entry.table as never)
               .select("id", { count: "exact", head: true })
               .eq(column as never, value);

@@ -58,6 +58,24 @@ export interface ShareableResourceEntry {
    * Surfaces broken end-to-end states explicitly.
    */
   rlsUsesHasPermission: boolean;
+
+  /**
+   * Non-`public` Postgres schema the resource table lives in, if any. supabase-js
+   * reaches it via `.schema(schemaName)`. Omitted ⇒ `public`.
+   * (Set for files/folders after the 2026 restructure moved them to the `files`
+   * schema.) FE-only — not part of the DB `shareable_resource_registry` parity.
+   */
+  schemaName?: string;
+
+  /**
+   * Physical table name to use for direct `.from()` reads/writes when it differs
+   * from `tableName` (which doubles as the `permissions.resource_type` / RLS key
+   * and the DB-registry value the parity test checks). Omitted ⇒ use `tableName`.
+   * (Set for files/folders: `tableName` is the canonical permissions key
+   * `'file'` / `'folder'`, but the physical table is `files.files` /
+   * `files.folders` after the 2026 canonicalization.) FE-only.
+   */
+  physicalTable?: string;
 }
 
 /**
@@ -215,21 +233,42 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/sandbox/{id}",
     rlsUsesHasPermission: true,
   },
-  cld_files: {
-    resourceType: "cld_files",
-    tableName: "cld_files",
+  file: {
+    // Canonical now: the file system was fully canonicalized in the 2026
+    // restructure. `resourceType` / `tableName` is `'file'` — this is the
+    // value sent as `p_resource_type` to the share RPCs / `resolve_shareable_
+    // resource`, which knows `'file'` (NOT the old `'cld_files'`). Physical
+    // table is `files.files`, reached via `.schema('files')`.
+    resourceType: "file",
+    tableName: "file",
+    schemaName: "files",
+    physicalTable: "files",
     idColumn: "id",
-    ownerColumn: "owner_id",
+    // Canonical owner column (trigger-stamped), not the old `owner_id`.
+    ownerColumn: "created_by",
+    // No `is_public` boolean — files carry the `platform.visibility` enum.
     isPublicColumn: null,
     displayLabel: "File",
     urlPathTemplate: "/files/f/{id}",
     // Files resolve access via the canonical resolver `iam.has_access('file',…)`
-    // (owner + grant + org + share-link), and file grants now live in the
-    // canonical `public.permissions` store (resource_type='file'). This flag
-    // tracks whether the table's RLS calls the grant-only `public.has_permission`
-    // helper directly; cld_files RLS still uses its own resolver path plus
-    // `cld_share_links`, so a bare `permissions` row is not the whole story.
-    rlsUsesHasPermission: false,
+    // (owner + grant + org + visibility/share-link), and file grants live in
+    // the canonical `public.permissions` store (resource_type='file').
+    rlsUsesHasPermission: true,
+  },
+  folder: {
+    // Folders are a registered canonical entity with file→folder / folder→
+    // folder containment; sharing flows through `public.permissions`
+    // (resource_type='folder') with `iam.has_access` RLS + visibility enum.
+    resourceType: "folder",
+    tableName: "folder",
+    schemaName: "files",
+    physicalTable: "folders",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Folder",
+    urlPathTemplate: "/files/all/{id}",
+    rlsUsesHasPermission: true,
   },
   prompt_actions: {
     resourceType: "prompt_actions",

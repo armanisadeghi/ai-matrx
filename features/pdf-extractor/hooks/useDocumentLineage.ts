@@ -21,6 +21,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { filesDb } from "@/features/files/filesDb";
 
 // ── Shapes returned to the consumer ────────────────────────────────────────
 
@@ -131,8 +132,8 @@ function rowToBinary(row: Record<string, unknown>): BinaryNode {
 }
 
 async function fetchCldFile(cldId: string): Promise<BinaryNode | null> {
-  const { data, error } = await supabase
-    .from("cld_files")
+  const { data, error } = await filesDb(supabase)
+    .from("files")
     .select(
       "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, size_bytes, created_at",
     )
@@ -158,8 +159,8 @@ async function walkBinaryAncestors(
 }
 
 async function fetchBinaryChildren(cldId: string): Promise<BinaryNode[]> {
-  const { data, error } = await supabase
-    .from("cld_files")
+  const { data, error } = await filesDb(supabase)
+    .from("files")
     .select(
       "id, file_name, derivation_kind, derivation_metadata, parent_file_id, mime_type, size_bytes, created_at",
     )

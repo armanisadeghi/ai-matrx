@@ -26,7 +26,10 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
 import { listOrgSharedResources } from "@/utils/permissions/orgResources";
 import { formatDistanceToNow } from "date-fns";
-import type { ResourceType } from "@/utils/permissions/registry";
+import {
+  getShareableResource,
+  type ResourceType,
+} from "@/utils/permissions/registry";
 
 export interface ResourceCardData {
   id: string;
@@ -89,8 +92,20 @@ export function OrgResourceList({
 
         let sharedRows: Array<Record<string, unknown>> = [];
         if (sharedIds.length > 0) {
-          const res = await supabase
-            .from(tableName as never)
+          // Hydrate shared rows from the canonical physical table. For most
+          // resources `tableName` IS the physical table in `public`. But some
+          // (files/folders, post-2026 canonicalization) live in a non-public
+          // schema and carry a distinct `permissions.resource_type` key vs
+          // their physical table name — resolve both from the registry so we
+          // read `files.files` (not `public.file`). Falls back to the
+          // `tableName` prop for any unregistered type.
+          const entry = getShareableResource(resourceType);
+          const physicalTable = entry?.physicalTable ?? tableName;
+          const base = (
+            entry?.schemaName ? supabase.schema(entry.schemaName as never) : supabase
+          ) as ReturnType<typeof supabase.schema>;
+          const res = await base
+            .from(physicalTable as never)
             .select(selectColumns)
             .in("id", sharedIds);
           sharedRows =
