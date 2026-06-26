@@ -1943,6 +1943,7 @@ export type Database = {
           is_archived: boolean
           is_favorite: boolean
           is_public: boolean
+          matrx_actions: Json
           mcp_servers: string[]
           messages: Json
           model_id: string | null
@@ -1962,6 +1963,7 @@ export type Database = {
           task_id: string | null
           tool_config: Json
           tools: string[]
+          ui_gates: Json
           updated_at: string
           updated_by: string | null
           user_id: string | null
@@ -1982,6 +1984,7 @@ export type Database = {
           is_archived?: boolean
           is_favorite?: boolean
           is_public?: boolean
+          matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
           model_id?: string | null
@@ -2001,6 +2004,7 @@ export type Database = {
           task_id?: string | null
           tool_config?: Json
           tools?: string[]
+          ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null
@@ -2021,6 +2025,7 @@ export type Database = {
           is_archived?: boolean
           is_favorite?: boolean
           is_public?: boolean
+          matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
           model_id?: string | null
@@ -2040,6 +2045,7 @@ export type Database = {
           task_id?: string | null
           tool_config?: Json
           tools?: string[]
+          ui_gates?: Json
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null
@@ -2643,6 +2649,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          matrx_actions: Json
           mcp_servers: string[]
           messages: Json | null
           model_id: string | null
@@ -2650,9 +2657,11 @@ export type Database = {
           name: string | null
           output_schema: Json | null
           settings: Json | null
+          skill_config: Json
           tags: string[] | null
           tool_config: Json
           tools: string[] | null
+          ui_gates: Json
           variable_definitions: Json | null
           version_number: number
         }
@@ -2667,6 +2676,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
           model_id?: string | null
@@ -2674,9 +2684,11 @@ export type Database = {
           name?: string | null
           output_schema?: Json | null
           settings?: Json | null
+          skill_config?: Json
           tags?: string[] | null
           tool_config?: Json
           tools?: string[] | null
+          ui_gates?: Json
           variable_definitions?: Json | null
           version_number: number
         }
@@ -2691,6 +2703,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
           model_id?: string | null
@@ -2698,9 +2711,11 @@ export type Database = {
           name?: string | null
           output_schema?: Json | null
           settings?: Json | null
+          skill_config?: Json
           tags?: string[] | null
           tool_config?: Json
           tools?: string[] | null
+          ui_gates?: Json
           variable_definitions?: Json | null
           version_number?: number
         }
@@ -24441,6 +24456,7 @@ export type Database = {
           model_id: string
           settings: Json
           tools: string[]
+          ui_gates: Json
           variable_definitions: Json
         }[]
       }
@@ -24681,6 +24697,7 @@ export type Database = {
           custom_tools: Json
           description: string
           is_active: boolean
+          matrx_actions: Json
           mcp_servers: string[]
           messages: Json
           model_id: string
@@ -24688,8 +24705,11 @@ export type Database = {
           name: string
           output_schema: Json
           settings: Json
+          skill_config: Json
           tags: string[]
+          tool_config: Json
           tools: string[]
+          ui_gates: Json
           variable_definitions: Json
           version_id: string
           version_number: number
@@ -24964,6 +24984,16 @@ export type Database = {
         Args: { p_definition: Json; p_org_id: string }
         Returns: Json
       }
+      apply_usage_delta: {
+        Args: {
+          p_bytes_delta: number
+          p_files_delta: number
+          p_record_upload?: boolean
+          p_upload_bytes?: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       assign_random_colors_to_node_all_nodes: {
         Args: never
         Returns: undefined
@@ -25110,6 +25140,7 @@ export type Database = {
           success: boolean
         }[]
       }
+      bump_version: { Args: { p_file_id: string }; Returns: number }
       calculate_trending_score: {
         Args: {
           p_comment_count: number
@@ -25171,6 +25202,10 @@ export type Database = {
           source_updated_at: string
         }[]
       }
+      check_file_rate_limit: {
+        Args: { p_actor_id: string; p_kind: string; p_limit: number }
+        Returns: Json
+      }
       check_guest_execution_limit: {
         Args: { p_fingerprint: string; p_max_executions?: number }
         Returns: {
@@ -25224,6 +25259,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_upload_quota: {
+        Args: { p_is_guest?: boolean; p_size_bytes: number; p_user_id: string }
+        Returns: Json
+      }
       claim_feedback_item: {
         Args: {
           p_admin_notes?: string
@@ -25272,91 +25311,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      cld_apply_usage_delta: {
-        Args: {
-          p_bytes_delta: number
-          p_files_delta: number
-          p_record_upload?: boolean
-          p_upload_bytes?: number
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      cld_bump_version: { Args: { p_file_id: string }; Returns: number }
-      cld_check_rate_limit: {
-        Args: { p_actor_id: string; p_kind: string; p_limit: number }
-        Returns: Json
-      }
-      cld_check_upload_quota: {
-        Args: { p_is_guest?: boolean; p_size_bytes: number; p_user_id: string }
-        Returns: Json
-      }
-      cld_consume_share_link: { Args: { p_token: string }; Returns: Json }
-      cld_count_user_files: {
-        Args: {
-          p_include_deleted?: boolean
-          p_include_folders?: boolean
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      cld_ensure_folder_chain: {
-        Args: { p_folder_path: string; p_owner_id: string }
-        Returns: string
-      }
-      cld_get_usage_status: {
-        Args: { p_is_guest?: boolean; p_user_id: string }
-        Returns: Json
-      }
-      cld_get_user_file_tree: {
-        Args: {
-          p_include_deleted?: boolean
-          p_include_folders?: boolean
-          p_limit?: number
-          p_offset?: number
-          p_order_by?: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      cld_get_user_limits: {
-        Args: { p_is_guest?: boolean; p_user_id: string }
-        Returns: Json
-      }
-      cld_hard_delete_file: { Args: { p_file_id: string }; Returns: Json }
-      cld_is_system_path: { Args: { p_path: string }; Returns: boolean }
-      cld_list_trash: {
-        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
-        Returns: Json
-      }
-      cld_prune_old_versions: {
-        Args: { p_file_id: string; p_keep: number }
-        Returns: Json
-      }
-      cld_rename_folder: {
-        Args: {
-          p_folder_id: string
-          p_new_parent_id?: string
-          p_new_path: string
-        }
-        Returns: Json
-      }
-      cld_restore_file: { Args: { p_file_id: string }; Returns: boolean }
-      cld_restore_folder: { Args: { p_folder_id: string }; Returns: Json }
-      cld_search_files: {
-        Args: {
-          p_limit?: number
-          p_mime_prefix?: string
-          p_offset?: number
-          p_query: string
-          p_user_id: string
-        }
-        Returns: Json
-      }
-      cld_soft_delete_file: { Args: { p_file_id: string }; Returns: boolean }
-      cld_soft_delete_folder: { Args: { p_folder_id: string }; Returns: Json }
-      cld_user_owns_file: { Args: { p_file_id: string }; Returns: boolean }
-      cld_user_owns_folder: { Args: { p_folder_id: string }; Returns: boolean }
       cleanup_deleted_sandboxes: {
         Args: { retention_days?: number }
         Returns: number
@@ -25438,6 +25392,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      consume_share_link: { Args: { p_token: string }; Returns: Json }
       convert_compiled_recipe_to_prompt: {
         Args: {
           p_compiled_recipe_id?: string
@@ -25517,6 +25472,14 @@ export type Database = {
       }
       convert_registered_function_to_frontend: {
         Args: { input_row: unknown }
+        Returns: Json
+      }
+      count_user_files: {
+        Args: {
+          p_include_deleted?: boolean
+          p_include_folders?: boolean
+          p_user_id: string
+        }
         Returns: Json
       }
       create_agent_task:
@@ -26484,6 +26447,10 @@ export type Database = {
         }[]
       }
       encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
+      ensure_folder_chain: {
+        Args: { p_folder_path: string; p_owner_id: string }
+        Returns: string
+      }
       ensure_personal_organization: {
         Args: { p_user_id: string }
         Returns: string
@@ -28223,6 +28190,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_usage_status: {
+        Args: { p_is_guest?: boolean; p_user_id: string }
+        Returns: Json
+      }
       get_user_dashboard_metrics: { Args: never; Returns: Json }
       get_user_email_preferences: {
         Args: { p_user_id: string }
@@ -28269,9 +28240,24 @@ export type Database = {
           view_count: number
         }[]
       }
+      get_user_file_tree: {
+        Args: {
+          p_include_deleted?: boolean
+          p_include_folders?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_order_by?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_user_form_context: { Args: { p_user_id: string }; Returns: Json }
       get_user_full_context: { Args: { p_user_id?: string }; Returns: Json }
       get_user_hierarchy: { Args: never; Returns: Json }
+      get_user_limits: {
+        Args: { p_is_guest?: boolean; p_user_id: string }
+        Returns: Json
+      }
       get_user_list_with_items: { Args: { p_list_id: string }; Returns: Json }
       get_user_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
@@ -28424,6 +28410,7 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: Json
       }
+      hard_delete_file: { Args: { p_file_id: string }; Returns: Json }
       has_permission: {
         Args: {
           p_required_permission: Database["public"]["Enums"]["permission_level"]
@@ -28626,6 +28613,7 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_user: { Args: { p_user: string }; Returns: boolean }
+      is_system_path: { Args: { p_path: string }; Returns: boolean }
       kg_caller_can_target_scope: {
         Args: { p_scope_id: string }
         Returns: boolean
@@ -28670,6 +28658,10 @@ export type Database = {
       }
       list_templates: {
         Args: { p_category?: string; p_personal_only?: boolean }
+        Returns: Json
+      }
+      list_trash: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: Json
       }
       list_wizard_archetypes: { Args: never; Returns: Json }
@@ -28828,6 +28820,10 @@ export type Database = {
         }
         Returns: Json
       }
+      prune_old_versions: {
+        Args: { p_file_id: string; p_keep: number }
+        Returns: Json
+      }
       purge_old_versions: {
         Args: {
           p_entity_id: string
@@ -28887,6 +28883,14 @@ export type Database = {
       remove_sharing: {
         Args: { permission_id: string; user_id?: string }
         Returns: boolean
+      }
+      rename_folder: {
+        Args: {
+          p_folder_id: string
+          p_new_parent_id?: string
+          p_new_path: string
+        }
+        Returns: Json
       }
       rename_storage_folder: {
         Args: {
@@ -29043,6 +29047,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      restore_file: { Args: { p_file_id: string }; Returns: boolean }
+      restore_folder: { Args: { p_folder_id: string }; Returns: Json }
       restore_note_version: {
         Args: { p_note_id: string; p_version_number: number }
         Returns: boolean
@@ -29079,6 +29085,16 @@ export type Database = {
       sch_recompute_task_next_due_at: {
         Args: { p_task_id: string }
         Returns: undefined
+      }
+      search_files: {
+        Args: {
+          p_limit?: number
+          p_mime_prefix?: string
+          p_offset?: number
+          p_query: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       search_scopes: {
         Args: { p_org_id: string; p_query: string; p_type_id?: string }
@@ -29254,6 +29270,8 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      soft_delete_file: { Args: { p_file_id: string }; Returns: boolean }
+      soft_delete_folder: { Args: { p_folder_id: string }; Returns: Json }
       split_feedback_item: {
         Args: { p_descriptions: string[]; p_parent_id: string }
         Returns: {
@@ -30093,6 +30111,8 @@ export type Database = {
         Args: { p_key: string; p_user_id: string; p_value: Json }
         Returns: Json
       }
+      user_owns_file: { Args: { p_file_id: string }; Returns: boolean }
+      user_owns_folder: { Args: { p_folder_id: string }; Returns: boolean }
       validate_slugs: {
         Args: { slug_array: string[] }
         Returns: {

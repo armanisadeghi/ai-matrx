@@ -57,6 +57,10 @@ function git(cmd: string): string {
     return execSync(cmd, {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
+      // Large generated files (e.g. types/database.types.ts) produce diffs far
+      // bigger than execSync's 1MB default → ENOBUFS, which previously aborted
+      // the whole pre-commit hook (and silently dropped commits). 256MB headroom.
+      maxBuffer: 256 * 1024 * 1024,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
