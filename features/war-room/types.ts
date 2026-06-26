@@ -5,17 +5,21 @@
 import type { Database, Json } from "@/types/database.types";
 
 // ── Raw DB row aliases ────────────────────────────────────────────────
-export type WarRoomSession = Database["public"]["Tables"]["wr_sessions"]["Row"];
+// War-room tables moved out of `public` into the dedicated `workspace` schema
+// in the 2026 DB restructure: `wr_sessions`→`workspace.war_rooms`,
+// `wr_threads`→`workspace.threads`. Reach them via `workspaceDb(supabase)`.
+export type WarRoomSession =
+  Database["workspace"]["Tables"]["war_rooms"]["Row"];
 export type WarRoomSessionInsert =
-  Database["public"]["Tables"]["wr_sessions"]["Insert"];
+  Database["workspace"]["Tables"]["war_rooms"]["Insert"];
 export type WarRoomSessionUpdate =
-  Database["public"]["Tables"]["wr_sessions"]["Update"];
+  Database["workspace"]["Tables"]["war_rooms"]["Update"];
 
-export type WarRoomThread = Database["public"]["Tables"]["wr_threads"]["Row"];
+export type WarRoomThread = Database["workspace"]["Tables"]["threads"]["Row"];
 export type WarRoomThreadInsert =
-  Database["public"]["Tables"]["wr_threads"]["Insert"];
+  Database["workspace"]["Tables"]["threads"]["Insert"];
 export type WarRoomThreadUpdate =
-  Database["public"]["Tables"]["wr_threads"]["Update"];
+  Database["workspace"]["Tables"]["threads"]["Update"];
 
 /**
  * Canonical anchor vocabulary.

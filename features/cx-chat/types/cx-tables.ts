@@ -34,7 +34,7 @@ export type CxConversationStatus = "active" | "completed" | "archived";
  * generated `cx_conversation` block is regenerated separately via `pnpm db-types`.)
  */
 export type ConversationVisibility =
-  PublicSchema["Tables"]["wr_sessions"]["Row"]["visibility"];
+  PublicSchema["Tables"]["cx_conversation"]["Row"]["visibility"];
 
 /** True when the conversation is reachable by anyone other than its owner. */
 export function isConversationShared(

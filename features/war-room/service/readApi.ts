@@ -7,6 +7,7 @@
 // (no table grant). Same edge semantics; RLS-respecting via assoc_for_*.
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { mapThreadContentsToAssignments } from "../utils/threadContentsToAssignments";
@@ -56,8 +57,8 @@ export async function fetchThreadContents(
   threadId: string,
 ): Promise<ThreadContentModule[]> {
   const [threadRow, threadEdgesRes] = await Promise.all([
-    supabase
-      .from("wr_threads")
+    workspaceDb(supabase)
+      .from("threads")
       .select("anchor_type, anchor_id")
       .eq("id", threadId)
       .is("deleted_at", null)

@@ -288,7 +288,7 @@ export const updateRoomIdentity =
     }
   };
 
-/** Persist the room's focused thread to `wr_sessions.active_thread_id`. */
+/** Persist the room's focused thread to `workspace.war_rooms.active_thread_id`. */
 export const persistActiveThread =
   (roomId: string, threadId: string | null) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {

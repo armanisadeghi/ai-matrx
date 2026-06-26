@@ -25,6 +25,7 @@
 // mutation is loud on failure (throws) — callers wrap with reportWarRoomError.
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -160,8 +161,9 @@ function isContentEdge(edge: AssociationTargetEdge): boolean {
  * the link invisible.
  */
 async function resolveContainerOrgId(ref: ContainerRef): Promise<string> {
-  const table = ref.type === "room" ? "wr_sessions" : "wr_threads";
-  const { data, error } = await supabase
+  // War-room tables live in the `workspace` schema (war_rooms / threads).
+  const table = ref.type === "room" ? "war_rooms" : "threads";
+  const { data, error } = await workspaceDb(supabase)
     .from(table)
     .select("organization_id")
     .eq("id", ref.id)

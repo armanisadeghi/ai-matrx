@@ -3,6 +3,7 @@
 // Supabase CRUD chokepoint for War Room. React → Supabase directly.
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { DEFAULT_SESSION_TITLE } from "./constants";
 import { listThreadIdsForRoom } from "./service/readApi";
@@ -18,8 +19,13 @@ import type {
   WarRoomThreadUpdate,
 } from "./types";
 
-const SESSIONS = "wr_sessions";
-const THREADS = "wr_threads";
+// War-room tables live in the `workspace` schema — always reached via
+// `workspaceDb(supabase).from(...)` (NOT the public `supabase.from`).
+const SESSIONS = "war_rooms";
+const THREADS = "threads";
+
+/** A supabase client scoped to the `workspace` schema for war-room tables. */
+const wsDb = workspaceDb(supabase);
 
 const NOT_DELETED = { deleted_at: null as null };
 
@@ -58,7 +64,7 @@ function deriveAnchor(input: CreateThreadInput): {
 // ── Sessions ──────────────────────────────────────────────────────────
 
 export async function listSessions(): Promise<WarRoomSession[]> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(SESSIONS)
     .select("*")
     .is("deleted_at", null)
@@ -66,14 +72,14 @@ export async function listSessions(): Promise<WarRoomSession[]> {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error("[war-room] listSessions failed:", error);
+    console.error("[war-room] listSessions failed:", error?.message ?? error);
     throw error;
   }
   return data ?? [];
 }
 
 export async function getSession(id: string): Promise<WarRoomSession | null> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(SESSIONS)
     .select("*")
     .eq("id", id)
@@ -81,7 +87,7 @@ export async function getSession(id: string): Promise<WarRoomSession | null> {
     .maybeSingle();
 
   if (error) {
-    console.error("[war-room] getSession failed:", error);
+    console.error("[war-room] getSession failed:", error?.message ?? error);
     throw error;
   }
   return data ?? null;
@@ -92,7 +98,7 @@ export async function createSession(
 ): Promise<WarRoomSession> {
   const userId = requireUserId();
   const organizationId = await resolveOrgIdNeverNull(input.organizationId);
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(SESSIONS)
     .insert({
       created_by: userId,
@@ -109,7 +115,7 @@ export async function createSession(
     .single();
 
   if (error) {
-    console.error("[war-room] createSession failed:", error);
+    console.error("[war-room] createSession failed:", error?.message ?? error);
     throw error;
   }
 
@@ -129,7 +135,7 @@ export async function updateSession(
   id: string,
   patch: WarRoomSessionUpdate,
 ): Promise<WarRoomSession> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(SESSIONS)
     .update(patch)
     .eq("id", id)
@@ -137,27 +143,27 @@ export async function updateSession(
     .single();
 
   if (error) {
-    console.error("[war-room] updateSession failed:", error);
+    console.error("[war-room] updateSession failed:", error?.message ?? error);
     throw error;
   }
   return data;
 }
 
 export async function touchSessionOpened(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await wsDb
     .from(SESSIONS)
     .update({ last_opened_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) console.error("[war-room] touchSessionOpened failed:", error);
+  if (error) console.error("[war-room] touchSessionOpened failed:", error?.message ?? error);
 }
 
 export async function softDeleteSession(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await wsDb
     .from(SESSIONS)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[war-room] softDeleteSession failed:", error);
+    console.error("[war-room] softDeleteSession failed:", error?.message ?? error);
     throw error;
   }
 }
@@ -166,14 +172,14 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 /** Every non-deleted thread owned by the caller (RLS-scoped). */
 export async function listAllUserThreads(): Promise<WarRoomThread[]> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(THREADS)
     .select("*")
     .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error("[war-room] listAllUserThreads failed:", error);
+    console.error("[war-room] listAllUserThreads failed:", error?.message ?? error);
     throw error;
   }
   return data ?? [];
@@ -186,14 +192,14 @@ export async function listThreadsForRoom(
   const threadIds = await listThreadIdsForRoom(roomId);
   if (threadIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(THREADS)
     .select("*")
     .in("id", threadIds)
     .is("deleted_at", null);
 
   if (error) {
-    console.error("[war-room] listThreadsForRoom failed:", error);
+    console.error("[war-room] listThreadsForRoom failed:", error?.message ?? error);
     throw error;
   }
 
@@ -205,7 +211,7 @@ export async function listThreadsForRoom(
 }
 
 export async function getThread(id: string): Promise<WarRoomThread | null> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(THREADS)
     .select("*")
     .eq("id", id)
@@ -213,7 +219,7 @@ export async function getThread(id: string): Promise<WarRoomThread | null> {
     .maybeSingle();
 
   if (error) {
-    console.error("[war-room] getThread failed:", error);
+    console.error("[war-room] getThread failed:", error?.message ?? error);
     throw error;
   }
   return data ?? null;
@@ -226,7 +232,7 @@ export async function createThread(
   let organizationId = await resolveOrgIdNeverNull(null);
 
   if (input.roomId) {
-    const { data: roomRow } = await supabase
+    const { data: roomRow } = await wsDb
       .from(SESSIONS)
       .select("organization_id")
       .eq("id", input.roomId)
@@ -235,7 +241,7 @@ export async function createThread(
   }
 
   const anchor = deriveAnchor(input);
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(THREADS)
     .insert({
       created_by: userId,
@@ -250,7 +256,7 @@ export async function createThread(
     .single();
 
   if (error) {
-    console.error("[war-room] createThread failed:", error);
+    console.error("[war-room] createThread failed:", error?.message ?? error);
     throw error;
   }
 
@@ -265,7 +271,7 @@ export async function updateThread(
   id: string,
   patch: WarRoomThreadUpdate,
 ): Promise<WarRoomThread> {
-  const { data, error } = await supabase
+  const { data, error } = await wsDb
     .from(THREADS)
     .update(patch)
     .eq("id", id)
@@ -273,19 +279,19 @@ export async function updateThread(
     .single();
 
   if (error) {
-    console.error("[war-room] updateThread failed:", error);
+    console.error("[war-room] updateThread failed:", error?.message ?? error);
     throw error;
   }
   return data;
 }
 
 export async function softDeleteThread(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await wsDb
     .from(THREADS)
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[war-room] softDeleteThread failed:", error);
+    console.error("[war-room] softDeleteThread failed:", error?.message ?? error);
     throw error;
   }
 }
@@ -295,7 +301,7 @@ export async function persistThreadPositions(
 ): Promise<void> {
   await Promise.all(
     updates.map(({ id, position }) =>
-      supabase.from(THREADS).update({ position }).eq("id", id),
+      wsDb.from(THREADS).update({ position }).eq("id", id),
     ),
   );
 }

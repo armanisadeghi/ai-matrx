@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
 export async function generateMetadata({
@@ -12,8 +13,9 @@ export async function generateMetadata({
 
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("wr_sessions")
+    // War-room session moved to the `workspace` schema (war_rooms).
+    const { data } = await workspaceDb(supabase)
+      .from("war_rooms")
       .select("title, description")
       .eq("id", id)
       .maybeSingle();
