@@ -6,11 +6,22 @@ import {
   Maximize2,
   Minimize2,
   ExternalLink,
+  Check,
+  Palette,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { SlideView, type SlideVariant } from "./SlideView";
+import { deckFontFamily, PRESET_LIST, presetTheme, resolveDeckTheme } from "./presets";
 
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render
 const PresentationExportMenu = lazy(() => import("./PresentationExportMenu"));
@@ -35,11 +46,17 @@ const Slideshow = (
   },
 ) => {
   const { slides, theme, initialState, onStateChange } = presentationData;
-  // Visual tier: "generic" (clean) | "fancy" (default — gradients, layouts) |
-  // "deluxe" (fancy + imagery). Read from the theme; default to "fancy" so
-  // existing decks instantly look better.
-  const variant: SlideVariant = ((theme?.variant as SlideVariant) ||
-    "fancy") as SlideVariant;
+  // Preset/template → a complete look (variant + palette + font). A live pick
+  // wins; otherwise merge the deck's `theme.preset`; otherwise the theme as-is.
+  // Visual tier defaults to "fancy" so existing decks instantly look better.
+  const [pickedPreset, setPickedPreset] = useState<string | null>(null);
+  const effectiveTheme = pickedPreset
+    ? presetTheme(pickedPreset)
+    : resolveDeckTheme(theme);
+  const variant: SlideVariant =
+    (effectiveTheme.variant as SlideVariant) || "fancy";
+  const activePresetKey =
+    pickedPreset ?? (theme?.preset ? String(theme.preset).toLowerCase() : null);
   // Seed the current slide from persisted state when available, clamped to the
   // valid range so a stale index from a shorter deck can't point off the end.
   const [currentSlide, setCurrentSlide] = useState(() => {
@@ -54,9 +71,12 @@ const Slideshow = (
   const slideContainerRef = useRef<HTMLDivElement>(null);
   const { open: openCanvas } = useCanvas();
 
-  // Keep a stable ref to onStateChange so closures don't go stale.
+  // Keep a stable ref to onStateChange so closures don't go stale (updated in
+  // an effect, not during render — refs must not be written while rendering).
   const onStateChangeRef = useRef(onStateChange);
-  onStateChangeRef.current = onStateChange;
+  useEffect(() => {
+    onStateChangeRef.current = onStateChange;
+  });
 
   /** Move to a slide and emit the new state to the persistence layer. */
   const applyCurrentSlide = (next: number) => {
@@ -124,8 +144,8 @@ const Slideshow = (
                       height: "6px",
                       backgroundColor:
                         currentSlide === index
-                          ? theme.primaryColor
-                          : `${theme.primaryColor}30`,
+                          ? effectiveTheme.primaryColor
+                          : `${effectiveTheme.primaryColor}30`,
                     }}
                     aria-label={`Go to slide ${index + 1}`}
                   />
@@ -137,6 +157,46 @@ const Slideshow = (
             </div>
 
             <div className="flex items-center gap-1 flex-shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Theme / template"
+                    title="Theme / template"
+                    className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <Palette className="h-3.5 w-3.5" style={{ color: effectiveTheme.primaryColor }} />
+                    <span className="hidden capitalize sm:inline">
+                      {PRESET_LIST.find((p) => p.key === activePresetKey)?.name ?? "Theme"}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-80 w-56 overflow-y-auto">
+                  <DropdownMenuLabel className="text-xs">Template</DropdownMenuLabel>
+                  {PRESET_LIST.map((p) => (
+                    <DropdownMenuItem key={p.key} onClick={() => setPickedPreset(p.key)} className="gap-2">
+                      <span
+                        className="h-4 w-4 shrink-0 rounded-full"
+                        style={{ background: `linear-gradient(135deg, ${p.primaryColor}, ${p.accentColor})` }}
+                      />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-sm leading-tight">{p.name}</span>
+                        <span className="truncate text-[10px] text-muted-foreground">{p.description}</span>
+                      </span>
+                      {activePresetKey === p.key && <Check className="h-3.5 w-3.5 shrink-0" />}
+                    </DropdownMenuItem>
+                  ))}
+                  {pickedPreset && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setPickedPreset(null)} className="text-xs text-muted-foreground">
+                        Reset to deck&apos;s theme
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <Suspense fallback={<div className="h-7 w-7" />}>
                 <PresentationExportMenu
                   presentationData={presentationData}
@@ -191,10 +251,10 @@ const Slideshow = (
               key={currentSlide}
               className={`w-full animate-fadeIn ${isFullScreen ? "max-w-6xl mx-auto" : "max-w-4xl mx-auto"}`}
             >
-              <div className="aspect-[16/9] w-full">
+              <div className="aspect-[16/9] w-full" style={{ fontFamily: deckFontFamily(effectiveTheme.font) }}>
                 <SlideView
                   slide={slide}
-                  theme={theme}
+                  theme={effectiveTheme}
                   variant={variant}
                   fullScreen={isFullScreen}
                 />
