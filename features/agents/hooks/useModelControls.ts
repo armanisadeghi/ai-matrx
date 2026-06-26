@@ -6,6 +6,7 @@
  */
 
 import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
+import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
 
 export interface ControlDefinition {
   type:
@@ -161,6 +162,38 @@ export interface NormalizedControls {
 }
 
 /**
+ * THE single canonical "does the selected model support tools?" read.
+ *
+ * Tool support is a MODEL capability. The aidream server already enforces it —
+ * `aidream/api/utils/tool_merge.py` resolves `supports_function_calling` and
+ * silently DROPS all tools/custom_tools/mcp_servers for models that can't use
+ * them. This helper aligns the FE so the UI never offers tools that will be
+ * dropped at run time.
+ *
+ * PERMISSIVE by design, mirroring the backend's permissive default: a model is
+ * treated as tool-capable UNLESS it EXPLICITLY declares `tools: { allowed:
+ * false }` (parsed to `tools.default === false`). In the live registry today,
+ * chat/LLM models carry `tools: { allowed: true }` while non-tool models
+ * (TTS / image / video / audio) simply OMIT the `tools` control — so an absent
+ * `tools` control is `default: undefined`, which this treats as supported. The
+ * gate only fires once a model declares the flag false (a future capability
+ * backfill), exactly matching server behaviour.
+ *
+ * Accepts either NormalizedControls shape — the hook's (this file) or the
+ * agent-settings parser's (`lib/redux/slices/agent-settings/types.ts`) — since
+ * both expose `tools?: { default?: unknown }`. Reuse this everywhere; never
+ * inline the `tools?.default !== false` check.
+ */
+export function supportsTools(
+  normalizedControls:
+    | { tools?: { default?: unknown } | null }
+    | null
+    | undefined,
+): boolean {
+  return normalizedControls?.tools?.default !== false;
+}
+
+/**
  * Parse and normalize controls from a model's controls object
  */
 export function useModelControls(models: any[], selectedModelId: string) {
@@ -259,13 +292,13 @@ export function useModelControls(models: any[], selectedModelId: string) {
     "max_tokens",
     "output_format",
     "n",
-    // UI capability flags from model controls (e.g. { allowed: true }).
-    // These indicate what a model supports — they are not LLMParams fields.
-    // Actual tool definitions are assembled separately via client_tools.
-    "tools",
-    "file_urls",
-    "image_urls",
-    "youtube_videos",
+    // Model-gated UI flags from model controls (e.g. { allowed: true }). These
+    // indicate what a model supports — they live in agent.uiGates, not in
+    // LLMParams. Recognised here (via the canonical UI_GATE_KEYS) so the parser
+    // surfaces them in NormalizedControls, which the UI-gates editor reads to
+    // know which gates to offer. Actual tool definitions are assembled
+    // separately via client_tools.
+    ...UI_GATE_KEYS,
     "multi_speaker",
     // ── Media-gen provider-native names (May 2026) ────────────────────
     // Each model's controls JSONB carries the EXACT field names the

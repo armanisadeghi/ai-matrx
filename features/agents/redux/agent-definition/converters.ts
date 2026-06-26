@@ -23,11 +23,58 @@
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
+import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
 import type {
   AgentDefinition,
   AgentType,
   AgentVersionSnapshot,
 } from "../../types/agent-definition.types";
+
+// ---------------------------------------------------------------------------
+// settings sanitizer — settings holds ONLY server-consumed model params.
+// These keys have dedicated columns now (matrx_actions / ui_gates / model_id /
+// tools); a writer must never reintroduce them into the settings blob. This is
+// the loud-recovery layer at the DB write chokepoint: if it ever strips one, an
+// upstream writer is still mis-routing a non-param into settings — a bug.
+// ---------------------------------------------------------------------------
+
+const SETTINGS_FORBIDDEN_KEYS: readonly string[] = [
+  "output_apply", // → matrx_actions column (retired key)
+  "model_id", // → model_id column
+  "internal_tools", // junk (no server consumer)
+  "file_urls", // → ui_gates column
+  "image_urls", // → ui_gates column
+  "youtube_videos", // → ui_gates column
+  "tools", // → tools[] column / tool_config (the boolean UI flag → ui_gates)
+];
+
+function sanitizeServerSettings(
+  settings: AgentDefinition["settings"] | null | undefined,
+): AgentDefinition["settings"] {
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+    return {} as AgentDefinition["settings"];
+  }
+  const src = settings as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  const stripped: string[] = [];
+  for (const [k, v] of Object.entries(src)) {
+    if (SETTINGS_FORBIDDEN_KEYS.includes(k)) {
+      stripped.push(k);
+      continue;
+    }
+    out[k] = v;
+  }
+  if (stripped.length > 0) {
+    console.warn(
+      `[agent-converters] Stripped non-param key(s) from settings on write: ${stripped.join(
+        ", ",
+      )}. These belong in dedicated columns (matrx_actions / ui_gates / model_id / tools) — ` +
+        "an upstream writer is mis-routing them into settings.",
+    );
+  }
+  return out as AgentDefinition["settings"];
+}
 
 export type { AgentVersionSnapshot };
 
@@ -183,6 +230,8 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     customTools,
     autoToolsDisabled,
     skillConfig,
+    uiGates: (row.ui_gates as unknown as UiGates) ?? {},
+    matrxActions: (row.matrx_actions as unknown as MatrxActionsConfig) ?? {},
     mcpServers: row.mcp_servers ?? [],
 
     userId: row.user_id,
@@ -247,9 +296,15 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
       agent.messages as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["messages"],
     variable_definitions:
       agent.variableDefinitions as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["variable_definitions"],
-    settings:
-      agent.settings as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["settings"],
+    settings: sanitizeServerSettings(
+      agent.settings,
+    ) as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["settings"],
     tools: agent.tools,
+
+    ui_gates:
+      agent.uiGates as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["ui_gates"],
+    matrx_actions:
+      agent.matrxActions as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["matrx_actions"],
 
     context_slots:
       agent.contextSlots as unknown as Database["public"]["Tables"]["agx_agent"]["Insert"]["context_slots"],
@@ -311,9 +366,17 @@ export function agentDefinitionToUpdate(
     update.variable_definitions =
       partial.variableDefinitions as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["variable_definitions"];
   if (partial.settings !== undefined)
-    update.settings =
-      partial.settings as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["settings"];
+    update.settings = sanitizeServerSettings(
+      partial.settings,
+    ) as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["settings"];
   if (partial.tools !== undefined) update.tools = partial.tools;
+
+  if (partial.uiGates !== undefined)
+    update.ui_gates =
+      partial.uiGates as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["ui_gates"];
+  if (partial.matrxActions !== undefined)
+    update.matrx_actions =
+      partial.matrxActions as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["matrx_actions"];
 
   if (partial.contextSlots !== undefined)
     update.context_slots =
@@ -423,6 +486,8 @@ export function versionSnapshotRowToAgentDefinition(
     skillConfig: parseSkillConfigJson(
       (row as { skill_config?: unknown }).skill_config,
     ),
+    uiGates: (row.ui_gates as unknown as UiGates) ?? {},
+    matrxActions: (row.matrx_actions as unknown as MatrxActionsConfig) ?? {},
     mcpServers: row.mcp_servers ?? [],
 
     isOwner: null,

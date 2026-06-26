@@ -64,6 +64,8 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
       forbidden: [],
       disabled: false,
     },
+    uiGates: {},
+    matrxActions: {},
 
     userId: null,
     organizationId: null,
@@ -464,6 +466,8 @@ export const agentDefinitionSlice = createSlice({
           forbidden: [],
           disabled: false,
         },
+        uiGates: data.uiGates ?? {},
+        matrxActions: data.matrxActions ?? {},
         mcpServers: data.mcpServers ?? [],
         userId: data.userId ?? null,
         organizationId: data.organizationId ?? null,
@@ -660,6 +664,37 @@ export const agentDefinitionSlice = createSlice({
       const record = state.agents[action.payload.id];
       if (!record) return;
       applyFieldEdit(record, "outputSchema", action.payload.outputSchema);
+    },
+
+    /**
+     * Model-gated UI flags (FE-only). The full UiGates object is replaced
+     * atomically; the gate editor computes the next value and dispatches once.
+     * Persisted to `agx_agent.ui_gates` — never sent to the server.
+     */
+    setAgentUiGates(
+      state,
+      action: PayloadAction<{ id: string; uiGates: AgentDefinition["uiGates"] }>,
+    ) {
+      const record = state.agents[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "uiGates", action.payload.uiGates);
+    },
+
+    /**
+     * Matrx Actions apply config. Replaced atomically by the Matrx Actions tab;
+     * persisted to `agx_agent.matrx_actions`. Read by aidream's output-directive
+     * dispatcher (full rebrand of the retired settings["output_apply"]).
+     */
+    setAgentMatrxActions(
+      state,
+      action: PayloadAction<{
+        id: string;
+        matrxActions: AgentDefinition["matrxActions"];
+      }>,
+    ) {
+      const record = state.agents[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "matrxActions", action.payload.matrxActions);
     },
 
     // ── Dirty / history management ────────────────────────────────────────────
@@ -893,6 +928,8 @@ export const {
   setAgentSkillConfig,
   setAgentModelTiers,
   setAgentOutputSchema,
+  setAgentUiGates,
+  setAgentMatrxActions,
   resetAgentField,
   resetAllAgentFields,
   markAgentSaved,

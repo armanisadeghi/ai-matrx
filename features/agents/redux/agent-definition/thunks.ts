@@ -306,6 +306,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
         tools: row.tools,
         customTools: row.custom_tools,
         modelId: row.model_id,
+        uiGates: row.ui_gates ?? {},
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "customExecution" }));
@@ -665,6 +666,8 @@ export const createAgent = createAsyncThunk<
       forbidden: [],
       disabled: false,
     },
+    uiGates: partial.uiGates ?? {},
+    matrxActions: partial.matrxActions ?? {},
     mcpServers: partial.mcpServers ?? [],
     userId,
     organizationId: partial.organizationId ?? null,

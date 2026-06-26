@@ -75,13 +75,15 @@ export interface AgentSettings {
   image_loras?: unknown[];
   disable_safety_checker?: boolean;
 
-  // UI-only capability flags — tell the UI which input types to show.
-  // These are NEVER sent to the API. Stripped in buildApiPayload().
-  image_urls?: boolean;
-  file_urls?: boolean;
-  youtube_videos?: boolean;
+  // Provider-native boolean params (REAL settings, sent to the API).
   internal_web_search?: boolean;
   internal_url_context?: boolean;
+
+  // NOTE: The model-gated UI flags (image_urls, file_urls, youtube_videos, and
+  // the `tools` capability boolean) are NO LONGER part of AgentSettings — they
+  // moved to the dedicated FE-only `agent.uiGates` column (type UiGates). See
+  // lib/redux/slices/agent-settings/ui-gates.ts. `tools?: string[]` above is the
+  // separate UI-managed tool-name list, not the capability gate.
 
   // Deprecated — read-only migration field. Never write this.
   output_format?: string;
@@ -92,12 +94,12 @@ export type ResponseFormatValue =
   | string;
 
 /**
- * Fields in AgentSettings that are UI-only and must be stripped before API submission.
+ * Fields in AgentSettings that are UI-only and must be stripped before API
+ * submission. The model-gated UI flags (image_urls / file_urls /
+ * youtube_videos / tools) moved to agent.uiGates and are stripped via
+ * UI_GATE_KEYS, not here.
  */
 export const UI_ONLY_FIELDS: ReadonlyArray<keyof AgentSettings> = [
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
   "internal_web_search",
   "internal_url_context",
   "output_format", // deprecated — never send

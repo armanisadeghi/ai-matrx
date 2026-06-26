@@ -142,26 +142,19 @@ import {
 } from "@/lib/redux/net/netRequestsSlice";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
+import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
 
-// UI-only capability flags carried inside `agent.settings` for the builder's
-// model picker (e.g. `tools: { allowed: true }`, `image_urls: true`). They
-// must not be forwarded to the model call — the actual tool list ships via
-// the tool fields below. Copied locally so this path takes zero dependency
-// on instance-model-overrides.
-const UI_CAPABILITY_KEYS = new Set<string>([
-  "tools",
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
-  "multi_speaker",
-]);
-
+// Model-gated UI flags that may ride flattened in the builder's working state
+// (e.g. `tools: { allowed: true }`, `image_urls: true`). They must not be
+// forwarded to the model call — the actual tool list ships via the tool fields
+// below. Stripped via the canonical `isUiGateKey`. (`multi_speaker` is a REAL
+// audio param and is intentionally NOT a gate key, so it now flows through.)
 function stripUiCapabilityFlags(
   settings: Record<string, unknown>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(settings)) {
-    if (UI_CAPABILITY_KEYS.has(k)) continue;
+    if (isUiGateKey(k)) continue;
     out[k] = v;
   }
   return out;

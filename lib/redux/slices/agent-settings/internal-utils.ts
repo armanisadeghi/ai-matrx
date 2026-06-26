@@ -26,6 +26,7 @@ import type {
   UI_ONLY_FIELDS,
 } from "./types";
 import { AgentContext } from "./types";
+import { isUiGateKey, UI_GATE_KEYS } from "./ui-gates";
 
 // Re-export for consumers
 export type { AgentContext };
@@ -76,19 +77,6 @@ const ALL_KNOWN_KEYS = new Set<string>([
   "stop_sequences",
 ]);
 
-/**
- * Keys that control UI capabilities rather than API submission values.
- * When seen in model controls, they become boolean feature flags in settings.
- */
-const UI_CAPABILITY_KEYS = new Set<string>([
-  "tools",
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
-  "multi_speaker",
-  "internal_web_search",
-  "internal_url_context",
-]);
 
 // ── Controls Parsing ───────────────────────────────────────────────────────────
 
@@ -232,8 +220,11 @@ export function extractModelDefaults(
     const rawControl = value as Record<string, unknown>;
     const normalizedKey = key === "output_format" ? "response_format" : key;
 
-    // UI-capability keys — tools gets special handling
-    if (UI_CAPABILITY_KEYS.has(normalizedKey)) {
+    // Model-gated UI flags — `tools` gets special handling. These now live in
+    // agent.uiGates, but a model's controls still declare them, so we keep
+    // extracting their boolean defaults here. (`multi_speaker` / `internal_*`
+    // are REAL params and fall through to the submission-param path below.)
+    if (isUiGateKey(normalizedKey)) {
       if (normalizedKey === "tools") {
         // Only add tools array if the model actually allows tools
         if (rawControl.allowed === true) {
@@ -507,11 +498,11 @@ export function computeOverrideDiff(
 
 // ── API Payload Builder ────────────────────────────────────────────────────────
 
-/** All UI-only field names — never sent to the Python backend */
+/** All UI-only field names — never sent to the Python backend. The model-gated
+ *  UI flags (now in agent.uiGates) are pulled from the canonical UI_GATE_KEYS so
+ *  a flattened value can never leak; the rest are genuine FE-only settings. */
 const UI_ONLY_SET = new Set<string>([
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
+  ...UI_GATE_KEYS,
   "internal_web_search",
   "internal_url_context",
   "output_format", // deprecated

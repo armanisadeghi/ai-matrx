@@ -22,6 +22,7 @@ import {
   selectNormalizedControls,
 } from "@/lib/redux/slices/agent-settings/selectors";
 import { applySettingsFromDialog } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
+import { supportsTools } from "@/features/agents/hooks/useModelControls";
 
 interface AvailableTool {
   name: string;
@@ -48,9 +49,9 @@ export function ToolSelectorPanel({
   );
 
   const selectedTools: string[] = effectiveSettings.tools ?? [];
-  const modelSupportsTools =
-    normalizedControls?.tools?.isFeatureFlag === true ||
-    normalizedControls?.tools !== undefined;
+  // Canonical capability read — supported unless the model explicitly declares
+  // tools:{allowed:false} (mirrors the server's permissive default).
+  const modelSupportsTools = supportsTools(normalizedControls);
 
   const handleAddTool = (toolName: string) => {
     if (selectedTools.includes(toolName)) return;
@@ -139,6 +140,26 @@ export function ToolSelectorPanel({
           </PopoverContent>
         </Popover>
       </div>
+
+      {/* Advisory — saved tools will be dropped at run time for this model.
+          Non-blocking; the server enforces the drop. */}
+      {!modelSupportsTools && selectedTools.length > 0 && (
+        <div className="flex items-start gap-1.5 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+          <span className="text-[11px] leading-tight text-amber-700 dark:text-amber-300">
+            This model doesn&apos;t support tools — the {selectedTools.length}{" "}
+            selected tool{selectedTools.length === 1 ? "" : "s"} will be dropped
+            at run time.
+          </span>
+        </div>
+      )}
+
+      {/* Inline explanation when the add affordance is disabled. */}
+      {!modelSupportsTools && (
+        <p className="text-[11px] italic text-muted-foreground">
+          This model doesn&apos;t support tools.
+        </p>
+      )}
 
       {/* Selected tools */}
       {selectedTools.length === 0 ? (

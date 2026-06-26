@@ -15,6 +15,7 @@ import {
   X,
   Braces,
   Loader2,
+  Zap,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -79,8 +80,10 @@ import {
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
 import { NumberInput } from "./controls/NumberInput";
+import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
+import { MatrxActionsTab } from "./matrx-actions/MatrxActionsTab";
 import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
@@ -103,7 +106,8 @@ type SettingsTab =
   | "raw"
   | "raw-edit"
   | "model-config"
-  | "output-schema";
+  | "output-schema"
+  | "matrx-actions";
 
 // NOTE: media inputs (image_input, start_image, end_image, mask, etc.) do
 // NOT belong on agent settings — they're per-run user inputs that flow
@@ -922,6 +926,11 @@ function TabBar({ active, onChange, issueCount }: TabBarProps) {
       id: "output-schema",
       label: "Output Schema",
       icon: <Braces className="h-3 w-3" />,
+    },
+    {
+      id: "matrx-actions",
+      label: "Matrx Actions",
+      icon: <Zap className="h-3 w-3" />,
     },
   ];
 
@@ -1859,6 +1868,17 @@ export function AgentSettingsCore({
                 </div>
               ),
             )}
+
+            {/* Input capabilities — model-gated UI flags. These live in the
+                dedicated agent.uiGates column (NOT settings), so they have
+                their own editor that writes via setAgentUiGates. Only gates
+                the selected model declares are shown. */}
+            {!noControls && (
+              <UiGatesEditor
+                agentId={agentId}
+                normalizedControls={normalizedControls}
+              />
+            )}
           </div>
         )}
 
@@ -1944,6 +1964,9 @@ export function AgentSettingsCore({
         {activeTab === "output-schema" && (
           <OutputSchemaTab agentId={agentId} onDirtyChange={setEditorDirty} />
         )}
+
+        {/* ── MATRX ACTIONS TAB ──────────────────────────────────────────── */}
+        {activeTab === "matrx-actions" && <MatrxActionsTab agentId={agentId} />}
       </div>
 
       {/* Model-change reconciliation dialog */}

@@ -31,6 +31,7 @@ import {
   Code2,
   Server,
   ShieldOff,
+  AlertTriangle,
 } from "lucide-react";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -50,6 +51,16 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import {
+  selectAllModels,
+  selectModelFullyLoaded,
+  fetchModelById,
+} from "@/features/ai-models/redux/modelRegistrySlice";
+import {
+  useModelControls,
+  supportsTools,
+} from "@/features/agents/hooks/useModelControls";
+import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
@@ -77,6 +88,36 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const agentReady = useAppSelector((s) =>
     agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
   );
+
+  // Tool support is a MODEL capability — the server drops added tools for
+  // models that can't use them. Read the effective (override ?? base) model for
+  // this run and gate the add-picker so we don't offer tools that will be
+  // silently dropped. Permissive default (see supportsTools).
+  const overrideState = useAppSelector(
+    selectInstanceOverrideState(conversationId),
+  );
+  const effectiveModelId =
+    (overrideState?.overrides?.model as string | undefined) ??
+    (overrideState?.baseSettings?.model as string | undefined) ??
+    "";
+  const models = useAppSelector(selectAllModels);
+  const modelIsFull = useAppSelector((s) =>
+    selectModelFullyLoaded(s, effectiveModelId),
+  );
+  const modelRegistryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
+  // The registry may hold only the lightweight "options" record (no controls).
+  // Pull the full record so the capability read is accurate; the thunk no-ops
+  // when already loaded.
+  useEffect(() => {
+    if (effectiveModelId && !modelIsFull && !modelRegistryLoading) {
+      void dispatch(fetchModelById(effectiveModelId));
+    }
+  }, [effectiveModelId, modelIsFull, modelRegistryLoading, dispatch]);
+  const { normalizedControls } = useModelControls(models, effectiveModelId);
+  // Unknown model (none selected / not loaded) → permissive, don't gate.
+  const modelSupportsTools = effectiveModelId
+    ? supportsTools(normalizedControls)
+    : true;
 
   const settings =
     useAppSelector(selectBuilderAdvancedSettings(conversationId)) ??
@@ -216,9 +257,34 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             </span>
           </div>
         )}
+
+        {/* Model-capability advisory — the selected model can't use tools; the
+            server drops them all at run time. Non-blocking. */}
+        {!modelSupportsTools && (
+          <div className="flex items-start gap-1.5 border-t border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
+            <span className="text-[10px] leading-tight text-amber-700 dark:text-amber-300">
+              This model doesn&apos;t support tools — any tools above or added
+              here are dropped at run time. Switch to a tool-capable model to use
+              them.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Section 2: add registry tools to THIS run ─────────────────── */}
+      {!modelSupportsTools ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-8 text-center">
+          <Wrench className="h-5 w-5 text-muted-foreground/40" />
+          <p className="text-xs text-muted-foreground">
+            This model doesn&apos;t support tools.
+          </p>
+          <p className="text-[10px] text-muted-foreground/70">
+            Switch to a tool-capable model to add tools to this run.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className="shrink-0 border-b border-border px-2 pb-1.5 pt-2">
         <p className="mb-1.5 text-[11px] leading-tight text-muted-foreground">
           Add tools to this run — on top of the agent&apos;s own tools.
@@ -273,7 +339,11 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
           ))
         )}
       </div>
+        </>
+      )}
 
+      {/* Clear added tools — available even when the model can't use tools, so a
+          user can clean up a set that would otherwise be dropped at run time. */}
       {added.size > 0 && (
         <div className="shrink-0 border-t border-border px-2 py-1.5">
           <button

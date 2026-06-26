@@ -382,6 +382,19 @@ export const selectAgentOutputSchema = createSelector(
   (record) => record?.outputSchema ?? null,
 );
 
+/** Model-gated UI flags (FE-only). Empty default so gate consumers render
+ *  without null-checks; never sent to the server. */
+export const selectAgentUiGates = createSelector(
+  [selectAgentById],
+  (record) => record?.uiGates ?? {},
+);
+
+/** Matrx Actions apply config. Empty default = system default policy. */
+export const selectAgentMatrxActions = createSelector(
+  [selectAgentById],
+  (record) => record?.matrxActions ?? {},
+);
+
 export const selectAgentTags = createSelector(
   [selectAgentById],
   (record) => record?.tags,

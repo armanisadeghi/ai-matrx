@@ -13,6 +13,7 @@
 import type { ValidationRule, ValidationIssue, ResolvedConfig } from "./types";
 import { getControlForKey } from "./resolve-config";
 import { evaluateAllConstraints } from "./constraints";
+import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
 
 // =============================================================================
 // Rule: Unrecognized Keys
@@ -386,11 +387,12 @@ const responseFormatStructure: ValidationRule = {
 // =============================================================================
 // (Removed) Rule: Frontend-only keys in settings
 //
-// Frontend capability flags (tools, image_urls, file_urls, youtube_videos,
-// multi_speaker) are legitimate in the agent settings store — they tell the UI
-// what a model supports. The API call boundary (selectSettingsOverridesForApi)
-// is responsible for stripping them before outbound requests, not the settings
-// editor. Flagging them here produced false warnings.
+// The model-gated UI flags (tools, image_urls, file_urls, youtube_videos) MOVED
+// OUT of the agent settings store into the dedicated FE-only `agent.uiGates`
+// column — they are no longer settings keys, so a dedicated "frontend-only key"
+// rule has nothing to flag. `multi_speaker` is a REAL audio param and remains a
+// normal setting. The API-call boundary still strips any flattened gate keys
+// (via UI_GATE_KEYS) before outbound requests.
 // =============================================================================
 
 // =============================================================================
@@ -435,16 +437,6 @@ const integerTypeEnforcement: ValidationRule = {
 // Rule: Unsupported by the selected model
 // =============================================================================
 
-// Frontend capability flags are model-independent (stripped before the API
-// call), so they must never be flagged as "unsupported".
-const UI_CAPABILITY_KEYS = new Set([
-  "tools",
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
-  "multi_speaker",
-]);
-
 const unsupportedByModel: ValidationRule = {
   id: "unsupported-by-model",
   description:
@@ -471,7 +463,9 @@ const unsupportedByModel: ValidationRule = {
     for (const [key, value] of Object.entries(settings)) {
       if (value === null || value === undefined) continue;
       if (key === "model_id") continue;
-      if (UI_CAPABILITY_KEYS.has(key)) continue; // model-independent flags
+      // Model-gated UI flags moved OUT of settings into agent.uiGates; they no
+      // longer appear here. Guard defensively in case a flattened value lingers.
+      if (isUiGateKey(key)) continue;
       if (key in LEGACY_KEY_MAP) continue; // handled by the deprecated-key rule
       if (!config.recognizedKeys.has(key)) continue; // handled by unrecognized-keys
       if (getControlForKey(config.normalizedControls, key)) continue; // supported

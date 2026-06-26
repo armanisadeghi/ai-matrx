@@ -8,6 +8,8 @@ import { OutputSchema } from "@/features/agents/types/json-schema";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 import type { SkillConfig } from "@/features/skills/types";
+import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
 
 export type AgentType = "user" | "builtin";
 
@@ -280,6 +282,22 @@ export interface AgentDefinition {
    */
   skillConfig: SkillConfig;
 
+  /**
+   * Model-gated UI flags (FE-only; persisted in `agx_agent.ui_gates`). Gate what
+   * the chat / builder UI exposes for the selected model (image/file/youtube
+   * attachment inputs, tool affordance). NEVER sent to the server — see
+   * `@/lib/redux/slices/agent-settings/ui-gates`. Defaults to `{}`.
+   */
+  uiGates: UiGates;
+
+  /**
+   * Matrx Actions apply config (persisted in `agx_agent.matrx_actions`). Declares
+   * whether model-emitted output directives auto-apply / ask / are off, and for
+   * which action types. Read by aidream's output-directive dispatcher. Full
+   * rebrand of the retired `settings["output_apply"]`. Defaults to `{}`.
+   */
+  matrxActions: MatrxActionsConfig;
+
   // Ownership & Hierarchy (null on version records)
   userId: string | null;
   organizationId: string | null;
@@ -392,6 +410,9 @@ export interface AgentExecutionFull {
   tools: string[];
   custom_tools: CustomToolDefinition[];
   context_slots: ContextSlot[] | null;
+  // FE-only model-gated UI flags — projected so the chat/execution path can gate
+  // attachment inputs (previously read from settings before the 2026-06 move).
+  ui_gates: UiGates;
 }
 
 // AgentDriftItem / AgentReference / AcceptVersionResult were removed when the
@@ -465,6 +486,13 @@ export interface AgentVersionSnapshot {
   changed_at: string;
   change_note: string | null;
   mcp_servers: string[];
+  // Versioned config columns (projected by agx_get_version_snapshot since the
+  // 2026-06 config-normalization migration; tool_config/skill_config were
+  // previously missing from the projection — fixed in the same sweep).
+  tool_config: Record<string, unknown> | null;
+  skill_config: AgentDefinition["skillConfig"] | null;
+  matrx_actions: MatrxActionsConfig;
+  ui_gates: UiGates;
 }
 
 // ---------------------------------------------------------------------------

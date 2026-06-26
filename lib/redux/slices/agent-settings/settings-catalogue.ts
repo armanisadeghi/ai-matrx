@@ -34,7 +34,6 @@ import type { ControlDefinition } from "./types";
 export type SettingsGroupId =
   | "text"
   | "featureFlags"
-  | "inputCapabilities"
   | "imageVideo"
   | "audio"
   | "other";
@@ -86,16 +85,11 @@ const FEATURE_FLAGS_GROUP: CatalogueEntry[] = [
   { key: "include_rai_reason", label: "Include RAI Reason" },
 ];
 
-// Frontend capability flags — what input types the UI offers. These are
-// model-independent by design (stripped before the API call), so they ALWAYS
-// belong on the panel. Previously they only appeared via the "Other Settings"
-// catch-all when a model happened to declare them.
-const INPUT_CAPABILITIES_GROUP: CatalogueEntry[] = [
-  { key: "tools", label: "Tools" },
-  { key: "file_urls", label: "File URLs" },
-  { key: "image_urls", label: "Image URLs" },
-  { key: "youtube_videos", label: "YouTube Videos" },
-];
+// NOTE: The model-gated input-capability flags (tools, file_urls, image_urls,
+// youtube_videos) are NO LONGER settings rows — they moved to the dedicated
+// FE-only `agent.uiGates` column and are edited via the UiGatesEditor
+// (Input capabilities section) in AgentSettingsCore. They never appear in the
+// settings catalogue or the AgentSettings type.
 
 const IMAGE_VIDEO_GROUP: CatalogueEntry[] = [
   { key: "size", label: "Size" },
@@ -147,11 +141,6 @@ const AUDIO_GROUP: CatalogueEntry[] = [
 export const SETTINGS_CATALOGUE: CatalogueGroup[] = [
   { id: "text", label: "", entries: TEXT_GROUP },
   { id: "featureFlags", label: "Feature Flags", entries: FEATURE_FLAGS_GROUP },
-  {
-    id: "inputCapabilities",
-    label: "Input Capabilities",
-    entries: INPUT_CAPABILITIES_GROUP,
-  },
   { id: "imageVideo", label: "Image / Video Settings", entries: IMAGE_VIDEO_GROUP },
   { id: "audio", label: "Audio Settings", entries: AUDIO_GROUP },
 ];

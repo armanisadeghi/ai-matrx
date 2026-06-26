@@ -6,17 +6,13 @@ import {
 } from "@/lib/redux/slices/agent-settings/types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
+import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
 
-// UI capability flags from model controls (e.g. `tools: { allowed: true }`).
-// These are legitimate in the settings store but are not LLMParams fields.
-// Included here so the "unrecognized key" rule doesn't flag them.
-const UI_CAPABILITY_KEYS = new Set([
-  "tools",
-  "image_urls",
-  "file_urls",
-  "youtube_videos",
-  "multi_speaker",
-]);
+// The model-gated UI flags moved OUT of settings into agent.uiGates, so they
+// should no longer appear in `settings`. We still register them as recognized
+// (defensive: a flattened value lingering must never trip "unrecognized key").
+// `multi_speaker` is a REAL audio param (not a gate) and is registered too.
+const UI_GATE_RECOGNIZED = new Set<string>([...UI_GATE_KEYS, "multi_speaker"]);
 
 const LEGACY_REMAP_KEYS = new Set(["max_tokens", "output_format", "n"]);
 
@@ -26,7 +22,8 @@ const LEGACY_REMAP_KEYS = new Set(["max_tokens", "output_format", "n"]);
  * Sources (union of):
  *   1. LLM_PARAMS_KEYS — auto-generated from the Python backend schema
  *   2. Model-specific controls — keys the selected model exposes
- *   3. UI capability flags (tools, image_urls, etc.)
+ *   3. UI gate keys (now in agent.uiGates) + multi_speaker — registered
+ *      defensively so a lingering flattened value never trips "unrecognized key"
  *   4. Legacy DB keys that are remapped at normalization time
  *
  * This replaces the hardcoded `recognizedKeys` set that previously lived
@@ -37,7 +34,7 @@ export function buildRecognizedKeys(
 ): Set<string> {
   const keys = new Set<string>([
     ...LLM_PARAMS_KEYS,
-    ...UI_CAPABILITY_KEYS,
+    ...UI_GATE_RECOGNIZED,
     ...LEGACY_REMAP_KEYS,
   ]);
 

@@ -106,9 +106,15 @@ function readAgentSnapshot(
   return {
     agentType: agent?.agentType ?? "user",
     variableDefinitions: agent?.variableDefinitions ?? [],
-    // Fold the agent's model into the snapshot so the per-instance override
-    // layer owns it (see buildInstanceBaseSettings for the full invariant).
-    baseSettings: buildInstanceBaseSettings(agent?.settings, agent?.modelId),
+    // Fold the agent's model + UI gates into the snapshot so the per-instance
+    // override layer owns them (see buildInstanceBaseSettings for the full
+    // invariant). uiGates carry the attachment/tool capability flags the chat
+    // surface gates on — flattened here, stripped before the API call.
+    baseSettings: buildInstanceBaseSettings(
+      agent?.settings,
+      agent?.modelId,
+      agent?.uiGates,
+    ),
     contextSlots: agent?.contextSlots ?? [],
     isCreator: agent?.isOwner ?? false,
   };

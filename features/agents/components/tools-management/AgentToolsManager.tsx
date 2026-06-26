@@ -103,6 +103,8 @@ import {
 } from "@/features/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
+import { supportsTools } from "@/features/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 
@@ -333,6 +335,29 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
   const autoToolsDisabled = useAppSelector((state) =>
     selectAgentAutoToolsDisabled(state, agentId),
   );
+
+  // Tool support is a MODEL capability — the server drops all tools for models
+  // that can't use them. Read the canonical capability once and align the UI:
+  // disable the add affordances and (below) warn when saved tools will be
+  // dropped. Permissive by default — only fires for an explicit
+  // tools:{allowed:false} model. See supportsTools() / aidream tool_merge.py.
+  const normalizedControls = useAppSelector((state) =>
+    selectNormalizedControls(state, agentId),
+  );
+  const modelSupportsTools = supportsTools(normalizedControls);
+
+  // Saved tool set across all three lanes — drives the drop advisory.
+  const savedTools = useAppSelector((state) => selectAgentTools(state, agentId));
+  const savedCustomTools = useAppSelector((state) =>
+    selectAgentCustomTools(state, agentId),
+  );
+  const savedMcpServers = useAppSelector((state) =>
+    selectAgentMcpServers(state, agentId),
+  );
+  const savedToolCount =
+    (Array.isArray(savedTools) ? savedTools.length : 0) +
+    (Array.isArray(savedCustomTools) ? savedCustomTools.length : 0) +
+    (Array.isArray(savedMcpServers) ? savedMcpServers.length : 0);
   const reduxTools = useAppSelector(selectAllTools);
   const reduxToolsStatus = useAppSelector(selectToolsStatus);
   const externalTools: DatabaseTool[] | undefined =
@@ -485,22 +510,48 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
         />
       </label>
 
+      {/* Model capability advisory — non-blocking. The selected model can't use
+          tools; the server drops all of them at run time. Never blocks saving. */}
+      {!modelSupportsTools && (
+        <div className="flex items-start gap-2 px-3 py-2 border-b border-amber-500/40 bg-amber-500/10 shrink-0">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" />
+          <p className="text-[11px] leading-tight text-amber-700 dark:text-amber-300">
+            This model doesn&apos;t support tools.
+            {savedToolCount > 0
+              ? ` The ${savedToolCount} tool${savedToolCount === 1 ? "" : "s"} configured below ${savedToolCount === 1 ? "will" : "will"} be dropped at run time for this model — switch to a tool-capable model to use them.`
+              : " Adding tools is disabled while it's selected."}
+          </p>
+        </div>
+      )}
+
       <div className="flex-1 overflow-hidden min-h-0">
         {activeTab === "server" && (
           <ServerToolsTab
             agentId={agentId}
             metadata={metadata}
             externalTools={externalTools}
+            modelSupportsTools={modelSupportsTools}
           />
         )}
-        {activeTab === "custom" && <CustomToolsTab agentId={agentId} />}
+        {activeTab === "custom" && (
+          <CustomToolsTab
+            agentId={agentId}
+            modelSupportsTools={modelSupportsTools}
+          />
+        )}
         {activeTab === "client" && (
           <ClientToolsTab
             agentId={agentId}
             availableTools={externalTools || metadata?.enabled_tools || []}
+            modelSupportsTools={modelSupportsTools}
           />
         )}
-        {activeTab === "mcp" && <McpToolsTab agentId={agentId} />}
+        {activeTab === "mcp" && (
+          <McpToolsTab
+            agentId={agentId}
+            modelSupportsTools={modelSupportsTools}
+          />
+        )}
       </div>
     </div>
   );
@@ -514,10 +565,12 @@ function ServerToolsTab({
   agentId,
   metadata,
   externalTools,
+  modelSupportsTools = true,
 }: {
   agentId: string;
   metadata: any;
   externalTools?: DatabaseTool[];
+  modelSupportsTools?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const selectedTools = useAppSelector((state) =>
@@ -581,7 +634,11 @@ function ServerToolsTab({
       const current = Array.isArray(selectedTools)
         ? (selectedTools as string[])
         : [];
-      const next = current.includes(toolId)
+      const isSelected = current.includes(toolId);
+      // The model can't use tools — block ADDING (removal stays allowed so the
+      // user can clean up a set that will otherwise be dropped at run time).
+      if (!isSelected && !modelSupportsTools) return;
+      const next = isSelected
         ? current.filter((t) => t !== toolId)
         : [...current, toolId];
       dispatch(
@@ -591,7 +648,7 @@ function ServerToolsTab({
         }),
       );
     },
-    [agentId, selectedTools, dispatch],
+    [agentId, selectedTools, modelSupportsTools, dispatch],
   );
 
   const clearAll = () => {
@@ -1165,15 +1222,17 @@ function ServerToolsTab({
                             None
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
-                          onClick={selectAllVisible}
-                          title="Select all visible tools"
-                        >
-                          Select all
-                        </Button>
+                        {modelSupportsTools && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                            onClick={selectAllVisible}
+                            title="Select all visible tools"
+                          >
+                            Select all
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>
@@ -1305,6 +1364,7 @@ function ServerToolsTab({
                           )
                         }
                         dupBundles={dupBundlesByToolId.get(tool.id)}
+                        addDisabled={!isActive && !modelSupportsTools}
                       />
                     );
                   })
@@ -1601,7 +1661,13 @@ function OrphanedToolsBanner({
 // Custom Tools Tab
 // =============================================================================
 
-function CustomToolsTab({ agentId }: { agentId: string }) {
+function CustomToolsTab({
+  agentId,
+  modelSupportsTools = true,
+}: {
+  agentId: string;
+  modelSupportsTools?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const customTools = useAppSelector((state) =>
     selectAgentCustomTools(state, agentId),
@@ -1656,6 +1722,12 @@ function CustomToolsTab({ agentId }: { agentId: string }) {
             variant="outline"
             size="sm"
             className="h-7 text-xs gap-1"
+            disabled={!modelSupportsTools}
+            title={
+              modelSupportsTools
+                ? undefined
+                : "This model doesn't support tools"
+            }
             onClick={() => {
               setIsAdding(true);
               setEditingIndex(null);
@@ -2015,9 +2087,14 @@ function CustomToolForm({
 function ClientToolsTab({
   agentId,
   availableTools,
+  // Accepted for a uniform tab contract. This tab only re-classifies tools that
+  // are ALREADY enabled (no add affordance), so the capability gate is a no-op
+  // here — the parent advisory already covers the drop-at-run-time case.
+  modelSupportsTools: _modelSupportsTools = true,
 }: {
   agentId: string;
   availableTools: DatabaseTool[];
+  modelSupportsTools?: boolean;
 }) {
   const selectedTools = useAppSelector((state) =>
     selectAgentTools(state, agentId),
@@ -2269,7 +2346,13 @@ function connectionBadge(status: string | null) {
 // MCP Tools Tab — real catalog + agent-level server assignment
 // =============================================================================
 
-function McpToolsTab({ agentId }: { agentId: string }) {
+function McpToolsTab({
+  agentId,
+  modelSupportsTools = true,
+}: {
+  agentId: string;
+  modelSupportsTools?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const catalog = useAppSelector(selectMcpCatalog);
   const catalogStatus = useAppSelector(selectMcpCatalogStatus);
@@ -2328,6 +2411,9 @@ function McpToolsTab({ agentId }: { agentId: string }) {
 
   const addToAgent = useCallback(
     (serverId: string) => {
+      // The model can't use tools — block adding MCP servers (removal still
+      // allowed). The server would drop them at run time regardless.
+      if (!modelSupportsTools) return;
       if (!agentServerSet.has(serverId)) {
         dispatch(
           setAgentMcpServers({
@@ -2337,7 +2423,7 @@ function McpToolsTab({ agentId }: { agentId: string }) {
         );
       }
     },
-    [agentId, agentMcpServers, agentServerSet, dispatch],
+    [agentId, agentMcpServers, agentServerSet, modelSupportsTools, dispatch],
   );
 
   const removeFromAgent = useCallback(
@@ -3673,6 +3759,7 @@ function ToolCard({
   onToggle,
   onExpand,
   dupBundles,
+  addDisabled = false,
 }: {
   tool: any;
   active: boolean;
@@ -3682,6 +3769,8 @@ function ToolCard({
   /** Names of enabled bundles that also provide this tool — when set, the tool
    * is redundant with a bundle and the card shows a gentle yellow nudge. */
   dupBundles?: string[];
+  /** Model can't use tools — block selecting this (unselected) card. */
+  addDisabled?: boolean;
 }) {
   const hasDetails = tool.has_details ?? true;
   const colors = getCategoryColor(tool.category);
@@ -3689,14 +3778,21 @@ function ToolCard({
 
   return (
     <div
-      className={`rounded-lg text-left transition-all border cursor-pointer select-none ${
+      title={addDisabled ? "This model doesn't support tools" : undefined}
+      className={`rounded-lg text-left transition-all border select-none ${
+        addDisabled
+          ? "cursor-not-allowed opacity-50 border-transparent"
+          : "cursor-pointer"
+      } ${
         isDup
           ? "border-amber-400/70 dark:border-amber-600/60 bg-amber-50/40 dark:bg-amber-950/15"
           : active
             ? `${colors.bg} ${colors.border}`
-            : "border-transparent hover:bg-muted/40 hover:border-border"
+            : !addDisabled
+              ? "border-transparent hover:bg-muted/40 hover:border-border"
+              : ""
       }`}
-      onClick={() => onToggle(tool.id)}
+      onClick={addDisabled ? undefined : () => onToggle(tool.id)}
     >
       <div className="flex items-start gap-3 w-full px-3 py-2.5">
         {/* Checkbox indicator — official component, presentational (card handles toggle) */}

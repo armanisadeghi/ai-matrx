@@ -92,9 +92,12 @@ function* handleSettingsChanged(
 
   const state = (yield select()) as RootState;
   // updateBaseSettings REPLACES baseSettings wholesale, so we must re-fold the
-  // agent's current model — otherwise editing any setting silently drops
-  // `model` from the instance base and defeats the override delta guard.
-  const modelId = state.agentDefinition.agents?.[agentId]?.modelId;
+  // agent's current model AND uiGates — otherwise editing any setting silently
+  // drops `model` (defeating the override delta guard) or the flattened UI
+  // gates (breaking the chat attachment capability read) from the instance base.
+  const agent = state.agentDefinition.agents?.[agentId];
+  const modelId = agent?.modelId;
+  const uiGates = agent?.uiGates;
   const allIds = state.conversations.allConversationIds;
   const byId = state.conversations.byConversationId;
 
@@ -103,7 +106,7 @@ function* handleSettingsChanged(
       yield put(
         updateBaseSettings({
           conversationId,
-          baseSettings: buildInstanceBaseSettings(settings, modelId),
+          baseSettings: buildInstanceBaseSettings(settings, modelId, uiGates),
         }),
       );
     }
@@ -134,6 +137,7 @@ function* handleModelChanged(
           baseSettings: buildInstanceBaseSettings(
             agent?.settings,
             agent?.modelId,
+            agent?.uiGates,
           ),
         }),
       );
