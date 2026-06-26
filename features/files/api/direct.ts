@@ -90,3 +90,54 @@ export async function getUsageStatusDirect(
     features: limits.features ?? {},
   };
 }
+
+// ---------------------------------------------------------------------------
+// Soft delete / restore (metadata-only — NO byte cleanup, so direct)
+// ---------------------------------------------------------------------------
+//
+// HARD delete + version prune return S3 `storage_uris` for the server to purge,
+// so those stay on the Python path (see ./files `deleteFile({hardDelete})`).
+// The mutation RPCs are hardened (auth.uid() + iam.has_access) — see
+// migrations/cld_files_mutation_rpc_auth_hardening.sql. The realtime middleware
+// applies a soft-delete echo idempotently (deletedAt → removeFile), so losing
+// the request-id echo dedup is harmless here.
+
+/** Soft-delete a file (trash). Returns true if a row was deleted. */
+export async function softDeleteFileDirect(fileId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("soft_delete_file", {
+    p_file_id: fileId,
+  });
+  if (error) throw pgErrorToError(error);
+  return Boolean(data);
+}
+
+/** Soft-delete a folder + its descendant subtree (cascades in SQL). */
+export async function softDeleteFolderDirect(
+  folderId: string,
+): Promise<{ folders: number; files: number; links: number }> {
+  const { data, error } = await supabase.rpc("soft_delete_folder", {
+    p_folder_id: folderId,
+  });
+  if (error) throw pgErrorToError(error);
+  return data as unknown as { folders: number; files: number; links: number };
+}
+
+/** Restore a soft-deleted file from trash. Returns true if restored. */
+export async function restoreFileDirect(fileId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("restore_file", {
+    p_file_id: fileId,
+  });
+  if (error) throw pgErrorToError(error);
+  return Boolean(data);
+}
+
+/** Restore a soft-deleted folder + its descendant subtree. */
+export async function restoreFolderDirect(
+  folderId: string,
+): Promise<{ folders: number; files: number }> {
+  const { data, error } = await supabase.rpc("restore_folder", {
+    p_folder_id: folderId,
+  });
+  if (error) throw pgErrorToError(error);
+  return data as unknown as { folders: number; files: number };
+}

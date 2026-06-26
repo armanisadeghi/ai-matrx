@@ -31,6 +31,10 @@ import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
 import * as ShareLinks from "@/features/files/api/share-links";
 import * as Versions from "@/features/files/api/versions";
+import {
+  softDeleteFileDirect,
+  softDeleteFolderDirect,
+} from "@/features/files/api/direct";
 import { fileHandler } from "@/features/files/handler/handler";
 import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
@@ -668,11 +672,17 @@ export const deleteFolder = createAsyncThunk<
   });
 
   try {
-    await Folders.deleteFolder(
-      arg.folderId,
-      { hardDelete: arg.hardDelete },
-      { requestId },
-    );
+    // Soft delete cascades the subtree in SQL (soft_delete_folder) → direct.
+    // Hard delete purges S3 bytes server-side, so it stays on the Python path.
+    if (arg.hardDelete) {
+      await Folders.deleteFolder(
+        arg.folderId,
+        { hardDelete: true },
+        { requestId },
+      );
+    } else {
+      await softDeleteFolderDirect(arg.folderId);
+    }
     dispatch(removeFolder({ id: arg.folderId }));
   } finally {
     releaseRequest(requestId);
@@ -1272,7 +1282,13 @@ export const deleteFile = createAsyncThunk<void, DeleteFileArg, ThunkApi>(
     });
 
     try {
-      await Files.deleteFile(fileId, { hardDelete }, { requestId });
+      // Soft delete is a pure metadata write → direct (canonical). Hard delete
+      // returns S3 URIs the server must purge, so it stays on the Python path.
+      if (hardDelete) {
+        await Files.deleteFile(fileId, { hardDelete: true }, { requestId });
+      } else {
+        await softDeleteFileDirect(fileId);
+      }
     } catch (err) {
       // Rollback — reinsert the record and reattach to its parent.
       dispatch(upsertFile(record));
