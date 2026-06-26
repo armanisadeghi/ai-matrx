@@ -18,8 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
-import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   RefreshCw,
   Loader2,
@@ -185,8 +184,6 @@ type LogResponse = {
 };
 
 type ViewMode = "log-only" | "split" | "json-only" | "raw";
-type JsonTab = "explorer" | "truncator" | "plain";
-
 // ─── Level / Category display helpers ────────────────────────────────────────
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
@@ -350,7 +347,7 @@ const LogLine = React.memo(function LogLine({
     line.level !== "UNKNOWN" ||
     line.module ||
     line.timestamp ||
-    line.httpStatus != null
+    line.httpStatus != null,
   );
 
   return (
@@ -930,8 +927,6 @@ export default function CoolifyLogViewer({
   }, []);
   const [selectedLine, setSelectedLine] = useState<ParsedLogLine | null>(null);
 
-  const [jsonTab, setJsonTab] = useState<JsonTab>("explorer");
-
   // Selection state — anchor is first click, tail is shift-click endpoint
   const [selAnchor, setSelAnchor] = useState<number | null>(null);
   const [selTail, setSelTail] = useState<number | null>(null);
@@ -1483,35 +1478,14 @@ export default function CoolifyLogViewer({
           <div
             className={`flex flex-col min-h-0 overflow-hidden bg-card border-l border-border ${viewMode === "split" ? "w-1/2" : "w-full"}`}
           >
-            {/* ── JSON panel header: tabs + close ── */}
-            <div className="shrink-0 flex items-center border-b border-border bg-muted/30">
-              <div className="flex items-center flex-1">
-                {(
-                  [
-                    { id: "explorer" as JsonTab, label: "Explorer" },
-                    { id: "truncator" as JsonTab, label: "Truncator" },
-                    { id: "plain" as JsonTab, label: "Plain JSON" },
-                  ] as const
-                ).map(({ id, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setJsonTab(id)}
-                    className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
-                      jsonTab === id
-                        ? "border-primary text-primary bg-accent"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+            {/* ── JSON panel header: close ── */}
+            <div className="shrink-0 flex items-center justify-end border-b border-border bg-muted/30 px-1">
               <button
                 onClick={() => {
                   setViewMode("log-only");
                   setSelectedLine(null);
                 }}
-                className="shrink-0 p-1.5 mr-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
                 title="Close panel"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1520,28 +1494,11 @@ export default function CoolifyLogViewer({
 
             {/* ── JSON panel body ── */}
             {jsonPanelData != null ? (
-              <>
-                {jsonTab === "explorer" && (
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    <JsonTreeViewer data={jsonPanelData} />
-                  </div>
-                )}
-                {jsonTab === "truncator" && (
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    <JsonTruncator
-                      initialValue={JSON.stringify(jsonPanelData, null, 2)}
-                      tabbed
-                      defaultTab="fields"
-                      className="h-full"
-                    />
-                  </div>
-                )}
-                {jsonTab === "plain" && (
-                  <pre className="flex-1 min-h-0 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all">
-                    {JSON.stringify(jsonPanelData, null, 2)}
-                  </pre>
-                )}
-              </>
+              <JsonInspector
+                data={jsonPanelData}
+                defaultView="json"
+                className="flex-1 min-h-0 rounded-none border-0 shadow-none"
+              />
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2">
                 <PanelLeft className="h-8 w-8 opacity-30" />

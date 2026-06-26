@@ -67,9 +67,11 @@ export function newNodeFunction(
   return {
     function_id: nodeDefinition.registeredFunctionId,
     workflow_id: workflowId,
+    function_type: "registered_function",
     type: "functionNode",
     node_type: categoryName,
     step_name: nodeDefinition.name,
+    status: "pending",
     execution_required: true,
     arguments: null,
     inputs: Array.isArray(normalizeInputMapping(nodeDefinition.inputs))
@@ -126,9 +128,11 @@ export function createCustomInputNode(
   return {
     function_id: null,
     workflow_id: workflowId,
+    function_type: "registered_function",
     type: nodeType,
     node_type: nodeType,
     step_name: nodeDefinition.name,
+    status: "pending",
     execution_required: false,
     arguments: null,
     inputs: [],

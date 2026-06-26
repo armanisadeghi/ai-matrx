@@ -1,12 +1,12 @@
 # Hand-off: remove the `is_personal` flag (use the personal *org* instead)
 
-> **Status:** scoped, not started. Owner decision (2026-06-06): `is_personal` should not exist — membership in the user's personal org already encodes "personal." This is a cross-cutting change (DB columns + 11 RPCs + ~68 frontend files), so it's handed off as its own ticket rather than done inline. An interim display fix already shipped (see "Already done" below) so the visible bug is gone.
+> **Status:** partially complete. Owner decision (2026-06-06): `is_personal` should not exist on project-like rows — membership in the user's personal org already encodes "personal." 2026-06-26 update: the frontend Personal pseudo-org sentinel has been removed; project creation/navigation now uses the real personal organization id. Template cleanup and any remaining DB/RPC cleanup stay in scope for the broader ticket.
 
 ## The decision
 
 There is a real **personal organization** per user (`organizations.is_personal = true`, created by the `ensure_personal_organization` RPC). The separate `is_personal` boolean on `ctx_projects` / `ctx_templates` is redundant with org membership and actively causes bugs. Remove the flag everywhere; derive "personal" from the org instead.
 
-**Canonical rule after removal:** a project/task/template is "personal" iff its `organization_id` is the user's personal org (or null). The UI should show the owning org's name; reserve a "Personal" label for the personal org specifically (decide: by `organizations.is_personal` — which we are KEEPING on the `organizations` table as the *source of truth* — or by a dedicated `personal_organization_id` on the user/profile).
+**Canonical rule after removal:** a project/task/template is "personal" iff its `organization_id` is the user's personal org. Do not use `NULL` organization ids for personal rows. The UI should show the owning org's name; reserve a "Personal" label for the personal org specifically (`organizations.is_personal`, which we are KEEPING on the `organizations` table as the source of truth).
 
 > Keep `organizations.is_personal` (it identifies the one personal org). Remove `ctx_projects.is_personal` and `ctx_templates.is_personal`. This doc assumes that split; confirm before migrating.
 
@@ -24,7 +24,7 @@ There is a real **personal organization** per user (`organizations.is_personal =
 **RPCs whose body references `is_personal` (11) — audit each:**
 `agx_get_user_context_tree`, `ctx_seed_template`, `ensure_personal_organization`, `get_user_full_context`, `get_user_hierarchy`, `get_user_nav_tree`, `get_user_organizations`, `get_user_projects`, `get_user_scopes`, `get_user_scopes_with_projects`, `list_templates`.
 
-Most read `ctx_projects.is_personal` to synthesize the **`PERSONAL_PSEUDO_ORG_ID`** grouping (`00000000-0000-0000-0000-000000000001`) in the nav tree. After removal these should group org-less projects (or personal-org projects) without the project-level flag. `ensure_personal_organization` and the `organizations.is_personal` reads stay.
+Most originally read `ctx_projects.is_personal` to synthesize a fake Personal org grouping in the nav tree. 2026-06-26: the frontend sentinel is gone; grouping should use the real `organizations.is_personal` org row. `ensure_personal_organization` and the `organizations.is_personal` reads stay.
 
 **Migration order:** (1) stop all writes (FE + RPCs) to `ctx_projects.is_personal` / `ctx_templates.is_personal`; (2) switch all reads to org-derived; (3) regenerate RPCs; (4) drop the two columns; (5) `pnpm db-types` + regenerate `types/database.types.ts`.
 
@@ -35,7 +35,7 @@ Mapped via Explore on 2026-06-06. Substantive work is **MEDIUM** (~4–10 files 
 - **Type defs:** `features/projects/types.ts` (`isPersonal`), `features/organizations/types.ts` (keep — org), `features/agent-context/redux/hierarchySlice.ts` (`NavProject.is_personal`, `NavOrganization.is_personal`), `types/database.types.ts` (regenerated).
 - **DB write sites (stop writing the flag):** `features/projects/service.ts` (`is_personal: !organizationId` at create), `features/tasks/services/projectService.ts` (**already deleted this session** — verify), `features/organizations/service.ts` (org create — keep).
 - **DB read / derive "Personal":** `features/projects/service.ts` (`getPersonalProjects`, transforms, sort), `features/projects/hooks.ts` (`projectsFromOrg`, `usePersonalProjects`), `features/projects/components/ProjectsHub.tsx` + `ProjectWorkspace.tsx` (**already switched to org-driven** — see below).
-- **Personal pseudo-org machinery (highest risk):** `features/agent-context/redux/hierarchySlice.ts` (`PERSONAL_PSEUDO_ORG_ID`, `isPersonalPseudoOrgId`), consumers in `features/projects/{service,hooks}.ts`, `features/research/components/overview/TopicSettingsPanel.tsx`, `features/agent-context/components/hierarchy-selection/**`. Decide whether the RPC keeps synthesizing the pseudo-org.
+- **Personal pseudo-org machinery:** **DONE 2026-06-26.** Removed `PERSONAL_PSEUDO_ORG_ID` / `isPersonalPseudoOrgId` and updated consumers in project creation/hooks, research project pickers, RAG context, War Room org resolution, and `callApi` scope injection to use real org ids.
 - **Sharing:** `features/sharing/components/tabs/ShareWithOrgTab.tsx` excludes `org.is_personal` orgs from share targets — re-point at `organizations.is_personal` (kept), not project flag.
 - **Templates:** `features/scope-system/components/TemplateGalleryDrawer.tsx`, `features/scope-system/redux/templatesSlice.ts` (`is_personal` / `template_is_personal`).
 - **Routing/invitations + pass-through props:** ~13 org/scope detail routes thread `orgIsPersonal`; invitation accept pages map `is_personal`.

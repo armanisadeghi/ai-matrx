@@ -1,13 +1,13 @@
 "use client";
 
-// features/war-room/components/tile/TileTabSelect.tsx
+// features/war-room/components/thread/ThreadTabSelect.tsx
 //
 // The COMPACT tile view switcher for Grid mode: a single dropdown that collapses
-// the six-segment TileTabBar into one button (current view's icon + a chevron,
+// the six-segment ThreadTabBar into one button (current view's icon + a chevron,
 // plus the label when the cell is wide enough). It reclaims the ~150px the
 // segmented control ate from the tile header so the thread TITLE always wins the
 // space fight, even at 12 tiles. The Stage tile keeps the full segmented bar
-// (TileTabBar) where vertical room is plentiful — this is the dense alternative,
+// (ThreadTabBar) where vertical room is plentiful — this is the dense alternative,
 // nothing is lost: every tab is one click away in the menu.
 
 import { ChevronDown } from "lucide-react";
@@ -18,22 +18,22 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { TileFlavor, TileTab } from "@/features/war-room/types";
+import type { ThreadAnchorType, ThreadTab } from "@/features/war-room/types";
 import {
-  TILE_KIND_ORDER,
-  tileTabKind,
-} from "@/features/war-room/components/room/tileKind";
+  THREAD_KIND_ORDER,
+  dynamicTabKind,
+} from "@/features/war-room/components/room/threadKind";
 
-export function TileTabSelect({
+export function ThreadTabSelect({
   active,
   onChange,
-  flavor,
+  anchorType = "canvas",
 }: {
-  active: TileTab;
-  onChange: (tab: TileTab) => void;
-  flavor?: TileFlavor;
+  active: ThreadTab;
+  onChange: (tab: ThreadTab) => void;
+  anchorType?: ThreadAnchorType;
 }) {
-  const current = tileTabKind(active, flavor);
+  const current = dynamicTabKind(active, anchorType);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -56,8 +56,8 @@ export function TileTabSelect({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
-        {TILE_KIND_ORDER.map((id) => {
-          const k = tileTabKind(id, flavor);
+        {THREAD_KIND_ORDER.map((id) => {
+          const k = dynamicTabKind(id, anchorType);
           const isActive = id === active;
           return (
             <DropdownMenuItem

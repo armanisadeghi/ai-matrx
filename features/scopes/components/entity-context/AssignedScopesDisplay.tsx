@@ -18,7 +18,9 @@
 
 import React from "react";
 import { Building2, Loader2, Tag } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import {
@@ -70,34 +72,19 @@ export function AssignedScopesDisplay({
         setOrgName(null);
       }
 
-      const { data: assigns } = await supabase
-        .from("ctx_scope_assignments")
-        .select("scope_id")
-        .eq("entity_type", entityType)
-        .eq("entity_id", entityId);
-      const ids = (assigns ?? []).map((a) => String((a as { scope_id: string }).scope_id));
-      if (ids.length === 0) {
-        if (!cancelled) {
-          setGroups([]);
-          setLoading(false);
-        }
+      const res = await scopesService.getEntityScopeDetails(
+        entityType as EntityType,
+        entityId,
+      );
+      if (cancelled) return;
+      if (isScopesRpcErr(res) || res.data.scopes.length === 0) {
+        setGroups([]);
+        setLoading(false);
         return;
       }
 
-      const { data: scopes } = await supabase
-        .from("ctx_scopes")
-        .select(
-          "id, name, scope_type:ctx_scope_types(id, label_singular, label_plural, icon, color)",
-        )
-        .in("id", ids);
-
-      if (cancelled) return;
       const byType = new Map<string, Group>();
-      for (const row of (scopes ?? []) as unknown as Array<{
-        id: string;
-        name: string;
-        scope_type: ScopeTypeRow | null;
-      }>) {
+      for (const row of res.data.scopes) {
         const t = row.scope_type;
         if (!t) continue;
         if (!byType.has(t.id)) byType.set(t.id, { type: t, scopes: [] });
@@ -127,7 +114,11 @@ export function AssignedScopesDisplay({
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         {showOrg && (
-          <Chip icon={<Building2 className="h-3 w-3" />} label="Organization" value={orgName ?? "None"} />
+          <Chip
+            icon={<Building2 className="h-3 w-3" />}
+            label="Organization"
+            value={orgName ?? "None"}
+          />
         )}
         {groups.map((g) =>
           g.scopes.map((s) => (
@@ -198,7 +189,9 @@ function Row({
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 w-36 shrink-0">
         {icon}
-        <dt className="text-sm font-medium text-muted-foreground truncate">{label}</dt>
+        <dt className="text-sm font-medium text-muted-foreground truncate">
+          {label}
+        </dt>
       </div>
       <dd className="flex flex-wrap gap-1.5 min-w-0">
         {values.map((v, i) => (
@@ -228,7 +221,9 @@ function Chip({
   label: string;
   value: string;
 }) {
-  const color = typeId ? resolveColor({ id: typeId, color: colorKey ?? null }) : null;
+  const color = typeId
+    ? resolveColor({ id: typeId, color: colorKey ?? null })
+    : null;
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ring-1 ${SCOPE_ICON_SURFACE} ${color ? `${color.fg} ${color.ring}` : "text-muted-foreground border-border"}`}

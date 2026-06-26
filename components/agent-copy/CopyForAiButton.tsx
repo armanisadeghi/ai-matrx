@@ -41,6 +41,17 @@ export interface CopyForAiButtonProps {
   className?: string;
   /** Shown on sm size buttons (default true). */
   showLabel?: boolean;
+  /**
+   * Idle-state glyph (default {@link Webhook}). Pass the brand
+   * {@link import("./CopyForAiIcon").CopyForAiIcon} to render the recognizable
+   * "copy for AI" mark instead of the generic webhook icon.
+   */
+  icon?: React.ComponentType<{ className?: string }>;
+  /**
+   * Compact, icon-only chrome (h-6) for window / toolbar headers — keeps the
+   * control at the uniform ~24px header height. Overrides `size`/`showLabel`.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -54,6 +65,8 @@ export function CopyForAiButton({
   disabled = false,
   className,
   showLabel = true,
+  icon: Icon = Webhook,
+  compact = false,
 }: CopyForAiButtonProps) {
   const [state, setState] = React.useState<"idle" | "loading" | "copied">(
     "idle",
@@ -76,6 +89,37 @@ export function CopyForAiButton({
     }
   };
 
+  const title = `Copy ${label} with full context, formatted for an AI agent`;
+
+  const glyph =
+    state === "loading" ? (
+      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+    ) : state === "copied" ? (
+      <Check className="h-3.5 w-3.5 text-emerald-500" />
+    ) : (
+      <Icon className="h-3.5 w-3.5" />
+    );
+
+  // Compact: a plain icon-only button at the uniform header height (h-6),
+  // bypassing the Button component's larger default sizes.
+  if (compact) {
+    return (
+      <button
+        type="button"
+        disabled={disabled || state === "loading"}
+        onClick={() => void handleClick()}
+        title={title}
+        aria-label={title}
+        className={cn(
+          "grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50",
+          className,
+        )}
+      >
+        {glyph}
+      </button>
+    );
+  }
+
   const isIcon = size === "icon";
 
   return (
@@ -86,22 +130,9 @@ export function CopyForAiButton({
       className={cn(isIcon ? "h-7 w-7" : "h-7 gap-1.5 text-xs", className)}
       disabled={disabled || state === "loading"}
       onClick={() => void handleClick()}
-      title={`Copy ${label} with full context, formatted for an AI agent`}
+      title={title}
     >
-      {state === "loading" ? (
-        <Loader2
-          className={cn(isIcon ? "h-3.5 w-3.5" : "h-3.5 w-3.5", "animate-spin")}
-        />
-      ) : state === "copied" ? (
-        <Check
-          className={cn(
-            isIcon ? "h-3.5 w-3.5" : "h-3.5 w-3.5",
-            "text-emerald-500",
-          )}
-        />
-      ) : (
-        <Webhook className={isIcon ? "h-3.5 w-3.5" : "h-3.5 w-3.5"} />
-      )}
+      {glyph}
       {!isIcon && showLabel ? (
         <span>{state === "copied" ? "Copied!" : "Copy for AI"}</span>
       ) : null}

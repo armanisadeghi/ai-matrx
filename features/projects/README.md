@@ -21,11 +21,11 @@ organizations → projects → project_members → auth.users
 | `name` | text | Required |
 | `slug` | text | URL-safe, unique per org |
 | `description` | text | Optional |
-| `organization_id` | uuid \| null | FK → organizations. Every project now has a non-null org (backfilled) |
+| `organization_id` | uuid | FK → organizations. Every project has a non-null org, including personal projects |
 | `created_by` | uuid | FK → auth.users |
 | `settings` | jsonb | Extensible config |
 
-> **Personal-ness is org-derived.** `ctx_projects.is_personal` was **dropped** — a project is "personal" **iff its owning organization's `organizations.is_personal` is true** (every user has exactly one personal org). Never treat `organization_id IS NULL` as "personal" anymore (it's always false after the backfill). Read personal-ness from the org: join `organizations(is_personal)`, or use the RPC-derived `NavProject.is_personal` (`get_user_full_context` / `get_user_nav_tree` still emit it). The canonical `createProject` service in `features/projects/service.ts` writes the row + `ctx_project_members` owner entry (and accepts the UI sentinel `PERSONAL_PSEUDO_ORG_ID = '00000000-0000-0000-0000-000000000001'` as input — it normalizes the sentinel to `NULL` before insert). All other write paths (`features/agent-context/service/hierarchyService.createProject`) delegate here.
+> **Personal-ness is org-derived.** `ctx_projects.is_personal` was **dropped** — a project is "personal" **iff its owning organization's `organizations.is_personal` is true** (every user has exactly one personal org). Never treat `organization_id IS NULL` as "personal" anymore. Read personal-ness from the org: join `organizations(is_personal)`, or use the RPC-derived `NavProject.is_personal`. The canonical `createProject` service in `features/projects/service.ts` resolves missing org input to the user's real personal org via `ensure_personal_organization` and writes that id.
 
 ### `project_members`
 | Column | Type | Notes |
@@ -118,7 +118,7 @@ Both require authentication and project admin role (enforced by RLS).
 ```ts
 useOrgProjects(organizationId)      // Projects in an org where user is a member
 useUserProjects()                   // All user's projects across all orgs (incl. personal)
-usePersonalProjects()               // Personal projects only (organization_id IS NULL)
+usePersonalProjects()               // Projects owned by the user's personal org
 useProject(projectId)               // Single project
 useProjectUserRole(projectId)       // Current user's role + permission flags
 useProjectMembers(projectId)        // Member list with user details
@@ -166,4 +166,6 @@ Two project-specific templates in `lib/email/client.ts`:
 
 ## Change Log
 
+- `2026-06-25` — **Canonical-DB cutover: members + invitations moved to `iam.memberships` / `iam.invitations`.** All project member + invitation reads/writes now go through two new sole-chokepoint services — `membershipsService` (`mbr_*` RPCs) and `invitationsService` (`inv_*` RPCs) in `features/organizations/service/` — never the legacy `ctx_project_*` junction tables. `service.ts` member functions (`getProjectMembers`, role/remove with the last-owner guard, `getProjectUserRole`, the project-listing trio via a shared `loadUserProjectsWithRole` using batch `mbr_count`) and invitation functions (`inviteToProject`/`getProjectInvitations`/`cancel`/`resend`/`accept`/`getUserProjectInvitations`) were rewritten. `createProject` writes the owner membership explicitly (legacy trigger no longer mirrors to canonical). `acceptProjectInvitation` relies on the atomic `inv_accept` (membership + accept in one txn). The two invite API routes are now email-only. `features/tasks/services/projectService.ts` and the accept page migrated too.
+- `2026-06-26` — Removed the Personal pseudo-org sentinel from project creation and navigation. `createProject`, JSON import, legacy task project creation, slug checks, and project listing hooks now resolve personal work to the user's real personal organization id.
 - `2026-06-23` — Create-project window layout polish: default window geometry enlarged, outer body padding removed so the Use AI runner renders edge-to-edge, Manual/Paste JSON panes now use stable full-height layouts with footer actions pinned to the bottom, and project create name/description plus Paste JSON fields use `ProInput`/`ProTextarea` with live `matrx-user/projects` create context.

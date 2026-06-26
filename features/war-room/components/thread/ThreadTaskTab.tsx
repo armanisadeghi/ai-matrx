@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileTaskTab.tsx
+// features/war-room/components/thread/ThreadTaskTab.tsx
 //
 // The Task tab is the real task editor (`features/tasks/components/TaskEditor`)
 // bound to the tile's task_id (embedded mode) — same name / description /
@@ -27,52 +27,55 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import {
-  selectTileFlavor,
-  selectTileTaskId,
+  selectThreadAnchorType,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
-import { createTileTask } from "@/features/war-room/redux/thunks";
+import { createThreadTask } from "@/features/war-room/redux/thunks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { cn } from "@/lib/utils";
 import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
-import { TileEmbeddedTaskView } from "./TileEmbeddedTaskView";
-import { TileProjectTab } from "./TileProjectTab";
+import { ThreadEmbeddedTaskView } from "./ThreadEmbeddedTaskView";
+import { ThreadProjectTab } from "./ThreadProjectTab";
+import { ThreadCanvasTab } from "./ThreadCanvasTab";
 import { SubtaskRail } from "./SubtaskRail";
 import { SubtaskDetailPane } from "./SubtaskDetailPane";
 
-export function TileTaskTab({
-  tileId,
+export function ThreadTaskTab({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+  const anchorType = useAppSelector((s) => selectThreadAnchorType(threadId)(s));
 
-  // A project tile's Task tab is the PROJECT's task list (browse + create +
-  // open), not the single-anchor task editor that thread/task tiles use.
-  if (flavor === "project") {
-    return <TileProjectTab tileId={tileId} compact={compact} />;
+  // Project-anchored → project task list. Canvas-anchored → resource launcher.
+  if (anchorType === "project") {
+    return <ThreadProjectTab threadId={threadId} compact={compact} />;
+  }
+  if (anchorType === "canvas") {
+    return <ThreadCanvasTab threadId={threadId} compact={compact} />;
   }
 
-  return <TileTaskTabAnchored tileId={tileId} compact={compact} />;
+  return <ThreadTaskTabAnchored threadId={threadId} compact={compact} />;
 }
 
-function TileTaskTabAnchored({
-  tileId,
+function ThreadTaskTabAnchored({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
-  const taskId = useAppSelector((s) => selectTileTaskId(tileId)(s));
+  const taskId = useAppSelector((s) => selectThreadTaskId(threadId)(s));
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,
   );
 
   // ── No task yet → fast inline creation (Feature 3) ───────────────────────
   if (!taskId) {
-    return <TileTaskCreate tileId={tileId} compact={compact} />;
+    return <ThreadTaskCreate threadId={threadId} compact={compact} />;
   }
 
   // Task linked but not yet hydrated into the slice → brief loading.
@@ -85,7 +88,7 @@ function TileTaskTabAnchored({
   }
 
   return (
-    <TileTaskTabAnchoredBody
+    <ThreadTaskTabAnchoredBody
       taskId={taskId}
       taskTitle={task.title}
       projectId={task.project_id ?? null}
@@ -94,7 +97,7 @@ function TileTaskTabAnchored({
   );
 }
 
-function TileTaskTabAnchoredBody({
+function ThreadTaskTabAnchoredBody({
   taskId,
   taskTitle,
   projectId,
@@ -109,7 +112,7 @@ function TileTaskTabAnchoredBody({
 
   if (drill.isDrilled && drill.currentTaskId) {
     return (
-      <TileEmbeddedTaskView
+      <ThreadEmbeddedTaskView
         taskId={drill.currentTaskId}
         projectId={projectId}
         compact={compact}
@@ -124,7 +127,7 @@ function TileTaskTabAnchoredBody({
   }
 
   return (
-    <TileTaskBody
+    <ThreadTaskBody
       taskId={taskId}
       projectId={projectId}
       compact={compact}
@@ -137,11 +140,11 @@ function TileTaskTabAnchoredBody({
  * Feature 3 — fast task creation
  * ──────────────────────────────────────────────────────────────────────── */
 
-function TileTaskCreate({
-  tileId,
+function ThreadTaskCreate({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
@@ -155,8 +158,8 @@ function TileTaskCreate({
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      const newId = await dispatch(createTileTask(tileId));
-      // createTileTask defaults the title to "New task"; stamp the real label.
+      const newId = await dispatch(createThreadTask(threadId));
+      // createThreadTask defaults the title to "New task"; stamp the real label.
       if (typeof newId === "string" && newId) {
         await dispatch(
           updateTaskFieldThunk({ taskId: newId, patch: { title: trimmed } }),
@@ -252,7 +255,7 @@ function TileTaskCreate({
  * Task body — real editor + Feature 4 subtask experience
  * ──────────────────────────────────────────────────────────────────────── */
 
-function TileTaskBody({
+function ThreadTaskBody({
   taskId,
   projectId,
   compact,

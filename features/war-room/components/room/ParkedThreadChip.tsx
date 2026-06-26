@@ -7,33 +7,33 @@
 // "gone" — the chip shows its title + a tiny LIVE status trio (task / notes /
 // audio) so it stays readable while parked, and clicking it restores AND stages
 // it in one move (you land straight back where you left off). Uses the real
-// toggleTileHide thunk.
+// toggleThreadHide thunk.
 
 import { ListChecks, NotebookPen, Mic, Eye } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toggleTileHide } from "@/features/war-room/redux/thunks";
+import { toggleThreadHide } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
-import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
+import { useThreadPulse } from "@/features/war-room/hooks/useThreadPulse";
 
 export function ParkedThreadChip({
-  tileId,
+  threadId,
   title,
   onRestore,
 }: {
-  tileId: string;
+  threadId: string;
   title: string;
   /** Called after the tile is un-hidden — e.g. to stage it. */
-  onRestore?: (tileId: string) => void;
+  onRestore?: (threadId: string) => void;
 }) {
   const dispatch = useAppDispatch();
-  const pulse = useTilePulse(tileId);
+  const pulse = useThreadPulse(threadId);
 
   return (
     <button
       type="button"
       onClick={() => {
-        dispatch(toggleTileHide(tileId, false));
-        onRestore?.(tileId);
+        dispatch(toggleThreadHide(threadId, false));
+        onRestore?.(threadId);
       }}
       title={`Bring "${title}" back to the stage`}
       className={cn(

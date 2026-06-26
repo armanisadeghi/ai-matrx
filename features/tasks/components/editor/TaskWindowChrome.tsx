@@ -1,26 +1,27 @@
 "use client";
 
 // Task window CHROME units — the slot-mapped presentation of a task inside a
-// WindowPanel. Each unit reads the shared TaskEditorController from context and
-// takes NO props (zero prop-drilling), so they drop straight into WindowPanel's
-// header/footer/body slots — which are descendants of the controller provider
-// even across the WindowPanel portal.
+// WindowPanel. Each reads the shared TaskEditorController from context and takes
+// no props (zero prop-drilling), so they drop into WindowPanel's header / footer
+// / body slots — descendants of the controller provider even across the portal.
 //
-//   TaskTitleBand     → body hero: status circle + big editable name + context
+//   TaskTitleBand     → body hero: big editable name + Status / Parent fields
+//   TaskWindowBreadcrumb → header titleNode: compact project/type context
 //   TaskHeaderActions → actionsRight: save/discard (dirty) + copy + reference +
-//                       open-full-page + delete
+//                       open-full-page + delete (all at the uniform ~24px height)
 //   TaskMetadataFooter→ footer bar: priority + due vitals + save status
 //
-// These are the canonical window chrome reused by both the single-task window
-// and (Wave 2) the unified TasksWindow. They import NO WindowPanel themselves
-// (bundle invariant) — the window composes them onto its slots.
+// Completeness is a clearly-labeled "Status" FIELD here (not a circle glued to
+// the title) — inside a task you set status deliberately, you don't toggle a
+// list checkbox. Subtask-ness shows as a "Parent task" field, like every other
+// labeled field, never as floating text.
 
 import Link from "next/link";
 import {
   Calendar,
   CheckCircle2,
   CheckSquare,
-  CircleDashed,
+  Circle,
   ExternalLink,
   Flag,
   ListTodo,
@@ -28,51 +29,23 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import { formatDateOnly } from "@/utils/dateOnly";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { TASK_PRIORITY_META } from "@/features/tasks/components/TaskPriorityPicker";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
 
-const TOGGLE_SIZE = {
-  sm: "size-3.5",
-  md: "w-4 h-4",
-  lg: "size-5",
-} as const;
-
-/** The status circle — toggles complete/incomplete. */
-export function TaskCompleteToggle({
-  size = "md",
-  className,
-}: {
-  size?: keyof typeof TOGGLE_SIZE;
-  className?: string;
-}) {
-  const { completed, isOperating, handleToggleComplete } =
-    useTaskEditorControllerCtx();
-  return (
-    <button
-      type="button"
-      onClick={handleToggleComplete}
-      disabled={isOperating}
-      className={cn(
-        "shrink-0 text-muted-foreground transition-colors hover:text-primary disabled:opacity-60",
-        className,
-      )}
-      title={completed ? "Mark incomplete" : "Mark complete"}
-      aria-label={completed ? "Mark incomplete" : "Mark complete"}
-    >
-      {completed ? (
-        <CheckCircle2 className={cn(TOGGLE_SIZE[size], "text-green-500")} />
-      ) : (
-        <CircleDashed className={TOGGLE_SIZE[size]} />
-      )}
-    </button>
-  );
-}
+// Uniform compact header-control heights (match NoteViewControls / ReferenceCopyButton):
+const ICON_BTN =
+  "grid h-6 w-6 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 [&_svg]:h-3.5 [&_svg]:w-3.5";
+const TEXT_BTN =
+  "inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors disabled:opacity-50";
 
 /** The big editable task name (window/display treatment). */
 export function TaskTitleField({ className }: { className?: string }) {
@@ -94,35 +67,81 @@ export function TaskTitleField({ className }: { className?: string }) {
   );
 }
 
+/** A label/value row in the title band — matches the body's PropertyRow width. */
+function BandField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-20 shrink-0 text-[11px] font-medium text-muted-foreground">
+        {label}
+      </span>
+      <div className="flex min-w-0 flex-1 items-center">{children}</div>
+    </div>
+  );
+}
+
 /**
- * The body hero — a deliberate, prominent title band. Lifts the name OUT of the
- * cramped editor strip and OUT of the WindowPanel header (whose absolute-centered
- * title collides with wide action clusters and truncates long names). Here the
- * full name gets room to breathe, with the status circle and a context line
- * (project · task/subtask).
+ * The body hero — a deliberate title band. The name gets room to breathe (not
+ * crammed into the WindowPanel header, whose centered title collides with wide
+ * action clusters). Completeness and parent are LABELED FIELDS below the title,
+ * consistent with the body's property rows.
  */
 export function TaskTitleBand() {
-  const { task, project } = useTaskEditorControllerCtx();
-  const isSubtask = !!task?.parent_task_id;
+  const { task, completed, isOperating, handleToggleComplete } =
+    useTaskEditorControllerCtx();
+  const parentId = task?.parent_task_id ?? null;
+  const parent = useAppSelector((s) =>
+    parentId ? selectTaskById(s, parentId) : undefined,
+  );
+  const openTaskEditor = useOpenTaskEditorWindow();
+
   return (
-    <div className="shrink-0 border-b border-border/60 bg-card/30 px-5 py-3.5">
-      <div className="flex items-start gap-3">
-        <div className="pt-0.5">
-          <TaskCompleteToggle size="lg" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <TaskTitleField />
-          <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            {isSubtask ? (
-              <CheckSquare className="size-3 shrink-0" />
-            ) : (
-              <ListTodo className="size-3 shrink-0" />
+    <div className="shrink-0 space-y-3 border-b border-border/60 bg-card/30 px-5 py-4">
+      <TaskTitleField />
+
+      <div className="space-y-2">
+        <BandField label="Status">
+          <button
+            type="button"
+            onClick={handleToggleComplete}
+            disabled={isOperating}
+            title={completed ? "Mark incomplete" : "Mark complete"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-60",
+              completed
+                ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
-            <span className="truncate">
-              {project?.name ? project.name : isSubtask ? "Subtask" : "Task"}
-            </span>
-          </div>
-        </div>
+          >
+            {completed ? (
+              <CheckCircle2 className="size-3.5" />
+            ) : (
+              <Circle className="size-3.5" />
+            )}
+            {completed ? "Completed" : "Mark complete"}
+          </button>
+        </BandField>
+
+        {parentId && (
+          <BandField label="Parent task">
+            <button
+              type="button"
+              onClick={() => openTaskEditor({ taskId: parentId })}
+              title={parent?.title ?? "Open parent task"}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <CheckSquare className="size-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">
+                {parent?.title ?? "Open parent task"}
+              </span>
+            </button>
+          </BandField>
+        )}
       </div>
     </div>
   );
@@ -146,7 +165,7 @@ export function TaskWindowBreadcrumb() {
   );
 }
 
-/** actionsRight cluster — utility + save/discard when dirty. */
+/** actionsRight cluster — utility + save/discard when dirty, at uniform height. */
 export function TaskHeaderActions() {
   const {
     taskId,
@@ -163,35 +182,41 @@ export function TaskHeaderActions() {
     <div className="flex items-center gap-0.5">
       {isDirty && (
         <>
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
+            type="button"
             onClick={handleDiscard}
             disabled={isSaving}
-            className="h-7 px-2 text-[11px]"
+            className={cn(
+              TEXT_BTN,
+              "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
           >
             Discard
-          </Button>
-          <Button
-            size="sm"
+          </button>
+          <button
+            type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="h-7 px-2 text-[11px]"
+            className={cn(
+              TEXT_BTN,
+              "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
           >
             {isSaving ? (
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+              <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <Save className="w-3 h-3 mr-1" />
+              <Save className="h-3 w-3" />
             )}
             Save
-          </Button>
+          </button>
         </>
       )}
       <TaskCopyForAiButton
         taskId={taskId}
         taskTitle={effective.title}
         location="Tasks — task window"
-        size="sm"
+        compact
+        icon={CopyForAiIcon}
       />
       <ReferenceCopyButton
         referenceType="task"
@@ -200,35 +225,24 @@ export function TaskHeaderActions() {
         toastLabel={effective.title || "Task"}
         size="sm"
       />
-      <Button
-        size="sm"
-        variant="ghost"
-        asChild
-        className="h-7 w-7 p-0"
+      <Link
+        href={`/tasks/${taskId}`}
+        target="_blank"
+        rel="noopener noreferrer"
         title="Open in full page"
+        className={ICON_BTN}
       >
-        <Link
-          href={`/tasks/${taskId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
+        <ExternalLink />
+      </Link>
+      <button
+        type="button"
         onClick={handleDelete}
         disabled={isDeleting || isOperating}
-        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
         title="Delete task"
+        className={cn(ICON_BTN, "hover:text-destructive")}
       >
-        {isDeleting ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Trash2 className="w-3.5 h-3.5" />
-        )}
-      </Button>
+        {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+      </button>
     </div>
   );
 }

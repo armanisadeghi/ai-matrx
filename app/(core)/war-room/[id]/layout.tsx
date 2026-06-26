@@ -13,7 +13,7 @@ export async function generateMetadata({
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("ctx_war_room_sessions")
+      .from("wr_sessions")
       .select("title, description")
       .eq("id", id)
       .maybeSingle();

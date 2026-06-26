@@ -20,8 +20,13 @@
  *   4. Omits `conversation_id` (server mints + echoes its own). Sends
  *      `is_new: true` every call. The Redux conversationId stays stable for
  *      UI continuity; stream events are remapped to it.
- *   5. Always POSTs `${baseUrl}${ENDPOINTS.ai.manual}` (`/ai/manual`). A dev
- *      guard throws if the URL ever drifts.
+ *   5. POSTs `${baseUrl}${manualPath}` where `manualPath` defaults to
+ *      `ENDPOINTS.ai.manual` (`/ai/manual`) but can be deliberately overridden
+ *      for testing — per-conversation via
+ *      `builderAdvancedSettings.manualEndpointOverride` (highest priority) or
+ *      globally via the apiConfig version / path-override registry (e.g.
+ *      `/ai/v2/chat`). A dev guard still throws if the URL ever drifts onto an
+ *      `/ai/agents/*` or `/ai/conversations/*` cache endpoint.
  *   6. Imports nothing from execute-instance.thunk.ts. Shares only transport
  *      plumbing (processStream, backend resolution, optimistic message,
  *      resilient-fetch, payload-recovery, net-requests, toNetError).
@@ -92,7 +97,11 @@ import { selectContextPayload } from "../instance-context/instance-context.selec
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
 import { resolveBackendForConversation } from "./resolve-base-url";
 import { resolveAgentSandboxRef } from "@/lib/sandbox/active-binding";
-import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectActiveServer,
+  selectEndpointOverrideConfig,
+} from "@/lib/redux/slices/apiConfigSlice";
+import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
   createRequest,
   setRequestStatus,
@@ -569,7 +578,29 @@ export const executeManualInstance = createAsyncThunk<
         }),
       );
 
-      const url = `${baseUrl}${ENDPOINTS.ai.manual}`;
+      // Resolve the manual-execution PATH. Priority:
+      //   1. Per-conversation Builder override (manualEndpointOverride) — the
+      //      dedicated "test this run against a different route" control. Wins
+      //      outright so a creator can probe e.g. /ai/v2/chat for one chat
+      //      without disturbing the rest of the app.
+      //   2. The global apiConfig override registry (version + path overrides)
+      //      applied to ENDPOINTS.ai.manual.
+      //   3. ENDPOINTS.ai.manual ("/ai/manual") — the default.
+      // The base URL was already resolved (incl. localhost / sandbox / EC2) —
+      // we only swap the path here.
+      const builderManualOverride =
+        state.instanceUIState?.byConversationId?.[
+          conversationId
+        ]?.builderAdvancedSettings?.manualEndpointOverride?.trim();
+      const manualPath = builderManualOverride
+        ? builderManualOverride.startsWith("/")
+          ? builderManualOverride
+          : `/${builderManualOverride}`
+        : resolveEndpointPath(
+            ENDPOINTS.ai.manual,
+            selectEndpointOverrideConfig(state),
+          );
+      const url = `${baseUrl}${manualPath}`;
 
       // Factual routing record — see execute-instance.thunk for the rationale.
       // The outbound payload variable in this thunk is `payload` (assembled by
@@ -602,17 +633,20 @@ export const executeManualInstance = createAsyncThunk<
         );
       }
 
-      // Dev-mode hard guard. This path CANNOT EVER hit an agent endpoint —
-      // the whole point of /ai/manual is to send the live agent definition
-      // and bypass server-side caching. If a future refactor accidentally
-      // rewires this URL or drops the ai_model_id, fail loudly the first
-      // time anyone touches the Builder in dev.
+      // Dev-mode hard guard. This path CANNOT EVER hit an agent or
+      // conversation CACHE endpoint — the whole point of the manual path is to
+      // send the live agent definition and bypass server-side caching. A
+      // deliberate route override (manualEndpointOverride / global apiConfig
+      // overrides — e.g. /ai/v2/chat) is allowed; we only block the two
+      // endpoint families that would silently re-introduce server-side
+      // definition lookup. If a future refactor drops ai_model_id, fail loudly.
       if (process.env.NODE_ENV !== "production") {
-        if (!url.endsWith("/ai/manual")) {
+        if (/\/ai\/agents\//.test(url) || /\/ai\/conversations\//.test(url)) {
           throw new Error(
             `[ManualExec] Forbidden URL "${url}". The manual execution path ` +
-              `must hit /ai/manual only — never /ai/agents/* or ` +
-              `/ai/conversations/*. Check ENDPOINTS.ai.manual.`,
+              `must NEVER hit /ai/agents/* or /ai/conversations/* (those do ` +
+              `server-side definition lookup + caching). Use /ai/manual or a ` +
+              `deliberate route override via manualEndpointOverride / apiConfig.`,
           );
         }
         if (!payload.ai_model_id) {

@@ -164,6 +164,20 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-25 — Fixed the **War Room "transcript vanished after stop"** defect.
+  The embedded pad's session load (mount-load resolving after a recording stop,
+  or a realtime-driven `activeSessionId` re-derivation) could re-run the
+  load-reset effect and overwrite the just-committed draft with the stale/empty
+  DB snapshot — leaving the Transcript pane blank while the cleaned output (built
+  from the in-memory commit) still landed. Two guards added in `CleanupPad`: (1)
+  the load-reset now early-returns when the loaded session is already the applied
+  one (`appliedSessionIdRef`) — a re-load never wipes on-screen state; (2) a
+  `localRawSessionRef` marks the bound session as locally-dictated
+  (`commitTranscript` / `handleDraftChange` / `queueTranscriptInsert`), so a
+  first load that lands *after* local content was produced keeps the local text.
+  The guard is scoped to the bound session (reset on `activeSessionId` change and
+  in `clearLocalContent`) so the shared-`"main"` page variant still re-applies a
+  session's DB snapshot on revisit.
 - 2026-06-24 — Fixed two transcript-pane regressions introduced with the
   `<textarea>` → `ProTextarea` swap. (1) **Data loss:** `commitTranscript` now
   falls back to the live streamed accumulation (`liveTranscriptRef`) whenever the

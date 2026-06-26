@@ -41,7 +41,7 @@ export function getNormalizedRegisteredFunctionNode(
     }));
 
   const now = new Date().toISOString();
-  const node: DbFunctionNode = {
+  const node = {
     id: uuidv4(),
     created_at: now,
     updated_at: now,
@@ -61,7 +61,7 @@ export function getNormalizedRegisteredFunctionNode(
     is_public: null,
     public_read: null,
     ui_node_data: null,
-  };
+  } as unknown as DbFunctionNode;
   return node;
 }
 

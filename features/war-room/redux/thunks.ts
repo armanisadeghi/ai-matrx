@@ -22,16 +22,25 @@ import {
   createSessionThunk,
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
+import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
 import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
-  selectEffectiveTileProjectId,
-  selectNoteIdsForTile,
-  selectTileEffectiveContext,
-  selectTileTaskId,
+  selectEffectiveThreadProjectId,
+  selectNoteIdsForThread,
+  selectRoomProjectId,
+  selectThreadEffectiveContext,
+  selectThreadTaskId,
 } from "./selectors";
+import {
+  fetchThreadContentAssignmentsBulk,
+  listThreadIdsForRoom,
+} from "../service/readApi";
 import * as service from "../service";
 import * as assoc from "../service/associations";
 import {
@@ -40,15 +49,16 @@ import {
   threadRef,
   type ContainerRef,
   type CreateSessionInput,
-  type CreateTileInput,
-  type TileFlavor,
-  type TileTab,
+  type CreateThreadInput,
+  type ThreadAnchorType,
+  type ThreadTab,
+  type ThreadUserState,
   type WarRoomAssignment,
   type WarRoomAssignmentEntityType,
   type WarRoomSession,
   type WarRoomSessionUpdate,
-  type WarRoomTile,
-  type WarRoomTileUpdate,
+  type WarRoomThread,
+  type WarRoomThreadUpdate,
 } from "../types";
 import {
   assignmentActiveSet,
@@ -56,72 +66,134 @@ import {
   assignmentsLoadedBulk,
   assignmentsLoadedForContainer,
   assignmentUpserted,
-  clearSessionTiles,
+  clearRoomThreads,
+  orphanThreadsLoaded,
   sessionRemoved,
   sessionsLoaded,
   sessionUpserted,
   setActiveSession,
   setListError,
   setListStatus,
-  setTileActiveTab,
-  setTileHidden,
-  setTilePinned,
-  setTilesStatus,
-  tileRemoved,
-  tileSessionChanged,
-  tilesLoadedForSession,
-  tileUpserted,
+  setThreadActiveTab,
+  setThreadUserState,
+  setThreadUserStateBulk,
+  setThreadsStatus,
+  threadMembershipChanged,
+  threadOrphaned,
+  threadRemoved,
+  threadUpserted,
+  threadsLoadedForRoom,
 } from "./slice";
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+function findRoomForThread(state: RootState, threadId: string): string | null {
+  for (const [roomId, ids] of Object.entries(state.warRoom.threadIdsByRoom)) {
+    if (ids.includes(threadId)) return roomId;
+  }
+  return null;
+}
+
+async function loadThreadUserStateBulk(
+  dispatch: AppDispatch,
+  threadIds: string[],
+): Promise<void> {
+  if (threadIds.length === 0) return;
+  const res = await favoritesService.getBulk("thread", threadIds);
+  if (isScopesRpcErr(res)) {
+    reportWarRoomError("loadThreadUserStateBulk", res.error, { toast: false });
+    return;
+  }
+  const bulk: Record<string, ThreadUserState> = {};
+  for (const item of res.data.items) {
+    bulk[item.entityId] = {
+      isPinned: item.isPinned,
+      isHidden: item.isHidden,
+    };
+  }
+  dispatch(setThreadUserStateBulk(bulk));
+}
+
+/** Hydrate thread assignment buckets from `thread_contents()` — selectors unchanged. */
+async function hydrateThreadAssignmentsFromRpc(
+  dispatch: AppDispatch,
+  threadIds: string[],
+): Promise<WarRoomAssignment[]> {
+  if (threadIds.length === 0) return [];
+  const byContainer = await fetchThreadContentAssignmentsBulk(threadIds);
+  dispatch(assignmentsLoadedBulk({ byContainer }));
+  return Object.values(byContainer).flat();
+}
+
+function flavorToAnchor(
+  flavor: "thread" | "task" | "project",
+  projectId?: string | null,
+): Pick<WarRoomThreadUpdate, "anchor_type" | "anchor_id"> {
+  if (flavor === "project" && projectId) {
+    return { anchor_type: "project", anchor_id: projectId };
+  }
+  if (flavor === "task") {
+    return { anchor_type: "task", anchor_id: null };
+  }
+  return { anchor_type: "canvas", anchor_id: null };
+}
 
 // ── Sessions ──────────────────────────────────────────────────────────
 
 export const loadSessionsList = () => async (dispatch: AppDispatch) => {
   dispatch(setListStatus("loading"));
   try {
-    const [sessions, allTiles] = await Promise.all([
+    const [sessions, allThreads] = await Promise.all([
       service.listSessions(),
-      service.listAllUserTiles(),
+      service.listAllUserThreads(),
     ]);
     dispatch(sessionsLoaded(sessions));
 
-    // Seed the cross-room search index — group tiles by session without
-    // clobbering tiles already loaded for the active room (full assignment
-    // buckets arrive later via loadWarRoomSession).
-    const bySession = new Map<string, WarRoomTile[]>();
-    for (const t of allTiles) {
-      const list = bySession.get(t.session_id) ?? [];
-      list.push(t);
-      bySession.set(t.session_id, list);
+    const roomIds = sessions.map((s) => s.id);
+    const assignedSet = await service.collectAssignedThreadIds(roomIds);
+    const threadsById = new Map(allThreads.map((t) => [t.id, t]));
+
+    const membership = await Promise.all(
+      roomIds.map(async (roomId) => {
+        const ids = await listThreadIdsForRoom(roomId);
+        const threads = ids
+          .map((id) => threadsById.get(id))
+          .filter((t): t is WarRoomThread => !!t)
+          .sort((a, b) => a.position - b.position);
+        return { roomId, threads };
+      }),
+    );
+
+    for (const t of allThreads) {
+      dispatch(threadUpserted(t));
     }
-    for (const [sessionId, tiles] of bySession) {
-      dispatch(tilesLoadedForSession({ sessionId, tiles }));
+    for (const { roomId, threads } of membership) {
+      dispatch(threadsLoadedForRoom({ roomId, threads }));
     }
 
-    // Task assignments seed thread-title fallback for cross-room search (tile.title
-    // is often blank until the user renames; the anchored task title is the label).
-    if (allTiles.length > 0) {
+    const orphanIds = await service.listOrphanThreadIds(
+      allThreads.map((t) => t.id),
+      assignedSet,
+    );
+    dispatch(orphanThreadsLoaded(orphanIds));
+
+    void loadThreadUserStateBulk(
+      dispatch,
+      allThreads.map((t) => t.id),
+    );
+
+    if (allThreads.length > 0) {
       try {
-        const assignments = await assoc.listAssignmentsForContainers(
-          allTiles.map((t) => threadRef(t.id)),
+        const assignments = await hydrateThreadAssignmentsFromRpc(
+          dispatch,
+          allThreads.map((t) => t.id),
         );
-        const byContainer: Record<string, WarRoomAssignment[]> = {};
-        for (const t of allTiles) {
-          byContainer[containerKey("thread", t.id)] = [];
-        }
-        for (const a of assignments) {
-          const key = containerKey(
-            a.container_type as ContainerRef["type"],
-            a.container_id,
-          );
-          (byContainer[key] ??= []).push(a);
-        }
-        dispatch(assignmentsLoadedBulk({ byContainer }));
 
         const taskIds = assignments
           .filter((a) => a.entity_type === "task")
           .map((a) => a.entity_id);
         if (taskIds.length > 0) {
-          void dispatch(hydrateTileTasks(taskIds));
+          void dispatch(hydrateThreadTasks(taskIds));
         }
       } catch (err) {
         reportWarRoomError("loadSessionsList.assignments", err);
@@ -144,6 +216,17 @@ export const createWarRoomSession =
     try {
       const session = await service.createSession(input);
       dispatch(sessionUpserted(session));
+      if (input.projectId) {
+        const rows = await assoc.listAssignmentsForContainer(
+          roomRef(session.id),
+        );
+        dispatch(
+          assignmentsLoadedForContainer({
+            key: containerKey("room", session.id),
+            assignments: rows,
+          }),
+        );
+      }
       return session;
     } catch {
       toast.error("Couldn't create the War Room");
@@ -169,12 +252,6 @@ export interface RoomIdentityPatch {
   color?: string | null;
 }
 
-/**
- * Update a room's IDENTITY (title / description / icon / color) in one write.
- * Optimistic: the slice is patched immediately from the prior row + the edit so
- * the header + gallery card rebrand without waiting on the round-trip; on failure
- * the prior row is restored and the error routed through reportWarRoomError.
- */
 export const updateRoomIdentity =
   (id: string, patch: RoomIdentityPatch) =>
   async (
@@ -184,7 +261,6 @@ export const updateRoomIdentity =
     const prior = getState().warRoom.sessionsById[id];
     if (!prior) return false;
 
-    // Normalize: trim title (never blank it out), pass the rest through.
     const next: WarRoomSessionUpdate = {};
     if (patch.title !== undefined) {
       const trimmed = patch.title.trim();
@@ -196,16 +272,15 @@ export const updateRoomIdentity =
     }
     if (patch.icon !== undefined) next.icon = patch.icon;
     if (patch.color !== undefined) next.color = patch.color;
-    if (Object.keys(next).length === 0) return true; // nothing to do
+    if (Object.keys(next).length === 0) return true;
 
-    // Optimistic apply from the live row so the UI rebrands instantly.
     dispatch(sessionUpserted({ ...prior, ...next }));
     try {
       const updated = await service.updateSession(id, next);
       dispatch(sessionUpserted(updated));
       return true;
     } catch (err) {
-      dispatch(sessionUpserted(prior)); // restore the pre-edit row
+      dispatch(sessionUpserted(prior));
       reportWarRoomError("updateRoomIdentity", err, {
         toast: "Couldn't save the room details",
       });
@@ -213,51 +288,34 @@ export const updateRoomIdentity =
     }
   };
 
-// ── active_tile_id (focused-thread RESTORE) ─────────────────────────────
-// The staged/focused tile is ephemeral React-context view state (roomViewContext)
-// BY DESIGN — it is NOT moved into Redux/persistence. We only MIRROR the resolved
-// focus to the session row so a room reopens on the thread you last had focused:
-//   • on OPEN  → seed the initial staged tile from session.active_tile_id (UI side)
-//   • on CHANGE → persist the new focus here (debounced, no-op when unchanged).
-
-/**
- * Persist the room's currently-focused tile to ctx_war_room_sessions.active_tile_id.
- * Guarded (skips a no-op write when the row already matches) and updates the slice
- * row so a re-open reads the fresh value. Background work — logs loudly on failure
- * but never toasts (focus restore is a convenience, not a user action).
- */
-export const persistActiveTile =
-  (sessionId: string, tileId: string | null) =>
+/** Persist the room's focused thread to `wr_sessions.active_thread_id`. */
+export const persistActiveThread =
+  (roomId: string, threadId: string | null) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<void> => {
-    const session = getState().warRoom.sessionsById[sessionId];
+    const session = getState().warRoom.sessionsById[roomId];
     if (!session) return;
-    if ((session.active_tile_id ?? null) === (tileId ?? null)) return; // no-op
+    if ((session.active_thread_id ?? null) === (threadId ?? null)) return;
     try {
-      const updated = await service.updateSession(sessionId, {
-        active_tile_id: tileId,
+      const updated = await service.updateSession(roomId, {
+        active_thread_id: threadId,
       });
       dispatch(sessionUpserted(updated));
     } catch (err) {
-      reportWarRoomError("persistActiveTile", err, { toast: false });
+      reportWarRoomError("persistActiveThread", err, { toast: false });
     }
   };
 
 export const deleteSession =
   (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
-    // Optimistic removal — on failure re-add the single removed session
-    // (targeted, no full network reload) so the list self-heals.
     const prior = getState().warRoom.sessionsById[id];
     dispatch(sessionRemoved(id));
     try {
       await service.softDeleteSession(id);
-      // Purge the room's association edges (its content + the membership edges of
-      // its threads + its scope edges) so none are orphaned — best-effort,
-      // loud-not-fatal (the room is already deleted).
-      void assoc
-        .purgeContainerEdges(roomRef(id))
-        .catch((edgeErr) =>
-          reportWarRoomError("deleteSession:purgeEdges", edgeErr, { toast: false }),
-        );
+      void assoc.purgeContainerEdges(roomRef(id)).catch((edgeErr) =>
+        reportWarRoomError("deleteSession:purgeEdges", edgeErr, {
+          toast: false,
+        }),
+      );
       toast.success("War Room deleted");
     } catch (err) {
       if (prior) dispatch(sessionUpserted(prior));
@@ -268,73 +326,62 @@ export const deleteSession =
     }
   };
 
-/** Load one room fully: session + tiles + audio links, set active, bump opened. */
 export const loadWarRoomSession =
   (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     dispatch(setActiveSession(id));
-    dispatch(setTilesStatus({ sessionId: id, status: "loading" }));
+    dispatch(setThreadsStatus({ roomId: id, status: "loading" }));
     try {
       const existing = getState().warRoom.sessionsById[id];
-      const [session, tiles] = await Promise.all([
+      const [session, threads] = await Promise.all([
         existing ? Promise.resolve(existing) : service.getSession(id),
-        service.listTiles(id),
+        service.listThreadsForRoom(id),
       ]);
 
       if (!session) {
-        dispatch(setTilesStatus({ sessionId: id, status: "error" }));
+        dispatch(setThreadsStatus({ roomId: id, status: "error" }));
         toast.error("War Room not found");
         return null;
       }
 
       dispatch(sessionUpserted(session));
-      dispatch(tilesLoadedForSession({ sessionId: id, tiles }));
+      dispatch(threadsLoadedForRoom({ roomId: id, threads }));
 
-      // ONE query for every association across the room + all its threads
-      // (notes, tasks, studio sessions, files, documents, conversations).
-      const refs: ContainerRef[] = [
-        roomRef(id),
-        ...tiles.map((t) => threadRef(t.id)),
-      ];
-      const assignments = await assoc.listAssignmentsForContainers(refs);
+      const threadIds = threads.map((t) => t.id);
+      const [roomAssignments, contentAssignments] = await Promise.all([
+        assoc.listAssignmentsForContainer(roomRef(id)),
+        hydrateThreadAssignmentsFromRpc(dispatch, threadIds),
+      ]);
 
-      // Seed an (empty) bucket for every container so a tile that lost its last
-      // assignment doesn't keep showing a stale one, then group rows by key.
-      const byContainer: Record<string, WarRoomAssignment[]> = {};
-      for (const ref of refs) byContainer[containerKey(ref.type, ref.id)] = [];
-      for (const a of assignments) {
-        const key = containerKey(
-          a.container_type as ContainerRef["type"],
-          a.container_id,
-        );
-        (byContainer[key] ??= []).push(a);
-      }
-      dispatch(assignmentsLoadedBulk({ byContainer }));
+      dispatch(
+        assignmentsLoadedForContainer({
+          key: containerKey("room", id),
+          assignments: roomAssignments,
+        }),
+      );
 
-      // Hydrate the threads' linked tasks into the agent-context slice so the
-      // Task tab renders after a fresh load (fire-and-forget).
-      const taskIds = assignments
+      void loadThreadUserStateBulk(dispatch, threadIds);
+
+      const taskIds = contentAssignments
         .filter((a) => a.entity_type === "task")
         .map((a) => a.entity_id);
-      void dispatch(hydrateTileTasks(taskIds));
+      void dispatch(hydrateThreadTasks(taskIds));
 
       void service.touchSessionOpened(id);
       return session;
     } catch (err) {
       console.error("[war-room] loadWarRoomSession failed:", err);
-      dispatch(setTilesStatus({ sessionId: id, status: "error" }));
+      dispatch(setThreadsStatus({ roomId: id, status: "error" }));
       toast.error("Couldn't open the War Room");
       return null;
     }
   };
 
 export const leaveWarRoomSession = (id: string) => (dispatch: AppDispatch) => {
-  dispatch(clearSessionTiles(id));
+  dispatch(clearRoomThreads(id));
   dispatch(setActiveSession(null));
 };
 
-// ── Context (controlled selection carried by the records) ──────────────
-// These persist org + scope onto ctx_war_room_* rows ONLY. They NEVER write
-// appContextSlice (global active context) or ctx_scope_assignments.
+// ── Context (scopes via setEntityScopes — not row columns) ─────────────
 
 export interface ContextSelectionInput {
   organizationId: string | null;
@@ -345,231 +392,175 @@ export const setSessionContextThunk =
   (sessionId: string, ctx: ContextSelectionInput) =>
   async (dispatch: AppDispatch) => {
     try {
-      const updated = await service.updateSession(sessionId, {
-        organization_id: ctx.organizationId,
-        context_scope_ids: ctx.scopeIds,
-      });
-      dispatch(sessionUpserted(updated));
+      if (ctx.organizationId !== undefined) {
+        const updated = await service.updateSession(sessionId, {
+          organization_id: ctx.organizationId,
+        });
+        dispatch(sessionUpserted(updated));
+      }
+      const result = await dispatch(
+        setEntityScopes({
+          entityType: "war_room",
+          entityId: sessionId,
+          scopeIds: ctx.scopeIds,
+          organizationId: ctx.organizationId ?? undefined,
+        }),
+      );
+      if (!result.ok) {
+        toast.error("Couldn't update the War Room context");
+      }
     } catch {
       toast.error("Couldn't update the War Room context");
     }
   };
 
-export const setTileContextOverrideThunk =
-  (tileId: string, ctx: ContextSelectionInput) =>
+export const setThreadContextOverrideThunk =
+  (threadId: string, ctx: ContextSelectionInput) =>
   async (dispatch: AppDispatch) => {
     try {
-      const updated = await service.updateTile(tileId, {
-        context_organization_id: ctx.organizationId,
-        context_scope_ids: ctx.scopeIds,
-      });
-      dispatch(tileUpserted(updated));
+      const result = await dispatch(
+        setEntityScopes({
+          entityType: "thread",
+          entityId: threadId,
+          scopeIds: ctx.scopeIds,
+          organizationId: ctx.organizationId ?? undefined,
+        }),
+      );
+      if (!result.ok) {
+        toast.error("Couldn't update the thread context");
+      }
     } catch {
-      toast.error("Couldn't update the tile context");
+      toast.error("Couldn't update the thread context");
     }
   };
 
-/** Reset a tile back to inheriting the session's context (override → NULL). */
-export const clearTileContextOverrideThunk =
-  (tileId: string) => async (dispatch: AppDispatch) => {
+export const clearThreadContextOverrideThunk =
+  (threadId: string) => async (dispatch: AppDispatch) => {
     try {
-      const updated = await service.updateTile(tileId, {
-        context_organization_id: null,
-        context_scope_ids: null,
-      });
-      dispatch(tileUpserted(updated));
+      const result = await dispatch(
+        setEntityScopes({
+          entityType: "thread",
+          entityId: threadId,
+          scopeIds: [],
+        }),
+      );
+      if (!result.ok) {
+        toast.error("Couldn't reset the thread context");
+      }
     } catch {
-      toast.error("Couldn't reset the tile context");
+      toast.error("Couldn't reset the thread context");
     }
   };
 
-// ── Tiles ─────────────────────────────────────────────────────────────
+// ── Threads ───────────────────────────────────────────────────────────
 
-export const createTile =
-  (input: CreateTileInput) =>
-  async (dispatch: AppDispatch): Promise<WarRoomTile | null> => {
+export const createThread =
+  (input: CreateThreadInput) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<WarRoomThread | null> => {
     try {
-      const tile = await service.createTile(input);
-      dispatch(tileUpserted(tile));
-      return tile;
+      const thread = await service.createThread(input);
+      dispatch(threadUpserted(thread));
+      if (input.roomId) {
+        dispatch(
+          threadMembershipChanged({
+            threadId: thread.id,
+            fromRoomId: null,
+            toRoomId: input.roomId,
+          }),
+        );
+      } else {
+        const orphans = getState().warRoom.orphanThreadIds;
+        if (!orphans.includes(thread.id)) {
+          dispatch(orphanThreadsLoaded([...orphans, thread.id]));
+        }
+      }
+      return thread;
     } catch {
-      toast.error("Couldn't create the tile");
+      toast.error("Couldn't create the thread");
       return null;
     }
   };
 
-// ── Project flavor + association (the room/tile invariant) ──────────────
-// INVARIANT: a room (session.project_id) and its tiles never hold CONFLICTING
-// projects. If the room has a project, every tile is NULL (inherits) or equal
-// to it. Per-tile projects (different projects on different tiles) are allowed
-// ONLY when the room has no project.
-// See migrations/ctx_war_room_tiles_flavor_project.sql.
-
-export type ProjectConflictResolution = "per-thread" | "keep-room";
-
-export interface TileProjectConflict {
-  /** True when assigning `requestedProjectId` to a tile in this room would
-   *  conflict with the room's existing project (room is P, request is a
-   *  different Q). */
-  hasConflict: boolean;
-  /** The room's current project_id (the P in the conflict), or null. */
-  roomProjectId: string | null;
-}
-
-/**
- * Synchronously decide whether assigning a project to a tile in this room would
- * break the invariant. The UI dispatches this BEFORE creating/associating so it
- * knows whether to prompt the user to choose a resolution.
- */
-export const checkTileProjectConflict =
-  (sessionId: string, requestedProjectId: string | null) =>
-  (_dispatch: AppDispatch, getState: () => RootState): TileProjectConflict => {
-    const roomProjectId =
-      getState().warRoom.sessionsById[sessionId]?.project_id ?? null;
-    return {
-      hasConflict:
-        requestedProjectId != null &&
-        roomProjectId != null &&
-        roomProjectId !== requestedProjectId,
-      roomProjectId,
-    };
-  };
-
-/** Set a tile's flavor (thread | task | project) without touching its project. */
-export const setTileFlavorThunk =
-  (tileId: string, flavor: TileFlavor) => async (dispatch: AppDispatch) => {
-    try {
-      const updated = await service.updateTile(tileId, { flavor });
-      dispatch(tileUpserted(updated));
-    } catch {
-      toast.error("Couldn't change the tile type");
-    }
-  };
-
-/**
- * Switch a room from "whole-room project" to "per-thread": stamp the room's
- * project onto every existing tile that lacks one, THEN clear the room's
- * project. Order matters — stamp before clear so the association is never lost
- * and the invariant holds throughout. No-op if the room has no project.
- */
-export const convertRoomToPerThreadThunk =
-  (sessionId: string) =>
+export const setThreadProjectThunk =
+  (threadId: string, projectId: string | null) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<boolean> => {
-    const roomProjectId =
-      getState().warRoom.sessionsById[sessionId]?.project_id ?? null;
-    if (!roomProjectId) return true; // already per-thread / no project
+    const thread = getState().warRoom.threadsById[threadId];
+    if (!thread) return false;
 
-    // The tiles `applyProjectToAllTiles` will stamp are exactly those with a
-    // NULL project_id (it filters .is("project_id", null)). Capture them so a
-    // mid-flight failure clearing the room can be fully rolled back — the room
-    // & its tiles must NEVER be left holding conflicting projects.
-    let stamped: WarRoomTile[] = [];
     try {
-      stamped = await service.applyProjectToAllTiles(sessionId, roomProjectId);
-      const updatedSession = await service.updateSession(sessionId, {
-        project_id: null,
-      });
-      for (const t of stamped) dispatch(tileUpserted(t));
-      dispatch(sessionUpserted(updatedSession));
-      return true;
-    } catch (err) {
-      // Compensating rollback: un-stamp every tile we just stamped so the room
-      // (still holding its project) doesn't end up conflicting with them. Best
-      // effort — any rollback failure is itself reported loudly.
-      await Promise.all(
-        stamped.map((t) =>
-          service
-            .updateTile(t.id, { project_id: null })
-            .then((reverted) => dispatch(tileUpserted(reverted)))
-            .catch((rollbackErr) =>
-              reportWarRoomError(
-                "convertRoomToPerThreadThunk:rollback",
-                rollbackErr,
-                { toast: false },
-              ),
-            ),
-        ),
-      );
-      reportWarRoomError("convertRoomToPerThreadThunk", err, {
-        toast: "Couldn't switch to per-thread projects",
-      });
-      return false;
-    }
-  };
-
-/**
- * Associate (or re-point / clear) a tile's project. The caller must resolve any
- * conflict FIRST (checkTileProjectConflict + a prompt) and pass `resolution`:
- *   • 'per-thread' — convert the room to per-thread, then give this tile its
- *      requested project.
- *   • 'keep-room'  — ignore the request; the tile JOINS the room's project.
- * With no conflict, `resolution` is unused. projectId=null clears the tile's
- * project (a project-flavor tile reverts to 'thread'; a task tile stays 'task').
- */
-export const setTileProjectThunk =
-  (
-    tileId: string,
-    projectId: string | null,
-    resolution?: ProjectConflictResolution,
-  ) =>
-  async (
-    dispatch: AppDispatch,
-    getState: () => RootState,
-  ): Promise<boolean> => {
-    const tile = getState().warRoom.tilesById[tileId];
-    if (!tile) return false;
-    const { hasConflict, roomProjectId } = checkTileProjectConflict(
-      tile.session_id,
-      projectId,
-    )(dispatch, getState);
-
-    let finalProjectId = projectId;
-    if (hasConflict) {
-      if (resolution === "keep-room") {
-        finalProjectId = roomProjectId; // join the room's project instead
-      } else if (resolution === "per-thread") {
-        const ok = await dispatch(convertRoomToPerThreadThunk(tile.session_id));
-        if (!ok) return false; // room project now null → requested id is safe
-      } else {
-        // Caller passed an unresolved real conflict — refuse rather than corrupt.
-        console.warn(
-          "[war-room] setTileProjectThunk refused: unresolved project conflict",
-        );
-        return false;
+      const patch: WarRoomThreadUpdate = {};
+      if (projectId) {
+        patch.anchor_type = "project";
+        patch.anchor_id = projectId;
+      } else if (thread.anchor_type === "project") {
+        patch.anchor_type = "canvas";
+        patch.anchor_id = null;
       }
-    }
-
-    try {
-      const patch: WarRoomTileUpdate = { project_id: finalProjectId };
-      // A tile gains 'project' flavor when given a project; clearing reverts a
-      // project tile to a generic thread (a task-flavored tile stays 'task').
-      if (finalProjectId) patch.flavor = "project";
-      else if (tile.flavor === "project") patch.flavor = "thread";
-      const updated = await service.updateTile(tileId, patch);
-      dispatch(tileUpserted(updated));
+      const updated = await service.updateThread(threadId, patch);
+      dispatch(threadUpserted(updated));
       return true;
     } catch {
-      toast.error("Couldn't update the tile's project");
+      toast.error("Couldn't update the thread's project");
       return false;
     }
   };
 
-/**
- * Associate the ROOM with a project (whole-room mode), or clear it (null). The
- * UI should only call this when no tile carries a DIFFERENT project (otherwise
- * use the conflict prompt). Clearing leaves any per-tile projects intact.
- */
+export const setThreadAnchorTypeThunk =
+  (threadId: string, anchorType: ThreadAnchorType) =>
+  async (dispatch: AppDispatch) => {
+    try {
+      const updated = await service.updateThread(threadId, {
+        anchor_type: anchorType,
+        anchor_id: anchorType === "canvas" ? null : undefined,
+      });
+      dispatch(threadUpserted(updated));
+    } catch {
+      toast.error("Couldn't change the thread type");
+    }
+  };
+
 export const setRoomProjectThunk =
-  (sessionId: string, projectId: string | null) =>
+  (roomId: string, projectId: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const updated = await service.updateSession(sessionId, {
-        project_id: projectId,
-      });
-      dispatch(sessionUpserted(updated));
+      if (projectId) {
+        const assignment = await assoc.createAssignment({
+          ref: roomRef(roomId),
+          entityType: "project",
+          entityId: projectId,
+          makeActive: true,
+        });
+        dispatch(
+          assignmentUpserted({
+            key: containerKey("room", roomId),
+            assignment,
+          }),
+        );
+      } else {
+        const rows = await assoc.listAssignmentsForContainer(roomRef(roomId));
+        const active = rows.find(
+          (a) => a.entity_type === "project" && a.is_active,
+        );
+        if (active) {
+          await assoc.removeAssignmentByEntity(
+            roomRef(roomId),
+            "project",
+            active.entity_id,
+          );
+          dispatch(
+            assignmentRemoved({
+              key: containerKey("room", roomId),
+              id: active.id,
+            }),
+          );
+        }
+      }
       return true;
     } catch {
       toast.error("Couldn't associate the room with the project");
@@ -577,70 +568,6 @@ export const setRoomProjectThunk =
     }
   };
 
-/**
- * Make the WHOLE room one project (the mirror of convertRoomToPerThread): clear
- * any per-tile project that DIFFERS from `projectId` (those tiles fall back to
- * inheriting the room's), then set the room's project. Used when the user picks
- * "one project for the whole room" while some threads carry their own.
- */
-export const absorbRoomIntoProjectThunk =
-  (sessionId: string, projectId: string) =>
-  async (
-    dispatch: AppDispatch,
-    getState: () => RootState,
-  ): Promise<boolean> => {
-    const tileIds = getState().warRoom.tileIdsBySession[sessionId] ?? [];
-    // Remember each tile we clear so a mid-loop / session-update failure can be
-    // rolled back — the room must NOT end up project-less while its tiles have
-    // already been stripped (or vice-versa).
-    const cleared: { id: string; priorProjectId: string }[] = [];
-    try {
-      for (const id of tileIds) {
-        const t = getState().warRoom.tilesById[id];
-        if (t?.project_id && t.project_id !== projectId) {
-          const priorProjectId = t.project_id;
-          const updated = await service.updateTile(id, { project_id: null });
-          dispatch(tileUpserted(updated));
-          cleared.push({ id, priorProjectId });
-        }
-      }
-      const updatedSession = await service.updateSession(sessionId, {
-        project_id: projectId,
-      });
-      dispatch(sessionUpserted(updatedSession));
-      return true;
-    } catch (err) {
-      // Compensating rollback: restore every per-tile project we cleared so no
-      // inconsistent room/tile project state survives the failure.
-      await Promise.all(
-        cleared.map(({ id, priorProjectId }) =>
-          service
-            .updateTile(id, { project_id: priorProjectId })
-            .then((reverted) => dispatch(tileUpserted(reverted)))
-            .catch((rollbackErr) =>
-              reportWarRoomError(
-                "absorbRoomIntoProjectThunk:rollback",
-                rollbackErr,
-                {
-                  toast: false,
-                },
-              ),
-            ),
-        ),
-      );
-      reportWarRoomError("absorbRoomIntoProjectThunk", err, {
-        toast: "Couldn't set the room project",
-      });
-      return false;
-    }
-  };
-
-/**
- * Create a NEW room associated with an existing project and seed one
- * project-flavor tile pointing at it (the project's command tile). The room's
- * project_id makes the whole room "about" the project; the seeded tile's Task
- * tab lists/creates the project's tasks. Returns the created session.
- */
 export const createRoomFromProject =
   (
     projectId: string,
@@ -655,15 +582,20 @@ export const createRoomFromProject =
         organizationId: organizationId ?? null,
       });
       dispatch(sessionUpserted(session));
-      const tile = await service.createTile({
-        sessionId: session.id,
-        flavor: "project",
+      const thread = await service.createThread({
+        roomId: session.id,
         projectId,
         activeTab: "task",
         title: projectName?.trim() || null,
         position: 0,
       });
-      dispatch(tileUpserted(tile));
+      dispatch(threadUpserted(thread));
+      dispatch(
+        threadsLoadedForRoom({
+          roomId: session.id,
+          threads: [thread],
+        }),
+      );
       return session;
     } catch {
       toast.error("Couldn't open a room for the project");
@@ -671,83 +603,72 @@ export const createRoomFromProject =
     }
   };
 
-// Coalesce concurrent lazy-create calls per (op, tileId) so a rapid
-// double-mount / double-click can't mint two notes / tasks / audio sessions
-// for the same tile. Keyed strings like "note:<tileId>".
-const inFlightTileOps = new Set<string>();
+const inFlightThreadOps = new Set<string>();
 
-/**
- * A human, trackable label for a tile's note — derived from the room name + the
- * thread (its own title, else its task's title, else its ordinal in the room),
- * disambiguated by note index. Replaces the generic "War Room note" that was the
- * SAME for every room and thread and littered the user's notes list.
- */
-function deriveTileNoteLabel(state: RootState, tileId: string): string {
-  const tile = state.warRoom.tilesById[tileId];
-  const sessionId = tile?.session_id ?? null;
+function deriveThreadNoteLabel(
+  state: RootState,
+  threadId: string,
+  roomId: string | null,
+): string {
+  const thread = state.warRoom.threadsById[threadId];
   const roomName =
-    (sessionId && state.warRoom.sessionsById[sessionId]?.title?.trim()) ||
-    "War Room";
-  const taskId = selectTileTaskId(tileId)(state);
+    (roomId && state.warRoom.sessionsById[roomId]?.title?.trim()) || "War Room";
+  const taskId = selectThreadTaskId(threadId)(state);
   const taskTitle = taskId
     ? selectTaskById(state, taskId)?.title?.trim()
     : undefined;
-  const ordinal = sessionId
-    ? (state.warRoom.tileIdsBySession[sessionId]?.indexOf(tileId) ?? -1)
+  const ordinal = roomId
+    ? (state.warRoom.threadIdsByRoom[roomId]?.indexOf(threadId) ?? -1)
     : -1;
   const threadLabel =
-    tile?.title?.trim() ||
+    thread?.title?.trim() ||
     taskTitle ||
     (ordinal >= 0 ? `Thread ${ordinal + 1}` : "Thread");
   const base =
     threadLabel === roomName ? roomName : `${roomName} — ${threadLabel}`;
-  // Index among the tile's existing notes — the 2nd+ note gets a "(N)" suffix.
-  const existing = selectNoteIdsForTile(tileId)(state).length;
+  const existing = selectNoteIdsForThread(threadId)(state).length;
   const n = existing + 1;
   return n > 1 ? `${base} (${n})` : base;
 }
 
-/**
- * Ensure the tile's Notes tab has a backing note. Creates one via the notes
- * programmatic API (no notes-page tab side effects), registers it in the notes
- * slice, links it to the tile, and keeps note.task_id in sync with the tile.
- */
-export const createTileNote =
-  (tileId: string, sessionId: string) =>
+export const createThreadNote =
+  (threadId: string, roomId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
-    const key = `note:${tileId}`;
-    const tile = getState().warRoom.tilesById[tileId];
-    const existingNote = selectActiveNoteId(tileId)(getState());
-    if (!tile || existingNote) return existingNote;
-    if (inFlightTileOps.has(key)) return null;
-    inFlightTileOps.add(key);
+    const key = `note:${threadId}`;
+    const thread = getState().warRoom.threadsById[threadId];
+    const existingNote = selectActiveNoteId(threadId)(getState());
+    if (!thread || existingNote) return existingNote;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
     try {
       const note = await createNote({
         content: "",
-        label: deriveTileNoteLabel(getState(), tileId),
-        task_id: selectTileTaskId(tileId)(getState()) ?? undefined,
+        label: deriveThreadNoteLabel(getState(), threadId, roomId),
+        task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "note",
         entityId: note.id,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return note.id;
     } catch (err) {
-      reportWarRoomError("createTileNote", err, {
+      reportWarRoomError("createThreadNote", err, {
         toast: "Couldn't create the note",
       });
       return null;
     } finally {
-      inFlightTileOps.delete(key);
+      inFlightThreadOps.delete(key);
     }
   };
 
-/** Map a ctx_tasks row to the agent-context TaskRecord shape (full-data). */
 function toTaskRecord(
   t: NonNullable<Awaited<ReturnType<typeof taskService.getTaskById>>>,
 ): TaskRecord {
@@ -767,27 +688,22 @@ function toTaskRecord(
   };
 }
 
-/**
- * Create a task and anchor it to the tile. The created task lands in the
- * agent-context tasks slice (createTaskThunk upserts it); we link it to the
- * tile and keep the tile's note associated with the same task.
- */
-export const createTileTask =
-  (tileId: string) =>
+export const createThreadTask =
+  (threadId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
-    const key = `task:${tileId}`;
-    const tile = getState().warRoom.tilesById[tileId];
-    const existingTask = selectTileTaskId(tileId)(getState());
-    if (!tile || existingTask) return existingTask;
-    if (inFlightTileOps.has(key)) return null;
-    inFlightTileOps.add(key);
+    const key = `task:${threadId}`;
+    const thread = getState().warRoom.threadsById[threadId];
+    const existingTask = selectThreadTaskId(threadId)(getState());
+    if (!thread || existingTask) return existingTask;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
     try {
-      // Stamp the task with the TILE's context, not the global active context
-      // — honors the War Room invariant (carries its own context). Also stamp
-      // the tile's EFFECTIVE project so a task created under a project room /
-      // project tile auto-associates app-wide (ctx_tasks.project_id).
-      const ctx = selectTileEffectiveContext(tileId)(getState());
-      const projectId = selectEffectiveTileProjectId(tileId)(getState());
+      const roomId = findRoomForThread(getState(), threadId);
+      const ctx = selectThreadEffectiveContext(threadId, roomId)(getState());
+      const projectId = selectEffectiveThreadProjectId(
+        threadId,
+        roomId,
+      )(getState());
       const taskId = await dispatch(
         createTaskThunk({
           title: "New task",
@@ -798,24 +714,21 @@ export const createTileTask =
       ).unwrap();
       if (!taskId) return null;
       const taskAssignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "task",
         entityId: taskId,
       });
       dispatch(
         assignmentUpserted({
-          key: containerKey("thread", tileId),
+          key: containerKey("thread", threadId),
           assignment: taskAssignment,
         }),
       );
-      // Keep ALL of the tile's linked notes associated with the task (best effort).
-      const noteIds = selectNoteIdsForTile(tileId)(getState());
+      const noteIds = selectNoteIdsForThread(threadId)(getState());
       await Promise.all(
         noteIds.map((noteId) =>
           updateNoteApi(noteId, { task_id: taskId }).catch((err) =>
-            // The task IS created; the note→task link is what failed. Surface it
-            // loudly so a note silently failing to link is no longer invisible.
-            reportWarRoomError("createTileTask", err, {
+            reportWarRoomError("createThreadTask", err, {
               toast: "Created the task, but couldn't link a note to it",
             }),
           ),
@@ -823,18 +736,16 @@ export const createTileTask =
       );
       return taskId;
     } catch (err) {
-      reportWarRoomError("createTileTask", err, {
+      reportWarRoomError("createThreadTask", err, {
         toast: "Couldn't create the task",
       });
       return null;
     } finally {
-      inFlightTileOps.delete(key);
+      inFlightThreadOps.delete(key);
     }
   };
 
-/** Load a task's subtasks into the agent-context slice so they survive a fresh
- *  room load (hydrateTileTasks only loads the parent). Idempotent. */
-export const loadTileSubtasks =
+export const loadThreadSubtasks =
   (taskId: string) => async (dispatch: AppDispatch) => {
     try {
       const subs = await taskService.getSubtasks(taskId);
@@ -848,9 +759,7 @@ export const loadTileSubtasks =
     }
   };
 
-/** Pull the threads' linked tasks into the agent-context slice so the Task tab
- *  can render them after a fresh room load. Fire-and-forget. */
-export const hydrateTileTasks =
+export const hydrateThreadTasks =
   (taskIds: string[]) => async (dispatch: AppDispatch) => {
     const unique = [...new Set(taskIds.filter((id): id is string => !!id))];
     if (unique.length === 0) return;
@@ -865,25 +774,19 @@ export const hydrateTileTasks =
     }
   };
 
-// ── Audio (transcript sessions per tile) ───────────────────────────────
-// Reuses the transcript-studio system: each tile audio session is a real
-// studio_sessions row (source='war_room', invisible to the Studio list) linked
-// via ctx_war_room_tile_audio_sessions. Raw transcript persists to
-// studio_raw_segments and renders from the transcriptStudio slice.
-
-/** Create a new audio (transcript) session for a tile and make it active. */
-export const addAudioSessionToTile =
-  (tileId: string) =>
+export const addAudioSessionToThread =
+  (threadId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const key = `audio:${tileId}`;
-    if (inFlightTileOps.has(key)) return null;
-    inFlightTileOps.add(key);
+    const key = `audio:${threadId}`;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
     try {
       const userId = requireUserId();
-      const ctx = selectTileEffectiveContext(tileId)(getState());
+      const roomId = findRoomForThread(getState(), threadId);
+      const ctx = selectThreadEffectiveContext(threadId, roomId)(getState());
       const session = await dispatch(
         createSessionThunk({
           userId,
@@ -894,31 +797,33 @@ export const addAudioSessionToTile =
       ).unwrap();
       if (!session) return null;
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "studio_session",
         entityId: session.id,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return session.id;
     } catch (err) {
-      reportWarRoomError("addAudioSessionToTile", err, {
+      reportWarRoomError("addAudioSessionToThread", err, {
         toast: "Couldn't start an audio session",
       });
       return null;
     } finally {
-      inFlightTileOps.delete(key);
+      inFlightThreadOps.delete(key);
     }
   };
 
-/** Switch which of a tile's audio sessions is active (persists + loads it). */
-export const setTileActiveAudioSession =
-  (tileId: string, studioSessionId: string) =>
+export const setThreadActiveAudioSession =
+  (threadId: string, studioSessionId: string) =>
   async (dispatch: AppDispatch) => {
     dispatch(
       assignmentActiveSet({
-        key: containerKey("thread", tileId),
+        key: containerKey("thread", threadId),
         entityType: "studio_session",
         entityId: studioSessionId,
       }),
@@ -926,380 +831,401 @@ export const setTileActiveAudioSession =
     dispatch(fetchRawSegmentsThunk({ sessionId: studioSessionId }));
     try {
       await assoc.setActiveAssignment(
-        threadRef(tileId),
+        threadRef(threadId),
         "studio_session",
         studioSessionId,
       );
     } catch (err) {
-      reportWarRoomError("setTileActiveAudioSession", err, {
+      reportWarRoomError("setThreadActiveAudioSession", err, {
         toast: "Couldn't switch the audio session",
       });
     }
   };
 
-/** Return the tile's active audio session, creating one if needed. */
-export const ensureTileAudioSession =
-  (tileId: string) =>
+export const ensureThreadAudioSession =
+  (threadId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const active = selectActiveAudioSessionId(tileId)(getState());
+    const active = selectActiveAudioSessionId(threadId)(getState());
     if (active) {
       dispatch(fetchRawSegmentsThunk({ sessionId: active }));
       return active;
     }
-    return dispatch(addAudioSessionToTile(tileId));
+    return dispatch(addAudioSessionToThread(threadId));
   };
 
-// ── Notes (multiple notes per tile) ────────────────────────────────────
-// Mirror of the audio sessions: each tile note is a real `notes` row linked
-// via a 'note' assignment row (ctx_war_room_assignments). One assignment per
-// note carries is_active; the active note drives note↔task sync + tile metrics.
-
-/** Create a fresh note for a tile, link it, and make it the active one. */
-export const addNoteToTile =
-  (tileId: string, _sessionId: string) =>
+export const addNoteToThread =
+  (threadId: string, roomId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const key = `note:${tileId}`;
-    if (inFlightTileOps.has(key)) return null;
-    inFlightTileOps.add(key);
+    const key = `note:${threadId}`;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
     try {
       const note = await createNote({
         content: "",
-        label: deriveTileNoteLabel(getState(), tileId),
-        task_id: selectTileTaskId(tileId)(getState()) ?? undefined,
+        label: deriveThreadNoteLabel(getState(), threadId, roomId),
+        task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "note",
         entityId: note.id,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return note.id;
     } catch (err) {
-      reportWarRoomError("addNoteToTile", err, {
+      reportWarRoomError("addNoteToThread", err, {
         toast: "Couldn't create the note",
       });
       return null;
     } finally {
-      inFlightTileOps.delete(key);
+      inFlightThreadOps.delete(key);
     }
   };
 
-/** Switch which of a tile's notes is active (optimistic; persists pointer). */
-export const setTileActiveNote =
-  (tileId: string, noteId: string) => async (dispatch: AppDispatch) => {
+export const setThreadActiveNote =
+  (threadId: string, noteId: string) => async (dispatch: AppDispatch) => {
     dispatch(
       assignmentActiveSet({
-        key: containerKey("thread", tileId),
+        key: containerKey("thread", threadId),
         entityType: "note",
         entityId: noteId,
       }),
     );
     try {
-      await assoc.setActiveAssignment(threadRef(tileId), "note", noteId);
+      await assoc.setActiveAssignment(threadRef(threadId), "note", noteId);
     } catch (err) {
-      reportWarRoomError("setTileActiveNote", err, {
+      reportWarRoomError("setThreadActiveNote", err, {
         toast: "Couldn't switch the note",
       });
     }
   };
 
-/** Return the tile's active note, creating one if needed. */
-export const ensureTileNote =
-  (tileId: string) =>
+export const ensureThreadNote =
+  (threadId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const active = selectActiveNoteId(tileId)(getState());
+    const active = selectActiveNoteId(threadId)(getState());
     if (active) return active;
-    const tile = getState().warRoom.tilesById[tileId];
-    return dispatch(addNoteToTile(tileId, tile?.session_id ?? ""));
+    const roomId = findRoomForThread(getState(), threadId);
+    return dispatch(addNoteToThread(threadId, roomId ?? ""));
   };
 
-export const deleteTile =
-  (id: string, sessionId: string) => async (dispatch: AppDispatch) => {
-    dispatch(tileRemoved({ id, sessionId }));
+export const deleteThread =
+  (id: string, roomId: string) => async (dispatch: AppDispatch) => {
+    dispatch(threadRemoved({ id, roomId }));
     try {
-      await service.softDeleteTile(id);
-      // Purge the thread's association edges (membership + content + scopes) so
-      // none are orphaned — best-effort, loud-not-fatal (the tile is already gone).
-      void assoc
-        .purgeContainerEdges(threadRef(id))
-        .catch((edgeErr) =>
-          reportWarRoomError("deleteTile:purgeEdges", edgeErr, { toast: false }),
-        );
+      await service.softDeleteThread(id);
+      void assoc.purgeContainerEdges(threadRef(id)).catch((edgeErr) =>
+        reportWarRoomError("deleteThread:purgeEdges", edgeErr, {
+          toast: false,
+        }),
+      );
     } catch {
-      toast.error("Couldn't remove the tile");
+      toast.error("Couldn't remove the thread");
     }
   };
 
-export const setTileActiveTabPersisted =
-  (id: string, tab: TileTab) => async (dispatch: AppDispatch) => {
-    dispatch(setTileActiveTab({ id, tab }));
+export const setThreadActiveTabPersisted =
+  (id: string, tab: ThreadTab) => async (dispatch: AppDispatch) => {
+    dispatch(setThreadActiveTab({ id, tab }));
     try {
-      await service.updateTile(id, { active_tab: tab });
+      await service.updateThread(id, { active_tab: tab });
     } catch {
-      /* tab is a soft preference; swallow */
+      /* soft preference */
     }
   };
 
-export const renameTile =
+export const renameThread =
   (id: string, title: string) => async (dispatch: AppDispatch) => {
     const trimmed = title.trim();
     try {
-      const updated = await service.updateTile(id, { title: trimmed || null });
-      dispatch(tileUpserted(updated));
+      const updated = await service.updateThread(id, {
+        title: trimmed || null,
+      });
+      dispatch(threadUpserted(updated));
     } catch {
-      toast.error("Couldn't rename the tile");
+      toast.error("Couldn't rename the thread");
     }
   };
 
-export const toggleTilePin =
-  (id: string, pinned: boolean) => async (dispatch: AppDispatch) => {
-    dispatch(setTilePinned({ id, pinned }));
-    try {
-      await service.updateTile(id, { is_pinned: pinned });
-    } catch (err) {
-      dispatch(setTilePinned({ id, pinned: !pinned }));
-      reportWarRoomError("toggleTilePin", err, {
+export const toggleThreadPin =
+  (id: string, pinned: boolean) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const prior = getState().warRoom.threadUserStateById[id] ?? {
+      isPinned: false,
+      isHidden: false,
+    };
+    dispatch(setThreadUserState({ id, state: { ...prior, isPinned: pinned } }));
+    const res = await favoritesService.setPinned("thread", id, pinned);
+    if (isScopesRpcErr(res)) {
+      dispatch(setThreadUserState({ id, state: prior }));
+      reportWarRoomError("toggleThreadPin", res.error, {
         toast: "Couldn't update pin",
       });
     }
   };
 
-export const toggleTileHide =
-  (id: string, hidden: boolean) => async (dispatch: AppDispatch) => {
-    dispatch(setTileHidden({ id, hidden }));
-    try {
-      await service.updateTile(id, { is_hidden: hidden });
-    } catch (err) {
-      dispatch(setTileHidden({ id, hidden: !hidden }));
-      reportWarRoomError("toggleTileHide", err, {
-        toast: "Couldn't update tile",
+export const toggleThreadHide =
+  (id: string, hidden: boolean) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const prior = getState().warRoom.threadUserStateById[id] ?? {
+      isPinned: false,
+      isHidden: false,
+    };
+    dispatch(setThreadUserState({ id, state: { ...prior, isHidden: hidden } }));
+    const res = await favoritesService.setHidden("thread", id, hidden);
+    if (isScopesRpcErr(res)) {
+      dispatch(setThreadUserState({ id, state: prior }));
+      reportWarRoomError("toggleThreadHide", res.error, {
+        toast: "Couldn't update thread",
       });
     }
   };
 
-export const persistTilePositions =
+export const persistThreadPositions =
   (updates: { id: string; position: number }[]) =>
   async (_dispatch: AppDispatch) => {
     try {
-      await service.persistTilePositions(updates);
+      await service.persistThreadPositions(updates);
     } catch {
-      toast.error("Couldn't save tile order");
+      toast.error("Couldn't save thread order");
     }
   };
 
-// ── Attachments (files + documents per tile) ───────────────────────────
-// Polymorphic links to cld_files (entity_type='user_file') and udt_documents
-// (entity_type='document'). The linked entity stays in its own feature; the
-// attachment row is just the link. Display details are hydrated client-side in
-// the Files tab (useFile for files, document-service for documents).
-
-/** Refresh a tile's full assignment bucket (Files tab mount / isolated tile). */
-export const loadTileAttachments =
-  (tileId: string) => async (dispatch: AppDispatch) => {
+export const loadThreadAttachments =
+  (threadId: string) => async (dispatch: AppDispatch) => {
     try {
-      const assignments = await assoc.listAssignmentsForContainer(
-        threadRef(tileId),
-      );
-      dispatch(
-        assignmentsLoadedForContainer({
-          key: containerKey("thread", tileId),
-          assignments,
-        }),
-      );
+      await hydrateThreadAssignmentsFromRpc(dispatch, [threadId]);
     } catch (err) {
-      // Background load — log loudly (so a failure is no longer invisible) but
-      // don't toast; the section just shows empty.
-      reportWarRoomError("loadTileAttachments", err, { toast: false });
+      reportWarRoomError("loadThreadAttachments", err, { toast: false });
     }
   };
 
-// Re-attaching an already-linked resource is no longer an error: createAssignment
-// upserts via assoc_add (ON CONFLICT) and returns the existing row, so there is no
-// 23505 to special-case. The catch blocks below handle only genuine failures.
-
-/** Link an existing/just-uploaded cloud file (cld_files.id) to a tile. */
-export const attachFileToTile =
-  (tileId: string, fileId: string, label?: string | null) =>
+export const attachFileToThread =
+  (threadId: string, fileId: string, label?: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "user_file",
         entityId: fileId,
         label,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return true;
     } catch (err) {
-      reportWarRoomError("attachFileToTile", err, {
+      reportWarRoomError("attachFileToThread", err, {
         toast: "Couldn't attach the file",
       });
       return false;
     }
   };
 
-/** Link a document (udt_documents.id) to a tile. */
-export const attachDocumentToTile =
-  (tileId: string, documentId: string, label?: string | null) =>
+export const attachDocumentToThread =
+  (threadId: string, documentId: string, label?: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "document",
         entityId: documentId,
         label,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return true;
     } catch (err) {
-      reportWarRoomError("attachDocumentToTile", err, {
+      reportWarRoomError("attachDocumentToThread", err, {
         toast: "Couldn't attach the document",
       });
       return false;
     }
   };
 
-/**
- * Link an agent conversation (cx_conversation.id) to a tile — so a thread "holds"
- * its agent conversations as first-class associations (the durable thread agent
- * registers its conversation here). Idempotent: re-linking the same conversation
- * is a no-op. NEW capability the association model unlocks.
- */
-export const attachConversationToTile =
-  (tileId: string, conversationId: string, label?: string | null) =>
+export const attachConversationToThread =
+  (threadId: string, conversationId: string, label?: string | null) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "conversation",
         entityId: conversationId,
         label,
         makeActive: true,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return true;
     } catch (err) {
-      reportWarRoomError("attachConversationToTile", err, { toast: false });
+      reportWarRoomError("attachConversationToThread", err, { toast: false });
       return false;
     }
   };
 
-// ── Attach EXISTING resources (the attach-existing counterparts of the
-//    create-new thunks above) — link a resource the user already owns to a
-//    thread, instead of minting a new one. Each writes an entity→thread edge via
-//    the same createAssignment chokepoint. (Files/documents/conversations already
-//    attach-existing above; these add notes + tasks.) ────────────────────────
-
-/** Attach an EXISTING note (notes.id) to a tile and make it the active note. The
- *  counterpart of addNoteToTile (which mints a new note). The caller is expected
- *  to have the note hydrated in the notes slice (a picker selecting it does). */
-export const attachExistingNoteToTile =
-  (tileId: string, noteId: string) =>
+export const attachExistingNoteToThread =
+  (threadId: string, noteId: string) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "note",
         entityId: noteId,
         makeActive: true,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
       return true;
     } catch (err) {
-      reportWarRoomError("attachExistingNoteToTile", err, {
+      reportWarRoomError("attachExistingNoteToThread", err, {
         toast: "Couldn't attach the note",
       });
       return false;
     }
   };
 
-/** Attach an EXISTING task (ctx_tasks.id) to a tile and make it the active task.
- *  The counterpart of createTileTask (which mints a new task). Hydrates the task
- *  into the agent-context slice so the Task tab renders it immediately. */
-export const attachExistingTaskToTile =
-  (tileId: string, taskId: string) =>
+export const attachExistingTaskToThread =
+  (threadId: string, taskId: string) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(tileId),
+        ref: threadRef(threadId),
         entityType: "task",
         entityId: taskId,
         makeActive: true,
       });
       dispatch(
-        assignmentUpserted({ key: containerKey("thread", tileId), assignment }),
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
       );
-      void dispatch(hydrateTileTasks([taskId]));
+      void dispatch(hydrateThreadTasks([taskId]));
       return true;
     } catch (err) {
-      reportWarRoomError("attachExistingTaskToTile", err, {
+      reportWarRoomError("attachExistingTaskToThread", err, {
         toast: "Couldn't attach the task",
       });
       return false;
     }
   };
 
-// ── Thread portability (move / import between rooms) ───────────────────
-// A thread (tile) and its resources are a portable unit: its content assignments
-// are keyed by the tile id (container_id), so they travel automatically. MOVING a
-// thread re-points its room membership — both the `thread → war_room` association
-// edge (the unified-model mechanism, also the basis for the future Unassigned
-// holding area) AND `tile.session_id` (which stays the RLS source until it's
-// dropped post-deploy), kept in lockstep. IMPORTING copies the thread + its
-// assignment rows into another room, leaving the original intact.
+/** Link a resource to a canvas thread's launcher (metadata.canvas, non-active). */
+export const attachCanvasResourceToThread =
+  (
+    threadId: string,
+    entityType: WarRoomAssignmentEntityType,
+    entityId: string,
+  ) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const assignment = await assoc.createAssignment({
+        ref: threadRef(threadId),
+        entityType,
+        entityId,
+        makeActive: false,
+        metadata: { canvas: true },
+      });
+      dispatch(
+        assignmentUpserted({
+          key: containerKey("thread", threadId),
+          assignment,
+        }),
+      );
+      if (entityType === "task") {
+        void dispatch(hydrateThreadTasks([entityId]));
+      }
+      return true;
+    } catch (err) {
+      reportWarRoomError("attachCanvasResourceToThread", err, {
+        toast: "Couldn't add the resource",
+      });
+      return false;
+    }
+  };
 
-/** Move a thread into another room (re-point membership edge + session_id; resources travel along). */
+/** Create a task and pin it on a canvas thread (does not change anchor_type). */
+export const createCanvasThreadTask =
+  (threadId: string, title: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const thread = getState().warRoom.threadsById[threadId];
+    if (!thread || thread.anchor_type !== "canvas") return null;
+    const trimmed = title.trim();
+    if (!trimmed) return null;
+    try {
+      const roomId = findRoomForThread(getState(), threadId);
+      const ctx = selectThreadEffectiveContext(threadId, roomId)(getState());
+      const projectId = selectEffectiveThreadProjectId(
+        threadId,
+        roomId,
+      )(getState());
+      const taskId = await dispatch(
+        createTaskThunk({
+          title: trimmed,
+          organizationId: ctx.organizationId,
+          scopeIds: ctx.scopeIds,
+          projectId,
+        }),
+      ).unwrap();
+      if (!taskId) return null;
+      await dispatch(attachCanvasResourceToThread(threadId, "task", taskId));
+      return taskId;
+    } catch (err) {
+      reportWarRoomError("createCanvasThreadTask", err, {
+        toast: "Couldn't create the task",
+      });
+      return null;
+    }
+  };
+
 export const moveThreadToRoom =
-  (tileId: string, targetSessionId: string) =>
+  (threadId: string, targetRoomId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<boolean> => {
-    const tile = getState().warRoom.tilesById[tileId];
-    if (!tile) return false;
-    const fromSessionId = tile.session_id;
-    if (fromSessionId === targetSessionId) return true; // already there
+    if (!getState().warRoom.threadsById[threadId]) return false;
+    const fromRoomId = findRoomForThread(getState(), threadId);
+    if (fromRoomId === targetRoomId) return true;
     try {
-      const updated = await service.updateTile(tileId, {
-        session_id: targetSessionId,
-      });
-      // Repoint the thread→war_room membership edge in lockstep. Best-effort: the
-      // move already landed via session_id; a failed edge repoint is loud, not fatal.
-      try {
-        await assoc.moveThreadMembership(tileId, fromSessionId, targetSessionId);
-      } catch (edgeErr) {
-        reportWarRoomError("moveThreadToRoom:membership", edgeErr, {
-          toast: false,
-        });
-      }
+      await assoc.moveThreadMembership(threadId, fromRoomId, targetRoomId);
       dispatch(
-        tileSessionChanged({
-          id: tileId,
-          fromSessionId,
-          toSessionId: targetSessionId,
+        threadMembershipChanged({
+          threadId,
+          fromRoomId,
+          toRoomId: targetRoomId,
         }),
       );
-      dispatch(tileUpserted(updated));
       toast.success("Thread moved");
       return true;
     } catch (err) {
@@ -1310,26 +1236,67 @@ export const moveThreadToRoom =
     }
   };
 
-/**
- * Remove a thread from its current room — it lands in the user's "Unassigned
- * threads" HOLDING room (get-or-create'd) until moved into another. This is the
- * holding-area mechanism: from /all the user opens "Unassigned threads" to see
- * every loose thread and move each into a real room (the same "Move to room").
- */
-export const removeThreadFromRoom =
-  (tileId: string) =>
+/** Attach an orphan thread (no room edge) to an existing War Room. */
+export const attachOrphanThreadToRoom =
+  (threadId: string, targetRoomId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<boolean> => {
-    const tile = getState().warRoom.tilesById[tileId];
-    if (!tile) return false;
+    if (!getState().warRoom.threadsById[threadId]) return false;
+    const existingRoom = findRoomForThread(getState(), threadId);
+    if (existingRoom) {
+      return dispatch(moveThreadToRoom(threadId, targetRoomId));
+    }
     try {
-      const holding = await service.ensureUnassignedRoom();
-      // Register the holding room so the move's optimistic bucket update lands.
-      dispatch(sessionUpserted(holding));
-      if (tile.session_id === holding.id) return true; // already unassigned
-      return await dispatch(moveThreadToRoom(tileId, holding.id));
+      await assoc.attachThreadToRoom(threadId, targetRoomId);
+      dispatch(
+        threadMembershipChanged({
+          threadId,
+          fromRoomId: null,
+          toRoomId: targetRoomId,
+        }),
+      );
+      toast.success("Thread attached");
+      return true;
+    } catch (err) {
+      reportWarRoomError("attachOrphanThreadToRoom", err, {
+        toast: "Couldn't attach the thread",
+      });
+      return false;
+    }
+  };
+
+/** Create a new War Room and attach an orphan thread for full interaction. */
+export const openOrphanThreadInNewRoom =
+  (threadId: string) =>
+  async (dispatch: AppDispatch): Promise<string | null> => {
+    const session = await dispatch(createWarRoomSession());
+    if (!session) return null;
+    const ok = await dispatch(attachOrphanThreadToRoom(threadId, session.id));
+    return ok ? session.id : null;
+  };
+
+export const removeThreadFromRoom =
+  (threadId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<boolean> => {
+    if (!getState().warRoom.threadsById[threadId]) return false;
+    const fromRoomId = findRoomForThread(getState(), threadId);
+    if (!fromRoomId) return true;
+    try {
+      const removed = await associationsService.remove({
+        sourceType: "thread",
+        sourceId: threadId,
+        targetType: "war_room",
+        targetId: fromRoomId,
+      });
+      if (isScopesRpcErr(removed)) throw removed.error;
+      dispatch(threadOrphaned({ threadId, fromRoomId }));
+      toast.success("Thread removed from room");
+      return true;
     } catch (err) {
       reportWarRoomError("removeThreadFromRoom", err, {
         toast: "Couldn't remove the thread from its room",
@@ -1338,44 +1305,45 @@ export const removeThreadFromRoom =
     }
   };
 
-/**
- * Import a COPY of a thread into another room: duplicate the tile (its identity)
- * and copy its assignment rows onto the new tile, leaving the source untouched.
- * Returns the new tile id (null on failure).
- */
 export const importThreadToRoom =
-  (tileId: string, targetSessionId: string) =>
+  (threadId: string, targetRoomId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const tile = getState().warRoom.tilesById[tileId];
-    if (!tile) return null;
+    const thread = getState().warRoom.threadsById[threadId];
+    if (!thread) return null;
     try {
       const position =
-        getState().warRoom.tileIdsBySession[targetSessionId]?.length ?? 0;
-      const newTile = await service.createTile({
-        sessionId: targetSessionId,
-        title: tile.title,
-        flavor: (tile.flavor as TileFlavor) ?? "thread",
-        projectId: tile.project_id,
-        activeTab: (tile.active_tab as TileTab) ?? "task",
+        getState().warRoom.threadIdsByRoom[targetRoomId]?.length ?? 0;
+      const newThread = await service.createThread({
+        roomId: targetRoomId,
+        title: thread.title,
+        anchorType: (thread.anchor_type as ThreadAnchorType) ?? "canvas",
+        anchorId: thread.anchor_id,
+        activeTab: (thread.active_tab as ThreadTab) ?? "task",
         position,
       });
-      dispatch(tileUpserted(newTile));
-      // Copy every resource assignment onto the new thread.
+      dispatch(threadUpserted(newThread));
+      dispatch(
+        threadMembershipChanged({
+          threadId: newThread.id,
+          fromRoomId: null,
+          toRoomId: targetRoomId,
+        }),
+      );
       const copied = await assoc.copyContainerAssignments(
-        threadRef(tileId),
-        threadRef(newTile.id),
+        threadRef(threadId),
+        threadRef(newThread.id),
       );
       dispatch(
         assignmentsLoadedForContainer({
-          key: containerKey("thread", newTile.id),
+          key: containerKey("thread", newThread.id),
           assignments: copied,
         }),
       );
       toast.success("Thread imported");
-      return newTile.id;
+      return newThread.id;
     } catch (err) {
       reportWarRoomError("importThreadToRoom", err, {
         toast: "Couldn't import the thread",
@@ -1384,27 +1352,28 @@ export const importThreadToRoom =
     }
   };
 
-/** Remove a tile's attachment link (the file/document itself is untouched). */
-export const detachTileAttachment =
-  (tileId: string, attachment: WarRoomAssignment) =>
+export const detachThreadAttachment =
+  (threadId: string, attachment: WarRoomAssignment) =>
   async (dispatch: AppDispatch) => {
-    // Optimistic — the link is cheap to re-create.
     dispatch(
       assignmentRemoved({
-        key: containerKey("thread", tileId),
+        key: containerKey("thread", threadId),
         id: attachment.id,
       }),
     );
     try {
       await assoc.removeAssignmentByEntity(
-        threadRef(tileId),
+        threadRef(threadId),
         attachment.entity_type as WarRoomAssignmentEntityType,
         attachment.entity_id,
       );
     } catch (err) {
-      dispatch(loadTileAttachments(tileId));
-      reportWarRoomError("detachTileAttachment", err, {
+      dispatch(loadThreadAttachments(threadId));
+      reportWarRoomError("detachThreadAttachment", err, {
         toast: "Couldn't remove the attachment",
       });
     }
   };
+
+/** Map legacy flavor picker values to anchor fields on create. */
+export { flavorToAnchor };

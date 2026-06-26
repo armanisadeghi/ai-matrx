@@ -65,7 +65,7 @@ import {
   type ProviderRetryControlAction,
 } from "@/features/agents/redux/execution-system/thunks/provider-retry-control.thunk";
 import {
-  isWarRoomTileAgentSurface,
+  isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
 
@@ -109,7 +109,7 @@ export function AgentAssistantMessage({
   useDebugContext("AgentAssistantMessage");
 
   useEffect(() => {
-    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
     traceWarRoomRenderPath(
       15,
       "AgentAssistantMessage.tsx",
@@ -299,7 +299,7 @@ export function AgentAssistantMessage({
     (isStreamActive || providerRetry.state !== "recovered");
 
   useEffect(() => {
-    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
     if (!hasBody && !failed) return;
     traceWarRoomRenderPath(
       16,

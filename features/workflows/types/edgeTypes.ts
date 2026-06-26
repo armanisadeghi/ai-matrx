@@ -1,9 +1,8 @@
-import type { Database } from "@/types/database.types";
+import type { DeprecatedWorkflowEdgeRow } from "@/utils/supabase/deprecated-tables";
 import { DataBrokerData } from "@/types/AutomationSchemaTypes";
 import { Edge } from "reactflow";
 
-export type DbWorkflowEdge =
-  Database["public"]["Tables"]["workflow_edge"]["Row"];
+export type DbWorkflowEdge = DeprecatedWorkflowEdgeRow;
 
 export interface EnrichedEdgeData {
   id: string;

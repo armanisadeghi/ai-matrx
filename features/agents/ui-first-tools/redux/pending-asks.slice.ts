@@ -67,7 +67,7 @@ export interface PendingAsk {
   /** kind:"approval" — the structured change descriptor rendered by <ApprovalCard>. */
   approval?: ApprovalChange;
   /** kind:"approval" — the tile this change acts on (drives "always approve"). */
-  tileId?: string;
+  threadId?: string;
   /** Batched-question metadata (0-based). When set, the card shows "N of M". */
   batchIndex?: number;
   batchTotal?: number;

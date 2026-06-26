@@ -5,7 +5,7 @@
  *
  * Flow on every `tool_delegated` event with a war-room tool_name:
  *   1. Resolve the bound tile from the conversation (binding-registry). No
- *      binding ⇒ submit a `no_tile_bound` error (never guess a tile to edit).
+ *      binding ⇒ submit a `no_thread_bound` error (never guess a tile to edit).
  *   2. Look up the schema + handler from the registry.
  *   3. Validate args via Zod. On failure: submit a `schema` error result.
  *   4. Flip the instance to `paused` — the honest "waiting on the user" signal
@@ -33,14 +33,14 @@ import { submitToolResult } from "@/features/agents/api/submit-tool-results";
 import { setInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { upsertToolLifecycle } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
-  setTileAutoApprove,
-  clearTileAutoApprove,
+  setThreadAutoApprove,
+  clearThreadAutoApprove,
 } from "@/features/war-room/redux/slice";
-import { selectIsTileAutoApproved } from "@/features/war-room/redux/selectors";
+import { selectIsThreadAutoApproved } from "@/features/war-room/redux/selectors";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { getWarRoomToolEntry } from "../tools/registry";
 import { isWarRoomToolName } from "../tools/names";
-import { getTileForConversation } from "../binding-registry";
+import { getThreadForConversation } from "../binding-registry";
 import { requestWarRoomApproval, cascadeAutoApprove } from "./approval";
 import { buildApprovalChange } from "./summary";
 
@@ -132,12 +132,12 @@ export const dispatchWarRoomTool = createAsyncThunk<
       return;
     }
 
-    const tileId = getTileForConversation(conversationId);
-    if (!tileId) {
+    const threadId = getThreadForConversation(conversationId);
+    if (!threadId) {
       // No live War Room panel is bound to this conversation. Refuse rather
       // than guess — editing the wrong tile is far worse than a no-op.
       fail(
-        "no_tile_bound",
+        "no_thread_bound",
         "No War Room tile is bound to this conversation; open the tile's Agent panel to enable editing.",
       );
       return;
@@ -167,7 +167,7 @@ export const dispatchWarRoomTool = createAsyncThunk<
     const change = buildApprovalChange(
       toolName,
       parsed.data as Record<string, unknown>,
-      { tileId, getState },
+      { threadId, getState },
     );
     const scope = change.autoApprove?.scope ?? null;
 
@@ -180,7 +180,7 @@ export const dispatchWarRoomTool = createAsyncThunk<
           conversationId,
           callId,
           userId,
-          tileId,
+          threadId,
           dispatch,
           getState,
         });
@@ -202,9 +202,9 @@ export const dispatchWarRoomTool = createAsyncThunk<
     // Auto-approve short-circuit: the user already granted "always approve" for
     // this class of edit on this tile. Run immediately — but LOUDLY: a toast
     // names the change and offers one-tap revoke (auto-approve is never silent).
-    if (scope && selectIsTileAutoApproved(tileId, scope)(getState())) {
+    if (scope && selectIsThreadAutoApproved(threadId, scope)(getState())) {
       const ok = await runApprovedHandler();
-      if (ok) fireAutoApproveToast(dispatch, tileId, scope, change);
+      if (ok) fireAutoApproveToast(dispatch, threadId, scope, change);
       return;
     }
 
@@ -214,7 +214,7 @@ export const dispatchWarRoomTool = createAsyncThunk<
     const decision = await requestWarRoomApproval({
       conversationId,
       callId,
-      tileId,
+      threadId,
       change,
       dispatch,
     });
@@ -254,10 +254,10 @@ export const dispatchWarRoomTool = createAsyncThunk<
     // Approved. If the user asked to stop being asked, persist the grant and
     // instantly clear any sibling cards stacked up for the same scope+tile.
     if (decision.remember && scope) {
-      dispatch(setTileAutoApprove({ tileId, scope, value: true }));
+      dispatch(setThreadAutoApprove({ threadId, scope, value: true }));
       cascadeAutoApprove({
         conversationId,
-        tileId,
+        threadId,
         scope,
         excludeCallId: callId,
         getState,
@@ -284,7 +284,7 @@ const PAST_TENSE: Record<ApprovalChange["verb"], string> = {
  */
 function fireAutoApproveToast(
   dispatch: AppDispatch,
-  tileId: string,
+  threadId: string,
   scope: string,
   change: ApprovalChange,
 ): void {
@@ -295,7 +295,7 @@ function fireAutoApproveToast(
     description: "Auto-approved — the agent can make these edits on this tile.",
     action: {
       label: "Stop",
-      onClick: () => dispatch(clearTileAutoApprove({ tileId, scope })),
+      onClick: () => dispatch(clearThreadAutoApprove({ threadId, scope })),
     },
   });
 }

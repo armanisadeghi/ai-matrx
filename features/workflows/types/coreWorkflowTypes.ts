@@ -1,4 +1,4 @@
-import type { Database } from "@/types/database.types";
+import type { DeprecatedWorkflowRow } from "@/utils/supabase/deprecated-tables";
 import type { NodeKnownBrokers } from "./knownBrokersTypes";
 
 export interface WorkflowNodeMetadata {
@@ -7,4 +7,4 @@ export interface WorkflowNodeMetadata {
   custom?: Record<string, unknown>;
 }
 
-export type DbWorkflow = Database["public"]["Tables"]["workflow"]["Row"];
+export type DbWorkflow = DeprecatedWorkflowRow;

@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { XYPosition } from "reactflow";
 import {
   DbFunctionNode,
@@ -170,7 +171,9 @@ export function batchReactFlowToDatabase(
   );
 }
 
-export function databaseToReactFlow(dbNode: WorkflowNodePersistShape): FunctionNode {
+export function databaseToReactFlow(
+  dbNode: WorkflowNodePersistShape,
+): FunctionNode {
   const nodeData = (dbNode.ui_node_data || {}) as Partial<ReactFlowUIMetadata>;
 
   const additionalDeps = dbNode.additional_dependencies as
@@ -271,8 +274,10 @@ export async function saveWorkflowNode(
   isUpdate: boolean,
 ): Promise<DbFunctionNode> {
   if (isUpdate) {
-    const { data: node, error } = await supabase
-      .from("workflow_node")
+    const { data: node, error } = await fromDeprecatedTable(
+      "workflow_node",
+      "features/workflows/service/functionNodeService.ts",
+    )
       .update(nodeData as never)
       .eq("id", nodeData.id)
       .select()
@@ -282,8 +287,10 @@ export async function saveWorkflowNode(
     // DB row uses `unknown` for JSON columns; DbFunctionNode narrows them.
     return node as unknown as DbFunctionNode;
   } else {
-    const { data: node, error } = await supabase
-      .from("workflow_node")
+    const { data: node, error } = await fromDeprecatedTable(
+      "workflow_node",
+      "features/workflows/service/functionNodeService.ts",
+    )
       .insert({
         ...nodeData,
         workflow_id: workflowId,
@@ -323,8 +330,10 @@ export async function saveWorkflowNodeWithConversion(
  * Remove node from workflow (clears workflow_id but keeps node in database)
  */
 export async function removeNodeFromWorkflow(nodeId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_node")
+  const { error } = await fromDeprecatedTable(
+    "workflow_node",
+    "features/workflows/service/functionNodeService.ts",
+  )
     .update({ workflow_id: null })
     .eq("id", nodeId);
 
@@ -336,8 +345,10 @@ export async function removeNodeFromWorkflow(nodeId: string): Promise<void> {
  * Delete workflow node permanently
  */
 export async function deleteWorkflowNode(nodeId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_node")
+  const { error } = await fromDeprecatedTable(
+    "workflow_node",
+    "features/workflows/service/functionNodeService.ts",
+  )
     .delete()
     .eq("id", nodeId);
 

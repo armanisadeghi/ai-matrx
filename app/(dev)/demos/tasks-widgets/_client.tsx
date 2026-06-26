@@ -8,8 +8,8 @@
  * pulls in real entities (notes, messages, files) from their respective
  * slices so you can see the widgets operating on live data.
  *
- * Anything you do here is real — it writes to `ctx_task_associations` and
- * shows up on `/tasks` immediately.
+ * Anything you do here is real — it writes a canonical `platform.associations`
+ * edge (via `associate_with_task`) and shows up on `/tasks` immediately.
  */
 
 import React from "react";
@@ -160,7 +160,7 @@ export default function TasksWidgetsDemo() {
           <AssociateTaskButton
             entityType="message"
             entityId={DEMO_IDS.message}
-            label="This demo message — writes to ctx_task_associations"
+            label="This demo message — writes a canonical platform.associations edge"
             variant="button"
             label_text="Attach to task"
           />

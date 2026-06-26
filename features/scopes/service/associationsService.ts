@@ -27,6 +27,7 @@ import {
 } from "@/features/scopes/service/rpcResult";
 import type {
   AssociationEdge,
+  AssociationSourceEdge,
   AssociationTargetEdge,
   AssociationTargetType,
   ScopesRpcResult,
@@ -41,7 +42,7 @@ interface AssocForEntityRow {
   other_id: string;
   label: string | null;
   metadata: Json;
-  org_id: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -54,7 +55,7 @@ function toEdge(row: AssocForEntityRow): AssociationEdge {
     otherId: row.other_id,
     label: row.label ?? null,
     metadata: (row.metadata ?? {}) as Json,
-    orgId: row.org_id ?? null,
+    orgId: row.organization_id ?? null,
     createdAt: row.created_at,
   };
 }
@@ -67,7 +68,7 @@ interface AssocForTargetsRow {
   source_id: string;
   label: string | null;
   metadata: Json;
-  org_id: string | null;
+  organization_id: string | null;
   created_at: string;
 }
 
@@ -79,7 +80,32 @@ function toTargetEdge(row: AssocForTargetsRow): AssociationTargetEdge {
     sourceId: row.source_id,
     label: row.label ?? null,
     metadata: (row.metadata ?? {}) as Json,
-    orgId: row.org_id ?? null,
+    orgId: row.organization_id ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+// Shape of one `assoc_for_sources` row (snake_case, straight from PG).
+interface AssocForSourcesRow {
+  id: string;
+  source_id: string;
+  target_type: string;
+  target_id: string;
+  label: string | null;
+  metadata: Json;
+  organization_id: string | null;
+  created_at: string;
+}
+
+function toSourceEdge(row: AssocForSourcesRow): AssociationSourceEdge {
+  return {
+    id: row.id,
+    sourceId: row.source_id,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    label: row.label ?? null,
+    metadata: (row.metadata ?? {}) as Json,
+    orgId: row.organization_id ?? null,
     createdAt: row.created_at,
   };
 }
@@ -139,6 +165,41 @@ export const associationsService = {
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as AssocForTargetsRow[];
       return ok({ edges: rows.map(toTargetEdge) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — BATCH: every OUTGOING edge for many sources, one round-trip.
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Every edge whose source is one of `sourceIds` (all the same `sourceType`),
+   * org-filtered by RLS inside the RPC. The source-side counterpart of
+   * `listForTargets` — for loading the targets of MANY sources at once (e.g.
+   * the scope tags of every visible note/task/project row) without N
+   * per-entity `assoc_for_entity` round-trips. Pass `targetType` to push the
+   * target filter (e.g. `"scope"`) into the DB. Each row carries `sourceId`
+   * so callers can group results back by source.
+   */
+  async listForSources(
+    sourceType: string,
+    sourceIds: string[],
+    targetType?: string,
+  ): Promise<ScopesRpcResult<{ edges: AssociationSourceEdge[] }>> {
+    try {
+      requireUserId();
+      const ids = Array.from(new Set(sourceIds));
+      if (ids.length === 0) return ok({ edges: [] });
+      const { data, error } = await supabase.rpc("assoc_for_sources", {
+        p_source_type: sourceType,
+        p_source_ids: ids,
+        ...(targetType ? { p_target_type: targetType } : {}),
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as AssocForSourcesRow[];
+      return ok({ edges: rows.map(toSourceEdge) });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

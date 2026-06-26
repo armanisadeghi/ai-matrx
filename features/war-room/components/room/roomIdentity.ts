@@ -11,7 +11,7 @@
 //   • session.color — one of ROOM_COLOR_TOKENS (a semantic-token id)
 //
 // Tailwind 4 needs STATIC class strings (no `bg-${token}`), so each color id maps
-// to a frozen record of full class strings — mirrors the feature's own tileKind.ts
+// to a frozen record of full class strings — mirrors the feature's own threadKind.ts
 // pattern. Colors are all semantic tokens (theme-aware: dark mode + theme changes
 // flow through automatically), never raw hex.
 

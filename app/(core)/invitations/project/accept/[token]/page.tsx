@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { acceptProjectInvitation } from '@/features/projects/service';
+import { acceptProjectInvitation, getProject } from '@/features/projects/service';
+import { invitationsService } from '@/features/organizations/service/invitationsService';
+import { isScopesRpcErr } from '@/features/scopes/types';
 import { supabase } from '@/utils/supabase/client';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
+import type { ProjectRole } from '@/features/projects/types';
 
 type InvitationWithProject = ProjectInvitation & { project: Project };
 
@@ -47,18 +50,22 @@ export default function AcceptProjectInvitationPage() {
         return;
       }
 
-      const { data: invitationData, error: inviteError } = await supabase
-        .from('ctx_project_invitations')
-        .select('*')
-        .eq('token', token)
-        .single();
-
-      if (inviteError || !invitationData) {
+      // Read the invitation through the canonical chokepoint. `inv_get_by_token`
+      // is gated to the invited party, so it returns the invite even before a
+      // membership exists (it omits the token field itself).
+      const inviteResult = await invitationsService.getByToken(token);
+      if (isScopesRpcErr(inviteResult)) {
         setError('Invitation not found or has already been used');
         return;
       }
 
-      if (new Date(invitationData.expires_at) <= new Date()) {
+      const invitationData = inviteResult.data.invitation;
+      if (!invitationData || invitationData.targetType !== 'project') {
+        setError('Invitation not found or has already been used');
+        return;
+      }
+
+      if (new Date(invitationData.expiresAt) <= new Date()) {
         setError('This invitation has expired');
         return;
       }
@@ -70,52 +77,22 @@ export default function AcceptProjectInvitationPage() {
         return;
       }
 
-      const { data: memberData } = await supabase
-        .from('ctx_project_members')
-        .select('id')
-        .eq('project_id', invitationData.project_id)
-        .eq('user_id', user.id)
-        .single();
-
-      if (memberData) {
-        setError('You are already a member of this project');
-        return;
-      }
-
-      const { data: projectData, error: projectError } = await supabase
-        .from('ctx_projects')
-        .select('*, organizations(is_personal)')
-        .eq('id', invitationData.project_id)
-        .single();
-
-      if (projectError || !projectData) {
+      const project = await getProject(invitationData.targetId);
+      if (!project) {
         setError('Project not found');
         return;
       }
 
       const transformedInvitation: InvitationWithProject = {
         id: invitationData.id,
-        projectId: invitationData.project_id,
+        projectId: invitationData.targetId,
         email: invitationData.email,
-        token: invitationData.token,
-        role: invitationData.role,
-        invitedAt: invitationData.invited_at,
-        invitedBy: invitationData.invited_by,
-        expiresAt: invitationData.expires_at,
-        project: {
-          id: projectData.id,
-          name: projectData.name,
-          slug: projectData.slug,
-          description: projectData.description,
-          organizationId: projectData.organization_id,
-          createdBy: projectData.created_by,
-          // Personal-ness is org-derived; ctx_projects no longer stores it.
-          isPersonal: projectData.organizations?.is_personal ?? false,
-          status: "active",
-          settings: projectData.settings,
-          createdAt: projectData.created_at,
-          updatedAt: projectData.updated_at,
-        },
+        token,
+        role: invitationData.role as ProjectRole,
+        invitedAt: invitationData.createdAt,
+        invitedBy: invitationData.createdBy,
+        expiresAt: invitationData.expiresAt,
+        project,
       };
 
       setInvitation(transformedInvitation);

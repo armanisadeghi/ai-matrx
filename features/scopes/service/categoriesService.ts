@@ -37,7 +37,7 @@ import type {
 // Shape of one `cat_list` row (snake_case, straight from PG).
 interface CatListRow {
   id: string;
-  org_id: string | null;
+  organization_id: string | null;
   dimension: string;
   name: string;
   slug: string | null;
@@ -51,7 +51,7 @@ interface CatListRow {
 function toCategory(row: CatListRow): PlatformCategory {
   return {
     id: row.id,
-    orgId: row.org_id ?? null,
+    orgId: row.organization_id ?? null,
     dimension: row.dimension,
     name: row.name,
     slug: row.slug ?? null,

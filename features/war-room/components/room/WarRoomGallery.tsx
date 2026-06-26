@@ -14,14 +14,14 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useGalleryLayout } from "@/hooks/useGalleryLayout";
 import { cn } from "@/lib/utils";
 import {
-  selectHiddenTiles,
-  selectOrderedGalleryTileIds,
-  selectTileIdsForSession,
+  selectHiddenThreads,
+  selectOrderedGalleryThreadIds,
+  selectThreadIdsForRoom,
 } from "@/features/war-room/redux/selectors";
 import type { GalleryPlacement } from "@/lib/layout/galleryLayout";
-import { WarRoomTile } from "../tile/WarRoomTile";
-import { NewTile } from "../tile/NewTile";
-import { HiddenTilesTray } from "./HiddenTilesTray";
+import { WarRoomThread } from "../thread/WarRoomThread";
+import { NewThread } from "../thread/NewThread";
+import { HiddenThreadsTray } from "./HiddenThreadsTray";
 import { useRoomView, DENSITY_LAYOUT } from "./roomViewContext";
 import { ThreadSortable, SortableThread } from "./threadDrag";
 import { useThreadReorder } from "@/features/war-room/hooks/useThreadReorder";
@@ -36,10 +36,10 @@ function cellStyle(p: GalleryPlacement | undefined): React.CSSProperties {
 }
 
 export function WarRoomGallery({ sessionId }: { sessionId: string }) {
-  const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
-  const hidden = useAppSelector(selectHiddenTiles(sessionId));
-  const allIds = useAppSelector(selectTileIdsForSession(sessionId));
-  const { density, stageTile, threadQuery } = useRoomView();
+  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
+  const hidden = useAppSelector(selectHiddenThreads(sessionId));
+  const allIds = useAppSelector(selectThreadIdsForRoom(sessionId));
+  const { density, stageThread, threadQuery } = useRoomView();
   const { commitOrder } = useThreadReorder(sessionId);
   const floors = DENSITY_LAYOUT[density];
 
@@ -53,7 +53,7 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
   const count = gridIds.length + (searching ? 0 : 1);
   const { ref, layout } = useGalleryLayout(count, floors);
 
-  const newTilePlacement = layout.placements[gridIds.length];
+  const newThreadPlacement = layout.placements[gridIds.length];
 
   // Searching with zero matches → a clean message instead of an empty grid.
   if (searching && gridIds.length === 0) {
@@ -64,12 +64,12 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
             No threads match “{threadQuery.trim()}”.
           </p>
         </div>
-        <HiddenTilesTray sessionId={sessionId} tiles={hidden} />
+        <HiddenThreadsTray sessionId={sessionId} threads={hidden} />
       </div>
     );
   }
 
-  const tileCells = gridIds.map((id, i) => {
+  const threadCells = gridIds.map((id, i) => {
     const p = layout.placements[i];
     return searching ? (
       // Filtered: flat cells (no reorder grip — reordering a subset is ambiguous).
@@ -78,11 +78,11 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
         style={cellStyle(p)}
         className="min-h-0 transition-[grid-column,grid-row] duration-200"
       >
-        <WarRoomTile
-          tileId={id}
+        <WarRoomThread
+          threadId={id}
           sessionId={sessionId}
           featured={p?.featured}
-          onStage={() => stageTile(id)}
+          onStage={() => stageThread(id)}
         />
       </div>
     ) : (
@@ -93,11 +93,11 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
         className="min-h-0 transition-[grid-column,grid-row] duration-200"
       >
         {(dragHandle) => (
-          <WarRoomTile
-            tileId={id}
+          <WarRoomThread
+            threadId={id}
             sessionId={sessionId}
             featured={p?.featured}
-            onStage={() => stageTile(id)}
+            onStage={() => stageThread(id)}
             dragHandle={dragHandle}
           />
         )}
@@ -121,33 +121,33 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
         }}
       >
         {searching ? (
-          tileCells
+          threadCells
         ) : (
           <ThreadSortable
             ids={visibleIds}
             strategy="grid"
             onReorder={commitOrder}
           >
-            {tileCells}
+            {threadCells}
           </ThreadSortable>
         )}
 
         {!searching ? (
           <div
-            key="__new_tile__"
-            style={cellStyle(newTilePlacement)}
+            key="__new_thread__"
+            style={cellStyle(newThreadPlacement)}
             className="min-h-0"
           >
-            <NewTile
+            <NewThread
               sessionId={sessionId}
               nextPosition={allIds.length}
-              onCreated={(tileId) => stageTile(tileId)}
+              onCreated={(threadId) => stageThread(threadId)}
             />
           </div>
         ) : null}
       </div>
 
-      <HiddenTilesTray sessionId={sessionId} tiles={hidden} />
+      <HiddenThreadsTray sessionId={sessionId} threads={hidden} />
     </div>
   );
 }

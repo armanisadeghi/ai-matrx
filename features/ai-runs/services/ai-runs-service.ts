@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { createClient } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import {
@@ -95,8 +96,10 @@ export const aiRunsService = {
     }
 
     // Get tasks
-    const { data: tasks, error: tasksError } = await supabase
-      .from("ai_tasks")
+    const { data: tasks, error: tasksError } = await fromDeprecatedTable(
+      "ai_tasks",
+      "features/ai-runs/services/ai-runs-service.ts:getWithTasks",
+    )
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: true });

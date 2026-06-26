@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileAttachmentsTab.tsx
+// features/war-room/components/thread/ThreadAttachmentsTab.tsx
 //
 // Files & Documents view for a tile. Two sections backed by ONE polymorphic
 // link table (ctx_war_room_tile_attachments, entity_type ∈ user_file|document):
@@ -52,7 +52,7 @@ import {
   InlineMediaRef,
   openFilePicker,
   requestUpload,
-  folderForWarRoomTile,
+  folderForWarRoomThread,
   fileIdToMediaRef,
   useFile,
   useFileSrc,
@@ -63,12 +63,12 @@ import {
   getDocument,
 } from "@/features/data-tables/document-service";
 import type { DocumentRow } from "@/features/data-tables/types";
-import { selectAttachmentsForTile } from "@/features/war-room/redux/selectors";
+import { selectAttachmentsForThread } from "@/features/war-room/redux/selectors";
 import {
-  loadTileAttachments,
-  attachFileToTile,
-  attachDocumentToTile,
-  detachTileAttachment,
+  loadThreadAttachments,
+  attachFileToThread,
+  attachDocumentToThread,
+  detachThreadAttachment,
 } from "@/features/war-room/redux/thunks";
 import type { WarRoomAssignment } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
@@ -76,20 +76,20 @@ import { cn } from "@/lib/utils";
 // Code-split: the new-file dialog pulls the full Monaco editor. Loading it lazily
 // keeps Monaco out of the War Room bundle; it loads the first time a user opens
 // the "New file" flow.
-const TileNewFileDialog = dynamic(
-  () => import("./TileNewFileDialog").then((m) => m.TileNewFileDialog),
+const ThreadNewFileDialog = dynamic(
+  () => import("./ThreadNewFileDialog").then((m) => m.ThreadNewFileDialog),
   { ssr: false },
 );
 
-export function TileAttachmentsTab({
-  tileId,
+export function ThreadAttachmentsTab({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const attachments = useAppSelector(selectAttachmentsForTile(tileId));
+  const attachments = useAppSelector(selectAttachmentsForThread(threadId));
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
@@ -101,8 +101,8 @@ export function TileAttachmentsTab({
   // Hydrate the tile's attachment rows on mount (idempotent — also seeded by
   // the room-load batch, but this covers a tile opened in isolation).
   useEffect(() => {
-    void dispatch(loadTileAttachments(tileId));
-  }, [dispatch, tileId]);
+    void dispatch(loadThreadAttachments(threadId));
+  }, [dispatch, threadId]);
 
   const fileRows = attachments.filter((a) => a.entity_type === "user_file");
   const docRows = attachments.filter((a) => a.entity_type === "document");
@@ -123,7 +123,7 @@ export function TileAttachmentsTab({
     try {
       const result = await requestUpload({
         files: Array.from(files),
-        folderPath: folderForWarRoomTile(tileId),
+        folderPath: folderForWarRoomThread(threadId),
         visibility: "private",
       });
       if (result.cancelled) return;
@@ -133,7 +133,7 @@ export function TileAttachmentsTab({
       const ids = [...result.uploaded, ...aliasedIds];
       let attached = 0;
       for (const id of ids) {
-        if (await dispatch(attachFileToTile(tileId, id))) attached += 1;
+        if (await dispatch(attachFileToThread(threadId, id))) attached += 1;
       }
       if (attached > 0) {
         toast.success(
@@ -168,7 +168,7 @@ export function TileAttachmentsTab({
       if (!ids || ids.length === 0) return;
       let attached = 0;
       for (const id of ids) {
-        if (await dispatch(attachFileToTile(tileId, id))) attached += 1;
+        if (await dispatch(attachFileToThread(threadId, id))) attached += 1;
       }
       if (attached > 0) {
         toast.success(
@@ -191,7 +191,7 @@ export function TileAttachmentsTab({
       }
       const doc = result.data;
       const ok = await dispatch(
-        attachDocumentToTile(tileId, doc.id, doc.document_name),
+        attachDocumentToThread(threadId, doc.id, doc.document_name),
       );
       setNewDocOpen(false);
       if (ok) {
@@ -206,13 +206,13 @@ export function TileAttachmentsTab({
   const handleAttachDoc = async (doc: DocumentRow) => {
     setDocPickerOpen(false);
     const ok = await dispatch(
-      attachDocumentToTile(tileId, doc.id, doc.document_name),
+      attachDocumentToThread(threadId, doc.id, doc.document_name),
     );
     if (ok) toast.success("Document attached");
   };
 
   const remove = (a: WarRoomAssignment) =>
-    dispatch(detachTileAttachment(tileId, a));
+    dispatch(detachThreadAttachment(threadId, a));
 
   // ── Compact (combined "All" view): list only, no chrome ─────────────────
   if (compact) {
@@ -341,8 +341,8 @@ export function TileAttachmentsTab({
       {/* Mounted only once opened so Monaco never loads until the user creates a
           file (the dynamic import + this guard keep it out of the room bundle). */}
       {newFileOpen && (
-        <TileNewFileDialog
-          tileId={tileId}
+        <ThreadNewFileDialog
+          threadId={threadId}
           open={newFileOpen}
           onOpenChange={setNewFileOpen}
         />

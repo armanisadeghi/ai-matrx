@@ -1,10 +1,10 @@
 "use client";
 
-// features/war-room/components/tile/TileOptionsMenu.tsx
+// features/war-room/components/thread/ThreadOptionsMenu.tsx
 //
 // The tile "…" options menu, shared by the Grid tile, the Stage tile, and the
 // rail row. Pin/Unpin · (Bring to stage) · Expand · Hide · Remove, driven by the
-// real TileActions. "Bring to stage" is the verb the Stage⇄Grid model adds —
+// real ThreadActions. "Bring to stage" is the verb the Stage⇄Grid model adds —
 // promote any tile to the focus pane; it only renders when an onStage handler
 // is supplied and the tile isn't already staged.
 
@@ -32,31 +32,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { TileActions } from "@/features/war-room/hooks/useTileActions";
+import type { ThreadActions } from "@/features/war-room/hooks/useThreadActions";
 import {
   selectSessionsList,
-  selectTileById,
-  selectUnassignedSessionId,
+  selectThreadById,
 } from "@/features/war-room/redux/selectors";
 import {
   moveThreadToRoom,
   removeThreadFromRoom,
 } from "@/features/war-room/redux/thunks";
-import { useTileCopyForAiTarget } from "../shared/TileCopyForAiButton";
+import { useThreadCopyForAiTarget } from "../shared/ThreadCopyForAiButton";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
-export function TileOptionsMenu({
+export function ThreadOptionsMenu({
   actions,
-  tileId,
+  threadId,
   onStage,
   isStaged,
   size = "sm",
   onOpenContext,
   contextActive,
 }: {
-  actions: TileActions;
-  tileId?: string;
+  actions: ThreadActions;
+  threadId?: string;
   onStage?: () => void;
   isStaged?: boolean;
   size?: "sm" | "md";
@@ -65,18 +64,18 @@ export function TileOptionsMenu({
   /** Highlights the Context item + labels it "overridden" when this tile overrides the session context. */
   contextActive?: boolean;
 }) {
-  const copyTarget = useTileCopyForAiTarget(tileId ?? "");
+  const copyTarget = useThreadCopyForAiTarget(threadId ?? "");
   const dispatch = useAppDispatch();
   const sessions = useAppSelector(selectSessionsList);
-  const tile = useAppSelector(selectTileById(tileId ?? null));
-  const unassignedId = useAppSelector(selectUnassignedSessionId);
-  const currentSessionId = tile?.session_id ?? null;
-  const inHolding = !!currentSessionId && currentSessionId === unassignedId;
-  // Rooms this thread can be moved INTO: every saved room but its own and the
-  // "Unassigned" holding room (that's reached via "Remove from room", not here).
-  const otherRooms = sessions.filter(
-    (s) => s.id !== currentSessionId && s.id !== unassignedId,
-  );
+  const tile = useAppSelector(selectThreadById(threadId ?? null));
+  const currentSessionId = useAppSelector((s) => {
+    if (!threadId) return null;
+    for (const [roomId, ids] of Object.entries(s.warRoom.threadIdsByRoom)) {
+      if (ids.includes(threadId)) return roomId;
+    }
+    return null;
+  });
+  const otherRooms = sessions.filter((s) => s.id !== currentSessionId);
 
   return (
     <DropdownMenu>
@@ -111,7 +110,7 @@ export function TileOptionsMenu({
             {contextActive ? "Context (overridden)" : "Context"}
           </DropdownMenuItem>
         ) : null}
-        {tileId && copyTarget ? (
+        {threadId && copyTarget ? (
           <DropdownMenuItem
             className="gap-2 p-0 focus:bg-transparent"
             onSelect={(e) => e.preventDefault()}
@@ -154,7 +153,7 @@ export function TileOptionsMenu({
           <EyeOff className="size-3.5 shrink-0" />
           Hide
         </DropdownMenuItem>
-        {tileId && otherRooms.length > 0 ? (
+        {threadId && otherRooms.length > 0 ? (
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="gap-2">
               <FolderInput className="size-3.5 shrink-0" />
@@ -164,7 +163,7 @@ export function TileOptionsMenu({
               {otherRooms.map((room) => (
                 <DropdownMenuItem
                   key={room.id}
-                  onClick={() => void dispatch(moveThreadToRoom(tileId, room.id))}
+                  onClick={() => void dispatch(moveThreadToRoom(threadId, room.id))}
                   className="gap-2"
                 >
                   <span className="truncate">
@@ -175,9 +174,9 @@ export function TileOptionsMenu({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ) : null}
-        {tileId && currentSessionId && !inHolding ? (
+        {threadId && currentSessionId ? (
           <DropdownMenuItem
-            onClick={() => void dispatch(removeThreadFromRoom(tileId))}
+            onClick={() => void dispatch(removeThreadFromRoom(threadId))}
             className="gap-2"
           >
             <FolderMinus className="size-3.5 shrink-0" />

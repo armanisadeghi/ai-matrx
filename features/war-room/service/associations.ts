@@ -49,7 +49,9 @@ const CONTAINER_TARGET: Record<WarRoomContainerType, AssociationTargetType> = {
   room: "war_room",
   thread: "thread",
 };
-function containerTargetType(type: WarRoomContainerType): AssociationTargetType {
+function containerTargetType(
+  type: WarRoomContainerType,
+): AssociationTargetType {
   return CONTAINER_TARGET[type];
 }
 
@@ -100,16 +102,21 @@ function isPlainObject(v: Json | null | undefined): v is Record<string, Json> {
 }
 
 /** Merge a metadata patch onto an existing (possibly null/array) jsonb value. */
-function mergeMeta(base: Json | null | undefined, patch: Record<string, Json>): Json {
+function mergeMeta(
+  base: Json | null | undefined,
+  patch: Record<string, Json>,
+): Json {
   return { ...(isPlainObject(base) ? base : {}), ...patch };
 }
 
 function metaNumber(md: Json, key: string, fallback: number): number {
-  if (isPlainObject(md) && typeof md[key] === "number") return md[key] as number;
+  if (isPlainObject(md) && typeof md[key] === "number")
+    return md[key] as number;
   return fallback;
 }
 function metaBool(md: Json, key: string, fallback: boolean): boolean {
-  if (isPlainObject(md) && typeof md[key] === "boolean") return md[key] as boolean;
+  if (isPlainObject(md) && typeof md[key] === "boolean")
+    return md[key] as boolean;
   return fallback;
 }
 
@@ -129,8 +136,6 @@ function edgeToAssignment(
     is_active: metaBool(md, "is_active", true),
     label: edge.label,
     metadata: edge.metadata,
-    // user_id / created_by aren't carried on the edge and no selector reads them.
-    user_id: null,
     created_by: null,
     created_at: edge.createdAt,
   } as WarRoomAssignment;
@@ -155,7 +160,7 @@ function isContentEdge(edge: AssociationTargetEdge): boolean {
  * the link invisible.
  */
 async function resolveContainerOrgId(ref: ContainerRef): Promise<string> {
-  const table = ref.type === "room" ? "ctx_war_room_sessions" : "ctx_war_room_tiles";
+  const table = ref.type === "room" ? "wr_sessions" : "wr_threads";
   const { data, error } = await supabase
     .from(table)
     .select("organization_id")
@@ -174,8 +179,14 @@ async function resolveContainerOrgId(ref: ContainerRef): Promise<string> {
     { p_user_id: userId },
   );
   if (e2 || !personal) {
-    console.error("[war-room] resolveContainerOrgId: personal-org fallback failed:", e2);
-    throw e2 ?? new Error("Could not resolve an organization for the war-room container");
+    console.error(
+      "[war-room] resolveContainerOrgId: personal-org fallback failed:",
+      e2,
+    );
+    throw (
+      e2 ??
+      new Error("Could not resolve an organization for the war-room container")
+    );
   }
   return personal as string;
 }
@@ -283,7 +294,9 @@ export async function createAssignment(
   // Demote prior active siblings of a single-active type (assoc_add overwrites
   // metadata on conflict, so this updates each existing edge in place).
   if (single && makeActive) {
-    const demote = sameType.filter((a) => a.is_active && a.entity_id !== entityId);
+    const demote = sameType.filter(
+      (a) => a.is_active && a.entity_id !== entityId,
+    );
     await Promise.all(
       demote.map((a) =>
         associationsService.add({
@@ -324,7 +337,6 @@ export async function createAssignment(
     is_active: isActive,
     label: input.label ?? null,
     metadata,
-    user_id: userId,
     created_by: userId,
     created_at: new Date().toISOString(),
   } as WarRoomAssignment;
@@ -351,7 +363,9 @@ export async function setActiveAssignment(
         targetId: ref.id,
         orgId,
         label: a.label ?? undefined,
-        metadata: mergeMeta(a.metadata, { is_active: a.entity_id === entityId }),
+        metadata: mergeMeta(a.metadata, {
+          is_active: a.entity_id === entityId,
+        }),
       }),
     ),
   );
@@ -410,23 +424,52 @@ export async function copyContainerAssignments(
   return copied;
 }
 
-// ── Thread ↔ room membership (the mobility mechanism) ───────────────────
+// ── Thread ↔ room membership ────────────────────────────────────────────
 //
-// A thread's room membership is a REVERSED edge `thread → war_room` (the tile is
-// the SOURCE/member, the room the TARGET) — distinct from content edges
-// (entity → container). It is the unified-model mechanism for thread mobility and
-// the future Unassigned holding area (no edge = unassigned). During the
-// transition it is kept in sync with `tile.session_id` (which stays the RLS
-// source until it is dropped post-deploy), so moving a thread repoints BOTH.
+// Room membership is a `thread → war_room` edge. Orphan = no edge.
 
 const MEMBERSHIP_META: Json = { membership: true };
 
+/** Room ids linked to a thread via `thread → war_room` membership edges. */
+export async function listRoomIdsForThread(
+  threadId: string,
+): Promise<string[]> {
+  const res = await associationsService.listForEntity("thread", threadId);
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  return res.data.edges
+    .filter(
+      (e) =>
+        e.direction === "outgoing" &&
+        e.otherType === "war_room" &&
+        isPlainObject(e.metadata) &&
+        e.metadata.membership === true,
+    )
+    .map((e) => e.otherId);
+}
+
+/** Attach a thread to a room (idempotent). */
+export async function attachThreadToRoom(
+  threadId: string,
+  roomId: string,
+): Promise<void> {
+  const orgId = await resolveContainerOrgId({ type: "room", id: roomId });
+  const res = await associationsService.add({
+    sourceType: "thread",
+    sourceId: threadId,
+    targetType: "war_room",
+    targetId: roomId,
+    orgId,
+    metadata: MEMBERSHIP_META,
+  });
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+}
+
 /**
- * Re-point a thread's room-membership edge from `fromRoomId` to `toRoomId`
- * (idempotent). The org is resolved from the destination room (never NULL).
+ * Re-point a thread's room-membership edge from `fromRoomId` to `toRoomId`.
+ * Pass `fromRoomId: null` when attaching an orphan.
  */
 export async function moveThreadMembership(
-  tileId: string,
+  threadId: string,
   fromRoomId: string | null,
   toRoomId: string,
 ): Promise<void> {
@@ -435,7 +478,7 @@ export async function moveThreadMembership(
   if (fromRoomId) {
     const removed = await associationsService.remove({
       sourceType: "thread",
-      sourceId: tileId,
+      sourceId: threadId,
       targetType: "war_room",
       targetId: fromRoomId,
     });
@@ -443,7 +486,7 @@ export async function moveThreadMembership(
   }
   const added = await associationsService.add({
     sourceType: "thread",
-    sourceId: tileId,
+    sourceId: threadId,
     targetType: "war_room",
     targetId: toRoomId,
     orgId,

@@ -9,23 +9,6 @@
 
 import { createSlice, createSelector, PayloadAction } from "@reduxjs/toolkit";
 
-// ─── Personal pseudo-org sentinel ──────────────────────────────────────────
-//
-// `get_user_full_context` synthesizes a "Personal" pseudo-org row that groups
-// every project where `organization_id IS NULL` and the user has a
-// ctx_project_members row. The pseudo-org carries this fixed sentinel id so
-// the frontend can recognize it everywhere.
-//
-// Treat the sentinel as "no real org": when persisting writes (create project,
-// create task, etc.) substitute `null` so foreign-key constraints don't fire.
-
-export const PERSONAL_PSEUDO_ORG_ID =
-  "00000000-0000-0000-0000-000000000001" as const;
-
-export function isPersonalPseudoOrgId(id: string | null | undefined): boolean {
-  return id === PERSONAL_PSEUDO_ORG_ID;
-}
-
 // ─── RPC response types ────────────────────────────────────────────────────
 
 /** Scope type as returned inside the full context response */

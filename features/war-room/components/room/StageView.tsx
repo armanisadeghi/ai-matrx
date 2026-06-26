@@ -16,16 +16,16 @@ import { ChevronRight, EyeOff } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
-  selectHiddenTiles,
-  selectOrderedGalleryTileIds,
-  selectTileIdsForSession,
+  selectHiddenThreads,
+  selectOrderedGalleryThreadIds,
+  selectThreadIdsForRoom,
 } from "@/features/war-room/redux/selectors";
-import { RailTile } from "./RailTile";
-import { StageTile } from "./StageTile";
+import { RailThread } from "./RailThread";
+import { StageThread } from "./StageThread";
 import { ParkedThreadChip } from "./ParkedThreadChip";
-import { NewTile } from "../tile/NewTile";
-import { QuickAddThread } from "../tile/QuickAddThread";
-import { QuickAddTask } from "../tile/QuickAddTask";
+import { NewThread } from "../thread/NewThread";
+import { QuickAddThread } from "../thread/QuickAddThread";
+import { QuickAddTask } from "../thread/QuickAddTask";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
 import { ThreadSortable, SortableThread } from "./threadDrag";
 import { useThreadReorder } from "@/features/war-room/hooks/useThreadReorder";
@@ -33,10 +33,10 @@ import { useThreadSearch } from "@/features/war-room/hooks/useThreadSearch";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function StageView({ sessionId }: { sessionId: string }) {
-  const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
-  const hidden = useAppSelector(selectHiddenTiles(sessionId));
-  const allIds = useAppSelector(selectTileIdsForSession(sessionId));
-  const { chosenStageId, setChosenStageId, stageTile, threadQuery } =
+  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
+  const hidden = useAppSelector(selectHiddenThreads(sessionId));
+  const allIds = useAppSelector(selectThreadIdsForRoom(sessionId));
+  const { chosenStageId, setChosenStageId, stageThread, threadQuery } =
     useRoomView();
   const { commitOrder } = useThreadReorder(sessionId);
   // The rail lists only matches; the Stage keeps the thread you're driving
@@ -50,7 +50,7 @@ export function StageView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     traceWarRoomRenderPath(3, "StageView.tsx", "Stage view render", {
       sessionId,
-      stagedTileId: stagedId,
+      stagedThreadId: stagedId,
       visibleThreadCount: visibleIds.length,
     });
   }, [sessionId, stagedId, visibleIds.length]);
@@ -64,7 +64,9 @@ export function StageView({ sessionId }: { sessionId: string }) {
             Threads
           </span>
           <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
-            {searching ? `${railIds.length}/${visibleIds.length}` : visibleIds.length}
+            {searching
+              ? `${railIds.length}/${visibleIds.length}`
+              : visibleIds.length}
           </span>
         </div>
 
@@ -74,9 +76,9 @@ export function StageView({ sessionId }: { sessionId: string }) {
             // ambiguous) ranked by relevance.
             railIds.length > 0 ? (
               railIds.map((id) => (
-                <RailTile
+                <RailThread
                   key={id}
-                  tileId={id}
+                  threadId={id}
                   sessionId={sessionId}
                   isStaged={stagedId === id}
                   onStage={() => setChosenStageId(id)}
@@ -96,8 +98,8 @@ export function StageView({ sessionId }: { sessionId: string }) {
               {visibleIds.map((id) => (
                 <SortableThread key={id} id={id}>
                   {(dragHandle) => (
-                    <RailTile
-                      tileId={id}
+                    <RailThread
+                      threadId={id}
                       sessionId={sessionId}
                       isStaged={stagedId === id}
                       onStage={() => setChosenStageId(id)}
@@ -119,15 +121,15 @@ export function StageView({ sessionId }: { sessionId: string }) {
                 sessionId={sessionId}
                 nextPosition={allIds.length}
                 variant="rail"
-                onOpen={(tileId) => stageTile(tileId)}
+                onOpen={(threadId) => stageThread(threadId)}
               />
               {/* Capture a task into the room (or into the staged thread)
                   without leaving the thread you're on (Feature 67a282c8). */}
               <QuickAddTask
                 sessionId={sessionId}
                 nextPosition={allIds.length}
-                stagedTileId={stagedId}
-                onOpen={(tileId) => stageTile(tileId)}
+                stagedThreadId={stagedId}
+                onOpen={(threadId) => stageThread(threadId)}
               />
             </>
           ) : null}
@@ -153,9 +155,9 @@ export function StageView({ sessionId }: { sessionId: string }) {
                   {hidden.map((t) => (
                     <ParkedThreadChip
                       key={t.id}
-                      tileId={t.id}
+                      threadId={t.id}
                       title={t.title?.trim() || "Untitled thread"}
-                      onRestore={(id) => stageTile(id)}
+                      onRestore={(id) => stageThread(id)}
                     />
                   ))}
                 </div>
@@ -168,12 +170,16 @@ export function StageView({ sessionId }: { sessionId: string }) {
       {/* ── Stage (the focused thread) ── */}
       <main className="flex-1 min-h-0 @max-4xl:min-h-[60vh]">
         {stagedId ? (
-          <StageTile key={stagedId} tileId={stagedId} sessionId={sessionId} />
+          <StageThread
+            key={stagedId}
+            threadId={stagedId}
+            sessionId={sessionId}
+          />
         ) : (
           <EmptyStage
             sessionId={sessionId}
             nextPosition={allIds.length}
-            onCreated={(id) => stageTile(id)}
+            onCreated={(id) => stageThread(id)}
           />
         )}
       </main>
@@ -188,7 +194,7 @@ function EmptyStage({
 }: {
   sessionId: string;
   nextPosition: number;
-  onCreated: (tileId: string) => void;
+  onCreated: (threadId: string) => void;
 }) {
   return (
     <div className="h-full grid place-items-center rounded-2xl border border-dashed border-border bg-card/30">
@@ -200,7 +206,7 @@ function EmptyStage({
           Start your first thread — it will open right here, ready to work.
         </p>
         <div className="mt-3 inline-flex">
-          <NewTile
+          <NewThread
             sessionId={sessionId}
             nextPosition={nextPosition}
             variant="rail"

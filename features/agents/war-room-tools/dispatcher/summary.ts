@@ -23,14 +23,14 @@ import type {
 import type { WarRoomToolName } from "../tools/names";
 import {
   selectActiveNoteId,
-  selectTileById,
-  selectTileTaskId,
+  selectThreadById,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 
 interface BuildCtx {
-  tileId: string;
+  threadId: string;
   getState: () => RootState;
 }
 
@@ -52,11 +52,11 @@ export function buildApprovalChange(
   ctx: BuildCtx,
 ): ApprovalChange {
   const state = ctx.getState();
-  const tile = selectTileById(ctx.tileId)(state);
+  const tile = selectThreadById(ctx.threadId)(state);
 
   switch (toolName) {
     case "war_room_update_task": {
-      const taskId = selectTileTaskId(ctx.tileId)(state);
+      const taskId = selectThreadTaskId(ctx.threadId)(state);
       const task = taskId ? selectTaskById(state, taskId) : null;
       const fields: ApprovalFieldDiff[] = [];
       if (str(args.title) !== undefined)
@@ -128,7 +128,7 @@ export function buildApprovalChange(
     }
 
     case "war_room_update_note": {
-      const noteId = selectActiveNoteId(ctx.tileId)(state);
+      const noteId = selectActiveNoteId(ctx.threadId)(state);
       const note = noteId ? selectNoteById(noteId)(state) : null;
       const append = args.mode === "append";
       const fields: ApprovalFieldDiff[] = [];
@@ -156,7 +156,7 @@ export function buildApprovalChange(
       };
     }
 
-    case "war_room_update_tile":
+    case "war_room_update_thread":
       return {
         verb: "rename",
         entity: "tile",

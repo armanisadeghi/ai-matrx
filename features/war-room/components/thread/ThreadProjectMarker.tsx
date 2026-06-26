@@ -1,26 +1,27 @@
 "use client";
 
-// TileProjectMarker — header chip for project-flavored tiles. Always visible
-// (unlike TileFlavorBadge which hides on tight grid cells) and links to the
+// ThreadProjectMarker — header chip for project-flavored tiles. Always visible
+// (unlike ThreadAnchorBadge which hides on tight grid cells) and links to the
 // full project workspace at /projects/[id].
 
 import Link from "next/link";
 import { ExternalLink, FolderKanban, Loader2 } from "lucide-react";
-import { useTileProject } from "@/features/war-room/hooks/useTileProject";
+import { useThreadProject } from "@/features/war-room/hooks/useThreadProject";
 import { cn } from "@/lib/utils";
 
-export function TileProjectMarker({
-  tileId,
+export function ThreadProjectMarker({
+  threadId,
   className,
   size = "sm",
 }: {
-  tileId: string;
+  threadId: string;
   className?: string;
   size?: "sm" | "md";
 }) {
-  const { isProjectTile, projectId, project, loading } = useTileProject(tileId);
+  const { isProjectThread, projectId, project, loading } =
+    useThreadProject(threadId);
 
-  if (!isProjectTile || !projectId) return null;
+  if (!isProjectThread || !projectId) return null;
 
   const label = project?.name?.trim() || "Project";
 

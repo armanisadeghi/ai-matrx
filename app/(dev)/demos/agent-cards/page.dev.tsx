@@ -29,14 +29,21 @@ function approvalAsk(callId: string, approval: ApprovalChange): PendingAsk {
     toolName: "war_room",
     kind: "approval",
     approval,
-    tileId: "demo-tile",
+    threadId: "demo-thread",
     status: "pending",
     createdAtMs: 0,
   };
 }
 
-function ask(partial: Omit<PendingAsk, "conversationId" | "status" | "createdAtMs">): PendingAsk {
-  return { conversationId: CONV, status: "pending", createdAtMs: 0, ...partial };
+function ask(
+  partial: Omit<PendingAsk, "conversationId" | "status" | "createdAtMs">,
+): PendingAsk {
+  return {
+    conversationId: CONV,
+    status: "pending",
+    createdAtMs: 0,
+    ...partial,
+  };
 }
 
 const SAMPLES: PendingAsk[] = [
@@ -70,7 +77,9 @@ const SAMPLES: PendingAsk[] = [
     verb: "rename",
     entity: "tile",
     title: "Untitled thread",
-    fields: [{ label: "Name", before: "Untitled thread", after: "Billing migration" }],
+    fields: [
+      { label: "Name", before: "Untitled thread", after: "Billing migration" },
+    ],
     autoApprove: { scope: "tile", noun: "tile renames" },
   }),
   ask({
@@ -86,8 +95,16 @@ const SAMPLES: PendingAsk[] = [
     kind: "choice",
     question: "Which strategy should I use to migrate the rows?",
     options: [
-      { label: "Backfill in batches", description: "Safer; ~10 min", preview: "UPDATE … LIMIT 1000\n-- repeat until 0 rows" },
-      { label: "Single transaction", description: "Faster; locks the table", preview: "BEGIN;\nUPDATE … ;\nCOMMIT;" },
+      {
+        label: "Backfill in batches",
+        description: "Safer; ~10 min",
+        preview: "UPDATE … LIMIT 1000\n-- repeat until 0 rows",
+      },
+      {
+        label: "Single transaction",
+        description: "Faster; locks the table",
+        preview: "BEGIN;\nUPDATE … ;\nCOMMIT;",
+      },
     ],
     allowOther: true,
   }),
@@ -120,7 +137,8 @@ const SAMPLES: PendingAsk[] = [
     toolName: "ui",
     kind: "notify",
     level: "warning",
-    message: "The export is large (480 MB). Generating it may take a few minutes.",
+    message:
+      "The export is large (480 MB). Generating it may take a few minutes.",
     actions: ["Continue", "Cancel"],
   }),
   ask({
@@ -142,7 +160,8 @@ const SAMPLES: PendingAsk[] = [
     callId: "k1",
     toolName: "request_user_takeover",
     kind: "takeover",
-    question: "I'm blocked on the login step — can you sign in, then tell me what you did?",
+    question:
+      "I'm blocked on the login step — can you sign in, then tell me what you did?",
   }),
 ];
 
@@ -154,7 +173,9 @@ export default function AgentCardGalleryPage() {
   useEffect(() => {
     for (const a of asks) {
       registerAskResolver(a.callId, (r: AskUserResponse) => {
-        setLog((l) => [{ callId: a.callId, summary: summarize(r) }, ...l].slice(0, 12));
+        setLog((l) =>
+          [{ callId: a.callId, summary: summarize(r) }, ...l].slice(0, 12),
+        );
         setAsks((cur) => cur.filter((x) => x.callId !== a.callId));
       });
     }
@@ -167,8 +188,8 @@ export default function AgentCardGalleryPage() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Agent cards</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              The inline ask + approval card family. Live — clicking resolves the
-              card and logs its response.
+              The inline ask + approval card family. Live — clicking resolves
+              the card and logs its response.
             </p>
           </div>
           <Button

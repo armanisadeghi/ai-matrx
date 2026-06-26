@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import type {
   AiTask,
   CreateAiTaskInput,
@@ -8,6 +9,9 @@ import type {
   CompleteAiTaskInput,
 } from "@/features/ai-runs/types/aiRunTypes";
 import { mapAiTaskRow } from "@/features/ai-runs/utils/db-row-mappers";
+
+const aiTasksTable = (method: string) =>
+  fromDeprecatedTable("ai_tasks", `actions/ai-tasks.actions.ts:${method}`);
 
 /**
  * AI Tasks Server Actions
@@ -24,8 +28,7 @@ export async function createAiTask(input: CreateAiTaskInput): Promise<AiTask> {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated");
 
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("createAiTask")
     .insert({
       user_id: user.id,
       run_id: input.run_id,
@@ -47,10 +50,7 @@ export async function createAiTask(input: CreateAiTaskInput): Promise<AiTask> {
 }
 
 export async function getAiTask(id: string): Promise<AiTask | null> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("getAiTask")
     .select("*")
     .eq("id", id)
     .single();
@@ -66,10 +66,7 @@ export async function getAiTask(id: string): Promise<AiTask | null> {
 export async function getAiTaskByTaskId(
   taskId: string,
 ): Promise<AiTask | null> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("getAiTaskByTaskId")
     .select("*")
     .eq("task_id", taskId)
     .single();
@@ -83,10 +80,7 @@ export async function getAiTaskByTaskId(
 }
 
 export async function listAiTasksForRun(runId: string): Promise<AiTask[]> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("listAiTasksForRun")
     .select("*")
     .eq("run_id", runId)
     .order("created_at", { ascending: true });
@@ -99,10 +93,7 @@ export async function updateAiTask(
   taskId: string,
   input: UpdateAiTaskInput,
 ): Promise<AiTask> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("updateAiTask")
     .update(input)
     .eq("task_id", taskId)
     .select()
@@ -116,8 +107,6 @@ export async function completeAiTask(
   taskId: string,
   input: CompleteAiTaskInput,
 ): Promise<AiTask> {
-  const supabase = await createClient();
-
   const updateData: UpdateAiTaskInput = {
     response_text: input.response_text,
     response_data: input.response_data,
@@ -132,8 +121,7 @@ export async function completeAiTask(
     status: "completed",
   };
 
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("completeAiTask")
     .update(updateData)
     .eq("task_id", taskId)
     .select()
@@ -147,10 +135,7 @@ export async function failAiTask(
   taskId: string,
   errorData?: Record<string, any>,
 ): Promise<AiTask> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("failAiTask")
     .update({
       status: "failed",
       response_errors: errorData,
@@ -165,10 +150,7 @@ export async function failAiTask(
 }
 
 export async function cancelAiTask(taskId: string): Promise<AiTask> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("ai_tasks")
+  const { data, error } = await aiTasksTable("cancelAiTask")
     .update({
       status: "cancelled",
       response_complete: true,

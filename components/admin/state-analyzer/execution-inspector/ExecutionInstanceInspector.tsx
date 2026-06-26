@@ -69,6 +69,7 @@ import type { ActiveRequestsState } from "@/features/agents/redux/execution-syst
 import type { ActiveRequest } from "@/features/agents/types/request.types";
 import type { ConversationFocusState } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import type { AgentDefinitionSliceState } from "@/features/agents/types/agent-definition.types";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
 
 // ---------------------------------------------------------------------------
@@ -998,9 +999,11 @@ function RequestsTab({ requests }: { requests: ActiveRequest[] }) {
 
 function RawJsonTab({ data }: { data: Record<string, unknown> }) {
   return (
-    <div className="text-sm">
-      <JsonTreeViewer data={data} />
-    </div>
+    <JsonInspector
+      data={data}
+      defaultView="json"
+      className="h-full min-h-[24rem] rounded-none border-0 shadow-none"
+    />
   );
 }
 

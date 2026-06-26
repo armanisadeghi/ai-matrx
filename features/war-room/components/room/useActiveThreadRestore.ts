@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/room/useActiveTileRestore.ts
+// features/war-room/components/room/useActiveThreadRestore.ts
 //
 // Wires the focused-thread RESTORE behaviour on top of the EPHEMERAL staged-tile
 // view state (roomViewContext) WITHOUT moving that state into Redux/persistence.
@@ -22,20 +22,20 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectOrderedGalleryTileIds,
+  selectOrderedGalleryThreadIds,
   selectSessionById,
 } from "@/features/war-room/redux/selectors";
-import { persistActiveTile } from "@/features/war-room/redux/thunks";
+import { persistActiveThread } from "@/features/war-room/redux/thunks";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
 
 /** Debounce window for active_tile_id writes (ms) — long enough to coalesce a
  *  burst of thread switches, short enough that a reopen feels current. */
 const PERSIST_DEBOUNCE_MS = 800;
 
-export function useActiveTileRestore(sessionId: string) {
+export function useActiveThreadRestore(sessionId: string) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
-  const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
+  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
   const { chosenStageId, setChosenStageId } = useRoomView();
 
   const seededRef = useRef(false);
@@ -53,7 +53,7 @@ export function useActiveTileRestore(sessionId: string) {
     // A `thread` URL param (useRoomUrlSync) is the authoritative open target —
     // a shared/refreshed link wins over the session-row mirror. Defer to it.
     if (new URLSearchParams(window.location.search).get("thread")) return;
-    const persisted = session.active_tile_id;
+    const persisted = session.active_thread_id;
     if (chosenStageId) return; // user already chose this mount
     if (persisted && visibleIds.includes(persisted)) {
       setChosenStageId(persisted);
@@ -70,7 +70,7 @@ export function useActiveTileRestore(sessionId: string) {
     if (!session) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      void dispatch(persistActiveTile(sessionId, resolvedStagedId));
+      void dispatch(persistActiveThread(sessionId, resolvedStagedId));
     }, PERSIST_DEBOUNCE_MS);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

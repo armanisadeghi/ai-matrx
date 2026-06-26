@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Braces,
@@ -10,12 +10,19 @@ import {
   Copy,
   FilePen,
   ListTree,
-  Network,
+  Minus,
+  Plus,
   Scissors,
 } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatJson } from "@/utils/json/json-cleaner-utility";
+import {
+  cleanJson,
+  defaultJsonExpandDepth,
+  formatJson,
+  formatJsonAtExpandDepth,
+  getJsonStructuralDepth,
+} from "@/utils/json/json-cleaner-utility";
 import { cn } from "@/lib/utils";
 
 const PaneFallback = () => (
@@ -54,6 +61,9 @@ export type JsonInspectorView =
   | "tree"
   | "truncator"
   | "edit";
+
+/** Raw JSON tab expand depth: 0 = minified, max = fully pretty-printed. */
+export type JsonRawExpandDepth = number;
 
 export interface JsonInspectorProps {
   /** Any JSON-serializable value to inspect. */
@@ -103,6 +113,23 @@ const ICON_CLS = "h-3.5 w-3.5";
 const PANE_CLS =
   "flex-1 min-h-0 overflow-auto mt-0 border-none outline-none ring-0 bg-gray-50 dark:bg-zinc-900";
 
+const JSON_PANE_CLS = cn(
+  PANE_CLS,
+  "overflow-hidden flex flex-col data-[state=active]:flex data-[state=active]:flex-col",
+);
+
+const RAW_DEPTH_BTN_CLS = cn(
+  "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] leading-none min-w-[1.35rem] transition-colors",
+  "text-muted-foreground hover:text-foreground hover:bg-muted",
+);
+
+const RAW_DEPTH_BTN_ACTIVE_CLS = "bg-muted text-foreground font-medium";
+
+const RAW_DEPTH_STEPPER_BTN_CLS = cn(
+  CELL_CLS,
+  "w-4 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40",
+);
+
 const TRUNCATOR_PANE_CLS =
   "flex-1 min-h-0 overflow-hidden mt-0 border-none outline-none ring-0 data-[state=active]:flex data-[state=active]:flex-col";
 
@@ -120,7 +147,11 @@ export function JsonInspector({
   className,
 }: JsonInspectorProps) {
   const editable = typeof onUpdate === "function";
-  const formattedJson = useMemo(() => formatJson(data, 2), [data]);
+  const prettyJson = useMemo(() => formatJson(data, 2), [data]);
+  const maxExpandDepth = useMemo(
+    () => getJsonStructuralDepth(cleanJson(data)),
+    [data],
+  );
   const truncatorValue = useMemo(
     () => (typeof data === "string" ? data : JSON.stringify(data, null, 2)),
     [data],
@@ -135,6 +166,32 @@ export function JsonInspector({
     () => new Set<JsonInspectorView>([defaultView]),
   );
   const [copied, setCopied] = useState(false);
+  const [expandDepth, setExpandDepth] = useState(() =>
+    defaultJsonExpandDepth(data),
+  );
+
+  useEffect(() => {
+    setExpandDepth((current) => Math.min(current, maxExpandDepth));
+  }, [maxExpandDepth]);
+
+  const rawJsonText = useMemo(
+    () => formatJsonAtExpandDepth(data, expandDepth),
+    [data, expandDepth],
+  );
+
+  const depthLabel =
+    expandDepth <= 0
+      ? "Compact"
+      : expandDepth >= maxExpandDepth
+        ? "Full"
+        : String(expandDepth);
+
+  const showDepthToolbar = maxExpandDepth > 0;
+  const showDepthStepper = maxExpandDepth > 5;
+  const depthOptions = useMemo(
+    () => Array.from({ length: maxExpandDepth + 1 }, (_, depth) => depth),
+    [maxExpandDepth],
+  );
 
   const handleValueChange = (next: string) => {
     const v = next as JsonInspectorView;
@@ -148,8 +205,9 @@ export function JsonInspector({
   };
 
   const handleCopy = async () => {
+    const text = value === "json" ? rawJsonText : prettyJson;
     try {
-      await navigator.clipboard.writeText(formattedJson);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -244,9 +302,113 @@ export function JsonInspector({
           </button>
         </div>
 
-        <TabsContent value="json" className={PANE_CLS}>
-          <pre className="p-2 text-xs text-gray-800 dark:text-gray-300 whitespace-pre-wrap">
-            {formattedJson}
+        <TabsContent value="json" className={JSON_PANE_CLS}>
+          {showDepthToolbar && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 border-b border-border flex-shrink-0 bg-white dark:bg-zinc-800">
+              {showDepthStepper ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setExpandDepth(0)}
+                    className={cn(
+                      RAW_DEPTH_BTN_CLS,
+                      expandDepth === 0 && RAW_DEPTH_BTN_ACTIVE_CLS,
+                    )}
+                    title="Compact — single line"
+                    aria-label="Compact JSON"
+                    aria-pressed={expandDepth === 0}
+                  >
+                    Compact
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandDepth((depth) => Math.max(0, depth - 1))
+                    }
+                    disabled={expandDepth <= 0}
+                    className={RAW_DEPTH_STEPPER_BTN_CLS}
+                    title="Collapse one level"
+                    aria-label="Collapse one level"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span
+                    className="px-1 text-[10px] tabular-nums text-muted-foreground"
+                    title={`Expand depth ${expandDepth} of ${maxExpandDepth}`}
+                  >
+                    {depthLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandDepth((depth) =>
+                        Math.min(maxExpandDepth, depth + 1),
+                      )
+                    }
+                    disabled={expandDepth >= maxExpandDepth}
+                    className={RAW_DEPTH_STEPPER_BTN_CLS}
+                    title="Expand one level"
+                    aria-label="Expand one level"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpandDepth(maxExpandDepth)}
+                    className={cn(
+                      RAW_DEPTH_BTN_CLS,
+                      expandDepth >= maxExpandDepth && RAW_DEPTH_BTN_ACTIVE_CLS,
+                    )}
+                    title="Full — expand every level"
+                    aria-label="Full JSON"
+                    aria-pressed={expandDepth >= maxExpandDepth}
+                  >
+                    Full
+                  </button>
+                </>
+              ) : (
+                depthOptions.map((depth) => {
+                  const label =
+                    depth === 0
+                      ? "Compact"
+                      : depth === maxExpandDepth
+                        ? "Full"
+                        : String(depth);
+                  return (
+                    <button
+                      key={depth}
+                      type="button"
+                      onClick={() => setExpandDepth(depth)}
+                      className={cn(
+                        RAW_DEPTH_BTN_CLS,
+                        expandDepth === depth && RAW_DEPTH_BTN_ACTIVE_CLS,
+                      )}
+                      title={
+                        depth === 0
+                          ? "Compact — single line"
+                          : depth === maxExpandDepth
+                            ? "Full — expand every level"
+                            : `Expand ${depth} level${depth === 1 ? "" : "s"}`
+                      }
+                      aria-label={`JSON depth ${label}`}
+                      aria-pressed={expandDepth === depth}
+                    >
+                      {label}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+          <pre
+            className={cn(
+              "flex-1 min-h-0 overflow-auto p-2 text-xs text-gray-800 dark:text-gray-300",
+              expandDepth <= 0
+                ? "whitespace-pre"
+                : "whitespace-pre-wrap break-words",
+            )}
+          >
+            {rawJsonText}
           </pre>
         </TabsContent>
 

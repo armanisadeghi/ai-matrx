@@ -6,16 +6,16 @@ import { selectProjectById } from "@/features/agent-context/redux/projectsSlice"
 import { getProject } from "@/features/projects/service";
 import type { Project } from "@/features/projects/types";
 import {
-  selectEffectiveTileProjectId,
-  selectTileFlavor,
+  selectEffectiveThreadProjectId,
+  selectThreadPickerOption,
 } from "@/features/war-room/redux/selectors";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 
 /** Resolved project for a tile — always hydrates full project fields when needed. */
-export function useTileProject(tileId: string) {
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+export function useThreadProject(threadId: string) {
+  const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
   const projectId = useAppSelector((s) =>
-    selectEffectiveTileProjectId(tileId)(s),
+    selectEffectiveThreadProjectId(threadId)(s),
   );
   const cached = useAppSelector((s) =>
     projectId ? selectProjectById(s, projectId) : undefined,
@@ -43,7 +43,7 @@ export function useTileProject(tileId: string) {
         // Clear loading so a failed fetch can't wedge the tile in a forever
         // spinner — and surface the failure loudly.
         setLoading(false);
-        reportWarRoomError("useTileProject", err);
+        reportWarRoomError("useThreadProject", err);
       });
 
     return () => {
@@ -76,7 +76,7 @@ export function useTileProject(tileId: string) {
     projectId,
     project: displayProject,
     loading: loading && !displayProject,
-    isProjectTile: flavor === "project",
+    isProjectThread: flavor === "project",
     applyPatch,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/hooks/useTileActions.ts
+// features/war-room/hooks/useThreadActions.ts
 //
 // One hook that resolves every action a tile can take (rename, pin, hide,
 // delete, expand, switch tab) against the REAL warRoom thunks + overlay
@@ -20,23 +20,24 @@ import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/trans
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
-  selectEffectiveTileProjectId,
-  selectTileById,
-  selectTileFlavor,
-  selectTileTaskId,
+  selectEffectiveThreadProjectId,
+  selectThreadById,
+  selectThreadIsPinned,
+  selectThreadPickerOption,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import {
-  deleteTile,
-  renameTile,
-  toggleTileHide,
-  toggleTilePin,
+  deleteThread,
+  renameThread,
+  toggleThreadHide,
+  toggleThreadPin,
 } from "@/features/war-room/redux/thunks";
-import type { TileTab } from "@/features/war-room/types";
+import type { ThreadTab } from "@/features/war-room/types";
 
-export interface TileActions {
+export interface ThreadActions {
   title: string;
   isPinned: boolean;
-  activeTab: TileTab;
+  activeTab: ThreadTab;
   canExpand: boolean;
   rename: (next: string) => void;
   togglePin: () => void;
@@ -45,26 +46,27 @@ export interface TileActions {
   remove: () => Promise<void>;
 }
 
-export function useTileActions(
-  tileId: string,
+export function useThreadActions(
+  threadId: string,
   sessionId: string,
-): TileActions | null {
+): ThreadActions | null {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const tile = useAppSelector(selectTileById(tileId));
-  const flavor = useAppSelector(selectTileFlavor(tileId));
+  const tile = useAppSelector(selectThreadById(threadId));
+  const flavor = useAppSelector(selectThreadPickerOption(threadId));
   const effectiveProjectId = useAppSelector(
-    selectEffectiveTileProjectId(tileId),
+    selectEffectiveThreadProjectId(threadId),
   );
-  const audioSessionId = useAppSelector(selectActiveAudioSessionId(tileId));
-  const taskId = useAppSelector(selectTileTaskId(tileId));
-  const noteId = useAppSelector(selectActiveNoteId(tileId));
+  const audioSessionId = useAppSelector(selectActiveAudioSessionId(threadId));
+  const taskId = useAppSelector(selectThreadTaskId(threadId));
+  const noteId = useAppSelector(selectActiveNoteId(threadId));
+  const isPinned = useAppSelector(selectThreadIsPinned(threadId));
   const openNoteInWindow = useOpenNoteInWindow();
   const openStudio = useOpenTranscriptStudioWindow();
 
   if (!tile) return null;
 
-  const activeTab = (tile.active_tab as TileTab) ?? "task";
+  const activeTab = (tile.active_tab as ThreadTab) ?? "task";
   const title = tile.title?.trim() || "Untitled thread";
 
   const canExpand =
@@ -109,17 +111,17 @@ export function useTileActions(
       variant: "destructive",
       confirmLabel: "Remove",
     });
-    if (ok) dispatch(deleteTile(tileId, sessionId));
+    if (ok) dispatch(deleteThread(threadId, sessionId));
   }
 
   return {
     title,
-    isPinned: tile.is_pinned,
+    isPinned,
     activeTab,
     canExpand,
-    rename: (next) => dispatch(renameTile(tileId, next)),
-    togglePin: () => dispatch(toggleTilePin(tileId, !tile.is_pinned)),
-    hide: () => dispatch(toggleTileHide(tileId, true)),
+    rename: (next) => dispatch(renameThread(threadId, next)),
+    togglePin: () => dispatch(toggleThreadPin(threadId, !isPinned)),
+    hide: () => dispatch(toggleThreadHide(threadId, true)),
     expand,
     remove,
   };

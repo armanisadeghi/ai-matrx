@@ -23,8 +23,8 @@ import { type ArtifactRendererProps } from "../artifact-renderers";
  * Tasks are NEVER auto-created. The materialized artifact is a *tracked
  * proposal*: it shows the agent's checklist plus an explicit **Convert to
  * tasks** action. Convert creates real `ctx_tasks` via the canonical
- * `ctx_task_associations` bridge (`entity_type='artifact'`, `entity_id=<canvas
- * item id>`) — the SAME path `TaskPreviewWindow` / `TaskChipRow` use everywhere
+ * `platform.associations` bridge (`associate_with_task`: source=`artifact`,
+ * target=`task`) — the SAME path `TaskPreviewWindow` / `TaskChipRow` use everywhere
  * else — so there is exactly one task-linkage model, not a parallel one.
  *
  * After Convert the real tasks are the source of truth and the artifact is a

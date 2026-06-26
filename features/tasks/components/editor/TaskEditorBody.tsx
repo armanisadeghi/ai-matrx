@@ -45,6 +45,7 @@ import {
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
+import type { Comment } from "@/features/comments/types";
 import { TaskContextPicker } from "../TaskContextSection";
 import TaskAssigneePicker from "../TaskAssigneePicker";
 import TaskAttachmentsPanel from "../TaskAttachmentsPanel";
@@ -68,6 +69,7 @@ import {
 } from "@/features/tasks/agent-context/buildTasksContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { useTaskEditorControllerCtx } from "./TaskEditorControllerContext";
+import { SectionHeader, PropertyRow } from "./editorPrimitives";
 
 export function TaskEditorBody({
   compact,
@@ -111,9 +113,7 @@ export function TaskEditorBody({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
 
-  const [comments, setComments] = useState<
-    { id: string; content: string; user_id: string; created_at: string }[]
-  >([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingComment, setIsAddingComment] = useState(false);
@@ -604,7 +604,7 @@ export function TaskEditorBody({
               {...TASKS_CONTEXT_MENU_PROPS}
               contextData={{
                 ...contextData,
-                content: comments.map((c) => c.content).join("\n\n"),
+                content: comments.map((c) => c.body).join("\n\n"),
               }}
             >
               <div className="mb-2 space-y-1.5 pl-1.5">
@@ -614,11 +614,11 @@ export function TaskEditorBody({
                     className="rounded-md border border-border/60 bg-card/40 p-2"
                   >
                     <p className="whitespace-pre-wrap text-xs text-foreground">
-                      {c.content}
+                      {c.body}
                     </p>
                     <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
                       <Clock className="size-2.5" />
-                      {new Date(c.created_at).toLocaleString()}
+                      {new Date(c.createdAt).toLocaleString()}
                     </p>
                   </div>
                 ))}
@@ -715,80 +715,6 @@ export function TaskEditorBody({
           )}
         </section>
       </div>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-
-function SectionHeader({
-  icon: Icon,
-  label,
-  count,
-  className,
-}: {
-  icon?: React.ComponentType<{ className?: string }>;
-  label: string;
-  count?: number;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "mb-2 flex items-center gap-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
-        className,
-      )}
-    >
-      {Icon && <Icon className="w-3 h-3" />}
-      <span>{label}</span>
-      {typeof count === "number" && (
-        <span className="text-muted-foreground/60 tabular-nums">({count})</span>
-      )}
-    </div>
-  );
-}
-
-function PropertyRow({
-  icon: Icon,
-  label,
-  children,
-  first,
-  last,
-  compact,
-}: {
-  icon?: React.ComponentType<{ className?: string }>;
-  label: string;
-  children: React.ReactNode;
-  first?: boolean;
-  last?: boolean;
-  compact?: boolean;
-}) {
-  if (compact) {
-    return (
-      <div className="flex h-7 items-center gap-1.5 pl-1.5 pr-1">
-        {Icon ? (
-          <Icon className="size-3 shrink-0 text-muted-foreground" />
-        ) : null}
-        <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
-          {label}
-        </span>
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-3 px-4 py-2.5",
-        !first && "border-t border-border/40",
-      )}
-    >
-      <div className="flex w-20 shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-        {Icon && <Icon className="w-3 h-3" />}
-        <span>{label}</span>
-      </div>
-      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }

@@ -46,15 +46,15 @@ function selectThreadSearchRows(sessionId: string) {
   if (!sel) {
     sel = createSelector(
       [
-        (s: RootState) => s.warRoom.tileIdsBySession[sessionId],
-        (s: RootState) => s.warRoom.tilesById,
+        (s: RootState) => s.warRoom.threadIdsByRoom[sessionId],
+        (s: RootState) => s.warRoom.threadsById,
         (s: RootState) => s.warRoom.assignmentsByContainer,
         (s: RootState) => s.tasks.entities,
       ],
-      (ids, tilesById, byContainer, taskEntities): ThreadSearchRow[] => {
+      (ids, threadsById, byContainer, taskEntities): ThreadSearchRow[] => {
         if (!ids || ids.length === 0) return EMPTY_ROWS;
         return ids.map((id): ThreadSearchRow => {
-          const tile = tilesById[id];
+          const tile = threadsById[id];
           const bucket = byContainer[containerKey("thread", id)] ?? [];
           const taskId = activeEntityIdOf(bucket, "task");
           const taskTitle = taskId ? taskEntities[taskId]?.title : undefined;

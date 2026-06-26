@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/WarRoomTile.tsx
+// features/war-room/components/thread/WarRoomThread.tsx
 //
 // The operable Grid-mode tile: a fully-working thread card (header + live tab
 // body) for the bird's-eye gallery. It is the consolidated tile design —
@@ -11,32 +11,35 @@
 //   • the room-wide instrument PROJECTOR can force which tab renders without
 //     mutating the tile's saved active_tab
 //   • a double-click (or the header "focus" button) promotes it to the Stage
-// All behavior runs through the shared useTileActions + the canonical tab
-// bodies (TileTaskTab / TileNotesTab / TileAudioTab) — nothing reimplemented.
+// All behavior runs through the shared useThreadActions + the canonical tab
+// bodies (ThreadTaskTab / ThreadNotesTab / ThreadAudioTab) — nothing reimplemented.
 
 import { useState } from "react";
 import { Pin, Focus, GripVertical } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectTileFlavor } from "@/features/war-room/redux/selectors";
-import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
+import {
+  selectThreadAnchorType,
+  selectThreadPickerOption,
+} from "@/features/war-room/redux/selectors";
+import { setThreadActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import type { ThreadDragHandle } from "../room/threadDrag";
 import { EditableTitle } from "../shared/EditableTitle";
-import { TileContextOverride } from "./TileContextOverride";
-import { TileFlavorBadge } from "./TileFlavorBadge";
-import { TileProjectMarker } from "./TileProjectMarker";
-import { TileTabSelect } from "./TileTabSelect";
-import { TileTabContent } from "./TileTabContent";
-import { TileMetricChips } from "./TileMetricChips";
-import { TileOptionsMenu } from "./TileOptionsMenu";
-import { TileCopyForAiButton } from "../shared/TileCopyForAiButton";
-import { useTileActions } from "@/features/war-room/hooks/useTileActions";
-import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
+import { ThreadContextOverride } from "./ThreadContextOverride";
+import { ThreadAnchorBadge } from "./ThreadAnchorBadge";
+import { ThreadProjectMarker } from "./ThreadProjectMarker";
+import { ThreadTabSelect } from "./ThreadTabSelect";
+import { ThreadTabContent } from "./ThreadTabContent";
+import { ThreadMetricChips } from "./ThreadMetricChips";
+import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
+import { ThreadCopyForAiButton } from "../shared/ThreadCopyForAiButton";
+import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
+import { useThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";
 import { useRoomView } from "../room/roomViewContext";
-import { tileTabKind } from "../room/tileKind";
+import { dynamicTabKind } from "../room/threadKind";
 
-export function WarRoomTile({
-  tileId,
+export function WarRoomThread({
+  threadId,
   sessionId,
   featured,
   onStage,
@@ -44,7 +47,7 @@ export function WarRoomTile({
    *  grid; the double-click / focus button still stage the tile. */
   dragHandle,
 }: {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   featured?: boolean;
   /** Promote this tile to the Stage (Grid mode only). */
@@ -52,23 +55,24 @@ export function WarRoomTile({
   dragHandle?: ThreadDragHandle;
 }) {
   const dispatch = useAppDispatch();
-  const actions = useTileActions(tileId, sessionId);
-  const metrics = useTileMetrics(tileId);
+  const actions = useThreadActions(threadId, sessionId);
+  const metrics = useThreadMetrics(threadId);
   const { projectedTab } = useRoomView();
   const [contextOpen, setContextOpen] = useState(false);
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+  const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
+  const anchorType = useAppSelector((s) => selectThreadAnchorType(threadId)(s));
   if (!actions) return null;
 
   // The board projector overrides what's SHOWN, never what's SAVED.
   const shownTab = projectedTab ?? actions.activeTab;
   const projected = projectedTab !== null && projectedTab !== actions.activeTab;
-  const kind = tileTabKind(shownTab, flavor);
+  const kind = dynamicTabKind(shownTab, anchorType);
 
   return (
     <div
       onDoubleClick={onStage}
       className={cn(
-        "group/tile @container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card transition-all duration-200",
+        "group/thread @container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card transition-all duration-200",
         shownTab === "combined"
           ? "border-l-[3px] border-l-border/70"
           : cn("border-l-[3px]", kind.sectionBorder),
@@ -99,24 +103,29 @@ export function WarRoomTile({
 
         {/* Project tiles: named link to /projects/[id]. Task tiles: quiet pill. */}
         {flavor === "project" ? (
-          <TileProjectMarker tileId={tileId} />
+          <ThreadProjectMarker threadId={threadId} />
         ) : (
-          <TileFlavorBadge tileId={tileId} className="@max-[16rem]:hidden" />
+          <ThreadAnchorBadge
+            threadId={threadId}
+            className="@max-[16rem]:hidden"
+          />
         )}
 
         {/* Live readings — hide on the tightest cells (handled by the chips). */}
         <div className="ml-0.5 @max-[12rem]:hidden">
-          <TileMetricChips m={metrics} />
+          <ThreadMetricChips m={metrics} />
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <span onClick={(e) => e.stopPropagation()}>
-            <TileCopyForAiButton tileId={tileId} />
+            <ThreadCopyForAiButton threadId={threadId} />
           </span>
-          <TileTabSelect
+          <ThreadTabSelect
             active={shownTab}
-            flavor={flavor}
-            onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
+            anchorType={anchorType}
+            onChange={(tab) =>
+              dispatch(setThreadActiveTabPersisted(threadId, tab))
+            }
           />
 
           {/* Drag to reorder — quiet until hover, alongside the focus control. */}
@@ -126,7 +135,7 @@ export function WarRoomTile({
               onClick={(e) => e.stopPropagation()}
               title="Drag to reorder"
               aria-label="Drag to reorder thread"
-              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100 cursor-grab active:cursor-grabbing touch-none"
+              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/thread:opacity-100 cursor-grab active:cursor-grabbing touch-none"
               {...dragHandle.attributes}
               {...dragHandle.listeners}
             >
@@ -140,22 +149,22 @@ export function WarRoomTile({
               type="button"
               onClick={onStage}
               title="Bring to stage"
-              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100"
+              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/thread:opacity-100"
             >
               <Focus className="size-3.5" />
             </button>
           ) : null}
 
-          <TileOptionsMenu
+          <ThreadOptionsMenu
             actions={actions}
-            tileId={tileId}
+            threadId={threadId}
             onStage={onStage}
             onOpenContext={() => setContextOpen(true)}
             contextActive={metrics.contextOverridden}
           />
           {/* Anchor-only popover, opened from the ⋯ menu's Context item. */}
-          <TileContextOverride
-            tileId={tileId}
+          <ThreadContextOverride
+            threadId={threadId}
             open={contextOpen}
             onOpenChange={setContextOpen}
             hideTrigger
@@ -173,11 +182,11 @@ export function WarRoomTile({
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <TileTabContent
+        <ThreadTabContent
           tab={shownTab}
-          tileId={tileId}
+          threadId={threadId}
           sessionId={sessionId}
-          tileLayout="grid"
+          threadLayout="grid"
         />
       </div>
     </div>

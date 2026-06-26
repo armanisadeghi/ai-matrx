@@ -14,8 +14,8 @@ import type {
   WarRoomAddSubtaskResult,
 } from "../tools/schemas";
 import { createSubtaskThunk } from "@/features/tasks/redux/thunks";
-import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
-import { selectTileTaskId } from "@/features/war-room/redux/selectors";
+import { loadThreadSubtasks } from "@/features/war-room/redux/thunks";
+import { selectThreadTaskId } from "@/features/war-room/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 
 export const addSubtaskHandler: WarRoomToolHandler<
@@ -24,9 +24,9 @@ export const addSubtaskHandler: WarRoomToolHandler<
 > = {
   name: "war_room_add_subtask",
   async run(args, ctx) {
-    const { tileId, dispatch, getState } = ctx;
+    const { threadId, dispatch, getState } = ctx;
 
-    const taskId = selectTileTaskId(tileId)(getState());
+    const taskId = selectThreadTaskId(threadId)(getState());
     if (!taskId) {
       return {
         ok: false,
@@ -48,7 +48,7 @@ export const addSubtaskHandler: WarRoomToolHandler<
     }
 
     // Keep the read-only subtask context in lockstep for the next turn.
-    void dispatch(loadTileSubtasks(taskId));
+    void dispatch(loadThreadSubtasks(taskId));
 
     const created = selectTaskById(getState(), newId);
     return {

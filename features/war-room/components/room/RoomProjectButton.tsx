@@ -2,15 +2,8 @@
 
 // features/war-room/components/room/RoomProjectButton.tsx
 //
-// Room-level PROJECT association control in the header. Lets the user tie the
-// WHOLE room to a project (so every thread belongs to it), see the current
-// mode, or clear it. Enforces the invariant (a room and its threads never hold
-// conflicting projects):
-//   • setting a project while some thread carries a DIFFERENT one prompts to
-//     move them all onto it (absorbRoomIntoProjectThunk).
-//   • 'per-thread' mode (threads carry their own, room has none) is shown as
-//     such; clearing/just-reading never forces a change.
-// Writes only the ctx_war_room_* rows — never appContextSlice.
+// Room-level PROJECT association in the header. Independent of each thread's
+// own project anchor — no conflict prompts; the user sets both however they want.
 
 import { FolderKanban, ChevronDown, X } from "lucide-react";
 import {
@@ -18,16 +11,12 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectSessionProjectId,
   selectSessionProjectMode,
 } from "@/features/war-room/redux/selectors";
-import {
-  setRoomProjectThunk,
-  absorbRoomIntoProjectThunk,
-} from "@/features/war-room/redux/thunks";
+import { setRoomProjectThunk } from "@/features/war-room/redux/thunks";
 import { useUserProjects } from "@/features/projects/hooks";
 import { cn } from "@/lib/utils";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
@@ -61,7 +50,7 @@ export function RoomProjectButton({ sessionId }: { sessionId: string }) {
               : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
           )}
           aria-label="Room project"
-          title="Associate this whole War Room with a project"
+          title="Associate this War Room with a project (optional default context)"
         >
           <FolderKanban className="size-3.5 shrink-0" />
           <span className="truncate">{label}</span>
@@ -69,7 +58,7 @@ export function RoomProjectButton({ sessionId }: { sessionId: string }) {
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72" align="end">
-        <RoomProjectPicker
+        <RoomProjectPickerBody
           sessionId={sessionId}
           roomProjectId={roomProjectId}
           mode={mode}
@@ -79,12 +68,7 @@ export function RoomProjectButton({ sessionId }: { sessionId: string }) {
   );
 }
 
-/**
- * The popover body — separated so it can read the live tiles via a selector at
- * choose-time (to detect per-thread conflicts) without the trigger re-rendering
- * on every tile change.
- */
-function RoomProjectPicker({
+function RoomProjectPickerBody({
   sessionId,
   roomProjectId,
   mode,
@@ -94,11 +78,6 @@ function RoomProjectPicker({
   mode: "room" | "per-thread" | "none";
 }) {
   const dispatch = useAppDispatch();
-  // Tiles for this session — to find threads on a different project.
-  const tileIds = useAppSelector(
-    (s) => s.warRoom.tileIdsBySession[sessionId] ?? EMPTY,
-  );
-  const tilesById = useAppSelector((s) => s.warRoom.tilesById);
 
   async function choose(id: string | null) {
     if (!id) {
@@ -106,24 +85,6 @@ function RoomProjectPicker({
       return;
     }
     if (id === roomProjectId) return;
-
-    const conflicting = tileIds.filter((tid) => {
-      const p = tilesById[tid]?.project_id;
-      return p && p !== id;
-    });
-
-    if (conflicting.length > 0) {
-      const ok = await confirm({
-        title: "Set the whole room to this project?",
-        description: `${conflicting.length} thread${
-          conflicting.length === 1 ? "" : "s"
-        } currently use a different project. They'll move to this one.`,
-        confirmLabel: "Set room project",
-      });
-      if (!ok) return;
-      await dispatch(absorbRoomIntoProjectThunk(sessionId, id));
-      return;
-    }
     await dispatch(setRoomProjectThunk(sessionId, id));
   }
 
@@ -133,8 +94,8 @@ function RoomProjectPicker({
         <p className="text-xs font-semibold text-foreground">Room project</p>
         <p className="text-[11px] text-muted-foreground">
           {mode === "per-thread"
-            ? "Threads currently use their own projects. Pick one to make the whole room a single project."
-            : "Tie this whole room to a project — every thread belongs to it."}
+            ? "Threads may use their own projects. This sets an optional room-level project."
+            : "Optional project context for this room. Threads can still use different projects."}
         </p>
       </div>
       <WarRoomProjectPicker
@@ -155,5 +116,3 @@ function RoomProjectPicker({
     </div>
   );
 }
-
-const EMPTY: string[] = [];

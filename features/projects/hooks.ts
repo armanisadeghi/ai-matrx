@@ -16,7 +16,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 import type { NavOrganization } from "@/features/agent-context/redux/hierarchySlice";
 import {
   Project,
@@ -57,17 +56,14 @@ import {
 const EMPTY_PROJECTS: ProjectWithRole[] = [];
 
 /** Map a NavOrganization's role to a ProjectRole. The nav tree only carries
- * org-level roles, not per-project roles. For org projects this is a sane
- * default until a finer query is needed; for the synthetic Personal pseudo-org
- * the user is always the owner of their personal projects. */
+ * org-level roles, not per-project roles. */
 function roleForOrgProject(orgRole: string): ProjectRole {
   if (orgRole === "owner" || orgRole === "admin") return orgRole;
   return "member";
 }
 
 function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
-  const isPersonalOrg =
-    org.is_personal === true || isPersonalPseudoOrgId(org.id);
+  const isPersonalOrg = org.is_personal === true;
   const role: ProjectRole = isPersonalOrg
     ? "owner"
     : roleForOrgProject(org.role);
@@ -76,7 +72,7 @@ function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
     name: p.name,
     slug: p.slug ?? null,
     description: null,
-    organizationId: isPersonalOrg ? null : org.id,
+    organizationId: org.id,
     createdBy: null,
     isPersonal: !!p.is_personal,
     // Nav-tree projects don't carry status/priority/dates; default until the
@@ -151,9 +147,7 @@ export function usePersonalProjects() {
   const projects = useMemo<ProjectWithRole[]>(() => {
     const out: ProjectWithRole[] = [];
     for (const org of orgs) {
-      const isPersonalOrg =
-        org.is_personal === true || isPersonalPseudoOrgId(org.id);
-      if (!isPersonalOrg) continue;
+      if (!org.is_personal) continue;
       out.push(...projectsFromOrg(org));
     }
     return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -498,11 +492,14 @@ export function useProjectInvitationOperations(projectId: string) {
   );
 
   const resend = useCallback(
-    async (invitationId: string) => {
+    async (invitationId: string, email?: string) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await resendProjectInvitation(invitationId);
+        const result = await resendProjectInvitation(
+          invitationId,
+          email ? { projectId, email } : undefined,
+        );
         if (!result.success)
           setError(result.error ?? "Failed to resend invitation");
         else await refreshInvitations();
@@ -516,7 +513,7 @@ export function useProjectInvitationOperations(projectId: string) {
         setLoading(false);
       }
     },
-    [refreshInvitations],
+    [projectId, refreshInvitations],
   );
 
   return { invite, cancel, resend, loading, error };
@@ -625,29 +622,33 @@ export function useProjectSlugAvailability(
 ) {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
+  const trimmedSlug = slug.trim();
 
   useEffect(() => {
-    if (!slug || slug.trim().length === 0) {
-      setAvailable(null);
-      return;
-    }
+    if (!trimmedSlug) return;
 
-    setChecking(true);
+    let cancelled = false;
 
     const timer = setTimeout(async () => {
+      if (cancelled) return;
+      setChecking(true);
       const isAvailable = await isProjectSlugAvailable(
-        slug,
+        trimmedSlug,
         organizationId ?? null,
       );
+      if (cancelled) return;
       setAvailable(isAvailable);
       setChecking(false);
     }, debounceMs);
 
     return () => {
+      cancelled = true;
       clearTimeout(timer);
-      setChecking(false);
     };
-  }, [slug, organizationId, debounceMs]);
+  }, [trimmedSlug, organizationId, debounceMs]);
 
-  return { available, checking };
+  return {
+    available: trimmedSlug ? available : null,
+    checking: trimmedSlug ? checking : false,
+  };
 }

@@ -39,7 +39,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import { resolveMarkdownContext } from "@/features/context-menu-v2/markdown/resolveMarkdownContext";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 import {
-  isWarRoomTileAgentSurface,
+  isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
 const AssistantTurnGroup = dynamic(
@@ -362,7 +362,7 @@ export function AgentConversationDisplay({
   ).length;
 
   useEffect(() => {
-    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
     traceWarRoomRenderPath(
       13,
       "AgentConversationDisplay.tsx",

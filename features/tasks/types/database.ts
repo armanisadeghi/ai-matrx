@@ -7,14 +7,13 @@ export type DatabaseProject =
 
 export type DatabaseTask = Database["public"]["Tables"]["ctx_tasks"]["Row"];
 
-export type DatabaseTaskAttachment =
-  Database["public"]["Tables"]["ctx_task_attachments"]["Row"];
-
-export type DatabaseTaskComment =
-  Database["public"]["Tables"]["ctx_task_comments"]["Row"];
-
-export type DatabaseTaskAssignment =
-  Database["public"]["Tables"]["ctx_task_assignments"]["Row"];
+// NOTE: task comments, attachments, and assignments moved off the legacy
+// junction tables in the 2026-06 canonical-DB cutover:
+//   - comments    → platform.comments  (via features/comments/commentsService)
+//   - attachments → platform.associations (user_file → task; associationsService)
+//   - assignments → ctx_tasks.assignee_id (primary assignee; no junction)
+// The dead `DatabaseTaskAttachment` / `DatabaseTaskComment` /
+// `DatabaseTaskAssignment` row aliases were removed with the cutover.
 
 // Joined types for easier use in UI
 export interface ProjectWithTasks extends DatabaseProject {

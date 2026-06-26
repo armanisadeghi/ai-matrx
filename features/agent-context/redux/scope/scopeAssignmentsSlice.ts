@@ -6,7 +6,9 @@ import {
   createAsyncThunk,
   createSelector,
 } from "@reduxjs/toolkit";
-import { supabase } from "@/utils/supabase/client";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import type { EntityType } from "@/features/scopes/types";
 import type { ScopeAssignment } from "./types";
 
 const scopeAssignmentsAdapter = createEntityAdapter<ScopeAssignment>();
@@ -52,18 +54,25 @@ function normalizeAssignments(
     }));
 }
 
+// All three thunks now flow through the `scopesService` chokepoint, which
+// reads/writes `platform.associations` via the assoc_* RPCs — the legacy
+// get_entity_scopes / set_entity_scopes / list_entities_by_scopes RPCs (which
+// hit the dropped `ctx_scope_assignments` table) are no longer called.
+// `scopesService` returns a `ScopesRpcResult` and never throws; these thunks
+// re-throw on error so their `rejected` cases still fire.
+
 export const fetchEntityScopes = createAsyncThunk(
   "scopeAssignments/fetchForEntity",
   async (params: { entity_type: string; entity_id: string }) => {
-    const { data, error } = await supabase.rpc("get_entity_scopes", {
-      p_entity_type: params.entity_type,
-      p_entity_id: params.entity_id,
-    });
-    if (error) throw error;
+    const res = await scopesService.getEntityScopes(
+      params.entity_type as EntityType,
+      params.entity_id,
+    );
+    if (isScopesRpcErr(res)) throw new Error(res.error.message);
     return {
       ...params,
       assignments: normalizeAssignments(
-        data,
+        res.data.scope_ids.map((scope_id) => ({ scope_id })),
         params.entity_type,
         params.entity_id,
       ),
@@ -78,16 +87,16 @@ export const setEntityScopes = createAsyncThunk(
     entity_id: string;
     scope_ids: string[];
   }) => {
-    const { data, error } = await supabase.rpc("set_entity_scopes", {
-      p_entity_type: params.entity_type,
-      p_entity_id: params.entity_id,
-      p_scope_ids: params.scope_ids,
-    });
-    if (error) throw error;
+    const res = await scopesService.setEntityScopes(
+      params.entity_type as EntityType,
+      params.entity_id,
+      params.scope_ids,
+    );
+    if (isScopesRpcErr(res)) throw new Error(res.error.message);
     return {
       ...params,
       assignments: normalizeAssignments(
-        data,
+        res.data.scope_ids.map((scope_id) => ({ scope_id })),
         params.entity_type,
         params.entity_id,
       ),
@@ -102,13 +111,13 @@ export const fetchEntitiesByScopes = createAsyncThunk(
     entity_type?: string;
     match_all?: boolean;
   }) => {
-    const { data, error } = await supabase.rpc("list_entities_by_scopes", {
-      p_scope_ids: params.scope_ids,
-      p_entity_type: params.entity_type ?? undefined,
-      p_match_all: params.match_all ?? true,
+    const res = await scopesService.listEntitiesByScopes({
+      scope_ids: params.scope_ids,
+      entity_type: params.entity_type as EntityType | undefined,
+      match_all: params.match_all ?? true,
     });
-    if (error) throw error;
-    return data as { entity_type: string; entity_id: string }[];
+    if (isScopesRpcErr(res)) throw new Error(res.error.message);
+    return res.data.entities as { entity_type: string; entity_id: string }[];
   },
 );
 

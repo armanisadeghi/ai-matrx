@@ -1,12 +1,11 @@
-import type { Database } from "@/types/database.types";
+import type { DeprecatedWorkflowUserInputRow } from "@/utils/supabase/deprecated-tables";
 import type {
   PythonDataType,
   ReactFlowUIMetadata,
 } from "@/features/workflows/types/workflowReactFlowTypes";
 import { Node } from "reactflow";
 
-export type DbUserInput =
-  Database["public"]["Tables"]["workflow_user_input"]["Row"];
+export type DbUserInput = DeprecatedWorkflowUserInputRow;
 
 export interface UserInputNodeData {
   id: string;

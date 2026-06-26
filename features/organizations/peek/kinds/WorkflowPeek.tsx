@@ -8,7 +8,7 @@
 
 import React from "react";
 import { Workflow } from "lucide-react";
-import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -30,8 +30,10 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("workflow")
+      const { data } = await fromDeprecatedTable(
+        "workflow",
+        "features/organizations/peek/kinds/WorkflowPeek.tsx",
+      )
         .select("name, description, created_at")
         .eq("id", id)
         .maybeSingle();
@@ -60,7 +62,9 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
             {row.description ? (
               row.description
             ) : (
-              <span className="text-muted-foreground italic">No description</span>
+              <span className="text-muted-foreground italic">
+                No description
+              </span>
             )}
           </PeekField>
           <PeekField label="Created">

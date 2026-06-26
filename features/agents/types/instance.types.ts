@@ -482,6 +482,19 @@ export interface BuilderAdvancedSettings {
    * tools, not deliberate additions).
    */
   addedTools?: string[];
+
+  /**
+   * Creator/admin-only, THIS conversation only: override the backend route the
+   * Builder's manual execution POSTs to. Normally the Builder always hits
+   * `/ai/manual` (the live-definition execution path). Set this to test the
+   * SAME request body against a different route — e.g. "/ai/v2/chat" — without
+   * editing code. The base URL / server selection (incl. localhost) is
+   * untouched; only the path changes. null/empty → use `ENDPOINTS.ai.manual`.
+   *
+   * Takes precedence over the global apiConfig version/path overrides for this
+   * one conversation. Value may be given with or without a leading slash.
+   */
+  manualEndpointOverride?: string | null;
 }
 
 export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
@@ -494,6 +507,7 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   disableToolInjection: false,
   surfaceOverride: null,
   addedTools: [],
+  manualEndpointOverride: null,
 };
 
 // =============================================================================

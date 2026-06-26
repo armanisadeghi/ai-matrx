@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, FileText, Wand2 } from "lucide-react";
+import { Brain, FileText, Wand2, Route } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -29,6 +30,14 @@ import {
   selectReuseConversationId,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectApiVersion,
+  selectPathOverrides,
+  setApiVersion,
+  setPathOverride,
+  clearApiOverrides,
+} from "@/lib/redux/slices/apiConfigSlice";
+import { ENDPOINTS } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
@@ -91,6 +100,9 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const directiveApplyPolicy = useAppSelector(
     (s) => s.userPreferences.assistant.directiveApplyPolicy,
   );
+  const apiVersion = useAppSelector(selectApiVersion);
+  const pathOverrides = useAppSelector(selectPathOverrides);
+  const globalManualOverride = pathOverrides[ENDPOINTS.ai.manual] ?? "";
   const [sysModalOpen, setSysModalOpen] = useState(false);
 
   const openMemoryInspector = () =>
@@ -300,6 +312,109 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
               checked={isSnapshot}
               onChange={(v) => dispatch(setUseSnapshot(v))}
             />
+
+            {/* ── API routing overrides (admin/test) ──────────────────────── */}
+            <Separator className="!my-1.5" />
+            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              <Route className="w-3 h-3" />
+              API routing (test)
+            </div>
+
+            {/* Per-conversation manual route override — the primary
+                "test THIS run against a different route" control. */}
+            <div className="py-1 space-y-1">
+              <Label
+                htmlFor={`manual-route-${conversationId}`}
+                className="text-xs text-muted-foreground"
+              >
+                Manual route (this run)
+              </Label>
+              <Input
+                id={`manual-route-${conversationId}`}
+                value={settings.manualEndpointOverride ?? ""}
+                onChange={(e) =>
+                  dispatch(
+                    setBuilderAdvancedSettings({
+                      conversationId,
+                      changes: {
+                        manualEndpointOverride: e.target.value || null,
+                      },
+                    }),
+                  )
+                }
+                placeholder={ENDPOINTS.ai.manual}
+                spellCheck={false}
+                className="h-7 text-xs font-mono"
+              />
+              <p className="text-[10px] leading-snug text-muted-foreground/70">
+                Overrides the Builder’s POST path for this conversation only
+                (e.g. <code className="font-mono">/ai/v2/chat</code>). Same
+                request body, same server — only the path changes. Empty ={" "}
+                <code className="font-mono">{ENDPOINTS.ai.manual}</code>.
+              </p>
+            </div>
+
+            <Separator className="!my-1.5" />
+
+            {/* Global manual route override — applies app-wide + persists. */}
+            <div className="py-1 space-y-1">
+              <Label
+                htmlFor={`global-manual-route-${conversationId}`}
+                className="text-xs text-muted-foreground"
+              >
+                Global manual route
+              </Label>
+              <Input
+                id={`global-manual-route-${conversationId}`}
+                value={globalManualOverride}
+                onChange={(e) =>
+                  dispatch(
+                    setPathOverride({
+                      canonicalPath: ENDPOINTS.ai.manual,
+                      replacement: e.target.value,
+                    }),
+                  )
+                }
+                placeholder={ENDPOINTS.ai.manual}
+                spellCheck={false}
+                className="h-7 text-xs font-mono"
+              />
+            </div>
+
+            {/* Global API version prefix — applies to EVERY backend path. */}
+            <div className="py-1 space-y-1">
+              <Label
+                htmlFor={`api-version-${conversationId}`}
+                className="text-xs text-muted-foreground"
+              >
+                Global API version
+              </Label>
+              <Input
+                id={`api-version-${conversationId}`}
+                value={apiVersion ?? ""}
+                onChange={(e) => dispatch(setApiVersion(e.target.value))}
+                placeholder="(none) — e.g. v2"
+                spellCheck={false}
+                className="h-7 text-xs font-mono"
+              />
+              <p className="text-[10px] leading-snug text-muted-foreground/70">
+                Prefixes every backend path app-wide (e.g.{" "}
+                <code className="font-mono">v2</code> →{" "}
+                <code className="font-mono">/v2/ai/manual</code>). Persists
+                across reloads.
+              </p>
+            </div>
+
+            {(apiVersion || Object.keys(pathOverrides).length > 0) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-7 text-xs"
+                onClick={() => dispatch(clearApiOverrides())}
+              >
+                Clear all API overrides
+              </Button>
+            )}
 
             {/* ── Observational Memory (admin-gated, per-conversation) ───── */}
             <Separator className="!my-1.5" />

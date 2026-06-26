@@ -1,8 +1,11 @@
 /**
- * Resend Project Invitation API Route
+ * Resend Project Invitation Email Route (email-only)
  *
- * Handles resending project invitation emails with extended expiry.
- * Mirrors /api/organizations/invitations/resend/route.ts
+ * The invitation row is refreshed (new expiry + fresh token) on the client via
+ * the canonical `inv_resend` RPC (`invitationsService.resend`). This route
+ * exists ONLY to re-send the reminder email — it receives the fresh token +
+ * recipient email + projectId and renders/sends the message. It NEVER touches
+ * any invitation table.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,54 +29,36 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { invitationId } = body;
+    const { token, projectId, email } = body;
 
-    if (!invitationId) {
+    if (!token || !projectId || !email) {
       return NextResponse.json(
-        { success: false, error: 'Missing required field: invitationId' },
+        { success: false, error: 'Missing required fields: token, projectId, email' },
         { status: 400 }
       );
     }
 
-    const { data: invitation, error: fetchError } = await supabase
-      .from('ctx_project_invitations')
-      .select('*, ctx_projects(name, organization_id, organizations(name))')
-      .eq('id', invitationId)
+    // Read-only, RLS-scoped lookup for the email body.
+    const { data: projectData } = await supabase
+      .from('ctx_projects')
+      .select('name, organization_id, organizations(name)')
+      .eq('id', projectId)
       .single();
 
-    if (fetchError || !invitation) {
-      console.error('Error fetching project invitation:', fetchError);
-      return NextResponse.json({ success: false, error: 'Invitation not found' }, { status: 404 });
-    }
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    const { error: updateError } = await supabase
-      .from('ctx_project_invitations')
-      .update({ expires_at: expiresAt.toISOString() })
-      .eq('id', invitationId);
-
-    if (updateError) {
-      console.error('Error updating project invitation expiry:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to update invitation' },
-        { status: 500 }
-      );
+    if (!projectData) {
+      return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 });
     }
 
     const inviterName =
       user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email ?? 'Someone';
 
-    const project = invitation.ctx_projects as { name?: string; organizations?: { name?: string } } | null;
-    const projectName = project?.name ?? 'the project';
-    const orgName = project?.organizations?.name ?? 'your organization';
-
+    const orgName = (projectData.organizations as { name?: string } | null)?.name ?? 'your organization';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.aimatrx.com';
-    const invitationUrl = `${siteUrl}/invitations/project/accept/${invitation.token}`;
+    const invitationUrl = `${siteUrl}/invitations/project/accept/${token}`;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const emailTemplate = emailTemplates.projectInvitationReminder(
-      projectName,
+      projectData.name,
       orgName,
       inviterName,
       invitationUrl,
@@ -81,17 +66,12 @@ export async function POST(request: NextRequest) {
     );
 
     const emailResult = await sendEmail({
-      to: invitation.email,
+      to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });
 
-    if (emailResult.success) {
-      await supabase
-      .from('ctx_project_invitations')
-      .update({ email_sent: true, email_sent_at: new Date().toISOString() })
-        .eq('id', invitationId);
-    } else {
+    if (!emailResult.success) {
       console.warn('Failed to resend project invitation email:', emailResult.error);
       return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
     }
@@ -102,7 +82,7 @@ export async function POST(request: NextRequest) {
       emailSent: true,
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to resend invitation';
+    const msg = error instanceof Error ? error.message : 'Failed to resend invitation email';
     console.error('Error in POST /api/projects/invitations/resend:', error);
     return NextResponse.json(
       {

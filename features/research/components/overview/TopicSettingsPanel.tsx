@@ -33,7 +33,6 @@ import { StatusBadge } from "../shared/StatusBadge";
 import { updateTopic } from "../../service";
 import { ProjectFormSheet } from "@/features/projects/components/ProjectFormSheet";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
 import type {
@@ -92,8 +91,7 @@ export function TopicSettingsPanel({
   const projectOptions = useMemo<ProjectOption[]>(() => {
     const out: ProjectOption[] = [];
     for (const org of orgs) {
-      const isPersonalOrg =
-        org.is_personal === true || isPersonalPseudoOrgId(org.id);
+      const isPersonalOrg = org.is_personal === true;
       for (const p of org.projects) {
         out.push({
           id: p.id,

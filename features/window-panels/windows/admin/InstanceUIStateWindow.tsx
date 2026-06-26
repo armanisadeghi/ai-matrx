@@ -27,6 +27,7 @@ import {
   selectAllUIStateConversationIds,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { cn } from "@/lib/utils";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -180,38 +181,23 @@ function TabItem({
 
 function FullSliceView() {
   const sliceState = useAppSelector(selectFullInstanceUIStateSlice);
-  const json = formatJson(sliceState, 2);
-  const { copied, copy } = useCopyText(json);
+  const instanceCount = Object.keys(sliceState.byConversationId).length;
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
-        <Code2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">
+    <JsonInspector
+      data={sliceState}
+      defaultView="json"
+      label={
+        <>
           instanceUIState — full slice
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {Object.keys(sliceState.byConversationId).length} instances
-        </span>
-        <button
-          type="button"
-          onClick={copy}
-          className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Copy full JSON"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-emerald-500" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <pre className="p-3 text-xs font-mono text-foreground whitespace-pre-wrap leading-relaxed">
-          {json}
-        </pre>
-      </div>
-    </div>
+          <span className="font-normal text-muted-foreground">
+            {" "}
+            ({instanceCount} instance{instanceCount === 1 ? "" : "s"})
+          </span>
+        </>
+      }
+      className="h-full min-h-0 rounded-none border-0 shadow-none"
+    />
   );
 }
 
@@ -272,8 +258,14 @@ function FooterRight({ state }: { state: InstanceUIState }) {
 // lives inside that branch.
 
 function InstanceUIStateBody({ state }: { state: InstanceUIState }) {
-  const { showFullSlice, openTabIds, activeTabId, setActiveTabId, openTab, closeTab } =
-    state;
+  const {
+    showFullSlice,
+    openTabIds,
+    activeTabId,
+    setActiveTabId,
+    openTab,
+    closeTab,
+  } = state;
 
   if (showFullSlice) {
     return <FullSliceView />;
@@ -289,7 +281,10 @@ function InstanceUIStateBody({ state }: { state: InstanceUIState }) {
       />
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeTabId ? (
-          <InstanceUIStateCore conversationId={activeTabId} className="h-full" />
+          <InstanceUIStateCore
+            conversationId={activeTabId}
+            className="h-full"
+          />
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">
             <LayoutDashboard className="h-10 w-10 opacity-15" />

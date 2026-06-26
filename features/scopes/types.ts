@@ -127,6 +127,42 @@ export interface AssociationTargetEdge {
   createdAt: string;
 }
 
+// ─── Denormalized scope display (scope + its type) ────────────────────
+//
+// A scope joined to its scope-type's presentation fields. Returned by
+// `scopesService.getEntityScopeDetails` / `listEntityScopeTags` so display
+// surfaces (AssignedScopesDisplay, the notes scope sidebar) never join
+// ctx_scopes / ctx_scope_types themselves — the chokepoint owns those tables.
+
+export interface ScopeTypeDisplay {
+  id: string;
+  label_singular: string;
+  label_plural: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface ScopeWithType {
+  id: string;
+  name: string;
+  scope_type: ScopeTypeDisplay | null;
+}
+
+// One row of `assoc_for_sources` — the source-side batch counterpart of
+// `AssociationTargetEdge`. Every OUTGOING edge from a set of sources of one
+// type (optionally filtered to one target type). `sourceId` lets callers
+// group results back by source.
+export interface AssociationSourceEdge {
+  id: string;
+  sourceId: string;
+  targetType: string;
+  targetId: string;
+  label: string | null;
+  metadata: Json;
+  orgId: string | null;
+  createdAt: string;
+}
+
 // Cache entry for one `${type}:${id}` endpoint — mirrors `EntityScopesEntry`.
 export interface AssociationsEntry {
   status: "idle" | "loading" | "ready" | "error";

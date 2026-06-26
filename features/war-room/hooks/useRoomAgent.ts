@@ -27,7 +27,7 @@ import { setContextEntries } from "@/features/agents/redux/execution-system/inst
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { WAR_ROOM_ROOM_AGENT_ID } from "@/features/war-room/constants";
-import { selectTileIdsForSession } from "@/features/war-room/redux/selectors";
+import { selectThreadIdsForRoom } from "@/features/war-room/redux/selectors";
 import { useDurableAgentConversation } from "@/features/war-room/hooks/useDurableAgentConversation";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import {
@@ -71,8 +71,8 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   // Re-push trigger: THIS room's tile set. The room shell hydrates the active
   // session's tiles into the warRoom slice, so the ordered tile-id list is the
   // signal — adding/removing/renaming a thread re-pushes the roster.
-  const tileIds = useAppSelector(selectTileIdsForSession(sessionId));
-  const tileSignature = tileIds.join("|");
+  const threadIds = useAppSelector(selectThreadIdsForRoom(sessionId));
+  const threadSignature = threadIds.join("|");
 
   // ── Build + push the single-room read-only context ───────────────────────
   const refreshContext = useCallback(async () => {
@@ -99,7 +99,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
     if (!conversationId) return;
     void refreshContext();
     // tileSignature is the intended re-push trigger; refreshContext is stable.
-  }, [conversationId, tileSignature, refreshContext]);
+  }, [conversationId, threadSignature, refreshContext]);
 
   return {
     conversationId,

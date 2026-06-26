@@ -20,6 +20,7 @@ import {
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
@@ -117,34 +118,13 @@ function useCopyText(text: string) {
 // ─── Shared: JSON pane ────────────────────────────────────────────────────────
 
 function JsonPane({ data, label }: { data: unknown; label?: string }) {
-  const json = formatJson(data, 2);
-  const { copied, copy } = useCopyText(json);
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {label && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border shrink-0">
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex-1">
-            {label}
-          </span>
-          <button
-            type="button"
-            onClick={copy}
-            className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
-            {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
-            ) : (
-              <Copy className="h-3 w-3" />
-            )}
-          </button>
-        </div>
-      )}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <pre className="p-3 text-xs font-mono text-foreground whitespace-pre-wrap leading-relaxed">
-          {json}
-        </pre>
-      </div>
-    </div>
+    <JsonInspector
+      data={data}
+      label={label}
+      defaultView="json"
+      className="h-full min-h-0 rounded-none border-0 shadow-none"
+    />
   );
 }
 

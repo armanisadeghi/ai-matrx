@@ -1,37 +1,32 @@
 // features/war-room/service.ts
 //
-// The single Supabase CRUD chokepoint for War Room. React → Supabase directly
-// (no Next.js middle tier). All writes are owner-scoped; RLS enforces access.
+// Supabase CRUD chokepoint for War Room. React → Supabase directly.
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
-import { DEFAULT_SESSION_TITLE, UNASSIGNED_ROOM_TITLE } from "./constants";
+import { DEFAULT_SESSION_TITLE } from "./constants";
+import { listThreadIdsForRoom } from "./service/readApi";
+import * as assoc from "./service/associations";
+import { roomRef, threadRef } from "./types";
 import type {
   CreateSessionInput,
-  CreateTileInput,
+  CreateThreadInput,
+  ThreadAnchorType,
   WarRoomSession,
   WarRoomSessionUpdate,
-  WarRoomTile,
-  WarRoomTileUpdate,
+  WarRoomThread,
+  WarRoomThreadUpdate,
 } from "./types";
 
-const SESSIONS = "ctx_war_room_sessions";
-const TILES = "ctx_war_room_tiles";
+const SESSIONS = "wr_sessions";
+const THREADS = "wr_threads";
 
-/**
- * Resolve a war-room container's organization_id, NEVER returning null. A real
- * input org (not the "Personal" pseudo-sentinel) wins; otherwise the user's
- * personal org. A NULL-org container would make every association edge into it
- * invisible (`platform.associations` fails closed), so org-on-create is the
- * load-bearing guarantee behind the unified relationship model.
- */
+const NOT_DELETED = { deleted_at: null as null };
+
 async function resolveOrgIdNeverNull(
   orgIdInput: string | null | undefined,
 ): Promise<string> {
-  const real =
-    orgIdInput && !isPersonalPseudoOrgId(orgIdInput) ? orgIdInput : null;
-  if (real) return real;
+  if (orgIdInput) return orgIdInput;
   const userId = requireUserId();
   const { data, error } = await supabase.rpc("ensure_personal_organization", {
     p_user_id: userId,
@@ -43,29 +38,30 @@ async function resolveOrgIdNeverNull(
   return data as string;
 }
 
-/** The tile's anchor (its singular primary subject) derived from create input.
- *  Task wins over project — matching the A.3 backfill priority — else canvas.
- *  Satisfies the CHECK (`canvas ⇒ anchor_id NULL`, else NOT NULL). */
-function deriveAnchor(input: CreateTileInput): {
-  anchor_type: "task" | "project" | "canvas";
+function deriveAnchor(input: CreateThreadInput): {
+  anchor_type: ThreadAnchorType;
   anchor_id: string | null;
 } {
   if (input.taskId) return { anchor_type: "task", anchor_id: input.taskId };
   if (input.projectId)
     return { anchor_type: "project", anchor_id: input.projectId };
+  if (input.anchorType) {
+    return {
+      anchor_type: input.anchorType,
+      anchor_id:
+        input.anchorType === "canvas" ? null : (input.anchorId ?? null),
+    };
+  }
   return { anchor_type: "canvas", anchor_id: null };
 }
 
 // ── Sessions ──────────────────────────────────────────────────────────
 
-/** All of the current user's saved War Rooms, most-recently-touched first. */
 export async function listSessions(): Promise<WarRoomSession[]> {
-  const userId = requireUserId();
   const { data, error } = await supabase
     .from(SESSIONS)
     .select("*")
-    .eq("user_id", userId)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .order("last_opened_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
@@ -81,7 +77,7 @@ export async function getSession(id: string): Promise<WarRoomSession | null> {
     .from(SESSIONS)
     .select("*")
     .eq("id", id)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
@@ -95,23 +91,18 @@ export async function createSession(
   input: CreateSessionInput = {},
 ): Promise<WarRoomSession> {
   const userId = requireUserId();
-  // org-on-create: a room is a container that holds association edges, so it must
-  // carry a real org from birth (never NULL — see resolveOrgIdNeverNull).
   const organizationId = await resolveOrgIdNeverNull(input.organizationId);
   const { data, error } = await supabase
     .from(SESSIONS)
     .insert({
-      user_id: userId,
+      created_by: userId,
       title: input.title?.trim() || DEFAULT_SESSION_TITLE,
       description: input.description ?? null,
       icon: input.icon ?? null,
       color: input.color ?? null,
       organization_id: organizationId,
-      project_id: input.projectId ?? null,
-      // anchor (singular primary subject): a project room is project-anchored.
       anchor_type: input.projectId ? "project" : "canvas",
       anchor_id: input.projectId ?? null,
-      context_scope_ids: input.contextScopeIds ?? [],
       last_opened_at: new Date().toISOString(),
     })
     .select("*")
@@ -121,6 +112,16 @@ export async function createSession(
     console.error("[war-room] createSession failed:", error);
     throw error;
   }
+
+  if (input.projectId) {
+    await assoc.createAssignment({
+      ref: roomRef(data.id),
+      entityType: "project",
+      entityId: input.projectId,
+      makeActive: true,
+    });
+  }
+
   return data;
 }
 
@@ -142,31 +143,6 @@ export async function updateSession(
   return data;
 }
 
-/**
- * Get-or-create the user's single "Unassigned threads" HOLDING ROOM. Threads
- * removed from a room land here until moved into another. Identified by the
- * reserved title (UNASSIGNED_ROOM_TITLE); the oldest match wins if several exist.
- * Reuses createSession (real org + canvas anchor).
- */
-export async function ensureUnassignedRoom(): Promise<WarRoomSession> {
-  const userId = requireUserId();
-  const { data: existing, error } = await supabase
-    .from(SESSIONS)
-    .select("*")
-    .eq("user_id", userId)
-    .eq("title", UNASSIGNED_ROOM_TITLE)
-    .eq("is_deleted", false)
-    .order("created_at", { ascending: true })
-    .limit(1);
-  if (error) {
-    console.error("[war-room] ensureUnassignedRoom lookup failed:", error);
-    throw error;
-  }
-  if (existing && existing.length > 0) return existing[0];
-  return createSession({ title: UNASSIGNED_ROOM_TITLE });
-}
-
-/** Bump last_opened_at so the room sorts to the top of /all. Fire-and-forget. */
 export async function touchSessionOpened(id: string): Promise<void> {
   const { error } = await supabase
     .from(SESSIONS)
@@ -178,7 +154,7 @@ export async function touchSessionOpened(id: string): Promise<void> {
 export async function softDeleteSession(id: string): Promise<void> {
   const { error } = await supabase
     .from(SESSIONS)
-    .update({ is_deleted: true })
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     console.error("[war-room] softDeleteSession failed:", error);
@@ -186,92 +162,87 @@ export async function softDeleteSession(id: string): Promise<void> {
   }
 }
 
-// ── Tiles ─────────────────────────────────────────────────────────────
+// ── Threads ───────────────────────────────────────────────────────────
 
-/**
- * Every non-deleted tile across all of the current user's War Rooms — one query
- * for the /all search index (room title → thread title ranking).
- */
-export async function listAllUserTiles(): Promise<WarRoomTile[]> {
-  const userId = requireUserId();
+/** Every non-deleted thread owned by the caller (RLS-scoped). */
+export async function listAllUserThreads(): Promise<WarRoomThread[]> {
   const { data, error } = await supabase
-    .from(TILES)
+    .from(THREADS)
     .select("*")
-    .eq("user_id", userId)
-    .eq("is_deleted", false)
-    .order("session_id", { ascending: true })
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true });
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error("[war-room] listAllUserTiles failed:", error);
+    console.error("[war-room] listAllUserThreads failed:", error);
     throw error;
   }
   return data ?? [];
 }
 
-export async function listTiles(sessionId: string): Promise<WarRoomTile[]> {
+/** Threads linked to a room, ordered by position. */
+export async function listThreadsForRoom(
+  roomId: string,
+): Promise<WarRoomThread[]> {
+  const threadIds = await listThreadIdsForRoom(roomId);
+  if (threadIds.length === 0) return [];
+
   const { data, error } = await supabase
-    .from(TILES)
+    .from(THREADS)
     .select("*")
-    .eq("session_id", sessionId)
-    .eq("is_deleted", false)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true });
+    .in("id", threadIds)
+    .is("deleted_at", null);
 
   if (error) {
-    console.error("[war-room] listTiles failed:", error);
+    console.error("[war-room] listThreadsForRoom failed:", error);
     throw error;
   }
-  return data ?? [];
+
+  const byId = new Map((data ?? []).map((t) => [t.id, t]));
+  return threadIds
+    .map((id) => byId.get(id))
+    .filter((t): t is WarRoomThread => !!t)
+    .sort((a, b) => a.position - b.position);
 }
 
-/**
- * Read a single tile by id (owner-scoped via RLS). Returns null when the tile
- * is missing or soft-deleted. Unlike `listTiles` (session-scoped) this resolves
- * a tile WITHOUT knowing its room — the seam the master tools need to act on a
- * thread in a room that isn't the active one.
- */
-export async function getTile(id: string): Promise<WarRoomTile | null> {
+export async function getThread(id: string): Promise<WarRoomThread | null> {
   const { data, error } = await supabase
-    .from(TILES)
+    .from(THREADS)
     .select("*")
     .eq("id", id)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
-    console.error("[war-room] getTile failed:", error);
+    console.error("[war-room] getThread failed:", error);
     throw error;
   }
   return data ?? null;
 }
 
-export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
+export async function createThread(
+  input: CreateThreadInput,
+): Promise<WarRoomThread> {
   const userId = requireUserId();
-  // A tile is a container too: inherit the room's org (denormalized, NEVER NULL)
-  // so its own association edges resolve to the right org, and stamp the anchor
-  // (its singular subject) alongside the legacy FKs until those FKs are dropped.
-  const { data: sessionRow } = await supabase
-    .from(SESSIONS)
-    .select("organization_id")
-    .eq("id", input.sessionId)
-    .maybeSingle();
-  const organizationId = await resolveOrgIdNeverNull(sessionRow?.organization_id);
+  let organizationId = await resolveOrgIdNeverNull(null);
+
+  if (input.roomId) {
+    const { data: roomRow } = await supabase
+      .from(SESSIONS)
+      .select("organization_id")
+      .eq("id", input.roomId)
+      .maybeSingle();
+    organizationId = await resolveOrgIdNeverNull(roomRow?.organization_id);
+  }
+
   const anchor = deriveAnchor(input);
   const { data, error } = await supabase
-    .from(TILES)
+    .from(THREADS)
     .insert({
-      session_id: input.sessionId,
-      user_id: userId,
+      created_by: userId,
       organization_id: organizationId,
-      task_id: input.taskId ?? null,
-      note_id: input.noteId ?? null,
       active_tab: input.activeTab ?? "task",
       position: input.position ?? 0,
       title: input.title ?? null,
-      flavor: input.flavor ?? "thread",
-      project_id: input.projectId ?? null,
       anchor_type: anchor.anchor_type,
       anchor_id: anchor.anchor_id,
     })
@@ -279,81 +250,76 @@ export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
     .single();
 
   if (error) {
-    console.error("[war-room] createTile failed:", error);
+    console.error("[war-room] createThread failed:", error);
     throw error;
   }
+
+  if (input.roomId) {
+    await assoc.attachThreadToRoom(data.id, input.roomId);
+  }
+
   return data;
 }
 
-/**
- * Stamp `projectId` onto EVERY non-deleted tile in a session that doesn't
- * already carry a project. Used by the "switch to per-thread projects"
- * conversion: the room's project is materialized onto its existing tiles right
- * before the room's own project_id is cleared, so the association is preserved
- * and the room/tile invariant never breaks mid-flight. Leaves `flavor` untouched
- * — a generic thread that inherited the room's project stays a generic thread,
- * it just now carries the project_id explicitly. Returns the updated rows.
- */
-export async function applyProjectToAllTiles(
-  sessionId: string,
-  projectId: string,
-): Promise<WarRoomTile[]> {
-  const { data, error } = await supabase
-    .from(TILES)
-    .update({ project_id: projectId })
-    .eq("session_id", sessionId)
-    .eq("is_deleted", false)
-    .is("project_id", null)
-    .select("*");
-
-  if (error) {
-    console.error("[war-room] applyProjectToAllTiles failed:", error);
-    throw error;
-  }
-  return data ?? [];
-}
-
-export async function updateTile(
+export async function updateThread(
   id: string,
-  patch: WarRoomTileUpdate,
-): Promise<WarRoomTile> {
+  patch: WarRoomThreadUpdate,
+): Promise<WarRoomThread> {
   const { data, error } = await supabase
-    .from(TILES)
+    .from(THREADS)
     .update(patch)
     .eq("id", id)
     .select("*")
     .single();
 
   if (error) {
-    console.error("[war-room] updateTile failed:", error);
+    console.error("[war-room] updateThread failed:", error);
     throw error;
   }
   return data;
 }
 
-export async function softDeleteTile(id: string): Promise<void> {
+export async function softDeleteThread(id: string): Promise<void> {
   const { error } = await supabase
-    .from(TILES)
-    .update({ is_deleted: true })
+    .from(THREADS)
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[war-room] softDeleteTile failed:", error);
+    console.error("[war-room] softDeleteThread failed:", error);
     throw error;
   }
 }
 
-/** Persist a batch of (id, position) updates after a reorder. */
-export async function persistTilePositions(
+export async function persistThreadPositions(
   updates: { id: string; position: number }[],
 ): Promise<void> {
   await Promise.all(
     updates.map(({ id, position }) =>
-      supabase.from(TILES).update({ position }).eq("id", id),
+      supabase.from(THREADS).update({ position }).eq("id", id),
     ),
   );
 }
 
-// NOTE: tile ↔ audio / note / attachment links no longer live here. The
-// polymorphic ctx_war_room_assignments table (see service/associations.ts)
-// replaced the three per-type link tables AND the tile FK columns. Read the
-// active task/note/audio via the war-room selectors; mutate via associations.ts.
+/** Thread ids with no `thread → war_room` membership edge. */
+export async function listOrphanThreadIds(
+  allThreadIds: string[],
+  assignedThreadIds: Set<string>,
+): Promise<string[]> {
+  return allThreadIds.filter((id) => !assignedThreadIds.has(id));
+}
+
+/** Build the set of thread ids assigned to any room. */
+export async function collectAssignedThreadIds(
+  roomIds: string[],
+): Promise<Set<string>> {
+  const results = await Promise.all(
+    roomIds.map((id) => listThreadIdsForRoom(id)),
+  );
+  const assigned = new Set<string>();
+  for (const ids of results) {
+    for (const id of ids) assigned.add(id);
+  }
+  return assigned;
+}
+
+// Content links: service/associations.ts + thread_contents() RPC.

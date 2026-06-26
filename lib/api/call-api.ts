@@ -67,14 +67,17 @@ import {
   selectIsAuthenticated,
   selectIsSuperAdmin,
 } from "@/lib/redux/slices/userSlice";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectResolvedBaseUrl,
+  selectEndpointOverrideConfig,
+} from "@/lib/redux/slices/apiConfigSlice";
+import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
   selectOrganizationId,
   selectProjectId,
   selectTaskId,
   selectConversationId,
 } from "@/lib/redux/slices/appContextSlice";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { logApiTarget } from "@/lib/api/log-api-target";
@@ -532,15 +535,11 @@ function resolveScope(
   // Guard defensively so callApi never crashes on a missing key — all fields are nullable.
   const hasAppContext = !!(state as any)?.appContext;
 
-  // Drop the synthetic Personal pseudo-org id before sending to the backend.
-  // The sentinel is a UI-only construct that maps to "no org" server-side.
   const rawOrgId = hasAppContext ? selectOrganizationId(state) : undefined;
-  const sanitizedOrgId =
-    rawOrgId && !isPersonalPseudoOrgId(rawOrgId) ? rawOrgId : undefined;
 
   const resolved: CallScope = {
     user_id: userId,
-    organization_id: sanitizedOrgId,
+    organization_id: rawOrgId ?? undefined,
     project_id: hasAppContext
       ? (selectProjectId(state) ?? undefined)
       : undefined,
@@ -866,9 +865,16 @@ export function callApi<
 
     // ── Step 3: Resolve URL ───────────────────────────────────────────────
     const baseUrl = resolveBaseUrl(state, config._testOverrides);
+    // Apply the global endpoint-override registry (API version + per-path
+    // overrides) to the canonical path BEFORE param substitution. Base URL /
+    // server selection (incl. localhost) is untouched — only the path moves.
+    const resolvedPath = resolveEndpointPath(
+      config.path as string,
+      selectEndpointOverrideConfig(state),
+    );
     const url = buildUrl(
       baseUrl,
-      config.path as string,
+      resolvedPath,
       config.pathParams as Record<string, string> | undefined,
       config.queryParams,
     );

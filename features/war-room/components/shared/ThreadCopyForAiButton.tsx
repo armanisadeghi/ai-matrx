@@ -6,27 +6,27 @@ import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 import {
-  selectEffectiveTileProjectId,
-  selectTileFlavor,
-  selectTileTaskId,
+  selectEffectiveThreadProjectId,
+  selectThreadPickerOption,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 
-export type TileCopyForAiTarget =
+export type ThreadCopyForAiTarget =
   | { kind: "project"; id: string; name?: string }
   | { kind: "task"; id: string; name?: string };
 
 /** Resolves which entity a tile's "Copy for AI" action should export. */
-export function useTileCopyForAiTarget(
-  tileId: string,
-): TileCopyForAiTarget | null {
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+export function useThreadCopyForAiTarget(
+  threadId: string,
+): ThreadCopyForAiTarget | null {
+  const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
   const projectId = useAppSelector((s) =>
-    selectEffectiveTileProjectId(tileId)(s),
+    selectEffectiveThreadProjectId(threadId)(s),
   );
   const projectName = useAppSelector((s) =>
     projectId ? selectProjectById(s, projectId)?.name : undefined,
   );
-  const taskId = useAppSelector((s) => selectTileTaskId(tileId)(s));
+  const taskId = useAppSelector((s) => selectThreadTaskId(threadId)(s));
   const taskTitle = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId)?.title : undefined,
   );
@@ -46,20 +46,20 @@ export function useTileCopyForAiTarget(
  * Standard "Copy for AI" control for any War Room tile — project-flavor tiles
  * export the full project tree; task/thread tiles export the anchored task.
  */
-export function TileCopyForAiButton({
-  tileId,
+export function ThreadCopyForAiButton({
+  threadId,
   size = "icon",
   className,
   locationPrefix = "War Room",
   showLabel,
 }: {
-  tileId: string;
+  threadId: string;
   size?: "icon" | "sm";
   className?: string;
   locationPrefix?: string;
   showLabel?: boolean;
 }) {
-  const target = useTileCopyForAiTarget(tileId);
+  const target = useThreadCopyForAiTarget(threadId);
 
   if (!target) return null;
 

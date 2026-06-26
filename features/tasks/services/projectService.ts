@@ -2,15 +2,17 @@
  * Task Project Service
  *
  * Legacy project service for the tasks feature.
- * Personal/unscoped projects (no organization_id) are handled here.
+ * Personal projects are stored under the user's real personal organization.
  * For org-scoped projects, use features/projects/service.ts instead.
  */
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
 
 /**
- * Create a new personal project (not org-scoped)
+ * Create a new project in the user's personal organization.
  */
 export async function createProject(
   name: string,
@@ -18,6 +20,15 @@ export async function createProject(
 ): Promise<DatabaseProject | null> {
   try {
     const userId = requireUserId();
+    const { data: organizationId, error: orgError } = await supabase.rpc(
+      "ensure_personal_organization",
+      { p_user_id: userId },
+    );
+
+    if (orgError || !organizationId) {
+      console.error("Error resolving personal organization:", orgError);
+      return null;
+    }
 
     const { data, error } = await supabase
       .from("ctx_projects")
@@ -25,7 +36,7 @@ export async function createProject(
         name,
         description: description ?? null,
         created_by: userId,
-        organization_id: null,
+        organization_id: organizationId,
         settings: {},
       })
       .select()
@@ -48,16 +59,16 @@ export async function createProject(
  */
 export async function ensureDefaultProject(): Promise<DatabaseProject | null> {
   try {
-    const userId = requireUserId();
+    requireUserId();
 
-    // Check if user has any projects (created_by or project_members)
-    const { data: memberProjects } = await supabase
-      .from("ctx_project_members")
-      .select("project_id")
-      .eq("user_id", userId)
-      .limit(1);
-
-    if (memberProjects && memberProjects.length > 0) return null;
+    // Check if user has any projects (membership via the canonical store).
+    const membersResult = await membershipsService.forUser("project");
+    if (
+      !isScopesRpcErr(membersResult) &&
+      membersResult.data.memberships.length > 0
+    ) {
+      return null;
+    }
 
     return await createProject("Personal", "Your personal tasks");
   } catch (error) {
@@ -73,19 +84,18 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
   try {
     const userId = requireUserId();
 
-    // Query via project_members (RLS-safe) for member projects
-    const { data: memberRows, error: memberError } = await supabase
-      .from("ctx_project_members")
-      .select("project_id")
-      .eq("user_id", userId);
-
-    if (memberError) {
-      console.error("Error fetching project memberships:", memberError);
+    // Memberships via the canonical store (RLS-safe).
+    const membersResult = await membershipsService.forUser("project");
+    if (isScopesRpcErr(membersResult)) {
+      console.error(
+        "Error fetching project memberships:",
+        membersResult.error.message,
+      );
     }
 
-    const memberProjectIds = (memberRows ?? []).map(
-      (r: { project_id: string }) => r.project_id,
-    );
+    const memberProjectIds = isScopesRpcErr(membersResult)
+      ? []
+      : membersResult.data.memberships.map((m) => m.containerId);
 
     // Also fetch personal projects created by user that may not have members yet
     const { data: createdProjects, error: createdError } = await supabase
@@ -132,14 +142,10 @@ export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
   try {
     const userId = requireUserId();
 
-    const { data: memberRows } = await supabase
-      .from("ctx_project_members")
-      .select("project_id")
-      .eq("user_id", userId);
-
-    const memberProjectIds = (memberRows ?? []).map(
-      (r: { project_id: string }) => r.project_id,
-    );
+    const membersResult = await membershipsService.forUser("project");
+    const memberProjectIds = isScopesRpcErr(membersResult)
+      ? []
+      : membersResult.data.memberships.map((m) => m.containerId);
 
     // Fetch with tasks joined
     let query = supabase

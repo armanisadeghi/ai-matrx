@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { Database, Play, AlertCircle } from "lucide-react";
 
 export const SQLEditor = ({ loading, error, onExecuteQuery }) => {
@@ -54,18 +54,9 @@ export const SQLEditor = ({ loading, error, onExecuteQuery }) => {
           )}
 
           {queryResult && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">Result</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[300px] w-full rounded-md border">
-                  <pre className="p-4 text-sm">
-                    {JSON.stringify(queryResult, null, 2)}
-                  </pre>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            <div className="h-[min(28rem,50vh)] min-h-[16rem] rounded-md border overflow-hidden">
+              <JsonInspector data={queryResult} defaultView="json" />
+            </div>
           )}
         </div>
       </CardContent>

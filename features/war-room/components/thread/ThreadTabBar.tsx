@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileTabBar.tsx
+// features/war-room/components/thread/ThreadTabBar.tsx
 //
 // The tile view switcher: a compact segmented control (one connected pill) with
 // a single "lit" segment, kind-colored to match the tile accent rail. Icon-only
@@ -10,29 +10,29 @@
 // at a time — the busy user never hunts for which view they're in.
 
 import { cn } from "@/lib/utils";
-import type { TileFlavor, TileTab } from "@/features/war-room/types";
+import type { ThreadAnchorType, ThreadTab } from "@/features/war-room/types";
 import {
-  TILE_KIND_ORDER,
-  tileTabKind,
-} from "@/features/war-room/components/room/tileKind";
+  THREAD_KIND_ORDER,
+  dynamicTabKind,
+} from "@/features/war-room/components/room/threadKind";
 
-export function TileTabBar({
+export function ThreadTabBar({
   active,
   onChange,
-  flavor,
+  anchorType = "canvas",
   withLabels = false,
   size = "sm",
 }: {
-  active: TileTab;
-  onChange: (tab: TileTab) => void;
-  flavor?: TileFlavor;
+  active: ThreadTab;
+  onChange: (tab: ThreadTab) => void;
+  anchorType?: ThreadAnchorType;
   withLabels?: boolean;
   size?: "sm" | "md";
 }) {
   return (
     <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 shrink-0">
-      {TILE_KIND_ORDER.map((id) => {
-        const k = tileTabKind(id, flavor);
+      {THREAD_KIND_ORDER.map((id) => {
+        const k = dynamicTabKind(id, anchorType);
         const isActive = id === active;
         return (
           <button

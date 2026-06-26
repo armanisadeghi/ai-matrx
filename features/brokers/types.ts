@@ -2,12 +2,16 @@ import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { Database } from "@/types/database.types";
 import { Constants } from "@/types/database.types";
 
-/** Canonical broker row — matches `public.data_broker`. */
-export type DataBroker = Database["public"]["Tables"]["data_broker"]["Row"];
-export type CreateBrokerInput =
-  Database["public"]["Tables"]["data_broker"]["Insert"];
-export type UpdateBrokerInput =
-  Database["public"]["Tables"]["data_broker"]["Update"];
+import type {
+  DeprecatedDataBrokerInsert,
+  DeprecatedDataBrokerRow,
+  DeprecatedDataBrokerUpdate,
+} from "@/utils/supabase/deprecated-tables";
+
+/** Canonical broker row — matches removed `public.data_broker`. */
+export type DataBroker = DeprecatedDataBrokerRow;
+export type CreateBrokerInput = DeprecatedDataBrokerInsert;
+export type UpdateBrokerInput = DeprecatedDataBrokerUpdate;
 
 export type DataType = Database["public"]["Enums"]["data_type"];
 export type Color = Database["public"]["Enums"]["color"];
@@ -252,4 +256,3 @@ type _CheckBulkUpsertBrokerResult =
     : false;
 declare const _bulkUpsertBrokerResult: _CheckBulkUpsertBrokerResult;
 true satisfies typeof _bulkUpsertBrokerResult;
-

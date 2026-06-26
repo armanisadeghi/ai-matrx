@@ -126,9 +126,9 @@ const DEFS: Record<WarRoomToolName, ToolSpecInline> = {
     },
   },
 
-  war_room_update_tile: {
+  war_room_update_thread: {
     kind: "inline",
-    name: "war_room_update_tile",
+    name: "war_room_update_thread",
     description:
       "Rename this tile (the room's entry for this work item). Requires the " +
       "user's approval. (A tile has no separate description — edit the task or " +

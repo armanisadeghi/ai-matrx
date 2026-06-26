@@ -20,16 +20,11 @@
 // choice and resolve the effective staged id against the live visible list, so
 // a hidden/deleted/never-chosen tile can never strand the Stage.
 
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
-import type { TileTab } from "@/features/war-room/types";
+import { createContext, useContext, useMemo, useState } from "react";
+import type { ThreadTab } from "@/features/war-room/types";
 import {
   GALLERY_GAP_PX,
-  GALLERY_MIN_TILE,
+  GALLERY_MIN_THREAD,
   GALLERY_TARGET_ASPECT,
 } from "@/features/war-room/constants";
 
@@ -41,8 +36,8 @@ export interface RoomViewState {
   setMode: (m: RoomMode) => void;
 
   /** When set, every tile renders this tab; null → each tile's own tab. */
-  projectedTab: TileTab | null;
-  setProjectedTab: (t: TileTab | null) => void;
+  projectedTab: ThreadTab | null;
+  setProjectedTab: (t: ThreadTab | null) => void;
 
   density: Density;
   setDensity: (d: Density) => void;
@@ -56,20 +51,20 @@ export interface RoomViewState {
   /** Tiles whose "anchor this thread" prompt the user dismissed this session
    *  (Feature 2fe48c5c) — a warning, never a block, so it's silenceable. */
   dismissedAnchorPrompts: ReadonlySet<string>;
-  dismissAnchorPrompt: (tileId: string) => void;
+  dismissAnchorPrompt: (threadId: string) => void;
 
   /** The user's explicit Stage choice (may be stale — resolve against visible). */
   chosenStageId: string | null;
   setChosenStageId: (id: string) => void;
-  /** Bring a tile to the Stage AND switch to Stage mode in one move. */
-  stageTile: (id: string) => void;
+  /** Bring a thread to the Stage AND switch to Stage mode in one move. */
+  stageThread: (id: string) => void;
 }
 
 const RoomViewContext = createContext<RoomViewState | null>(null);
 
 export function RoomViewProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<RoomMode>("stage");
-  const [projectedTab, setProjectedTab] = useState<TileTab | null>(null);
+  const [projectedTab, setProjectedTab] = useState<ThreadTab | null>(null);
   const [density, setDensity] = useState<Density>("comfortable");
   const [threadQuery, setThreadQuery] = useState("");
   const [dismissedAnchorPrompts, setDismissedAnchorPrompts] = useState<
@@ -90,21 +85,28 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
       threadQuery,
       setThreadQuery,
       dismissedAnchorPrompts,
-      dismissAnchorPrompt: (tileId: string) =>
+      dismissAnchorPrompt: (threadId: string) =>
         setDismissedAnchorPrompts((prev) => {
-          if (prev.has(tileId)) return prev;
+          if (prev.has(threadId)) return prev;
           const next = new Set(prev);
-          next.add(tileId);
+          next.add(threadId);
           return next;
         }),
       chosenStageId,
       setChosenStageId,
-      stageTile: (id: string) => {
+      stageThread: (id: string) => {
         setChosenStageId(id);
         setMode("stage");
       },
     }),
-    [mode, projectedTab, density, threadQuery, dismissedAnchorPrompts, chosenStageId],
+    [
+      mode,
+      projectedTab,
+      density,
+      threadQuery,
+      dismissedAnchorPrompts,
+      chosenStageId,
+    ],
   );
 
   return (
@@ -140,11 +142,15 @@ export function resolveStagedId(
 // before the grid switches to scrolling.
 export const DENSITY_LAYOUT: Record<
   Density,
-  { gap: number; minTile: { width: number; height: number }; targetAspect: number }
+  {
+    gap: number;
+    minTile: { width: number; height: number };
+    targetAspect: number;
+  }
 > = {
   comfortable: {
     gap: GALLERY_GAP_PX,
-    minTile: GALLERY_MIN_TILE,
+    minTile: GALLERY_MIN_THREAD,
     targetAspect: GALLERY_TARGET_ASPECT,
   },
   compact: {

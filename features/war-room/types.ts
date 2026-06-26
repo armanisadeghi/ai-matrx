@@ -1,61 +1,50 @@
 // features/war-room/types.ts
 //
-// War Room domain types. Supabase-generated rows are the source of truth — we
-// alias them directly (snake_case) rather than maintaining a parallel mapped
-// shape. See features/war-room/FEATURE.md.
+// War Room domain types. Supabase-generated rows are the source of truth.
 
 import type { Database, Json } from "@/types/database.types";
 
 // ── Raw DB row aliases ────────────────────────────────────────────────
-export type WarRoomSession =
-  Database["public"]["Tables"]["ctx_war_room_sessions"]["Row"];
+export type WarRoomSession = Database["public"]["Tables"]["wr_sessions"]["Row"];
 export type WarRoomSessionInsert =
-  Database["public"]["Tables"]["ctx_war_room_sessions"]["Insert"];
+  Database["public"]["Tables"]["wr_sessions"]["Insert"];
 export type WarRoomSessionUpdate =
-  Database["public"]["Tables"]["ctx_war_room_sessions"]["Update"];
+  Database["public"]["Tables"]["wr_sessions"]["Update"];
 
-export type WarRoomTile =
-  Database["public"]["Tables"]["ctx_war_room_tiles"]["Row"];
-export type WarRoomTileInsert =
-  Database["public"]["Tables"]["ctx_war_room_tiles"]["Insert"];
-export type WarRoomTileUpdate =
-  Database["public"]["Tables"]["ctx_war_room_tiles"]["Update"];
+export type WarRoomThread = Database["public"]["Tables"]["wr_threads"]["Row"];
+export type WarRoomThreadInsert =
+  Database["public"]["Tables"]["wr_threads"]["Insert"];
+export type WarRoomThreadUpdate =
+  Database["public"]["Tables"]["wr_threads"]["Update"];
 
-// ── Associations — the unified `platform.associations` model ───────────
-// War-room relationships are EDGES in `platform.associations`, reconstructed
-// into this shape by service/associations.ts. This is NOT a table row: the old
-// per-type link tables (ctx_war_room_tile_audio_sessions/_notes/_attachments)
-// and the transitional `ctx_war_room_assignments` table are being dropped. A
-// container (room = session, thread = tile) holds ANY resource type, M2M; the
-// Redux bucket `assignmentsByContainer` is keyed by container, and selectors +
-// reducers read exactly the fields below.
+/**
+ * Canonical anchor vocabulary.
+ * `canvas` — freeform resource hub; no anchor_id (the thread itself is the identity).
+ * `task` / `project` — first tab binds to that entity via anchor_id.
+ */
+export type ThreadAnchorType = "canvas" | "project" | "task";
 
-/** A war-room association, reconstructed from a `platform.associations` edge. */
+/** One row from `thread_contents(thread_id)` — tab module hydration. */
+export type ThreadContentModule =
+  Database["public"]["Functions"]["thread_contents"]["Returns"][number];
+
+// ── Associations — reconstructed from `platform.associations` edges ───
 export interface WarRoomAssignment {
   id: string;
-  /** The container vocabulary: 'room' | 'thread'. */
   container_type: string;
   container_id: string;
-  /** The held resource type (war-room vocabulary: 'note' | 'task' | 'project' |
-   *  'conversation' | 'studio_session' | 'user_file' | 'document'). */
   entity_type: string;
   entity_id: string;
-  /** Gallery order within its type — carried in the edge metadata. */
   position: number | null;
-  /** The focused member of a single-active type — carried in the edge metadata. */
   is_active: boolean | null;
   label: string | null;
   metadata: Json | null;
-  /** Not carried on the edge (the RPC owns created_by); present for shape parity, read nowhere. */
-  user_id: string | null;
   created_by: string | null;
   created_at: string | null;
 }
 
-/** A container that can hold resources: a whole room, or one thread (tile). */
 export type WarRoomContainerType = "room" | "thread";
 
-/** Every resource type a War Room container can hold. */
 export type WarRoomAssignmentEntityType =
   | "project"
   | "task"
@@ -65,33 +54,43 @@ export type WarRoomAssignmentEntityType =
   | "user_file"
   | "document";
 
-/** A typed reference to a container (room or thread). */
+/** Entity types linkable from the Canvas tab (metadata.canvas on the edge). */
+export const CANVAS_RESOURCE_ENTITY_TYPES = [
+  "task",
+  "project",
+  "note",
+  "user_file",
+  "document",
+] as const satisfies readonly WarRoomAssignmentEntityType[];
+
+export type CanvasResourceEntityType =
+  (typeof CANVAS_RESOURCE_ENTITY_TYPES)[number];
+
 export interface ContainerRef {
   type: WarRoomContainerType;
   id: string;
 }
 
-/** Stable Redux key for a container's assignment bucket. */
 export function containerKey(type: WarRoomContainerType, id: string): string {
   return `${type}:${id}`;
 }
-export function threadRef(tileId: string): ContainerRef {
-  return { type: "thread", id: tileId };
-}
-export function roomRef(sessionId: string): ContainerRef {
-  return { type: "room", id: sessionId };
+
+export function threadRef(threadId: string): ContainerRef {
+  return { type: "thread", id: threadId };
 }
 
-/**
- * Entity types that have a single "active/focused" member per container (setting
- * one demotes the others of the same type). The rest (files, documents,
- * conversations) coexist with no focus. Attachments are always is_active=true.
- */
+export function roomRef(roomId: string): ContainerRef {
+  return { type: "room", id: roomId };
+}
+
 export const SINGLE_ACTIVE_ENTITY_TYPES: ReadonlySet<WarRoomAssignmentEntityType> =
   new Set(["task", "project", "note", "studio_session"]);
 
-// ── Tile tabs ─────────────────────────────────────────────────────────
-export type TileTab =
+/** Quick-add flavor picker vocabulary (maps to thread anchor_type). */
+export type ThreadPickerOption = "thread" | "task" | "project";
+
+// ── Thread tabs ───────────────────────────────────────────────────────
+export type ThreadTab =
   | "task"
   | "notes"
   | "audio"
@@ -99,29 +98,17 @@ export type TileTab =
   | "agent"
   | "combined";
 
-// ── Tile flavor ───────────────────────────────────────────────────────
-// What a tile primarily REPRESENTS (its render/intent discriminator):
-//   • thread  — the generic multi-tab tile (today's default; zero change)
-//   • task    — task-anchored (uses the existing task_id)
-//   • project — project-anchored (uses project_id; its Task tab lists/creates
-//               the project's tasks, which auto-associate via ctx_tasks.project_id)
-// DB column is `text` + CHECK (extend like active_tab). These are INTERNAL
-// tokens — user-facing labels live in constants and are rename-safe.
-export type TileFlavor = "thread" | "task" | "project";
+/** Per-user pin/hide — lives in `platform.user_entity_state`, not on the row. */
+export interface ThreadUserState {
+  isPinned: boolean;
+  isHidden: boolean;
+}
 
-export const TILE_FLAVORS: readonly TileFlavor[] = [
-  "thread",
-  "task",
-  "project",
-] as const;
-
-// ── Resolved context bundle (override ?? session default) ──────────────
-// A controlled selection the record carries — NEVER written to appContextSlice
-// or ctx_scope_assignments. See features/scopes/FEATURE.md.
-export interface TileContext {
+// ── Resolved context (scopes via setEntityScopes — not row columns) ───
+export interface ThreadContext {
   organizationId: string | null;
   scopeIds: string[];
-  /** true when the tile carries its own override (not inheriting the session). */
+  /** true when the thread has its own scope tags (not inheriting the room). */
   isOverridden: boolean;
 }
 
@@ -132,20 +119,20 @@ export interface CreateSessionInput {
   icon?: string | null;
   color?: string | null;
   organizationId?: string | null;
+  /** Creates a `war_room → project` association after insert. */
   projectId?: string | null;
-  contextScopeIds?: string[];
 }
 
-export interface CreateTileInput {
-  sessionId: string;
+export interface CreateThreadInput {
+  /** When set, inserts a `thread → war_room` membership edge after create. */
+  roomId?: string | null;
+  anchorType?: ThreadAnchorType;
+  anchorId?: string | null;
+  /** Convenience — sets anchor to task. */
   taskId?: string | null;
-  noteId?: string | null;
-  activeTab?: TileTab;
+  /** Convenience — sets anchor to project. */
+  projectId?: string | null;
+  activeTab?: ThreadTab;
   position?: number;
   title?: string | null;
-  /** What the tile represents. Defaults to 'thread' (the generic tile). */
-  flavor?: TileFlavor;
-  /** FK to ctx_projects for a project-flavor tile. The caller must have already
-   *  resolved any room/tile project conflict (see thunks `checkTileProjectConflict`). */
-  projectId?: string | null;
 }

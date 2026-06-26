@@ -3,11 +3,23 @@
 // THE SOLE CHOKEPOINT for all ctx_* Supabase access from frontend code.
 //
 // Every read and write of ctx_scope_types, ctx_scopes, ctx_context_items,
-// ctx_context_item_values, ctx_scope_assignments, ctx_templates,
-// ctx_template_scope_types, ctx_template_context_items, ctx_context_access_log
-// goes through this file. No other file is allowed to query these tables.
-// ESLint rule `no-restricted-syntax` enforces the chokepoint at the lint
-// boundary; the boy-scout rule applies if you find a violation.
+// ctx_context_item_values, ctx_templates, ctx_template_scope_types,
+// ctx_template_context_items, ctx_context_access_log goes through this file.
+// No other file is allowed to query these tables. ESLint rule
+// `no-restricted-syntax` enforces the chokepoint at the lint boundary; the
+// boy-scout rule applies if you find a violation.
+//
+// SCOPE ASSIGNMENTS MOVED OFF ctx_scope_assignments → platform.associations
+// (DB changeover, data fully copied). A scope tag is the unified edge
+//     source = (entityType, entityId)   →   target = ('scope', scopeId)
+// reached ONLY through the assoc_* RPCs, whose sole chokepoint is
+// `associationsService`. This file therefore no longer touches
+// ctx_scope_assignments at all — every assignment read/write below delegates
+// to `associationsService`. (See docs/db_rebuild/db-canonical-access-model.md.)
+//
+// Bulk source→scope reads use the batch `assoc_for_sources` RPC (one
+// round-trip for N entities, target-filtered to 'scope' in the DB) — see
+// `bulkEntityScopeIds`. Reverse (scope→members) reads use `assoc_for_targets`.
 //
 // Spec: features/scopes/docs/RPC_CONTRACTS.md — when the Python team ships
 // the proposed RPC family (get_user_scope_tree_with_projects, resolve_*,
@@ -23,6 +35,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
   ContextItemRow,
   ContextItemValue,
@@ -38,11 +52,21 @@ import type {
   ScopeTypeNode,
   ScopesRpcError,
   ScopesRpcResult,
+  ScopeWithType,
   SetContextValuePayload,
   SetContextValueResult,
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
+
+// One denormalized scope row for tags: which entity, which scope, plus the
+// scope's name and its type's singular label (sidebar grouping).
+export interface EntityScopeTag {
+  entity_id: string;
+  scope_id: string;
+  scope_name: string;
+  scope_type: string;
+}
 
 // ─── helpers ────────────────────────────────────────────────────────
 
@@ -87,11 +111,9 @@ export const scopesService = {
    * The boot fetch. One round-trip equivalent in the future RPC. For now,
    * three parallel queries: orgs+role, scope_types+scopes, projects.
    *
-   * Personal projects (organization_id IS NULL) are not yet synthesised
-   * into a virtual Personal org here — that contract belongs to the
-   * future `get_user_scope_tree_with_projects` RPC. The legacy
-   * `hierarchyService.fetchFullContext()` continues to handle the
-   * pseudo-org sentinel until Phase 5 removes it.
+   * Projects are grouped by their real organization_id, including the user's
+   * personal organization. Unscoped project rows are invalid under the current
+   * tenancy contract.
    */
   async getScopeTree(): Promise<ScopesRpcResult<ScopeTreeResponse>> {
     try {
@@ -143,27 +165,14 @@ export const scopesService = {
         .select("id, organization_id, name, slug")
         .order("name", { ascending: true });
 
-      const assignmentsP = supabase
-        .from("ctx_scope_assignments")
-        .select("entity_id, entity_type, scope_id")
-        .eq("entity_type", "project");
-
-      const [orgsRes, scopeTypesRes, scopesRes, projectsRes, assignmentsRes] =
-        await Promise.all([
-          orgsP,
-          scopeTypesP,
-          scopesP,
-          projectsP,
-          assignmentsP,
-        ]);
+      const [orgsRes, scopeTypesRes, scopesRes, projectsRes] =
+        await Promise.all([orgsP, scopeTypesP, scopesP, projectsP]);
 
       if (orgsRes.error) return err(...mapPgErrorPair(orgsRes.error));
       if (scopeTypesRes.error)
         return err(...mapPgErrorPair(scopeTypesRes.error));
       if (scopesRes.error) return err(...mapPgErrorPair(scopesRes.error));
       if (projectsRes.error) return err(...mapPgErrorPair(projectsRes.error));
-      if (assignmentsRes.error)
-        return err(...mapPgErrorPair(assignmentsRes.error));
 
       // Index scopes by scope_type_id for fast nesting.
       const scopesByType = new Map<string, ScopeNode[]>();
@@ -173,12 +182,24 @@ export const scopesService = {
         scopesByType.set(s.scope_type_id, list);
       }
 
-      // Build per-project scope_id list.
+      // Build per-project scope_id list from the unified association edge:
+      // every edge INCOMING to one of these scopes whose source is a project.
+      // (`assoc_for_targets` is the batch-by-target read; we filter the
+      // project sources client-side.)
       const projectScopes = new Map<string, string[]>();
-      for (const a of assignmentsRes.data ?? []) {
-        const list = projectScopes.get(a.entity_id) ?? [];
-        list.push(a.scope_id);
-        projectScopes.set(a.entity_id, list);
+      const scopeIds = (scopesRes.data ?? []).map((s) => s.id);
+      if (scopeIds.length > 0) {
+        const assocRes = await associationsService.listForTargets(
+          "scope",
+          scopeIds,
+        );
+        if (isScopesRpcErr(assocRes)) return assocRes;
+        for (const edge of assocRes.data.edges) {
+          if (edge.sourceType !== "project") continue;
+          const list = projectScopes.get(edge.sourceId) ?? [];
+          list.push(edge.targetId);
+          projectScopes.set(edge.sourceId, list);
+        }
       }
 
       // Group scope_types and projects per org.
@@ -195,7 +216,7 @@ export const scopesService = {
 
       const projectsByOrg = new Map<string, ProjectNode[]>();
       for (const p of projectsRes.data ?? []) {
-        if (!p.organization_id) continue; // personal projects: future Personal pseudo-org
+        if (!p.organization_id) continue;
         const list = projectsByOrg.get(p.organization_id) ?? [];
         list.push({
           id: p.id,
@@ -254,13 +275,13 @@ export const scopesService = {
         if (error) return err(...mapPgErrorPair(error));
         taskIds = (data ?? []).map((row) => row.id);
       } else if (level === "scope") {
-        const { data, error } = await supabase
-          .from("ctx_scope_assignments")
-          .select("entity_id")
-          .eq("entity_type", "task")
-          .eq("scope_id", id);
-        if (error) return err(...mapPgErrorPair(error));
-        taskIds = (data ?? []).map((row) => row.entity_id);
+        // Tasks tagged with this scope = edges INCOMING to ('scope', id)
+        // whose source is a task.
+        const res = await associationsService.listForTargets("scope", [id]);
+        if (isScopesRpcErr(res)) return res;
+        taskIds = res.data.edges
+          .filter((e) => e.sourceType === "task")
+          .map((e) => e.sourceId);
       } else {
         // org-level: tasks belonging to projects under this org, OR tasks
         // tagged directly with no project. Defer to future RPC for correctness.
@@ -275,19 +296,12 @@ export const scopesService = {
         .in("id", taskIds);
       if (taskErr) return err(...mapPgErrorPair(taskErr));
 
-      const { data: tagRows, error: tagErr } = await supabase
-        .from("ctx_scope_assignments")
-        .select("entity_id, scope_id")
-        .eq("entity_type", "task")
-        .in("entity_id", taskIds);
-      if (tagErr) return err(...mapPgErrorPair(tagErr));
+      const tagsRes = await bulkEntityScopeIds("task", taskIds);
+      if (isScopesRpcErr(tagsRes)) return tagsRes;
 
-      const tagsByEntity = new Map<string, string[]>();
-      for (const row of tagRows ?? []) {
-        const list = tagsByEntity.get(row.entity_id) ?? [];
-        list.push(row.scope_id);
-        tagsByEntity.set(row.entity_id, list);
-      }
+      const tagsByEntity = new Map<string, string[]>(
+        Object.entries(tagsRes.data),
+      );
 
       const tasks: TaskNode[] = (taskRows ?? []).map((row) => ({
         id: row.id,
@@ -320,14 +334,14 @@ export const scopesService = {
       const ids = (projectRows ?? []).map((r) => r.id);
       if (ids.length === 0) return ok({ projects: [] });
 
-      const { data: tagRows, error: tagErr } = await supabase
-        .from("ctx_scope_assignments")
-        .select("entity_id")
-        .eq("entity_type", "project")
-        .in("entity_id", ids);
-      if (tagErr) return err(...mapPgErrorPair(tagErr));
+      // A project is "orphan" when it carries NO scope tag. Read per-project
+      // scope edges through the unified association edge.
+      const tagsRes = await bulkEntityScopeIds("project", ids);
+      if (isScopesRpcErr(tagsRes)) return tagsRes;
 
-      const tagged = new Set((tagRows ?? []).map((r) => r.entity_id));
+      const tagged = new Set(
+        ids.filter((id) => (tagsRes.data[id] ?? []).length > 0),
+      );
       const orphans = (projectRows ?? [])
         .filter((p) => !tagged.has(p.id))
         .map<ProjectNode>((p) => ({
@@ -520,13 +534,11 @@ export const scopesService = {
   //  the user selects active scopes globally and wants the surrounding
   //  list filtered to just the entities tagged with those scopes.
   //
-  //  Eventually swaps to a single `list_entities_by_scopes` RPC; today
-  //  the chokepoint reads `ctx_scope_assignments` directly so consumers
-  //  can be migrated off the legacy slice immediately. The legacy
-  //  scopeAssignmentsSlice talks to a `list_entities_by_scopes` SQL
-  //  function that does ANY/ALL filtering with one round-trip; once
-  //  that ships everywhere we replace the inline filter below with
-  //  `supabase.rpc("list_entities_by_scopes", ...)`.
+  //  Reads the unified association edge via `assoc_for_targets('scope', …)`
+  //  (one round-trip: every edge incoming to those scopes), then does the
+  //  ANY/ALL fold client-side. A future `list_entities_by_scopes`-style RPC
+  //  could push the ANY/ALL filter into the DB, but the assoc batch read is
+  //  already a single round-trip.
   // ──────────────────────────────────────────────────────────────────
 
   async listEntitiesByScopes(args: {
@@ -545,16 +557,15 @@ export const scopesService = {
       requireUserId();
       if (args.scope_ids.length === 0) return ok({ entities: [] });
 
-      const query = supabase
-        .from("ctx_scope_assignments")
-        .select("entity_type, entity_id, scope_id")
-        .in("scope_id", args.scope_ids);
-      const { data, error } = args.entity_type
-        ? await query.eq("entity_type", args.entity_type)
-        : await query;
-      if (error) return err(...mapPgErrorPair(error));
+      // Members of these scopes = every edge INCOMING to ('scope', scopeId).
+      // The edge source IS the tagged entity; `targetId` is the scope it hit.
+      const res = await associationsService.listForTargets(
+        "scope",
+        args.scope_ids,
+      );
+      if (isScopesRpcErr(res)) return res;
 
-      // Fold rows into a map: { [entityKey]: Set<scope_id> }.
+      // Fold edges into a map: { [entityKey]: Set<scope_id> }.
       const matches = new Map<
         string,
         {
@@ -563,16 +574,17 @@ export const scopesService = {
           hits: Set<string>;
         }
       >();
-      for (const row of data ?? []) {
-        const key = `${row.entity_type}:${row.entity_id}`;
+      for (const edge of res.data.edges) {
+        if (args.entity_type && edge.sourceType !== args.entity_type) continue;
+        const key = `${edge.sourceType}:${edge.sourceId}`;
         const entry = matches.get(key);
         if (entry) {
-          entry.hits.add(row.scope_id);
+          entry.hits.add(edge.targetId);
         } else {
           matches.set(key, {
-            entity_type: row.entity_type as EntityType,
-            entity_id: row.entity_id,
-            hits: new Set([row.scope_id]),
+            entity_type: edge.sourceType as EntityType,
+            entity_id: edge.sourceId,
+            hits: new Set([edge.targetId]),
           });
         }
       }
@@ -658,13 +670,13 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase
-        .from("ctx_scope_assignments")
-        .select("scope_id")
-        .eq("entity_type", entityType)
-        .eq("entity_id", entityId);
-      if (error) return err(...mapPgErrorPair(error));
-      return ok({ scope_ids: (data ?? []).map((r) => r.scope_id) });
+      // A scope tag is an OUTGOING edge entity → ('scope', scopeId).
+      const res = await associationsService.listForEntity(entityType, entityId);
+      if (isScopesRpcErr(res)) return res;
+      const scope_ids = res.data.edges
+        .filter((e) => e.direction === "outgoing" && e.otherType === "scope")
+        .map((e) => e.otherId);
+      return ok({ scope_ids });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -681,18 +693,84 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ byEntity: Record<string, string[]> }>> {
     try {
       requireUserId();
-      if (entityIds.length === 0) return ok({ byEntity: {} });
-      const { data, error } = await supabase
-        .from("ctx_scope_assignments")
-        .select("entity_id, scope_id")
-        .eq("entity_type", entityType)
-        .in("entity_id", entityIds);
-      if (error) return err(...mapPgErrorPair(error));
-      const byEntity: Record<string, string[]> = {};
-      for (const row of data ?? []) {
-        (byEntity[row.entity_id] ??= []).push(row.scope_id);
-      }
-      return ok({ byEntity });
+      const res = await bulkEntityScopeIds(entityType, entityIds);
+      if (isScopesRpcErr(res)) return res;
+      return ok({ byEntity: res.data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — ENTITY ASSIGNMENTS, DENORMALIZED (scope + type for display)
+  //
+  //  The display counterpart of `getEntityScopes`: returns each assigned
+  //  scope joined to its type's presentation fields, so read-only surfaces
+  //  (AssignedScopesDisplay) render `Type: Scope` chains without joining
+  //  ctx_scopes / ctx_scope_types themselves (this file owns those tables).
+  // ──────────────────────────────────────────────────────────────────
+
+  async getEntityScopeDetails(
+    entityType: EntityType,
+    entityId: string,
+  ): Promise<ScopesRpcResult<{ scopes: ScopeWithType[] }>> {
+    try {
+      requireUserId();
+      const assoc = await associationsService.listForEntity(
+        entityType,
+        entityId,
+      );
+      if (isScopesRpcErr(assoc)) return assoc;
+      const ids = assoc.data.edges
+        .filter((e) => e.direction === "outgoing" && e.otherType === "scope")
+        .map((e) => e.otherId);
+      if (ids.length === 0) return ok({ scopes: [] });
+
+      const disp = await fetchScopeDisplays(ids);
+      if (isScopesRpcErr(disp)) return disp;
+      return ok({ scopes: disp.data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — ALL TAGS FOR AN ENTITY TYPE, DENORMALIZED (sidebar grouping)
+  //
+  //  Every scope tag across every entity of `entityType`, flattened with
+  //  scope name + type label. Powers list/sidebar grouping (e.g. the notes
+  //  "by scope" view). Reads all visible scopes (RLS-scoped) for their
+  //  display fields, then folds the INCOMING `scope` edges from sources of
+  //  this type via `assoc_for_targets`. One scopes query + one assoc RPC.
+  // ──────────────────────────────────────────────────────────────────
+
+  async listEntityScopeTags(
+    entityType: EntityType,
+  ): Promise<ScopesRpcResult<{ tags: EntityScopeTag[] }>> {
+    try {
+      requireUserId();
+      const disp = await fetchScopeDisplays(null);
+      if (isScopesRpcErr(disp)) return disp;
+
+      const byId = new Map(disp.data.map((s) => [s.id, s]));
+      const scopeIds = disp.data.map((s) => s.id);
+      if (scopeIds.length === 0) return ok({ tags: [] });
+
+      const assoc = await associationsService.listForTargets("scope", scopeIds);
+      if (isScopesRpcErr(assoc)) return assoc;
+
+      const tags: EntityScopeTag[] = assoc.data.edges
+        .filter((e) => e.sourceType === entityType)
+        .map((e) => {
+          const s = byId.get(e.targetId);
+          return {
+            entity_id: e.sourceId,
+            scope_id: e.targetId,
+            scope_name: s?.name ?? "",
+            scope_type: s?.scope_type?.label_singular ?? "",
+          };
+        });
+      return ok({ tags });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -701,13 +779,17 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
   //  WRITE — ENTITY ASSIGNMENTS (M2M tagging)
   //
-  //  Set-semantics via the `set_entity_scopes` SECURITY DEFINER RPC: one
-  //  transaction that validates `max_assignments_per_entity`, checks the
-  //  caller's org membership (migration ctx_set_entity_scopes_auth),
-  //  delete-alls, inserts, and returns the authoritative final state.
-  //  Replaced the previous client-side read→insert→delete (3 round-trips,
-  //  no transaction): partial failures stranded a union of old+new tags,
-  //  two tabs could interleave to a wrong set, and the cap was unenforced.
+  //  Set-semantics on the unified association edge via `assoc_set_targets`:
+  //  one transaction that makes the entity's `scope` edges exactly equal
+  //  `scopeIds` (adds missing, removes extras), org-checked inside the RPC.
+  //  Replaced the legacy `set_entity_scopes` RPC (which wrote the dropped
+  //  `ctx_scope_assignments` table). `assoc_set_targets` returns void, so we
+  //  echo the deduped input as the authoritative post-state — it is exactly
+  //  what the transaction just made true.
+  //
+  //  NOTE: the old RPC also enforced `max_assignments_per_entity`; the assoc
+  //  layer does not. If that cap must hold, it belongs in `assoc_add`/
+  //  `assoc_set_targets`, not re-implemented here.
   // ──────────────────────────────────────────────────────────────────
 
   async setEntityScopes(
@@ -719,24 +801,15 @@ export const scopesService = {
       requireUserId();
       const target = Array.from(new Set(scopeIds));
 
-      const { data, error } = await supabase.rpc("set_entity_scopes", {
-        p_entity_type: entityType,
-        p_entity_id: entityId,
-        p_scope_ids: target,
+      const res = await associationsService.setTargets({
+        sourceType: entityType,
+        sourceId: entityId,
+        targetType: "scope",
+        targetIds: target,
       });
-      if (error) return err(...mapPgErrorPair(error));
+      if (isScopesRpcErr(res)) return res;
 
-      // The RPC returns the final DB state as
-      // [{ scope_id, scope_name, type_label, type_icon, type_color }] — use
-      // it as the authoritative result rather than echoing the input.
-      const rows = (Array.isArray(data) ? data : []) as Array<{
-        scope_id?: string;
-      }>;
-      const scope_ids = rows
-        .map((r) => r.scope_id)
-        .filter((id): id is string => !!id);
-
-      return ok({ scope_ids });
+      return ok({ scope_ids: target });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -760,11 +833,10 @@ export const scopesService = {
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
-    const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> =
-      {
-        project: "ctx_projects",
-        task: "ctx_tasks",
-      };
+    const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> = {
+      project: "ctx_projects",
+      task: "ctx_tasks",
+    };
     try {
       const table = ENTITY_ORG_TABLE[entityType];
       if (!table || scopeIds.length === 0) return ok({ organization_id: null });
@@ -874,6 +946,55 @@ export const scopesService = {
 
   applyTemplate: notYetImplemented("apply_template"),
 };
+
+// ─── internal: bulk source→scope read over the association edge ─────────
+//
+// Maps each entity to its scope tags (OUTGOING edges to ('scope', …)) in ONE
+// round-trip via `assoc_for_sources` (batch-by-source, target-filtered to
+// 'scope' in the DB). Every requested id is present in the result map (empty
+// array when untagged) so callers can rely on the key existing.
+
+async function bulkEntityScopeIds(
+  entityType: EntityType,
+  entityIds: string[],
+): Promise<ScopesRpcResult<Record<string, string[]>>> {
+  const ids = Array.from(new Set(entityIds));
+  if (ids.length === 0) return ok({});
+
+  const res = await associationsService.listForSources(
+    entityType,
+    ids,
+    "scope",
+  );
+  if (isScopesRpcErr(res)) return res;
+
+  const byEntity: Record<string, string[]> = {};
+  for (const id of ids) byEntity[id] = [];
+  for (const edge of res.data.edges) {
+    (byEntity[edge.sourceId] ??= []).push(edge.targetId);
+  }
+  return ok(byEntity);
+}
+
+// ─── internal: scope display rows (scope joined to its type) ────────────
+//
+// The one place ctx_scopes ⋈ ctx_scope_types is read for presentation. Pass
+// scope ids to resolve a specific set, or `null` for every scope the caller
+// can see (RLS-scoped). Used by getEntityScopeDetails / listEntityScopeTags.
+
+async function fetchScopeDisplays(
+  scopeIds: string[] | null,
+): Promise<ScopesRpcResult<ScopeWithType[]>> {
+  if (scopeIds && scopeIds.length === 0) return ok([]);
+  const base = supabase
+    .from("ctx_scopes")
+    .select(
+      "id, name, scope_type:ctx_scope_types(id, label_singular, label_plural, icon, color)",
+    );
+  const { data, error } = scopeIds ? await base.in("id", scopeIds) : await base;
+  if (error) return err(...mapPgErrorPair(error));
+  return ok((data ?? []) as unknown as ScopeWithType[]);
+}
 
 // ─── internal: paired return for err() to satisfy TS tuple unpacking ────
 

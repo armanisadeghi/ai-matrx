@@ -60,7 +60,7 @@ export interface AssociateTaskButtonProps {
 /**
  * The universal "attach to a task" button. Takes an entity (table + id) and
  * opens a popover with: search existing tasks, or create a new one. Both
- * paths write a row to ctx_task_associations and dispatch the linkage thunks
+ * paths write a canonical platform.associations edge (via associate_with_task) and dispatch the linkage thunks
  * so the attachments panel + reverse-lookup chip rows update immediately.
  *
  * Drop it anywhere — no providers required.

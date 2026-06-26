@@ -1,8 +1,8 @@
 // BookmarkManagerActions.jsx
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { SettingsIcon } from 'lucide-react';
-import BookmarkManager from './BookmarkManager';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/ButtonMine";
+import { SettingsIcon } from "lucide-react";
+import BookmarkManager from "./BookmarkManager";
 
 const BookmarkManagerActions = ({ jsonStr }) => {
   const [isManagerOpen, setIsManagerOpen] = useState(false);
@@ -10,12 +10,12 @@ const BookmarkManagerActions = ({ jsonStr }) => {
   return (
     <div className="flex space-x-2">
       <Button
-        size="sm"
-        variant="ghost"
+        size="xs"
+        variant="outline"
         onClick={() => setIsManagerOpen(true)}
         title="Manage Bookmarks"
       >
-        <SettingsIcon className="w-4 h-4" />
+        <SettingsIcon className="w-3 h-3" />
       </Button>
       <BookmarkManager open={isManagerOpen} onOpenChange={setIsManagerOpen} />
     </div>

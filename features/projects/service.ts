@@ -12,9 +12,13 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
-import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
-import type { DbRpcRow } from "@/types/supabase-rpc";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
+import { requireUserId } from "@/utils/auth/getUserId";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
+import {
+  invitationsService,
+  type Invitation,
+} from "@/features/organizations/service/invitationsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   Project,
   ProjectWithRole,
@@ -37,24 +41,11 @@ import {
   generateProjectSlug,
 } from "./types";
 
-// The HierarchyCascade can surface a synthetic "Personal" pseudo-org whose id
-// is the personal sentinel. Anything that hits the real organizations table
-// must treat that sentinel as `null`, otherwise we get FK violations or
-// nonsensical org-scoped queries.
-function normalizeOrgId(
-  organizationId: string | null | undefined,
-): string | null {
-  if (!organizationId) return null;
-  if (isPersonalPseudoOrgId(organizationId)) return null;
-  return organizationId;
-}
-
-/** Resolve null / pseudo-org to the user's real personal org id (never leave NULL). */
+/** Resolve null to the user's real personal org id (never leave NULL). */
 async function resolveOrganizationId(
   organizationId: string | null | undefined,
-): Promise<string | null> {
-  const normalized = normalizeOrgId(organizationId);
-  if (normalized) return normalized;
+): Promise<string> {
+  if (organizationId) return organizationId;
 
   const currentUserId = requireUserId();
   const { data, error } = await supabase.rpc("ensure_personal_organization", {
@@ -62,16 +53,12 @@ async function resolveOrganizationId(
   });
   if (error || !data) {
     console.error("Error resolving personal organization:", error?.message);
-    return null;
+    throw pgErrorToError(
+      error ?? { message: "Could not resolve personal organization" },
+    );
   }
-  return data;
+  return data as string;
 }
-
-// ============================================================================
-// DB Row Interfaces
-// ============================================================================
-
-type ProjectMemberWithUserRow = DbRpcRow<"get_project_members_with_users">;
 
 // ============================================================================
 // Project CRUD Operations
@@ -83,12 +70,6 @@ export async function createProject(
   try {
     const { name, slug, description, settings } = options;
     const organizationId = await resolveOrganizationId(options.organizationId);
-    if (!organizationId) {
-      return {
-        success: false,
-        error: "Could not resolve organization for this project",
-      };
-    }
 
     const nameValidation = validateProjectName(name);
     if (!nameValidation.valid) {
@@ -102,12 +83,9 @@ export async function createProject(
 
     const slugFree = await isProjectSlugAvailable(slug, organizationId);
     if (!slugFree) {
-      const scope = organizationId
-        ? "in this organization"
-        : "in your personal projects";
       return {
         success: false,
-        error: `A project with that slug already exists ${scope}`,
+        error: "A project with that slug already exists in this organization",
       };
     }
 
@@ -138,13 +116,24 @@ export async function createProject(
       return { success: false, error: "Project created but no data returned" };
     }
 
-    // Creator ownership is granted by the DB trigger
-    // `trg_ctx_projects_add_creator_membership` (AFTER INSERT on ctx_projects,
-    // SECURITY DEFINER, `ON CONFLICT (project_id, user_id) DO NOTHING`). The
-    // owner `ctx_project_members` row already exists by the time this insert
-    // returns — do NOT insert it again here, or it violates the
-    // `(project_id, user_id)` unique constraint and surfaces a spurious
-    // "duplicate" error even though the project + membership are created.
+    // Canonical creator-membership write. The legacy DB trigger still inserts
+    // into the old project-member junction table, but that table NO LONGER
+    // mirrors to `iam.memberships` — so we must explicitly land the owner
+    // membership in the canonical store. `mbr_add` is idempotent (reactivates a
+    // soft-deleted row), so this is safe even though the trigger also fires.
+    const memberResult = await membershipsService.add({
+      containerType: "project",
+      containerId: project.id,
+      userId: currentUserId,
+      role: "owner",
+      orgId: organizationId,
+    });
+    if (isScopesRpcErr(memberResult)) {
+      console.error(
+        "Project created but owner membership failed:",
+        memberResult.error,
+      );
+    }
 
     return {
       success: true,
@@ -174,11 +163,11 @@ export async function updateProject(
     if (updates.description !== undefined)
       updateData.description = updates.description;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
-    // Move to a different org (its owner's personal org is a valid target).
-    // Never persist a null org — every project belongs to one.
+    // Move to a different org. Null means the owner's personal org.
     if (updates.organizationId !== undefined) {
-      const orgId = normalizeOrgId(updates.organizationId);
-      if (orgId) updateData.organization_id = orgId;
+      updateData.organization_id = await resolveOrganizationId(
+        updates.organizationId,
+      );
     }
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
@@ -276,11 +265,12 @@ export async function getPersonalProjectBySlug(
 ): Promise<Project | null> {
   try {
     const userId = requireUserId();
+    const organizationId = await resolveOrganizationId(null);
 
     const base = supabase
       .from("ctx_projects")
       .select("*")
-      .is("organization_id", null)
+      .eq("organization_id", organizationId)
       .eq("created_by", userId);
 
     const query = UUID_PATTERN.test(slugOrId)
@@ -296,43 +286,69 @@ export async function getPersonalProjectBySlug(
   }
 }
 
+/**
+ * Load the current user's project memberships and the matching project rows in
+ * one pass — the canonical replacement for the old project-member junction
+ * join (`role` + project). Reads
+ * memberships from `membershipsService.forUser('project')`, loads those
+ * projects from `ctx_projects` (joining `organizations(is_personal)` so the
+ * personal filter works), and batches member counts via
+ * `membershipsService.counts` (replacing the per-project N+1 count queries).
+ */
+async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
+  const membersResult = await membershipsService.forUser("project");
+  if (isScopesRpcErr(membersResult)) {
+    console.error(
+      "Error fetching project memberships:",
+      membersResult.error.message,
+    );
+    return [];
+  }
+
+  const memberships = membersResult.data.memberships;
+  if (memberships.length === 0) return [];
+
+  const roleById = new Map<string, ProjectRole>();
+  for (const m of memberships) {
+    roleById.set(m.containerId, m.role as ProjectRole);
+  }
+  const projectIds = Array.from(roleById.keys());
+
+  const { data: projectRows, error: projectsError } = await supabase
+    .from("ctx_projects")
+    .select(`*, organizations(is_personal)`)
+    .in("id", projectIds);
+
+  if (projectsError) {
+    console.error("Error fetching projects:", projectsError.message);
+    return [];
+  }
+
+  const countsResult = await membershipsService.counts("project", projectIds);
+  const countById = new Map<string, number>();
+  if (!isScopesRpcErr(countsResult)) {
+    for (const c of countsResult.data.counts) {
+      countById.set(c.containerId, c.memberCount);
+    }
+  }
+
+  return (projectRows ?? []).map((row: Record<string, unknown>) => {
+    const proj = transformProjectFromDb(row);
+    return {
+      ...proj,
+      role: roleById.get(proj.id) ?? ("member" as ProjectRole),
+      memberCount: countById.get(proj.id) ?? 0,
+    };
+  });
+}
+
 export async function getOrgProjects(
   organizationId: string,
 ): Promise<ProjectWithRole[]> {
   try {
-    const currentUserId = requireUserId();
-
-    const { data, error } = await supabase
-      .from("ctx_project_members")
-      .select(`role, ctx_projects(*)`)
-      .eq("user_id", currentUserId)
-      .not("ctx_projects.organization_id", "is", null);
-
-    if (error) {
-      console.error("Error fetching org projects:", error.message);
-      return [];
-    }
-
-    const projects: ProjectWithRole[] = await Promise.all(
-      (data ?? [])
-        .filter((item: Record<string, unknown>) => {
-          const proj = item.ctx_projects as Record<string, unknown> | null;
-          return proj && proj.organization_id === organizationId;
-        })
-        .map(async (item: Record<string, unknown>) => {
-          const proj = transformProjectFromDb(
-            item.ctx_projects as Record<string, unknown>,
-          );
-          const { count } = await supabase
-            .from("ctx_project_members")
-            .select("*", { count: "exact", head: true })
-            .eq("project_id", proj.id);
-          return {
-            ...proj,
-            role: item.role as ProjectRole,
-            memberCount: count ?? 0,
-          };
-        }),
+    requireUserId();
+    const projects = (await loadUserProjectsWithRole()).filter(
+      (p) => p.organizationId === organizationId,
     );
 
     return projects.sort((a, b) => {
@@ -351,35 +367,8 @@ export async function getOrgProjects(
 
 export async function getUserProjects(): Promise<ProjectWithRole[]> {
   try {
-    const currentUserId = requireUserId();
-
-    const { data, error } = await supabase
-      .from("ctx_project_members")
-      .select(`role, ctx_projects(*)`)
-      .eq("user_id", currentUserId);
-
-    if (error) {
-      console.error("Error fetching user projects:", error.message);
-      return [];
-    }
-
-    const projects: ProjectWithRole[] = await Promise.all(
-      (data ?? []).map(async (item: Record<string, unknown>) => {
-        const proj = transformProjectFromDb(
-          item.ctx_projects as Record<string, unknown>,
-        );
-        const { count } = await supabase
-          .from("ctx_project_members")
-          .select("*", { count: "exact", head: true })
-          .eq("project_id", proj.id);
-        return {
-          ...proj,
-          role: item.role as ProjectRole,
-          memberCount: count ?? 0,
-        };
-      }),
-    );
-
+    requireUserId();
+    const projects = await loadUserProjectsWithRole();
     return projects.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
     console.error("Error in getUserProjects:", error);
@@ -392,15 +381,9 @@ export async function isProjectSlugAvailable(
   organizationId: string | null,
 ): Promise<boolean> {
   try {
-    const orgId = normalizeOrgId(organizationId);
+    const orgId = await resolveOrganizationId(organizationId);
     let query = supabase.from("ctx_projects").select("id").eq("slug", slug);
-    if (orgId) {
-      query = query.eq("organization_id", orgId);
-    } else {
-      // Personal project: scope uniqueness to the current user
-      const userId = requireUserId();
-      query = query.is("organization_id", null).eq("created_by", userId);
-    }
+    query = query.eq("organization_id", orgId);
     const { data } = await query.single();
     return !data;
   } catch {
@@ -410,54 +393,19 @@ export async function isProjectSlugAvailable(
 
 export async function getPersonalProjects(): Promise<ProjectWithRole[]> {
   try {
-    const currentUserId = requireUserId();
-
-    const { data, error } = await supabase
-      .from("ctx_project_members")
-      .select(`role, ctx_projects(*, organizations(is_personal))`)
-      .eq("user_id", currentUserId);
-
-    if (error) {
-      console.error("Error fetching personal projects:", error.message);
-      return [];
-    }
-
-    const projects: ProjectWithRole[] = await Promise.all(
-      (data ?? [])
-        .filter((item: Record<string, unknown>) => {
-          // A project is personal iff its owning org is the user's personal org
-          // (organizations.is_personal). ctx_projects no longer stores is_personal.
-          const proj = item.ctx_projects as Record<string, unknown> | null;
-          const org = proj?.organizations as
-            | { is_personal?: boolean | null }
-            | null
-            | undefined;
-          return org?.is_personal === true;
-        })
-        .map(async (item: Record<string, unknown>) => {
-          const proj = transformProjectFromDb(
-            item.ctx_projects as Record<string, unknown>,
-          );
-          const { count } = await supabase
-            .from("ctx_project_members")
-            .select("*", { count: "exact", head: true })
-            .eq("project_id", proj.id);
-          return {
-            ...proj,
-            role: item.role as ProjectRole,
-            memberCount: count ?? 0,
-          };
-        }),
+    requireUserId();
+    // A project is personal iff its owning org is the user's personal org
+    // (organizations.is_personal). ctx_projects no longer stores is_personal;
+    // transformProjectFromDb derives isPersonal from the joined org.
+    const projects = (await loadUserProjectsWithRole()).filter(
+      (p) => p.isPersonal,
     );
-
     return projects.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
     console.error("Error in getPersonalProjects:", error);
     return [];
   }
 }
-
-export { generateProjectSlug as suggestProjectSlug };
 
 // ============================================================================
 // Member Management
@@ -466,35 +414,52 @@ export { generateProjectSlug as suggestProjectSlug };
 export async function getProjectMembers(
   projectId: string,
 ): Promise<ProjectMemberWithUser[]> {
-  try {
-    const { data, error } = await supabase.rpc(
-      "get_project_members_with_users",
-      {
-        p_project_id: projectId,
-      },
-    );
-    if (error) throw pgErrorToError(error);
-
-    return ((data as unknown as ProjectMemberWithUserRow[]) ?? []).map(
-      (row) => ({
-        id: row.id,
-        projectId: row.project_id,
-        userId: row.user_id,
-        role: row.role as ProjectRole,
-        joinedAt: row.joined_at,
-        invitedBy: row.invited_by as string | null,
-        user: {
-          id: row.user_id,
-          email: row.user_email || "",
-          displayName: row.user_display_name || undefined,
-          avatarUrl: row.user_avatar_url || undefined,
-        },
-      }),
-    );
-  } catch (error) {
-    console.error("Error fetching project members:", error);
+  const result = await membershipsService.listWithUsers("project", projectId);
+  if (isScopesRpcErr(result)) {
+    console.error("Error fetching project members:", result.error.message);
     return [];
   }
+
+  return result.data.members.map((m) => ({
+    id: m.id,
+    projectId: m.containerId,
+    userId: m.userId,
+    role: m.role as ProjectRole,
+    joinedAt: m.createdAt,
+    invitedBy: m.createdBy,
+    user: {
+      id: m.userId,
+      email: m.user.email,
+      displayName: m.user.displayName ?? undefined,
+      avatarUrl: m.user.avatarUrl ?? undefined,
+    },
+  }));
+}
+
+/**
+ * Guard: returns an error string if `userId` is the sole owner of the project
+ * (so they cannot be removed or demoted), else null. Sources membership data
+ * from the canonical `membershipsService.listForContainer`.
+ */
+async function lastOwnerGuard(
+  projectId: string,
+  userId: string,
+  action: "demote" | "remove",
+): Promise<string | null> {
+  const result = await membershipsService.listForContainer(
+    "project",
+    projectId,
+  );
+  if (isScopesRpcErr(result)) return null;
+  const members = result.data.members;
+  const owners = members.filter((m) => m.role === "owner");
+  const target = members.find((m) => m.userId === userId);
+  if (target?.role === "owner" && owners.length === 1) {
+    return action === "demote"
+      ? "Cannot change role of the last owner"
+      : "Cannot remove the last owner";
+  }
+  return null;
 }
 
 export async function updateProjectMemberRole(
@@ -504,42 +469,24 @@ export async function updateProjectMemberRole(
 ): Promise<OperationResult> {
   try {
     if (newRole !== "owner") {
-      const { data: owners } = await supabase
-        .from("ctx_project_members")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("role", "owner");
-
-      if (owners && owners.length === 1) {
-        const { data: member } = await supabase
-          .from("ctx_project_members")
-          .select("role")
-          .eq("project_id", projectId)
-          .eq("user_id", userId)
-          .single();
-
-        if (member?.role === "owner") {
-          return {
-            success: false,
-            error: "Cannot change role of the last owner",
-          };
-        }
-      }
+      const guardError = await lastOwnerGuard(projectId, userId, "demote");
+      if (guardError) return { success: false, error: guardError };
     }
 
-    const { data: updatedRows, error } = await supabase
-      .from("ctx_project_members")
-      .update({ role: newRole })
-      .eq("project_id", projectId)
-      .eq("user_id", userId)
-      .select();
+    const result = await membershipsService.setRole({
+      containerType: "project",
+      containerId: projectId,
+      userId,
+      role: newRole,
+    });
 
-    if (error) throw pgErrorToError(error);
-
-    if (!updatedRows || updatedRows.length === 0) {
+    if (isScopesRpcErr(result)) {
       return {
         success: false,
-        error: "Unable to update member role. You may not have permission.",
+        error:
+          result.error.code === "forbidden_org"
+            ? "Unable to update member role. You may not have permission."
+            : result.error.message,
       };
     }
 
@@ -557,38 +504,22 @@ export async function removeProjectMember(
   userId: string,
 ): Promise<OperationResult> {
   try {
-    const { data: member } = await supabase
-      .from("ctx_project_members")
-      .select("role")
-      .eq("project_id", projectId)
-      .eq("user_id", userId)
-      .single();
+    const guardError = await lastOwnerGuard(projectId, userId, "remove");
+    if (guardError) return { success: false, error: guardError };
 
-    if (member?.role === "owner") {
-      const { data: owners } = await supabase
-        .from("ctx_project_members")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("role", "owner");
+    const result = await membershipsService.remove({
+      containerType: "project",
+      containerId: projectId,
+      userId,
+    });
 
-      if (owners && owners.length === 1) {
-        return { success: false, error: "Cannot remove the last owner" };
-      }
-    }
-
-    const { data: deletedRows, error } = await supabase
-      .from("ctx_project_members")
-      .delete()
-      .eq("project_id", projectId)
-      .eq("user_id", userId)
-      .select();
-
-    if (error) throw pgErrorToError(error);
-
-    if (!deletedRows || deletedRows.length === 0) {
+    if (isScopesRpcErr(result)) {
       return {
         success: false,
-        error: "Unable to remove member. You may not have permission.",
+        error:
+          result.error.code === "forbidden_org"
+            ? "Unable to remove member. You may not have permission."
+            : result.error.message,
       };
     }
 
@@ -622,14 +553,13 @@ export async function getProjectUserRole(
   try {
     const currentUserId = requireUserId();
 
-    const { data } = await supabase
-      .from("ctx_project_members")
-      .select("role")
-      .eq("project_id", projectId)
-      .eq("user_id", currentUserId)
-      .single();
+    const result = await membershipsService.forUser("project");
+    if (isScopesRpcErr(result)) return null;
 
-    return (data?.role as ProjectRole) ?? null;
+    const membership = result.data.memberships.find(
+      (m) => m.containerId === projectId && m.userId === currentUserId,
+    );
+    return (membership?.role as ProjectRole) ?? null;
   } catch (error) {
     console.error("Error fetching project user role:", error);
     return null;
@@ -651,29 +581,48 @@ export async function inviteToProject(
       return { success: false, error: emailValidation.error };
     }
 
-    const response = await fetch("/api/projects/invite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectId,
-        email: email.toLowerCase().trim(),
-        role,
-      }),
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Canonical path: the client creates / refreshes the invitation row via the
+    // `inv_create` RPC (client → Supabase, per repo doctrine). The API route is
+    // now email-only — it receives the already-created token + email and sends
+    // the email, never touching any invitation table.
+    const createResult = await invitationsService.create({
+      targetType: "project",
+      targetId: projectId,
+      email: normalizedEmail,
+      role,
     });
 
-    const result = await response.json();
+    if (isScopesRpcErr(createResult)) {
+      return { success: false, error: createResult.error.message };
+    }
 
-    if (!response.ok || !result.success) {
-      return {
-        success: false,
-        error: result.error || "Failed to send invitation",
-      };
+    const invitation = createResult.data.invitation;
+
+    // Fire the email-only route. A delivery failure does NOT fail the invite —
+    // the row exists and is acceptable via its token / the user's invites list.
+    try {
+      await fetch("/api/projects/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invitationId: invitation.id,
+          projectId,
+          email: normalizedEmail,
+          role,
+          token: invitation.token,
+          expiresAt: invitation.expiresAt,
+        }),
+      });
+    } catch (emailError) {
+      console.warn("Project invitation email send failed:", emailError);
     }
 
     return {
       success: true,
       message: "Invitation sent successfully",
-      invitation: transformInvitationFromDb(result.data),
+      invitation: invitationToProjectInvitation(invitation),
     };
   } catch (error: unknown) {
     const msg =
@@ -686,49 +635,52 @@ export async function inviteToProject(
 export async function getProjectInvitations(
   projectId: string,
 ): Promise<ProjectInvitation[]> {
-  try {
-    const { data, error } = await supabase
-      .from("ctx_project_invitations")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("invited_at", { ascending: false });
-
-    if (error) throw pgErrorToError(error);
-
-    return (data ?? []).map(transformInvitationFromDb);
-  } catch (error) {
-    console.error("Error fetching project invitations:", error);
+  const result = await invitationsService.listForTarget("project", projectId);
+  if (isScopesRpcErr(result)) {
+    console.error("Error fetching project invitations:", result.error.message);
     return [];
   }
+  return result.data.invitations.map(invitationToProjectInvitation);
 }
 
 export async function cancelProjectInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
-  try {
-    const { error } = await supabase
-      .from("ctx_project_invitations")
-      .delete()
-      .eq("id", invitationId);
-
-    if (error) throw pgErrorToError(error);
-    return { success: true, message: "Invitation cancelled successfully" };
-  } catch (error: unknown) {
-    const msg =
-      error instanceof Error ? error.message : "Failed to cancel invitation";
-    console.error("Error cancelling project invitation:", error);
-    return { success: false, error: msg };
+  const result = await invitationsService.revoke(invitationId);
+  if (isScopesRpcErr(result)) {
+    console.error(
+      "Error cancelling project invitation:",
+      result.error.message,
+    );
+    return { success: false, error: result.error.message };
   }
+  return { success: true, message: "Invitation cancelled successfully" };
 }
 
+/**
+ * Resend a project invitation. The row refresh (new expiry + fresh token) goes
+ * through the canonical `inv_resend` RPC on the client; the email-only route
+ * then rebuilds + sends the accept link. `projectId` + `email` are passed so the
+ * route never has to read any invitation table.
+ */
 export async function resendProjectInvitation(
   invitationId: string,
+  context?: { projectId: string; email: string },
 ): Promise<OperationResult> {
   try {
+    const resendResult = await invitationsService.resend(invitationId);
+    if (isScopesRpcErr(resendResult)) {
+      return { success: false, error: resendResult.error.message };
+    }
+
     const response = await fetch("/api/projects/invitations/resend", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invitationId }),
+      body: JSON.stringify({
+        token: resendResult.data.token,
+        projectId: context?.projectId,
+        email: context?.email,
+      }),
     });
 
     const result = await response.json();
@@ -753,48 +705,31 @@ export async function acceptProjectInvitation(
   token: string,
 ): Promise<ProjectResult> {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    const { data: invitation, error: inviteError } = await supabase
-      .from("ctx_project_invitations")
-      .select("*, ctx_projects(*)")
-      .eq("token", token)
-      .eq("email", getUserEmail() ?? "")
-      .gt("expires_at", new Date().toISOString())
-      .single();
-
-    if (inviteError || !invitation) {
-      return { success: false, error: "Invalid or expired invitation" };
+    // The RPC is atomic: it creates the membership AND marks the invite
+    // accepted in one transaction. No separate membership write needed.
+    const acceptResult = await invitationsService.accept(token);
+    if (isScopesRpcErr(acceptResult)) {
+      return {
+        success: false,
+        error:
+          acceptResult.error.code === "not_found"
+            ? "Invalid or expired invitation"
+            : acceptResult.error.message,
+      };
     }
 
-    const { error: memberError } = await supabase
-      .from("ctx_project_members")
-      .insert({
-        project_id: invitation.project_id,
-        user_id: currentUserId,
-        role: invitation.role,
-        invited_by: invitation.invited_by,
-      });
-
-    if (memberError) {
-      if (memberError.code === "23505") {
-        return {
-          success: false,
-          error: "You are already a member of this project",
-        };
-      }
-      throw memberError;
+    const project = await getProject(acceptResult.data.accepted.targetId);
+    if (!project) {
+      // Membership was created; the project row just couldn't be re-read.
+      return { success: true, message: "Successfully joined project" };
     }
-
-    await supabase
-      .from("ctx_project_invitations")
-      .delete()
-      .eq("id", invitation.id);
 
     return {
       success: true,
       message: "Successfully joined project",
-      project: transformProjectFromDb(invitation.ctx_projects),
+      project,
     };
   } catch (error: unknown) {
     const msg =
@@ -808,23 +743,27 @@ export async function getUserProjectInvitations(): Promise<
   ProjectInvitationWithProject[]
 > {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    const { data, error } = await supabase
-      .from("ctx_project_invitations")
-      .select("*, ctx_projects(*)")
-      .eq("email", getUserEmail() ?? "")
-      .gt("expires_at", new Date().toISOString())
-      .order("invited_at", { ascending: false });
+    const result = await invitationsService.forMe();
+    if (isScopesRpcErr(result)) {
+      console.error(
+        "Error fetching user project invitations:",
+        result.error.message,
+      );
+      return [];
+    }
 
-    if (error) throw pgErrorToError(error);
+    const invitations = result.data.invitations.filter(
+      (inv) => inv.targetType === "project",
+    );
 
-    return (data ?? []).map((item: Record<string, unknown>) => ({
-      ...transformInvitationFromDb(item),
-      project: item.ctx_projects
-        ? transformProjectFromDb(item.ctx_projects as Record<string, unknown>)
-        : undefined,
-    }));
+    return await Promise.all(
+      invitations.map(async (inv) => ({
+        ...invitationToProjectInvitation(inv),
+        project: (await getProject(inv.targetId)) ?? undefined,
+      })),
+    );
   } catch (error) {
     console.error("Error fetching user project invitations:", error);
     return [];
@@ -918,17 +857,18 @@ function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
   };
 }
 
-function transformInvitationFromDb(
-  dbRecord: Record<string, unknown>,
-): ProjectInvitation {
+/** Map a canonical `iam.invitations` row (camelCase) to the feature's
+ * `ProjectInvitation` shape. `created_at` → `invitedAt`, `created_by` →
+ * `invitedBy`; token may be absent (e.g. from `getByToken`). */
+function invitationToProjectInvitation(inv: Invitation): ProjectInvitation {
   return {
-    id: dbRecord.id as string,
-    projectId: dbRecord.project_id as string,
-    email: dbRecord.email as string,
-    token: dbRecord.token as string,
-    role: dbRecord.role as ProjectRole,
-    invitedAt: dbRecord.invited_at as string,
-    invitedBy: (dbRecord.invited_by as string) ?? null,
-    expiresAt: dbRecord.expires_at as string,
+    id: inv.id,
+    projectId: inv.targetId,
+    email: inv.email,
+    token: inv.token ?? "",
+    role: inv.role as ProjectRole,
+    invitedAt: inv.createdAt,
+    invitedBy: inv.createdBy,
+    expiresAt: inv.expiresAt,
   };
 }

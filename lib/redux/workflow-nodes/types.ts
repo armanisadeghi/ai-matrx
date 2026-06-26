@@ -1,5 +1,9 @@
 import type { Node } from "@xyflow/react";
-import type { Database } from "@/types/database.types";
+import type {
+  DeprecatedWorkflowNodeDataInsert,
+  DeprecatedWorkflowNodeDataRow,
+  DeprecatedWorkflowNodeDataUpdate,
+} from "@/utils/supabase/deprecated-tables";
 import type { InputMapping, Output, Dependency } from "../workflow/types";
 
 export interface WorkflowRegisteredFunctionArg {
@@ -66,17 +70,19 @@ export type XyFlowNodeType =
   | "direct-input";
 
 // Raw Supabase rows — these change automatically when the schema regenerates.
-export type WorkflowNodeRow =
-  Database["public"]["Tables"]["workflow_node_data"]["Row"];
-export type WorkflowNodeRowInsert =
-  Database["public"]["Tables"]["workflow_node_data"]["Insert"];
-export type WorkflowNodeRowUpdate =
-  Database["public"]["Tables"]["workflow_node_data"]["Update"];
+export type WorkflowNodeRow = DeprecatedWorkflowNodeDataRow;
+export type WorkflowNodeRowInsert = DeprecatedWorkflowNodeDataInsert;
+export type WorkflowNodeRowUpdate = DeprecatedWorkflowNodeDataUpdate;
 
 // JSON column names are asserted against the DB schema so a rename/removal
 // upstream triggers a compile error here rather than at every call site.
 // If the DB schema drops one of these keys, the extends constraint fails.
-type WorkflowNodeJsonCols = "inputs" | "outputs" | "dependencies" | "metadata" | "ui_data";
+type WorkflowNodeJsonCols =
+  | "inputs"
+  | "outputs"
+  | "dependencies"
+  | "metadata"
+  | "ui_data";
 type _AssertJsonCols = WorkflowNodeJsonCols extends keyof WorkflowNodeRow
   ? WorkflowNodeJsonCols
   : never;
@@ -93,7 +99,10 @@ export type WorkflowNode = Omit<WorkflowNodeRow, _AssertJsonCols> & {
   ui_data: WorkflowNodeUiData | null;
 };
 
-export type WorkflowNodeCreateInput = Omit<WorkflowNodeRowInsert, _AssertJsonCols> & {
+export type WorkflowNodeCreateInput = Omit<
+  WorkflowNodeRowInsert,
+  _AssertJsonCols
+> & {
   inputs?: InputMapping[] | null;
   outputs?: Output[] | null;
   dependencies?: Dependency[] | null;
@@ -101,7 +110,10 @@ export type WorkflowNodeCreateInput = Omit<WorkflowNodeRowInsert, _AssertJsonCol
   ui_data?: WorkflowNodeUiData | null;
 };
 
-export type WorkflowNodeUpdateInput = Omit<WorkflowNodeRowUpdate, _AssertJsonCols> & {
+export type WorkflowNodeUpdateInput = Omit<
+  WorkflowNodeRowUpdate,
+  _AssertJsonCols
+> & {
   inputs?: InputMapping[] | null;
   outputs?: Output[] | null;
   dependencies?: Dependency[] | null;
@@ -109,11 +121,7 @@ export type WorkflowNodeUpdateInput = Omit<WorkflowNodeRowUpdate, _AssertJsonCol
   ui_data?: WorkflowNodeUiData | null;
 };
 
-export type WorkflowNodeStatus =
-  | "pending"
-  | "executing"
-  | "success"
-  | "error";
+export type WorkflowNodeStatus = "pending" | "executing" | "success" | "error";
 
 export interface WorkflowNodeState {
   entities: Record<string, WorkflowNode>;

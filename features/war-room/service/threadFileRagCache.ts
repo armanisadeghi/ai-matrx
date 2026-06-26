@@ -8,7 +8,7 @@
  * SYNC `war_room` context builder needs it to stamp the `<file rag>` flag.
  *
  * Mirrors the pattern of `features/files/api/document-lookup.ts`'s module cache:
- * the prefetch effect in `TileAgentPanel` fills it (best-effort), and the sync
+ * the prefetch effect in `ThreadAgentPanel` fills it (best-effort), and the sync
  * builder reads it. Unknown ⇒ `undefined` (the builder OMITS the flag rather than
  * guessing). Never a second Redux slice — this is ephemeral per-session wiring.
  */

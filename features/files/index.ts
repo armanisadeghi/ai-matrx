@@ -290,7 +290,7 @@ export {
   folderForConversation,
   folderForOrg,
   folderForTask,
-  folderForWarRoomTile,
+  folderForWarRoomThread,
   isHiddenFolder,
   isConventionalFolder,
   resolveDefaultVisibility,

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TileProjectTab — project-flavored tile first tab.
+ * ThreadProjectTab — project-flavored tile first tab.
  *
  * Root: editable project fields + task list (create, toggle, drill in).
  * Drill: same TaskEditor stack as task threads (task → subtask → …).
@@ -16,26 +16,26 @@ import {
   InlineProjectName,
   ProjectMetaRow,
 } from "@/features/projects/components/ProjectInlineEditors";
-import { useTileProject } from "@/features/war-room/hooks/useTileProject";
+import { useThreadProject } from "@/features/war-room/hooks/useThreadProject";
 import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
-import { TileProjectTaskList } from "./TileProjectTaskList";
-import { TileEmbeddedTaskView } from "./TileEmbeddedTaskView";
+import { ThreadProjectTaskList } from "./ThreadProjectTaskList";
+import { ThreadEmbeddedTaskView } from "./ThreadEmbeddedTaskView";
 import { cn } from "@/lib/utils";
 
-export function TileProjectTab({
-  tileId,
+export function ThreadProjectTab({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
-  const { projectId, project, loading, isProjectTile, applyPatch } =
-    useTileProject(tileId);
+  const { projectId, project, loading, isProjectThread, applyPatch } =
+    useThreadProject(threadId);
   const drill = useTaskDrillStack();
   const { canManageSettings } = useProjectUserRole(projectId ?? undefined);
 
-  if (!isProjectTile) return null;
+  if (!isProjectThread) return null;
 
   if (!projectId) {
     return (
@@ -62,7 +62,7 @@ export function TileProjectTab({
 
   if (drill.isDrilled && drill.currentTaskId) {
     return (
-      <TileEmbeddedTaskView
+      <ThreadEmbeddedTaskView
         taskId={drill.currentTaskId}
         projectId={projectId}
         compact={compact}
@@ -80,7 +80,7 @@ export function TileProjectTab({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <TileProjectOverview
+      <ThreadProjectOverview
         projectId={projectId}
         project={project}
         loading={loading}
@@ -89,8 +89,8 @@ export function TileProjectTab({
         onPatch={applyPatch}
       />
       <div className="min-h-0 flex-1 border-t border-border/60">
-        <TileProjectTaskList
-          tileId={tileId}
+        <ThreadProjectTaskList
+          threadId={threadId}
           compact={compact}
           hideProjectHeader
           onOpenTask={drill.push}
@@ -100,7 +100,7 @@ export function TileProjectTab({
   );
 }
 
-function TileProjectOverview({
+function ThreadProjectOverview({
   projectId,
   project,
   loading,
@@ -109,7 +109,7 @@ function TileProjectOverview({
   onPatch,
 }: {
   projectId: string;
-  project: ReturnType<typeof useTileProject>["project"];
+  project: ReturnType<typeof useThreadProject>["project"];
   loading: boolean;
   compact?: boolean;
   canEdit: boolean;

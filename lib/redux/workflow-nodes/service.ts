@@ -1,4 +1,4 @@
-import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import {
   WorkflowNode,
   WorkflowNodeCreateInput,
@@ -6,13 +6,13 @@ import {
   WorkflowNodeRowInsert,
   WorkflowNodeRowUpdate,
   WorkflowNodeUpdateInput,
-} from './types';
+} from "./types";
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
  * service boundary we tag them with the app-level shape — callers can then
  * work with the narrowed union without per-call casts. The narrowing is a
- * pure type assertion; if the DB column is renamed or removed, the WorkflowNode
+ * pure type assertion; if a DB column is renamed or removed, the WorkflowNode
  * shape (derived from the DB row) will surface the drift at compile time.
  */
 const narrowNode = (row: WorkflowNodeRow): WorkflowNode =>
@@ -27,98 +27,113 @@ const toUpdate = (updates: WorkflowNodeUpdateInput): WorkflowNodeRowUpdate =>
 export const workflowNodeService = {
   async fetchAll(): Promise<WorkflowNode[]> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_node_data')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:fetchAll",
+      )
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return (data ?? []).map(narrowNode);
     } catch (error) {
-      console.error('Error fetching workflow nodes:', error);
+      console.error("Error fetching workflow nodes:", error);
       throw error;
     }
   },
 
   async fetchOne(id: string): Promise<WorkflowNode> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_node_data')
-        .select('*')
-        .eq('id', id)
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:fetchOne",
+      )
+        .select("*")
+        .eq("id", id)
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Workflow node not found');
+      if (!data) throw new Error("Workflow node not found");
       return narrowNode(data);
     } catch (error) {
-      console.error('Error fetching workflow node:', error);
+      console.error("Error fetching workflow node:", error);
       throw error;
     }
   },
 
   async fetchByWorkflowId(workflowId: string): Promise<WorkflowNode[]> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_node_data')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .order('created_at', { ascending: true });
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:fetchByWorkflowId",
+      )
+        .select("*")
+        .eq("workflow_id", workflowId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return (data ?? []).map(narrowNode);
     } catch (error) {
-      console.error('Error fetching workflow nodes by workflow ID:', error);
+      console.error("Error fetching workflow nodes by workflow ID:", error);
       throw error;
     }
   },
 
   async create(node: WorkflowNodeCreateInput): Promise<WorkflowNode> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_node_data')
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:create",
+      )
         .insert([toInsert(node)])
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Failed to create workflow node');
+      if (!data) throw new Error("Failed to create workflow node");
       return narrowNode(data);
     } catch (error) {
-      console.error('Error creating workflow node:', error);
+      console.error("Error creating workflow node:", error);
       throw error;
     }
   },
 
-  async update(id: string, updates: WorkflowNodeUpdateInput): Promise<WorkflowNode> {
+  async update(
+    id: string,
+    updates: WorkflowNodeUpdateInput,
+  ): Promise<WorkflowNode> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_node_data')
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:update",
+      )
         .update(toUpdate(updates))
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Failed to update workflow node');
+      if (!data) throw new Error("Failed to update workflow node");
       return narrowNode(data);
     } catch (error) {
-      console.error('Error updating workflow node:', error);
+      console.error("Error updating workflow node:", error);
       throw error;
     }
   },
 
   async delete(id: string): Promise<string> {
     try {
-      const { error } = await supabase
-        .from('workflow_node_data')
+      const { error } = await fromDeprecatedTable(
+        "workflow_node_data",
+        "lib/redux/workflow-nodes/service.ts:delete",
+      )
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
       return id;
     } catch (error) {
-      console.error('Error deleting workflow node:', error);
+      console.error("Error deleting workflow node:", error);
       throw error;
     }
   },

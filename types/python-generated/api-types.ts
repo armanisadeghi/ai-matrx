@@ -848,6 +848,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/v2/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat V2
+         * @description The SAME chat, run on the matrx-runtime Request Management Layer — the new spine
+         *     owns the request envelope (identity / status / cost / lease, linked to the cx
+         *     conversation) while the proven loop streams + persists unchanged. Spine tracking is
+         *     best-effort and never breaks the chat. Public URL: POST /api/ai/v2/chat.
+         *     See aidream/services/runtime/FEATURE.md.
+         */
+        post: operations["chat_v2_ai_v2_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/conversation/{conversation_id}": {
         parameters: {
             query?: never;
@@ -4135,6 +4159,68 @@ export interface paths {
          * @description Full single ``system_error`` row by id — including the traceback.
          */
         get: operations["get_error_admin_system_errors__error_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Executions
+         * @description The most-recent executions across all conversations (newest first) — watch v2
+         *     traffic land without knowing a conversation id first.
+         */
+        get: operations["recent_executions_admin_runtime_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conversation Executions
+         * @description Every runtime execution tree linked to a cx_conversation — one per request that
+         *     ran on the spine (multi-turn conversations accrue several).
+         */
+        get: operations["conversation_executions_admin_runtime_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/runtime/executions/{execution_id}/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Execution Tree
+         * @description The whole tree for an execution — pass ANY node id; it resolves to the root.
+         */
+        get: operations["execution_tree_admin_runtime_executions__execution_id__tree_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7460,6 +7546,11 @@ export interface paths {
          * @description Run one Knowledge-Asset derivation over the doc, streaming live
          *     progress. Inserts a `derive_runs` row so the operation is observable and
          *     cancelable (POST .../derive-runs/{run_id}/cancel).
+         *
+         *     `reset` (query param) only affects the resumable LLM derivations
+         *     (section_summary / synthetic_qa): default False RESUMES — already-persisted
+         *     sections are skipped (no re-spend); True clears the set once then rebuilds.
+         *     Ignored by the other 4 runners, which don't accept it.
          */
         post: operations["derive_stream_rag_library__processed_document_id__derive__kind__post"];
         delete?: never;
@@ -12817,6 +12908,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/actions/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Action
+         * @description Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.
+         *
+         *     The client POSTs back the envelope it received in `directive_apply.proposed`. This
+         *     is an explicit user action (a human clicked accept), so it bypasses the model-facing
+         *     policy gate by design. Applies through the same per-item core as the auto path
+         *     (`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.
+         */
+        post: operations["confirm_action_actions_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/analysis": {
         parameters: {
             query?: never;
@@ -17033,6 +17149,8 @@ export interface components {
             amendments?: components["schemas"]["SurfaceAmendments"] | null;
             /** Mcp */
             mcp?: string[];
+            /** Apply Policy */
+            apply_policy?: ("auto" | "ask" | "off") | null;
         };
         /** ClientToolResult */
         ClientToolResult: {
@@ -17596,6 +17714,15 @@ export interface components {
              */
             memory_scope: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
+        };
+        /** ConversationExecutionsResponse */
+        ConversationExecutionsResponse: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Execution Count */
+            execution_count: number;
+            /** Trees */
+            trees: components["schemas"]["ExecutionTree"][];
         };
         /** ConversationIngestRequest */
         ConversationIngestRequest: {
@@ -18814,6 +18941,84 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** DirectiveConfirmRequest */
+        DirectiveConfirmRequest: {
+            /**
+             * Matrx Version
+             * @default 1
+             */
+            matrx_version: number;
+            /**
+             * Kind
+             * @default output_directive
+             */
+            kind: string;
+            /** Type */
+            type: string;
+            /** Items */
+            items?: {
+                [key: string]: unknown;
+            }[];
+            /** Proposal Id */
+            proposal_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
+        /** DirectiveConfirmResult */
+        DirectiveConfirmResult: {
+            /** Type */
+            type: string;
+            /** Proposal Id */
+            proposal_id: string;
+            /** Applied */
+            applied: number;
+            /** Failed */
+            failed: number;
+            /** Receipts */
+            receipts: (components["schemas"]["DirectiveItemApplied"] | components["schemas"]["DirectiveItemFailed"])[];
+        };
+        /** DirectiveItemApplied */
+        DirectiveItemApplied: {
+            /**
+             * Kind
+             * @default directive_apply.item
+             */
+            kind: string;
+            /** Type */
+            type: string;
+            /** Index */
+            index: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "applied" | "already_applied" | "failed";
+            /** Resource Kind */
+            resource_kind: string;
+            /** Resource Ids */
+            resource_ids: string[];
+            /** Summary */
+            summary: string;
+        };
+        /** DirectiveItemFailed */
+        DirectiveItemFailed: {
+            /**
+             * Kind
+             * @default directive_apply.failed
+             */
+            kind: string;
+            /** Type */
+            type: string;
+            /** Index */
+            index: number;
+            /** Error */
+            error: string;
+            /** Fault */
+            fault: string;
+        };
         /** DiscardRequest */
         DiscardRequest: {
             /** Job Id */
@@ -19259,6 +19464,96 @@ export interface components {
         ExcludePageBody: {
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * ExecutionError
+         * @description Structured error captured on a non-success terminal transition. Mirrors the
+         *     repo's `describe_db_exception` shape — never a bare string in a status column.
+         */
+        ExecutionError: {
+            /** Error Type */
+            error_type: string;
+            /** Message */
+            message: string;
+            /** Traceback */
+            traceback?: string | null;
+            /** Status Code */
+            status_code?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ExecutionStatus
+         * @description Where a unit of work is. The ONLY column that marks progress; errors live
+         *     in the structured `error`, never here.
+         * @enum {string}
+         */
+        ExecutionStatus: "pending" | "running" | "paused" | "waiting_input" | "completed" | "failed" | "cancelled";
+        /**
+         * ExecutionTree
+         * @description A request's whole execution tree in one read — the observability primitive.
+         *     Per-node detail nested under `root`, plus tree-wide rollups (the design's
+         *     'this request's whole tree with cost/status/timing in one call').
+         */
+        ExecutionTree: {
+            root: components["schemas"]["ExecutionTreeNode"];
+            /** Node Count */
+            node_count: number;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost: string;
+            /** Total Meters */
+            total_meters?: {
+                [key: string]: string;
+            };
+            /** Status Counts */
+            status_counts?: {
+                [key: string]: number;
+            };
+        };
+        /**
+         * ExecutionTreeNode
+         * @description One execution as a node in the read-only tree view, with its children nested.
+         *     Payload-blind: `type` is the opaque registered_action, feature data is reached only
+         *     via `link_kind`/`link_id`.
+         */
+        ExecutionTreeNode: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+            status: components["schemas"]["ExecutionStatus"];
+            /** Parent Execution Id */
+            parent_execution_id?: string | null;
+            /**
+             * Cost
+             * @default 0
+             */
+            cost: string;
+            /** Meters */
+            meters?: {
+                [key: string]: string;
+            };
+            /** Link Kind */
+            link_kind?: string | null;
+            /** Link Id */
+            link_id?: string | null;
+            error?: components["schemas"]["ExecutionError"] | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Ended At */
+            ended_at?: string | null;
+            /**
+             * Depth
+             * @default 0
+             */
+            depth: number;
+            /** Children */
+            children?: components["schemas"]["ExecutionTreeNode"][];
         };
         /** ExpandRequest */
         ExpandRequest: {
@@ -22284,6 +22579,10 @@ export interface components {
             has_voyage_embedding: boolean;
             /** Section Kind */
             section_kind: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** LibraryChunksResponse */
         LibraryChunksResponse: {
@@ -25174,6 +25473,13 @@ export interface components {
             model_supports_tools: boolean;
             /** Tools */
             tools: components["schemas"]["RealtimeTool"][];
+        };
+        /** RecentExecutionsResponse */
+        RecentExecutionsResponse: {
+            /** Count */
+            count: number;
+            /** Executions */
+            executions: components["schemas"]["ExecutionTreeNode"][];
         };
         /**
          * RecoveryApplyAck
@@ -29883,6 +30189,8 @@ export interface components {
             add?: string[];
             /** Remove */
             remove?: string[];
+            /** Apply Policy */
+            apply_policy?: ("auto" | "ask" | "off") | null;
         };
         /** UserSecretBulkEnvRequest */
         UserSecretBulkEnvRequest: {
@@ -32153,6 +32461,39 @@ export interface operations {
         };
     };
     chat_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_v2_ai_v2_chat_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -38091,6 +38432,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemErrorRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_executions_admin_runtime_recent_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description filter by registered_action, e.g. 'conversation' */
+                type?: string | null;
+                /** @description filter by lifecycle status */
+                status?: components["schemas"]["ExecutionStatus"] | null;
+                /** @description only top-level executions (one per request) */
+                roots_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentExecutionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    conversation_executions_admin_runtime_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationExecutionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execution_tree_admin_runtime_executions__execution_id__tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionTree"];
                 };
             };
             /** @description Validation Error */
@@ -44431,7 +44871,9 @@ export interface operations {
     };
     derive_stream_rag_library__processed_document_id__derive__kind__post: {
         parameters: {
-            query?: never;
+            query?: {
+                reset?: boolean;
+            };
             header?: never;
             path: {
                 processed_document_id: string;
@@ -52250,6 +52692,10 @@ export interface operations {
                 error_text_contains?: string | null;
                 request_id?: string | null;
                 user_id?: string | null;
+                /** @description Only rows with failed_at >= this instant (ISO-8601). */
+                since?: string | null;
+                /** @description Only rows with failed_at < this instant (ISO-8601). */
+                until?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -52463,9 +52909,14 @@ export interface operations {
             query?: {
                 resolved?: "any" | "yes" | "no";
                 kind?: string | null;
+                route?: string | null;
                 error_text_contains?: string | null;
                 request_id?: string | null;
                 user_id?: string | null;
+                /** @description Only rows with occurred_at >= this instant (ISO-8601). */
+                since?: string | null;
+                /** @description Only rows with occurred_at < this instant (ISO-8601). */
+                until?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -54019,6 +54470,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionApplyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_action_actions_confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectiveConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectiveConfirmResult"];
                 };
             };
             /** @description Validation Error */

@@ -25,7 +25,7 @@ export interface WarRoomSearchRoomHit {
 }
 
 export interface WarRoomSearchThreadHit {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   threadTitle: string;
   roomTitle: string;
@@ -38,7 +38,7 @@ interface RoomSearchRow {
 }
 
 interface ThreadSearchRow {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   threadTitle: string;
   roomTitle: string;
@@ -73,16 +73,16 @@ const selectThreadSearchRows = createSelector(
   [
     (s: RootState) => s.warRoom.sessionIds,
     (s: RootState) => s.warRoom.sessionsById,
-    (s: RootState) => s.warRoom.tileIdsBySession,
-    (s: RootState) => s.warRoom.tilesById,
+    (s: RootState) => s.warRoom.threadIdsByRoom,
+    (s: RootState) => s.warRoom.threadsById,
     (s: RootState) => s.warRoom.assignmentsByContainer,
     (s: RootState) => s.tasks.entities,
   ],
   (
     sessionIds,
     sessionsById,
-    tileIdsBySession,
-    tilesById,
+    threadIdsByRoom,
+    threadsById,
     byContainer,
     taskEntities,
   ): ThreadSearchRow[] => {
@@ -90,15 +90,15 @@ const selectThreadSearchRows = createSelector(
     for (const sessionId of sessionIds) {
       const roomTitle =
         sessionsById[sessionId]?.title?.trim() || "Untitled War Room";
-      const tileIds = tileIdsBySession[sessionId] ?? [];
-      for (const tileId of tileIds) {
-        const tile = tilesById[tileId];
+      const tileIds = threadIdsByRoom[sessionId] ?? [];
+      for (const threadId of tileIds) {
+        const tile = threadsById[threadId];
         if (!tile) continue;
-        const bucket = byContainer[containerKey("thread", tileId)] ?? [];
+        const bucket = byContainer[containerKey("thread", threadId)] ?? [];
         const taskId = activeEntityIdOf(bucket, "task");
         const taskTitle = taskId ? taskEntities[taskId]?.title : undefined;
         rows.push({
-          tileId,
+          threadId,
           sessionId,
           threadTitle: threadDisplayTitle(tile, taskTitle),
           roomTitle,
@@ -140,7 +140,7 @@ export function useWarRoomAllSearch(query: string): {
         description: r.description || null,
       })),
       threadHits: rankedThreads.map((r) => ({
-        tileId: r.tileId,
+        threadId: r.threadId,
         sessionId: r.sessionId,
         threadTitle: r.threadTitle,
         roomTitle: r.roomTitle,

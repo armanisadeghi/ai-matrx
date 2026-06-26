@@ -8,7 +8,7 @@
 //
 // The room's view state is ephemeral by design (roomViewContext — never Redux,
 // never the DB; see FEATURE.md invariant 4). The session row already persists
-// `active_tile_id` (a slow, debounced server mirror via useActiveTileRestore).
+// `active_tile_id` (a slow, debounced server mirror via useActiveThreadRestore).
 // This hook adds the FAST, shareable layer on top: a URL param mirror that needs
 // no round-trip and travels in a copied link.
 //
@@ -23,12 +23,12 @@
 // window.history.replaceState (no Next navigation, no Suspense boundary, no
 // scroll jump). `thread` only hydrates once the tile is actually visible — a
 // stale/hidden/deleted id can never strand the Stage (resolveStagedId still
-// clamps); seeding from the session row (useActiveTileRestore) is the fallback
+// clamps); seeding from the session row (useActiveThreadRestore) is the fallback
 // when no `thread` param is present.
 
 import { useEffect, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrderedGalleryTileIds } from "@/features/war-room/redux/selectors";
+import { selectOrderedGalleryThreadIds } from "@/features/war-room/redux/selectors";
 import { useRoomView, type Density, type RoomMode } from "./roomViewContext";
 
 function isMode(v: string | null): v is RoomMode {
@@ -39,7 +39,7 @@ function isDensity(v: string | null): v is Density {
 }
 
 export function useRoomUrlSync(sessionId: string) {
-  const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
+  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
   const {
     mode,
     setMode,

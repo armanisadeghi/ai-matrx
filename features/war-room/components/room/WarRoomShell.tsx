@@ -47,11 +47,11 @@ import {
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { cn } from "@/lib/utils";
 import {
-  selectHiddenTiles,
-  selectOrderedGalleryTileIds,
-  selectPinnedTileCount,
+  selectHiddenThreads,
+  selectOrderedGalleryThreadIds,
+  selectPinnedThreadCount,
   selectSessionById,
-  selectTilesStatusForSession,
+  selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
 import {
   deleteSession,
@@ -68,7 +68,7 @@ import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
 import { ThreadSearchBox } from "./ThreadSearchBox";
 import { roomColorOf, roomIconOf } from "./roomIdentity";
-import { useActiveTileRestore } from "./useActiveTileRestore";
+import { useActiveThreadRestore } from "./useActiveThreadRestore";
 import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
   RoomViewProvider,
@@ -76,7 +76,7 @@ import {
   type RoomMode,
   type Density,
 } from "./roomViewContext";
-import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
+import { THREAD_KIND_ORDER, threadKindOf } from "./threadKind";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 
@@ -119,7 +119,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const session = useAppSelector(selectSessionById(sessionId));
-  const tilesStatus = useAppSelector(selectTilesStatusForSession(sessionId));
+  const tilesStatus = useAppSelector(selectThreadsStatusForRoom(sessionId));
   const { mode } = useRoomView();
 
   // Restore the room VIEW on open, two complementary layers:
@@ -132,7 +132,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   // The staged tile itself stays ephemeral view-state (roomViewContext); both
   // layers only MIRROR it.
   useRoomUrlSync(sessionId);
-  useActiveTileRestore(sessionId);
+  useActiveThreadRestore(sessionId);
 
   // Room branding (icon + color) — the chosen identity, with safe defaults.
   const RoomIcon = roomIconOf(session?.icon);
@@ -330,9 +330,9 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
 
 // ── Live meter — active / parked / pinned, straight from Redux ──────────────
 function LiveMeter({ sessionId }: { sessionId: string }) {
-  const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
-  const hidden = useAppSelector(selectHiddenTiles(sessionId));
-  const pinnedCount = useAppSelector(selectPinnedTileCount(sessionId));
+  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
+  const hidden = useAppSelector(selectHiddenThreads(sessionId));
+  const pinnedCount = useAppSelector(selectPinnedThreadCount(sessionId));
   return (
     <div className="hidden @2xl:flex items-center gap-2 pl-2 ml-0.5 border-l border-border/60 text-[11px] tabular-nums text-muted-foreground shrink-0">
       <span
@@ -409,8 +409,8 @@ function InstrumentProjector() {
       aria-label="Project all threads to one view"
       title="Project the whole room to one view"
     >
-      {TILE_KIND_ORDER.map((id) => {
-        const k = tileKindOf(id);
+      {THREAD_KIND_ORDER.map((id) => {
+        const k = threadKindOf(id);
         const isOn = projectedTab === id;
         return (
           <button

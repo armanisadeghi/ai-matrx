@@ -1,14 +1,16 @@
 /**
- * Project Invitation API Route
+ * Project Invitation Email Route (email-only)
  *
- * Handles creating project invitations and sending invitation emails.
- * Mirrors /api/organizations/invite/route.ts
+ * The invitation ROW is created on the client via the canonical `inv_create`
+ * RPC (`invitationsService.create`, client → Supabase per repo doctrine). This
+ * route exists ONLY to send the invitation email — it receives the
+ * already-created token + email + project and renders/sends the message. It
+ * NEVER touches any invitation table.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
-import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,48 +29,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, role, projectId } = body;
+    const { email, projectId, token, expiresAt } = body;
 
-    if (!email || !role || !projectId) {
+    if (!email || !projectId || !token) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: email, role, projectId' },
+        { success: false, error: 'Missing required fields: email, projectId, token' },
         { status: 400 }
       );
     }
 
-    const token = crypto.randomUUID();
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    const { data: invitation, error: insertError } = await supabase
-      .from('ctx_project_invitations')
-      .insert({
-        project_id: projectId,
-        email: email.toLowerCase().trim(),
-        token,
-        role,
-        invited_by: user.id,
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        return NextResponse.json(
-          { success: false, error: 'User already invited to this project' },
-          { status: 409 }
-        );
-      }
-      console.error('Error creating project invitation:', insertError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to create invitation' },
-        { status: 500 }
-      );
-    }
-
-    // Fetch project + org details for email
+    // Fetch project + org details for the email body (read-only, RLS-scoped).
     const { data: projectData } = await supabase
       .from('ctx_projects')
       .select('name, organization_id, organizations(name)')
@@ -85,13 +55,16 @@ export async function POST(request: NextRequest) {
     const orgName = (projectData.organizations as { name?: string } | null)?.name ?? 'your organization';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.aimatrx.com';
     const invitationUrl = `${siteUrl}/invitations/project/accept/${token}`;
+    const expiry = expiresAt
+      ? new Date(expiresAt)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const emailTemplate = emailTemplates.projectInvitation(
       projectData.name,
       orgName,
       inviterName,
       invitationUrl,
-      expiresAt
+      expiry
     );
 
     const emailResult = await sendEmail({
@@ -100,22 +73,16 @@ export async function POST(request: NextRequest) {
       html: emailTemplate.html,
     });
 
-    if (emailResult.success) {
-      await supabase
-        .from('ctx_project_invitations')
-        .update({ email_sent: true, email_sent_at: new Date().toISOString() })
-        .eq('id', invitation.id);
-    } else {
+    if (!emailResult.success) {
       console.warn('Failed to send project invitation email:', emailResult.error);
     }
 
     return NextResponse.json({
       success: true,
-      data: invitation,
       emailSent: emailResult.success,
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to process invitation';
+    const msg = error instanceof Error ? error.message : 'Failed to send invitation email';
     console.error('Error in POST /api/projects/invite:', error);
     return NextResponse.json(
       {

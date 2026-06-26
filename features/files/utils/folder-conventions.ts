@@ -235,10 +235,10 @@ export function folderForTask(taskId: string): string {
 
 /**
  * Files attached to a specific War Room tile.
- *   folderForWarRoomTile("abc-123") → "War Room/abc-123"
+ *   folderForWarRoomThread("abc-123") → "War Room/abc-123"
  */
-export function folderForWarRoomTile(tileId: string): string {
-  return `${CloudFolders.WAR_ROOM}/${tileId}`;
+export function folderForWarRoomThread(threadId: string): string {
+  return `${CloudFolders.WAR_ROOM}/${threadId}`;
 }
 
 /**

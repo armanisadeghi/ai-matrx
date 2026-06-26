@@ -128,7 +128,7 @@ export const surfaceDelegatedToolCall = (
     if (isWarRoomToolName(toolName)) {
       // War Room write tools (war_room_update_task / _add_subtask /
       // _toggle_subtask / _update_note / _update_tile). Armed ONLY on a war-room
-      // tile's Agent conversation (TileAgentPanel registers them per-conversation
+      // tile's Agent conversation (ThreadAgentPanel registers them per-conversation
       // + binds the tile). The dispatcher resolves the bound tile, requires the
       // user to approve the write (HITL), runs the real feature writer, then
       // POSTs the result; it flips the instance to `paused` while awaiting

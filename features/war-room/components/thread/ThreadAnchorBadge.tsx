@@ -1,25 +1,25 @@
 "use client";
 
-// features/war-room/components/tile/TileFlavorBadge.tsx
+// features/war-room/components/thread/ThreadAnchorBadge.tsx
 //
 // A compact flavor marker for a tile header. Renders NOTHING for the default
 // 'thread' flavor (the common case stays clean), and a quiet pill for task /
 // project tiles so the kind reads at a glance next to the title. Flavor is
-// orthogonal to the tab-derived accent rail (tileKind), so this is its own thing.
+// orthogonal to the tab-derived accent rail (threadKind), so this is its own thing.
 
 import { FolderKanban, ListChecks } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectTileFlavor } from "@/features/war-room/redux/selectors";
+import { selectThreadPickerOption } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 
-export function TileFlavorBadge({
-  tileId,
+export function ThreadAnchorBadge({
+  threadId,
   className,
 }: {
-  tileId: string;
+  threadId: string;
   className?: string;
 }) {
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+  const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
   if (flavor === "thread") return null;
   const isProject = flavor === "project";
   const Icon = isProject ? FolderKanban : ListChecks;

@@ -86,8 +86,13 @@ export function ProjectImportJsonPanel({
   const resolveInitialOrg = (): OrgContext => {
     if (!initialOrgId) return null;
     if (initialOrgSlug)
-      return { id: initialOrgId, name: "", slug: initialOrgSlug };
-    return { id: initialOrgId, name: "", slug: "" };
+      return {
+        id: initialOrgId,
+        name: "",
+        slug: initialOrgSlug,
+        isPersonal: false,
+      };
+    return { id: initialOrgId, name: "", slug: "", isPersonal: false };
   };
   const [selectedOrg, setSelectedOrg] = useState<OrgContext>(resolveInitialOrg);
 
@@ -95,7 +100,12 @@ export function ProjectImportJsonPanel({
     if (!initialOrgId || !orgs.length) return;
     const found = orgs.find((o) => o.id === initialOrgId);
     if (found)
-      setSelectedOrg({ id: found.id, name: found.name, slug: found.slug });
+      setSelectedOrg({
+        id: found.id,
+        name: found.name,
+        slug: found.slug,
+        isPersonal: found.is_personal,
+      });
   }, [orgs, initialOrgId]);
 
   // Re-validating on every keystroke is cheap (pure, local) but noisy; only

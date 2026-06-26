@@ -1,12 +1,12 @@
 "use client";
 
-// features/war-room/hooks/useTileMetrics.ts
+// features/war-room/hooks/useThreadMetrics.ts
 //
 // Reads LIVE Redux data for one tile and distills it into the small set of
 // "instrument readings" the tile header surfaces as metric chips — so the room
 // scans like a wall of monitors, not a wall of decoration. Every number here is
 // real (subtask progress, transcript presence, context state); none is
-// cosmetic. Consumed by <TileMetricChips>.
+// cosmetic. Consumed by <ThreadMetricChips>.
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -18,16 +18,16 @@ import { selectSessionRawText } from "@/features/transcript-studio/redux/selecto
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
-  selectAudioSessionIdsForTile,
-  selectTileById,
-  selectTileEffectiveContext,
-  selectTileTaskId,
+  selectAudioSessionIdsForThread,
+  selectThreadById,
+  selectThreadEffectiveContext,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
-import type { TileTab } from "@/features/war-room/types";
+import type { ThreadTab } from "@/features/war-room/types";
 
-export interface TileMetrics {
+export interface ThreadMetrics {
   /** Resolved active tab. */
-  activeTab: TileTab;
+  activeTab: ThreadTab;
   /** true when the tile is anchored to a real task record. */
   hasTask: boolean;
   taskTitle: string | null;
@@ -49,10 +49,10 @@ export interface TileMetrics {
   scopeCount: number;
 }
 
-export function useTileMetrics(tileId: string): TileMetrics {
-  const tile = useAppSelector(selectTileById(tileId));
-  const taskId = useAppSelector(selectTileTaskId(tileId));
-  const noteId = useAppSelector(selectActiveNoteId(tileId));
+export function useThreadMetrics(threadId: string): ThreadMetrics {
+  const tile = useAppSelector(selectThreadById(threadId));
+  const taskId = useAppSelector(selectThreadTaskId(threadId));
+  const noteId = useAppSelector(selectActiveNoteId(threadId));
 
   const task = useAppSelector((s) => (taskId ? selectTaskById(s, taskId) : undefined));
   const subtasks = useAppSelector((s) =>
@@ -62,16 +62,16 @@ export function useTileMetrics(tileId: string): TileMetrics {
     noteId ? selectNoteContent(noteId)(s) : undefined,
   );
 
-  const audioIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
-  const activeAudioId = useAppSelector(selectActiveAudioSessionId(tileId));
+  const audioIds = useAppSelector(selectAudioSessionIdsForThread(threadId));
+  const activeAudioId = useAppSelector(selectActiveAudioSessionId(threadId));
   const rawText = useAppSelector(selectSessionRawText(activeAudioId));
 
-  const ctx = useAppSelector((s) => selectTileEffectiveContext(tileId)(s));
+  const ctx = useAppSelector((s) => selectThreadEffectiveContext(threadId)(s));
 
   const subtasksDone = subtasks.filter((st) => st.status === "completed").length;
 
   return {
-    activeTab: ((tile?.active_tab as TileTab) ?? "task") as TileTab,
+    activeTab: ((tile?.active_tab as ThreadTab) ?? "task") as ThreadTab,
     hasTask: !!taskId,
     taskTitle: task?.title ?? null,
     taskCompleted: task?.status === "completed",

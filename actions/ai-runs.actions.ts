@@ -3,6 +3,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type {
   AiRun,
@@ -91,8 +92,10 @@ export async function getAiRunWithTasks(
   }
 
   // Get tasks
-  const { data: tasks, error: tasksError } = await supabase
-    .from("ai_tasks")
+  const { data: tasks, error: tasksError } = await fromDeprecatedTable(
+    "ai_tasks",
+    "actions/ai-runs.actions.ts:getAiRunWithTasks",
+  )
     .select("*")
     .eq("run_id", runId)
     .order("created_at", { ascending: true });

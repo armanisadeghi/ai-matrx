@@ -37,7 +37,7 @@ export type WarRoomScope = "thread" | "room" | "all";
  * `<files>` manifest. `id` is the `cld_files.id` (file) / `udt_documents.id`
  * (document) — the handle `war_room_read_file(file_id=…)` (files) / the `document`
  * tool (documents) read by. `hasExtraction`/`ragIndexed` are best-effort: omitted
- * (undefined) when not yet known rather than guessed (see tileToThreadModel).
+ * (undefined) when not yet known rather than guessed (see threadToModel).
  */
 export interface WarRoomFileModel {
   /** cld_files.id (kind="file") or udt_documents.id (kind="document"). */
@@ -70,7 +70,7 @@ export interface WarRoomThreadModel {
   fileCount: number;
   /**
    * Per-file manifest for the thread an agent is working IN (current_thread
-   * only). Populated by the Tier-1 builder (`tileToThreadModel`); the async
+   * only). Populated by the Tier-1 builder (`threadToModel`); the async
    * Tier-2/3 builders leave it undefined and rely on `fileCount`.
    */
   files?: WarRoomFileModel[];

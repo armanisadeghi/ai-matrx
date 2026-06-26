@@ -2,13 +2,13 @@
 //
 // One place for the human-readable thread label used in search hits, rails, etc.
 
-import type { WarRoomTile } from "@/features/war-room/types";
+import type { WarRoomThread } from "@/features/war-room/types";
 
 export const UNTITLED_THREAD_LABEL = "Untitled thread";
 
 /** The thread title shown in UI — never empty. */
 export function threadDisplayTitle(
-  tile: Pick<WarRoomTile, "title"> | null | undefined,
+  tile: Pick<WarRoomThread, "title"> | null | undefined,
   fallbackTaskTitle?: string | null,
 ): string {
   const own = tile?.title?.trim();

@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * TileProjectTaskList
+ * ThreadProjectTaskList
  *
  * The Task tab for a PROJECT-flavored War Room tile. Where a thread/task tile's
- * Task tab anchors on a SINGLE task (`TileTaskTab` → `TaskEditor`), a project
+ * Task tab anchors on a SINGLE task (`ThreadTaskTab` → `TaskEditor`), a project
  * tile represents a whole project, so its Task tab is the project's task LIST:
  * browse, fast-create, and open any task in the REAL `TaskEditor`.
  *
@@ -21,7 +21,7 @@
  *   • toggle    → `toggleTaskCompleteThunk`
  *
  * The effective project is resolved from the foundation:
- * `selectEffectiveTileProjectId` (the tile's own project_id ?? the room's).
+ * `selectEffectiveThreadProjectId` (the tile's own project_id ?? the room's).
  */
 
 import { useEffect, useState } from "react";
@@ -57,28 +57,28 @@ import {
   selectShowCompleted,
   setShowCompleted,
 } from "@/features/tasks/redux/taskUiSlice";
-import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selectors";
+import { selectEffectiveThreadProjectId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ProInput } from "@/components/official/ProInput";
 import { ProjectCopyForAiButton } from "@/features/projects/components/ProjectCopyForAiButton";
 import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
-export function TileProjectTaskList({
-  tileId,
+export function ThreadProjectTaskList({
+  threadId,
   compact,
   hideProjectHeader,
   onOpenTask,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
-  /** When embedded in TileProjectTab, the overview owns project identity. */
+  /** When embedded in ThreadProjectTab, the overview owns project identity. */
   hideProjectHeader?: boolean;
   /** In-tile drill-down; falls back to taskEditorWindow when omitted. */
   onOpenTask?: (taskId: string) => void;
 }) {
   const projectId = useAppSelector((s) =>
-    selectEffectiveTileProjectId(tileId)(s),
+    selectEffectiveThreadProjectId(threadId)(s),
   );
 
   if (!projectId) {

@@ -1,7 +1,7 @@
 // BookmarkManager.jsx
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/ButtonMine';
 import { Input } from '@/components/ui/input';
 import { saveBookmarks, loadBookmarks, exportBookmarks, importBookmarks } from '../utils/json-path-navigation-util';
 import { copyToClipboard } from '../utils/scraper-utils';

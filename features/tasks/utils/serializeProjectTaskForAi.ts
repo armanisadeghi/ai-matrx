@@ -12,7 +12,7 @@ import type {
   TaskExportNode,
 } from "@/features/tasks/services/aiExportService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
-import type { DatabaseTaskComment } from "@/features/tasks/types/database";
+import type { Comment } from "@/features/comments/types";
 
 function escapeXml(value: string): string {
   return value
@@ -60,17 +60,14 @@ function taskStatus(status: string | null | undefined): string {
   return status === "completed" ? "done" : "open";
 }
 
-function serializeComments(
-  comments: DatabaseTaskComment[],
-  level: number,
-): string {
+function serializeComments(comments: Comment[], level: number): string {
   if (comments.length === 0) return "";
   const lines = [`${indent(level)}<comments>\n`];
   for (const c of comments) {
-    const body = (c.content ?? "").trim();
+    const body = (c.body ?? "").trim();
     if (!body) continue;
     lines.push(
-      `${indent(level + 1)}<comment${renderAttrs({ at: c.created_at ?? undefined })}>${escapeXml(body)}</comment>\n`,
+      `${indent(level + 1)}<comment${renderAttrs({ at: c.createdAt ?? undefined })}>${escapeXml(body)}</comment>\n`,
     );
   }
   if (lines.length === 1) return "";

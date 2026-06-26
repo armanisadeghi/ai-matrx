@@ -67,7 +67,7 @@ export type TaskChecklistProps = {
   /**
    * Hide the built-in Reset / Save / "Save as Tasks" action row. Set when the
    * surrounding surface owns the convert/persist actions (e.g. the tasks
-   * artifact, which converts via `ctx_task_associations`) so there is exactly
+   * artifact, which converts via the `platform.associations` bridge) so there is exactly
    * one convert path, not two.
    */
   hideActions?: boolean;

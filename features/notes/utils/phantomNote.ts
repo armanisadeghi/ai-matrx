@@ -39,5 +39,7 @@ export function createPhantomNote(folderName: string = "Draft"): Note {
     metadata: {},
     sync_version: 0,
     version: 1,
+    created_by: null,
+    updated_by: null,
   };
 }

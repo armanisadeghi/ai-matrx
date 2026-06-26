@@ -14,10 +14,8 @@ import {
   getTaskAttachments,
   type TaskAttachment,
 } from "@/features/tasks/services/taskService";
-import type {
-  DatabaseTask,
-  DatabaseTaskComment,
-} from "@/features/tasks/types/database";
+import type { DatabaseTask } from "@/features/tasks/types/database";
+import type { Comment } from "@/features/comments/types";
 
 export interface NoteExportRow {
   id: string;
@@ -31,7 +29,7 @@ export interface NoteExportRow {
 
 export interface TaskExportNode {
   task: DatabaseTask;
-  comments: DatabaseTaskComment[];
+  comments: Comment[];
   attachments: TaskAttachment[];
   notes: NoteExportRow[];
   subtasks: TaskExportNode[];
@@ -47,7 +45,7 @@ export interface ProjectExportBundle {
 export interface TaskExportBundle {
   task: DatabaseTask;
   project: Project | null;
-  comments: DatabaseTaskComment[];
+  comments: Comment[];
   attachments: TaskAttachment[];
   notes: NoteExportRow[];
   subtasks: TaskExportNode[];
@@ -120,7 +118,7 @@ async function buildTaskExportNode(
 
   return {
     task,
-    comments: comments as DatabaseTaskComment[],
+    comments,
     attachments,
     notes,
     subtasks,
@@ -155,7 +153,7 @@ async function buildTaskForest(
     const subtasks = await Promise.all(children.map(nodeFromTask));
     return {
       task,
-      comments: comments as DatabaseTaskComment[],
+      comments,
       attachments,
       notes,
       subtasks,
@@ -215,7 +213,7 @@ export async function fetchTaskExportBundle(
   return {
     task: row,
     project,
-    comments: comments as DatabaseTaskComment[],
+    comments,
     attachments,
     notes,
     subtasks: tree.subtasks,

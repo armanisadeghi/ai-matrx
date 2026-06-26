@@ -14,13 +14,13 @@ import {
   warRoomAddSubtaskArgsSchema,
   warRoomToggleSubtaskArgsSchema,
   warRoomUpdateNoteArgsSchema,
-  warRoomUpdateTileArgsSchema,
+  warRoomUpdateThreadArgsSchema,
 } from "./schemas";
 import { updateTaskHandler } from "../handlers/update-task.handler";
 import { addSubtaskHandler } from "../handlers/add-subtask.handler";
 import { toggleSubtaskHandler } from "../handlers/toggle-subtask.handler";
 import { updateNoteHandler } from "../handlers/update-note.handler";
-import { updateTileHandler } from "../handlers/update-tile.handler";
+import { updateThreadHandler } from "../handlers/update-thread.handler";
 
 export interface WarRoomToolRegistryEntry {
   schema: z.ZodTypeAny;
@@ -44,9 +44,9 @@ const registry: Record<string, WarRoomToolRegistryEntry> = {
     schema: warRoomUpdateNoteArgsSchema,
     handler: updateNoteHandler,
   },
-  war_room_update_tile: {
-    schema: warRoomUpdateTileArgsSchema,
-    handler: updateTileHandler,
+  war_room_update_thread: {
+    schema: warRoomUpdateThreadArgsSchema,
+    handler: updateThreadHandler,
   },
 };
 

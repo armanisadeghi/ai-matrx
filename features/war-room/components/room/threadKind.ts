@@ -1,4 +1,4 @@
-// features/war-room/components/room/tileKind.ts
+// features/war-room/components/room/threadKind.ts
 //
 // Maps a tile's active tab to a glanceable identity: a semantic accent color +
 // Lucide icon + short label. The accent gives the busy multitasker an
@@ -14,6 +14,7 @@
 
 import {
   FolderKanban,
+  LayoutGrid,
   ListChecks,
   NotebookPen,
   Mic,
@@ -21,10 +22,10 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import type { TileFlavor, TileTab } from "@/features/war-room/types";
+import type { ThreadAnchorType, ThreadTab } from "@/features/war-room/types";
 
-export interface TileKind {
-  id: TileTab;
+export interface ThreadKind {
+  id: ThreadTab;
   label: string;
   Icon: typeof ListChecks;
   /** Tailwind text-color class for the icon/active state. */
@@ -37,7 +38,7 @@ export interface TileKind {
   sectionBorder: string;
 }
 
-export const TILE_KINDS: Record<TileTab, TileKind> = {
+export const THREAD_KINDS: Record<ThreadTab, ThreadKind> = {
   task: {
     id: "task",
     label: "Task",
@@ -96,7 +97,7 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
   },
 };
 
-export const TILE_KIND_ORDER: TileTab[] = [
+export const THREAD_KIND_ORDER: ThreadTab[] = [
   "task",
   "notes",
   "audio",
@@ -105,21 +106,25 @@ export const TILE_KIND_ORDER: TileTab[] = [
   "combined",
 ];
 
-export function tileKindOf(tab: TileTab | string | null | undefined): TileKind {
-  return TILE_KINDS[(tab as TileTab) ?? "task"] ?? TILE_KINDS.task;
+export function threadKindOf(
+  tab: ThreadTab | string | null | undefined,
+): ThreadKind {
+  return THREAD_KINDS[(tab as ThreadTab) ?? "task"] ?? THREAD_KINDS.task;
 }
 
-/** Tab switcher + accent rail: project-flavor tiles label the first tab "Project". */
-export function tileTabKind(
-  tab: TileTab | string | null | undefined,
-  flavor?: TileFlavor,
-): TileKind {
-  if (tab === "task" && flavor === "project") return PROJECT_SECTION_KIND;
-  return tileKindOf(tab);
-}
+/** Canvas-anchored threads — freeform resource hub (the thread IS the identity). */
+const CANVAS_DYNAMIC_KIND: ThreadKind = {
+  id: "task",
+  label: "Canvas",
+  Icon: LayoutGrid,
+  text: "text-accent-2",
+  bg: "bg-accent-2/10",
+  rail: "bg-accent-2",
+  sectionBorder: "border-l-accent-2",
+};
 
-/** Project-flavored tiles paint the stacked Task section dark blue; otherwise task green. */
-const PROJECT_SECTION_KIND: TileKind = {
+/** Project-anchored threads — first tab lists the project's tasks. */
+const PROJECT_SECTION_KIND: ThreadKind = {
   id: "task",
   label: "Project",
   Icon: FolderKanban,
@@ -129,12 +134,28 @@ const PROJECT_SECTION_KIND: TileKind = {
   sectionBorder: "border-l-primary",
 };
 
+/**
+ * Label + accent for a tab segment. The first tab (`task`) is the **Dynamic**
+ * tab: `project` → Project, `task` → Task, `canvas` → Canvas.
+ */
+export function dynamicTabKind(
+  tab: ThreadTab | string | null | undefined,
+  anchorType: ThreadAnchorType = "canvas",
+): ThreadKind {
+  if (tab === "task") {
+    if (anchorType === "project") return PROJECT_SECTION_KIND;
+    if (anchorType === "task") return THREAD_KINDS.task;
+    return CANVAS_DYNAMIC_KIND;
+  }
+  return threadKindOf(tab);
+}
+
 export function combinedSectionKind(
   tab: "task" | "notes" | "audio" | "files",
-  flavor?: TileFlavor,
-): TileKind {
-  if (tab === "task" && flavor === "project") return PROJECT_SECTION_KIND;
-  return tileKindOf(tab);
+  anchorType: ThreadAnchorType = "canvas",
+): ThreadKind {
+  if (tab === "task") return dynamicTabKind("task", anchorType);
+  return threadKindOf(tab);
 }
 
 // Re-export for consumers that only need the project section kind.

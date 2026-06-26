@@ -42,6 +42,7 @@ export const DEFAULT_WORKFLOW: Omit<
   viewport: null,
   is_public: false,
   public_read: false,
+  organization_id: null,
 };
 
 const initialState: WorkflowState = {

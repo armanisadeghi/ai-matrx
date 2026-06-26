@@ -1,5 +1,6 @@
 "use client";
 
+import type { ComponentType } from "react";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { fetchTaskExportBundle } from "@/features/tasks/services/aiExportService";
 import { serializeTaskForAi } from "@/features/tasks/utils/serializeProjectTaskForAi";
@@ -12,6 +13,8 @@ export function TaskCopyForAiButton({
   className,
   showLabel = true,
   disabled,
+  icon,
+  compact,
 }: {
   taskId: string;
   taskTitle?: string;
@@ -20,6 +23,8 @@ export function TaskCopyForAiButton({
   className?: string;
   showLabel?: boolean;
   disabled?: boolean;
+  icon?: ComponentType<{ className?: string }>;
+  compact?: boolean;
 }) {
   const label = taskTitle?.trim() || "Task";
 
@@ -30,6 +35,8 @@ export function TaskCopyForAiButton({
       className={className}
       showLabel={showLabel}
       disabled={disabled}
+      icon={icon}
+      compact={compact}
       agent={async () => {
         const bundle = await fetchTaskExportBundle(taskId);
         if (!bundle) {

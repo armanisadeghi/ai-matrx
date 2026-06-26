@@ -1,20 +1,15 @@
 // features/war-room/constants.ts
 
-/** studio_sessions.source value for transcript sessions owned by a War Room tile. */
+/** studio_sessions.source value for transcript sessions owned by a War Room thread. */
 export const WAR_ROOM_AUDIO_SOURCE = "war_room";
 
 export const DEFAULT_SESSION_TITLE = "New War Room";
 
 /**
- * Reserved title of the per-user "Unassigned threads" HOLDING ROOM. A thread
- * removed from a room lands here (its session_id repoints to this room) until
- * moved into another — a render-path-safe holding area that works with the
- * session_id-keyed gallery, no NULL session_id, no schema change. Identified by
- * this exact title (the war-room base tables are currently views from an
- * in-flight changeover; a title marker is robust to view regeneration where a
- * new column would not be). One get-or-create'd per user.
+ * Reserved section label on `/war-room/all` for threads with no room membership.
+ * Not a DB row — orphan = no `thread → war_room` edge.
  */
-export const UNASSIGNED_ROOM_TITLE = "Unassigned threads";
+export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 
 // ── War Room agent personas (the 3-tier "brain") ─────────────────────
 // Builtin, public `agx_agent` rows authored for War Room. Each persona knows
@@ -32,5 +27,5 @@ export const WAR_ROOM_MASTER_AGENT_ID = "639af529-62cc-4c8e-a169-6c9bd5215ae7";
 
 // ── Gallery layout tuning (consumed by the generic gallery engine) ───
 export const GALLERY_GAP_PX = 12;
-export const GALLERY_MIN_TILE = { width: 300, height: 220 };
+export const GALLERY_MIN_THREAD = { width: 300, height: 220 };
 export const GALLERY_TARGET_ASPECT = 4 / 3;

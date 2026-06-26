@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/QuickAddThread.tsx
+// features/war-room/components/thread/QuickAddThread.tsx
 //
 // The reusable "spin up a new thread without leaving this one" primitive.
 // One inline composer shared by every New-thread affordance in the room (the
@@ -29,7 +29,7 @@
 // "Create" stays put (ready for the next quick-add); "Create and Open" jumps
 // into the fresh thread via the room view's stageTile(). Threads = tiles, so
 // creation reuses the createTile thunk; an entered description is persisted onto
-// the tile's note by reusing addNoteToTile + the notes update API.
+// the tile's note by reusing addNoteToThread + the notes update API.
 
 import { useRef, useState } from "react";
 import {
@@ -43,35 +43,31 @@ import {
   FolderKanban,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
-  addNoteToTile,
-  createTile,
-  checkTileProjectConflict,
-  convertRoomToPerThreadThunk,
-  type ProjectConflictResolution,
+  addNoteToThread,
+  createThread,
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import type { TileFlavor } from "@/features/war-room/types";
+import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
-import { ProjectConflictDialog } from "../shared/ProjectConflictDialog";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 
-/** How the collapsed trigger reads — matches the two NewTile shells. */
+/** How the collapsed trigger reads — matches the two NewThread shells. */
 export type QuickAddVariant = "card" | "rail";
 
 const FLAVOR_OPTIONS: {
-  value: TileFlavor;
+  value: ThreadPickerOption;
   label: string;
   icon: typeof SquareStack;
   hint: string;
 }[] = [
   {
     value: "thread",
-    label: "Thread",
+    label: "Canvas",
     icon: SquareStack,
-    hint: "A general thread",
+    hint: "Freeform resource hub",
   },
   {
     value: "task",
@@ -97,7 +93,7 @@ export function QuickAddThread({
   sessionId: string;
   nextPosition: number;
   variant?: QuickAddVariant;
-  onOpen?: (tileId: string) => void;
+  onOpen?: (threadId: string) => void;
 }) {
   const dispatch = useAppDispatch();
 
@@ -108,22 +104,9 @@ export function QuickAddThread({
   const [busy, setBusy] = useState(false);
 
   // Flavor + project selection.
-  const [flavor, setFlavor] = useState<TileFlavor>("thread");
+  const [flavor, setFlavor] = useState<ThreadPickerOption>("thread");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string | null>(null);
-
-  // Conflict prompt: open + the room's project at the time of the clash + the
-  // create mode to resume once the user resolves.
-  const [conflictOpen, setConflictOpen] = useState(false);
-  const [conflictRoomProjectId, setConflictRoomProjectId] = useState<
-    string | null
-  >(null);
-  const pendingModeRef = useRef<"stay" | "open">("stay");
-
-  // Other threads in the room (for the conflict dialog copy).
-  const otherThreadCount = useAppSelector(
-    (s) => (s.warRoom.tileIdsBySession[sessionId] ?? []).length,
-  );
 
   const nameRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
@@ -148,73 +131,44 @@ export function QuickAddThread({
     setProjectName(null);
   }
 
-  /**
-   * Validate + (for project flavor) conflict-check, then create. A project
-   * thread that clashes with the room's project defers to the dialog; otherwise
-   * it falls straight through to doCreate.
-   */
   async function create(mode: "stay" | "open") {
     if (busy) return;
     if (flavor === "project" && !projectId) {
       toast.error("Choose a project for this thread first");
       return;
     }
-    if (flavor === "project" && projectId) {
-      const { hasConflict, roomProjectId } = dispatch(
-        checkTileProjectConflict(sessionId, projectId),
-      );
-      if (hasConflict) {
-        setConflictRoomProjectId(roomProjectId);
-        pendingModeRef.current = mode;
-        setConflictOpen(true);
-        return;
-      }
-    }
     await doCreate(mode);
   }
 
-  /**
-   * Persist the thread. `resolution` is set only when resuming from the conflict
-   * dialog: 'per-thread' converts the room first; 'keep-room' joins the room's
-   * project instead of the requested one.
-   */
-  async function doCreate(
-    mode: "stay" | "open",
-    resolution?: ProjectConflictResolution,
-  ) {
+  async function doCreate(mode: "stay" | "open") {
     if (busy) return;
     const trimmedName = name.trim();
     const trimmedDescription = description.trim();
     setBusy(true);
     try {
-      let effectiveProjectId = flavor === "project" ? projectId : null;
-      if (resolution === "keep-room") {
-        effectiveProjectId = conflictRoomProjectId; // join the room's project
-      } else if (resolution === "per-thread") {
-        const ok = await dispatch(convertRoomToPerThreadThunk(sessionId));
-        if (!ok) return; // conversion failed (toast shown) — abort cleanly
-        // room now has no project → the requested id is safe
-      }
-
-      const tile = await dispatch(
-        createTile({
-          sessionId,
+      const thread = await dispatch(
+        createThread({
+          roomId: sessionId,
           position: nextPosition,
           title:
             trimmedName ||
             (flavor === "project" ? (projectName ?? undefined) : undefined),
-          flavor,
-          projectId: effectiveProjectId,
-          // task/project tiles open on the Task tab; threads keep the default.
+          projectId: flavor === "project" ? projectId : undefined,
+          anchorType:
+            flavor === "project"
+              ? "project"
+              : flavor === "task"
+                ? "task"
+                : "canvas",
           activeTab: flavor === "thread" ? undefined : "task",
         }),
       );
-      if (!tile?.id) return; // thunk already surfaced the failure (toast)
+      if (!thread?.id) return;
 
       // Optional description → persist onto the tile's note (reuses the note
       // flow: create + link + activate, then write the description as content).
       if (trimmedDescription) {
-        const noteId = await dispatch(addNoteToTile(tile.id, sessionId));
+        const noteId = await dispatch(addNoteToThread(thread.id, sessionId));
         if (noteId) {
           await updateNote(noteId, { content: trimmedDescription }).catch(
             () => {},
@@ -223,7 +177,7 @@ export function QuickAddThread({
       }
 
       if (mode === "open") {
-        onOpen?.(tile.id);
+        onOpen?.(thread.id);
         collapse();
       } else {
         // Stay put: clear the name/description but keep the flavor + project
@@ -233,13 +187,7 @@ export function QuickAddThread({
       }
     } finally {
       setBusy(false);
-      setConflictOpen(false);
-      setConflictRoomProjectId(null);
     }
-  }
-
-  function onResolveConflict(resolution: ProjectConflictResolution) {
-    void doCreate(pendingModeRef.current, resolution);
   }
 
   function revealDescription() {
@@ -473,18 +421,6 @@ export function QuickAddThread({
           </button>
         </div>
       </div>
-
-      <ProjectConflictDialog
-        open={conflictOpen}
-        onOpenChange={(o) => {
-          setConflictOpen(o);
-          if (!o) setConflictRoomProjectId(null);
-        }}
-        requestedProjectName={projectName}
-        otherThreadCount={otherThreadCount}
-        busy={busy}
-        onResolve={onResolveConflict}
-      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlic
 
 import { cn } from "@/lib/utils";
 import {
-  isWarRoomTileAgentSurface,
+  isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
 
@@ -119,7 +119,7 @@ export function AgentConversationColumn({
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
 
   useEffect(() => {
-    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
     traceWarRoomRenderPath(
       12,
       "AgentConversationColumn.tsx",

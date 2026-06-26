@@ -1,5 +1,6 @@
 import { XYPosition } from "reactflow";
 import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import {
   DbBrokerRelayData,
   BrokerRelayNode,
@@ -119,8 +120,10 @@ export async function saveWorkflowRelay(
   isUpdate: boolean,
 ): Promise<DbBrokerRelayData> {
   if (isUpdate) {
-    const { data: relay, error } = await supabase
-      .from("workflow_relay")
+    const { data: relay, error } = await fromDeprecatedTable(
+      "workflow_relay",
+      "features/workflows/service/relayService.ts",
+    )
       .update(relayData)
       .eq("id", relayData.id)
       .select()
@@ -136,8 +139,10 @@ export async function saveWorkflowRelay(
       );
     }
 
-    const { data: relay, error } = await supabase
-      .from("workflow_relay")
+    const { data: relay, error } = await fromDeprecatedTable(
+      "workflow_relay",
+      "features/workflows/service/relayService.ts",
+    )
       .insert({
         ...relayData,
         workflow_id: workflowId,
@@ -153,8 +158,10 @@ export async function saveWorkflowRelay(
 }
 
 export async function removeRelayFromWorkflow(relayId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_relay")
+  const { error } = await fromDeprecatedTable(
+    "workflow_relay",
+    "features/workflows/service/relayService.ts",
+  )
     .update({ workflow_id: null })
     .eq("id", relayId);
 
@@ -163,8 +170,10 @@ export async function removeRelayFromWorkflow(relayId: string): Promise<void> {
 }
 
 export async function deleteWorkflowRelay(relayId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_relay")
+  const { error } = await fromDeprecatedTable(
+    "workflow_relay",
+    "features/workflows/service/relayService.ts",
+  )
     .delete()
     .eq("id", relayId);
 

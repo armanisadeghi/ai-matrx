@@ -1,11 +1,11 @@
 "use client";
 
-// features/war-room/hooks/useTilePulse.ts
+// features/war-room/hooks/useThreadPulse.ts
 //
 // The load-bearing "is this thread alive?" primitive for the War Room.
 //
 // A wall of equal cards can't tell you which threads are alive — a peripheral
-// thread has to telegraph its real state without being opened. `useTilePulse`
+// thread has to telegraph its real state without being opened. `useThreadPulse`
 // derives that live pulse for a single tile by COMPOSING the existing feature
 // slices (tasks, notes, transcript, war-room audio links) read-only. It writes
 // nothing. It is the difference between a dead tile and a living instrument on
@@ -27,16 +27,16 @@ import { selectSessionRawText } from "@/features/transcript-studio/redux/selecto
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
-  selectAudioSessionIdsForTile,
-  selectTileById,
-  selectTileEffectiveContext,
-  selectTileTaskId,
+  selectAudioSessionIdsForThread,
+  selectThreadById,
+  selectThreadEffectiveContext,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
-import type { TileTab } from "@/features/war-room/types";
+import type { ThreadTab } from "@/features/war-room/types";
 
-export interface TilePulse {
+export interface ThreadPulse {
   /** The tile's chosen lead tab — what its "face" should show. */
-  activeTab: TileTab;
+  activeTab: ThreadTab;
   /** A short human label for the tile's dominant state, e.g. "3/5 done". */
   headline: string;
   /** The most relevant content preview line (note text, transcript, etc.). */
@@ -79,10 +79,10 @@ function clampPreview(text: string | null | undefined): string | null {
   return t.length > PREVIEW_MAX ? `${t.slice(0, PREVIEW_MAX)}…` : t;
 }
 
-export function useTilePulse(tileId: string): TilePulse {
-  const tile = useAppSelector(selectTileById(tileId));
-  const taskId = useAppSelector(selectTileTaskId(tileId));
-  const noteId = useAppSelector(selectActiveNoteId(tileId));
+export function useThreadPulse(threadId: string): ThreadPulse {
+  const tile = useAppSelector(selectThreadById(threadId));
+  const taskId = useAppSelector(selectThreadTaskId(threadId));
+  const noteId = useAppSelector(selectActiveNoteId(threadId));
 
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,
@@ -94,8 +94,8 @@ export function useTilePulse(tileId: string): TilePulse {
     noteId ? selectNoteContent(noteId)(s) : undefined,
   );
 
-  const audioSessionIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
-  const activeAudioId = useAppSelector(selectActiveAudioSessionId(tileId));
+  const audioSessionIds = useAppSelector(selectAudioSessionIdsForThread(threadId));
+  const activeAudioId = useAppSelector(selectActiveAudioSessionId(threadId));
   const transcript = useAppSelector(selectSessionRawText(activeAudioId));
 
   // LIVE recording signal — the ONLY source of a "Recording" claim. Reads the
@@ -115,9 +115,9 @@ export function useTilePulse(tileId: string): TilePulse {
   });
   const isRecording = recStatus !== "idle";
 
-  const ctx = useAppSelector((s) => selectTileEffectiveContext(tileId)(s));
+  const ctx = useAppSelector((s) => selectThreadEffectiveContext(threadId)(s));
 
-  const activeTab = (tile?.active_tab as TileTab) ?? "task";
+  const activeTab = (tile?.active_tab as ThreadTab) ?? "task";
 
   const subtaskTotal = subtasks.length;
   const subtaskDone = subtasks.filter((t) => t.status === "completed").length;

@@ -1,6 +1,6 @@
 /**
  * Shared types for War Room tool handlers. Mirrors
- * `ui-first-tools/handlers/types.ts`, plus a resolved `tileId` — every war-room
+ * `ui-first-tools/handlers/types.ts`, plus a resolved `threadId` — every war-room
  * tool acts on a specific tile's entities, and the dispatcher resolves that
  * tile from the conversation binding (see `../binding-registry.ts`) BEFORE
  * invoking the handler, so handlers never have to look it up themselves.
@@ -22,7 +22,7 @@ export interface WarRoomHandlerContext {
   callId: string;
   userId: string;
   /** The tile whose entities this call may mutate (resolved from the binding). */
-  tileId: string;
+  threadId: string;
   dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
   getState: () => RootState;
 }

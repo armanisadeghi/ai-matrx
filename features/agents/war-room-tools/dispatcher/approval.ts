@@ -8,7 +8,7 @@
  * column, and awaits the user's decision via the shared ask-resolver registry:
  *
  *   - `enqueuePendingAsk` (pendingAsks slice) carries the {@link ApprovalChange}
- *     descriptor + the tileId (so the card's "always approve" knows its scope).
+ *     descriptor + the threadId (so the card's "always approve" knows its scope).
  *   - `registerAskResolver` gives us a promise that resolves when the user
  *     clicks Approve / Decline / Respond / × on that card.
  *
@@ -51,7 +51,7 @@ export interface RequestApprovalInput {
   /** The delegated tool call id — the ApprovalCard keys off this. */
   callId: string;
   /** The tile this change acts on (drives the "always approve" scope). */
-  tileId: string;
+  threadId: string;
   /** The structured change descriptor the card renders. */
   change: ApprovalChange;
   dispatch: Dispatch;
@@ -64,7 +64,7 @@ export interface RequestApprovalInput {
 export async function requestWarRoomApproval(
   input: RequestApprovalInput,
 ): Promise<WarRoomApprovalDecision> {
-  const { conversationId, callId, tileId, change, dispatch } = input;
+  const { conversationId, callId, threadId, change, dispatch } = input;
 
   dispatch(
     enqueuePendingAsk({
@@ -74,7 +74,7 @@ export async function requestWarRoomApproval(
       toolName: "war_room",
       kind: "approval",
       approval: change,
-      tileId,
+      threadId,
       status: "pending",
       createdAtMs: Date.now(),
     }),
@@ -111,19 +111,19 @@ export async function requestWarRoomApproval(
  */
 export function cascadeAutoApprove(opts: {
   conversationId: string;
-  tileId: string;
+  threadId: string;
   scope: string;
   excludeCallId: string;
   getState: () => RootState;
 }): void {
-  const { conversationId, tileId, scope, excludeCallId, getState } = opts;
+  const { conversationId, threadId, scope, excludeCallId, getState } = opts;
   const asks = selectPendingAsksForConversation(conversationId)(getState());
   for (const ask of asks) {
     if (
       ask.status === "pending" &&
       ask.kind === "approval" &&
       ask.callId !== excludeCallId &&
-      ask.tileId === tileId &&
+      ask.threadId === threadId &&
       ask.approval?.autoApprove?.scope === scope
     ) {
       resolveAskByCallId(ask.callId, { ...EMPTY_ASK_RESPONSE, confirmed: true });

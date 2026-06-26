@@ -22,12 +22,12 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { getTile } from "@/features/war-room/service";
+import { getThread } from "@/features/war-room/service";
 import { listAssignmentsForContainer } from "@/features/war-room/service/associations";
-import { threadRef, type WarRoomTile } from "@/features/war-room/types";
+import { threadRef, type WarRoomThread } from "@/features/war-room/types";
 
 export interface ResolvedThread {
-  tile: WarRoomTile;
+  thread: WarRoomThread;
   /** The active studio (audio) session id for the tile, or null. */
   studioSessionId: string | null;
   /** The thread agent's conversation id, or null when none exists yet. */
@@ -43,8 +43,8 @@ export interface ResolvedThread {
 export async function resolveThread(
   threadId: string,
 ): Promise<ResolvedThread | null> {
-  const tile = await getTile(threadId);
-  if (!tile) return null;
+  const thread = await getThread(threadId);
+  if (!thread) return null;
 
   // Active audio session for the tile (mirror of masterAgentContext: prefer the
   // flagged-active 'studio_session' assignment, else the first by position). The
@@ -63,7 +63,7 @@ export async function resolveThread(
   }
 
   if (!studioSessionId) {
-    return { tile, studioSessionId: null, conversationId: null };
+    return { thread, studioSessionId: null, conversationId: null };
   }
 
   // The thread agent's conversation = studio_sessions.assistant_conversation_id
@@ -83,5 +83,5 @@ export async function resolveThread(
     conversationId = data?.assistant_conversation_id ?? null;
   }
 
-  return { tile, studioSessionId, conversationId };
+  return { thread, studioSessionId, conversationId };
 }

@@ -17,6 +17,8 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
 import type { Note, CreateNoteInput } from "../types";
 import type { NoteRecord, NoteScopeAssignment } from "./notes.types";
@@ -615,29 +617,21 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
 /**
  * Fetch all scope assignments for entity_type = 'note'.
  * Returns denormalized rows with scope name + type for sidebar grouping.
+ *
+ * Scope tags now live on `platform.associations`; the denormalized read goes
+ * through the `scopesService` chokepoint (which also owns the ctx_scopes /
+ * ctx_scope_types join) rather than querying ctx_scope_assignments directly.
  */
 export const fetchAllNoteScopes = createAsyncThunk<NoteScopeAssignment[], void>(
   "notes/fetchAllNoteScopes",
   async () => {
-    const { data, error } = await supabase
-      .from("ctx_scope_assignments")
-      .select(
-        `
-        entity_id,
-        scope_id,
-        scope:ctx_scopes!inner(name, scope_type:ctx_scope_types!inner(label_singular))
-      `,
-      )
-      .eq("entity_type", "note");
-
-    if (error) throw error;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (data ?? []).map((row: any) => ({
-      entity_id: row.entity_id as string,
-      scope_id: row.scope_id as string,
-      scope_name: row.scope?.name ?? "",
-      scope_type: row.scope?.scope_type?.label_singular ?? "",
+    const res = await scopesService.listEntityScopeTags("note");
+    if (isScopesRpcErr(res)) throw new Error(res.error.message);
+    return res.data.tags.map((t) => ({
+      entity_id: t.entity_id,
+      scope_id: t.scope_id,
+      scope_name: t.scope_name,
+      scope_type: t.scope_type,
     }));
   },
 );

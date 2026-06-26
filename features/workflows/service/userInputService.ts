@@ -1,4 +1,8 @@
 import { supabase } from "@/utils/supabase/client";
+import {
+  fromDeprecatedTable,
+  logDeprecatedTableAccess,
+} from "@/utils/supabase/deprecated-tables";
 import { Node, XYPosition } from "reactflow";
 import { UserInputNode } from "@/features/workflows/types/userInputNodeTypes";
 import { DbUserInput } from "@/features/workflows/types/userInputNodeTypes";
@@ -149,8 +153,10 @@ export async function saveWorkflowUserInput(
   isUpdate: boolean,
 ): Promise<DbUserInput> {
   if (isUpdate) {
-    const { data: userInput, error } = await supabase
-      .from("workflow_user_input")
+    const { data: userInput, error } = await fromDeprecatedTable(
+      "workflow_user_input",
+      "features/workflows/service/userInputService.ts:saveWorkflowUserInput(update)",
+    )
       .update(inputData)
       .eq("id", inputData.id)
       .select()
@@ -164,8 +170,10 @@ export async function saveWorkflowUserInput(
       throw new Error("broker_id is required to create a workflow user input");
     }
 
-    const { data: userInput, error } = await supabase
-      .from("workflow_user_input")
+    const { data: userInput, error } = await fromDeprecatedTable(
+      "workflow_user_input",
+      "features/workflows/service/userInputService.ts:saveWorkflowUserInput(create)",
+    )
       .insert({
         ...inputData,
         workflow_id: workflowId,
@@ -186,8 +194,10 @@ export async function saveWorkflowUserInput(
 export async function removeUserInputFromWorkflow(
   inputId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_user_input")
+  const { error } = await fromDeprecatedTable(
+    "workflow_user_input",
+    "features/workflows/service/userInputService.ts:removeUserInputFromWorkflow",
+  )
     .update({ workflow_id: null })
     .eq("id", inputId);
 
@@ -201,8 +211,10 @@ export async function removeUserInputFromWorkflow(
  * Delete workflow user input permanently
  */
 export async function deleteWorkflowUserInput(inputId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_user_input")
+  const { error } = await fromDeprecatedTable(
+    "workflow_user_input",
+    "features/workflows/service/userInputService.ts:deleteWorkflowUserInput",
+  )
     .delete()
     .eq("id", inputId);
 
@@ -212,6 +224,11 @@ export async function deleteWorkflowUserInput(inputId: string): Promise<void> {
 export async function duplicateWorkflowUserInputRPC(
   inputId: string,
 ): Promise<DbUserInput> {
+  logDeprecatedTableAccess(
+    "workflow_user_input",
+    "features/workflows/service/userInputService.ts:duplicateWorkflowUserInputRPC (duplicate_row RPC)",
+  );
+
   const { data, error } = await supabase.rpc("duplicate_row", {
     p_table_name: "workflow_user_input",
     p_source_id: inputId,

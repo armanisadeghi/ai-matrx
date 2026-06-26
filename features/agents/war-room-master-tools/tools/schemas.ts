@@ -54,7 +54,7 @@ export const warRoomMessageThreadArgsSchema = z.object({
   message: z.string().min(1).max(100000),
   /**
    * "fresh" — start a NEW conversation seeded with the thread's full context
-   *   (task / notes / files via buildTileAgentContextEntries) + the message.
+   *   (task / notes / files via buildThreadAgentContextEntries) + the message.
    *   No prior chat history. The default — a clean, well-scoped ask.
    * "fork" — branch the thread's EXISTING conversation (full history) and send
    *   the message on the fork. Use when continuity with what was already said

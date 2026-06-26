@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileAudioTab.tsx
+// features/war-room/components/thread/ThreadAudioTab.tsx
 //
 // Audio view: the REAL transcription-cleanup pipeline, embedded. Record →
 // chunked/crash-safe transcribe → auto-clean → the clean version appears
@@ -13,7 +13,7 @@
 // away IN PLACE — never stripped: the pad's own reveal bar opens the clean
 // agent, context items, dictionary + clean-up (the "Controls" drawer), the
 // custom-agent slots ("Custom"), and the tile's recording-SESSION LIST (the
-// "Sessions" drawer — TileAudioSessionList, driven by the war-room association
+// "Sessions" drawer — ThreadAudioSessionList, driven by the war-room association
 // store: list / switch / start a session, scoped to THIS tile). The pad's own
 // PAGE-scoped session list and the GLOBAL ActiveContextButton stay hidden (the
 // tile owns sessions, and War Room carries its own context, never the global).
@@ -49,24 +49,24 @@ const CleanupPad = dynamic(
 );
 import {
   selectActiveAudioSessionId,
-  selectAudioSessionIdsForTile,
+  selectAudioSessionIdsForThread,
 } from "@/features/war-room/redux/selectors";
 import {
-  addAudioSessionToTile,
-  ensureTileAudioSession,
-  setTileActiveAudioSession,
+  addAudioSessionToThread,
+  ensureThreadAudioSession,
+  setThreadActiveAudioSession,
 } from "@/features/war-room/redux/thunks";
-import { TileAudioSessionList } from "./TileAudioSessionList";
+import { ThreadAudioSessionList } from "./ThreadAudioSessionList";
 import { cn } from "@/lib/utils";
 
-function TileAudioSessionChrome({
-  tileId,
+function ThreadAudioSessionChrome({
+  threadId,
   compact,
   sessionId,
   sessionIds,
   activeIndex,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
   sessionId: string | null;
   sessionIds: string[];
@@ -94,7 +94,7 @@ function TileAudioSessionChrome({
                 <DropdownMenuItem
                   key={sid}
                   onClick={() =>
-                    dispatch(setTileActiveAudioSession(tileId, sid))
+                    dispatch(setThreadActiveAudioSession(threadId, sid))
                   }
                   className={cn("gap-2", sid === sessionId && "text-primary")}
                 >
@@ -106,7 +106,7 @@ function TileAudioSessionChrome({
         ) : null}
         <button
           type="button"
-          onClick={() => void dispatch(addAudioSessionToTile(tileId))}
+          onClick={() => void dispatch(addAudioSessionToThread(threadId))}
           className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Start a new recording session in this tile"
           aria-label="New recording session"
@@ -142,7 +142,9 @@ function TileAudioSessionChrome({
             {sessionIds.map((sid, i) => (
               <DropdownMenuItem
                 key={sid}
-                onClick={() => dispatch(setTileActiveAudioSession(tileId, sid))}
+                onClick={() =>
+                  dispatch(setThreadActiveAudioSession(threadId, sid))
+                }
                 className={cn("gap-2", sid === sessionId && "text-primary")}
               >
                 <Radio className="size-3.5 shrink-0" />
@@ -157,7 +159,7 @@ function TileAudioSessionChrome({
 
       <button
         type="button"
-        onClick={() => void dispatch(addAudioSessionToTile(tileId))}
+        onClick={() => void dispatch(addAudioSessionToThread(threadId))}
         className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         title="Start a new recording session in this tile"
       >
@@ -168,28 +170,28 @@ function TileAudioSessionChrome({
   );
 }
 
-export function TileAudioTab({
-  tileId,
+export function ThreadAudioTab({
+  threadId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
-  const sessionIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
+  const sessionId = useAppSelector(selectActiveAudioSessionId(threadId));
+  const sessionIds = useAppSelector(selectAudioSessionIdsForThread(threadId));
   const activeIndex = sessionId ? sessionIds.indexOf(sessionId) : -1;
 
   // Ensure the tile has a backing audio session so the embedded pad always has
   // one to bind to (idempotent + coalesced inside the thunk). A fresh tile gets
   // its first session here; recording into it persists via the pad's own writer.
   useEffect(() => {
-    if (!sessionId) void dispatch(ensureTileAudioSession(tileId));
-  }, [sessionId, tileId, dispatch]);
+    if (!sessionId) void dispatch(ensureThreadAudioSession(threadId));
+  }, [sessionId, threadId, dispatch]);
 
   const sessionChrome = (
-    <TileAudioSessionChrome
-      tileId={tileId}
+    <ThreadAudioSessionChrome
+      threadId={threadId}
       compact={compact}
       sessionId={sessionId}
       sessionIds={sessionIds}
@@ -220,7 +222,7 @@ export function TileAudioTab({
             showNewSession={false}
             compact={compact}
             embeddedHeaderSlot={compact ? sessionChrome : undefined}
-            sessionListSlot={<TileAudioSessionList tileId={tileId} />}
+            sessionListSlot={<ThreadAudioSessionList threadId={threadId} />}
             sections={{
               sidebar: false,
               dictionary: false,

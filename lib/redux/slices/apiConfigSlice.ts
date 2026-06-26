@@ -109,6 +109,23 @@ interface ApiConfigState {
   customUrl: string | null;
   health: Record<ServerEnvironment, ServerHealthRecord>;
   recentCalls: ApiCallLogEntry[];
+
+  /**
+   * Global API version override. When set (e.g. "v2"), every backend PATH is
+   * prefixed with this leading segment (the base URL / server selection is
+   * untouched). `null` → no version transform. See
+   * lib/api/resolve-endpoint-path.ts.
+   */
+  apiVersion: string | null;
+
+  /**
+   * Exact-match endpoint path overrides — canonical path (the ENDPOINTS /
+   * schema template, e.g. "/ai/manual") → full replacement path
+   * (e.g. "/ai/v2/chat"). Wins over `apiVersion`. This is the surgical
+   * "send THIS call somewhere else for a test" escape hatch — change both the
+   * version and the core route without editing code.
+   */
+  pathOverrides: Record<string, string>;
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
@@ -117,19 +134,25 @@ interface ApiConfigState {
 // real footgun. SSR-safe: no-op on the server, lazy-read on the client.
 const PERSIST_KEY = "matrx.apiConfig.v1";
 
-function loadPersistedServer(): {
+interface PersistedApiConfig {
   activeServer: ServerEnvironment;
   customUrl: string | null;
-} {
-  const fallback = { activeServer: "production" as ServerEnvironment, customUrl: null };
+  apiVersion: string | null;
+  pathOverrides: Record<string, string>;
+}
+
+function loadPersistedServer(): PersistedApiConfig {
+  const fallback: PersistedApiConfig = {
+    activeServer: "production",
+    customUrl: null,
+    apiVersion: null,
+    pathOverrides: {},
+  };
   if (typeof window === "undefined") return fallback;
   try {
     const raw = window.localStorage.getItem(PERSIST_KEY);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as {
-      activeServer?: ServerEnvironment;
-      customUrl?: string | null;
-    };
+    const parsed = JSON.parse(raw) as Partial<PersistedApiConfig>;
     const valid: ServerEnvironment[] = [
       "production",
       "development",
@@ -144,24 +167,31 @@ function loadPersistedServer(): {
         parsed.activeServer && valid.includes(parsed.activeServer)
           ? parsed.activeServer
           : "production",
-      customUrl:
-        typeof parsed.customUrl === "string" ? parsed.customUrl : null,
+      customUrl: typeof parsed.customUrl === "string" ? parsed.customUrl : null,
+      apiVersion:
+        typeof parsed.apiVersion === "string" && parsed.apiVersion.trim()
+          ? parsed.apiVersion
+          : null,
+      pathOverrides:
+        parsed.pathOverrides && typeof parsed.pathOverrides === "object"
+          ? parsed.pathOverrides
+          : {},
     };
   } catch {
     return fallback;
   }
 }
 
-function persistServer(
-  activeServer: ServerEnvironment,
-  customUrl: string | null,
-): void {
+function persistServer(state: ApiConfigState): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(
-      PERSIST_KEY,
-      JSON.stringify({ activeServer, customUrl }),
-    );
+    const payload: PersistedApiConfig = {
+      activeServer: state.activeServer,
+      customUrl: state.customUrl,
+      apiVersion: state.apiVersion,
+      pathOverrides: state.pathOverrides,
+    };
+    window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
   } catch {
     /* quota / privacy mode — non-fatal */
   }
@@ -174,6 +204,8 @@ const initialState: ApiConfigState = {
   customUrl: _persisted.customUrl,
   health: buildDefaultHealth(),
   recentCalls: [],
+  apiVersion: _persisted.apiVersion,
+  pathOverrides: _persisted.pathOverrides,
 };
 
 // ============================================================================
@@ -329,13 +361,56 @@ const apiConfigSlice = createSlice({
       if (action.payload !== "custom") {
         state.customUrl = null;
       }
-      persistServer(state.activeServer, state.customUrl);
+      persistServer(state);
     },
 
     setCustomUrl: (state, action: PayloadAction<string>) => {
       state.activeServer = "custom";
       state.customUrl = action.payload;
-      persistServer(state.activeServer, state.customUrl);
+      persistServer(state);
+    },
+
+    /**
+     * Set (or clear, with null/"") the global API version segment applied to
+     * every backend path. Persisted across reloads. Does NOT touch the base
+     * URL — localhost/prod/custom routing is unaffected.
+     */
+    setApiVersion: (state, action: PayloadAction<string | null>) => {
+      const v = action.payload?.trim();
+      state.apiVersion = v ? v : null;
+      persistServer(state);
+    },
+
+    /**
+     * Override a single canonical endpoint path with a full replacement path
+     * (e.g. "/ai/manual" → "/ai/v2/chat"). Pass an empty/whitespace
+     * replacement to remove the override. Persisted across reloads.
+     */
+    setPathOverride: (
+      state,
+      action: PayloadAction<{ canonicalPath: string; replacement: string }>,
+    ) => {
+      const { canonicalPath, replacement } = action.payload;
+      const next = replacement?.trim();
+      if (next) {
+        state.pathOverrides[canonicalPath] = next;
+      } else {
+        delete state.pathOverrides[canonicalPath];
+      }
+      persistServer(state);
+    },
+
+    /** Remove a single endpoint path override. */
+    clearPathOverride: (state, action: PayloadAction<string>) => {
+      delete state.pathOverrides[action.payload];
+      persistServer(state);
+    },
+
+    /** Clear every API override (version + all path overrides) at once. */
+    clearApiOverrides: (state) => {
+      state.apiVersion = null;
+      state.pathOverrides = {};
+      persistServer(state);
     },
 
     setServerHealthChecking: (
@@ -389,6 +464,10 @@ const apiConfigSlice = createSlice({
 export const {
   setActiveServer,
   setCustomUrl,
+  setApiVersion,
+  setPathOverride,
+  clearPathOverride,
+  clearApiOverrides,
   setServerHealthChecking,
   setServerHealthResult,
   appendApiCallLog,
@@ -411,6 +490,33 @@ export const selectActiveServer = (
 /** The custom URL (only meaningful when activeServer === 'custom') */
 export const selectCustomUrl = (state: StateWithApiConfig): string | null =>
   state.apiConfig.customUrl;
+
+/** The global API version segment (null = no version transform applied). */
+export const selectApiVersion = (state: StateWithApiConfig): string | null =>
+  state.apiConfig.apiVersion;
+
+/** Exact-match endpoint path overrides (canonical path → replacement path). */
+export const selectPathOverrides = (
+  state: StateWithApiConfig,
+): Record<string, string> => state.apiConfig.pathOverrides;
+
+/**
+ * The combined endpoint-override config — ready to hand straight to
+ * `resolveEndpointPath(path, config)`. Memoized so it is referentially stable
+ * between override changes.
+ */
+export const selectEndpointOverrideConfig = createSelector(
+  selectApiVersion,
+  selectPathOverrides,
+  (apiVersion, pathOverrides) => ({ apiVersion, pathOverrides }),
+);
+
+/** Whether any API override (version or path) is currently active. */
+export const selectHasActiveApiOverrides = (
+  state: StateWithApiConfig,
+): boolean =>
+  state.apiConfig.apiVersion !== null ||
+  Object.keys(state.apiConfig.pathOverrides).length > 0;
 
 /**
  * The resolved base URL string for the active server.

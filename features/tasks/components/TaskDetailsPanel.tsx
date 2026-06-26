@@ -55,6 +55,7 @@ import { ReferenceCopyButton } from "@/features/matrx-envelope/components/Refere
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
+import type { Comment } from "@/features/comments/types";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
@@ -97,7 +98,7 @@ export default function TaskDetailsPanel({
   const [isDirty, setIsDirty] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
@@ -685,9 +686,13 @@ export default function TaskDetailsPanel({
           ) : (
             <div className="space-y-3 max-h-[200px] overflow-y-auto">
               {comments.map((comment) => {
-                const isCurrentUser = comment.user_id === currentUserId;
-                const displayName = isCurrentUser ? "You" : "User";
-                const initial = isCurrentUser ? "Y" : "U";
+                const isCurrentUser = comment.createdBy === currentUserId;
+                const authorName =
+                  comment.author.displayName ?? comment.author.email ?? null;
+                const displayName = isCurrentUser
+                  ? "You"
+                  : (authorName ?? "User");
+                const initial = (displayName[0] ?? "U").toUpperCase();
 
                 return (
                   <div key={comment.id} className="text-sm">
@@ -701,11 +706,11 @@ export default function TaskDetailsPanel({
                             {displayName}
                           </p>
                           <p className="text-xs text-muted-foreground/80">
-                            {new Date(comment.created_at).toLocaleDateString()}
+                            {new Date(comment.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <p className="text-foreground mt-1 break-words">
-                          {comment.content}
+                          {comment.body}
                         </p>
                       </div>
                     </div>

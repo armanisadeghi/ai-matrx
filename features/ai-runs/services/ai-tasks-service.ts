@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { mapAiTaskRow } from "@/features/ai-runs/utils/db-row-mappers";
 import type {
@@ -7,6 +7,12 @@ import type {
   UpdateAiTaskInput,
   CompleteAiTaskInput,
 } from "../types/aiRunTypes";
+
+const aiTasksTable = (method: string) =>
+  fromDeprecatedTable(
+    "ai_tasks",
+    `features/ai-runs/services/ai-tasks-service.ts:${method}`,
+  );
 
 /**
  * AI Tasks Service - Client-side CRUD operations for ai_tasks table
@@ -21,16 +27,13 @@ export const aiTasksService = {
    * Create a new task (before submitting to socket.io)
    */
   async create(input: CreateAiTaskInput): Promise<AiTask> {
-    const supabase = createClient();
-
     const userId = requireUserId();
 
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("create")
       .insert({
         user_id: userId,
         run_id: input.run_id,
-        task_id: input.task_id, // Must match socket.io taskId
+        task_id: input.task_id,
         service: input.service,
         task_name: input.task_name,
         model_id: input.model_id,
@@ -48,16 +51,13 @@ export const aiTasksService = {
    * Get a task by database ID
    */
   async get(id: string): Promise<AiTask | null> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("get")
       .select("*")
       .eq("id", id)
       .single();
 
     if (error) {
-      if (error.code === "PGRST116") return null; // Not found
+      if (error.code === "PGRST116") return null;
       throw error;
     }
 
@@ -68,10 +68,7 @@ export const aiTasksService = {
    * Get a task by socket.io task_id (most common lookup)
    */
   async getByTaskId(taskId: string): Promise<AiTask | null> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("getByTaskId")
       .select("*")
       .eq("task_id", taskId)
       .single();
@@ -88,10 +85,7 @@ export const aiTasksService = {
    * List all tasks for a run
    */
   async listForRun(runId: string): Promise<AiTask[]> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("listForRun")
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: true });
@@ -111,8 +105,6 @@ export const aiTasksService = {
     order_by?: "created_at" | "updated_at";
     order_direction?: "asc" | "desc";
   }): Promise<{ tasks: AiTask[]; total: number; hasMore: boolean }> {
-    const supabase = createClient();
-
     const userId = requireUserId();
 
     const limit = filters?.limit || 20;
@@ -120,8 +112,7 @@ export const aiTasksService = {
     const orderBy = filters?.order_by || "created_at";
     const orderDirection = filters?.order_direction || "desc";
 
-    let query = supabase
-      .from("ai_tasks")
+    let query = aiTasksTable("list")
       .select("*", { count: "exact" })
       .eq("user_id", userId);
 
@@ -152,10 +143,7 @@ export const aiTasksService = {
    * Update a task (used during streaming)
    */
   async update(taskId: string, input: UpdateAiTaskInput): Promise<AiTask> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("update")
       .update(input)
       .eq("task_id", taskId)
       .select()
@@ -169,10 +157,7 @@ export const aiTasksService = {
    * Update a task by database ID
    */
   async updateById(id: string, input: UpdateAiTaskInput): Promise<AiTask> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("updateById")
       .update(input)
       .eq("id", id)
       .select()
@@ -184,11 +169,8 @@ export const aiTasksService = {
 
   /**
    * Complete a task with final data
-   * This will trigger database aggregations to update the parent run
    */
   async complete(taskId: string, input: CompleteAiTaskInput): Promise<AiTask> {
-    const supabase = createClient();
-
     const updateData: UpdateAiTaskInput = {
       response_text: input.response_text,
       response_data: input.response_data,
@@ -203,16 +185,13 @@ export const aiTasksService = {
       status: "completed",
     };
 
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("complete")
       .update(updateData)
       .eq("task_id", taskId)
       .select()
       .single();
 
     if (error) throw error;
-
-    // Database triggers will automatically update the parent run's aggregates
     return mapAiTaskRow(data);
   },
 
@@ -220,10 +199,7 @@ export const aiTasksService = {
    * Mark a task as failed
    */
   async fail(taskId: string, errorData?: Record<string, any>): Promise<AiTask> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("fail")
       .update({
         status: "failed",
         response_errors: errorData,
@@ -241,10 +217,7 @@ export const aiTasksService = {
    * Cancel a task
    */
   async cancel(taskId: string): Promise<AiTask> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("cancel")
       .update({
         status: "cancelled",
         response_complete: true,
@@ -269,16 +242,13 @@ export const aiTasksService = {
       tool_updates?: Record<string, any>;
     },
   ): Promise<AiTask> {
-    const supabase = createClient();
-
     const updateData: UpdateAiTaskInput = {
       response_text: responseText,
       status: "streaming",
       ...additionalData,
     };
 
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("updateStreaming")
       .update(updateData)
       .eq("task_id", taskId)
       .select()
@@ -292,10 +262,7 @@ export const aiTasksService = {
    * Delete a task (cascade will handle if run is deleted)
    */
   async delete(taskId: string): Promise<void> {
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from("ai_tasks")
+    const { error } = await aiTasksTable("delete")
       .delete()
       .eq("task_id", taskId);
 
@@ -306,10 +273,7 @@ export const aiTasksService = {
    * Get the latest task for a run
    */
   async getLatestForRun(runId: string): Promise<AiTask | null> {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("ai_tasks")
+    const { data, error } = await aiTasksTable("getLatestForRun")
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: false })

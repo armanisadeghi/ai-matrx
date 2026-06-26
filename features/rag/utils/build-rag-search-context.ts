@@ -10,7 +10,6 @@
  * Project and task are NOT part of the RAG search API — they affect agent
  * invocation via call-api scope injection but not chunk retrieval today.
  */
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 import type { RagSearchFilters } from "@/features/rag/api/search";
 
 export interface ActiveContextForRagSearch {
@@ -27,10 +26,7 @@ export function buildRagSearchContext(
   ctx: ActiveContextForRagSearch,
   extraFilters?: RagSearchFilters,
 ): RagSearchContextPayload {
-  const organization_id =
-    ctx.organizationId && !isPersonalPseudoOrgId(ctx.organizationId)
-      ? ctx.organizationId
-      : undefined;
+  const organization_id = ctx.organizationId ?? undefined;
   const scope_ids = ctx.scopeIds.length > 0 ? ctx.scopeIds : undefined;
 
   const filters: RagSearchFilters = {

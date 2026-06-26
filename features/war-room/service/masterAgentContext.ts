@@ -36,13 +36,14 @@
 import { supabase } from "@/utils/supabase/client";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { getTaskById } from "@/features/tasks/services/taskService";
-import { listSessions, listTiles } from "@/features/war-room/service";
+import { listSessions, listThreadsForRoom } from "@/features/war-room/service";
 import { listAssignmentsForContainers } from "@/features/war-room/service/associations";
 import {
+  roomRef,
   threadRef,
   type WarRoomAssignment,
   type WarRoomSession,
-  type WarRoomTile,
+  type WarRoomThread,
 } from "@/features/war-room/types";
 import {
   buildWarRoomContextEntry,
@@ -55,27 +56,27 @@ import {
  * the polymorphic ctx_war_room_assignments table is now the single source. The
  * tile id is the assignment's `container_id` (container_type='thread').
  */
-export interface TileAssignmentIndex {
+export interface ThreadAssignmentIndex {
   /** Active task id per tile (is_active row, else first by position). */
-  taskByTile: Map<string, string>;
+  taskByThread: Map<string, string>;
   /** Active note id per tile (is_active row, else first by position). */
-  noteByTile: Map<string, string>;
+  noteByThread: Map<string, string>;
   /** Active studio (audio) session id per tile. */
-  activeAudioByTile: Map<string, string>;
+  activeAudioByThread: Map<string, string>;
   /** Tiles that have ANY audio session linked. */
-  hasAudioByTile: Set<string>;
+  hasAudioByThread: Set<string>;
   /** File + document attachment count per tile. */
-  fileCountByTile: Map<string, number>;
+  fileCountByThread: Map<string, number>;
 }
 
 export function indexThreadAssignments(
   rows: WarRoomAssignment[],
-): TileAssignmentIndex {
-  const taskByTile = new Map<string, string>();
-  const noteByTile = new Map<string, string>();
-  const activeAudioByTile = new Map<string, string>();
-  const hasAudioByTile = new Set<string>();
-  const fileCountByTile = new Map<string, number>();
+): ThreadAssignmentIndex {
+  const taskByThread = new Map<string, string>();
+  const noteByThread = new Map<string, string>();
+  const activeAudioByThread = new Map<string, string>();
+  const hasAudioByThread = new Set<string>();
+  const fileCountByThread = new Map<string, number>();
 
   // Prefer the is_active member of each single-active type; rows arrive ordered
   // by position so the first seen is the positional fallback.
@@ -83,40 +84,40 @@ export function indexThreadAssignments(
     map: Map<string, string>,
     row: WarRoomAssignment,
   ): void => {
-    const tileId = row.container_id;
-    if (row.is_active) map.set(tileId, row.entity_id);
-    else if (!map.has(tileId)) map.set(tileId, row.entity_id);
+    const threadId = row.container_id;
+    if (row.is_active) map.set(threadId, row.entity_id);
+    else if (!map.has(threadId)) map.set(threadId, row.entity_id);
   };
 
   for (const row of rows) {
     if (row.container_type !== "thread") continue;
     switch (row.entity_type) {
       case "task":
-        pickActive(taskByTile, row);
+        pickActive(taskByThread, row);
         break;
       case "note":
-        pickActive(noteByTile, row);
+        pickActive(noteByThread, row);
         break;
       case "studio_session":
-        hasAudioByTile.add(row.container_id);
-        pickActive(activeAudioByTile, row);
+        hasAudioByThread.add(row.container_id);
+        pickActive(activeAudioByThread, row);
         break;
       case "user_file":
       case "document":
-        fileCountByTile.set(
+        fileCountByThread.set(
           row.container_id,
-          (fileCountByTile.get(row.container_id) ?? 0) + 1,
+          (fileCountByThread.get(row.container_id) ?? 0) + 1,
         );
         break;
     }
   }
 
   return {
-    taskByTile,
-    noteByTile,
-    activeAudioByTile,
-    hasAudioByTile,
-    fileCountByTile,
+    taskByThread,
+    noteByThread,
+    activeAudioByThread,
+    hasAudioByThread,
+    fileCountByThread,
   };
 }
 
@@ -170,11 +171,11 @@ function noteSnippet(content: string | null | undefined): string | undefined {
  *  else a positional fallback. Keeps the roster readable when tiles are
  *  unnamed (the common early case). */
 function threadTitle(
-  tile: WarRoomTile,
+  thread: WarRoomThread,
   taskTitle: string | undefined,
   index: number,
 ): string {
-  const own = tile.title?.trim();
+  const own = thread.title?.trim();
   if (own) return own;
   if (taskTitle?.trim()) return taskTitle.trim();
   return `Thread ${index + 1}`;
@@ -240,40 +241,44 @@ export async function buildMasterAgentContext(
 
   // Fetch every room's tiles in parallel, then the assignment data for the full
   // tile set in one batched query (listAssignmentsForContainers).
-  const tilesByRoom = await Promise.all(
+  const threadsByRoom = await Promise.all(
     sessions.map(async (s) => {
       try {
-        return { sessionId: s.id, tiles: await listTiles(s.id) };
+        return { sessionId: s.id, threads: await listThreadsForRoom(s.id) };
       } catch (err) {
         console.error(
-          `[war-room/master] listTiles failed for room ${s.id}:`,
+          `[war-room/master] listThreadsForRoom failed for room ${s.id}:`,
           err,
         );
-        return { sessionId: s.id, tiles: [] as WarRoomTile[] };
+        return { sessionId: s.id, threads: [] as WarRoomThread[] };
       }
     }),
   );
 
-  const allTiles: WarRoomTile[] = tilesByRoom.flatMap((r) => r.tiles);
-  const allTileIds = allTiles.map((t) => t.id);
+  const allThreads: WarRoomThread[] = threadsByRoom.flatMap((r) => r.threads);
+  const allThreadIds = allThreads.map((t) => t.id);
 
   // ONE batched read of the polymorphic assignment table for every tile (thread
   // container), then index per tile. Tolerates failure — a missing signal just
   // omits that field from the roster, never blocks it.
   let assignments: WarRoomAssignment[] = [];
   try {
-    assignments = await listAssignmentsForContainers(
-      allTileIds.map((id) => threadRef(id)),
-    );
+    assignments = await listAssignmentsForContainers([
+      ...allThreadIds.map((id) => threadRef(id)),
+      ...sessions.map((s) => roomRef(s.id)),
+    ]);
   } catch (err) {
-    console.error("[war-room/master] listAssignmentsForContainers failed:", err);
+    console.error(
+      "[war-room/master] listAssignmentsForContainers failed:",
+      err,
+    );
   }
   const {
-    taskByTile,
-    noteByTile: activeNoteByTile,
-    activeAudioByTile,
-    hasAudioByTile,
-    fileCountByTile,
+    taskByThread,
+    noteByThread: activeNoteByThread,
+    activeAudioByThread,
+    hasAudioByThread,
+    fileCountByThread,
   } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
@@ -281,7 +286,7 @@ export async function buildMasterAgentContext(
   // for the tile's ACTIVE audio session. We query studio_sessions DIRECTLY (not
   // studioService.listSessions/getSession — those exclude source='war_room').
   const activeStudioSessionIds = [
-    ...new Set([...activeAudioByTile.values()]),
+    ...new Set([...activeAudioByThread.values()]),
   ];
   const convoBySession = new Map<string, string | null>();
   if (activeStudioSessionIds.length > 0) {
@@ -308,8 +313,8 @@ export async function buildMasterAgentContext(
   // a low-frequency, on-open build, so N small reads are acceptable here).
   const taskIds = [
     ...new Set(
-      allTiles
-        .map((t) => taskByTile.get(t.id) ?? null)
+      allThreads
+        .map((t) => taskByThread.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -318,10 +323,7 @@ export async function buildMasterAgentContext(
     const tasks = await Promise.all(
       taskIds.map((id) =>
         getTaskById(id).catch((err) => {
-          console.error(
-            `[war-room/master] getTaskById failed for ${id}:`,
-            err,
-          );
+          console.error(`[war-room/master] getTaskById failed for ${id}:`, err);
           return null;
         }),
       ),
@@ -334,8 +336,8 @@ export async function buildMasterAgentContext(
   // Note ids: the active 'note' assignment per tile.
   const noteIds = [
     ...new Set(
-      allTiles
-        .map((t) => activeNoteByTile.get(t.id) ?? null)
+      allThreads
+        .map((t) => activeNoteByThread.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -354,33 +356,46 @@ export async function buildMasterAgentContext(
   }
 
   // ── Assemble the roster ────────────────────────────────────────────────
-  const tilesBySessionId = new Map<string, WarRoomTile[]>();
-  for (const { sessionId, tiles } of tilesByRoom) {
-    tilesBySessionId.set(sessionId, tiles);
+  const threadsBySessionId = new Map<string, WarRoomThread[]>();
+  for (const { sessionId, threads } of threadsByRoom) {
+    threadsBySessionId.set(sessionId, threads);
+  }
+
+  const roomProjectById = new Map<string, string | null>();
+  for (const a of assignments) {
+    if (
+      a.container_type === "room" &&
+      a.entity_type === "project" &&
+      a.is_active
+    ) {
+      roomProjectById.set(a.container_id, a.entity_id);
+    }
   }
 
   const rooms: MasterRoomEntry[] = sessions.map((session) => {
-    const tiles = tilesBySessionId.get(session.id) ?? [];
-    const threads: MasterThreadEntry[] = tiles.map((tile, index) => {
-      const taskId = taskByTile.get(tile.id) ?? null;
+    const threads = threadsBySessionId.get(session.id) ?? [];
+    const roster: MasterThreadEntry[] = threads.map((thread, index) => {
+      const taskId = taskByThread.get(thread.id) ?? null;
       const taskTitle = taskId ? taskTitleById.get(taskId) : undefined;
-      const noteId = activeNoteByTile.get(tile.id) ?? null;
+      const noteId = activeNoteByThread.get(thread.id) ?? null;
       const snippet = noteId
         ? noteSnippet(noteContentById.get(noteId))
         : undefined;
-      const activeStudioId = activeAudioByTile.get(tile.id) ?? null;
+      const activeStudioId = activeAudioByThread.get(thread.id) ?? null;
       const conversationId = activeStudioId
-        ? convoBySession.get(activeStudioId) ?? null
+        ? (convoBySession.get(activeStudioId) ?? null)
         : null;
 
       const entry: MasterThreadEntry = {
-        threadId: tile.id,
-        threadTitle: threadTitle(tile, taskTitle, index),
+        threadId: thread.id,
+        threadTitle: threadTitle(thread, taskTitle, index),
         conversationId,
-        hasAudio: hasAudioByTile.has(tile.id),
-        fileCount: fileCountByTile.get(tile.id) ?? 0,
+        hasAudio: hasAudioByThread.has(thread.id),
+        fileCount: fileCountByThread.get(thread.id) ?? 0,
       };
-      const status = conversationId ? resolveStatus?.(conversationId) : undefined;
+      const status = conversationId
+        ? resolveStatus?.(conversationId)
+        : undefined;
       if (status) entry.status = status;
       if (taskTitle) entry.taskTitle = taskTitle;
       if (snippet) entry.noteSnippet = snippet;
@@ -392,13 +407,12 @@ export async function buildMasterAgentContext(
       title: session.title,
       description: session.description ?? null,
       threadCount: threads.length,
-      threads,
+      threads: roster,
     };
   });
 
-  const sessionById = new Map(sessions.map((s) => [s.id, s]));
   const roomModels: WarRoomRoomModel[] = rooms.map((r) => {
-    const projectId = sessionById.get(r.roomId)?.project_id ?? null;
+    const projectId = roomProjectById.get(r.roomId) ?? null;
     return {
       id: r.roomId,
       title: r.title,

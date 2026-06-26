@@ -1,4 +1,7 @@
-import type { Database } from "@/types/database.types";
+import type {
+  DeprecatedWorkflowNodeInsert,
+  DeprecatedWorkflowNodeRow,
+} from "@/utils/supabase/deprecated-tables";
 import type { ReactFlowUIMetadata } from "@/features/workflows/types/workflowReactFlowTypes";
 import { Node } from "reactflow";
 
@@ -26,10 +29,8 @@ export interface ArgumentMapping {
 }
 
 // Raw DB shapes — change automatically on `pnpm types` regeneration.
-export type DbFunctionNodeRow =
-  Database["public"]["Tables"]["workflow_node"]["Row"];
-export type DbFunctionNodeInsert =
-  Database["public"]["Tables"]["workflow_node"]["Insert"];
+export type DbFunctionNodeRow = DeprecatedWorkflowNodeRow;
+export type DbFunctionNodeInsert = DeprecatedWorkflowNodeInsert;
 
 // JSON column names asserted against the live schema — a rename or removal
 // upstream collapses `_AssertJsonCols` to `never`.
@@ -40,13 +41,17 @@ type DbFunctionNodeJsonCols =
   | "return_broker_overrides"
   | "metadata"
   | "ui_node_data";
-type _AssertDbFunctionNodeJsonCols = DbFunctionNodeJsonCols extends keyof DbFunctionNodeRow
-  ? DbFunctionNodeJsonCols
-  : never;
+type _AssertDbFunctionNodeJsonCols =
+  DbFunctionNodeJsonCols extends keyof DbFunctionNodeRow
+    ? DbFunctionNodeJsonCols
+    : never;
 
 // App-level function-node shape — DB row with JSON columns narrowed to the
 // structures editors and validators read. Non-JSON columns flow through.
-export type DbFunctionNode = Omit<DbFunctionNodeRow, _AssertDbFunctionNodeJsonCols> & {
+export type DbFunctionNode = Omit<
+  DbFunctionNodeRow,
+  _AssertDbFunctionNodeJsonCols
+> & {
   additional_dependencies: WorkflowDependency[] | null;
   arg_mapping: ArgumentMapping[] | null;
   arg_overrides: ArgumentOverride[] | null;
@@ -55,7 +60,10 @@ export type DbFunctionNode = Omit<DbFunctionNodeRow, _AssertDbFunctionNodeJsonCo
   ui_node_data: ReactFlowUIMetadata | null;
 };
 
-export type WorkflowNodeInsert = Omit<DbFunctionNodeInsert, _AssertDbFunctionNodeJsonCols> & {
+export type WorkflowNodeInsert = Omit<
+  DbFunctionNodeInsert,
+  _AssertDbFunctionNodeJsonCols
+> & {
   additional_dependencies?: WorkflowDependency[] | null;
   arg_mapping?: ArgumentMapping[] | null;
   arg_overrides?: ArgumentOverride[] | null;

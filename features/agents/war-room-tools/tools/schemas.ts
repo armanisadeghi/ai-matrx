@@ -123,20 +123,20 @@ export interface WarRoomUpdateNoteResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// war_room_update_tile — rename the tile (the room's entry for this work item)
+// war_room_update_thread — rename the tile (the room's entry for this work item)
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTE: ctx_war_room_tiles has only a `title` column (no description). A tile's
 // descriptive content lives on its task/note, which `war_room_update_task` /
 // `war_room_update_note` cover. So this tool renames the tile only.
 
-export const warRoomUpdateTileArgsSchema = z.object({
+export const warRoomUpdateThreadArgsSchema = z.object({
   /** New tile title. Empty string is rejected; clear-to-default is not a tool op. */
   title: z.string().min(1).max(300),
 });
 
-export type WarRoomUpdateTileArgs = z.infer<typeof warRoomUpdateTileArgsSchema>;
+export type WarRoomUpdateThreadArgs = z.infer<typeof warRoomUpdateThreadArgsSchema>;
 
-export interface WarRoomUpdateTileResult {
+export interface WarRoomUpdateThreadResult {
   ok: boolean;
   tile?: { id: string; title: string | null };
   message?: string;

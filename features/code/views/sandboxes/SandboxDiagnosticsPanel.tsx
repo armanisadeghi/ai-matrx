@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -928,13 +929,13 @@ export function SandboxDiagnosticsPanel({
           {showRaw && (
             <TabsContent
               value="raw"
-              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col min-h-[18rem]"
             >
-              <ScrollArea className="h-72 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
-                <pre className="text-xs font-mono p-3 whitespace-pre-wrap">
-                  {JSON.stringify(diag, null, 2)}
-                </pre>
-              </ScrollArea>
+              <JsonInspector
+                data={diag}
+                defaultView="json"
+                className="h-full min-h-[18rem] rounded-md border border-border shadow-none"
+              />
             </TabsContent>
           )}
 
@@ -1315,9 +1316,8 @@ function SecretsInjectionPanel({ diag }: { diag: SandboxDiagnostics }) {
       {!si && (
         <div className="rounded-md border border-border bg-muted/30 p-3 text-muted-foreground">
           No <code>secrets_injection</code> field on this sandbox's config.
-          Sandboxes created before the diagnostic field was deployed don't
-          carry this stamp — create a fresh sandbox to see the full
-          status.
+          Sandboxes created before the diagnostic field was deployed don't carry
+          this stamp — create a fresh sandbox to see the full status.
         </div>
       )}
 
@@ -1351,22 +1351,17 @@ function SecretsInjectionPanel({ diag }: { diag: SandboxDiagnostics }) {
             tone={si.user_id_set ? "success" : "danger"}
           />
           {si.skipped_reason && (
-            <KV
-              k="Skipped because"
-              v={si.skipped_reason}
-              tone="warn"
-              full
-            />
+            <KV k="Skipped because" v={si.skipped_reason} tone="warn" full />
           )}
-          {si.error && (
-            <KV k="Error" v={si.error} tone="danger" full />
-          )}
+          {si.error && <KV k="Error" v={si.error} tone="danger" full />}
         </div>
       )}
 
       <div className="text-[11px] text-muted-foreground shrink-0">
         This shows whether the orchestrator's call to aidream's
-        <code className="px-1">/api/user-secrets/internal/sandbox-env-for-user</code>
+        <code className="px-1">
+          /api/user-secrets/internal/sandbox-env-for-user
+        </code>
         succeeded. Vault contents are merged into{" "}
         <code>docker run -e KEY=value</code> on container create — so an
         existing sandbox can't pick up new secrets; you need a fresh box.
@@ -1375,9 +1370,11 @@ function SecretsInjectionPanel({ diag }: { diag: SandboxDiagnostics }) {
   );
 }
 
-function headlineFor(
-  si: SandboxDiagnostics["secrets_injection"],
-): { label: string; detail: string; tone: "success" | "warn" | "danger" } {
+function headlineFor(si: SandboxDiagnostics["secrets_injection"]): {
+  label: string;
+  detail: string;
+  tone: "success" | "warn" | "danger";
+} {
   if (!si) {
     return {
       label: "Unknown",

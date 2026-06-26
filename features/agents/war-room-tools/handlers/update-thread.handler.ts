@@ -1,5 +1,5 @@
 /**
- * `war_room_update_tile` handler — rename the tile (the room's entry for this
+ * `war_room_update_thread` handler — rename the tile (the room's entry for this
  * work item).
  *
  * Reuses the REAL `renameTile` war-room thunk, which persists
@@ -14,31 +14,31 @@
 
 import type { WarRoomToolHandler } from "./types";
 import type {
-  WarRoomUpdateTileArgs,
-  WarRoomUpdateTileResult,
+  WarRoomUpdateThreadArgs,
+  WarRoomUpdateThreadResult,
 } from "../tools/schemas";
-import { renameTile } from "@/features/war-room/redux/thunks";
-import { selectTileById } from "@/features/war-room/redux/selectors";
+import { renameThread } from "@/features/war-room/redux/thunks";
+import { selectThreadById } from "@/features/war-room/redux/selectors";
 
-export const updateTileHandler: WarRoomToolHandler<
-  WarRoomUpdateTileArgs,
-  WarRoomUpdateTileResult
+export const updateThreadHandler: WarRoomToolHandler<
+  WarRoomUpdateThreadArgs,
+  WarRoomUpdateThreadResult
 > = {
-  name: "war_room_update_tile",
+  name: "war_room_update_thread",
   async run(args, ctx) {
-    const { tileId, dispatch, getState } = ctx;
+    const { threadId, dispatch, getState } = ctx;
 
-    const tile = selectTileById(tileId)(getState());
+    const tile = selectThreadById(threadId)(getState());
     if (!tile) {
       return { ok: false, message: "Tile not found." };
     }
 
-    await dispatch(renameTile(tileId, args.title));
+    await dispatch(renameThread(threadId, args.title));
 
-    const updated = selectTileById(tileId)(getState());
+    const updated = selectThreadById(threadId)(getState());
     return {
       ok: true,
-      tile: { id: tileId, title: updated?.title ?? args.title },
+      tile: { id: threadId, title: updated?.title ?? args.title },
     };
   },
 };

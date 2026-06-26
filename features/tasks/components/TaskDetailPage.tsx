@@ -35,6 +35,7 @@ import * as taskService from "@/features/tasks/services/taskService";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
+import type { Comment } from "@/features/comments/types";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -125,9 +126,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   const [isDirty, setIsDirty] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
-  const [comments, setComments] = useState<
-    { id: string; content: string; user_id: string; created_at: string }[]
-  >([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
@@ -622,26 +621,29 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
             ) : (
               <div className="space-y-4 mb-4">
                 {comments.map((comment) => {
-                  const isMe = comment.user_id === currentUserId;
+                  const isMe = comment.createdBy === currentUserId;
+                  const authorName =
+                    comment.author.displayName ?? comment.author.email ?? null;
+                  const displayName = isMe ? "You" : (authorName ?? "User");
                   return (
                     <div
                       key={comment.id}
                       className="flex items-start gap-3 text-sm"
                     >
                       <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-medium">
-                        {isMe ? "Y" : "U"}
+                        {(displayName[0] ?? "U").toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 mb-1">
                           <span className="text-xs font-medium text-muted-foreground">
-                            {isMe ? "You" : "User"}
+                            {displayName}
                           </span>
                           <span className="text-xs text-muted-foreground/60">
-                            {new Date(comment.created_at).toLocaleDateString()}
+                            {new Date(comment.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                         <p className="text-foreground break-words">
-                          {comment.content}
+                          {comment.body}
                         </p>
                       </div>
                     </div>

@@ -69,7 +69,6 @@ import {
 } from "../../service";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { groupProjectsByOrgDisplay } from "@/features/agent-context/utils/groupProjectsByOrgDisplay";
-import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateNavTree } from "@/features/agent-context/redux/hierarchySlice";
@@ -1285,7 +1284,6 @@ export default function ResearchInitForm() {
   const { orgs, flatProjects, isLoading: projectsLoading } = useNavTree();
   const projectsByOrg = groupProjectsByOrgDisplay(orgs, flatProjects);
   const orgsForCreate = orgs
-    .filter((org) => !isPersonalPseudoOrgId(org.id))
     .sort((a, b) => {
       if (a.is_personal !== b.is_personal) return a.is_personal ? -1 : 1;
       return formatOrgDisplayName(a).localeCompare(formatOrgDisplayName(b));

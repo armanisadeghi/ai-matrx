@@ -22,7 +22,7 @@
  *
  * REUSED ON THE TILE AGENT: the read-only members (`war_room_read_thread`,
  * `war_room_read_file`) are also armed on a per-thread TILE conversation by
- * `TileAgentPanel` — routing keys off the NAME (this family ⇒ the read
+ * `ThreadAgentPanel` — routing keys off the NAME (this family ⇒ the read
  * dispatcher, no HITL), not the surface — so a thread agent can read a sibling
  * thread's chain and the extracted text of its own attached files without an
  * approval pause. The write/orchestration members stay master/room-only.

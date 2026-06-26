@@ -34,10 +34,10 @@ export const updateNoteHandler: WarRoomToolHandler<
 > = {
   name: "war_room_update_note",
   async run(args, ctx) {
-    const { tileId, dispatch, getState } = ctx;
+    const { threadId, dispatch, getState } = ctx;
 
     const state = getState();
-    const noteId = selectActiveNoteId(tileId)(state);
+    const noteId = selectActiveNoteId(threadId)(state);
     if (!noteId) {
       return {
         ok: false,

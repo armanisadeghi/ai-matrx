@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/room/StageTile.tsx
+// features/war-room/components/room/StageThread.tsx
 //
 // The hero focus pane: the ONE thread the user is driving right now. Full
 // height, a rich two-row header (identity + live status + metric chips, then the
@@ -13,56 +13,59 @@
 import { useEffect } from "react";
 import { Maximize2, Pin } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectTileFlavor } from "@/features/war-room/redux/selectors";
-import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
+import {
+  selectThreadAnchorType,
+  selectThreadPickerOption,
+} from "@/features/war-room/redux/selectors";
+import { setThreadActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { EditableTitle } from "../shared/EditableTitle";
-import { TileContextOverride } from "../tile/TileContextOverride";
-import { TileTabBar } from "../tile/TileTabBar";
-import { TileProjectMarker } from "../tile/TileProjectMarker";
-import { TileTabContent } from "../tile/TileTabContent";
-import { TileMetricChips } from "../tile/TileMetricChips";
-import { TileOptionsMenu } from "../tile/TileOptionsMenu";
-import { ThreadAnchorBanner } from "../tile/ThreadAnchorBanner";
-import { TileCopyForAiButton } from "../shared/TileCopyForAiButton";
-import { PulseGlyph } from "../tile/PulseGlyph";
-import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
-import { useTileActions } from "@/features/war-room/hooks/useTileActions";
-import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
+import { ThreadContextOverride } from "../thread/ThreadContextOverride";
+import { ThreadTabBar } from "../thread/ThreadTabBar";
+import { ThreadProjectMarker } from "../thread/ThreadProjectMarker";
+import { ThreadTabContent } from "../thread/ThreadTabContent";
+import { ThreadMetricChips } from "../thread/ThreadMetricChips";
+import { ThreadOptionsMenu } from "../thread/ThreadOptionsMenu";
+import { ThreadCopyForAiButton } from "../shared/ThreadCopyForAiButton";
+import { PulseGlyph } from "../thread/PulseGlyph";
+import { useThreadPulse } from "@/features/war-room/hooks/useThreadPulse";
+import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
+import { useThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";
 import { useRoomView } from "./roomViewContext";
-import { tileTabKind } from "./tileKind";
+import { dynamicTabKind } from "./threadKind";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
-export function StageTile({
-  tileId,
+export function StageThread({
+  threadId,
   sessionId,
 }: {
-  tileId: string;
+  threadId: string;
   sessionId: string;
 }) {
   const dispatch = useAppDispatch();
-  const pulse = useTilePulse(tileId);
-  const metrics = useTileMetrics(tileId);
-  const actions = useTileActions(tileId, sessionId);
+  const pulse = useThreadPulse(threadId);
+  const metrics = useThreadMetrics(threadId);
+  const actions = useThreadActions(threadId, sessionId);
   const { projectedTab } = useRoomView();
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+  const flavor = useAppSelector((s) => selectThreadPickerOption(threadId)(s));
+  const anchorType = useAppSelector((s) => selectThreadAnchorType(threadId)(s));
   if (!actions) return null;
 
   const shownTab = projectedTab ?? actions.activeTab;
-  const kind = tileTabKind(shownTab, flavor);
+  const kind = dynamicTabKind(shownTab, anchorType);
 
   useEffect(() => {
-    traceWarRoomRenderPath(4, "StageTile.tsx", "Stage tile render", {
-      tileId,
+    traceWarRoomRenderPath(4, "StageThread.tsx", "Stage tile render", {
+      threadId,
       sessionId,
       activeTab: shownTab,
     });
     if (shownTab === "agent") {
-      traceWarRoomRenderPath(5, "StageTile.tsx", "Agent tab selected", {
-        tileId,
+      traceWarRoomRenderPath(5, "StageThread.tsx", "Agent tab selected", {
+        threadId,
       });
     }
-  }, [tileId, sessionId, shownTab]);
+  }, [threadId, sessionId, shownTab]);
 
   return (
     <div
@@ -92,20 +95,20 @@ export function StageTile({
               inputClassName="text-[15px] font-semibold"
             />
             {flavor === "project" ? (
-              <TileProjectMarker tileId={tileId} size="md" />
+              <ThreadProjectMarker threadId={threadId} size="md" />
             ) : null}
           </div>
           <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
             <span>{pulse.headline}</span>
             <span className="hidden @sm:block">
-              <TileMetricChips m={metrics} />
+              <ThreadMetricChips m={metrics} />
             </span>
           </div>
         </div>
 
         <div className="shrink-0 flex items-center gap-1">
-          <TileCopyForAiButton tileId={tileId} />
-          <TileContextOverride tileId={tileId} />
+          <ThreadCopyForAiButton threadId={threadId} />
+          <ThreadContextOverride threadId={threadId} />
           {actions.canExpand ? (
             <button
               type="button"
@@ -116,9 +119,9 @@ export function StageTile({
               <Maximize2 className="size-4" />
             </button>
           ) : null}
-          <TileOptionsMenu
+          <ThreadOptionsMenu
             actions={actions}
-            tileId={tileId}
+            threadId={threadId}
             isStaged
             size="md"
           />
@@ -127,26 +130,24 @@ export function StageTile({
 
       {/* View switcher row */}
       <div className="shrink-0 pl-4 pr-3.5 pb-2.5">
-        <TileTabBar
+        <ThreadTabBar
           active={shownTab}
-          flavor={flavor}
-          onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
+          anchorType={anchorType}
+          onChange={(tab) =>
+            dispatch(setThreadActiveTabPersisted(threadId, tab))
+          }
           withLabels
           size="md"
         />
       </div>
 
-      {/* Anchor guard (Feature 2fe48c5c): a generic, unanchored thread gets a
-          quiet, dismissable nudge to give it a task or a project. */}
-      <ThreadAnchorBanner tileId={tileId} sessionId={sessionId} />
-
       {/* Body */}
       <div className="flex-1 min-h-0 border-t border-border/60 bg-card">
-        <TileTabContent
+        <ThreadTabContent
           tab={shownTab}
-          tileId={tileId}
+          threadId={threadId}
           sessionId={sessionId}
-          tileLayout="stage"
+          threadLayout="stage"
         />
       </div>
     </div>

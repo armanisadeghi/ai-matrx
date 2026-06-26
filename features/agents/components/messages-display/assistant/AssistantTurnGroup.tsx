@@ -39,7 +39,7 @@ import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCaptureP
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantActionBar } from "./AssistantActionBar";
 import {
-  isWarRoomTileAgentSurface,
+  isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
 } from "@/features/war-room/utils/renderPathTrace";
 
@@ -100,7 +100,7 @@ export function AssistantTurnGroup({
     !!lastMember && !lastMember.isStreamActive && !!anchorMessageId;
 
   useEffect(() => {
-    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!isWarRoomThreadAgentSurface(surfaceKey)) return;
     traceWarRoomRenderPath(
       14,
       "AssistantTurnGroup.tsx",

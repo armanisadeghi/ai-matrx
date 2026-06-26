@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileContextOverride.tsx
+// features/war-room/components/thread/ThreadContextOverride.tsx
 //
 // Per-tile context control. Shows the tile's effective context (inherited from
 // the session by default) and lets the user override it to a more specific
@@ -14,21 +14,21 @@ import {
   PopoverAnchor,
 } from "@/components/ui/popover";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectTileEffectiveContext } from "@/features/war-room/redux/selectors";
+import { selectThreadEffectiveContext } from "@/features/war-room/redux/selectors";
 import {
-  clearTileContextOverrideThunk,
-  setTileContextOverrideThunk,
+  clearThreadContextOverrideThunk,
+  setThreadContextOverrideThunk,
 } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { WarRoomContextPicker } from "../shared/WarRoomContextPicker";
 
-export function TileContextOverride({
-  tileId,
+export function ThreadContextOverride({
+  threadId,
   open,
   onOpenChange,
   hideTrigger = false,
 }: {
-  tileId: string;
+  threadId: string;
   /** Controlled open state — supply with `hideTrigger` to drive from elsewhere (e.g. the options menu). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -36,7 +36,7 @@ export function TileContextOverride({
   hideTrigger?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const ctx = useAppSelector((s) => selectTileEffectiveContext(tileId)(s));
+  const ctx = useAppSelector((s) => selectThreadEffectiveContext(threadId)(s));
 
   const hasContext = !!ctx.organizationId || ctx.scopeIds.length > 0;
 
@@ -88,7 +88,7 @@ export function TileContextOverride({
           {ctx.isOverridden ? (
             <button
               type="button"
-              onClick={() => dispatch(clearTileContextOverrideThunk(tileId))}
+              onClick={() => dispatch(clearThreadContextOverrideThunk(threadId))}
               className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
               title="Reset to the War Room's context"
             >
@@ -103,7 +103,7 @@ export function TileContextOverride({
           value={{ organizationId: ctx.organizationId, scopeIds: ctx.scopeIds }}
           onChange={(next) =>
             dispatch(
-              setTileContextOverrideThunk(tileId, {
+              setThreadContextOverrideThunk(threadId, {
                 organizationId: next.organizationId,
                 scopeIds: next.scopeIds,
               }),

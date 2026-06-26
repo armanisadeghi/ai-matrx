@@ -9,7 +9,7 @@ export type DrillSegment = {
 };
 
 /** Compact breadcrumb + back for in-tile project → task → subtask navigation. */
-export function TileDrillHeader({
+export function ThreadDrillHeader({
   segments,
   onBack,
   compact,

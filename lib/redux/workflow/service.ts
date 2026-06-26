@@ -1,4 +1,4 @@
-import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import {
   Workflow,
   WorkflowCreateInput,
@@ -6,7 +6,7 @@ import {
   WorkflowRowInsert,
   WorkflowRowUpdate,
   WorkflowUpdateInput,
-} from './types';
+} from "./types";
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
@@ -27,84 +27,94 @@ const toUpdate = (updates: WorkflowUpdateInput): WorkflowRowUpdate =>
 export const workflowService = {
   async fetchAll(): Promise<Workflow[]> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_data')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_data",
+        "lib/redux/workflow/service.ts:fetchAll",
+      )
+        .select("*")
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return (data ?? []).map(narrowWorkflow);
     } catch (error) {
-      console.error('Error fetching workflows:', error);
+      console.error("Error fetching workflows:", error);
       throw error;
     }
   },
 
   async fetchOne(id: string): Promise<Workflow> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_data')
-        .select('*')
-        .eq('id', id)
-        .eq('is_deleted', false)
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_data",
+        "lib/redux/workflow/service.ts:fetchOne",
+      )
+        .select("*")
+        .eq("id", id)
+        .eq("is_deleted", false)
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Workflow not found');
+      if (!data) throw new Error("Workflow not found");
       return narrowWorkflow(data);
     } catch (error) {
-      console.error('Error fetching workflow:', error);
+      console.error("Error fetching workflow:", error);
       throw error;
     }
   },
 
   async create(workflow: WorkflowCreateInput): Promise<Workflow> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_data')
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_data",
+        "lib/redux/workflow/service.ts:create",
+      )
         .insert([toInsert(workflow)])
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Failed to create workflow');
+      if (!data) throw new Error("Failed to create workflow");
       return narrowWorkflow(data);
     } catch (error) {
-      console.error('Error creating workflow:', error);
+      console.error("Error creating workflow:", error);
       throw error;
     }
   },
 
   async update(id: string, updates: WorkflowUpdateInput): Promise<Workflow> {
     try {
-      const { data, error } = await supabase
-        .from('workflow_data')
+      const { data, error } = await fromDeprecatedTable(
+        "workflow_data",
+        "lib/redux/workflow/service.ts:update",
+      )
         .update(toUpdate(updates))
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Failed to update workflow');
+      if (!data) throw new Error("Failed to update workflow");
       return narrowWorkflow(data);
     } catch (error) {
-      console.error('Error updating workflow:', error);
+      console.error("Error updating workflow:", error);
       throw error;
     }
   },
 
   async delete(id: string): Promise<string> {
     try {
-      const { error } = await supabase
-        .from('workflow_data')
+      const { error } = await fromDeprecatedTable(
+        "workflow_data",
+        "lib/redux/workflow/service.ts:delete",
+      )
         .update({ is_deleted: true })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
       return id;
     } catch (error) {
-      console.error('Error deleting workflow:', error);
+      console.error("Error deleting workflow:", error);
       throw error;
     }
   },

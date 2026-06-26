@@ -1,10 +1,10 @@
 "use client";
 
-// features/war-room/components/tile/TileMetricChips.tsx
+// features/war-room/components/thread/ThreadMetricChips.tsx
 //
 // The "instrument readings" that turn a tile header into a glanceable monitor.
 // A compact, single-line strip of micro-chips driven entirely by LIVE Redux
-// data (via useTileMetrics): subtask progress, note fill, transcript presence,
+// data (via useThreadMetrics): subtask progress, note fill, transcript presence,
 // audio-session count, context state. Nothing here is cosmetic — every chip is
 // a real reading the operator can act on without opening the tile.
 //
@@ -16,7 +16,7 @@
 
 import { CheckSquare, FileText, Mic, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TileMetrics } from "@/features/war-room/hooks/useTileMetrics";
+import type { ThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";
 
 function Chip({
   Icon,
@@ -46,7 +46,7 @@ function Chip({
   );
 }
 
-export function TileMetricChips({ m }: { m: TileMetrics }) {
+export function ThreadMetricChips({ m }: { m: ThreadMetrics }) {
   return (
     <div className="flex items-center gap-1 min-w-0 overflow-hidden">
       {/* Subtask progress — lights up green when complete. */}
@@ -69,7 +69,9 @@ export function TileMetricChips({ m }: { m: TileMetrics }) {
           title={`Note has ${m.noteChars.toLocaleString()} characters`}
           className="@max-[15rem]:hidden"
         >
-          {m.noteChars > 999 ? `${Math.round(m.noteChars / 100) / 10}k` : m.noteChars}
+          {m.noteChars > 999
+            ? `${Math.round(m.noteChars / 100) / 10}k`
+            : m.noteChars}
         </Chip>
       ) : null}
 
@@ -83,7 +85,10 @@ export function TileMetricChips({ m }: { m: TileMetrics }) {
               ? `${m.audioCount} audio session${m.audioCount > 1 ? "s" : ""} · transcript captured`
               : `${m.audioCount} audio session${m.audioCount > 1 ? "s" : ""}`
           }
-          className={cn(m.hasTranscript && "text-warning", "@max-[13rem]:hidden")}
+          className={cn(
+            m.hasTranscript && "text-warning",
+            "@max-[13rem]:hidden",
+          )}
         >
           {m.audioCount > 1 ? m.audioCount : m.hasTranscript ? "•" : ""}
         </Chip>
@@ -96,10 +101,13 @@ export function TileMetricChips({ m }: { m: TileMetrics }) {
           active={m.contextOverridden}
           title={
             m.contextOverridden
-              ? `Tile context overridden · ${m.scopeCount} scope${m.scopeCount === 1 ? "" : "s"}`
+              ? `Thread context overridden · ${m.scopeCount} scope${m.scopeCount === 1 ? "" : "s"}`
               : `Context inherited · ${m.scopeCount} scope${m.scopeCount === 1 ? "" : "s"}`
           }
-          className={cn(m.contextOverridden && "text-primary", "@max-[17rem]:hidden")}
+          className={cn(
+            m.contextOverridden && "text-primary",
+            "@max-[17rem]:hidden",
+          )}
         >
           {m.scopeCount > 0 ? m.scopeCount : ""}
         </Chip>

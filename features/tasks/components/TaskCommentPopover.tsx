@@ -3,9 +3,10 @@
 // features/tasks/components/TaskCommentPopover.tsx
 //
 // Reusable task-comment surface: a compact button that opens a popover with the
-// comment thread + an inline composer. Backed by ctx_task_comments via
-// taskService. Built here (not in War Room) so the full task editor and any
-// other surface can adopt it — there was no task-comment UI before this.
+// comment thread + an inline composer. Backed by the canonical comments
+// primitive (`platform.comments`) via `commentsService` (entity_type='task'),
+// reached through taskService's comment helpers. Built here (not in War Room)
+// so the full task editor and any other surface can adopt it.
 
 import { useState } from "react";
 import { MessageSquare, Loader2 } from "lucide-react";
@@ -17,15 +18,9 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import * as taskService from "@/features/tasks/services/taskService";
+import type { Comment } from "@/features/comments/types";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
-
-interface TaskComment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id?: string | null;
-}
 
 export function TaskCommentPopover({
   taskId,
@@ -35,7 +30,7 @@ export function TaskCommentPopover({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [draft, setDraft] = useState("");
@@ -45,7 +40,7 @@ export function TaskCommentPopover({
     setLoading(true);
     try {
       const rows = await taskService.getTaskComments(taskId);
-      setComments((rows ?? []) as TaskComment[]);
+      setComments(rows);
       setLoaded(true);
     } finally {
       setLoading(false);
@@ -64,7 +59,7 @@ export function TaskCommentPopover({
     try {
       const created = await taskService.createTaskComment(taskId, content);
       if (created) {
-        setComments((prev) => [...prev, created as TaskComment]);
+        setComments((prev) => [...prev, created]);
         setDraft("");
       } else {
         toast.error("Couldn't add comment");
@@ -104,10 +99,10 @@ export function TaskCommentPopover({
             comments.map((c) => (
               <div key={c.id} className="rounded-md bg-muted/50 px-2 py-1.5">
                 <p className="text-xs text-foreground whitespace-pre-wrap break-words">
-                  {c.content}
+                  {c.body}
                 </p>
                 <span className="text-[10px] text-muted-foreground">
-                  {formatRelativeTime(c.created_at)}
+                  {formatRelativeTime(c.createdAt)}
                 </span>
               </div>
             ))

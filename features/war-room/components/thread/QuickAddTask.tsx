@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/QuickAddTask.tsx
+// features/war-room/components/thread/QuickAddTask.tsx
 //
 // Feature 67a282c8 — capture a task into the room WITHOUT leaving the thread
 // you're on. The task analog of QuickAddThread: same keyboard-first interaction
@@ -15,8 +15,8 @@
 //   • Thread — add the task INTO the current staged thread: as a SUBTASK when it
 //     already has a task, else as the thread's anchor task. Never stages away.
 //
-// Reuses the real writers — `createTile` + `createTileTask` (new thread),
-// `createSubtaskThunk` / `createTileTask` (current thread) — so Redux + every
+// Reuses the real writers — `createTile` + `createThreadTask` (new thread),
+// `createSubtaskThunk` / `createThreadTask` (current thread) — so Redux + every
 // surface update live; nothing is reimplemented.
 
 import { useRef, useState } from "react";
@@ -24,11 +24,14 @@ import { Loader2, Check, ArrowRight, ListChecks, ListPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
-  createTile,
-  createTileTask,
+  createThread,
+  createThreadTask,
 } from "@/features/war-room/redux/thunks";
-import { createSubtaskThunk, updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
-import { selectTileTaskId } from "@/features/war-room/redux/selectors";
+import {
+  createSubtaskThunk,
+  updateTaskFieldThunk,
+} from "@/features/tasks/redux/thunks";
+import { selectThreadTaskId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 
 export type QuickAddTaskTarget = "room" | "thread";
@@ -37,15 +40,15 @@ export function QuickAddTask({
   sessionId,
   nextPosition,
   /** The currently-staged thread — the "Thread" target. Omit to force Room-only. */
-  stagedTileId,
+  stagedThreadId,
   /** Promote a freshly-created task thread to the Stage ("Create and Open"). */
   onOpen,
   variant = "rail",
 }: {
   sessionId: string;
   nextPosition: number;
-  stagedTileId?: string | null;
-  onOpen?: (tileId: string) => void;
+  stagedThreadId?: string | null;
+  onOpen?: (threadId: string) => void;
   variant?: "rail" | "card";
 }) {
   const dispatch = useAppDispatch();
@@ -59,7 +62,7 @@ export function QuickAddTask({
   const [target, setTarget] = useState<QuickAddTaskTarget>("room");
 
   const titleRef = useRef<HTMLInputElement>(null);
-  const canTargetThread = !!stagedTileId;
+  const canTargetThread = !!stagedThreadId;
   const effectiveTarget: QuickAddTaskTarget =
     target === "thread" && canTargetThread ? "thread" : "room";
 
@@ -82,9 +85,11 @@ export function QuickAddTask({
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      if (effectiveTarget === "thread" && stagedTileId) {
+      if (effectiveTarget === "thread" && stagedThreadId) {
         // Add to the staged thread: subtask of its task, else its anchor task.
-        const existingTaskId = selectTileTaskId(stagedTileId)(store.getState());
+        const existingTaskId = selectThreadTaskId(stagedThreadId)(
+          store.getState(),
+        );
         if (existingTaskId) {
           await dispatch(
             createSubtaskThunk({
@@ -93,7 +98,7 @@ export function QuickAddTask({
             }),
           ).unwrap();
         } else {
-          const newTaskId = await dispatch(createTileTask(stagedTileId));
+          const newTaskId = await dispatch(createThreadTask(stagedThreadId));
           if (typeof newTaskId === "string" && newTaskId) {
             await dispatch(
               updateTaskFieldThunk({
@@ -110,25 +115,28 @@ export function QuickAddTask({
       }
 
       // Room target: a new task-flavored sibling thread holding the task.
-      const tile = await dispatch(
-        createTile({
-          sessionId,
+      const thread = await dispatch(
+        createThread({
+          roomId: sessionId,
           position: nextPosition,
           title: trimmed,
-          flavor: "task",
+          anchorType: "task",
           activeTab: "task",
         }),
       );
-      if (!tile?.id) return; // thunk surfaced the failure
-      const newTaskId = await dispatch(createTileTask(tile.id));
+      if (!thread?.id) return; // thunk surfaced the failure
+      const newTaskId = await dispatch(createThreadTask(thread.id));
       if (typeof newTaskId === "string" && newTaskId) {
         await dispatch(
-          updateTaskFieldThunk({ taskId: newTaskId, patch: { title: trimmed } }),
+          updateTaskFieldThunk({
+            taskId: newTaskId,
+            patch: { title: trimmed },
+          }),
         );
       }
 
       if (mode === "open") {
-        onOpen?.(tile.id);
+        onOpen?.(thread.id);
         collapse();
       } else {
         // Stay on the current thread; re-arm for the next quick task.
@@ -187,12 +195,10 @@ export function QuickAddTask({
           aria-label="Add task to"
           className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5"
         >
-          {(
-            [
-              { value: "room" as const, label: "New thread" },
-              { value: "thread" as const, label: "This thread" },
-            ]
-          ).map((opt) => {
+          {[
+            { value: "room" as const, label: "New thread" },
+            { value: "thread" as const, label: "This thread" },
+          ].map((opt) => {
             const active = effectiveTarget === opt.value;
             return (
               <button

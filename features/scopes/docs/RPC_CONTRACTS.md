@@ -22,9 +22,9 @@
 ### Auth & RLS
 
 - All RPCs assume `auth.uid()` is present. None are anonymous.
-- Read RPCs return rows for orgs the user is a member of, **plus** the user's personal projects/tasks (org_id IS NULL). Personal data is keyed off `auth.uid() = created_by` or `auth.uid() IN (project.member_ids)` depending on table.
+- Read RPCs return rows for orgs the user is a member of, including the user's personal organization (`organizations.is_personal = true`).
 - Mutation RPCs additionally check the user's role in the target org. Roles are read via `is_member_of_org(org_id, min_role)`.
-- **Personal pseudo-org sentinel:** the frontend may send `PERSONAL_PSEUDO_ORG_ID = '00000000-0000-0000-0000-000000000001'`. The client API boundary strips it to `NULL` before the request; servers should defensively treat it as `NULL` if it slips through (this preserves the boundary-strip behaviour documented in `features/agent-context/FEATURE.md`).
+- Personal context is not synthesized. Frontend and RPC callers pass the real personal organization id.
 
 ### Error semantics
 
@@ -87,7 +87,7 @@ The boot fetch. One round-trip. ~20 KB for a typical user.
     id: string;
     name: string;
     slug: string;
-    is_personal: boolean;        // true for the Personal pseudo-org synthesised server-side
+    is_personal: boolean;        // true for the user's real personal organization row
     role: 'owner' | 'admin' | 'member';   // mirrors public.org_role exactly — no read-only role exists
     scope_types: Array<{
       id: string;
@@ -132,7 +132,7 @@ The boot fetch. One round-trip. ~20 KB for a typical user.
 - `p_refresh = true` is a hint for cache invalidation on the server side. Pure read otherwise.
 - Tasks are NOT returned. See `list_scope_tasks`.
 - Orphan projects (org_id present but no scope) ARE returned in the `projects` array — the client decides whether to show them under "Other projects" based on `scope_ids` length.
-- Personal projects (org_id IS NULL) are returned under the Personal pseudo-org.
+- Personal projects are returned under the user's real personal organization.
 - Result is bounded — max 200 scope_types per org, max 500 scopes per type, max 1000 projects per org. If a user exceeds these, return what fits in stable order (alpha) and set a `truncated: true` flag (extension to the shape — TBD if needed).
 
 ### `list_scope_tasks(p_level text, p_id uuid, p_limit int default 200, p_offset int default 0)`

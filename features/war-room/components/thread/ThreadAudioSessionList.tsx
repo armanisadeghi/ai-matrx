@@ -1,16 +1,16 @@
 "use client";
 
-// features/war-room/components/tile/TileAudioSessionList.tsx
+// features/war-room/components/thread/ThreadAudioSessionList.tsx
 //
 // The tile's recording-session LIST — the powerful "track every session" view
 // that the embedded CleanupPad reveals in place (via its `sessionListSlot`
 // prop), instead of the page-scoped CleanupSessionList. It drives the REAL
 // war-room association store: the tile's `source='war_room'` studio sessions,
 // tracked in the war-room slice and exposed through:
-//   • selectAudioSessionIdsForTile(tileId)   — the tile's ordered session ids
-//   • selectActiveAudioSessionId(tileId)      — which one is focused
-//   • setTileActiveAudioSession(tileId, id)   — switch focus (persists + loads)
-//   • addAudioSessionToTile(tileId)           — start a fresh session
+//   • selectAudioSessionIdsForThread(threadId)   — the tile's ordered session ids
+//   • selectActiveAudioSessionId(threadId)      — which one is focused
+//   • setThreadActiveAudioSession(threadId, id)   — switch focus (persists + loads)
+//   • addAudioSessionToThread(threadId)           — start a fresh session
 //
 // Each row enriches with the studio session row's title + relative time when
 // that row is hydrated in the transcript-studio slice (it is, for any session
@@ -24,19 +24,19 @@ import type { RootState } from "@/lib/redux/store";
 import { selectSessionsById } from "@/features/transcript-studio/redux/selectors";
 import {
   selectActiveAudioSessionId,
-  selectAudioSessionIdsForTile,
+  selectAudioSessionIdsForThread,
 } from "@/features/war-room/redux/selectors";
 import {
-  addAudioSessionToTile,
-  setTileActiveAudioSession,
+  addAudioSessionToThread,
+  setThreadActiveAudioSession,
 } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 
-export function TileAudioSessionList({ tileId }: { tileId: string }) {
+export function ThreadAudioSessionList({ threadId }: { threadId: string }) {
   const dispatch = useAppDispatch();
-  const sessionIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
-  const activeId = useAppSelector(selectActiveAudioSessionId(tileId));
+  const sessionIds = useAppSelector(selectAudioSessionIdsForThread(threadId));
+  const activeId = useAppSelector(selectActiveAudioSessionId(threadId));
   // Studio session rows (title / updatedAt) for any session already hydrated.
   const studioById = useAppSelector((s: RootState) => selectSessionsById(s));
 
@@ -52,7 +52,7 @@ export function TileAudioSessionList({ tileId }: { tileId: string }) {
         </span>
         <button
           type="button"
-          onClick={() => void dispatch(addAudioSessionToTile(tileId))}
+          onClick={() => void dispatch(addAudioSessionToThread(threadId))}
           title="Start a new recording session in this thread"
           className="inline-flex h-7 items-center gap-1 rounded-md border border-primary/30 bg-card px-2 text-[11px] font-medium text-foreground ring-1 ring-primary/10 transition-all hover:ring-primary/30 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
@@ -82,7 +82,7 @@ export function TileAudioSessionList({ tileId }: { tileId: string }) {
                 <button
                   type="button"
                   onClick={() =>
-                    dispatch(setTileActiveAudioSession(tileId, sid))
+                    dispatch(setThreadActiveAudioSession(threadId, sid))
                   }
                   aria-pressed={active}
                   className={cn(

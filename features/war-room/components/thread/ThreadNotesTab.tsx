@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileNotesTab.tsx
+// features/war-room/components/thread/ThreadNotesTab.tsx
 //
 // Notes view backed by real `notes` records + the notes autosave middleware.
 // A tile can hold MULTIPLE notes (mirror of the audio sessions): the tile owns
@@ -44,12 +44,12 @@ import {
 import { fetchNoteContent } from "@/features/notes/redux/thunks";
 import {
   selectActiveNoteId,
-  selectNoteIdsForTile,
+  selectNoteIdsForThread,
 } from "@/features/war-room/redux/selectors";
 import {
-  addNoteToTile,
-  ensureTileNote,
-  setTileActiveNote,
+  addNoteToThread,
+  ensureThreadNote,
+  setThreadActiveNote,
 } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
@@ -59,26 +59,26 @@ const MODES: { id: EditorMode; label: string; Icon: typeof Type }[] = [
   { id: "preview", label: "Preview", Icon: Eye },
 ];
 
-export function TileNotesTab({
-  tileId,
+export function ThreadNotesTab({
+  threadId,
   sessionId,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const noteId = useAppSelector(selectActiveNoteId(tileId));
-  const noteIds = useAppSelector(selectNoteIdsForTile(tileId));
+  const noteId = useAppSelector(selectActiveNoteId(threadId));
+  const noteIds = useAppSelector(selectNoteIdsForThread(threadId));
   const activeIndex = noteId ? noteIds.indexOf(noteId) : -1;
 
   // Ensure the tile has a backing note so the editor always has one to bind to
   // (idempotent + coalesced inside the thunk). A fresh tile gets its first note
   // here; an existing tile resolves its active 'note' assignment.
   useEffect(() => {
-    if (!noteId) void dispatch(ensureTileNote(tileId));
-  }, [noteId, tileId, dispatch]);
+    if (!noteId) void dispatch(ensureThreadNote(threadId));
+  }, [noteId, threadId, dispatch]);
 
   // Compact ("All" combined view): merged toolbar + plain editor only.
   if (compact) {
@@ -91,8 +91,8 @@ export function TileNotesTab({
     }
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <TileNotesToolbar
-          tileId={tileId}
+        <ThreadNotesToolbar
+          threadId={threadId}
           sessionId={sessionId}
           noteId={noteId}
           noteIds={noteIds}
@@ -100,7 +100,7 @@ export function TileNotesTab({
           compact
         />
         <div className="min-h-0 flex-1">
-          <TileNoteEditor noteId={noteId} compact />
+          <ThreadNoteEditor noteId={noteId} compact />
         </div>
       </div>
     );
@@ -108,8 +108,8 @@ export function TileNotesTab({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <TileNotesToolbar
-        tileId={tileId}
+      <ThreadNotesToolbar
+        threadId={threadId}
         sessionId={sessionId}
         noteId={noteId}
         noteIds={noteIds}
@@ -118,7 +118,7 @@ export function TileNotesTab({
 
       <div className="min-h-0 flex-1">
         {noteId ? (
-          <TileNoteEditor noteId={noteId} />
+          <ThreadNoteEditor noteId={noteId} />
         ) : (
           <div className="grid h-full place-items-center">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
@@ -129,15 +129,15 @@ export function TileNotesTab({
   );
 }
 
-function TileNotesToolbar({
-  tileId,
+function ThreadNotesToolbar({
+  threadId,
   sessionId,
   noteId,
   noteIds,
   activeIndex,
   compact,
 }: {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   noteId: string | null;
   noteIds: string[];
@@ -204,7 +204,7 @@ function TileNotesToolbar({
             {noteIds.map((nid, i) => (
               <NoteSwitcherItem
                 key={nid}
-                tileId={tileId}
+                threadId={threadId}
                 nid={nid}
                 index={i}
                 activeNoteId={noteId}
@@ -218,7 +218,7 @@ function TileNotesToolbar({
 
       <button
         type="button"
-        onClick={() => void dispatch(addNoteToTile(tileId, sessionId))}
+        onClick={() => void dispatch(addNoteToThread(threadId, sessionId))}
         className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         title="Create a new note in this tile"
       >
@@ -232,12 +232,12 @@ function TileNotesToolbar({
 /** One row in the note switcher — shows the note's real label (not a positional
  *  "Note N"), so the user can see and pick the note by name. */
 function NoteSwitcherItem({
-  tileId,
+  threadId,
   nid,
   index,
   activeNoteId,
 }: {
-  tileId: string;
+  threadId: string;
   nid: string;
   index: number;
   activeNoteId: string | null;
@@ -247,7 +247,7 @@ function NoteSwitcherItem({
   const label = note?.label?.trim() || `Note ${index + 1}`;
   return (
     <DropdownMenuItem
-      onClick={() => dispatch(setTileActiveNote(tileId, nid))}
+      onClick={() => dispatch(setThreadActiveNote(threadId, nid))}
       className={cn("gap-2", nid === activeNoteId && "text-primary")}
     >
       <span className="truncate">{label}</span>
@@ -255,7 +255,7 @@ function NoteSwitcherItem({
   );
 }
 
-function TileNoteEditor({
+function ThreadNoteEditor({
   noteId,
   compact,
 }: {

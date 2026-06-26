@@ -649,6 +649,21 @@ export default function CleanupPad({
    */
   const liveTranscriptRef = useRef("");
   liveTranscriptRef.current = liveTranscript;
+  /**
+   * Ref mirror of `appliedSessionId` so the load-reset effect can read the
+   * latest applied session without taking it as a dependency.
+   */
+  const appliedSessionIdRef = useRef<string | null>(null);
+  appliedSessionIdRef.current = appliedSessionId;
+  /**
+   * The bound session id for which the user has produced raw transcript content
+   * locally this mount (dictation / typing / queued insert). Guards the
+   * load-reset effect: a session load that resolves AFTER local content was
+   * produced — the mount-load-vs-recording race, or a realtime re-load of the
+   * same session — must never clobber the just-dictated text with the stale DB
+   * snapshot. This is the War Room "transcript vanished after stop" defect.
+   */
+  const localRawSessionRef = useRef<string | null>(null);
 
   // Pane textarea refs — the context menu reads selection through these.
   const transcriptTaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -833,64 +848,91 @@ export default function CleanupPad({
     [paneApplicationScope],
   );
 
+  // Scope the locally-dictated protection to the currently-bound session: the
+  // moment we switch sessions, the just-dictated guard no longer applies (the
+  // page variant shares one "main" voicePad instance across sessions, so a
+  // stale guard would otherwise keep the prior session's text on revisit).
+  useEffect(() => {
+    localRawSessionRef.current = null;
+  }, [session.activeSessionId]);
+
   // ── Session content loading: reset local state from the DB snapshot ───────
   useEffect(() => {
     const loaded = session.loaded;
     if (!loaded) return;
-    dispatch(
-      clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }),
-    );
-    dispatch(
-      setDraftText({
-        overlayId: OVERLAY_ID,
-        instanceId: INSTANCE_ID,
-        text: loaded.rawText,
-      }),
-    );
-    setEditedResponse(loaded.cleanText || null);
 
-    // Guard: ids that didn't resolve to a real agent name (studio shortcut
-    // ids on foreign sessions) aren't runnable here — fall back, loudly.
-    const validClean =
-      loaded.cleanAgentId && loaded.agentNames[loaded.cleanAgentId];
-    if (loaded.cleanAgentId && !validClean) {
-      console.warn(
-        `[cleanup] persisted clean agent ${loaded.cleanAgentId} did not resolve to an agent (studio shortcut id?) — using the role default`,
+    // A re-load of the session already reflected in the panes must NEVER wipe
+    // local state — once applied, local is authoritative. Without this guard a
+    // load that resolves AFTER a recording stop committed its transcript (or any
+    // realtime re-load of the same session) would clobber the just-dictated text
+    // with the stale DB snapshot, leaving the transcript pane blank while the
+    // cleaned output (built from the in-memory commit) still lands. This is the
+    // War Room "transcript vanished after stop" defect.
+    if (loaded.sessionId === appliedSessionIdRef.current) return;
+
+    // First application of this session. If the user already produced transcript
+    // content locally for this exact session before its load landed (the
+    // mount-load-vs-recording race), keep everything local — the in-pane text is
+    // newer than the DB read — and only mark the session applied below.
+    const keepLocalContent = localRawSessionRef.current === loaded.sessionId;
+
+    if (!keepLocalContent) {
+      dispatch(
+        clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }),
       );
-    }
-    setCleanAgentId(
-      validClean
-        ? loaded.cleanAgentId!
-        : (cleanRoleRef.current?.effectiveAgentId ?? ""),
-    );
+      dispatch(
+        setDraftText({
+          overlayId: OVERLAY_ID,
+          instanceId: INSTANCE_ID,
+          text: loaded.rawText,
+        }),
+      );
+      setEditedResponse(loaded.cleanText || null);
 
-    const loadedSlots = (
-      loaded.customSlots.length > 0 ? loaded.customSlots : initialSlots()
-    )
-      .slice(0, MAX_CUSTOM_SLOTS)
-      .map((slot) => {
-        if (slot.agentId && !loaded.agentNames[slot.agentId]) {
-          console.warn(
-            `[cleanup] persisted slot agent ${slot.agentId} did not resolve to an agent — clearing`,
-          );
-          return { ...slot, agentId: null };
-        }
-        return slot;
-      });
-    pickedSlotIdsRef.current = new Set();
-    setSlots(loadedSlots);
-    setActiveSlotIdx(0);
-    const edited: Record<string, string | null> = {};
-    for (const slot of loadedSlots) {
-      edited[slot.id] = loaded.customTexts[slot.docKind] || null;
-    }
-    setEditedBySlot(edited);
+      // Guard: ids that didn't resolve to a real agent name (studio shortcut
+      // ids on foreign sessions) aren't runnable here — fall back, loudly.
+      const validClean =
+        loaded.cleanAgentId && loaded.agentNames[loaded.cleanAgentId];
+      if (loaded.cleanAgentId && !validClean) {
+        console.warn(
+          `[cleanup] persisted clean agent ${loaded.cleanAgentId} did not resolve to an agent (studio shortcut id?) — using the role default`,
+        );
+      }
+      setCleanAgentId(
+        validClean
+          ? loaded.cleanAgentId!
+          : (cleanRoleRef.current?.effectiveAgentId ?? ""),
+      );
 
-    contextItemsRef.current = loaded.contextItems;
+      const loadedSlots = (
+        loaded.customSlots.length > 0 ? loaded.customSlots : initialSlots()
+      )
+        .slice(0, MAX_CUSTOM_SLOTS)
+        .map((slot) => {
+          if (slot.agentId && !loaded.agentNames[slot.agentId]) {
+            console.warn(
+              `[cleanup] persisted slot agent ${slot.agentId} did not resolve to an agent — clearing`,
+            );
+            return { ...slot, agentId: null };
+          }
+          return slot;
+        });
+      pickedSlotIdsRef.current = new Set();
+      setSlots(loadedSlots);
+      setActiveSlotIdx(0);
+      const edited: Record<string, string | null> = {};
+      for (const slot of loadedSlots) {
+        edited[slot.id] = loaded.customTexts[slot.docKind] || null;
+      }
+      setEditedBySlot(edited);
+
+      contextItemsRef.current = loaded.contextItems;
+      setLiveTranscript("");
+      cleanAi.reset();
+      for (const ai of slotAis) ai.reset();
+    }
+
     setAgentNames((prev) => ({ ...prev, ...loaded.agentNames }));
-    setLiveTranscript("");
-    cleanAi.reset();
-    for (const ai of slotAis) ai.reset();
     // Content is now reflected in the panes — lift the per-pane loading veil.
     setAppliedSessionId(loaded.sessionId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -914,6 +956,9 @@ export default function CleanupPad({
     setPendingSuffix("");
     pendingPrefixRef.current = "";
     pendingSuffixRef.current = "";
+    // Content was explicitly cleared — drop the locally-dictated protection so a
+    // subsequent session load (or a fresh session) can apply its own snapshot.
+    localRawSessionRef.current = null;
     cleanAi.reset();
     for (const ai of slotAis) ai.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1165,6 +1210,10 @@ export default function CleanupPad({
       clearPendingInserts();
       if (!combined) return null;
 
+      // Mark this session as locally-dictated so a load that resolves after this
+      // commit (mount-load race / realtime re-load) can't wipe the transcript.
+      localRawSessionRef.current = sessionRefs.current.activeSessionId;
+
       if (trimmed) {
         dispatch(
           addTranscriptEntry({
@@ -1268,6 +1317,7 @@ export default function CleanupPad({
         }),
       );
       baseTextRef.current = next;
+      localRawSessionRef.current = sessionRefs.current.activeSessionId;
       session.persistRawReplace(next);
     },
     [dispatch, isMicRecording, isMicTranscribing, session],
@@ -1294,6 +1344,7 @@ export default function CleanupPad({
       // stream). Mark the focus session as actively edited so the live preview
       // stops fighting the caret until the field is blurred.
       transcriptEditedRef.current = true;
+      localRawSessionRef.current = sessionRefs.current.activeSessionId;
       setLiveTranscript("");
       if (pendingPrefixRef.current || pendingSuffixRef.current) {
         setPendingPrefix("");

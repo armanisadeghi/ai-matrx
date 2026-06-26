@@ -1,4 +1,5 @@
-import { supabase } from '@/utils/supabase/client';
+import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import type {
   DataBroker,
   BrokerValue,
@@ -10,7 +11,7 @@ import type {
   UpdateBrokerInput,
   CreateBrokerValueInput,
   BulkBrokerValueInput,
-} from '../types';
+} from "../types";
 
 export class BrokerService {
   // ==========================================
@@ -21,7 +22,12 @@ export class BrokerService {
    * Get all brokers, optionally filtered by user
    */
   static async getBrokers(userId?: string): Promise<DataBroker[]> {
-    let query = supabase.from('data_broker').select('*').order('name');
+    let query = fromDeprecatedTable(
+      "data_broker",
+      "features/brokers/services/core-broker-crud.ts:getBrokers",
+    )
+      .select("*")
+      .order("name");
 
     if (userId) {
       query = query.or(`user_id.eq.${userId},user_id.is.null`);
@@ -37,10 +43,12 @@ export class BrokerService {
    * Get a single broker by ID
    */
   static async getBrokerById(id: string): Promise<DataBroker | null> {
-    const { data, error } = await supabase
-      .from('data_broker')
-      .select('*')
-      .eq('id', id)
+    const { data, error } = await fromDeprecatedTable(
+      "data_broker",
+      "features/brokers/services/core-broker-crud.ts:getBrokerById",
+    )
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
@@ -51,8 +59,10 @@ export class BrokerService {
    * Create a new broker
    */
   static async createBroker(input: CreateBrokerInput): Promise<DataBroker> {
-    const { data, error } = await supabase
-      .from('data_broker')
+    const { data, error } = await fromDeprecatedTable(
+      "data_broker",
+      "features/brokers/services/core-broker-crud.ts:createBroker",
+    )
       .insert(input)
       .select()
       .single();
@@ -66,12 +76,14 @@ export class BrokerService {
    */
   static async updateBroker(
     id: string,
-    input: UpdateBrokerInput
+    input: UpdateBrokerInput,
   ): Promise<DataBroker> {
-    const { data, error } = await supabase
-      .from('data_broker')
+    const { data, error } = await fromDeprecatedTable(
+      "data_broker",
+      "features/brokers/services/core-broker-crud.ts:updateBroker",
+    )
       .update(input)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -83,7 +95,12 @@ export class BrokerService {
    * Delete a broker
    */
   static async deleteBroker(id: string): Promise<void> {
-    const { error } = await supabase.from('data_broker').delete().eq('id', id);
+    const { error } = await fromDeprecatedTable(
+      "data_broker",
+      "features/brokers/services/core-broker-crud.ts:deleteBroker",
+    )
+      .delete()
+      .eq("id", id);
 
     if (error) throw error;
   }
@@ -105,19 +122,22 @@ export class BrokerService {
     user_id?: string;
     is_global?: boolean;
   }): Promise<BrokerValue[]> {
-    let query = supabase.from('broker_values').select('*');
+    let query = fromDeprecatedTable(
+      "broker_values",
+      "features/brokers/services/core-broker-crud.ts:getBrokerValues",
+    ).select("*");
 
     // Apply filters
-    if (params.broker_id) query = query.eq('broker_id', params.broker_id);
+    if (params.broker_id) query = query.eq("broker_id", params.broker_id);
     if (params.organization_id)
-      query = query.eq('organization_id', params.organization_id);
-    if (params.project_id) query = query.eq('project_id', params.project_id);
-    if (params.task_id) query = query.eq('task_id', params.task_id);
-    if (params.ai_runs_id) query = query.eq('ai_runs_id', params.ai_runs_id);
-    if (params.ai_tasks_id) query = query.eq('ai_tasks_id', params.ai_tasks_id);
-    if (params.user_id) query = query.eq('user_id', params.user_id);
+      query = query.eq("organization_id", params.organization_id);
+    if (params.project_id) query = query.eq("project_id", params.project_id);
+    if (params.task_id) query = query.eq("task_id", params.task_id);
+    if (params.ai_runs_id) query = query.eq("ai_runs_id", params.ai_runs_id);
+    if (params.ai_tasks_id) query = query.eq("ai_tasks_id", params.ai_tasks_id);
+    if (params.user_id) query = query.eq("user_id", params.user_id);
     if (params.is_global !== undefined)
-      query = query.eq('is_global', params.is_global);
+      query = query.eq("is_global", params.is_global);
 
     const { data, error } = await query;
 
@@ -129,10 +149,12 @@ export class BrokerService {
    * Get a single broker value by ID
    */
   static async getBrokerValueById(id: string): Promise<BrokerValue | null> {
-    const { data, error } = await supabase
-      .from('broker_values')
-      .select('*')
-      .eq('id', id)
+    const { data, error } = await fromDeprecatedTable(
+      "broker_values",
+      "features/brokers/services/core-broker-crud.ts:getBrokerValueById",
+    )
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error) throw error;
@@ -143,9 +165,9 @@ export class BrokerService {
    * Upsert a broker value (create or update)
    */
   static async upsertBrokerValue(
-    input: CreateBrokerValueInput
+    input: CreateBrokerValueInput,
   ): Promise<string> {
-    const { data, error } = await supabase.rpc('upsert_broker_value', {
+    const { data, error } = await supabase.rpc("upsert_broker_value", {
       p_broker_id: input.broker_id,
       p_value: input.value,
       p_is_global: input.is_global || false,
@@ -167,9 +189,9 @@ export class BrokerService {
    */
   static async bulkUpsertBrokerValues(
     brokerValues: BulkBrokerValueInput[],
-    scope: Partial<BrokerContext> & { created_by?: string }
+    scope: Partial<BrokerContext> & { created_by?: string },
   ): Promise<BulkUpsertBrokerResult[]> {
-    const { data, error } = await supabase.rpc('bulk_upsert_broker_values', {
+    const { data, error } = await supabase.rpc("bulk_upsert_broker_values", {
       p_broker_value_pairs: brokerValues,
       p_is_global: false,
       p_user_id: scope.user_id || null,
@@ -189,10 +211,12 @@ export class BrokerService {
    * Delete a broker value
    */
   static async deleteBrokerValue(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('broker_values')
+    const { error } = await fromDeprecatedTable(
+      "broker_values",
+      "features/brokers/services/core-broker-crud.ts:deleteBrokerValue",
+    )
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) throw error;
   }
@@ -207,10 +231,10 @@ export class BrokerService {
    */
   static async getBrokerValuesForContext(
     brokerIds: string[],
-    context: BrokerContext
+    context: BrokerContext,
   ): Promise<ResolvedBrokerValue[]> {
     const { data, error } = await supabase.rpc(
-      'get_broker_values_for_context',
+      "get_broker_values_for_context",
       {
         p_broker_ids: brokerIds,
         p_user_id: context.user_id || null,
@@ -219,7 +243,7 @@ export class BrokerService {
         p_task_id: context.task_id || null,
         p_ai_runs_id: context.ai_runs_id || null,
         p_ai_tasks_id: context.ai_tasks_id || null,
-      }
+      },
     );
 
     if (error) throw error;
@@ -231,10 +255,10 @@ export class BrokerService {
    */
   static async getCompleteBrokerDataForContext(
     brokerIds: string[],
-    context: BrokerContext
+    context: BrokerContext,
   ): Promise<CompleteBrokerData[]> {
     const { data, error } = await supabase.rpc(
-      'get_complete_broker_data_for_context',
+      "get_complete_broker_data_for_context",
       {
         p_broker_ids: brokerIds,
         p_user_id: context.user_id || null,
@@ -243,7 +267,7 @@ export class BrokerService {
         p_task_id: context.task_id || null,
         p_ai_runs_id: context.ai_runs_id || null,
         p_ai_tasks_id: context.ai_tasks_id || null,
-      }
+      },
     );
 
     if (error) throw error;
@@ -256,9 +280,9 @@ export class BrokerService {
    */
   static async getMissingBrokerIds(
     brokerIds: string[],
-    context: BrokerContext
+    context: BrokerContext,
   ): Promise<string[]> {
-    const { data, error } = await supabase.rpc('get_missing_broker_ids', {
+    const { data, error } = await supabase.rpc("get_missing_broker_ids", {
       p_broker_ids: brokerIds,
       p_user_id: context.user_id || null,
       p_organization_id: context.organization_id || null,
@@ -303,23 +327,29 @@ export class BrokerService {
    * Useful for passing to AI agents or templates
    */
   static brokerValuesToObject(
-    brokers: ResolvedBrokerValue[]
+    brokers: ResolvedBrokerValue[],
   ): Record<string, any> {
-    return brokers.reduce((acc, broker) => {
-      acc[broker.broker_id] = broker.value;
-      return acc;
-    }, {} as Record<string, any>);
+    return brokers.reduce(
+      (acc, broker) => {
+        acc[broker.broker_id] = broker.value;
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
   }
 
   /**
    * Convert complete broker data to a key-value object with names as keys
    */
   static completeBrokerDataToObject(
-    brokers: CompleteBrokerData[]
+    brokers: CompleteBrokerData[],
   ): Record<string, any> {
-    return brokers.reduce((acc, broker) => {
-      acc[broker.broker_name] = broker.value;
-      return acc;
-    }, {} as Record<string, any>);
+    return brokers.reduce(
+      (acc, broker) => {
+        acc[broker.broker_name] = broker.value;
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
   }
 }

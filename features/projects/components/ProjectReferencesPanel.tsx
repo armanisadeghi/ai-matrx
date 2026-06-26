@@ -22,8 +22,6 @@ import {
   CheckSquare,
   Workflow,
   Box,
-  Users,
-  Mail,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -258,18 +256,11 @@ const TABLE_META: Record<string, TableMeta> = {
     category: "Learning",
     categoryColor: CATEGORY_COLORS.Learning,
   },
-  ctx_project_members: {
-    label: "Members",
-    icon: Users,
-    category: "Project",
-    categoryColor: CATEGORY_COLORS.Project,
-  },
-  ctx_project_invitations: {
-    label: "Invitations",
-    icon: Mail,
-    category: "Project",
-    categoryColor: CATEGORY_COLORS.Project,
-  },
+  // Project membership + invitations moved to the canonical iam.memberships /
+  // iam.invitations stores (2026 DB cutover). The legacy project-member /
+  // project-invitation tables no longer hold project data, so they are no
+  // longer surfaced here; any residual FK row falls through to the generated
+  // label in getTableMeta.
   ctx_user_active_context: {
     label: "Active Context",
     icon: Activity,
@@ -296,7 +287,7 @@ function getTableMeta(tableName: string): TableMeta {
 // Sub-components
 // ============================================================================
 
-function ReferenceRow({ ref: r }: { ref: ProjectReference }) {
+function ReferenceRow({ reference: r }: { reference: ProjectReference }) {
   const meta = getTableMeta(r.tableName);
   const Icon = meta.icon;
   const isEmpty = r.rowCount === 0;
@@ -356,7 +347,7 @@ function CategorySection({
         </span>
       </div>
       {visibleRefs.map((r) => (
-        <ReferenceRow key={`${r.schemaName}.${r.tableName}`} ref={r} />
+        <ReferenceRow key={`${r.schemaName}.${r.tableName}`} reference={r} />
       ))}
     </div>
   );

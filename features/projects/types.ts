@@ -84,7 +84,7 @@ export interface ProjectInvitationWithProject extends ProjectInvitation {
 export interface CreateProjectOptions {
   name: string;
   slug: string;
-  /** Undefined or null = personal project (no org) */
+  /** Undefined or null resolves to the user's personal organization. */
   organizationId?: string | null;
   description?: string;
   settings?: Record<string, unknown>;
@@ -94,9 +94,8 @@ export interface UpdateProjectOptions {
   name?: string;
   description?: string;
   settings?: Record<string, unknown>;
-  /** Move the project to a different organization (its owner's personal org
-   * counts as an org). Never set to null — every project belongs to an org. */
-  organizationId?: string;
+  /** Move the project to a different organization; null resolves to personal org. */
+  organizationId?: string | null;
   status?: ProjectStatus;
   priority?: ProjectPriority | null;
   /** ISO date (yyyy-mm-dd) or null to clear. */

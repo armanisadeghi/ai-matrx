@@ -45,12 +45,13 @@
 import { supabase } from "@/utils/supabase/client";
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { getTaskById } from "@/features/tasks/services/taskService";
-import { getSession, listTiles } from "@/features/war-room/service";
+import { getSession, listThreadsForRoom } from "@/features/war-room/service";
 import { listAssignmentsForContainers } from "@/features/war-room/service/associations";
 import {
+  roomRef,
   threadRef,
   type WarRoomAssignment,
-  type WarRoomTile,
+  type WarRoomThread,
 } from "@/features/war-room/types";
 import {
   indexThreadAssignments,
@@ -85,11 +86,11 @@ function noteSnippet(content: string | null | undefined): string | undefined {
 /** A human label for a thread (tile) — its own title, else its task title, else
  *  a positional fallback. Keeps the roster readable when tiles are unnamed. */
 function threadTitle(
-  tile: WarRoomTile,
+  thread: WarRoomThread,
   taskTitle: string | undefined,
   index: number,
 ): string {
-  const own = tile.title?.trim();
+  const own = thread.title?.trim();
   if (own) return own;
   if (taskTitle?.trim()) return taskTitle.trim();
   return `Thread ${index + 1}`;
@@ -123,7 +124,18 @@ export async function buildRoomAgentContext(
   try {
     const session = await getSession(sessionId);
     if (session?.title?.trim()) roomTitle = session.title.trim();
-    projectId = session?.project_id ?? null;
+    projectId = null;
+    try {
+      const roomAssignments = await listAssignmentsForContainers([
+        roomRef(sessionId),
+      ]);
+      const activeProject = roomAssignments.find(
+        (a) => a.entity_type === "project" && a.is_active,
+      );
+      projectId = activeProject?.entity_id ?? null;
+    } catch {
+      // roster still works without project basis
+    }
   } catch (err) {
     // Loud recovery: the agent can still operate on the thread roster; only the
     // human-readable room name in the framing degrades.
@@ -143,9 +155,7 @@ export async function buildRoomAgentContext(
     "thread's agent with war_room_message_thread(thread_id). Rename this room " +
     "with war_room_rename_room. Read or edit any task / note / project by id " +
     "with the data / data_action tools.";
-  const toEntry = (
-    threadModels: WarRoomThreadModel[],
-  ): AssistantContextEntry =>
+  const toEntry = (threadModels: WarRoomThreadModel[]): AssistantContextEntry =>
     buildWarRoomContextEntry({
       scope: "room",
       role: roomRole,
@@ -161,21 +171,21 @@ export async function buildRoomAgentContext(
 
   // Tiles for THIS room only (the master builder fans out across every room; the
   // single-room scope is exactly what keeps this agent acting within its room).
-  let tiles: WarRoomTile[] = [];
+  let threads: WarRoomThread[] = [];
   try {
-    tiles = await listTiles(sessionId);
+    threads = await listThreadsForRoom(sessionId);
   } catch (err) {
     console.error(
-      `[war-room/room-agent] listTiles failed for ${sessionId}:`,
+      `[war-room/room-agent] listThreadsForRoom failed for ${sessionId}:`,
       err,
     );
   }
 
-  if (tiles.length === 0) {
+  if (threads.length === 0) {
     return [toEntry([])];
   }
 
-  const allTileIds = tiles.map((t) => t.id);
+  const allThreadIds = threads.map((t) => t.id);
 
   // ONE batched read of the polymorphic assignment table for this room's tiles,
   // then index per tile (same helper the master builder uses). Tolerates failure
@@ -183,7 +193,7 @@ export async function buildRoomAgentContext(
   let assignments: WarRoomAssignment[] = [];
   try {
     assignments = await listAssignmentsForContainers(
-      allTileIds.map((id) => threadRef(id)),
+      allThreadIds.map((id) => threadRef(id)),
     );
   } catch (err) {
     console.error(
@@ -192,18 +202,18 @@ export async function buildRoomAgentContext(
     );
   }
   const {
-    taskByTile,
-    noteByTile: activeNoteByTile,
-    activeAudioByTile,
-    hasAudioByTile,
-    fileCountByTile,
+    taskByThread,
+    noteByThread: activeNoteByThread,
+    activeAudioByThread,
+    hasAudioByThread,
+    fileCountByThread,
   } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
   // The thread agent's conversation id = studio_sessions.assistant_conversation_id
   // for the tile's ACTIVE audio session. We query studio_sessions DIRECTLY (not
   // studioService.listSessions/getSession — those exclude source='war_room').
-  const activeStudioSessionIds = [...new Set([...activeAudioByTile.values()])];
+  const activeStudioSessionIds = [...new Set([...activeAudioByThread.values()])];
   const convoBySession = new Map<string, string | null>();
   if (activeStudioSessionIds.length > 0) {
     const { data, error } = await supabase
@@ -229,8 +239,8 @@ export async function buildRoomAgentContext(
   // on-open build, so N small reads are acceptable here.
   const taskIds = [
     ...new Set(
-      tiles
-        .map((t) => taskByTile.get(t.id) ?? null)
+      threads
+        .map((t) => taskByThread.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -255,8 +265,8 @@ export async function buildRoomAgentContext(
   // Note ids: the active 'note' assignment per tile.
   const noteIds = [
     ...new Set(
-      tiles
-        .map((t) => activeNoteByTile.get(t.id) ?? null)
+      threads
+        .map((t) => activeNoteByThread.get(t.id) ?? null)
         .filter((id): id is string => !!id),
     ),
   ];
@@ -275,22 +285,24 @@ export async function buildRoomAgentContext(
   }
 
   // ── Assemble the roster (this room's threads only) ─────────────────────
-  const threads: MasterThreadEntry[] = tiles.map((tile, index) => {
-    const taskId = taskByTile.get(tile.id) ?? null;
+  const roster: MasterThreadEntry[] = threads.map((thread, index) => {
+    const taskId = taskByThread.get(thread.id) ?? null;
     const taskTitle = taskId ? taskTitleById.get(taskId) : undefined;
-    const noteId = activeNoteByTile.get(tile.id) ?? null;
-    const snippet = noteId ? noteSnippet(noteContentById.get(noteId)) : undefined;
-    const activeStudioId = activeAudioByTile.get(tile.id) ?? null;
+    const noteId = activeNoteByThread.get(thread.id) ?? null;
+    const snippet = noteId
+      ? noteSnippet(noteContentById.get(noteId))
+      : undefined;
+    const activeStudioId = activeAudioByThread.get(thread.id) ?? null;
     const conversationId = activeStudioId
-      ? convoBySession.get(activeStudioId) ?? null
+      ? (convoBySession.get(activeStudioId) ?? null)
       : null;
 
     const entry: MasterThreadEntry = {
-      threadId: tile.id,
-      threadTitle: threadTitle(tile, taskTitle, index),
+      threadId: thread.id,
+      threadTitle: threadTitle(thread, taskTitle, index),
       conversationId,
-      hasAudio: hasAudioByTile.has(tile.id),
-      fileCount: fileCountByTile.get(tile.id) ?? 0,
+      hasAudio: hasAudioByThread.has(thread.id),
+      fileCount: fileCountByThread.get(thread.id) ?? 0,
     };
     const status = conversationId ? resolveStatus?.(conversationId) : undefined;
     if (status) entry.status = status;
@@ -299,7 +311,7 @@ export async function buildRoomAgentContext(
     return entry;
   });
 
-  const threadModels: WarRoomThreadModel[] = threads.map((e) => ({
+  const threadModels: WarRoomThreadModel[] = roster.map((e) => ({
     id: e.threadId,
     title: e.threadTitle,
     conversationId: e.conversationId,

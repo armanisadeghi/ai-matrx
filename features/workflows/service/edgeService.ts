@@ -1,5 +1,5 @@
 import * as React from "react";
-import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import {
   DbWorkflowEdge,
   EnrichedEdgeData,
@@ -141,8 +141,10 @@ export async function saveWorkflowEdge(
     );
   }
 
-  const { data: edge, error } = await supabase
-    .from("workflow_edge")
+  const { data: edge, error } = await fromDeprecatedTable(
+    "workflow_edge",
+    "features/workflows/service/edgeService.ts",
+  )
     .upsert({
       ...edgeData,
       workflow_id: workflowId,
@@ -155,8 +157,10 @@ export async function saveWorkflowEdge(
 }
 
 export async function deleteWorkflowEdge(edgeId: string): Promise<void> {
-  const { error } = await supabase
-    .from("workflow_edge")
+  const { error } = await fromDeprecatedTable(
+    "workflow_edge",
+    "features/workflows/service/edgeService.ts",
+  )
     .delete()
     .eq("id", edgeId);
   if (error) throw new Error(`Failed to delete edge: ${error.message}`);

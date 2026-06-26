@@ -1,9 +1,9 @@
 "use client";
 
-// features/war-room/components/tile/NewTile.tsx
+// features/war-room/components/thread/NewThread.tsx
 //
 // The always-present "start a thread" affordance. A thin shell over the shared
-// QuickAddThread composer (features/war-room/components/tile/QuickAddThread.tsx)
+// QuickAddThread composer (features/war-room/components/thread/QuickAddThread.tsx)
 // so the Grid cell and the Stage rail share one inline create flow:
 //
 //   click → AUTO-FOCUSED name field → Enter = Create (stay, ready for the next
@@ -17,7 +17,7 @@
 
 import { QuickAddThread } from "./QuickAddThread";
 
-export function NewTile({
+export function NewThread({
   sessionId,
   nextPosition,
   variant = "card",
@@ -26,7 +26,7 @@ export function NewTile({
   sessionId: string;
   nextPosition: number;
   variant?: "card" | "rail";
-  onCreated?: (tileId: string) => void;
+  onCreated?: (threadId: string) => void;
 }) {
   return (
     <QuickAddThread

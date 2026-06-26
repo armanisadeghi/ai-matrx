@@ -7,9 +7,9 @@
 // silent background work).
 //
 // Usage:
-//   reportWarRoomError("createTileTask", err);                  // default toast
-//   reportWarRoomError("attachFileToTile", err, { toast: "…" }); // custom toast
-//   reportWarRoomError("loadTileAttachments", err, { toast: false }); // log only
+//   reportWarRoomError("createThreadTask", err);                  // default toast
+//   reportWarRoomError("attachFileToThread", err, { toast: "…" }); // custom toast
+//   reportWarRoomError("loadThreadAttachments", err, { toast: false }); // log only
 
 import { toast } from "sonner";
 

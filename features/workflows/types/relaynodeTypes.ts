@@ -1,9 +1,8 @@
-import type { Database } from "@/types/database.types";
+import type { DeprecatedWorkflowRelayRow } from "@/utils/supabase/deprecated-tables";
 import type { ReactFlowUIMetadata } from "@/features/workflows/types/workflowReactFlowTypes";
 import { Node } from "reactflow";
 
-export type DbBrokerRelayData =
-  Database["public"]["Tables"]["workflow_relay"]["Row"];
+export type DbBrokerRelayData = DeprecatedWorkflowRelayRow;
 
 export interface BrokerRelayNodeData {
   id: string;

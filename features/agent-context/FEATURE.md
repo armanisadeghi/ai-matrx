@@ -2,7 +2,7 @@
 
 **Status:** `active` (brokers production) / `migrating` (agent-context is being narrowed; scope CRUD has moved to [`features/scopes/`](../scopes/FEATURE.md))
 **Tier:** `1` — foundational for every agent invocation.
-**Last updated:** `2026-05-16`
+**Last updated:** `2026-06-26`
 
 > Combined doc: **brokers** (hierarchical variable resolver) and **agent-context** (its consumer that auto-fills declared context slots on an agent at invocation time). These two cannot be understood separately, but **neither owns scope as a data concept any more** — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
 
@@ -183,22 +183,9 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 - **Do not create per-feature scope state.** Use `appContextSlice` + broker resolution + `selectResolvedContext` — scattered scope state breaks the mental model.
 - **ResolvedContext is the authoritative scope input.** When filling slots, prefer `ResolvedContext.values` over re-implementing your own scope walk. If a slot needs something `ResolvedContext` doesn't carry, that's a signal to extend the scope module, not bypass it.
 
-### Personal-projects sentinel
+### Personal organization
 
-`get_user_full_context` (legacy) and the new scope-tree RPCs synthesise a virtual **Personal** organization so personal projects (`projects.organization_id IS NULL`) appear inside the same nav-tree shape as real orgs.
-
-```ts
-export const PERSONAL_PSEUDO_ORG_ID = "00000000-0000-0000-0000-000000000001" as const;
-export function isPersonalPseudoOrgId(id: string | null | undefined): boolean;
-```
-
-Rules:
-
-1. **Storable in Redux / passable in UI props.** `<ActiveScopePicker />`, `useActiveContext`, and `appContextSlice.organization_id` may all carry the sentinel — that's how the UI knows to show "Personal" instead of "All organizations".
-2. **Never send it to the backend.** The single API boundary (`lib/api/call-api.ts → resolveScope`) sanitizes it to `undefined` before any request. The canonical `features/projects/service.ts createProject` normalizes it to `NULL` before insert. New API code paths must do the same — use `isPersonalPseudoOrgId()` to guard.
-3. **Never create routes under `/org/personal/...`.** Personal projects redirect to `/projects/{slug}/...` — `CreateProjectModal` and `ProjectFormSheet` already enforce this.
-
-The sentinel's home moves from `features/agent-context/redux/hierarchySlice.ts` to `lib/redux/slices/appContextSlice.ts` during Phase 1 of the scopes rebuild. The export name and behaviour are preserved.
+Personal context uses the user's real `organizations.is_personal = true` row. There is no frontend personal-org sentinel: `appContextSlice.organization_id`, nav-tree org ids, project rows, RAG filters, and backend API scope all carry the real organization id. When a project-create path receives no organization id, it resolves the user's personal organization with `ensure_personal_organization` and writes that id.
 
 ---
 
@@ -245,9 +232,9 @@ Until Phase 5 lands:
 
 ## Change log
 
+- `2026-06-26` — codex: removed the frontend Personal pseudo-org sentinel (`PERSONAL_PSEUDO_ORG_ID` / `isPersonalPseudoOrgId`). Personal projects now carry the real personal organization id through nav-tree consumers, project creation, War Room, RAG search context, and `callApi` scope injection.
 - `2026-06-24` — claude: pointer added — durable cross-entity relationships now live in the unified `platform.associations` edge via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs), not in brokers, slots, or `appContextSlice`. One invariant line; full model in the scopes doc.
 - `2026-05-16` — composer: narrowed scope of this doc. All scope CRUD content moved to [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Updated cross-links. Updated `appContextSlice` location (lib). Updated broker hierarchy table to use "Scope" as the level name (was "Workspace"). Added explicit deprecation pointers for everything to be deleted in Phase 5 of the scopes rebuild.
-- `2026-05-01` — codex: documented `PERSONAL_PSEUDO_ORG_ID` sentinel rules; `get_user_full_context` now returns a virtual Personal org so personal projects appear in the nav tree; `lib/api/call-api.ts → resolveScope` strips the sentinel before any backend call.
 - `2026-04-22` — claude: initial combined FEATURE.md for agent-context + brokers.
 
 ---

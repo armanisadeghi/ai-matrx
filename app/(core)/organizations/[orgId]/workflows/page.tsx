@@ -5,14 +5,16 @@ import { useParams } from "next/navigation";
 import { Workflow, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
-import { supabase } from "@/utils/supabase/client";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const SELECT_COLS = "id, name, description, category, version, updated_at";
 
 const fetchOwned = async (orgId: string) => {
-  const res = await supabase
-    .from("workflow")
+  const res = await fromDeprecatedTable(
+    "workflow",
+    "app/(core)/organizations/[orgId]/workflows/page.tsx:fetchOwned",
+  )
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .or("is_deleted.is.null,is_deleted.eq.false")
@@ -25,9 +27,10 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   title: (row.name as string | null) ?? "Untitled workflow",
   subtitle: (row.description as string | null) ?? null,
   updatedAt: (row.updated_at as string | null) ?? null,
-  tags: [row.category as string | null, row.version ? `v${row.version}` : null].filter(
-    (v): v is string => Boolean(v),
-  ),
+  tags: [
+    row.category as string | null,
+    row.version ? `v${row.version}` : null,
+  ].filter((v): v is string => Boolean(v)),
   source,
 });
 
@@ -69,7 +72,9 @@ export default function OrgWorkflowsPage() {
           getHref={getHref}
           emptyTitle="No shared workflows yet"
           emptyDescription="Workflows owned by this organization will appear here, along with workflows other members share."
-          emptyIcon={<Workflow className="h-8 w-8 text-violet-600 dark:text-violet-400" />}
+          emptyIcon={
+            <Workflow className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+          }
         />
       )}
     </OrgResourceLayout>

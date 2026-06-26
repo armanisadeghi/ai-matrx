@@ -55,7 +55,7 @@ export const NodeEditorManager: React.FC<NodeEditorManagerProps> = ({
   if ("type" in editingNode && editingNode.type === "userInput") {
     return (
       <ConnectedUserInput
-        nodeData={editingNode as DbUserInput}
+        nodeData={editingNode as unknown as DbUserInput}
         onSave={onSave}
         onClose={onClose}
         open={!!editingNode}
@@ -77,7 +77,7 @@ export const NodeEditorManager: React.FC<NodeEditorManagerProps> = ({
   if ("type" in editingNode && editingNode.type === "brokerRelay") {
     return (
       <BrokerRelayEditor
-        nodeData={editingNode as DbBrokerRelayData}
+        nodeData={editingNode as unknown as DbBrokerRelayData}
         onSave={onSave}
         onClose={onClose}
         open={!!editingNode}

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TileEmbeddedTaskView — one TaskEditor surface for any task depth (parent,
+ * ThreadEmbeddedTaskView — one TaskEditor surface for any task depth (parent,
  * child, subtask). Subtask rail drills in-place; back pops the stack.
  */
 
@@ -13,10 +13,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { cn } from "@/lib/utils";
-import { TileDrillHeader, type DrillSegment } from "./TileDrillHeader";
+import { ThreadDrillHeader, type DrillSegment } from "./ThreadDrillHeader";
 import { SubtaskRail } from "./SubtaskRail";
 
-export function TileEmbeddedTaskView({
+export function ThreadEmbeddedTaskView({
   taskId,
   projectId,
   compact,
@@ -58,7 +58,7 @@ export function TileEmbeddedTaskView({
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/task">
-      <TileDrillHeader segments={segments} onBack={onBack} compact={compact} />
+      <ThreadDrillHeader segments={segments} onBack={onBack} compact={compact} />
 
       <div className="flex min-h-0 flex-1 @[34rem]/task:flex-row">
         <div className="min-h-0 min-w-0 flex-1">

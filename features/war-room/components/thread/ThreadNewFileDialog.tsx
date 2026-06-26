@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/tile/TileNewFileDialog.tsx
+// features/war-room/components/thread/ThreadNewFileDialog.tsx
 //
 // "New file" creator for a War Room tile's Files section. Lets the user author a
 // lightweight code / config / raw-text file (JSON, YAML, plain text, etc.) right
@@ -12,7 +12,7 @@
 //   1) the editor text → a `File` (Blob) with the chosen name + mime
 //   2) requestUpload(...) — the one canonical upload primitive (dedup pre-flight,
 //      durable cld_files row), into the tile's conventional folder
-//   3) attachFileToTile(tileId, fileId, name) — the existing association thunk
+//   3) attachFileToThread(threadId, fileId, name) — the existing association thunk
 //
 // Heavy (Monaco) — the host loads THIS dialog via next/dynamic({ ssr:false }), so
 // nothing here enters the War Room bundle until the user opens it.
@@ -31,12 +31,12 @@ import {
 import { Button } from "@/components/ui/button";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { getFileExtension } from "@/features/code-editor/config/languages";
-import {
-  requestUpload,
-  folderForWarRoomTile,
-} from "@/features/files";
+import { requestUpload, folderForWarRoomThread } from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { attachFileToTile } from "@/features/war-room/redux/thunks";
+import {
+  attachFileToThread,
+  attachCanvasResourceToThread,
+} from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
 /**
@@ -72,14 +72,17 @@ function withExtension(name: string, language: string): string {
     : `${trimmed}${ext}`;
 }
 
-export function TileNewFileDialog({
-  tileId,
+export function ThreadNewFileDialog({
+  threadId,
   open,
   onOpenChange,
+  /** Where the created file is linked — Files tab (default) or Canvas launcher. */
+  attachTarget = "files",
 }: {
-  tileId: string;
+  threadId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  attachTarget?: "files" | "canvas";
 }) {
   const dispatch = useAppDispatch();
   const [name, setName] = useState("");
@@ -112,7 +115,7 @@ export function TileNewFileDialog({
       const file = new File([text], fileName, { type: lang.mime });
       const result = await requestUpload({
         files: [file],
-        folderPath: folderForWarRoomTile(tileId),
+        folderPath: folderForWarRoomThread(threadId),
         visibility: "private",
       });
       if (result.cancelled) return;
@@ -125,11 +128,18 @@ export function TileNewFileDialog({
       if (!fileId) {
         const first = result.failed[0];
         toast.error(
-          first ? `Couldn't create the file: ${first.error}` : "Couldn't create the file",
+          first
+            ? `Couldn't create the file: ${first.error}`
+            : "Couldn't create the file",
         );
         return;
       }
-      const attached = await dispatch(attachFileToTile(tileId, fileId, fileName));
+      const attached =
+        attachTarget === "canvas"
+          ? await dispatch(
+              attachCanvasResourceToThread(threadId, "user_file", fileId),
+            )
+          : await dispatch(attachFileToThread(threadId, fileId, fileName));
       if (attached) {
         toast.success(`Created ${fileName}`);
         reset();

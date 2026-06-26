@@ -72,7 +72,7 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     if (deletingId) return;
     setDeletingId(attachment.id);
     const ok = await taskService.deleteTaskAttachment(
-      attachment.id,
+      taskId,
       attachment.file_path,
     );
     if (ok) {

@@ -1,11 +1,11 @@
 "use client";
 
-// features/war-room/components/tile/TileAgentPanel.tsx
+// features/war-room/components/thread/ThreadAgentPanel.tsx
 //
 // The composed REAL Scribe "Agent+" collaboration panel, embedded in a War Room
 // tile. This is the heavy half of the Agent tab — it pulls the whole agent
-// execution + TTS + working-document graph, so TileAgentTab loads it lazily via
-// next/dynamic (ssr:false), the same way TileAudioTab loads CleanupPad. Keeping
+// execution + TTS + working-document graph, so ThreadAgentTab loads it lazily via
+// next/dynamic (ssr:false), the same way ThreadAudioTab loads CleanupPad. Keeping
 // it out of the room bundle lets the gallery hydrate fast.
 //
 // We REUSE the Scribe components unchanged — they are parameterized purely by a
@@ -22,7 +22,7 @@
 // voice below — exactly as ScribeScreen stacks them, minus the page header.
 //
 // SESSION BINDING: the `sessionId` here is the TILE's own studio_sessions row
-// (its Audio session), resolved by TileAgentTab. Sharing that session is the
+// (its Audio session), resolved by ThreadAgentTab. Sharing that session is the
 // whole point — the tile's recordings ARE the agent's transcript context, and
 // agent edits land in the same working document the Audio tab transcribes into.
 //
@@ -51,11 +51,11 @@ import {
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
   selectActiveNoteId,
-  selectAttachmentsForTile,
-  selectTileTaskId,
+  selectAttachmentsForThread,
+  selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
-import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
-import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { loadThreadSubtasks } from "@/features/war-room/redux/thunks";
+import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
@@ -67,16 +67,16 @@ import {
 } from "@/features/agents/war-room-tools/binding-registry";
 
 console.log(
-  "[Track War Room] 8c, TileAgentPanel.tsx — module evaluated (chunk loaded)",
+  "[Track War Room] 8c, ThreadAgentPanel.tsx — module evaluated (chunk loaded)",
 );
 
-export default function TileAgentPanel({
+export default function ThreadAgentPanel({
   sessionId,
-  tileId,
+  threadId,
   compact,
 }: {
   sessionId: string;
-  tileId: string;
+  threadId: string;
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
@@ -86,22 +86,22 @@ export default function TileAgentPanel({
   // panel re-renders (and rebuilds the extra-context callback) whenever any of
   // them changes. The data itself is already in Redux (hydrated on room load);
   // we only need subtasks pulled in (hydrateTileTasks loads the parent only).
-  const taskId = useAppSelector(selectTileTaskId(tileId));
+  const taskId = useAppSelector(selectThreadTaskId(threadId));
   const task = useAppSelector((s) =>
     taskId ? selectTaskById(s, taskId) : undefined,
   );
   const subtasks = useAppSelector((s) =>
     taskId ? selectSubtasksByParent(s, taskId) : EMPTY_SUBTASKS,
   );
-  const noteId = useAppSelector(selectActiveNoteId(tileId));
+  const noteId = useAppSelector(selectActiveNoteId(threadId));
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
-  const attachments = useAppSelector(selectAttachmentsForTile(tileId));
+  const attachments = useAppSelector(selectAttachmentsForThread(threadId));
 
   // Ensure the task's subtasks are hydrated so `tile_task.subtasks` is complete.
   useEffect(() => {
-    if (taskId) void dispatch(loadTileSubtasks(taskId));
+    if (taskId) void dispatch(loadThreadSubtasks(taskId));
   }, [taskId, dispatch]);
 
   // ── Hydrate the attached files' extraction + RAG-searchable signals ──────
@@ -132,15 +132,15 @@ export default function TileAgentPanel({
   // A builder the assistant hook calls against fresh state. Its identity changes
   // whenever the tile's task/subtasks/note/files change (the values it closes
   // over), which is exactly what re-triggers the hook's context-refresh effect.
-  // Keeping it keyed on the data — not just tileId — is what makes edits to the
+  // Keeping it keyed on the data — not just threadId — is what makes edits to the
   // task/note/files reach the agent without waiting for a recording or cleanup.
   const buildExtraEntries = useCallback(
-    (state: RootState) => buildTileAgentContextEntries(state, tileId),
-    // Deliberately keyed on the underlying tile DATA (not just tileId) so the
+    (state: RootState) => buildThreadAgentContextEntries(state, threadId),
+    // Deliberately keyed on the underlying tile DATA (not just threadId) so the
     // hook re-pushes context when the task/note/files change. (exhaustive-deps
     // is disabled repo-wide; listed here for intent.)
     [
-      tileId,
+      threadId,
       taskId,
       task?.title,
       task?.status,
@@ -170,19 +170,19 @@ export default function TileAgentPanel({
   });
 
   useEffect(() => {
-    traceWarRoomRenderPath(9, "TileAgentPanel.tsx", "mount", {
-      tileId,
+    traceWarRoomRenderPath(9, "ThreadAgentPanel.tsx", "mount", {
+      threadId,
       studioSessionId: sessionId,
     });
-  }, [tileId, sessionId]);
+  }, [threadId, sessionId]);
 
   useEffect(() => {
     if (!conversationId) return;
-    traceWarRoomRenderPath(10, "TileAgentPanel.tsx", "conversation ready", {
-      tileId,
+    traceWarRoomRenderPath(10, "ThreadAgentPanel.tsx", "conversation ready", {
+      threadId,
       conversationId,
     });
-  }, [tileId, conversationId]);
+  }, [threadId, conversationId]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the
@@ -195,7 +195,7 @@ export default function TileAgentPanel({
   // dispatcher, which gates the write behind the user's approval).
   useEffect(() => {
     if (!conversationId) return;
-    registerWarRoomToolBinding(conversationId, tileId);
+    registerWarRoomToolBinding(conversationId, threadId);
     dispatch(
       setClientTools({
         conversationId,
@@ -211,13 +211,13 @@ export default function TileAgentPanel({
       }),
     );
     return () => {
-      clearWarRoomToolBinding(conversationId, tileId);
+      clearWarRoomToolBinding(conversationId, threadId);
       // Disarm on unmount so a later non-war-room use of the same conversation
       // (should never happen — it's durable per session — but be exact) doesn't
       // keep these tools offered.
       dispatch(setClientTools({ conversationId, tools: [] }));
     };
-  }, [conversationId, tileId, dispatch]);
+  }, [conversationId, threadId, dispatch]);
 
   // Re-pull the working document the moment this session's agent turn finishes,
   // covering the non-active-tile realtime gap described above.

@@ -1,6 +1,6 @@
 "use client";
 
-// features/war-room/components/room/RailTile.tsx
+// features/war-room/components/room/RailThread.tsx
 //
 // The peripheral "instrument": a compact, LIVE summary of one thread that sits
 // in the Stage rail (a watchlist row). It shows the real pulse (PulseGlyph), the
@@ -11,17 +11,17 @@
 
 import { GripVertical, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
-import { useTileActions } from "@/features/war-room/hooks/useTileActions";
-import { PulseGlyph } from "../tile/PulseGlyph";
-import { TileOptionsMenu } from "../tile/TileOptionsMenu";
+import { useThreadPulse } from "@/features/war-room/hooks/useThreadPulse";
+import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
+import { PulseGlyph } from "../thread/PulseGlyph";
+import { ThreadOptionsMenu } from "../thread/ThreadOptionsMenu";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectTileFlavor } from "@/features/war-room/redux/selectors";
-import { tileTabKind } from "./tileKind";
+import { selectThreadAnchorType } from "@/features/war-room/redux/selectors";
+import { dynamicTabKind } from "./threadKind";
 import type { ThreadDragHandle } from "./threadDrag";
 
-export function RailTile({
-  tileId,
+export function RailThread({
+  threadId,
   sessionId,
   isStaged,
   onStage,
@@ -29,18 +29,18 @@ export function RailTile({
    *  reorders the rail; the body click still stages. */
   dragHandle,
 }: {
-  tileId: string;
+  threadId: string;
   sessionId: string;
   isStaged: boolean;
   onStage: () => void;
   dragHandle?: ThreadDragHandle;
 }) {
-  const pulse = useTilePulse(tileId);
-  const actions = useTileActions(tileId, sessionId);
-  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+  const pulse = useThreadPulse(threadId);
+  const actions = useThreadActions(threadId, sessionId);
+  const anchorType = useAppSelector((s) => selectThreadAnchorType(threadId)(s));
   if (!actions) return null;
 
-  const kind = tileTabKind(pulse.activeTab, flavor);
+  const kind = dynamicTabKind(pulse.activeTab, anchorType);
 
   return (
     <div
@@ -118,9 +118,9 @@ export function RailTile({
             : "opacity-0 group-hover/rail:opacity-100 focus-within:opacity-100",
         )}
       >
-        <TileOptionsMenu
+        <ThreadOptionsMenu
           actions={actions}
-          tileId={tileId}
+          threadId={threadId}
           isStaged={isStaged}
         />
       </div>

@@ -6,7 +6,7 @@
  *
  *   • "fresh" (default) — start a NEW conversation for the thread's agent,
  *     seeded with the thread's OWN read-only context (its task / notes / files
- *     via `buildTileAgentContextEntries`) plus the master's message. No prior
+ *     via `buildThreadAgentContextEntries`) plus the master's message. No prior
  *     chat history. Recipe = the spec's FRESH INSTANCE path:
  *       createManualInstance({ agentId: WAR_ROOM_THREAD_AGENT_ID,
  *         apiEndpointMode:"agent", allowChat:true })
@@ -39,8 +39,9 @@ import { resolveThread } from "../service/threadResolver";
 import { messageRecordToText } from "../service/messageText";
 import { openWatch } from "@/features/war-room/redux/watchSlice";
 import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
-import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
-import { selectTileById } from "@/features/war-room/redux/selectors";
+import { listRoomIdsForThread } from "@/features/war-room/service/associations";
+import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { selectThreadById } from "@/features/war-room/redux/selectors";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
@@ -106,8 +107,8 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
       };
     }
 
-    const tile = resolved.tile;
-    const threadLabel = tile.title?.trim() || "thread";
+    const thread = resolved.thread;
+    const threadLabel = thread.title?.trim() || "thread";
 
     // ── FORK ────────────────────────────────────────────────────────────
     if (mode === "fork") {
@@ -132,7 +133,9 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         // Watch + notify BEFORE the run so the window is up as the stream lands.
         notifyAndWatch(dispatch, forkId, threadLabel);
 
-        dispatch(setUserInputText({ conversationId: forkId, text: args.message }));
+        dispatch(
+          setUserInputText({ conversationId: forkId, text: args.message }),
+        );
         await dispatch(executeInstance({ conversationId: forkId })).unwrap();
 
         return {
@@ -159,10 +162,17 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
       // The tile's context lives in Redux only when its ROOM is loaded. The
       // master spans all rooms, so the target tile may be in a room that isn't
       // active — load it first (guarded: skip if the tile is already present).
-      if (!selectTileById(tile.id)(getState())) {
-        await dispatch(loadWarRoomSession(tile.session_id));
+      if (!selectThreadById(thread.id)(getState())) {
+        const roomIds = await listRoomIdsForThread(thread.id);
+        const roomId = roomIds[0] ?? null;
+        if (roomId) {
+          await dispatch(loadWarRoomSession(roomId));
+        }
       }
-      const contextEntries = buildTileAgentContextEntries(getState(), tile.id);
+      const contextEntries = buildThreadAgentContextEntries(
+        getState(),
+        thread.id,
+      );
 
       const conversationId = await dispatch(
         createManualInstance({
@@ -178,7 +188,9 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
       // Seed the thread's own read-only context (task / notes / files), then the
       // message. Guard against an empty set (never push []).
       if (contextEntries.length > 0) {
-        dispatch(setContextEntries({ conversationId, entries: contextEntries }));
+        dispatch(
+          setContextEntries({ conversationId, entries: contextEntries }),
+        );
       }
       dispatch(setUserInputText({ conversationId, text: args.message }));
 

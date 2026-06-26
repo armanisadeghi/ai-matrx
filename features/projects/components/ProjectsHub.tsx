@@ -62,6 +62,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { supabase } from "@/utils/supabase/client";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
@@ -273,17 +275,16 @@ export function ProjectsHub({
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("ctx_scope_assignments")
-        .select("entity_id")
-        .eq("entity_type", "project")
-        .eq("scope_id", scopeParam);
+      const res = await scopesService.listEntitiesByScopes({
+        scope_ids: [scopeParam],
+        entity_type: "project",
+      });
       if (!cancelled) {
         setScopeProjectIds(
           new Set(
-            (data ?? []).map((r) =>
-              String((r as { entity_id: string }).entity_id),
-            ),
+            isScopesRpcErr(res)
+              ? []
+              : res.data.entities.map((e) => e.entity_id),
           ),
         );
       }

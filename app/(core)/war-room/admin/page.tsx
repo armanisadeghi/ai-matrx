@@ -66,10 +66,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
-      name: "StageView + StageTile + RailTile",
+      name: "StageView + StageThread + RailThread",
       filePath: "features/war-room/components/room/StageView.tsx",
       description:
-        "Stage mode: a live watchlist rail (RailTile rows with PulseGlyph + status word) beside the hero focus pane (StageTile, full working state). Click a rail row to snap it onto the Stage. Parked threads fold into a collapsible rail section.",
+        "Stage mode: a live watchlist rail (RailThread rows with PulseGlyph + status word) beside the hero focus pane (StageThread, full working state). Click a rail row to snap it onto the Stage. Parked threads fold into a collapsible rail section.",
       tier: "internal",
     },
     {
@@ -80,38 +80,38 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "WarRoomTile",
-      filePath: "features/war-room/components/tile/WarRoomTile.tsx",
+      name: "WarRoomThread",
+      filePath: "features/war-room/components/thread/WarRoomThread.tsx",
       description:
-        "The operable Grid tile: kind accent rail + live metric chips + segmented tab switcher + projector support; double-click promotes to the Stage. Shares the canonical tab bodies via TileTabContent.",
+        "The operable Grid tile: kind accent rail + live metric chips + segmented tab switcher + projector support; double-click promotes to the Stage. Shares the canonical tab bodies via ThreadTabContent.",
       tier: "internal",
     },
     {
       name: "Tile presentation primitives",
-      filePath: "features/war-room/components/tile/TileTabBar.tsx",
+      filePath: "features/war-room/components/thread/ThreadTabBar.tsx",
       description:
-        "TileTabBar (segmented, kind-colored switcher), TileTabContent (5 bodies + combined view), TileMetricChips (live readings), PulseGlyph (is-alive glyph), TileOptionsMenu (pin/stage/expand/hide/remove), tileKind (semantic accent map).",
+        "ThreadTabBar (segmented, kind-colored switcher), ThreadTabContent (5 bodies + combined view), ThreadMetricChips (live readings), PulseGlyph (is-alive glyph), ThreadOptionsMenu (pin/stage/expand/hide/remove), threadKind (semantic accent map).",
       tier: "internal",
     },
     {
       name: "Tile hooks (pulse / metrics / actions)",
-      filePath: "features/war-room/hooks/useTilePulse.ts",
+      filePath: "features/war-room/hooks/useThreadPulse.ts",
       description:
-        "useTilePulse (live status word + headline + preview), useTileMetrics (chip readings), useTileActions (rename/pin/hide/expand/delete resolver). Compose the real tasks/notes/transcript/warRoom slices read-only — written once, consumed by Stage + Grid + parked chips.",
+        "useThreadPulse (live status word + headline + preview), useThreadMetrics (chip readings), useThreadActions (rename/pin/hide/expand/delete resolver). Compose the real tasks/notes/transcript/warRoom slices read-only — written once, consumed by Stage + Grid + parked chips.",
       tier: "candidate",
     },
     {
       name: "Tile tabs (Task / Notes / Audio / Files / Agent)",
-      filePath: "features/war-room/components/tile/TileTaskTab.tsx",
+      filePath: "features/war-room/components/thread/ThreadTaskTab.tsx",
       description:
-        "TileTaskTab (name/subtasks/attachments/comments), TileNotesTab (NoteEditorCore + autosave), TileAudioTab (embedded CleanupPad over transcript-studio), TileAttachmentsTab (Files: upload/pick via @/features/files + InlineMediaRef; Documents: createDocument/listAccessibleDocuments → /documents/[id]) — all backed by ctx_war_room_tile_* link tables.",
+        "ThreadTaskTab (name/subtasks/attachments/comments), ThreadNotesTab (NoteEditorCore + autosave), ThreadAudioTab (embedded CleanupPad over transcript-studio), ThreadAttachmentsTab (Files: upload/pick via @/features/files + InlineMediaRef; Documents: createDocument/listAccessibleDocuments → /documents/[id]) — all backed by ctx_war_room_tile_* link tables.",
       tier: "internal",
     },
     {
-      name: "TileAgentTab + TileAgentPanel (Agent)",
-      filePath: "features/war-room/components/tile/TileAgentTab.tsx",
+      name: "ThreadAgentTab + ThreadAgentPanel (Agent)",
+      filePath: "features/war-room/components/thread/ThreadAgentTab.tsx",
       description:
-        "The Agent tab: REUSES the real Scribe Agent+ panel unchanged — AssistantAgentBar (pick/switch agent) + WorkingDocumentHeader (user+agent co-edited working document) + ExperimentalAgentScreen (conversation + auto-voice/record/text-input + RecordActionSheet). TileAgentTab resolves the tile's studio session (selectActiveAudioSessionId → ensureTileAudioSession, same as Audio); TileAgentPanel is the lazy (next/dynamic ssr:false) composed body, plus a post-turn document re-fetch covering the single-active-session realtime gap. Bound to the SAME studio_sessions row the Audio tab records into, so the tile's recordings are the agent's transcript context.",
+        "The Agent tab: REUSES the real Scribe Agent+ panel unchanged — AssistantAgentBar (pick/switch agent) + WorkingDocumentHeader (user+agent co-edited working document) + ExperimentalAgentScreen (conversation + auto-voice/record/text-input + RecordActionSheet). ThreadAgentTab resolves the tile's studio session (selectActiveAudioSessionId → ensureThreadAudioSession, same as Audio); ThreadAgentPanel is the lazy (next/dynamic ssr:false) composed body, plus a post-turn document re-fetch covering the single-active-session realtime gap. Bound to the SAME studio_sessions row the Audio tab records into, so the tile's recordings are the agent's transcript context.",
       tier: "internal",
     },
     {
@@ -146,14 +146,14 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "War Room agent tools (war-room-tools)",
       filePath: "features/agents/war-room-tools/tools/names.ts",
       description:
-        "Client-delegated tool family that lets the tile's Agent+ assistant EDIT the tile's entities (it already SEES them via context). Mirrors features/agents/ui-first-tools: 5 write tools (war_room_update_task / war_room_add_subtask / war_room_toggle_subtask / war_room_update_note / war_room_update_tile), each a Zod schema + a handler calling the REAL writers (tasks thunks, notesApi, war-room renameTile). Offered as INLINE tool specs (no server registry change). Armed + tile-bound per conversation by TileAgentPanel; routed via an isWarRoomToolName branch in surface-delegated-tool-call.thunk. Every write is HITL-gated by a confirm AskCard (reuses the ui-first pendingAsks surface).",
+        "Client-delegated tool family that lets the tile's Agent+ assistant EDIT the tile's entities (it already SEES them via context). Mirrors features/agents/ui-first-tools: 5 write tools (war_room_update_task / war_room_add_subtask / war_room_toggle_subtask / war_room_update_note / war_room_update_thread), each a Zod schema + a handler calling the REAL writers (tasks thunks, notesApi, war-room renameTile). Offered as INLINE tool specs (no server registry change). Armed + tile-bound per conversation by ThreadAgentPanel; routed via an isWarRoomToolName branch in surface-delegated-tool-call.thunk. Every write is HITL-gated by a confirm AskCard (reuses the ui-first pendingAsks surface).",
       tier: "internal",
     },
     {
       name: "War Room MASTER agent tools (war-room-master-tools)",
       filePath: "features/agents/war-room-master-tools/tools/names.ts",
       description:
-        "Read-only + orchestration tool family (NOTIFY-AND-WATCH, NOT HITL — deliberately the opposite of war-room-tools): war_room_read_thread (read a thread agent's chain), war_room_read_file (read an attached file's EXTRACTED TEXT — clean/raw/chunks via features/rag/api/document.ts; service/fileResolver.ts resolves file_id=cld_files.id → canonicalProcessedDocumentId, falling back to lookupFileDocument; never the raw PDF, never throws — no-extraction returns ok:false), war_room_message_thread (mode 'fresh'/'fork'), war_room_create_room, war_room_rename_room. service/threadResolver.ts resolves a thread_id (= tile id) → the thread agent's conversationId. Offered as INLINE specs (build-tool-injection isWarRoomMasterToolName branch); routed via an isWarRoomMasterToolName branch in surface-delegated-tool-call.thunk → dispatchWarRoomMasterTool (runs immediately, validates args, resolves target, refuses unknown). The READ-ONLY members (read_thread + read_file) are ALSO armed on each TILE agent by TileAgentPanel (routing keys off the name, not the surface) so a thread agent reads siblings' chains + its own files' text with no approval. The full set is armed on the master conversation by useMasterAgent; the TIER-2 room agent (useRoomAgent) gets it MINUS war_room_create_room. NO DB / NO server change.",
+        "Read-only + orchestration tool family (NOTIFY-AND-WATCH, NOT HITL — deliberately the opposite of war-room-tools): war_room_read_thread (read a thread agent's chain), war_room_read_file (read an attached file's EXTRACTED TEXT — clean/raw/chunks via features/rag/api/document.ts; service/fileResolver.ts resolves file_id=cld_files.id → canonicalProcessedDocumentId, falling back to lookupFileDocument; never the raw PDF, never throws — no-extraction returns ok:false), war_room_message_thread (mode 'fresh'/'fork'), war_room_create_room, war_room_rename_room. service/threadResolver.ts resolves a thread_id (= tile id) → the thread agent's conversationId. Offered as INLINE specs (build-tool-injection isWarRoomMasterToolName branch); routed via an isWarRoomMasterToolName branch in surface-delegated-tool-call.thunk → dispatchWarRoomMasterTool (runs immediately, validates args, resolves target, refuses unknown). The READ-ONLY members (read_thread + read_file) are ALSO armed on each TILE agent by ThreadAgentPanel (routing keys off the name, not the surface) so a thread agent reads siblings' chains + its own files' text with no approval. The full set is armed on the master conversation by useMasterAgent; the TIER-2 room agent (useRoomAgent) gets it MINUS war_room_create_room. NO DB / NO server change.",
       tier: "internal",
     },
     {
@@ -167,11 +167,11 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Tile flavors + project association",
       filePath: "features/war-room/components/shared/WarRoomProjectPicker.tsx",
       description:
-        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (TileProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + WarRoomProjectPicker), TileFlavorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectButton (/all: 'From project' → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). WarRoomProjectPicker is a flat cross-org project picker (useUserProjects) — the canonical EntityTargetPicker kind='project' is org-gated and can't express 'any of my projects'. INVARIANT (see invariant 9): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveTileProjectId). Foundation: redux/thunks (checkTileProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectTileFlavor / selectEffectiveTileProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
+        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (ThreadProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + WarRoomProjectPicker), ThreadAnchorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectButton (/all: 'From project' → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). WarRoomProjectPicker is a flat cross-org project picker (useUserProjects) — the canonical EntityTargetPicker kind='project' is org-gated and can't express 'any of my projects'. INVARIANT (see invariant 9): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveThreadProjectId). Foundation: redux/thunks (checkThreadProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectThreadPickerOption / selectEffectiveThreadProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
       tier: "candidate",
     },
     {
-      name: "WarRoomContextPicker + TileContextOverride + SessionContextButton",
+      name: "WarRoomContextPicker + ThreadContextOverride + SessionContextButton",
       filePath: "features/war-room/components/shared/WarRoomContextPicker.tsx",
       description:
         "Controlled org+scope picker (composes EntityTargetPicker + EntityScopeTagger) and its session/tile hosts. Writes only to ctx_war_room_* rows — never global context.",
@@ -181,14 +181,14 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "TaskCommentPopover",
       filePath: "features/tasks/components/TaskCommentPopover.tsx",
       description:
-        "Reusable task-comment surface (button → popover thread + composer) over ctx_task_comments. Built for War Room; the full task editor can adopt it.",
+        "Reusable task-comment surface (button → popover thread + composer) over the canonical comments primitive (platform.comments via commentsService). Built for War Room; the full task editor can adopt it.",
       tier: "internal",
     },
     {
-      name: "HiddenTilesTray + ParkedThreadChip + NewTile",
-      filePath: "features/war-room/components/room/HiddenTilesTray.tsx",
+      name: "HiddenThreadsTray + ParkedThreadChip + NewThread",
+      filePath: "features/war-room/components/room/HiddenThreadsTray.tsx",
       description:
-        "Grid-mode parked-threads dock. ParkedThreadChip carries a live status trio and restores-and-stages on click (hidden ≠ gone). NewTile is the always-present add affordance (card + rail shapes) that auto-stages the fresh thread.",
+        "Grid-mode parked-threads dock. ParkedThreadChip carries a live status trio and restores-and-stages on click (hidden ≠ gone). NewThread is the always-present add affordance (card + rail shapes) that auto-stages the fresh thread.",
       tier: "internal",
     },
   ],
@@ -236,7 +236,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Files / Documents",
       description:
-        "The Files tab links cld_files (upload via folderForWarRoomTile or pick existing) and udt_documents (createDocument / listAccessibleDocuments → /documents/[id]) via the polymorphic ctx_war_room_tile_attachments table. Reuses @/features/files (requestUpload/openFilePicker/InlineMediaRef) + data-tables document-service — no upload/pick/doc-edit reimplemented.",
+        "The Files tab links cld_files (upload via folderForWarRoomThread or pick existing) and udt_documents (createDocument / listAccessibleDocuments → /documents/[id]) via the polymorphic ctx_war_room_tile_attachments table. Reuses @/features/files (requestUpload/openFilePicker/InlineMediaRef) + data-tables document-service — no upload/pick/doc-edit reimplemented.",
     },
     {
       name: "Scopes",

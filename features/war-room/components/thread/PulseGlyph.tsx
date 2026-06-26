@@ -1,8 +1,8 @@
 "use client";
 
-// features/war-room/components/tile/PulseGlyph.tsx
+// features/war-room/components/thread/PulseGlyph.tsx
 //
-// The glanceable "is this thread alive?" glyph. Turns a TilePulse into one tight
+// The glanceable "is this thread alive?" glyph. Turns a ThreadPulse into one tight
 // visual the eye reads in <100ms across a rail of 12:
 //   · task with subtasks  → a progress ring (filled by completion)
 //   · completed task       → a check
@@ -14,14 +14,14 @@
 
 import { Check, ListChecks, NotebookPen, AudioLines } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TilePulse } from "@/features/war-room/hooks/useTilePulse";
+import type { ThreadPulse } from "@/features/war-room/hooks/useThreadPulse";
 
 export function PulseGlyph({
   pulse,
   size = 18,
   className,
 }: {
-  pulse: TilePulse;
+  pulse: ThreadPulse;
   size?: number;
   className?: string;
 }) {

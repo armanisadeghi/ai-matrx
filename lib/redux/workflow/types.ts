@@ -3,7 +3,11 @@
 import { UserDataReference } from "@/components/user-generated-table-data/tableReferences";
 import { BrokerMapEntry } from "../brokerSlice/types";
 import { Viewport } from "@xyflow/react";
-import type { Database } from "@/types/database.types";
+import type {
+  DeprecatedWorkflowDataInsert,
+  DeprecatedWorkflowDataRow,
+  DeprecatedWorkflowDataUpdate,
+} from "@/utils/supabase/deprecated-tables";
 
 export type NodeInputType =
   | "unused"
@@ -135,11 +139,9 @@ export interface WorkflowMetadata {
 }
 
 // Raw Supabase rows. These change automatically on `pnpm types` regeneration.
-export type WorkflowRow = Database["public"]["Tables"]["workflow_data"]["Row"];
-export type WorkflowRowInsert =
-  Database["public"]["Tables"]["workflow_data"]["Insert"];
-export type WorkflowRowUpdate =
-  Database["public"]["Tables"]["workflow_data"]["Update"];
+export type WorkflowRow = DeprecatedWorkflowDataRow;
+export type WorkflowRowInsert = DeprecatedWorkflowDataInsert;
+export type WorkflowRowUpdate = DeprecatedWorkflowDataUpdate;
 
 // JSON column names are asserted against the DB schema — a rename/removal
 // upstream surfaces here (`_AssertJsonCols` resolves to `never`).

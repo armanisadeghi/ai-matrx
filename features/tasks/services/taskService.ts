@@ -5,6 +5,10 @@ import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { DatabaseTask } from "../types";
 import { fileHandler, folderForTask } from "@/features/files";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { commentsService } from "@/features/comments/service/commentsService";
+import type { Comment } from "@/features/comments/types";
+import { isScopesRpcErr } from "@/features/scopes/types";
 
 export interface CreateTaskInput {
   title: string;
@@ -172,7 +176,21 @@ export async function getTopLevelProjectTasks(
 }
 
 // ─── Attachments ─────────────────────────────────────────────────────────────
+//
+// Canonical model: "a file attached to a task" is an ASSOCIATION edge with the
+// file as SOURCE (`user_file`) and the task as TARGET (`task`) — there is no
+// dedicated attachments table anymore. Reads come from `get_task_associations`
+// (which already aggregates the task's `files`), writes go through the
+// `associationsService` chokepoint. The file itself lives in cloud-files under
+// `Task Attachments/{taskId}/`, so users see every attachment grouped by task
+// in the Files app.
 
+/**
+ * A file attached to a task. `id` and `file_path` are both the cloud-files
+ * UUID — `getAttachmentUrl(file_path)` resolves it to a fresh signed URL.
+ * Shape preserved from the legacy table so existing UI/serializers consume it
+ * unchanged; it is now projected from the association edge.
+ */
 export interface TaskAttachment {
   id: string;
   task_id: string;
@@ -188,16 +206,34 @@ export async function getTaskAttachments(
   taskId: string,
 ): Promise<TaskAttachment[]> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_task_attachments")
-      .select("*")
-      .eq("task_id", taskId)
-      .order("uploaded_at", { ascending: true });
+    // `get_task_associations` returns the task's attached files (the source
+    // entities of `user_file → task` edges), joined to file metadata.
+    const { data, error } = await supabase.rpc("get_task_associations", {
+      p_task_id: taskId,
+    });
     if (error) {
       console.error("Error fetching task attachments:", error.message);
       return [];
     }
-    return data || [];
+    const bundle = (data ?? {}) as {
+      files?: {
+        id: string;
+        filename: string;
+        mime_type: string | null;
+        storage_path: string;
+        created_at: string;
+      }[];
+    };
+    return (bundle.files ?? []).map((f) => ({
+      id: f.id,
+      task_id: taskId,
+      file_name: f.filename,
+      file_type: f.mime_type,
+      file_size: null,
+      file_path: f.id,
+      uploaded_by: null,
+      uploaded_at: f.created_at,
+    }));
   } catch (error) {
     console.error("Exception fetching task attachments:", error);
     return [];
@@ -205,24 +241,16 @@ export async function getTaskAttachments(
 }
 
 /**
- * Upload a task attachment. Migrated to cloud-files in Phase 9 — the file
- * now lives under `Task Attachments/{taskId}/` in the user's cloud-files
- * tree, so they can open the Files app and see every attachment grouped by
- * task. The attachment row's `file_path` column stores the cloud-files
- * UUID (not a storage path) — use `getAttachmentUrl(filePath)` to resolve
- * to a fresh signed URL when opening.
- *
- * UUID regex check in `isCloudFileId` below decides whether a given
- * `file_path` is a new-format cloud-files id or a legacy storage path.
- * Legacy rows continue working against the old system until they're
- * migrated or deleted — see features/files/migration/INVENTORY.md.
+ * Upload a file and attach it to a task. The file lands in cloud-files under
+ * `Task Attachments/{taskId}/`; the link is an association edge
+ * (`user_file → task`) created through `associationsService`.
  */
 export async function uploadTaskAttachment(
   taskId: string,
   file: File,
 ): Promise<TaskAttachment | null> {
   try {
-    const userId = requireUserId();
+    requireUserId();
 
     // Ensure the user-visible folder `Task Attachments/{taskId}` exists.
     const folderPath = folderForTask(taskId);
@@ -258,25 +286,16 @@ export async function uploadTaskAttachment(
       throw new Error(`Couldn't attach file: ${reason}`);
     }
 
-    const { data, error: insertError } = await supabase
-      .from("ctx_task_attachments")
-      .insert({
-        task_id: taskId,
-        file_name: file.name,
-        file_type: file.type || null,
-        file_size: file.size,
-        // Store the cloud-files UUID here. `getAttachmentUrl` detects this
-        // format and hits the cloud-files signed-URL endpoint.
-        file_path: fileId,
-        uploaded_by: userId,
-      })
-      .select()
-      .single();
-    if (insertError) {
-      console.error("Error recording attachment:", insertError.message);
-      // Best-effort cleanup of the orphaned cloud-files upload via the raw
-      // API (a thunk dispatch is overkill in this best-effort cleanup path;
-      // realtime reconciles the slice asynchronously).
+    // Link file (source) → task (target) via the canonical association edge.
+    const linked = await associationsService.add({
+      sourceType: "user_file",
+      sourceId: fileId,
+      targetType: "task",
+      targetId: taskId,
+    });
+    if (isScopesRpcErr(linked)) {
+      console.error("Error linking attachment to task:", linked.error.message);
+      // Best-effort cleanup of the orphaned cloud-files upload.
       try {
         await fileHandler.remove(fileId, { hard: false });
       } catch {
@@ -284,7 +303,17 @@ export async function uploadTaskAttachment(
       }
       return null;
     }
-    return data;
+
+    return {
+      id: fileId,
+      task_id: taskId,
+      file_name: file.name,
+      file_type: file.type || null,
+      file_size: file.size,
+      file_path: fileId,
+      uploaded_by: requireUserId(),
+      uploaded_at: new Date().toISOString(),
+    };
   } catch (error) {
     console.error("Exception uploading attachment:", error);
     return null;
@@ -292,8 +321,9 @@ export async function uploadTaskAttachment(
 }
 
 /**
- * Resolve an attachment's `file_path` column to a URL that can be opened in
- * the browser. The handler auto-refreshes signed URLs before they expire.
+ * Resolve an attachment's `file_path` (cloud-files UUID) to a URL that can be
+ * opened in the browser. The handler auto-refreshes signed URLs before they
+ * expire.
  */
 export async function getAttachmentUrl(fileId: string): Promise<string> {
   try {
@@ -306,26 +336,35 @@ export async function getAttachmentUrl(fileId: string): Promise<string> {
   }
 }
 
+/**
+ * Detach a file from a task. Removes the `user_file → task` association edge
+ * and soft-deletes the cloud-files row. `attachmentId` and `fileId` are the
+ * same cloud-files UUID for canonical (association-backed) attachments.
+ */
 export async function deleteTaskAttachment(
-  attachmentId: string,
+  taskId: string,
   fileId: string,
 ): Promise<boolean> {
   try {
-    // Soft-delete the cloud-files row via the raw API. Realtime reconciles
-    // the slice; this avoids needing to wire a thunk dispatch through the
-    // store singleton in service code.
+    // Drop the association edge (file → task).
+    const unlinked = await associationsService.remove({
+      sourceType: "user_file",
+      sourceId: fileId,
+      targetType: "task",
+      targetId: taskId,
+    });
+    if (isScopesRpcErr(unlinked)) {
+      console.error(
+        "Error removing attachment association:",
+        unlinked.error.message,
+      );
+      return false;
+    }
+    // Soft-delete the cloud-files row (best-effort; realtime reconciles).
     try {
       await fileHandler.remove(fileId, { hard: false });
     } catch (err) {
       console.error("cloud-files delete failed:", err);
-    }
-    const { error } = await supabase
-      .from("ctx_task_attachments")
-      .delete()
-      .eq("id", attachmentId);
-    if (error) {
-      console.error("Error deleting attachment record:", error.message);
-      return false;
     }
     return true;
   } catch (error) {
@@ -763,80 +802,54 @@ export async function getTaskPermissions(taskId: string) {
 }
 
 /**
- * Get comments for a task
+ * Get comments for a task.
+ *
+ * Backed by the canonical comments primitive (`platform.comments`) via the
+ * `commentsService` chokepoint — entity_type='task'. Returns clean `Comment`
+ * rows (oldest→newest, threaded via `parentId`).
  */
-export async function getTaskComments(taskId: string): Promise<any[]> {
-  try {
-    const { data, error } = await supabase
-      .from("ctx_task_comments")
-      .select(
-        `
-        id,
-        content,
-        created_at,
-        updated_at,
-        user_id
-      `,
-      )
-      .eq("task_id", taskId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Error fetching task comments:", error.message);
-      return [];
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error("Exception fetching task comments:", error);
+export async function getTaskComments(taskId: string): Promise<Comment[]> {
+  const res = await commentsService.listForEntity("task", taskId);
+  if (isScopesRpcErr(res)) {
+    console.error("Error fetching task comments:", res.error.message);
     return [];
   }
+  return res.data.comments;
 }
 
 /**
- * Create a comment on a task
+ * Create a comment on a task.
+ *
+ * Writes through `commentsService` (entity_type='task'); the RPC resolves the
+ * org from the task. Re-reads the created comment so the caller gets the full
+ * `Comment` (with author) back, matching the list shape.
  */
 export async function createTaskComment(
   taskId: string,
   content: string,
-): Promise<any | null> {
-  try {
-    const userId = requireUserId();
-    const { data, error } = await supabase
-      .from("ctx_task_comments")
-      .insert({
-        task_id: taskId,
-        user_id: userId,
-        content,
-      })
-      .select(
-        `
-        id,
-        content,
-        created_at,
-        updated_at,
-        user_id
-      `,
-      )
-      .single();
-
-    if (error) {
-      console.error("Error creating task comment:", error.message);
-      return null;
-    }
-
-    // Send comment notification to task owner
-    if (data) {
-      sendTaskCommentNotification(taskId, content).catch((err) => {
-        console.error("Error sending comment notification:", err);
-      });
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Exception creating task comment:", error);
+  parentId?: string | null,
+): Promise<Comment | null> {
+  const added = await commentsService.add({
+    entityType: "task",
+    entityId: taskId,
+    body: content,
+    parentId: parentId ?? null,
+  });
+  if (isScopesRpcErr(added)) {
+    console.error("Error creating task comment:", added.error.message);
     return null;
   }
+  const newId = added.data.id;
+
+  // Send comment notification to task owner (fire-and-forget).
+  sendTaskCommentNotification(taskId, content).catch((err) => {
+    console.error("Error sending comment notification:", err);
+  });
+
+  // Re-read the thread to return the freshly-created comment with its author.
+  const list = await commentsService.listForEntity("task", taskId);
+  if (isScopesRpcErr(list)) return null;
+  return list.data.comments.find((c) => c.id === newId) ?? null;
 }
 
 /**

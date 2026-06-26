@@ -25,7 +25,7 @@ export function WarRoomThreadHitRow({ hit }: { hit: WarRoomSearchThreadHit }) {
   const [pending, startTransition] = useTransition();
   const RoomIcon = roomIconOf(session?.icon);
   const roomColor = roomColorOf(session?.color);
-  const href = `/war-room/${hit.sessionId}?thread=${hit.tileId}`;
+  const href = `/war-room/${hit.sessionId}?thread=${hit.threadId}`;
 
   return (
     <Link

@@ -1607,6 +1607,46 @@
         }
       }
     },
+    "/ai/v2/chat": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Chat V2",
+        "description": "The SAME chat, run on the matrx-runtime Request Management Layer — the new spine\nowns the request envelope (identity / status / cost / lease, linked to the cx\nconversation) while the proven loop streams + persists unchanged. Spine tracking is\nbest-effort and never breaks the chat. Public URL: POST /api/ai/v2/chat.\nSee aidream/services/runtime/FEATURE.md.",
+        "operationId": "chat_v2_ai_v2_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/conversation/{conversation_id}": {
       "post": {
         "tags": [
@@ -10439,6 +10479,186 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SystemErrorRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/runtime/recent": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Recent Executions",
+        "description": "The most-recent executions across all conversations (newest first) — watch v2\ntraffic land without knowing a conversation id first.",
+        "operationId": "recent_executions_admin_runtime_recent_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "filter by registered_action, e.g. 'conversation'",
+              "title": "Type"
+            },
+            "description": "filter by registered_action, e.g. 'conversation'"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ExecutionStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "filter by lifecycle status",
+              "title": "Status"
+            },
+            "description": "filter by lifecycle status"
+          },
+          {
+            "name": "roots_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "only top-level executions (one per request)",
+              "default": false,
+              "title": "Roots Only"
+            },
+            "description": "only top-level executions (one per request)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentExecutionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/runtime/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Conversation Executions",
+        "description": "Every runtime execution tree linked to a cx_conversation — one per request that\nran on the spine (multi-turn conversations accrue several).",
+        "operationId": "conversation_executions_admin_runtime_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationExecutionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/runtime/executions/{execution_id}/tree": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Execution Tree",
+        "description": "The whole tree for an execution — pass ANY node id; it resolves to the root.",
+        "operationId": "execution_tree_admin_runtime_executions__execution_id__tree_get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionTree"
                 }
               }
             }
@@ -19886,7 +20106,7 @@
           "RAG"
         ],
         "summary": "Derive Stream",
-        "description": "Run one Knowledge-Asset derivation over the doc, streaming live\nprogress. Inserts a `derive_runs` row so the operation is observable and\ncancelable (POST .../derive-runs/{run_id}/cancel).",
+        "description": "Run one Knowledge-Asset derivation over the doc, streaming live\nprogress. Inserts a `derive_runs` row so the operation is observable and\ncancelable (POST .../derive-runs/{run_id}/cancel).\n\n`reset` (query param) only affects the resumable LLM derivations\n(section_summary / synthetic_qa): default False RESUMES — already-persisted\nsections are skipped (no re-spend); True clears the set once then rebuilds.\nIgnored by the other 4 runners, which don't accept it.",
         "operationId": "derive_stream_rag_library__processed_document_id__derive__kind__post",
         "parameters": [
           {
@@ -19905,6 +20125,16 @@
             "schema": {
               "type": "string",
               "title": "Kind"
+            }
+          },
+          {
+            "name": "reset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Reset"
             }
           }
         ],
@@ -32469,6 +32699,44 @@
             }
           },
           {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only rows with failed_at >= this instant (ISO-8601).",
+              "title": "Since"
+            },
+            "description": "Only rows with failed_at >= this instant (ISO-8601)."
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only rows with failed_at < this instant (ISO-8601).",
+              "title": "Until"
+            },
+            "description": "Only rows with failed_at < this instant (ISO-8601)."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -32813,6 +33081,22 @@
             }
           },
           {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Route"
+            }
+          },
+          {
             "name": "error_text_contains",
             "in": "query",
             "required": false,
@@ -32859,6 +33143,44 @@
               ],
               "title": "User Id"
             }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only rows with occurred_at >= this instant (ISO-8601).",
+              "title": "Since"
+            },
+            "description": "Only rows with occurred_at >= this instant (ISO-8601)."
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only rows with occurred_at < this instant (ISO-8601).",
+              "title": "Until"
+            },
+            "description": "Only rows with occurred_at < this instant (ISO-8601)."
           },
           {
             "name": "limit",
@@ -35468,6 +35790,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ActionApplyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/actions/confirm": {
+      "post": {
+        "tags": [
+          "Actions",
+          "Actions"
+        ],
+        "summary": "Confirm Action",
+        "description": "Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.\n\nThe client POSTs back the envelope it received in `directive_apply.proposed`. This\nis an explicit user action (a human clicked accept), so it bypasses the model-facing\npolicy gate by design. Applies through the same per-item core as the auto path\n(`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.",
+        "operationId": "confirm_action_actions_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectiveConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectiveConfirmResult"
                 }
               }
             }
@@ -47521,6 +47886,22 @@
             },
             "type": "array",
             "title": "Mcp"
+          },
+          "apply_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "ask",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apply Policy"
           }
         },
         "type": "object",
@@ -49089,6 +49470,32 @@
         },
         "type": "object",
         "title": "ConversationContinueRequest"
+      },
+      "ConversationExecutionsResponse": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "execution_count": {
+            "type": "integer",
+            "title": "Execution Count"
+          },
+          "trees": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionTree"
+            },
+            "type": "array",
+            "title": "Trees"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "execution_count",
+          "trees"
+        ],
+        "title": "ConversationExecutionsResponse"
       },
       "ConversationIngestRequest": {
         "properties": {
@@ -52339,6 +52746,184 @@
         ],
         "title": "DirectChatRequest"
       },
+      "DirectiveConfirmRequest": {
+        "properties": {
+          "matrx_version": {
+            "type": "integer",
+            "title": "Matrx Version",
+            "default": 1
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "output_directive"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "proposal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "DirectiveConfirmRequest"
+      },
+      "DirectiveConfirmResult": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "proposal_id": {
+            "type": "string",
+            "title": "Proposal Id"
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "receipts": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/DirectiveItemApplied"
+                },
+                {
+                  "$ref": "#/components/schemas/DirectiveItemFailed"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Receipts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "proposal_id",
+          "applied",
+          "failed",
+          "receipts"
+        ],
+        "title": "DirectiveConfirmResult"
+      },
+      "DirectiveItemApplied": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "directive_apply.item"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "already_applied",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "resource_kind": {
+            "type": "string",
+            "title": "Resource Kind"
+          },
+          "resource_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Resource Ids"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "index",
+          "status",
+          "resource_kind",
+          "resource_ids",
+          "summary"
+        ],
+        "title": "DirectiveItemApplied"
+      },
+      "DirectiveItemFailed": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": "directive_apply.failed"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "fault": {
+            "type": "string",
+            "title": "Fault"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "index",
+          "error",
+          "fault"
+        ],
+        "title": "DirectiveItemFailed"
+      },
       "DiscardRequest": {
         "properties": {
           "job_id": {
@@ -53554,6 +54139,229 @@
         },
         "type": "object",
         "title": "ExcludePageBody"
+      },
+      "ExecutionError": {
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "traceback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traceback"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "error_type",
+          "message"
+        ],
+        "title": "ExecutionError",
+        "description": "Structured error captured on a non-success terminal transition. Mirrors the\nrepo's `describe_db_exception` shape — never a bare string in a status column."
+      },
+      "ExecutionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "paused",
+          "waiting_input",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "title": "ExecutionStatus",
+        "description": "Where a unit of work is. The ONLY column that marks progress; errors live\nin the structured `error`, never here."
+      },
+      "ExecutionTree": {
+        "properties": {
+          "root": {
+            "$ref": "#/components/schemas/ExecutionTreeNode"
+          },
+          "node_count": {
+            "type": "integer",
+            "title": "Node Count"
+          },
+          "total_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Cost",
+            "default": "0"
+          },
+          "total_meters": {
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+            },
+            "type": "object",
+            "title": "Total Meters"
+          },
+          "status_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Status Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "root",
+          "node_count"
+        ],
+        "title": "ExecutionTree",
+        "description": "A request's whole execution tree in one read — the observability primitive.\nPer-node detail nested under `root`, plus tree-wide rollups (the design's\n'this request's whole tree with cost/status/timing in one call')."
+      },
+      "ExecutionTreeNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExecutionStatus"
+          },
+          "parent_execution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Execution Id"
+          },
+          "cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cost",
+            "default": "0"
+          },
+          "meters": {
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+            },
+            "type": "object",
+            "title": "Meters"
+          },
+          "link_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Kind"
+          },
+          "link_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExecutionError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth",
+            "default": 0
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionTreeNode"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "status"
+        ],
+        "title": "ExecutionTreeNode",
+        "description": "One execution as a node in the read-only tree view, with its children nested.\nPayload-blind: `type` is the opaque registered_action, feature data is reached only\nvia `link_kind`/`link_id`."
       },
       "ExpandRequest": {
         "properties": {
@@ -62107,6 +62915,18 @@
               }
             ],
             "title": "Section Kind"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
           }
         },
         "type": "object",
@@ -69744,6 +70564,27 @@
           "tools"
         ],
         "title": "RealtimeToolsResponse"
+      },
+      "RecentExecutionsResponse": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "executions": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionTreeNode"
+            },
+            "type": "array",
+            "title": "Executions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "executions"
+        ],
+        "title": "RecentExecutionsResponse"
       },
       "RecoveryApplyAck": {
         "properties": {
@@ -82563,6 +83404,22 @@
             },
             "type": "array",
             "title": "Remove"
+          },
+          "apply_policy": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "ask",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apply Policy"
           }
         },
         "type": "object",

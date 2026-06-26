@@ -14,6 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { requireUserId } from "@/utils/auth/getUserId";
 import type { Json } from "@/types/database.types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,18 +200,30 @@ export function validateProjectJson(raw: string): ProjectJsonValidation {
  * Create a project (and its full task/subtask tree) from the JSON payload via
  * the `create_project_from_json` RPC — one transaction, RLS-respecting.
  *
- * @param organizationId  null = personal project (no org).
+ * @param organizationId  null resolves to the user's personal organization.
  */
 export async function createProjectFromJson(
   payload: ProjectJsonPayload,
   organizationId: string | null,
 ): Promise<CreateProjectFromJsonResult> {
   try {
+    let resolvedOrganizationId = organizationId;
+    if (!resolvedOrganizationId) {
+      const userId = requireUserId();
+      const { data, error } = await supabase.rpc("ensure_personal_organization", {
+        p_user_id: userId,
+      });
+      if (error || !data) {
+        throw pgErrorToError(
+          error ?? { message: "Could not resolve personal organization" },
+        );
+      }
+      resolvedOrganizationId = data as string;
+    }
+
     const { data, error } = await supabase.rpc("create_project_from_json", {
       p_payload: payload as unknown as Json,
-      // The RPC defaults p_organization_id to NULL (personal project) when
-      // omitted; passing undefined drops the key so the default applies.
-      ...(organizationId ? { p_organization_id: organizationId } : {}),
+      p_organization_id: resolvedOrganizationId,
     });
 
     if (error) throw pgErrorToError(error);

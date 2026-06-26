@@ -7,7 +7,7 @@
 // once (no forked drag handling).
 //
 // The order is the tiles' `position` field (the same one
-// `selectOrderedGalleryTileIds` sorts by, pinned-first). A drag produces a new
+// `selectOrderedGalleryThreadIds` sorts by, pinned-first). A drag produces a new
 // id order; we re-stamp `position` from each id's NEW index and:
 //   • optimistically apply it to the slice (`setTilePosition`) so the move is
 //     instant and the gallery/rail re-sorts immediately, then
@@ -23,9 +23,9 @@
 
 import { useCallback } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { setTilePosition } from "@/features/war-room/redux/slice";
-import { persistTilePositions } from "@/features/war-room/redux/thunks";
-import { selectOrderedGalleryTileIds } from "@/features/war-room/redux/selectors";
+import { setThreadPosition } from "@/features/war-room/redux/slice";
+import { persistThreadPositions } from "@/features/war-room/redux/thunks";
+import { selectOrderedGalleryThreadIds } from "@/features/war-room/redux/selectors";
 
 /** Position stride between adjacent threads (leaves room to insert without a full re-stamp). */
 const POSITION_STRIDE = 10;
@@ -46,7 +46,7 @@ export function useThreadReorder(sessionId: string): ThreadReorder {
   const commitOrder = useCallback(
     (orderedIds: string[]) => {
       // Read the live current order to detect a true change + skip no-op writes.
-      const current = selectOrderedGalleryTileIds(sessionId)(store.getState());
+      const current = selectOrderedGalleryThreadIds(sessionId)(store.getState());
       if (
         orderedIds.length === current.length &&
         orderedIds.every((id, i) => id === current[i])
@@ -61,10 +61,10 @@ export function useThreadReorder(sessionId: string): ThreadReorder {
 
       // Optimistic: re-sort the slice immediately (one small update per tile).
       for (const u of updates) {
-        dispatch(setTilePosition(u));
+        dispatch(setThreadPosition(u));
       }
       // Durable: persist the batch (loud toast on failure inside the thunk).
-      void dispatch(persistTilePositions(updates));
+      void dispatch(persistThreadPositions(updates));
     },
     [dispatch, store, sessionId],
   );

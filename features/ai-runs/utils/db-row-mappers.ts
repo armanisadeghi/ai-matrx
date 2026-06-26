@@ -10,7 +10,9 @@ import type {
 } from "@/features/ai-runs/types/aiRunTypes";
 
 type AiRunRow = Database["public"]["Tables"]["ai_runs"]["Row"];
-type AiTaskRow = Database["public"]["Tables"]["ai_tasks"]["Row"];
+import type { DeprecatedAiTasksRow } from "@/utils/supabase/deprecated-tables";
+
+type AiTaskRow = DeprecatedAiTasksRow;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

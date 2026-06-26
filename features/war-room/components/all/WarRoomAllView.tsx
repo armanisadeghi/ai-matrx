@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   selectListStatus,
+  selectOrphanThreadIds,
   selectSessionsList,
 } from "@/features/war-room/redux/selectors";
 import { loadSessionsList } from "@/features/war-room/redux/thunks";
@@ -20,6 +21,7 @@ import { useWarRoomAllSearch } from "@/features/war-room/hooks/useWarRoomAllSear
 import { WarRoomSearchField } from "@/features/war-room/components/shared/WarRoomSearchField";
 import { SessionCard } from "./SessionCard";
 import { WarRoomThreadHitRow } from "./WarRoomThreadHitRow";
+import { UnassignedThreadsSection } from "./UnassignedThreadsSection";
 import { NewSessionButton } from "./NewSessionButton";
 import { NewRoomFromProjectButton } from "./NewRoomFromProjectButton";
 
@@ -51,6 +53,7 @@ const MasterWatchLayer = dynamic(
 export function WarRoomAllView() {
   const dispatch = useAppDispatch();
   const sessions = useAppSelector(selectSessionsList);
+  const orphanIds = useAppSelector(selectOrphanThreadIds);
   const status = useAppSelector(selectListStatus);
 
   // Master Agent panel — local state owns open/closed. Non-modal so the rooms
@@ -74,7 +77,8 @@ export function WarRoomAllView() {
   }, [dispatch]);
 
   const isLoading = status === "loading" || status === "idle";
-  const isEmpty = status === "ready" && sessions.length === 0;
+  const isEmpty =
+    status === "ready" && sessions.length === 0 && orphanIds.length === 0;
   const searchEmpty =
     isSearching && roomHits.length === 0 && threadHits.length === 0;
   const filteredRoomIds = new Set(roomHits.map((r) => r.sessionId));
@@ -151,6 +155,8 @@ export function WarRoomAllView() {
             <EmptyState />
           ) : searchEmpty ? (
             <SearchEmptyState query={searchQuery.trim()} />
+          ) : sessions.length === 0 && orphanIds.length > 0 ? (
+            <UnassignedThreadsSection />
           ) : (
             <div className="space-y-6">
               {visibleSessions.length > 0 ? (
@@ -171,6 +177,8 @@ export function WarRoomAllView() {
                 </section>
               ) : null}
 
+              {!isSearching ? <UnassignedThreadsSection /> : null}
+
               {isSearching && threadHits.length > 0 ? (
                 <section>
                   <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -181,7 +189,7 @@ export function WarRoomAllView() {
                   </h2>
                   <ul className="space-y-2 max-w-2xl">
                     {threadHits.map((hit) => (
-                      <li key={hit.tileId}>
+                      <li key={hit.threadId}>
                         <WarRoomThreadHitRow hit={hit} />
                       </li>
                     ))}

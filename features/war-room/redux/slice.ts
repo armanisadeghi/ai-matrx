@@ -1,27 +1,23 @@
 // features/war-room/redux/slice.ts
 //
-// RTK slice for War Room. Holds session/tile linkage + tile UI state only.
-// Small, individual updates — no large-object replacements (repo doctrine).
+// RTK slice for War Room — session/thread linkage + UI state only.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   containerKey,
   SINGLE_ACTIVE_ENTITY_TYPES,
-  type TileTab,
+  type ThreadTab,
+  type ThreadUserState,
   type WarRoomAssignment,
   type WarRoomSession,
-  type WarRoomTile,
+  type WarRoomThread,
 } from "../types";
-import {
-  initialWarRoomState,
-  type LoadStatus,
-} from "./warRoom.types";
+import { initialWarRoomState, type LoadStatus } from "./warRoom.types";
 
 function removeId(ids: string[], id: string): string[] {
   return ids.includes(id) ? ids.filter((x) => x !== id) : ids;
 }
 
-/** Demote every same-type sibling of `keep` to is_active=false (single-active types). */
 function demoteSiblings(
   list: WarRoomAssignment[],
   entityType: string,
@@ -36,7 +32,6 @@ const warRoomSlice = createSlice({
   name: "warRoom",
   initialState: initialWarRoomState,
   reducers: {
-    // ── Session list ──────────────────────────────────────────────────
     setListStatus(state, action: PayloadAction<LoadStatus>) {
       state.listStatus = action.payload;
       if (action.payload !== "error") state.listError = null;
@@ -71,116 +66,123 @@ const warRoomSlice = createSlice({
       state.activeSessionId = action.payload;
     },
 
-    // ── Tiles ─────────────────────────────────────────────────────────
-    setTilesStatus(
+    setThreadsStatus(
       state,
-      action: PayloadAction<{ sessionId: string; status: LoadStatus }>,
+      action: PayloadAction<{ roomId: string; status: LoadStatus }>,
     ) {
-      state.tilesStatusBySession[action.payload.sessionId] =
-        action.payload.status;
+      state.threadsStatusByRoom[action.payload.roomId] = action.payload.status;
     },
-    tilesLoadedForSession(
+    threadsLoadedForRoom(
       state,
-      action: PayloadAction<{ sessionId: string; tiles: WarRoomTile[] }>,
+      action: PayloadAction<{ roomId: string; threads: WarRoomThread[] }>,
     ) {
-      const { sessionId, tiles } = action.payload;
+      const { roomId, threads } = action.payload;
       const ids: string[] = [];
-      for (const t of tiles) {
-        state.tilesById[t.id] = t;
+      for (const t of threads) {
+        state.threadsById[t.id] = t;
         ids.push(t.id);
       }
-      state.tileIdsBySession[sessionId] = ids;
-      state.tilesStatusBySession[sessionId] = "ready";
+      state.threadIdsByRoom[roomId] = ids;
+      state.threadsStatusByRoom[roomId] = "ready";
     },
-    tileUpserted(state, action: PayloadAction<WarRoomTile>) {
+    orphanThreadsLoaded(state, action: PayloadAction<string[]>) {
+      state.orphanThreadIds = action.payload;
+    },
+    threadUpserted(state, action: PayloadAction<WarRoomThread>) {
       const t = action.payload;
-      const existed = !!state.tilesById[t.id];
-      state.tilesById[t.id] = t;
-      if (!existed) {
-        const ids = state.tileIdsBySession[t.session_id] ?? [];
-        if (!ids.includes(t.id)) ids.push(t.id);
-        state.tileIdsBySession[t.session_id] = ids;
-      }
+      state.threadsById[t.id] = t;
     },
-    /**
-     * Move a thread (tile) from one room to another — thread PORTABILITY. The
-     * tile's assignment bucket (container_id = tileId) is untouched, so all its
-     * resources travel with it. Only the room membership lists + the tile's
-     * session_id change.
-     */
-    tileSessionChanged(
+    threadMembershipChanged(
       state,
       action: PayloadAction<{
-        id: string;
-        fromSessionId: string;
-        toSessionId: string;
+        threadId: string;
+        fromRoomId: string | null;
+        toRoomId: string;
       }>,
     ) {
-      const { id, fromSessionId, toSessionId } = action.payload;
-      const tile = state.tilesById[id];
-      if (tile) tile.session_id = toSessionId;
-      if (state.tileIdsBySession[fromSessionId]) {
-        state.tileIdsBySession[fromSessionId] = removeId(
-          state.tileIdsBySession[fromSessionId],
-          id,
+      const { threadId, fromRoomId, toRoomId } = action.payload;
+      if (fromRoomId && state.threadIdsByRoom[fromRoomId]) {
+        state.threadIdsByRoom[fromRoomId] = removeId(
+          state.threadIdsByRoom[fromRoomId],
+          threadId,
         );
       }
-      const toList = state.tileIdsBySession[toSessionId];
-      if (toList && !toList.includes(id)) toList.push(id);
+      const toList = state.threadIdsByRoom[toRoomId] ?? [];
+      if (!toList.includes(threadId)) toList.push(threadId);
+      state.threadIdsByRoom[toRoomId] = toList;
+      state.orphanThreadIds = removeId(state.orphanThreadIds, threadId);
     },
-    tileRemoved(
+    threadOrphaned(
       state,
-      action: PayloadAction<{ id: string; sessionId: string }>,
+      action: PayloadAction<{ threadId: string; fromRoomId: string }>,
     ) {
-      const { id, sessionId } = action.payload;
-      delete state.tilesById[id];
-      if (state.tileIdsBySession[sessionId]) {
-        state.tileIdsBySession[sessionId] = removeId(
-          state.tileIdsBySession[sessionId],
+      const { threadId, fromRoomId } = action.payload;
+      if (state.threadIdsByRoom[fromRoomId]) {
+        state.threadIdsByRoom[fromRoomId] = removeId(
+          state.threadIdsByRoom[fromRoomId],
+          threadId,
+        );
+      }
+      if (!state.orphanThreadIds.includes(threadId)) {
+        state.orphanThreadIds.push(threadId);
+      }
+    },
+    threadRemoved(
+      state,
+      action: PayloadAction<{ id: string; roomId: string }>,
+    ) {
+      const { id, roomId } = action.payload;
+      delete state.threadsById[id];
+      if (state.threadIdsByRoom[roomId]) {
+        state.threadIdsByRoom[roomId] = removeId(
+          state.threadIdsByRoom[roomId],
           id,
         );
       }
+      state.orphanThreadIds = removeId(state.orphanThreadIds, id);
       delete state.assignmentsByContainer[containerKey("thread", id)];
+      delete state.threadUserStateById[id];
+      delete state.autoApproveByThread[id];
     },
-    setTileActiveTab(
+    setThreadActiveTab(
       state,
-      action: PayloadAction<{ id: string; tab: TileTab }>,
+      action: PayloadAction<{ id: string; tab: ThreadTab }>,
     ) {
-      const t = state.tilesById[action.payload.id];
+      const t = state.threadsById[action.payload.id];
       if (t) t.active_tab = action.payload.tab;
     },
-    setTilePinned(
+    setThreadUserState(
       state,
-      action: PayloadAction<{ id: string; pinned: boolean }>,
+      action: PayloadAction<{ id: string; state: ThreadUserState }>,
     ) {
-      const t = state.tilesById[action.payload.id];
-      if (t) t.is_pinned = action.payload.pinned;
+      state.threadUserStateById[action.payload.id] = action.payload.state;
     },
-    setTileHidden(
+    setThreadUserStateBulk(
       state,
-      action: PayloadAction<{ id: string; hidden: boolean }>,
+      action: PayloadAction<Record<string, ThreadUserState>>,
     ) {
-      const t = state.tilesById[action.payload.id];
-      if (t) t.is_hidden = action.payload.hidden;
+      for (const [id, userState] of Object.entries(action.payload)) {
+        state.threadUserStateById[id] = userState;
+      }
     },
-    setTilePosition(
+    setThreadPosition(
       state,
       action: PayloadAction<{ id: string; position: number }>,
     ) {
-      const t = state.tilesById[action.payload.id];
+      const t = state.threadsById[action.payload.id];
       if (t) t.position = action.payload.position;
     },
-    // ── Associations (polymorphic M2M — the one source of truth) ──────
-    /** Bulk-replace assignment buckets after a room load (keyed by containerKey). */
+
     assignmentsLoadedBulk(
       state,
-      action: PayloadAction<{ byContainer: Record<string, WarRoomAssignment[]> }>,
+      action: PayloadAction<{
+        byContainer: Record<string, WarRoomAssignment[]>;
+      }>,
     ) {
       for (const [key, rows] of Object.entries(action.payload.byContainer)) {
         state.assignmentsByContainer[key] = rows;
       }
     },
-    /** Replace one container's bucket (e.g. after loading a single tile's links). */
     assignmentsLoadedForContainer(
       state,
       action: PayloadAction<{ key: string; assignments: WarRoomAssignment[] }>,
@@ -188,7 +190,6 @@ const warRoomSlice = createSlice({
       state.assignmentsByContainer[action.payload.key] =
         action.payload.assignments;
     },
-    /** Upsert one assignment; single-active types demote their same-type siblings. */
     assignmentUpserted(
       state,
       action: PayloadAction<{ key: string; assignment: WarRoomAssignment }>,
@@ -210,7 +211,6 @@ const warRoomSlice = createSlice({
       else list.push(assignment);
       state.assignmentsByContainer[key] = list;
     },
-    /** Remove one assignment row from a container's bucket. */
     assignmentRemoved(
       state,
       action: PayloadAction<{ key: string; id: string }>,
@@ -222,7 +222,6 @@ const warRoomSlice = createSlice({
         );
       }
     },
-    /** Mark one (entityType, entityId) active in a container, demoting siblings. */
     assignmentActiveSet(
       state,
       action: PayloadAction<{
@@ -241,52 +240,47 @@ const warRoomSlice = createSlice({
       }
     },
 
-    // ── Agent-edit auto-approve (HITL) ────────────────────────────────
-    /**
-     * Grant ("always approve") a class of agent edit on a tile, so the approval
-     * card stops asking. The dispatcher fires a loud, revocable toast on each
-     * silently-approved write — auto-approve is never silent.
-     */
-    setTileAutoApprove(
+    setThreadAutoApprove(
       state,
-      action: PayloadAction<{ tileId: string; scope: string; value: boolean }>,
+      action: PayloadAction<{
+        threadId: string;
+        scope: string;
+        value: boolean;
+      }>,
     ) {
-      const { tileId, scope, value } = action.payload;
-      const cur = state.autoApproveByTile[tileId] ?? {};
+      const { threadId, scope, value } = action.payload;
+      const cur = state.autoApproveByThread[threadId] ?? {};
       if (value) cur[scope] = true;
       else delete cur[scope];
-      if (Object.keys(cur).length > 0) state.autoApproveByTile[tileId] = cur;
-      else delete state.autoApproveByTile[tileId];
+      if (Object.keys(cur).length > 0)
+        state.autoApproveByThread[threadId] = cur;
+      else delete state.autoApproveByThread[threadId];
     },
-
-    /** Revoke one scope's grant (omit `scope` to revoke every grant on the tile). */
-    clearTileAutoApprove(
+    clearThreadAutoApprove(
       state,
-      action: PayloadAction<{ tileId: string; scope?: string }>,
+      action: PayloadAction<{ threadId: string; scope?: string }>,
     ) {
-      const { tileId, scope } = action.payload;
+      const { threadId, scope } = action.payload;
       if (!scope) {
-        delete state.autoApproveByTile[tileId];
+        delete state.autoApproveByThread[threadId];
         return;
       }
-      const cur = state.autoApproveByTile[tileId];
+      const cur = state.autoApproveByThread[threadId];
       if (!cur) return;
       delete cur[scope];
-      if (Object.keys(cur).length === 0) delete state.autoApproveByTile[tileId];
+      if (Object.keys(cur).length === 0)
+        delete state.autoApproveByThread[threadId];
     },
 
-    /** Drop all loaded tiles for a session (e.g. when leaving the room). */
-    clearSessionTiles(state, action: PayloadAction<string>) {
-      const sessionId = action.payload;
-      const ids = state.tileIdsBySession[sessionId] ?? [];
+    clearRoomThreads(state, action: PayloadAction<string>) {
+      const roomId = action.payload;
+      const ids = state.threadIdsByRoom[roomId] ?? [];
       for (const id of ids) {
-        delete state.tilesById[id];
         delete state.assignmentsByContainer[containerKey("thread", id)];
-        delete state.autoApproveByTile[id];
       }
-      delete state.assignmentsByContainer[containerKey("room", sessionId)];
-      delete state.tileIdsBySession[sessionId];
-      delete state.tilesStatusBySession[sessionId];
+      delete state.assignmentsByContainer[containerKey("room", roomId)];
+      delete state.threadIdsByRoom[roomId];
+      delete state.threadsStatusByRoom[roomId];
     },
   },
 });
@@ -298,23 +292,25 @@ export const {
   sessionUpserted,
   sessionRemoved,
   setActiveSession,
-  setTilesStatus,
-  tilesLoadedForSession,
-  tileUpserted,
-  tileSessionChanged,
-  tileRemoved,
-  setTileActiveTab,
-  setTilePinned,
-  setTileHidden,
-  setTilePosition,
+  setThreadsStatus,
+  threadsLoadedForRoom,
+  orphanThreadsLoaded,
+  threadUpserted,
+  threadMembershipChanged,
+  threadOrphaned,
+  threadRemoved,
+  setThreadActiveTab,
+  setThreadUserState,
+  setThreadUserStateBulk,
+  setThreadPosition,
   assignmentsLoadedBulk,
   assignmentsLoadedForContainer,
   assignmentUpserted,
   assignmentRemoved,
   assignmentActiveSet,
-  setTileAutoApprove,
-  clearTileAutoApprove,
-  clearSessionTiles,
+  setThreadAutoApprove,
+  clearThreadAutoApprove,
+  clearRoomThreads,
 } = warRoomSlice.actions;
 
 export default warRoomSlice.reducer;

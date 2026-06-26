@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
 // and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
@@ -54,8 +55,10 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    const { data: conversation, error: convError } = await adminClient
-      .from("conversations")
+    const { data: conversation, error: convError } = await fromDeprecatedTable(
+      "conversations",
+      "app/api/tool-testing/conversation/route.ts:POST",
+    )
       .insert({
         type: "direct",
         name: `Tool Test — ${new Date().toISOString()}`,
@@ -75,17 +78,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: participantError } = await adminClient
-      .from("conversation_participants")
-      .insert({
-        conversation_id: conversation.id,
-        user_id: userId,
-        role: "owner",
-      });
+    const { error: participantError } = await fromDeprecatedTable(
+      "conversation_participants",
+      "app/api/tool-testing/conversation/route.ts:POST:participants",
+    ).insert({
+      conversation_id: conversation.id,
+      user_id: userId,
+      role: "owner",
+    });
 
     if (participantError) {
-      await adminClient
-        .from("conversations")
+      await fromDeprecatedTable(
+        "conversations",
+        "app/api/tool-testing/conversation/route.ts:POST:rollback",
+      )
         .delete()
         .eq("id", conversation.id);
       console.error("[ToolTest] Failed to add participant:", participantError);

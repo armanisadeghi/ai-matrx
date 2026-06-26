@@ -61,8 +61,13 @@ import type { Project } from "../types";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Represents the org context chosen in the form: null = Personal project */
-export type OrgContext = { id: string; name: string; slug: string } | null;
+/** Represents the organization chosen in the form; null resolves to personal org. */
+export type OrgContext = {
+  id: string;
+  name: string;
+  slug: string;
+  isPersonal: boolean;
+} | null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -124,6 +129,7 @@ export function OrgSelector({
     id: string;
     name: string;
     slug: string;
+    is_personal: boolean;
     role: string;
   }[];
   orgsLoading: boolean;
@@ -132,8 +138,10 @@ export function OrgSelector({
   locked: boolean;
   isMobile: boolean;
 }) {
-  const label = selectedOrg ? selectedOrg.name : "Personal";
-  const Icon = selectedOrg ? Building2 : User;
+  const personalOrg = orgs.find((org) => org.is_personal);
+  const teamOrgs = orgs.filter((org) => !org.is_personal);
+  const label = selectedOrg?.isPersonal ? "Personal" : selectedOrg?.name ?? "Personal";
+  const Icon = selectedOrg?.isPersonal || !selectedOrg ? User : Building2;
 
   if (locked) {
     return (
@@ -174,23 +182,42 @@ export function OrgSelector({
       <DropdownMenuContent align="start" className="w-[280px]">
         {/* Personal option */}
         <DropdownMenuItem
-          onClick={() => onSelect(null)}
-          className={cn("gap-2", !selectedOrg && "bg-accent")}
+          onClick={() =>
+            onSelect(
+              personalOrg
+                ? {
+                    id: personalOrg.id,
+                    name: personalOrg.name,
+                    slug: personalOrg.slug,
+                    isPersonal: true,
+                  }
+                : null,
+            )
+          }
+          className={cn(
+            "gap-2",
+            (!selectedOrg || selectedOrg.isPersonal) && "bg-accent",
+          )}
         >
           <User className="h-4 w-4 shrink-0" />
           <span>Personal</span>
           <span className="text-[10px] text-muted-foreground ml-auto">
-            No org
+            Personal org
           </span>
         </DropdownMenuItem>
 
-        {orgs.length > 0 && <DropdownMenuSeparator />}
+        {teamOrgs.length > 0 && <DropdownMenuSeparator />}
 
-        {orgs.map((org) => (
+        {teamOrgs.map((org) => (
           <DropdownMenuItem
             key={org.id}
             onClick={() =>
-              onSelect({ id: org.id, name: org.name, slug: org.slug })
+              onSelect({
+                id: org.id,
+                name: org.name,
+                slug: org.slug,
+                isPersonal: false,
+              })
             }
             className={cn("gap-2", selectedOrg?.id === org.id && "bg-accent")}
           >
@@ -247,8 +274,13 @@ export function ProjectFormCore({
   const resolveInitialOrg = (): OrgContext => {
     if (!initialOrgId) return null;
     if (initialOrgSlug)
-      return { id: initialOrgId, name: "", slug: initialOrgSlug };
-    return { id: initialOrgId, name: "", slug: "" };
+      return {
+        id: initialOrgId,
+        name: "",
+        slug: initialOrgSlug,
+        isPersonal: false,
+      };
+    return { id: initialOrgId, name: "", slug: "", isPersonal: false };
   };
 
   const [selectedOrg, setSelectedOrg] = useState<OrgContext>(resolveInitialOrg);
@@ -258,7 +290,12 @@ export function ProjectFormCore({
     if (!initialOrgId || !orgs.length) return;
     const found = orgs.find((o) => o.id === initialOrgId);
     if (found) {
-      setSelectedOrg({ id: found.id, name: found.name, slug: found.slug });
+      setSelectedOrg({
+        id: found.id,
+        name: found.name,
+        slug: found.slug,
+        isPersonal: found.is_personal,
+      });
     }
   }, [orgs, initialOrgId]);
 
@@ -299,7 +336,7 @@ export function ProjectFormCore({
       const result = await createProject({
         name,
         slug,
-        // Pass undefined (not '') when no org — Postgres rejects empty string for UUID
+        // Undefined resolves to the user's personal org in the canonical service.
         organizationId: selectedOrg?.id ?? undefined,
         description: description || undefined,
       });
@@ -312,10 +349,6 @@ export function ProjectFormCore({
             typeof dispatch
           >[0],
         );
-        // The canonical service normalizes the personal pseudo-org sentinel to
-        // a null organization id; redirect to the personal /projects path in
-        // that case rather than the non-existent /organizations/personal route.
-        const persistedOrgId = result.project.organizationId;
         toast.success("Project created!", {
           description: "You can manage permissions in project settings.",
           action: !skipRedirect
@@ -325,7 +358,7 @@ export function ProjectFormCore({
                   // Personal projects always use UUID — slug is only unique
                   // inside an org, so the personal route segment is `[id]`.
                   const base =
-                    persistedOrgId && selectedOrg?.slug
+                    !result.project!.isPersonal && selectedOrg?.slug
                       ? `/organizations/${selectedOrg.slug}/projects/${result.project!.slug ?? result.project!.id}/settings`
                       : `/projects/${result.project!.id}/settings`;
                   router.push(base);
@@ -347,7 +380,7 @@ export function ProjectFormCore({
     }
   };
 
-  const slugPrefix = selectedOrg?.slug
+  const slugPrefix = selectedOrg?.slug && !selectedOrg.isPersonal
     ? `/organizations/${selectedOrg.slug}/projects/`
     : "/projects/";
 

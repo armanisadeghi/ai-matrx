@@ -62,6 +62,6 @@ export function traceWarRoomRenderPath(
 }
 
 /** Surface keys used by the tile Agent tab (ExperimentalAgentScreen). */
-export function isWarRoomTileAgentSurface(surfaceKey?: string): boolean {
+export function isWarRoomThreadAgentSurface(surfaceKey?: string): boolean {
   return !!surfaceKey?.startsWith("studio-assistant-experimental:");
 }

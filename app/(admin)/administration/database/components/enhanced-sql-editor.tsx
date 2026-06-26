@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
@@ -22,11 +21,9 @@ import {
   Plus,
   Trash2,
   Zap,
-  FolderOpen
+  FolderOpen,
 } from "lucide-react";
-import RawJsonExplorer from "@/components/official/json-explorer/RawJsonExplorer";
-import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
-import { JsonTruncator } from "@/components/official-candidate/json-truncator/JsonTruncator";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import AccordionWrapper from "@/components/matrx/matrx-collapsible/AccordionWrapper";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -84,7 +81,6 @@ export const EnhancedSQLEditor = ({
   const [queryHistory, setQueryHistory] = useState<
     { query: string; timestamp: Date }[]
   >([]);
-  const [activeResultTab, setActiveResultTab] = useState("raw");
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [useCache, setUseCache] = useState(true);
   const [replacementPairs, setReplacementPairs] = useState<ReplacementPair[]>([
@@ -566,99 +562,19 @@ export const EnhancedSQLEditor = ({
                   </Badge>
                 )}
               </h3>
-              <div className="flex items-center gap-2">
-                {executionTime !== null && (
-                  <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {(executionTime / 1000).toFixed(2)}s
-                  </span>
-                )}
-                <Button
-                  onClick={() =>
-                    copyToClipboard(JSON.stringify(queryResult, null, 2))
-                  }
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
+              {executionTime !== null && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {(executionTime / 1000).toFixed(2)}s
+                </span>
+              )}
             </div>
 
-            <Tabs
-              value={activeResultTab}
-              onValueChange={setActiveResultTab}
-              className="w-full flex-1 min-h-0 flex flex-col overflow-hidden"
-            >
-              <div className="border-b border-slate-200 dark:border-slate-700 px-4 flex-shrink-0">
-                <TabsList className="h-9 bg-transparent">
-                  <TabsTrigger
-                    value="raw"
-                    className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
-                  >
-                    Raw JSON
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="explorer"
-                    className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
-                  >
-                    JSON Explorer
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="tree-viewer"
-                    className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
-                  >
-                    Tree
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="truncator"
-                    className="text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-800 dark:data-[state=active]:text-slate-200 data-[state=active]:shadow-none data-[state=active]:border-slate-200 dark:data-[state=active]:border-slate-700 data-[state=active]:border-b-0 rounded-b-none"
-                  >
-                    Truncator
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent
-                value="raw"
-                className="m-0 flex-1 min-h-0 overflow-auto"
-              >
-                <pre className="p-4 text-sm text-slate-800 dark:text-slate-200 font-mono whitespace-pre-wrap">
-                  {JSON.stringify(queryResult, null, 2)}
-                </pre>
-              </TabsContent>
-
-              <TabsContent
-                value="explorer"
-                className="m-0 flex-1 min-h-0 overflow-auto"
-              >
-                <RawJsonExplorer pageData={queryResult} />
-              </TabsContent>
-
-              <TabsContent
-                value="tree-viewer"
-                className="m-0 flex-1 min-h-0 overflow-auto bg-gray-50 dark:bg-zinc-900"
-              >
-                <JsonTreeViewer data={queryResult} />
-              </TabsContent>
-              <TabsContent
-                value="truncator"
-                className="m-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
-              >
-                <JsonTruncator
-                  initialValue={
-                    typeof queryResult === "string"
-                      ? queryResult
-                      : JSON.stringify(queryResult, null, 2)
-                  }
-                  tabbed
-                  defaultTab="fields"
-                  className="flex-1 min-h-0"
-                  allowLayoutToggle
-                />
-              </TabsContent>
-            </Tabs>
+            <JsonInspector
+              data={queryResult}
+              defaultView="json"
+              className="flex-1 min-h-0 rounded-none border-0 shadow-none"
+            />
           </div>
         )}
       </CardContent>
