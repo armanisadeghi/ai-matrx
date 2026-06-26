@@ -56,24 +56,68 @@ function parseMap(raw: string): MapSpec | { error: string } {
       return { error: "Map needs a JSON object with a `markers` array." };
     }
   }
-  const o = (Array.isArray(obj) ? { markers: obj } : obj) as Record<string, unknown>;
-  const rawMarkers = Array.isArray(o.markers) ? o.markers : Array.isArray(o.places) ? o.places : [];
+  const o = (Array.isArray(obj) ? { markers: obj } : obj) as Record<
+    string,
+    unknown
+  >;
+  const rawMarkers = Array.isArray(o.markers)
+    ? o.markers
+    : Array.isArray(o.places)
+      ? o.places
+      : [];
   const markers: MapMarker[] = (rawMarkers as Record<string, unknown>[])
-    .map((m) => {
-      const lat = num(m?.lat ?? m?.latitude ?? (Array.isArray(m?.coordinates) ? m.coordinates[0] : undefined) ?? (Array.isArray(m?.coords) ? m.coords[0] : undefined));
-      const lng = num(m?.lng ?? m?.lon ?? m?.longitude ?? (Array.isArray(m?.coordinates) ? m.coordinates[1] : undefined) ?? (Array.isArray(m?.coords) ? m.coords[1] : undefined));
+    .map((m): MapMarker | null => {
+      const lat = num(
+        m?.lat ??
+          m?.latitude ??
+          (Array.isArray(m?.coordinates) ? m.coordinates[0] : undefined) ??
+          (Array.isArray(m?.coords) ? m.coords[0] : undefined),
+      );
+      const lng = num(
+        m?.lng ??
+          m?.lon ??
+          m?.longitude ??
+          (Array.isArray(m?.coordinates) ? m.coordinates[1] : undefined) ??
+          (Array.isArray(m?.coords) ? m.coords[1] : undefined),
+      );
       if (lat == null || lng == null) return null;
-      return { lat, lng, label: m?.label != null ? String(m.label ?? m.name) : m?.name != null ? String(m.name) : undefined, description: m?.description != null ? String(m.description) : undefined };
+      return {
+        lat,
+        lng,
+        label:
+          m?.label != null
+            ? String(m.label ?? m.name)
+            : m?.name != null
+              ? String(m.name)
+              : undefined,
+        description: m?.description != null ? String(m.description) : undefined,
+      };
     })
     .filter((m): m is MapMarker => m != null);
-  if (markers.length === 0) return { error: "Map `markers` need at least one {lat, lng} point." };
+  if (markers.length === 0)
+    return { error: "Map `markers` need at least one {lat, lng} point." };
   const c = o.center as unknown;
-  const center = Array.isArray(c) && num(c[0]) != null && num(c[1]) != null ? ([num(c[0])!, num(c[1])!] as [number, number]) : undefined;
-  return { title: typeof o.title === "string" ? o.title : undefined, center, zoom: num(o.zoom), markers };
+  const center =
+    Array.isArray(c) && num(c[0]) != null && num(c[1]) != null
+      ? ([num(c[0])!, num(c[1])!] as [number, number])
+      : undefined;
+  return {
+    title: typeof o.title === "string" ? o.title : undefined,
+    center,
+    zoom: num(o.zoom),
+    markers,
+  };
 }
 
-export const MapBlock: React.FC<MapBlockProps> = ({ content = "", isStreamActive = false, className }) => {
-  const parsed = useMemo(() => (isStreamActive ? null : parseMap(content)), [content, isStreamActive]);
+export const MapBlock: React.FC<MapBlockProps> = ({
+  content = "",
+  isStreamActive = false,
+  className,
+}) => {
+  const parsed = useMemo(
+    () => (isStreamActive ? null : parseMap(content)),
+    [content, isStreamActive],
+  );
   const spec = parsed && !("error" in parsed) ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
   const [copied, setCopied] = useState(false);
@@ -89,17 +133,29 @@ export const MapBlock: React.FC<MapBlockProps> = ({ content = "", isStreamActive
   };
 
   return (
-    <div className={cn("my-3 overflow-hidden rounded-lg border border-border bg-card", className)}>
+    <div
+      className={cn(
+        "my-3 overflow-hidden rounded-lg border border-border bg-card",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="truncate text-sm font-medium text-foreground">{spec?.title ?? "Map"}</span>
+          <span className="truncate text-sm font-medium text-foreground">
+            {spec?.title ?? "Map"}
+          </span>
           {spec && (
             <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
-              {spec.markers.length} {spec.markers.length === 1 ? "place" : "places"}
+              {spec.markers.length}{" "}
+              {spec.markers.length === 1 ? "place" : "places"}
             </span>
           )}
-          {isStreamActive && <span className="shrink-0 animate-pulse text-xs text-muted-foreground">…</span>}
+          {isStreamActive && (
+            <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
+              …
+            </span>
+          )}
         </div>
         {!isStreamActive && spec && (
           <button
@@ -109,7 +165,11 @@ export const MapBlock: React.FC<MapBlockProps> = ({ content = "", isStreamActive
             onClick={handleCopy}
             className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
           >
-            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
           </button>
         )}
       </div>
@@ -123,7 +183,11 @@ export const MapBlock: React.FC<MapBlockProps> = ({ content = "", isStreamActive
           </div>
         ) : spec ? (
           <div className="h-72 w-full overflow-hidden rounded-md border border-border">
-            <MapCanvas markers={spec.markers} center={spec.center} zoom={spec.zoom} />
+            <MapCanvas
+              markers={spec.markers}
+              center={spec.center}
+              zoom={spec.zoom}
+            />
           </div>
         ) : null}
       </div>

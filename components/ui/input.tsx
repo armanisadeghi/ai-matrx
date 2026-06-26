@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useMotionTemplate, useMotionValue, motion } from "motion/react";
+import { motion } from "motion/react";
 import { MatrxVariant } from "./types";
 import { Check, Copy, Trash2 } from "lucide-react";
 
@@ -16,7 +16,7 @@ const getVariantStyles = (variant: MatrxVariant = "default") => {
     focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600
     disabled:cursor-not-allowed disabled:opacity-50
     dark:shadow-[0px_0px_1px_1px_var(--neutral-700)]
-    group-hover/input:shadow-none transition duration-400
+    transition duration-400
     [&:-webkit-autofill]:bg-background [&:-webkit-autofill]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill]:[caret-color:currentColor]
     dark:[&:-webkit-autofill]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]
     [&:-webkit-autofill:hover]:shadow-[0_0_0_1000px_hsl(var(--background))_inset] [&:-webkit-autofill:focus]:shadow-[0_0_0_1000px_hsl(var(--background))_inset]`;
@@ -41,40 +41,13 @@ const getVariantStyles = (variant: MatrxVariant = "default") => {
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, variant = "default", ...props }, ref) => {
-    const radius = 100;
-    const [visible, setVisible] = React.useState(false);
-    let mouseX = useMotionValue(0);
-    let mouseY = useMotionValue(0);
-
-    function handleMouseMove({ currentTarget, clientX, clientY }: any) {
-      let { left, top } = currentTarget.getBoundingClientRect();
-      mouseX.set(clientX - left);
-      mouseY.set(clientY - top);
-    }
-
     return (
-      <motion.div
-        style={{
-          background: useMotionTemplate`
-                    radial-gradient(
-                      ${visible ? radius + "px" : "0px"} circle at ${mouseX}px ${mouseY}px,
-                      var(--blue-500),
-                      transparent 80%
-                    )
-                  `,
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
-        className="p-[2px] rounded-lg transition duration-300 group/input w-full"
-      >
-        <input
-          type={type}
-          className={cn(getVariantStyles(variant), className)}
-          ref={ref}
-          {...props}
-        />
-      </motion.div>
+      <input
+        type={type}
+        className={cn(getVariantStyles(variant), className)}
+        ref={ref}
+        {...props}
+      />
     );
   },
 );
@@ -164,7 +137,6 @@ const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
         );
         setHasCopied(true);
 
-        // Reset the copied state after 1 second
         setTimeout(() => {
           setHasCopied(false);
         }, 450);
@@ -222,7 +194,6 @@ const FancyInput = React.forwardRef<HTMLInputElement, FancyInputProps>(
         );
         setHasCopied(true);
 
-        // Reset the copied state after 450ms
         setTimeout(() => {
           setHasCopied(false);
         }, 450);
@@ -238,11 +209,7 @@ const FancyInput = React.forwardRef<HTMLInputElement, FancyInputProps>(
         )}
         <Input
           ref={ref}
-          className={cn(
-            prefix && "pl-10",
-            "pr-8", // Add right padding for the copy button
-            className,
-          )}
+          className={cn(prefix && "pl-10", "pr-8", className)}
           {...props}
         />
         <button
@@ -286,11 +253,7 @@ const DeleteInput = React.forwardRef<HTMLInputElement, DeleteInputProps>(
 
     return (
       <div className={cn("relative w-full", wrapperClassName)}>
-        <Input
-          ref={ref}
-          className={cn("pr-8 w-full", className)} // pr-8 for right padding, w-full for full width
-          {...props}
-        />
+        <Input ref={ref} className={cn("pr-8 w-full", className)} {...props} />
         <button
           type="button"
           onClick={handleDelete}

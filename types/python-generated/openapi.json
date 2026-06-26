@@ -1161,6 +1161,128 @@
         }
       }
     },
+    "/ai/v2/agent/{agent_id}": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Start Agent V2",
+        "description": "The SAME agent run, on the matrx-runtime spine (the new system owns the request\nenvelope; the proven loop streams + persists unchanged). Spine tracking is\nbest-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.\nSee aidream/services/runtime/FEATURE.md.",
+        "operationId": "start_agent_v2_ai_v2_agent__agent_id__post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/v2/agents/{agent_id}": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Start Agent V2",
+        "description": "The SAME agent run, on the matrx-runtime spine (the new system owns the request\nenvelope; the proven loop streams + persists unchanged). Spine tracking is\nbest-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.\nSee aidream/services/runtime/FEATURE.md.",
+        "operationId": "start_agent_v2_ai_v2_agents__agent_id__post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agents/{agent_id}/invalidate-cache": {
       "post": {
         "tags": [
@@ -1653,7 +1775,6 @@
           "AI"
         ],
         "summary": "Continue Conversation",
-        "description": "Continue an existing conversation.\n\nResolves the UnifiedConfig from cache or DB via ConversationResolver,\nappends the new user_input, then hands off to the AI engine.\n\nOptional fields (zero impact when absent):\n- ``client_tools``: tool names the client will execute instead of the server.\n- ``ide_state``: per-turn ephemeral editor state (selected_text, diagnostics) appended\n  to user_input for this turn.  Stable session fields (git, workspace, active_file)\n  are ignored here — they were set as variables on the first agent turn.",
         "operationId": "continue_conversation_ai_conversation__conversation_id__post",
         "parameters": [
           {
@@ -1704,8 +1825,109 @@
           "AI"
         ],
         "summary": "Continue Conversation",
-        "description": "Continue an existing conversation.\n\nResolves the UnifiedConfig from cache or DB via ConversationResolver,\nappends the new user_input, then hands off to the AI engine.\n\nOptional fields (zero impact when absent):\n- ``client_tools``: tool names the client will execute instead of the server.\n- ``ide_state``: per-turn ephemeral editor state (selected_text, diagnostics) appended\n  to user_input for this turn.  Stable session fields (git, workspace, active_file)\n  are ignored here — they were set as variables on the first agent turn.",
         "operationId": "continue_conversation_ai_conversations__conversation_id__post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationContinueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/v2/conversation/{conversation_id}": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Continue Conversation V2",
+        "description": "The SAME conversation continuation, on the matrx-runtime spine (the new system\nowns the request envelope; the proven loop streams + persists unchanged). Spine\ntracking is best-effort and never breaks the turn. Public URL:\nPOST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.",
+        "operationId": "continue_conversation_v2_ai_v2_conversation__conversation_id__post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationContinueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/v2/conversations/{conversation_id}": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Continue Conversation V2",
+        "description": "The SAME conversation continuation, on the matrx-runtime spine (the new system\nowns the request envelope; the proven loop streams + persists unchanged). Spine\ntracking is best-effort and never breaks the turn. Public URL:\nPOST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.",
+        "operationId": "continue_conversation_v2_ai_v2_conversations__conversation_id__post",
         "parameters": [
           {
             "name": "conversation_id",
@@ -27114,98 +27336,6 @@
         }
       }
     },
-    "/files/migrate-guest-to-user": {
-      "post": {
-        "tags": [
-          "Files"
-        ],
-        "summary": "Migrate Guest To User",
-        "description": "Re-own all cld_* rows from a guest UUID to a real user (idempotent, one-shot).\n\nSecurity model (closes C4):\n  - Caller MUST be authenticated as ``new_user_id`` (the just-converted user).\n  - Caller MUST also send the ``X-Guest-Fingerprint`` (or X-Fingerprint-ID)\n    they used as a guest. The backend resolves that fingerprint to a guest\n    UUID using the same registry the AuthMiddleware uses, and refuses if\n    the resolved UUID does not match ``body.guest_id`` (or, if no guest_id\n    is provided, uses the resolved UUID directly).\n  - The migration is recorded in ``cld_guest_migrations`` so a second call\n    with a DIFFERENT new_user_id fails with a 409 ('locked').\n  - Admins / X-Cloud-Files-Bypass callers may pass an explicit guest_id\n    without the fingerprint check (for support-tooling).",
-        "operationId": "migrate_guest_to_user_files_migrate_guest_to_user_post",
-        "parameters": [
-          {
-            "name": "X-Guest-Fingerprint",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Guest-Fingerprint"
-            }
-          },
-          {
-            "name": "X-Fingerprint-ID",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Fingerprint-Id"
-            }
-          },
-          {
-            "name": "X-Cloud-Files-Bypass",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Cloud-Files-Bypass"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GuestConversionRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GuestConversionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/files/{file_id}": {
       "get": {
         "tags": [
@@ -31554,6 +31684,24 @@
               "type": "string",
               "title": "Table Name"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31667,6 +31815,24 @@
               "title": "Search"
             },
             "description": "Column filters as 'col1:val1,col2:val2'"
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31706,6 +31872,24 @@
               "type": "string",
               "title": "Table Name"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31756,6 +31940,24 @@
               "type": "string",
               "title": "Row Id"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31804,6 +32006,24 @@
               "type": "string",
               "title": "Row Id"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31852,6 +32072,24 @@
               "type": "string",
               "title": "Row Id"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31894,6 +32132,24 @@
               "type": "string",
               "title": "Table Name"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31936,6 +32192,24 @@
               "type": "string",
               "title": "Table Name"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -31999,6 +32273,24 @@
               "type": "string",
               "title": "Table Name"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -32050,6 +32342,24 @@
               "type": "string",
               "title": "Row Id"
             }
+          },
+          {
+            "name": "schema",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "PostgreSQL schema name",
+              "title": "Schema"
+            },
+            "description": "PostgreSQL schema name"
           }
         ],
         "responses": {
@@ -49537,6 +49847,17 @@
             ],
             "title": "User Id"
           },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
           "title": {
             "anyOf": [
               {
@@ -49552,7 +49873,7 @@
         "additionalProperties": true,
         "type": "object",
         "title": "ConversationRecord",
-        "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible."
+        "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible.\n``user_id`` mirrors ``created_by`` for clients not yet on the cutover."
       },
       "CopyFileRequest": {
         "properties": {
@@ -59062,89 +59383,6 @@
           "redirect_uri"
         ],
         "title": "GscOauthStartRequest"
-      },
-      "GuestConversionRequest": {
-        "properties": {
-          "new_user_id": {
-            "type": "string",
-            "title": "New User Id",
-            "description": "The auth.users.id the guest is becoming"
-          },
-          "guest_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Guest Id",
-            "description": "Optional explicit guest_id; honoured only with admin bypass"
-          }
-        },
-        "type": "object",
-        "required": [
-          "new_user_id"
-        ],
-        "title": "GuestConversionRequest",
-        "description": "Migrate a guest's cld_* rows to a real user.\n\nThe caller MUST be authenticated as ``new_user_id`` AND must have\n``X-Guest-Fingerprint`` set to the value the guest was using before\nsign-in (the backend hashes + verifies it server-side)."
-      },
-      "GuestConversionResponse": {
-        "properties": {
-          "files": {
-            "type": "integer",
-            "title": "Files",
-            "default": 0
-          },
-          "folders": {
-            "type": "integer",
-            "title": "Folders",
-            "default": 0
-          },
-          "groups": {
-            "type": "integer",
-            "title": "Groups",
-            "default": 0
-          },
-          "perms": {
-            "type": "integer",
-            "title": "Perms",
-            "default": 0
-          },
-          "shares": {
-            "type": "integer",
-            "title": "Shares",
-            "default": 0
-          },
-          "files_migrated": {
-            "type": "integer",
-            "title": "Files Migrated",
-            "default": 0
-          },
-          "folders_migrated": {
-            "type": "integer",
-            "title": "Folders Migrated",
-            "default": 0
-          },
-          "groups_migrated": {
-            "type": "integer",
-            "title": "Groups Migrated",
-            "default": 0
-          },
-          "permissions_migrated": {
-            "type": "integer",
-            "title": "Permissions Migrated",
-            "default": 0
-          },
-          "shares_migrated": {
-            "type": "integer",
-            "title": "Shares Migrated",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "GuestConversionResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -81967,7 +82205,7 @@
         "additionalProperties": true,
         "type": "object",
         "title": "TrashFileEntry",
-        "description": "Soft-deleted file as projected by the ``cld_list_trash`` RPC.\n\nThe RPC returns ``cld_files`` rows with their canonical column set;\nextra keys are tolerated because new columns can land before this\nmodel is bumped."
+        "description": "Soft-deleted file as projected by the ``list_trash`` RPC.\n\nThe RPC returns ``cld_files`` rows with their canonical column set;\nextra keys are tolerated because new columns can land before this\nmodel is bumped."
       },
       "TrashFolderEntry": {
         "properties": {
@@ -82063,7 +82301,7 @@
         "additionalProperties": true,
         "type": "object",
         "title": "TrashFolderEntry",
-        "description": "Soft-deleted folder as projected by the ``cld_list_trash`` RPC."
+        "description": "Soft-deleted folder as projected by the ``list_trash`` RPC."
       },
       "TrashListResponse": {
         "properties": {

@@ -626,6 +626,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/v2/agent/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Agent V2
+         * @description The SAME agent run, on the matrx-runtime spine (the new system owns the request
+         *     envelope; the proven loop streams + persists unchanged). Spine tracking is
+         *     best-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.
+         *     See aidream/services/runtime/FEATURE.md.
+         */
+        post: operations["start_agent_v2_ai_v2_agent__agent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/v2/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Agent V2
+         * @description The SAME agent run, on the matrx-runtime spine (the new system owns the request
+         *     envelope; the proven loop streams + persists unchanged). Spine tracking is
+         *     best-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.
+         *     See aidream/services/runtime/FEATURE.md.
+         */
+        post: operations["start_agent_v2_ai_v2_agents__agent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/invalidate-cache": {
         parameters: {
             query?: never;
@@ -881,19 +927,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Continue Conversation
-         * @description Continue an existing conversation.
-         *
-         *     Resolves the UnifiedConfig from cache or DB via ConversationResolver,
-         *     appends the new user_input, then hands off to the AI engine.
-         *
-         *     Optional fields (zero impact when absent):
-         *     - ``client_tools``: tool names the client will execute instead of the server.
-         *     - ``ide_state``: per-turn ephemeral editor state (selected_text, diagnostics) appended
-         *       to user_input for this turn.  Stable session fields (git, workspace, active_file)
-         *       are ignored here — they were set as variables on the first agent turn.
-         */
+        /** Continue Conversation */
         post: operations["continue_conversation_ai_conversation__conversation_id__post"];
         delete?: never;
         options?: never;
@@ -910,20 +944,54 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Continue Conversation
-         * @description Continue an existing conversation.
-         *
-         *     Resolves the UnifiedConfig from cache or DB via ConversationResolver,
-         *     appends the new user_input, then hands off to the AI engine.
-         *
-         *     Optional fields (zero impact when absent):
-         *     - ``client_tools``: tool names the client will execute instead of the server.
-         *     - ``ide_state``: per-turn ephemeral editor state (selected_text, diagnostics) appended
-         *       to user_input for this turn.  Stable session fields (git, workspace, active_file)
-         *       are ignored here — they were set as variables on the first agent turn.
-         */
+        /** Continue Conversation */
         post: operations["continue_conversation_ai_conversations__conversation_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/v2/conversation/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Continue Conversation V2
+         * @description The SAME conversation continuation, on the matrx-runtime spine (the new system
+         *     owns the request envelope; the proven loop streams + persists unchanged). Spine
+         *     tracking is best-effort and never breaks the turn. Public URL:
+         *     POST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.
+         */
+        post: operations["continue_conversation_v2_ai_v2_conversation__conversation_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/v2/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Continue Conversation V2
+         * @description The SAME conversation continuation, on the matrx-runtime spine (the new system
+         *     owns the request envelope; the proven loop streams + persists unchanged). Spine
+         *     tracking is best-effort and never breaks the turn. Public URL:
+         *     POST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.
+         */
+        post: operations["continue_conversation_v2_ai_v2_conversations__conversation_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10204,38 +10272,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/files/migrate-guest-to-user": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Migrate Guest To User
-         * @description Re-own all cld_* rows from a guest UUID to a real user (idempotent, one-shot).
-         *
-         *     Security model (closes C4):
-         *       - Caller MUST be authenticated as ``new_user_id`` (the just-converted user).
-         *       - Caller MUST also send the ``X-Guest-Fingerprint`` (or X-Fingerprint-ID)
-         *         they used as a guest. The backend resolves that fingerprint to a guest
-         *         UUID using the same registry the AuthMiddleware uses, and refuses if
-         *         the resolved UUID does not match ``body.guest_id`` (or, if no guest_id
-         *         is provided, uses the resolved UUID directly).
-         *       - The migration is recorded in ``cld_guest_migrations`` so a second call
-         *         with a DIFFERENT new_user_id fails with a 409 ('locked').
-         *       - Admins / X-Cloud-Files-Bypass callers may pass an explicit guest_id
-         *         without the fingerprint check (for support-tooling).
-         */
-        post: operations["migrate_guest_to_user_files_migrate_guest_to_user_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/files/{file_id}": {
         parameters: {
             query?: never;
@@ -17743,12 +17779,15 @@ export interface components {
          *
          *     ORM ``to_dict`` projections evolve with the schema (status / metadata /
          *     flags), so ``extra="allow"`` keeps the wire shape backward-compatible.
+         *     ``user_id`` mirrors ``created_by`` for clients not yet on the cutover.
          */
         ConversationRecord: {
             /** Id */
             id?: string | null;
             /** User Id */
             user_id?: string | null;
+            /** Created By */
+            created_by?: string | null;
             /** Title */
             title?: string | null;
         } & {
@@ -21256,79 +21295,6 @@ export interface components {
              * @default false
              */
             is_default: boolean;
-        };
-        /**
-         * GuestConversionRequest
-         * @description Migrate a guest's cld_* rows to a real user.
-         *
-         *     The caller MUST be authenticated as ``new_user_id`` AND must have
-         *     ``X-Guest-Fingerprint`` set to the value the guest was using before
-         *     sign-in (the backend hashes + verifies it server-side).
-         */
-        GuestConversionRequest: {
-            /**
-             * New User Id
-             * @description The auth.users.id the guest is becoming
-             */
-            new_user_id: string;
-            /**
-             * Guest Id
-             * @description Optional explicit guest_id; honoured only with admin bypass
-             */
-            guest_id?: string | null;
-        };
-        /** GuestConversionResponse */
-        GuestConversionResponse: {
-            /**
-             * Files
-             * @default 0
-             */
-            files: number;
-            /**
-             * Folders
-             * @default 0
-             */
-            folders: number;
-            /**
-             * Groups
-             * @default 0
-             */
-            groups: number;
-            /**
-             * Perms
-             * @default 0
-             */
-            perms: number;
-            /**
-             * Shares
-             * @default 0
-             */
-            shares: number;
-            /**
-             * Files Migrated
-             * @default 0
-             */
-            files_migrated: number;
-            /**
-             * Folders Migrated
-             * @default 0
-             */
-            folders_migrated: number;
-            /**
-             * Groups Migrated
-             * @default 0
-             */
-            groups_migrated: number;
-            /**
-             * Permissions Migrated
-             * @default 0
-             */
-            permissions_migrated: number;
-            /**
-             * Shares Migrated
-             * @default 0
-             */
-            shares_migrated: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -29662,7 +29628,7 @@ export interface components {
         };
         /**
          * TrashFileEntry
-         * @description Soft-deleted file as projected by the ``cld_list_trash`` RPC.
+         * @description Soft-deleted file as projected by the ``list_trash`` RPC.
          *
          *     The RPC returns ``cld_files`` rows with their canonical column set;
          *     extra keys are tolerated because new columns can land before this
@@ -29694,7 +29660,7 @@ export interface components {
         };
         /**
          * TrashFolderEntry
-         * @description Soft-deleted folder as projected by the ``cld_list_trash`` RPC.
+         * @description Soft-deleted folder as projected by the ``list_trash`` RPC.
          */
         TrashFolderEntry: {
             /** Id */
@@ -32166,6 +32132,80 @@ export interface operations {
             };
         };
     };
+    start_agent_v2_ai_v2_agent__agent_id__post: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_agent_v2_ai_v2_agents__agent_id__post: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post: {
         parameters: {
             query?: {
@@ -32562,6 +32602,76 @@ export interface operations {
         };
     };
     continue_conversation_ai_conversations__conversation_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    continue_conversation_v2_ai_v2_conversation__conversation_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    continue_conversation_v2_ai_v2_conversations__conversation_id__post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49191,43 +49301,6 @@ export interface operations {
             };
         };
     };
-    migrate_guest_to_user_files_migrate_guest_to_user_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Guest-Fingerprint"?: string | null;
-                "X-Fingerprint-ID"?: string | null;
-                "X-Cloud-Files-Bypass"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GuestConversionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GuestConversionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_file_files__file_id__get: {
         parameters: {
             query?: never;
@@ -52009,7 +52082,10 @@ export interface operations {
     };
     get_columns_admin_db_tables__table_name__columns_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52049,6 +52125,8 @@ export interface operations {
                 sort_dir?: string;
                 /** @description Column filters as 'col1:val1,col2:val2' */
                 search?: string | null;
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
             };
             header?: never;
             path: {
@@ -52080,7 +52158,10 @@ export interface operations {
     };
     create_row_admin_db_tables__table_name__rows_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52111,7 +52192,10 @@ export interface operations {
     };
     get_row_admin_db_tables__table_name__rows__row_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52143,7 +52227,10 @@ export interface operations {
     };
     delete_row_admin_db_tables__table_name__rows__row_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52175,7 +52262,10 @@ export interface operations {
     };
     update_row_admin_db_tables__table_name__rows__row_id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52207,7 +52297,10 @@ export interface operations {
     };
     bulk_delete_rows_admin_db_tables__table_name__rows_bulk_delete_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52238,7 +52331,10 @@ export interface operations {
     };
     bulk_update_rows_admin_db_tables__table_name__rows_bulk_update_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52289,7 +52385,10 @@ export interface operations {
     };
     clear_table_cache_admin_db_cache__table_name__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;
@@ -52320,7 +52419,10 @@ export interface operations {
     };
     evict_row_cache_admin_db_cache__table_name___row_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description PostgreSQL schema name */
+                schema?: string | null;
+            };
             header?: never;
             path: {
                 table_name: string;

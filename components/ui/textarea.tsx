@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { useMotionTemplate, useMotionValue, motion } from "motion/react";
+import { motion } from "motion/react";
 import { Check, Copy } from "lucide-react";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -12,16 +12,10 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   wrapperClassName?: string;
 }
 
-// When the consumer asks the <textarea> to fill its container via `h-full`,
-// `h-dvh`, or `flex-1`, the wrapping motion.div must also stretch or
-// CSS `height: 100%` on the inner textarea resolves against an auto-sized
-// parent and collapses. This detects those classes and forwards matching
-// stretch behavior to the wrapper so `<Textarea className="h-full" />`
-// works out-of-the-box without consumers needing to learn about
-// `wrapperClassName`.
 const FILL_HEIGHT_REGEX = /(?:^|\s)(h-full|h-dvh|flex-1|grow)(?:\s|$)/;
 const FILL_WIDTH_REGEX = /(?:^|\s)(w-full|w-screen)(?:\s|$)/;
-const getWrapperStretchClasses = (className?: string) => {
+
+const getStretchClasses = (className?: string) => {
   if (!className) return undefined;
   const fills: string[] = [];
   if (FILL_HEIGHT_REGEX.test(className)) fills.push("h-full min-h-0");
@@ -29,7 +23,9 @@ const getWrapperStretchClasses = (className?: string) => {
   return fills.length ? fills.join(" ") : undefined;
 };
 
-// Hook for auto-grow functionality
+const TEXTAREA_BASE_CLASS =
+  "flex h-auto w-full border border-input bg-background text-black dark:text-white shadow-textarea rounded-md px-3 py-2 text-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-[0px_0px_1px_1px_var(--neutral-700)] transition duration-400";
+
 const useAutoGrow = (
   ref: React.RefObject<HTMLTextAreaElement>,
   value: string | number | readonly string[] | undefined,
@@ -41,14 +37,9 @@ const useAutoGrow = (
     if (!autoGrow || !ref.current) return;
 
     const textarea = ref.current;
-
-    // Reset height to auto to get the correct scrollHeight
     textarea.style.height = "auto";
 
-    // Calculate new height
     let newHeight = textarea.scrollHeight;
-
-    // Apply min/max constraints
     if (minHeight) newHeight = Math.max(newHeight, minHeight);
 
     if (maxHeight && newHeight >= maxHeight) {
@@ -66,62 +57,35 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     { className, autoGrow, minHeight, maxHeight, wrapperClassName, ...props },
     ref,
   ) => {
-    const radius = 200;
-    const [visible, setVisible] = React.useState(false);
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
     const internalRef = React.useRef<HTMLTextAreaElement>(null);
     const textareaRef =
       (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
+    const stretchClasses = getStretchClasses(className);
+    const needsWrapper = Boolean(wrapperClassName || stretchClasses);
 
     useAutoGrow(textareaRef, props.value, autoGrow, minHeight, maxHeight);
 
-    function handleMouseMove({ currentTarget, clientX, clientY }: any) {
-      const { left, top } = currentTarget.getBoundingClientRect();
-      mouseX.set(clientX - left);
-      mouseY.set(clientY - top);
-    }
+    const textarea = (
+      <textarea
+        className={cn(
+          TEXTAREA_BASE_CLASS,
+          autoGrow && "resize-none",
+          stretchClasses,
+          className,
+        )}
+        ref={textareaRef}
+        style={{
+          minHeight: minHeight ? `${minHeight}px` : undefined,
+          maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+        }}
+        {...props}
+      />
+    );
+
+    if (!needsWrapper) return textarea;
 
     return (
-      <motion.div
-        style={{
-          background: useMotionTemplate`
-                radial-gradient(
-                  ${visible ? radius + "px" : "0px"} circle at ${mouseX}px ${mouseY}px,
-                  var(--blue-500),
-                  transparent 80%
-                )
-              `,
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
-        className={cn(
-          "p-[2px] rounded-lg transition duration-300 group/textarea",
-          getWrapperStretchClasses(className),
-          wrapperClassName,
-        )}
-      >
-        <textarea
-          className={cn(
-            `flex h-auto w-full border border-input bg-background text-black dark:text-white shadow-textarea rounded-md px-3 py-2 text-sm
-                placeholder:text-neutral-500 dark:placeholder:text-neutral-400 
-                focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600
-                disabled:cursor-not-allowed disabled:opacity-50
-                dark:shadow-[0px_0px_1px_1px_var(--neutral-700)]
-                group-hover/textarea:shadow-none transition duration-400
-                `,
-            autoGrow && "resize-none",
-            className,
-          )}
-          ref={textareaRef}
-          style={{
-            minHeight: minHeight ? `${minHeight}px` : undefined,
-            maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-          }}
-          {...props}
-        />
-      </motion.div>
+      <div className={cn(stretchClasses, wrapperClassName)}>{textarea}</div>
     );
   },
 );
@@ -154,7 +118,6 @@ const BasicTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 BasicTextarea.displayName = "BasicTextarea";
 
-// Textarea with Prefix
 interface TextareaWithPrefixProps extends Omit<TextareaProps, "prefix"> {
   prefix?: React.ReactNode;
   wrapperClassName?: string;
@@ -186,7 +149,7 @@ const TextareaWithPrefix = React.forwardRef<
       <div
         className={cn(
           "relative",
-          getWrapperStretchClasses(className),
+          getStretchClasses(className),
           wrapperClassName,
         )}
       >
@@ -215,23 +178,12 @@ const TextareaWithPrefix = React.forwardRef<
 );
 TextareaWithPrefix.displayName = "TextareaWithPrefix";
 
-// Textarea with Copy Button
 interface CopyTextareaProps extends TextareaProps {
   variant?: "default" | "fancy";
 }
 
 const CopyTextarea = React.forwardRef<HTMLTextAreaElement, CopyTextareaProps>(
-  (
-    {
-      className,
-      variant = "default",
-      autoGrow,
-      minHeight,
-      maxHeight,
-      ...props
-    },
-    ref,
-  ) => {
+  ({ className, autoGrow, minHeight, maxHeight, ...props }, ref) => {
     const [hasCopied, setHasCopied] = React.useState(false);
     const internalRef = React.useRef<HTMLTextAreaElement>(null);
     const textareaRef =
@@ -251,7 +203,7 @@ const CopyTextarea = React.forwardRef<HTMLTextAreaElement, CopyTextareaProps>(
     };
 
     return (
-      <div className={cn("relative", getWrapperStretchClasses(className))}>
+      <div className={cn("relative", getStretchClasses(className))}>
         <textarea
           ref={textareaRef}
           className={cn(
@@ -290,7 +242,6 @@ const CopyTextarea = React.forwardRef<HTMLTextAreaElement, CopyTextareaProps>(
 );
 CopyTextarea.displayName = "CopyTextarea";
 
-// Fancy Textarea with Both Features
 interface FancyTextareaProps extends Omit<TextareaProps, "prefix"> {
   prefix?: React.ReactNode;
   wrapperClassName?: string;
@@ -310,10 +261,6 @@ const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
     ref,
   ) => {
     const [hasCopied, setHasCopied] = React.useState(false);
-    const radius = 200;
-    const [visible, setVisible] = React.useState(false);
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
     const internalRef = React.useRef<HTMLTextAreaElement>(null);
     const textareaRef =
       (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
@@ -331,31 +278,13 @@ const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
       }
     };
 
-    function handleMouseMove({ currentTarget, clientX, clientY }: any) {
-      const { left, top } = currentTarget.getBoundingClientRect();
-      mouseX.set(clientX - left);
-      mouseY.set(clientY - top);
-    }
-
     return (
-      <motion.div
+      <div
         className={cn(
           "relative",
-          getWrapperStretchClasses(className),
+          getStretchClasses(className),
           wrapperClassName,
         )}
-        style={{
-          background: useMotionTemplate`
-                  radial-gradient(
-                    ${visible ? radius + "px" : "0px"} circle at ${mouseX}px ${mouseY}px,
-                    var(--blue-500),
-                    transparent 80%
-                  )
-                `,
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setVisible(true)}
-        onMouseLeave={() => setVisible(false)}
       >
         {prefix && (
           <div className="absolute left-3 top-3 text-muted-foreground z-10 pointer-events-none">
@@ -365,11 +294,9 @@ const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
         <textarea
           ref={textareaRef}
           className={cn(
-            "flex w-full rounded-md border-none bg-background text-black dark:text-white shadow-textarea px-3 py-2 text-sm resize-y",
-            "placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
-            "focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
+            TEXTAREA_BASE_CLASS,
             prefix && "pl-10",
-            "pr-10", // Space for copy button
+            "pr-10",
             autoGrow && "resize-none",
             className,
           )}
@@ -398,7 +325,7 @@ const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
             <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
           )}
         </button>
-      </motion.div>
+      </div>
     );
   },
 );
