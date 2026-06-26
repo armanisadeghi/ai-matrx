@@ -22,6 +22,7 @@ packages/*/tsconfig.tsbuildinfo
 # next.js
 /.next/
 /.next-preview/
+.next*/
 /out/
 
 # production
