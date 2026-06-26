@@ -24,8 +24,10 @@ import {
   Loader2,
   Lock,
   Pencil,
+  Plus,
   Search,
   Tag,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,12 +44,46 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
+import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
+import type { Database as DB } from "@/types/database.types";
 import type {
   SystemContextCategory,
   SystemContextItem,
   SystemContextPayload,
 } from "@/app/api/admin/system-context/route";
+
+type ValueType = DB["public"]["Enums"]["context_value_type"];
+type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
+
+const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
+  { value: "string", label: "Text (string)" },
+  { value: "number", label: "Number" },
+  { value: "boolean", label: "Boolean" },
+  { value: "date", label: "Date" },
+  { value: "object", label: "Object (JSON)" },
+  { value: "array", label: "Array (JSON)" },
+  { value: "document", label: "Document / media" },
+  { value: "reference", label: "Reference" },
+];
+
+const SENSITIVITY_OPTIONS: { value: Sensitivity; label: string }[] = [
+  { value: "public", label: "Public" },
+  { value: "internal", label: "Internal" },
+  { value: "restricted", label: "Restricted" },
+  { value: "privileged", label: "Privileged" },
+];
 
 const PAGE_LOCATION =
   "AI Matrx Admin — System Context (/administration/system-context)";
@@ -106,6 +142,11 @@ export default function SystemContextPage() {
   const [query, setQuery] = useState("");
   const [scopeFilter, setScopeFilter] = useState<string>("all");
   const [editing, setEditing] = useState<SystemContextItem | null>(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [addItemPreset, setAddItemPreset] = useState<SystemContextCategory | null>(
+    null,
+  );
+  const [addItemOpen, setAddItemOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/admin/system-context");
@@ -118,6 +159,59 @@ export default function SystemContextPage() {
     }
     setData((await res.json()) as SystemContextPayload);
   }, []);
+
+  const openAddItem = useCallback((category: SystemContextCategory | null) => {
+    setAddItemPreset(category);
+    setAddItemOpen(true);
+  }, []);
+
+  const handleDeleteItem = useCallback(
+    async (it: SystemContextItem) => {
+      const ok = await confirm({
+        title: `Delete "${it.key}"?`,
+        description: `This removes the system context item and its stored value. Agents bound to it will fall back to their default. This cannot be undone.`,
+        confirmLabel: "Delete item",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      const res = await fetch(
+        `/api/admin/system-context?type=item&id=${it.id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        toast.error(`Delete failed: ${error}`);
+        return;
+      }
+      toast.success(`Deleted ${it.key}.`);
+      await fetchData();
+    },
+    [fetchData],
+  );
+
+  const handleDeleteCategory = useCallback(
+    async (category: SystemContextCategory) => {
+      const ok = await confirm({
+        title: `Delete category "${category.label_singular}"?`,
+        description: `This deletes the scope type and ALL ${category.item_count} item(s) and values inside it. This cannot be undone.`,
+        confirmLabel: "Delete category",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      const res = await fetch(
+        `/api/admin/system-context?type=scope_type&id=${category.scope_type_id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        toast.error(`Delete failed: ${error}`);
+        return;
+      }
+      toast.success(`Deleted category ${category.label_singular}.`);
+      await fetchData();
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
     fetchData().finally(() => setLoading(false));
@@ -181,6 +275,29 @@ export default function SystemContextPage() {
               </code>
               .
             </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setCreatingCategory(true)}
+            >
+              <Layers className="mr-1.5 h-4 w-4" /> New category
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => openAddItem(null)}
+              disabled={categories.length === 0}
+              title={
+                categories.length === 0
+                  ? "Create a category first"
+                  : "Add a system context item"
+              }
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> Add item
+            </Button>
           </div>
         </header>
 
@@ -269,6 +386,9 @@ export default function SystemContextPage() {
                 category={category}
                 rows={rows}
                 onEdit={setEditing}
+                onAddItem={openAddItem}
+                onDeleteItem={handleDeleteItem}
+                onDeleteCategory={handleDeleteCategory}
               />
             ))}
           </div>
@@ -281,6 +401,28 @@ export default function SystemContextPage() {
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
+            await fetchData();
+          }}
+        />
+      )}
+
+      {creatingCategory && (
+        <NewScopeTypeDialog
+          onClose={() => setCreatingCategory(false)}
+          onSaved={async () => {
+            setCreatingCategory(false);
+            await fetchData();
+          }}
+        />
+      )}
+
+      {addItemOpen && (
+        <AddItemDialog
+          categories={categories}
+          preset={addItemPreset}
+          onClose={() => setAddItemOpen(false)}
+          onSaved={async () => {
+            setAddItemOpen(false);
             await fetchData();
           }}
         />
@@ -321,11 +463,20 @@ function CategoryBlock({
   category,
   rows,
   onEdit,
+  onAddItem,
+  onDeleteItem,
+  onDeleteCategory,
 }: {
   category: SystemContextCategory;
   rows: SystemContextItem[];
   onEdit: (it: SystemContextItem) => void;
+  onAddItem: (category: SystemContextCategory) => void;
+  onDeleteItem: (it: SystemContextItem) => void;
+  onDeleteCategory: (category: SystemContextCategory) => void;
 }) {
+  // The built-in Environment category holds the read-only ambient items; it
+  // can't be deleted (the API guards it too).
+  const isProtected = rows.some((r) => r.is_computed);
   return (
     <section className="rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
@@ -341,6 +492,29 @@ function CategoryBlock({
             <span className="hidden truncate text-xs text-muted-foreground lg:inline">
               {category.description}
             </span>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 px-2"
+            onClick={() => onAddItem(category)}
+          >
+            <Plus className="mr-1 h-3 w-3" /> Add item
+          </Button>
+          {!isProtected && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              title={`Delete category ${category.label_singular}`}
+              onClick={() => onDeleteCategory(category)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           )}
         </div>
       </div>
@@ -448,16 +622,28 @@ function CategoryBlock({
                         <Lock className="h-3 w-3" /> read-only
                       </span>
                     ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2"
-                        onClick={() => onEdit(it)}
-                        disabled={!it.scope_id}
-                      >
-                        <Pencil className="mr-1 h-3 w-3" /> Edit
-                      </Button>
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          onClick={() => onEdit(it)}
+                          disabled={!it.scope_id}
+                        >
+                          <Pencil className="mr-1 h-3 w-3" /> Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          title={`Delete ${it.key}`}
+                          onClick={() => onDeleteItem(it)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
                     )}
                     <CopyButtons
                       human={() => itemSummary(it)}
@@ -483,6 +669,36 @@ function CategoryBlock({
   );
 }
 
+// Initial editor value: structured (parsed) for JSON/media custom components,
+// raw string otherwise.
+function initialEditorValue(item: SystemContextItem): unknown {
+  const cur = item.current_value;
+  if (cur == null) return "";
+  const cc = item.custom_component as VariableCustomComponent | null;
+  const structured =
+    item.value_type === "object" ||
+    item.value_type === "array" ||
+    (cc != null && isMediaComponentType(cc.type));
+  if (structured) {
+    try {
+      return JSON.parse(cur);
+    } catch {
+      return cur;
+    }
+  }
+  return cur;
+}
+
+function isMediaComponentType(t: string | undefined): boolean {
+  return (
+    t === "image" ||
+    t === "audio" ||
+    t === "video" ||
+    t === "youtube" ||
+    t === "document"
+  );
+}
+
 function EditValueDialog({
   item,
   onClose,
@@ -492,12 +708,11 @@ function EditValueDialog({
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
-  const [value, setValue] = useState<string>(item.current_value ?? "");
+  const [value, setValue] = useState<unknown>(() => initialEditorValue(item));
   const [saving, setSaving] = useState(false);
 
-  const isJson = item.value_type === "object" || item.value_type === "array";
-  const isMultiline =
-    isJson || item.value_type === "string" || item.value_type === "document";
+  const customComponent =
+    (item.custom_component as VariableCustomComponent | null) ?? undefined;
 
   async function save() {
     if (!item.scope_id) {
@@ -506,14 +721,16 @@ function EditValueDialog({
     }
     setSaving(true);
     try {
+      const valueColumns = buildScopeValuePayload(value, item.value_type);
       const res = await fetch("/api/admin/system-context", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "set_value",
           itemId: item.id,
           scopeId: item.scope_id,
           valueType: item.value_type,
-          value,
+          valueColumns,
         }),
       });
       if (!res.ok) {
@@ -550,39 +767,13 @@ function EditValueDialog({
         </DialogHeader>
 
         <div className="space-y-2 py-2">
-          {isMultiline ? (
-            <Textarea
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              rows={isJson ? 8 : 4}
-              placeholder={
-                isJson
-                  ? item.value_type === "array"
-                    ? "[]"
-                    : "{}"
-                  : "Value"
-              }
-              className={isJson ? "font-mono text-xs" : ""}
-            />
-          ) : (
-            <Input
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              type={item.value_type === "number" ? "number" : "text"}
-              placeholder={
-                item.value_type === "boolean"
-                  ? "true or false"
-                  : item.value_type === "date"
-                    ? "YYYY-MM-DD"
-                    : "Value"
-              }
-            />
-          )}
-          {item.value_type === "boolean" && (
-            <p className="text-xs text-muted-foreground">
-              Accepts true / false.
-            </p>
-          )}
+          <ItemValueField
+            valueType={item.value_type}
+            customComponent={customComponent}
+            variableName={item.display_name || item.key}
+            value={value}
+            onChange={setValue}
+          />
         </div>
 
         <DialogFooter>
@@ -601,5 +792,375 @@ function EditValueDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// One value field that honors the item's component when set, else falls back to
+// a type-appropriate plain input. Shared by the edit + add dialogs.
+function ItemValueField({
+  valueType,
+  customComponent,
+  variableName,
+  value,
+  onChange,
+}: {
+  valueType: ValueType;
+  customComponent: VariableCustomComponent | undefined;
+  variableName: string;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  if (customComponent) {
+    return (
+      <VariableInputComponent
+        value={value}
+        onChange={onChange}
+        variableName={variableName}
+        customComponent={customComponent}
+        hideLabel
+      />
+    );
+  }
+
+  const isJson = valueType === "object" || valueType === "array";
+  const isMultiline = isJson || valueType === "string" || valueType === "document";
+  const str = typeof value === "string" ? value : value == null ? "" : String(value);
+
+  if (isMultiline) {
+    return (
+      <Textarea
+        value={str}
+        onChange={(e) => onChange(e.target.value)}
+        rows={isJson ? 8 : 4}
+        placeholder={isJson ? (valueType === "array" ? "[]" : "{}") : "Value"}
+        className={isJson ? "font-mono text-xs" : ""}
+      />
+    );
+  }
+  return (
+    <Input
+      value={str}
+      onChange={(e) => onChange(e.target.value)}
+      type={valueType === "number" ? "number" : "text"}
+      placeholder={
+        valueType === "boolean"
+          ? "true or false"
+          : valueType === "date"
+            ? "YYYY-MM-DD"
+            : "Value"
+      }
+    />
+  );
+}
+
+// Create a new System category (a scope type + its one value-holding scope).
+function NewScopeTypeDialog({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const [singular, setSingular] = useState("");
+  const [plural, setPlural] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!singular.trim()) {
+      toast.error("A name is required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/system-context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_scope_type",
+          label_singular: singular.trim(),
+          label_plural: plural.trim() || singular.trim(),
+          description: description.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        toast.error(`Create failed: ${error}`);
+        return;
+      }
+      toast.success(`Created category "${singular.trim()}".`);
+      await onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New System category</DialogTitle>
+          <DialogDescription>
+            A platform-wide scope type (e.g. Company, Brand, Platform). Its items
+            resolve for every user. Created as a system category in the
+            member-less <code className="text-xs">matrx-system</code> org.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <Field label="Name (singular)">
+            <Input
+              value={singular}
+              onChange={(e) => setSingular(e.target.value)}
+              placeholder="Company"
+              autoFocus
+            />
+          </Field>
+          <Field label="Name (plural)" hint="Defaults to the singular name.">
+            <Input
+              value={plural}
+              onChange={(e) => setPlural(e.target.value)}
+              placeholder="Companies"
+            />
+          </Field>
+          <Field label="Description" hint="Optional.">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="What kind of platform-wide values live here."
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={save} disabled={saving}>
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Create category
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Create a new System context item (definition + component + optional value).
+function AddItemDialog({
+  categories,
+  preset,
+  onClose,
+  onSaved,
+}: {
+  categories: SystemContextCategory[];
+  preset: SystemContextCategory | null;
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const [scopeTypeId, setScopeTypeId] = useState(preset?.scope_type_id ?? "");
+  const [key, setKey] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [valueType, setValueType] = useState<ValueType>("string");
+  const [sensitivity, setSensitivity] = useState<Sensitivity>("internal");
+  const [description, setDescription] = useState("");
+  const [customComponent, setCustomComponent] = useState<
+    VariableCustomComponent | undefined
+  >(undefined);
+  const [value, setValue] = useState<unknown>("");
+  const [saving, setSaving] = useState(false);
+
+  const keyValid = key === "" || /^[a-z0-9_]+$/.test(key);
+
+  async function save() {
+    if (!scopeTypeId) return toast.error("Pick a category.");
+    if (!key.trim()) return toast.error("A key is required.");
+    if (!keyValid)
+      return toast.error("Key may only use lowercase letters, numbers, underscores.");
+    if (!displayName.trim()) return toast.error("A display name is required.");
+
+    const hasValue =
+      value != null && !(typeof value === "string" && value.trim() === "");
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/system-context", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_item",
+          scopeTypeId,
+          key: key.trim().toLowerCase(),
+          display_name: displayName.trim(),
+          value_type: valueType,
+          sensitivity,
+          description: description.trim(),
+          custom_component: customComponent ?? null,
+          valueColumns: hasValue
+            ? buildScopeValuePayload(value, valueType)
+            : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: res.statusText }));
+        toast.error(`Create failed: ${error}`);
+        return;
+      }
+      toast.success(`Created item "${key.trim().toLowerCase()}".`);
+      await onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add System context item</DialogTitle>
+          <DialogDescription>
+            A reusable, platform-wide value. Agents can bind a variable or context
+            slot to it; ambient/computed keys are reserved.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          <Field label="Category">
+            <Select value={scopeTypeId} onValueChange={setScopeTypeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pick a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c.scope_type_id} value={c.scope_type_id}>
+                    {c.label_singular}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="Key"
+              hint={keyValid ? "lowercase_with_underscores" : undefined}
+              error={!keyValid ? "lowercase letters, numbers, _ only" : undefined}
+            >
+              <Input
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                placeholder="company_name"
+                className="font-mono text-sm"
+              />
+            </Field>
+            <Field label="Display name">
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Company Name"
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Value type">
+              <Select
+                value={valueType}
+                onValueChange={(v) => setValueType(v as ValueType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VALUE_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Sensitivity">
+              <Select
+                value={sensitivity}
+                onValueChange={(v) => setSensitivity(v as Sensitivity)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SENSITIVITY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+
+          <Field label="Description" hint="Optional.">
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="What this value represents and where it's used."
+            />
+          </Field>
+
+          <div className="rounded-md border border-border bg-muted/30 p-3">
+            <div className="mb-2 text-xs font-medium text-muted-foreground">
+              Input component (how the value is authored)
+            </div>
+            <CustomComponentConfigurator
+              value={customComponent}
+              onChange={setCustomComponent}
+            />
+          </div>
+
+          <Field label="Initial value" hint="Optional — you can set it later.">
+            <ItemValueField
+              valueType={valueType}
+              customComponent={customComponent}
+              variableName={displayName || key || "value"}
+              value={value}
+              onChange={setValue}
+            />
+          </Field>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={save} disabled={saving}>
+            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+            Create item
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-xs font-medium text-foreground">{label}</span>
+      {children}
+      {error ? (
+        <span className="block text-[11px] text-destructive">{error}</span>
+      ) : hint ? (
+        <span className="block text-[11px] text-muted-foreground">{hint}</span>
+      ) : null}
+    </label>
   );
 }
