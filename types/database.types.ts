@@ -3175,344 +3175,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cld_account_tiers: {
-        Row: {
-          created_at: string
-          features: Json
-          id: string
-          is_default_for_guests: boolean
-          is_default_for_users: boolean
-          max_bulk_items: number | null
-          max_daily_upload_bytes: number | null
-          max_daily_uploads: number | null
-          max_file_size_bytes: number | null
-          max_files: number | null
-          max_share_links_per_resource: number | null
-          max_storage_bytes: number | null
-          max_versions_per_file: number | null
-          name: string
-          rate_limit_downloads_per_min: number | null
-          rate_limit_general_per_min: number | null
-          rate_limit_uploads_per_min: number | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          features?: Json
-          id: string
-          is_default_for_guests?: boolean
-          is_default_for_users?: boolean
-          max_bulk_items?: number | null
-          max_daily_upload_bytes?: number | null
-          max_daily_uploads?: number | null
-          max_file_size_bytes?: number | null
-          max_files?: number | null
-          max_share_links_per_resource?: number | null
-          max_storage_bytes?: number | null
-          max_versions_per_file?: number | null
-          name: string
-          rate_limit_downloads_per_min?: number | null
-          rate_limit_general_per_min?: number | null
-          rate_limit_uploads_per_min?: number | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          features?: Json
-          id?: string
-          is_default_for_guests?: boolean
-          is_default_for_users?: boolean
-          max_bulk_items?: number | null
-          max_daily_upload_bytes?: number | null
-          max_daily_uploads?: number | null
-          max_file_size_bytes?: number | null
-          max_files?: number | null
-          max_share_links_per_resource?: number | null
-          max_storage_bytes?: number | null
-          max_versions_per_file?: number | null
-          name?: string
-          rate_limit_downloads_per_min?: number | null
-          rate_limit_general_per_min?: number | null
-          rate_limit_uploads_per_min?: number | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      cld_analysis: {
-        Row: {
-          analyzer_version: string
-          classification: Json | null
-          completed_at: string | null
-          detectors_run: Json
-          file_id: string
-          metadata: Json
-          mime_type: string | null
-          owner_id: string
-          page_count: number | null
-          progress: Json
-          started_at: string
-          status: string
-          summary_counts: Json
-          text_source_map: Json | null
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          analyzer_version?: string
-          classification?: Json | null
-          completed_at?: string | null
-          detectors_run?: Json
-          file_id: string
-          metadata?: Json
-          mime_type?: string | null
-          owner_id: string
-          page_count?: number | null
-          progress?: Json
-          started_at?: string
-          status?: string
-          summary_counts?: Json
-          text_source_map?: Json | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          analyzer_version?: string
-          classification?: Json | null
-          completed_at?: string | null
-          detectors_run?: Json
-          file_id?: string
-          metadata?: Json
-          mime_type?: string | null
-          owner_id?: string
-          page_count?: number | null
-          progress?: Json
-          started_at?: string
-          status?: string
-          summary_counts?: Json
-          text_source_map?: Json | null
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_analysis_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: true
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: true
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
-      }
-      cld_analysis_result: {
-        Row: {
-          confidence_tier: string
-          created_at: string
-          detector_kind: string
-          detector_version: string
-          elapsed_ms: number
-          error: string | null
-          file_id: string
-          id: string
-          page_id: string | null
-          payload: Json | null
-          payload_bytes: number
-          payload_uri: string | null
-          status: string
-          summary: Json
-          text_sources: string[]
-        }
-        Insert: {
-          confidence_tier?: string
-          created_at?: string
-          detector_kind: string
-          detector_version?: string
-          elapsed_ms?: number
-          error?: string | null
-          file_id: string
-          id?: string
-          page_id?: string | null
-          payload?: Json | null
-          payload_bytes?: number
-          payload_uri?: string | null
-          status?: string
-          summary?: Json
-          text_sources?: string[]
-        }
-        Update: {
-          confidence_tier?: string
-          created_at?: string
-          detector_kind?: string
-          detector_version?: string
-          elapsed_ms?: number
-          error?: string | null
-          file_id?: string
-          id?: string
-          page_id?: string | null
-          payload?: Json | null
-          payload_bytes?: number
-          payload_uri?: string | null
-          status?: string
-          summary?: Json
-          text_sources?: string[]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_analysis_result_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-        ]
-      }
-      cld_entities: {
-        Row: {
-          canonical_value: string
-          created_at: string
-          file_id: string
-          id: string
-          is_user_named: boolean
-          label: string
-          label_category: string
-          normalized_value: Json | null
-          owner_id: string
-          source_annotation_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          canonical_value: string
-          created_at?: string
-          file_id: string
-          id?: string
-          is_user_named?: boolean
-          label: string
-          label_category?: string
-          normalized_value?: Json | null
-          owner_id: string
-          source_annotation_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          canonical_value?: string
-          created_at?: string
-          file_id?: string
-          id?: string
-          is_user_named?: boolean
-          label?: string
-          label_category?: string
-          normalized_value?: Json | null
-          owner_id?: string
-          source_annotation_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_entities_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_entities_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_entities_source_annotation_id_fkey"
-            columns: ["source_annotation_id"]
-            isOneToOne: false
-            referencedRelation: "cld_page_annotations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_entities_source_annotation_id_fkey"
-            columns: ["source_annotation_id"]
-            isOneToOne: false
-            referencedRelation: "file_page_annotations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_events: {
-        Row: {
-          actor_id: string | null
-          actor_type: string
-          event_type: string
-          id: string
-          ip_address: unknown
-          occurred_at: string
-          payload: Json
-          processed_at: string | null
-          request_id: string | null
-          resource_id: string | null
-          resource_type: string | null
-        }
-        Insert: {
-          actor_id?: string | null
-          actor_type: string
-          event_type: string
-          id?: string
-          ip_address?: unknown
-          occurred_at?: string
-          payload?: Json
-          processed_at?: string | null
-          request_id?: string | null
-          resource_id?: string | null
-          resource_type?: string | null
-        }
-        Update: {
-          actor_id?: string | null
-          actor_type?: string
-          event_type?: string
-          id?: string
-          ip_address?: unknown
-          occurred_at?: string
-          payload?: Json
-          processed_at?: string | null
-          request_id?: string | null
-          resource_id?: string | null
-          resource_type?: string | null
-        }
-        Relationships: []
-      }
       cld_file_permissions: {
         Row: {
           expires_at: string | null
@@ -3549,1100 +3211,6 @@ export type Database = {
           permission_level?: string
           resource_id?: string
           resource_type?: string
-        }
-        Relationships: []
-      }
-      cld_file_rag_jobs: {
-        Row: {
-          attempt_count: number
-          completed_at: string | null
-          created_at: string
-          error: Json | null
-          file_id: string
-          id: string
-          organization_id: string | null
-          scheduled_for: string
-          skipped_reason: string | null
-          started_at: string | null
-          status: string
-          trigger_source: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attempt_count?: number
-          completed_at?: string | null
-          created_at?: string
-          error?: Json | null
-          file_id: string
-          id?: string
-          organization_id?: string | null
-          scheduled_for?: string
-          skipped_reason?: string | null
-          started_at?: string | null
-          status?: string
-          trigger_source?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          attempt_count?: number
-          completed_at?: string | null
-          created_at?: string
-          error?: Json | null
-          file_id?: string
-          id?: string
-          organization_id?: string | null
-          scheduled_for?: string
-          skipped_reason?: string | null
-          started_at?: string | null
-          status?: string
-          trigger_source?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_file_rag_jobs_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_file_rag_jobs_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "cld_file_rag_jobs_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_file_versions: {
-        Row: {
-          change_summary: string | null
-          checksum: string | null
-          created_at: string
-          created_by: string | null
-          file_id: string
-          id: string
-          organization_id: string | null
-          size_bytes: number | null
-          storage_uri: string
-          version_number: number
-        }
-        Insert: {
-          change_summary?: string | null
-          checksum?: string | null
-          created_at?: string
-          created_by?: string | null
-          file_id: string
-          id?: string
-          organization_id?: string | null
-          size_bytes?: number | null
-          storage_uri: string
-          version_number: number
-        }
-        Update: {
-          change_summary?: string | null
-          checksum?: string | null
-          created_at?: string
-          created_by?: string | null
-          file_id?: string
-          id?: string
-          organization_id?: string | null
-          size_bytes?: number | null
-          storage_uri?: string
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_file_versions_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_file_versions_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
-      }
-      cld_files: {
-        Row: {
-          _legacy_storage_uri: string | null
-          canonical_processed_document_id: string | null
-          checksum: string | null
-          created_at: string
-          current_version: number
-          deleted_at: string | null
-          derivation_kind: string | null
-          derivation_metadata: Json
-          duplicate_of_file_id: string | null
-          duration_ms: number | null
-          file_name: string
-          file_path: string
-          height: number | null
-          id: string
-          metadata: Json
-          mime_type: string | null
-          organization_id: string | null
-          owner_id: string
-          parent_file_id: string | null
-          parent_folder_id: string | null
-          size_bytes: number | null
-          storage_uri: string
-          updated_at: string
-          visibility: string
-          width: number | null
-        }
-        Insert: {
-          _legacy_storage_uri?: string | null
-          canonical_processed_document_id?: string | null
-          checksum?: string | null
-          created_at?: string
-          current_version?: number
-          deleted_at?: string | null
-          derivation_kind?: string | null
-          derivation_metadata?: Json
-          duplicate_of_file_id?: string | null
-          duration_ms?: number | null
-          file_name: string
-          file_path: string
-          height?: number | null
-          id?: string
-          metadata?: Json
-          mime_type?: string | null
-          organization_id?: string | null
-          owner_id: string
-          parent_file_id?: string | null
-          parent_folder_id?: string | null
-          size_bytes?: number | null
-          storage_uri: string
-          updated_at?: string
-          visibility?: string
-          width?: number | null
-        }
-        Update: {
-          _legacy_storage_uri?: string | null
-          canonical_processed_document_id?: string | null
-          checksum?: string | null
-          created_at?: string
-          current_version?: number
-          deleted_at?: string | null
-          derivation_kind?: string | null
-          derivation_metadata?: Json
-          duplicate_of_file_id?: string | null
-          duration_ms?: number | null
-          file_name?: string
-          file_path?: string
-          height?: number | null
-          id?: string
-          metadata?: Json
-          mime_type?: string | null
-          organization_id?: string | null
-          owner_id?: string
-          parent_file_id?: string | null
-          parent_folder_id?: string | null
-          size_bytes?: number | null
-          storage_uri?: string
-          updated_at?: string
-          visibility?: string
-          width?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
-            columns: ["canonical_processed_document_id"]
-            isOneToOne: false
-            referencedRelation: "processed_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_files_duplicate_of_file_id_fkey"
-            columns: ["duplicate_of_file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_files_duplicate_of_file_id_fkey"
-            columns: ["duplicate_of_file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "cld_files_parent_file_id_fkey"
-            columns: ["parent_file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_files_parent_file_id_fkey"
-            columns: ["parent_file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "cld_files_parent_folder_id_fkey"
-            columns: ["parent_folder_id"]
-            isOneToOne: false
-            referencedRelation: "cld_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_folders: {
-        Row: {
-          created_at: string
-          deleted_at: string | null
-          folder_name: string
-          folder_path: string
-          id: string
-          is_system: boolean
-          metadata: Json
-          organization_id: string | null
-          owner_id: string
-          parent_id: string | null
-          updated_at: string
-          visibility: string
-        }
-        Insert: {
-          created_at?: string
-          deleted_at?: string | null
-          folder_name: string
-          folder_path: string
-          id?: string
-          is_system?: boolean
-          metadata?: Json
-          organization_id?: string | null
-          owner_id: string
-          parent_id?: string | null
-          updated_at?: string
-          visibility?: string
-        }
-        Update: {
-          created_at?: string
-          deleted_at?: string | null
-          folder_name?: string
-          folder_path?: string
-          id?: string
-          is_system?: boolean
-          metadata?: Json
-          organization_id?: string | null
-          owner_id?: string
-          parent_id?: string | null
-          updated_at?: string
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_folders_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "cld_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_guest_migrations: {
-        Row: {
-          fingerprint_hash: string
-          guest_id: string
-          migrated_at: string
-          migrated_to: string
-          payload: Json
-        }
-        Insert: {
-          fingerprint_hash: string
-          guest_id: string
-          migrated_at?: string
-          migrated_to: string
-          payload?: Json
-        }
-        Update: {
-          fingerprint_hash?: string
-          guest_id?: string
-          migrated_at?: string
-          migrated_to?: string
-          payload?: Json
-        }
-        Relationships: []
-      }
-      cld_idempotency: {
-        Row: {
-          created_at: string
-          endpoint: string
-          expires_at: string
-          idempotency_key: string
-          owner_id: string
-          request_hash: string
-          resource_id: string | null
-          resource_type: string | null
-          response_body: Json
-          status_code: number
-        }
-        Insert: {
-          created_at?: string
-          endpoint: string
-          expires_at?: string
-          idempotency_key: string
-          owner_id: string
-          request_hash: string
-          resource_id?: string | null
-          resource_type?: string | null
-          response_body: Json
-          status_code: number
-        }
-        Update: {
-          created_at?: string
-          endpoint?: string
-          expires_at?: string
-          idempotency_key?: string
-          owner_id?: string
-          request_hash?: string
-          resource_id?: string | null
-          resource_type?: string | null
-          response_body?: Json
-          status_code?: number
-        }
-        Relationships: []
-      }
-      cld_overrides: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          file_id: string
-          id: string
-          notes: string | null
-          override_kind: string
-          override_value: Json
-          owner_id: string
-          page_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          file_id: string
-          id?: string
-          notes?: string | null
-          override_kind: string
-          override_value: Json
-          owner_id: string
-          page_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          file_id?: string
-          id?: string
-          notes?: string | null
-          override_kind?: string
-          override_value?: Json
-          owner_id?: string
-          page_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_overrides_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-        ]
-      }
-      cld_page_annotations: {
-        Row: {
-          bbox: Json
-          created_at: string
-          created_by: string | null
-          entity_id: string | null
-          extracted_text: string | null
-          extracted_text_source: string
-          file_id: string
-          id: string
-          is_user_locked: boolean
-          label: string
-          label_category: string
-          last_edited_by: string | null
-          normalized_value: Json | null
-          notes: string | null
-          owner_id: string
-          page_id: string | null
-          page_number: number
-          parent_result_id: string | null
-          redact: boolean
-          redaction_span_id: string | null
-          source: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          bbox: Json
-          created_at?: string
-          created_by?: string | null
-          entity_id?: string | null
-          extracted_text?: string | null
-          extracted_text_source?: string
-          file_id: string
-          id?: string
-          is_user_locked?: boolean
-          label: string
-          label_category?: string
-          last_edited_by?: string | null
-          normalized_value?: Json | null
-          notes?: string | null
-          owner_id: string
-          page_id?: string | null
-          page_number: number
-          parent_result_id?: string | null
-          redact?: boolean
-          redaction_span_id?: string | null
-          source?: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          bbox?: Json
-          created_at?: string
-          created_by?: string | null
-          entity_id?: string | null
-          extracted_text?: string | null
-          extracted_text_source?: string
-          file_id?: string
-          id?: string
-          is_user_locked?: boolean
-          label?: string
-          label_category?: string
-          last_edited_by?: string | null
-          normalized_value?: Json | null
-          notes?: string | null
-          owner_id?: string
-          page_id?: string | null
-          page_number?: number
-          parent_result_id?: string | null
-          redact?: boolean
-          redaction_span_id?: string | null
-          source?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_page_annotations_entity_fk"
-            columns: ["entity_id"]
-            isOneToOne: false
-            referencedRelation: "cld_entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_entity_fk"
-            columns: ["entity_id"]
-            isOneToOne: false
-            referencedRelation: "file_entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_parent_result_id_fkey"
-            columns: ["parent_result_id"]
-            isOneToOne: false
-            referencedRelation: "cld_analysis_result"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_parent_result_id_fkey"
-            columns: ["parent_result_id"]
-            isOneToOne: false
-            referencedRelation: "file_analysis_result"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_pages: {
-        Row: {
-          created_at: string
-          excluded_at: string | null
-          excluded_by: string | null
-          excluded_reason: string | null
-          file_id: string
-          height_pt: number | null
-          id: string
-          metadata: Json
-          ocr_confidence: number | null
-          owner_id: string
-          page_index: number
-          processed_document_page_id: string | null
-          rotation: number
-          source_page_index: number
-          status: string
-          text_source: string
-          thumbnail_url: string | null
-          updated_at: string
-          user_modified: boolean
-          width_pt: number | null
-        }
-        Insert: {
-          created_at?: string
-          excluded_at?: string | null
-          excluded_by?: string | null
-          excluded_reason?: string | null
-          file_id: string
-          height_pt?: number | null
-          id?: string
-          metadata?: Json
-          ocr_confidence?: number | null
-          owner_id: string
-          page_index: number
-          processed_document_page_id?: string | null
-          rotation?: number
-          source_page_index: number
-          status?: string
-          text_source?: string
-          thumbnail_url?: string | null
-          updated_at?: string
-          user_modified?: boolean
-          width_pt?: number | null
-        }
-        Update: {
-          created_at?: string
-          excluded_at?: string | null
-          excluded_by?: string | null
-          excluded_reason?: string | null
-          file_id?: string
-          height_pt?: number | null
-          id?: string
-          metadata?: Json
-          ocr_confidence?: number | null
-          owner_id?: string
-          page_index?: number
-          processed_document_page_id?: string | null
-          rotation?: number
-          source_page_index?: number
-          status?: string
-          text_source?: string
-          thumbnail_url?: string | null
-          updated_at?: string
-          user_modified?: boolean
-          width_pt?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_pages_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_pages_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_pages_processed_document_page_id_fkey"
-            columns: ["processed_document_page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["page_id"]
-          },
-          {
-            foreignKeyName: "file_pages_processed_document_page_id_fkey"
-            columns: ["processed_document_page_id"]
-            isOneToOne: false
-            referencedRelation: "processed_document_pages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_rate_limit_buckets: {
-        Row: {
-          actor_id: string
-          bucket_kind: string
-          counter: number
-          minute_bucket: string
-        }
-        Insert: {
-          actor_id: string
-          bucket_kind: string
-          counter?: number
-          minute_bucket: string
-        }
-        Update: {
-          actor_id?: string
-          bucket_kind?: string
-          counter?: number
-          minute_bucket?: string
-        }
-        Relationships: []
-      }
-      cld_share_links: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean
-          max_uses: number | null
-          organization_id: string | null
-          permission_level: string
-          resource_id: string
-          resource_type: string
-          share_token: string
-          use_count: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          organization_id?: string | null
-          permission_level?: string
-          resource_id: string
-          resource_type: string
-          share_token?: string
-          use_count?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean
-          max_uses?: number | null
-          organization_id?: string | null
-          permission_level?: string
-          resource_id?: string
-          resource_type?: string
-          share_token?: string
-          use_count?: number
-        }
-        Relationships: []
-      }
-      cld_structure: {
-        Row: {
-          bucket_id: string
-          created_at: string | null
-          file_id: string | null
-          id: number
-          is_folder: boolean
-          metadata: Json | null
-          name: string
-          parent_path: string | null
-          path: string
-          updated_at: string | null
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string | null
-          file_id?: string | null
-          id?: number
-          is_folder: boolean
-          metadata?: Json | null
-          name: string
-          parent_path?: string | null
-          path: string
-          updated_at?: string | null
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string | null
-          file_id?: string | null
-          id?: number
-          is_folder?: boolean
-          metadata?: Json | null
-          name?: string
-          parent_path?: string | null
-          path?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      cld_uploads_inflight: {
-        Row: {
-          bucket: string
-          created_at: string
-          expires_at: string
-          file_id: string
-          file_name: string
-          file_path: string
-          id: string
-          idempotency_key: string | null
-          key: string
-          metadata: Json
-          mime_type: string | null
-          multipart_upload_id: string
-          owner_id: string
-          parts: Json
-          status: string
-          updated_at: string
-          upload_length: number
-          upload_offset: number
-          visibility: string
-        }
-        Insert: {
-          bucket: string
-          created_at?: string
-          expires_at?: string
-          file_id: string
-          file_name: string
-          file_path: string
-          id?: string
-          idempotency_key?: string | null
-          key: string
-          metadata?: Json
-          mime_type?: string | null
-          multipart_upload_id: string
-          owner_id: string
-          parts?: Json
-          status?: string
-          updated_at?: string
-          upload_length: number
-          upload_offset?: number
-          visibility?: string
-        }
-        Update: {
-          bucket?: string
-          created_at?: string
-          expires_at?: string
-          file_id?: string
-          file_name?: string
-          file_path?: string
-          id?: string
-          idempotency_key?: string | null
-          key?: string
-          metadata?: Json
-          mime_type?: string | null
-          multipart_upload_id?: string
-          owner_id?: string
-          parts?: Json
-          status?: string
-          updated_at?: string
-          upload_length?: number
-          upload_offset?: number
-          visibility?: string
-        }
-        Relationships: []
-      }
-      cld_user_account: {
-        Row: {
-          blocked_reason: string | null
-          created_at: string
-          custom_limits: Json
-          is_blocked: boolean
-          notes: string | null
-          tier_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          blocked_reason?: string | null
-          created_at?: string
-          custom_limits?: Json
-          is_blocked?: boolean
-          notes?: string | null
-          tier_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          blocked_reason?: string | null
-          created_at?: string
-          custom_limits?: Json
-          is_blocked?: boolean
-          notes?: string | null
-          tier_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_user_account_tier_id_fkey"
-            columns: ["tier_id"]
-            isOneToOne: false
-            referencedRelation: "cld_account_tiers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_user_group_members: {
-        Row: {
-          added_at: string
-          added_by: string | null
-          group_id: string
-          id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          added_at?: string
-          added_by?: string | null
-          group_id: string
-          id?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          added_at?: string
-          added_by?: string | null
-          group_id?: string
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_user_group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "cld_user_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_user_groups: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          organization_id: string | null
-          owner_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          organization_id?: string | null
-          owner_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          organization_id?: string | null
-          owner_id?: string
-        }
-        Relationships: []
-      }
-      cld_user_storage_usage: {
-        Row: {
-          bytes_used: number
-          daily_reset_at: string
-          daily_upload_bytes: number
-          daily_upload_count: number
-          files_count: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          bytes_used?: number
-          daily_reset_at?: string
-          daily_upload_bytes?: number
-          daily_upload_count?: number
-          files_count?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          bytes_used?: number
-          daily_reset_at?: string
-          daily_upload_bytes?: number
-          daily_upload_count?: number
-          files_count?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      cld_webhook_deliveries: {
-        Row: {
-          attempt: number
-          completed_at: string | null
-          created_at: string
-          error_message: string | null
-          event_id: string
-          http_status: number | null
-          id: string
-          latency_ms: number | null
-          next_attempt_at: string | null
-          status: string
-          webhook_id: string
-        }
-        Insert: {
-          attempt?: number
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          event_id: string
-          http_status?: number | null
-          id?: string
-          latency_ms?: number | null
-          next_attempt_at?: string | null
-          status?: string
-          webhook_id: string
-        }
-        Update: {
-          attempt?: number
-          completed_at?: string | null
-          created_at?: string
-          error_message?: string | null
-          event_id?: string
-          http_status?: number | null
-          id?: string
-          latency_ms?: number | null
-          next_attempt_at?: string | null
-          status?: string
-          webhook_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cld_webhook_deliveries_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "cld_events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_webhook_deliveries_webhook_id_fkey"
-            columns: ["webhook_id"]
-            isOneToOne: false
-            referencedRelation: "cld_webhooks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cld_webhooks: {
-        Row: {
-          consecutive_failures: number
-          created_at: string
-          description: string | null
-          event_types: string[] | null
-          id: string
-          is_active: boolean
-          last_attempt_at: string | null
-          last_success_at: string | null
-          max_consecutive_failures: number
-          owner_id: string
-          resource_types: string[] | null
-          secret: string
-          target_url: string
-          updated_at: string
-        }
-        Insert: {
-          consecutive_failures?: number
-          created_at?: string
-          description?: string | null
-          event_types?: string[] | null
-          id?: string
-          is_active?: boolean
-          last_attempt_at?: string | null
-          last_success_at?: string | null
-          max_consecutive_failures?: number
-          owner_id: string
-          resource_types?: string[] | null
-          secret: string
-          target_url: string
-          updated_at?: string
-        }
-        Update: {
-          consecutive_failures?: number
-          created_at?: string
-          description?: string | null
-          event_types?: string[] | null
-          id?: string
-          is_active?: boolean
-          last_attempt_at?: string | null
-          last_success_at?: string | null
-          max_consecutive_failures?: number
-          owner_id?: string
-          resource_types?: string[] | null
-          secret?: string
-          target_url?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -5737,91 +4305,6 @@ export type Database = {
           },
         ]
       }
-      ctx_project_invitations: {
-        Row: {
-          email: string
-          email_sent: boolean | null
-          email_sent_at: string | null
-          expires_at: string
-          id: string
-          invited_at: string | null
-          invited_by: string | null
-          project_id: string
-          role: Database["public"]["Enums"]["project_role"]
-          token: string
-        }
-        Insert: {
-          email: string
-          email_sent?: boolean | null
-          email_sent_at?: string | null
-          expires_at: string
-          id?: string
-          invited_at?: string | null
-          invited_by?: string | null
-          project_id: string
-          role?: Database["public"]["Enums"]["project_role"]
-          token: string
-        }
-        Update: {
-          email?: string
-          email_sent?: boolean | null
-          email_sent_at?: string | null
-          expires_at?: string
-          id?: string
-          invited_at?: string | null
-          invited_by?: string | null
-          project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_invitations_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_project_members: {
-        Row: {
-          created_at: string | null
-          id: string
-          invited_by: string | null
-          joined_at: string | null
-          project_id: string | null
-          role: Database["public"]["Enums"]["project_role"]
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["project_role"]
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          project_id?: string | null
-          role?: Database["public"]["Enums"]["project_role"]
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ctx_projects: {
         Row: {
           created_at: string | null
@@ -6045,155 +4528,6 @@ export type Database = {
             columns: ["scope_type_id"]
             isOneToOne: false
             referencedRelation: "ctx_scope_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_task_assignments: {
-        Row: {
-          assigned_at: string | null
-          assigned_by: string | null
-          id: string
-          task_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          id?: string
-          task_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          assigned_at?: string | null
-          assigned_by?: string | null
-          id?: string
-          task_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_assignments_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_task_associations: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          entity_id: string
-          entity_type: string
-          id: string
-          label: string | null
-          metadata: Json
-          task_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          entity_id: string
-          entity_type: string
-          id?: string
-          label?: string | null
-          metadata?: Json
-          task_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          label?: string | null
-          metadata?: Json
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ctx_task_associations_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_task_attachments: {
-        Row: {
-          file_name: string
-          file_path: string
-          file_size: number | null
-          file_type: string | null
-          id: string
-          task_id: string | null
-          uploaded_at: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          file_name: string
-          file_path: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          task_id?: string | null
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          file_name?: string
-          file_path?: string
-          file_size?: number | null
-          file_type?: string | null
-          id?: string
-          task_id?: string | null
-          uploaded_at?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_attachments_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_task_comments: {
-        Row: {
-          content: string
-          created_at: string | null
-          id: string
-          task_id: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          id?: string
-          task_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          id?: string
-          task_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_comments_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -7173,6 +5507,7 @@ export type Database = {
           user_id: string
           variables: Json
           version: number
+          visibility: "private" | "internal" | "link" | "public"
         }
         Insert: {
           app_instance_id?: string | null
@@ -7215,6 +5550,7 @@ export type Database = {
           user_id: string
           variables?: Json
           version?: number
+          visibility?: "private" | "internal" | "link" | "public"
         }
         Update: {
           app_instance_id?: string | null
@@ -7257,6 +5593,7 @@ export type Database = {
           user_id?: string
           variables?: Json
           version?: number
+          visibility?: "private" | "internal" | "link" | "public"
         }
         Relationships: [
           {
@@ -12396,6 +10733,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          expires_at: string | null
           granted_to_organization_id: string | null
           granted_to_user_id: string | null
           id: string
@@ -12411,6 +10749,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          expires_at?: string | null
           granted_to_organization_id?: string | null
           granted_to_user_id?: string | null
           id?: string
@@ -12426,6 +10765,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          expires_at?: string | null
           granted_to_organization_id?: string | null
           granted_to_user_id?: string | null
           id?: string
@@ -22877,800 +21217,6 @@ export type Database = {
           },
         ]
       }
-      wf_checkpoint: {
-        Row: {
-          channel_values: Json
-          created_at: string
-          id: string
-          interrupt_payload: Json | null
-          metadata: Json
-          next_invocations: Json
-          parent_checkpoint_id: string | null
-          pending_writes: Json
-          run_id: string
-          step: number
-          thread_id: string
-        }
-        Insert: {
-          channel_values?: Json
-          created_at?: string
-          id?: string
-          interrupt_payload?: Json | null
-          metadata?: Json
-          next_invocations?: Json
-          parent_checkpoint_id?: string | null
-          pending_writes?: Json
-          run_id: string
-          step: number
-          thread_id: string
-        }
-        Update: {
-          channel_values?: Json
-          created_at?: string
-          id?: string
-          interrupt_payload?: Json | null
-          metadata?: Json
-          next_invocations?: Json
-          parent_checkpoint_id?: string | null
-          pending_writes?: Json
-          run_id?: string
-          step?: number
-          thread_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_checkpoint_parent_checkpoint_id_fkey"
-            columns: ["parent_checkpoint_id"]
-            isOneToOne: false
-            referencedRelation: "wf_checkpoint"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_checkpoint_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_definition: {
-        Row: {
-          category: string | null
-          channels: Json
-          created_at: string
-          description: string | null
-          edges: Json
-          entry_nodes: Json
-          id: string
-          is_active: boolean
-          is_archived: boolean
-          is_favorite: boolean
-          is_public: boolean
-          max_concurrent_runs: number | null
-          metadata: Json
-          name: string
-          nodes: Json
-          organization_id: string | null
-          project_id: string | null
-          source_definition_id: string | null
-          source_snapshot_at: string | null
-          strict_channels: boolean
-          tags: string[]
-          task_id: string | null
-          updated_at: string
-          user_id: string
-          version: number
-          viewport: Json
-        }
-        Insert: {
-          category?: string | null
-          channels?: Json
-          created_at?: string
-          description?: string | null
-          edges?: Json
-          entry_nodes?: Json
-          id?: string
-          is_active?: boolean
-          is_archived?: boolean
-          is_favorite?: boolean
-          is_public?: boolean
-          max_concurrent_runs?: number | null
-          metadata?: Json
-          name: string
-          nodes?: Json
-          organization_id?: string | null
-          project_id?: string | null
-          source_definition_id?: string | null
-          source_snapshot_at?: string | null
-          strict_channels?: boolean
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id: string
-          version?: number
-          viewport?: Json
-        }
-        Update: {
-          category?: string | null
-          channels?: Json
-          created_at?: string
-          description?: string | null
-          edges?: Json
-          entry_nodes?: Json
-          id?: string
-          is_active?: boolean
-          is_archived?: boolean
-          is_favorite?: boolean
-          is_public?: boolean
-          max_concurrent_runs?: number | null
-          metadata?: Json
-          name?: string
-          nodes?: Json
-          organization_id?: string | null
-          project_id?: string | null
-          source_definition_id?: string | null
-          source_snapshot_at?: string | null
-          strict_channels?: boolean
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id?: string
-          version?: number
-          viewport?: Json
-        }
-        Relationships: []
-      }
-      wf_definition_version: {
-        Row: {
-          category: string | null
-          change_note: string | null
-          changed_at: string
-          changed_by_user_id: string | null
-          channels: Json | null
-          definition_id: string
-          description: string | null
-          edges: Json | null
-          entry_nodes: Json | null
-          id: string
-          is_active: boolean | null
-          metadata: Json | null
-          name: string | null
-          nodes: Json | null
-          strict_channels: boolean | null
-          tags: string[] | null
-          version_number: number
-          viewport: Json | null
-        }
-        Insert: {
-          category?: string | null
-          change_note?: string | null
-          changed_at?: string
-          changed_by_user_id?: string | null
-          channels?: Json | null
-          definition_id: string
-          description?: string | null
-          edges?: Json | null
-          entry_nodes?: Json | null
-          id?: string
-          is_active?: boolean | null
-          metadata?: Json | null
-          name?: string | null
-          nodes?: Json | null
-          strict_channels?: boolean | null
-          tags?: string[] | null
-          version_number: number
-          viewport?: Json | null
-        }
-        Update: {
-          category?: string | null
-          change_note?: string | null
-          changed_at?: string
-          changed_by_user_id?: string | null
-          channels?: Json | null
-          definition_id?: string
-          description?: string | null
-          edges?: Json | null
-          entry_nodes?: Json | null
-          id?: string
-          is_active?: boolean | null
-          metadata?: Json | null
-          name?: string | null
-          nodes?: Json | null
-          strict_channels?: boolean | null
-          tags?: string[] | null
-          version_number?: number
-          viewport?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_definition_version_definition_id_fkey"
-            columns: ["definition_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_idempotency: {
-        Row: {
-          created_at: string
-          expires_at: string
-          id: string
-          idempotency_key: string
-          route_path: string
-          run_id: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          idempotency_key: string
-          route_path: string
-          run_id?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string
-          id?: string
-          idempotency_key?: string
-          route_path?: string
-          run_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_idempotency_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_job: {
-        Row: {
-          attempt: number
-          checkpoint_id: string | null
-          claimed_at: string | null
-          claimed_by: string | null
-          created_at: string
-          id: string
-          inputs: Json
-          kind: string
-          last_error: Json | null
-          max_attempts: number
-          max_steps: number
-          priority: number
-          resume_value: Json | null
-          run_id: string
-          updated_at: string
-          visible_at: string
-        }
-        Insert: {
-          attempt?: number
-          checkpoint_id?: string | null
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string
-          id?: string
-          inputs?: Json
-          kind: string
-          last_error?: Json | null
-          max_attempts?: number
-          max_steps?: number
-          priority?: number
-          resume_value?: Json | null
-          run_id: string
-          updated_at?: string
-          visible_at?: string
-        }
-        Update: {
-          attempt?: number
-          checkpoint_id?: string | null
-          claimed_at?: string | null
-          claimed_by?: string | null
-          created_at?: string
-          id?: string
-          inputs?: Json
-          kind?: string
-          last_error?: Json | null
-          max_attempts?: number
-          max_steps?: number
-          priority?: number
-          resume_value?: Json | null
-          run_id?: string
-          updated_at?: string
-          visible_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_job_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_node_events: {
-        Row: {
-          attempt: number | null
-          checkpoint_id: string | null
-          created_at: string
-          duration_ms: number | null
-          error_message: string | null
-          error_type: string | null
-          event_ts: string
-          event_type: string
-          id: string
-          node_id: string | null
-          payload: Json
-          run_id: string
-          seq: number | null
-          spec_type: string | null
-          step: number | null
-        }
-        Insert: {
-          attempt?: number | null
-          checkpoint_id?: string | null
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          error_type?: string | null
-          event_ts?: string
-          event_type: string
-          id?: string
-          node_id?: string | null
-          payload: Json
-          run_id: string
-          seq?: number | null
-          spec_type?: string | null
-          step?: number | null
-        }
-        Update: {
-          attempt?: number | null
-          checkpoint_id?: string | null
-          created_at?: string
-          duration_ms?: number | null
-          error_message?: string | null
-          error_type?: string | null
-          event_ts?: string
-          event_type?: string
-          id?: string
-          node_id?: string | null
-          payload?: Json
-          run_id?: string
-          seq?: number | null
-          spec_type?: string | null
-          step?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_node_events_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_node_outcome: {
-        Row: {
-          attempt: number
-          channel_writes: Json
-          completed_at: string
-          duration_ms: number
-          error: Json | null
-          id: string
-          node_id: string
-          output: Json
-          run_id: string
-          sends: Json
-          source: string
-          step: number
-        }
-        Insert: {
-          attempt?: number
-          channel_writes?: Json
-          completed_at?: string
-          duration_ms?: number
-          error?: Json | null
-          id?: string
-          node_id: string
-          output?: Json
-          run_id: string
-          sends?: Json
-          source?: string
-          step: number
-        }
-        Update: {
-          attempt?: number
-          channel_writes?: Json
-          completed_at?: string
-          duration_ms?: number
-          error?: Json | null
-          id?: string
-          node_id?: string
-          output?: Json
-          run_id?: string
-          sends?: Json
-          source?: string
-          step?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_node_outcome_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_recovery_audit: {
-        Row: {
-          agent_confidence: number | null
-          agent_reasoning: string | null
-          created_at: string
-          id: string
-          proposal_action: string
-          proposal_payload: Json
-          run_id: string | null
-          surface: string
-          user_id: string
-          was_applied: boolean
-          was_overridden: boolean
-          workflow_id: string | null
-        }
-        Insert: {
-          agent_confidence?: number | null
-          agent_reasoning?: string | null
-          created_at?: string
-          id?: string
-          proposal_action: string
-          proposal_payload?: Json
-          run_id?: string | null
-          surface: string
-          user_id: string
-          was_applied?: boolean
-          was_overridden?: boolean
-          workflow_id?: string | null
-        }
-        Update: {
-          agent_confidence?: number | null
-          agent_reasoning?: string | null
-          created_at?: string
-          id?: string
-          proposal_action?: string
-          proposal_payload?: Json
-          run_id?: string | null
-          surface?: string
-          user_id?: string
-          was_applied?: boolean
-          was_overridden?: boolean
-          workflow_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_recovery_audit_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
-            columns: ["workflow_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_run: {
-        Row: {
-          agent_id: string | null
-          agent_version_id: string | null
-          completed_at: string | null
-          conversation_id: string | null
-          created_at: string
-          definition_hash: string
-          definition_id: string
-          definition_version_id: string | null
-          error: Json | null
-          event_seq: number
-          id: string
-          input: Json
-          interrupt_payload: Json | null
-          last_checkpoint_id: string | null
-          max_recovery_retries: number
-          metadata: Json
-          organization_id: string | null
-          output: Json | null
-          parent_run_id: string | null
-          project_id: string | null
-          recovery_retry_count: number
-          started_at: string | null
-          status: string
-          steps_executed: number
-          task_id: string | null
-          thread_id: string
-          user_id: string
-        }
-        Insert: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          completed_at?: string | null
-          conversation_id?: string | null
-          created_at?: string
-          definition_hash: string
-          definition_id: string
-          definition_version_id?: string | null
-          error?: Json | null
-          event_seq?: number
-          id?: string
-          input?: Json
-          interrupt_payload?: Json | null
-          last_checkpoint_id?: string | null
-          max_recovery_retries?: number
-          metadata?: Json
-          organization_id?: string | null
-          output?: Json | null
-          parent_run_id?: string | null
-          project_id?: string | null
-          recovery_retry_count?: number
-          started_at?: string | null
-          status?: string
-          steps_executed?: number
-          task_id?: string | null
-          thread_id: string
-          user_id: string
-        }
-        Update: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          completed_at?: string | null
-          conversation_id?: string | null
-          created_at?: string
-          definition_hash?: string
-          definition_id?: string
-          definition_version_id?: string | null
-          error?: Json | null
-          event_seq?: number
-          id?: string
-          input?: Json
-          interrupt_payload?: Json | null
-          last_checkpoint_id?: string | null
-          max_recovery_retries?: number
-          metadata?: Json
-          organization_id?: string | null
-          output?: Json | null
-          parent_run_id?: string | null
-          project_id?: string | null
-          recovery_retry_count?: number
-          started_at?: string | null
-          status?: string
-          steps_executed?: number
-          task_id?: string | null
-          thread_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_run_definition_id_fkey"
-            columns: ["definition_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_run_definition_version_id_fkey"
-            columns: ["definition_version_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition_version"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_run_parent_run_id_fkey"
-            columns: ["parent_run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_template: {
-        Row: {
-          category: string | null
-          created_at: string
-          created_by: string | null
-          definition: Json
-          description: string | null
-          id: string
-          is_published: boolean
-          name: string
-          popularity: number
-          preview_image_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          definition: Json
-          description?: string | null
-          id?: string
-          is_published?: boolean
-          name: string
-          popularity?: number
-          preview_image_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          created_by?: string | null
-          definition?: Json
-          description?: string | null
-          id?: string
-          is_published?: boolean
-          name?: string
-          popularity?: number
-          preview_image_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      wf_trigger: {
-        Row: {
-          created_at: string
-          cron_expression: string | null
-          default_inputs: Json
-          definition_id: string
-          definition_version_id: string | null
-          description: string | null
-          fire_count: number
-          id: string
-          is_active: boolean
-          kind: string
-          last_fired_at: string | null
-          last_run_id: string | null
-          max_steps: number
-          name: string
-          next_run_at: string | null
-          organization_id: string | null
-          project_id: string | null
-          task_id: string | null
-          timezone: string
-          updated_at: string
-          user_id: string
-          webhook_secret: string | null
-        }
-        Insert: {
-          created_at?: string
-          cron_expression?: string | null
-          default_inputs?: Json
-          definition_id: string
-          definition_version_id?: string | null
-          description?: string | null
-          fire_count?: number
-          id?: string
-          is_active?: boolean
-          kind: string
-          last_fired_at?: string | null
-          last_run_id?: string | null
-          max_steps?: number
-          name: string
-          next_run_at?: string | null
-          organization_id?: string | null
-          project_id?: string | null
-          task_id?: string | null
-          timezone?: string
-          updated_at?: string
-          user_id: string
-          webhook_secret?: string | null
-        }
-        Update: {
-          created_at?: string
-          cron_expression?: string | null
-          default_inputs?: Json
-          definition_id?: string
-          definition_version_id?: string | null
-          description?: string | null
-          fire_count?: number
-          id?: string
-          is_active?: boolean
-          kind?: string
-          last_fired_at?: string | null
-          last_run_id?: string | null
-          max_steps?: number
-          name?: string
-          next_run_at?: string | null
-          organization_id?: string | null
-          project_id?: string | null
-          task_id?: string | null
-          timezone?: string
-          updated_at?: string
-          user_id?: string
-          webhook_secret?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_trigger_definition_id_fkey"
-            columns: ["definition_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_trigger_definition_version_id_fkey"
-            columns: ["definition_version_id"]
-            isOneToOne: false
-            referencedRelation: "wf_definition_version"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wf_trigger_fire: {
-        Row: {
-          error_message: string | null
-          error_type: string | null
-          fired_at: string
-          fired_by_user_id: string | null
-          id: string
-          request_body_hash: string | null
-          run_id: string | null
-          source_ip: string | null
-          status: string
-          trigger_id: string
-          user_id: string
-        }
-        Insert: {
-          error_message?: string | null
-          error_type?: string | null
-          fired_at?: string
-          fired_by_user_id?: string | null
-          id?: string
-          request_body_hash?: string | null
-          run_id?: string | null
-          source_ip?: string | null
-          status: string
-          trigger_id: string
-          user_id: string
-        }
-        Update: {
-          error_message?: string | null
-          error_type?: string | null
-          fired_at?: string
-          fired_by_user_id?: string | null
-          id?: string
-          request_body_hash?: string | null
-          run_id?: string | null
-          source_ip?: string | null
-          status?: string
-          trigger_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wf_trigger_fire_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "wf_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wf_trigger_fire_trigger_id_fkey"
-            columns: ["trigger_id"]
-            isOneToOne: false
-            referencedRelation: "wf_trigger"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       window_sessions: {
         Row: {
           created_at: string | null
@@ -23917,6 +21463,1017 @@ export type Database = {
         }
         Relationships: []
       }
+      cld_account_tiers: {
+        Row: {
+          created_at: string | null
+          features: Json | null
+          id: string | null
+          is_default_for_guests: boolean | null
+          is_default_for_users: boolean | null
+          max_bulk_items: number | null
+          max_daily_upload_bytes: number | null
+          max_daily_uploads: number | null
+          max_file_size_bytes: number | null
+          max_files: number | null
+          max_share_links_per_resource: number | null
+          max_storage_bytes: number | null
+          max_versions_per_file: number | null
+          name: string | null
+          rate_limit_downloads_per_min: number | null
+          rate_limit_general_per_min: number | null
+          rate_limit_uploads_per_min: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          features?: Json | null
+          id?: string | null
+          is_default_for_guests?: boolean | null
+          is_default_for_users?: boolean | null
+          max_bulk_items?: number | null
+          max_daily_upload_bytes?: number | null
+          max_daily_uploads?: number | null
+          max_file_size_bytes?: number | null
+          max_files?: number | null
+          max_share_links_per_resource?: number | null
+          max_storage_bytes?: number | null
+          max_versions_per_file?: number | null
+          name?: string | null
+          rate_limit_downloads_per_min?: number | null
+          rate_limit_general_per_min?: number | null
+          rate_limit_uploads_per_min?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          features?: Json | null
+          id?: string | null
+          is_default_for_guests?: boolean | null
+          is_default_for_users?: boolean | null
+          max_bulk_items?: number | null
+          max_daily_upload_bytes?: number | null
+          max_daily_uploads?: number | null
+          max_file_size_bytes?: number | null
+          max_files?: number | null
+          max_share_links_per_resource?: number | null
+          max_storage_bytes?: number | null
+          max_versions_per_file?: number | null
+          name?: string | null
+          rate_limit_downloads_per_min?: number | null
+          rate_limit_general_per_min?: number | null
+          rate_limit_uploads_per_min?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_analysis: {
+        Row: {
+          analyzer_version: string | null
+          classification: Json | null
+          completed_at: string | null
+          detectors_run: Json | null
+          file_id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          owner_id: string | null
+          page_count: number | null
+          progress: Json | null
+          started_at: string | null
+          status: string | null
+          summary_counts: Json | null
+          text_source_map: Json | null
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          analyzer_version?: string | null
+          classification?: Json | null
+          completed_at?: string | null
+          detectors_run?: Json | null
+          file_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          owner_id?: string | null
+          page_count?: number | null
+          progress?: Json | null
+          started_at?: string | null
+          status?: string | null
+          summary_counts?: Json | null
+          text_source_map?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          analyzer_version?: string | null
+          classification?: Json | null
+          completed_at?: string | null
+          detectors_run?: Json | null
+          file_id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          owner_id?: string | null
+          page_count?: number | null
+          progress?: Json | null
+          started_at?: string | null
+          status?: string | null
+          summary_counts?: Json | null
+          text_source_map?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_analysis_result: {
+        Row: {
+          confidence_tier: string | null
+          created_at: string | null
+          detector_kind: string | null
+          detector_version: string | null
+          elapsed_ms: number | null
+          error: string | null
+          file_id: string | null
+          id: string | null
+          page_id: string | null
+          payload: Json | null
+          payload_bytes: number | null
+          payload_uri: string | null
+          status: string | null
+          summary: Json | null
+          text_sources: string[] | null
+        }
+        Insert: {
+          confidence_tier?: string | null
+          created_at?: string | null
+          detector_kind?: string | null
+          detector_version?: string | null
+          elapsed_ms?: number | null
+          error?: string | null
+          file_id?: string | null
+          id?: string | null
+          page_id?: string | null
+          payload?: Json | null
+          payload_bytes?: number | null
+          payload_uri?: string | null
+          status?: string | null
+          summary?: Json | null
+          text_sources?: string[] | null
+        }
+        Update: {
+          confidence_tier?: string | null
+          created_at?: string | null
+          detector_kind?: string | null
+          detector_version?: string | null
+          elapsed_ms?: number | null
+          error?: string | null
+          file_id?: string | null
+          id?: string | null
+          page_id?: string | null
+          payload?: Json | null
+          payload_bytes?: number | null
+          payload_uri?: string | null
+          status?: string | null
+          summary?: Json | null
+          text_sources?: string[] | null
+        }
+        Relationships: []
+      }
+      cld_entities: {
+        Row: {
+          canonical_value: string | null
+          created_at: string | null
+          file_id: string | null
+          id: string | null
+          is_user_named: boolean | null
+          label: string | null
+          label_category: string | null
+          normalized_value: Json | null
+          owner_id: string | null
+          source_annotation_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          canonical_value?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string | null
+          is_user_named?: boolean | null
+          label?: string | null
+          label_category?: string | null
+          normalized_value?: Json | null
+          owner_id?: string | null
+          source_annotation_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          canonical_value?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string | null
+          is_user_named?: boolean | null
+          label?: string | null
+          label_category?: string | null
+          normalized_value?: Json | null
+          owner_id?: string | null
+          source_annotation_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_file_rag_jobs: {
+        Row: {
+          attempt_count: number | null
+          completed_at: string | null
+          created_at: string | null
+          error: Json | null
+          file_id: string | null
+          id: string | null
+          organization_id: string | null
+          scheduled_for: string | null
+          skipped_reason: string | null
+          started_at: string | null
+          status: string | null
+          trigger_source: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error?: Json | null
+          file_id?: string | null
+          id?: string | null
+          organization_id?: string | null
+          scheduled_for?: string | null
+          skipped_reason?: string | null
+          started_at?: string | null
+          status?: string | null
+          trigger_source?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error?: Json | null
+          file_id?: string | null
+          id?: string | null
+          organization_id?: string | null
+          scheduled_for?: string | null
+          skipped_reason?: string | null
+          started_at?: string | null
+          status?: string | null
+          trigger_source?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cld_file_versions: {
+        Row: {
+          change_summary: string | null
+          checksum: string | null
+          created_at: string | null
+          created_by: string | null
+          file_id: string | null
+          id: string | null
+          organization_id: string | null
+          size_bytes: number | null
+          storage_uri: string | null
+          version_number: number | null
+        }
+        Insert: {
+          change_summary?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          file_id?: string | null
+          id?: string | null
+          organization_id?: string | null
+          size_bytes?: number | null
+          storage_uri?: string | null
+          version_number?: number | null
+        }
+        Update: {
+          change_summary?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          file_id?: string | null
+          id?: string | null
+          organization_id?: string | null
+          size_bytes?: number | null
+          storage_uri?: string | null
+          version_number?: number | null
+        }
+        Relationships: []
+      }
+      cld_files: {
+        Row: {
+          _legacy_storage_uri: string | null
+          canonical_processed_document_id: string | null
+          checksum: string | null
+          created_at: string | null
+          current_version: number | null
+          deleted_at: string | null
+          derivation_kind: string | null
+          derivation_metadata: Json | null
+          duplicate_of_file_id: string | null
+          duration_ms: number | null
+          file_name: string | null
+          file_path: string | null
+          height: number | null
+          id: string | null
+          metadata: Json | null
+          mime_type: string | null
+          organization_id: string | null
+          owner_id: string | null
+          parent_file_id: string | null
+          parent_folder_id: string | null
+          size_bytes: number | null
+          storage_uri: string | null
+          updated_at: string | null
+          visibility: string | null
+          width: number | null
+        }
+        Insert: {
+          _legacy_storage_uri?: string | null
+          canonical_processed_document_id?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          current_version?: number | null
+          deleted_at?: string | null
+          derivation_kind?: string | null
+          derivation_metadata?: Json | null
+          duplicate_of_file_id?: string | null
+          duration_ms?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          height?: number | null
+          id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          organization_id?: string | null
+          owner_id?: string | null
+          parent_file_id?: string | null
+          parent_folder_id?: string | null
+          size_bytes?: number | null
+          storage_uri?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+          width?: number | null
+        }
+        Update: {
+          _legacy_storage_uri?: string | null
+          canonical_processed_document_id?: string | null
+          checksum?: string | null
+          created_at?: string | null
+          current_version?: number | null
+          deleted_at?: string | null
+          derivation_kind?: string | null
+          derivation_metadata?: Json | null
+          duplicate_of_file_id?: string | null
+          duration_ms?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          height?: number | null
+          id?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          organization_id?: string | null
+          owner_id?: string | null
+          parent_file_id?: string | null
+          parent_folder_id?: string | null
+          size_bytes?: number | null
+          storage_uri?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
+      cld_folders: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          folder_name: string | null
+          folder_path: string | null
+          id: string | null
+          is_system: boolean | null
+          metadata: Json | null
+          organization_id: string | null
+          owner_id: string | null
+          parent_id: string | null
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          folder_name?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_system?: boolean | null
+          metadata?: Json | null
+          organization_id?: string | null
+          owner_id?: string | null
+          parent_id?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          folder_name?: string | null
+          folder_path?: string | null
+          id?: string | null
+          is_system?: boolean | null
+          metadata?: Json | null
+          organization_id?: string | null
+          owner_id?: string | null
+          parent_id?: string | null
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      cld_guest_migrations: {
+        Row: {
+          fingerprint_hash: string | null
+          guest_id: string | null
+          migrated_at: string | null
+          migrated_to: string | null
+          payload: Json | null
+        }
+        Insert: {
+          fingerprint_hash?: string | null
+          guest_id?: string | null
+          migrated_at?: string | null
+          migrated_to?: string | null
+          payload?: Json | null
+        }
+        Update: {
+          fingerprint_hash?: string | null
+          guest_id?: string | null
+          migrated_at?: string | null
+          migrated_to?: string | null
+          payload?: Json | null
+        }
+        Relationships: []
+      }
+      cld_idempotency: {
+        Row: {
+          created_at: string | null
+          endpoint: string | null
+          expires_at: string | null
+          idempotency_key: string | null
+          owner_id: string | null
+          request_hash: string | null
+          resource_id: string | null
+          resource_type: string | null
+          response_body: Json | null
+          status_code: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint?: string | null
+          expires_at?: string | null
+          idempotency_key?: string | null
+          owner_id?: string | null
+          request_hash?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          response_body?: Json | null
+          status_code?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string | null
+          expires_at?: string | null
+          idempotency_key?: string | null
+          owner_id?: string | null
+          request_hash?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          response_body?: Json | null
+          status_code?: number | null
+        }
+        Relationships: []
+      }
+      cld_overrides: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          file_id: string | null
+          id: string | null
+          notes: string | null
+          override_kind: string | null
+          override_value: Json | null
+          owner_id: string | null
+          page_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          file_id?: string | null
+          id?: string | null
+          notes?: string | null
+          override_kind?: string | null
+          override_value?: Json | null
+          owner_id?: string | null
+          page_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          file_id?: string | null
+          id?: string | null
+          notes?: string | null
+          override_kind?: string | null
+          override_value?: Json | null
+          owner_id?: string | null
+          page_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_page_annotations: {
+        Row: {
+          bbox: Json | null
+          created_at: string | null
+          created_by: string | null
+          entity_id: string | null
+          extracted_text: string | null
+          extracted_text_source: string | null
+          file_id: string | null
+          id: string | null
+          is_user_locked: boolean | null
+          label: string | null
+          label_category: string | null
+          last_edited_by: string | null
+          normalized_value: Json | null
+          notes: string | null
+          owner_id: string | null
+          page_id: string | null
+          page_number: number | null
+          parent_result_id: string | null
+          redact: boolean | null
+          redaction_span_id: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bbox?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string | null
+          extracted_text?: string | null
+          extracted_text_source?: string | null
+          file_id?: string | null
+          id?: string | null
+          is_user_locked?: boolean | null
+          label?: string | null
+          label_category?: string | null
+          last_edited_by?: string | null
+          normalized_value?: Json | null
+          notes?: string | null
+          owner_id?: string | null
+          page_id?: string | null
+          page_number?: number | null
+          parent_result_id?: string | null
+          redact?: boolean | null
+          redaction_span_id?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bbox?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          entity_id?: string | null
+          extracted_text?: string | null
+          extracted_text_source?: string | null
+          file_id?: string | null
+          id?: string | null
+          is_user_locked?: boolean | null
+          label?: string | null
+          label_category?: string | null
+          last_edited_by?: string | null
+          normalized_value?: Json | null
+          notes?: string | null
+          owner_id?: string | null
+          page_id?: string | null
+          page_number?: number | null
+          parent_result_id?: string | null
+          redact?: boolean | null
+          redaction_span_id?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_pages: {
+        Row: {
+          created_at: string | null
+          excluded_at: string | null
+          excluded_by: string | null
+          excluded_reason: string | null
+          file_id: string | null
+          height_pt: number | null
+          id: string | null
+          metadata: Json | null
+          ocr_confidence: number | null
+          owner_id: string | null
+          page_index: number | null
+          processed_document_page_id: string | null
+          rotation: number | null
+          source_page_index: number | null
+          status: string | null
+          text_source: string | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          user_modified: boolean | null
+          width_pt: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_reason?: string | null
+          file_id?: string | null
+          height_pt?: number | null
+          id?: string | null
+          metadata?: Json | null
+          ocr_confidence?: number | null
+          owner_id?: string | null
+          page_index?: number | null
+          processed_document_page_id?: string | null
+          rotation?: number | null
+          source_page_index?: number | null
+          status?: string | null
+          text_source?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_modified?: boolean | null
+          width_pt?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          excluded_at?: string | null
+          excluded_by?: string | null
+          excluded_reason?: string | null
+          file_id?: string | null
+          height_pt?: number | null
+          id?: string | null
+          metadata?: Json | null
+          ocr_confidence?: number | null
+          owner_id?: string | null
+          page_index?: number | null
+          processed_document_page_id?: string | null
+          rotation?: number | null
+          source_page_index?: number | null
+          status?: string | null
+          text_source?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          user_modified?: boolean | null
+          width_pt?: number | null
+        }
+        Relationships: []
+      }
+      cld_rate_limit_buckets: {
+        Row: {
+          actor_id: string | null
+          bucket_kind: string | null
+          counter: number | null
+          minute_bucket: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          bucket_kind?: string | null
+          counter?: number | null
+          minute_bucket?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          bucket_kind?: string | null
+          counter?: number | null
+          minute_bucket?: string | null
+        }
+        Relationships: []
+      }
+      cld_share_links: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string | null
+          is_active: boolean | null
+          max_uses: number | null
+          organization_id: string | null
+          permission_level: string | null
+          resource_id: string | null
+          resource_type: string | null
+          share_token: string | null
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          max_uses?: number | null
+          organization_id?: string | null
+          permission_level?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          share_token?: string | null
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          max_uses?: number | null
+          organization_id?: string | null
+          permission_level?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          share_token?: string | null
+          use_count?: number | null
+        }
+        Relationships: []
+      }
+      cld_structure: {
+        Row: {
+          bucket_id: string | null
+          created_at: string | null
+          file_id: string | null
+          id: number | null
+          is_folder: boolean | null
+          metadata: Json | null
+          name: string | null
+          parent_path: string | null
+          path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bucket_id?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: number | null
+          is_folder?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          parent_path?: string | null
+          path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bucket_id?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: number | null
+          is_folder?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          parent_path?: string | null
+          path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      cld_uploads_inflight: {
+        Row: {
+          bucket: string | null
+          created_at: string | null
+          expires_at: string | null
+          file_id: string | null
+          file_name: string | null
+          file_path: string | null
+          id: string | null
+          idempotency_key: string | null
+          key: string | null
+          metadata: Json | null
+          mime_type: string | null
+          multipart_upload_id: string | null
+          owner_id: string | null
+          parts: Json | null
+          status: string | null
+          updated_at: string | null
+          upload_length: number | null
+          upload_offset: number | null
+          visibility: string | null
+        }
+        Insert: {
+          bucket?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          file_id?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          key?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          multipart_upload_id?: string | null
+          owner_id?: string | null
+          parts?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          upload_length?: number | null
+          upload_offset?: number | null
+          visibility?: string | null
+        }
+        Update: {
+          bucket?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          file_id?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string | null
+          idempotency_key?: string | null
+          key?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          multipart_upload_id?: string | null
+          owner_id?: string | null
+          parts?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          upload_length?: number | null
+          upload_offset?: number | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      cld_user_account: {
+        Row: {
+          blocked_reason: string | null
+          created_at: string | null
+          custom_limits: Json | null
+          is_blocked: boolean | null
+          notes: string | null
+          tier_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          blocked_reason?: string | null
+          created_at?: string | null
+          custom_limits?: Json | null
+          is_blocked?: boolean | null
+          notes?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          blocked_reason?: string | null
+          created_at?: string | null
+          custom_limits?: Json | null
+          is_blocked?: boolean | null
+          notes?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cld_user_storage_usage: {
+        Row: {
+          bytes_used: number | null
+          daily_reset_at: string | null
+          daily_upload_bytes: number | null
+          daily_upload_count: number | null
+          files_count: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bytes_used?: number | null
+          daily_reset_at?: string | null
+          daily_upload_bytes?: number | null
+          daily_upload_count?: number | null
+          files_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bytes_used?: number | null
+          daily_reset_at?: string | null
+          daily_upload_bytes?: number | null
+          daily_upload_count?: number | null
+          files_count?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cld_webhook_deliveries: {
+        Row: {
+          attempt: number | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          http_status: number | null
+          id: string | null
+          latency_ms: number | null
+          next_attempt_at: string | null
+          status: string | null
+          webhook_id: string | null
+        }
+        Insert: {
+          attempt?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          http_status?: number | null
+          id?: string | null
+          latency_ms?: number | null
+          next_attempt_at?: string | null
+          status?: string | null
+          webhook_id?: string | null
+        }
+        Update: {
+          attempt?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          http_status?: number | null
+          id?: string | null
+          latency_ms?: number | null
+          next_attempt_at?: string | null
+          status?: string | null
+          webhook_id?: string | null
+        }
+        Relationships: []
+      }
+      cld_webhooks: {
+        Row: {
+          consecutive_failures: number | null
+          created_at: string | null
+          description: string | null
+          event_types: string[] | null
+          id: string | null
+          is_active: boolean | null
+          last_attempt_at: string | null
+          last_success_at: string | null
+          max_consecutive_failures: number | null
+          owner_id: string | null
+          resource_types: string[] | null
+          secret: string | null
+          target_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          consecutive_failures?: number | null
+          created_at?: string | null
+          description?: string | null
+          event_types?: string[] | null
+          id?: string | null
+          is_active?: boolean | null
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          max_consecutive_failures?: number | null
+          owner_id?: string | null
+          resource_types?: string[] | null
+          secret?: string | null
+          target_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          consecutive_failures?: number | null
+          created_at?: string | null
+          description?: string | null
+          event_types?: string[] | null
+          id?: string | null
+          is_active?: boolean | null
+          last_attempt_at?: string | null
+          last_success_at?: string | null
+          max_consecutive_failures?: number | null
+          owner_id?: string | null
+          resource_types?: string[] | null
+          secret?: string | null
+          target_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       context_menu_unified_view: {
         Row: {
           categories_flat: Json | null
@@ -24121,22 +22678,7 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_analysis_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: true
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: true
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
+        Relationships: []
       }
       file_analysis_result: {
         Row: {
@@ -24190,43 +22732,7 @@ export type Database = {
           summary?: Json | null
           text_sources?: string[] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_analysis_result_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-        ]
+        Relationships: []
       }
       file_entities: {
         Row: {
@@ -24268,36 +22774,7 @@ export type Database = {
           source_annotation_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_entities_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_entities_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_entities_source_annotation_id_fkey"
-            columns: ["source_annotation_id"]
-            isOneToOne: false
-            referencedRelation: "cld_page_annotations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_entities_source_annotation_id_fkey"
-            columns: ["source_annotation_id"]
-            isOneToOne: false
-            referencedRelation: "file_page_annotations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       file_overrides: {
         Row: {
@@ -24336,43 +22813,7 @@ export type Database = {
           page_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_overrides_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_overrides_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-        ]
+        Relationships: []
       }
       file_page_annotations: {
         Row: {
@@ -24450,71 +22891,7 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_page_annotations_entity_fk"
-            columns: ["entity_id"]
-            isOneToOne: false
-            referencedRelation: "cld_entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_entity_fk"
-            columns: ["entity_id"]
-            isOneToOne: false
-            referencedRelation: "file_entities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "cld_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "file_pages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_page_id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_parent_result_id_fkey"
-            columns: ["parent_result_id"]
-            isOneToOne: false
-            referencedRelation: "cld_analysis_result"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_page_annotations_parent_result_id_fkey"
-            columns: ["parent_result_id"]
-            isOneToOne: false
-            referencedRelation: "file_analysis_result"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       file_pages: {
         Row: {
@@ -24583,36 +22960,7 @@ export type Database = {
           user_modified?: boolean | null
           width_pt?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_pages_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "cld_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_pages_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-          {
-            foreignKeyName: "file_pages_processed_document_page_id_fkey"
-            columns: ["processed_document_page_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["page_id"]
-          },
-          {
-            foreignKeyName: "file_pages_processed_document_page_id_fkey"
-            columns: ["processed_document_page_id"]
-            isOneToOne: false
-            referencedRelation: "processed_document_pages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       file_structure: {
         Row: {

@@ -31,6 +31,7 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { ProInput } from "@/components/official/ProInput";
 import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
@@ -298,7 +299,7 @@ export function QuickAddThread({
         })}
       </div>
 
-      <input
+      <ProInput
         ref={nameRef}
         type="text"
         value={name}
@@ -307,11 +308,9 @@ export function QuickAddThread({
         disabled={busy}
         placeholder={namePlaceholder}
         aria-label="New thread name"
-        className={cn(
-          "w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium text-foreground placeholder:text-muted-foreground/70",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60",
-        )}
-        style={{ fontSize: "16px" }}
+        showCopyButton={false}
+        wrapperClassName="w-full"
+        className="rounded-lg border-border bg-background font-medium shadow-none"
       />
 
       {flavor === "task" ? (

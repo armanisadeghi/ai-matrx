@@ -32,6 +32,7 @@ import {
   updateTaskFieldThunk,
 } from "@/features/tasks/redux/thunks";
 import { selectThreadTaskId } from "@/features/war-room/redux/selectors";
+import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/lib/utils";
 
 export type QuickAddTaskTarget = "room" | "thread";
@@ -222,35 +223,30 @@ export function QuickAddTask({
         </div>
       ) : null}
 
-      <div className="flex items-center gap-2">
-        <span className="grid place-items-center size-5 shrink-0 text-success">
-          {busy ? (
-            <Loader2 className="size-3 animate-spin" />
+      <ProInput
+        ref={titleRef}
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={onKeyDown}
+        disabled={busy}
+        placeholder={
+          effectiveTarget === "thread"
+            ? "Add a task to this thread…"
+            : "Capture a task as a new thread…"
+        }
+        aria-label="New task name"
+        showCopyButton={false}
+        startIcon={
+          busy ? (
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
           ) : (
-            <ListChecks className="size-3.5" />
-          )}
-        </span>
-        <input
-          ref={titleRef}
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={onKeyDown}
-          disabled={busy}
-          placeholder={
-            effectiveTarget === "thread"
-              ? "Add a task to this thread…"
-              : "Capture a task as a new thread…"
-          }
-          aria-label="New task name"
-          // 16px to avoid iOS zoom.
-          style={{ fontSize: "16px" }}
-          className={cn(
-            "min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground/70",
-            "focus-visible:outline-none disabled:opacity-60",
-          )}
-        />
-      </div>
+            <ListChecks className="size-3.5 text-success" />
+          )
+        }
+        wrapperClassName="w-full"
+        className="border-0 bg-transparent font-medium shadow-none"
+      />
 
       <div className="flex items-center justify-end gap-1.5">
         {effectiveTarget === "room" ? (
