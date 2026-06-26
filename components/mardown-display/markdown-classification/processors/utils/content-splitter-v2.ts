@@ -88,6 +88,9 @@ export const SPECIAL_CODE_LANGUAGES = [
   "mermaid",
   "svg",
   "chart",
+  "map",
+  "stats",
+  "diff",
   // html + react are DELIVERABLES (a webpage / a live component), not throwaway
   // code snippets — promote them so they materialize into persistent artifacts
   // (render-by-id, no re-creation), unlike a bare ```code fence.

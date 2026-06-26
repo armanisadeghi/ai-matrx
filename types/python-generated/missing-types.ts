@@ -85,6 +85,27 @@ export interface ChartRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/** Interactive Leaflet map from a ```map JSON spec (markers/places). Client-only. */
+export interface MapRenderBlock {
+  type: "map";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** KPI / headline-metric cards from a ```stats JSON spec. Client-only. */
+export interface StatsRenderBlock {
+  type: "stats";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+/** Before/after diff from a ```diff JSON spec ({old,new}). Client-only. */
+export interface DiffRenderBlock {
+  type: "diff";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 /**
  * A clickable reference to a platform entity (agent, note, task, file, etc.).
  * Emitted by an agent as a ```json fence keyed by `item_presentation`:
@@ -172,6 +193,9 @@ export type ClientOnlyRenderBlock =
   | AudioRenderBlock
   | SvgRenderBlock
   | ChartRenderBlock
+  | MapRenderBlock
+  | StatsRenderBlock
+  | DiffRenderBlock
   | ItemPresentationRenderBlock
   | YoutubeRenderBlock
   | MatrxEnvelopeRenderBlock

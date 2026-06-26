@@ -65,6 +65,11 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.
   { canvasType: "svg", aliases: ["svg"], standaloneAliases: ["svg"], materializable: true },
   { canvasType: "chart", aliases: ["chart"], standaloneAliases: ["chart"], materializable: true },
+  // Map (Leaflet markers), KPI stat cards, and before/after diff — JSON-spec
+  // visuals, durable + referenceable, so they materialize.
+  { canvasType: "map", aliases: ["map"], standaloneAliases: ["map"], materializable: true },
+  { canvasType: "stats", aliases: ["stats"], standaloneAliases: ["stats"], materializable: true },
+  { canvasType: "diff", aliases: ["diff"], standaloneAliases: ["diff"], materializable: true },
   // Interactive form — answers persist per-viewer to canvas_item_state (generic
   // adapter), so it materializes safely (no message-bound _matrxState).
   { canvasType: "questionnaire", aliases: ["questionnaire"], standaloneAliases: ["questionnaire"], materializable: true, persistenceStrategy: "generic" },

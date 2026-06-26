@@ -108,6 +108,13 @@ export function reconstructBlockMarkdown(block: {
     // Chart (JSON spec) is fence-promoted too — reconstruct as a ```chart fence.
     case "chart":
       return `\`\`\`chart\n${content}\n\`\`\``;
+    // Map / stats / diff are JSON-spec fence-promoted types — same rule.
+    case "map":
+      return `\`\`\`map\n${content}\n\`\`\``;
+    case "stats":
+      return `\`\`\`stats\n${content}\n\`\`\``;
+    case "diff":
+      return `\`\`\`diff\n${content}\n\`\`\``;
     // Item presentation is a JSON-fence block keyed by `item_presentation` —
     // reconstruct as a ```json fence so the reload splitter re-detects it.
     case "item_presentation":
