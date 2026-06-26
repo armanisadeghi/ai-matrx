@@ -70,19 +70,31 @@ Legend — **DIRECT-NOW** = convert FE to a direct supabase-js call (safe today)
 ### Internal helpers (renamed; no app change)
 `is_system_path`, `user_owns_file`, `user_owns_folder` + the four triggers — in use via RLS/triggers.
 
-## Phased plan
+## Phased plan / status
 
-- **Phase A — docs (done 2026-06-26):** CLAUDE.md + this feature's FEATURE.md now state the rule; the
-  `cld_`→new RPC names were propagated in the backend (aidream `76cc64b05`) and FE comments (`0c3d0c06d`).
-- **Phase B — DIRECT-NOW reads (safe):** convert `useStorageQuota`, the `searchFiles()` callsite, and the
-  trash view to `supabase.rpc(...)`. No DB change required.
-- **Phase C — harden the 8 mutation RPCs** with `auth.uid()` + `iam.has_access(...,'editor')` (one
-  idempotent migration; canonical `iam` access primitive). Closes the IDOR gap.
-- **Phase D — DIRECT-AFTER-HARDEN mutations:** repoint FE soft-delete / rename / move / restore (file +
-  folder) to the hardened RPCs; wire **restore_folder** into the trash UI.
-- **Phase E — admin prune page** for `prune_old_versions`.
-- **Phase F — collapse the dead path:** once B–E land, the Python `/files/*` *metadata* endpoints are
-  unused by our FE — keep them only for non-Supabase consumers, and delete any FE wrapper that no longer
-  has a caller. `count_user_files` / dead RPCs dropped from the DB.
+- **Phase A — docs ✅ DONE (2026-06-26):** CLAUDE.md + FEATURE.md state the rule; `cld_`→new RPC names
+  propagated in backend (aidream `76cc64b05`) + FE comments (`0c3d0c06d`); docs (`4ba90199d`).
+- **Phase B — DIRECT-NOW reads ✅ DONE:** `useStorageQuota` → `get_usage_status` via
+  [`api/direct.ts`](api/direct.ts) `getUsageStatusDirect` (`b7ffcf669`). Search was already client-side
+  (`useFileSearch`); `list_trash` rides with the trash-restore wiring (Phase D).
+- **Phase C — harden the 8 mutation RPCs ✅ DONE & VERIFIED LIVE:**
+  [`migrations/cld_files_mutation_rpc_auth_hardening.sql`](../../migrations/cld_files_mutation_rpc_auth_hardening.sql)
+  applied + recorded in `_schema_migrations` (`1a68f69f1`). JWT-scoped `iam.has_access` guard; service-role
+  backend unaffected. **DB-agent action:** fold the guard into aidream's canonical source so a re-apply
+  can't strip it.
+- **Phase D — DIRECT-AFTER-HARDEN mutations 🔶 IN PROGRESS:**
+  - ✅ `deleteFile`/`deleteFolder` **soft** path → `soft_delete_file`/`soft_delete_folder` direct
+    (`13fe12931`). Hard delete stays server (S3 purge). `softDelete*Direct` + `restore*Direct` in `direct.ts`.
+  - ⏳ Wire trash **restore** (`restore_file`/`restore_folder` — helpers ready) — no restore UI exists yet.
+  - ⏳ `bulkDeleteFiles` soft path → loop `soft_delete_file`.
+  - ⛔ `renameFile`/`moveFile`/`bulkMoveFiles` + `updateFolder` rename → **blocked**: no `rename_file`/move
+    RPC exists (REST does path-change + folder auto-create). **DB-agent action:** add a hardened
+    `rename_file(p_file_id, p_new_path)` (+ optional move) RPC mirroring `rename_folder`.
+  - ⏳ `grant`/`revokePermission`, `createShareLink` → direct `public.permissions` / `files.share_links` writes.
+  - **Verify all D conversions in-browser once the app is back up** (realtime + optimistic interaction).
+- **Phase E — admin prune page** for `prune_old_versions` (DB prune direct; the S3 byte purge of returned
+  `storage_uris` needs a server endpoint).
+- **Phase F — collapse the dead path:** once D–E land, delete FE REST wrappers without callers; drop dead
+  RPCs (`count_user_files`, anything superseded).
 
 _Last updated: 2026-06-26._
