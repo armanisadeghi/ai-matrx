@@ -92,13 +92,13 @@ appContextSlice = {
 
 ### Local context
 
-The context attached to a specific entity (a note, a task, an agent, an attachment, anything). Stored via `ctx_scope_assignments` (M2M) plus the entity's own FK columns (`project_id`, `task_id`, `organization_id`).
+The context attached to a specific entity (a note, a task, an agent, an attachment, anything). A scope tag is the unified edge in `platform.associations` (`source=(entityType, entityId) → target=('scope', scopeId)`), reached via `scopesService` / `associationsService` — never written directly. (The old `ctx_scope_assignments` M2M table is graveyarded; data was copied to `platform.associations` on 2026-06-24 and no FE code references it.) The entity's own FK columns (`project_id`, `task_id`, `organization_id`) still carry their part too.
 
 ### The invariant
 
 > **Global context is ONLY written by things that explicitly modify global context.**
 
-A picker that says "tag this note with Client: Rejuvina" writes to `ctx_scope_assignments`. Period. It never dispatches `setOrganization` / `setActiveScope` / anything that touches `appContextSlice`.
+A picker that says "tag this note with Client: Rejuvina" writes the local scope tag via `scopesService.setEntityScopes` (a `platform.associations` edge). Period. It never dispatches `setOrganization` / `setActiveScope` / anything that touches `appContextSlice`.
 
 This rule kills the #1 bug in the old code: every helpful picker silently mutated the sidebar. Opening a note to tag it with a scope quietly redirected the entire app's active context. That stops here.
 
@@ -323,7 +323,7 @@ organizations
                  └─ ctx_context_item_values   (cells; one current row per (item, scope))
 
 orgs / projects / tasks / notes / agents / ...
-  └─ ctx_scope_assignments   (M2M tags from a scope to any entity)
+  └─ platform.associations   (scope→entity tags; was ctx_scope_assignments, graveyarded)
 ```
 
 ### Resolution flow
@@ -332,7 +332,7 @@ orgs / projects / tasks / notes / agents / ...
 flowchart TD
   Trigger["User action"]
   Trigger --> Q1{"Bound to an entity?"}
-  Q1 -- "yes" --> Local["Read ctx_scope_assignments for entity"]
+  Q1 -- "yes" --> Local["Read entity scope tags (platform.associations via scopesService)"]
   Q1 -- "no" --> GlobalOnly["Read appContext only"]
   Local --> Global["Read appContext scope_selections"]
   Global --> Merge["Merge: local wins on same scope_type collision"]
@@ -526,7 +526,7 @@ setActiveTask(taskId: string | null)
 setActiveConversation(conversationId: string | null)
 ```
 
-Every other surface that wants to "set a scope on a thing" goes through `setEntityScopes()` thunks targeting `ctx_scope_assignments`, never `appContextSlice`.
+Every other surface that wants to "set a scope on a thing" goes through `setEntityScopes()` thunks (`scopesService` → `platform.associations`), never `appContextSlice`.
 
 ### Selectors
 
@@ -559,7 +559,7 @@ selectContradictions({ entityType?, entityId? })   // returns Array<{ typeId, gl
 | `features/agent-context/redux/scope/scopeTypesSlice.ts` | `scopesSlice` (selectors) |
 | `features/agent-context/redux/scope/scopesSlice.ts` | `scopesSlice` (selectors) |
 | `features/agent-context/redux/scope/scopeAssignmentsSlice.ts` | thunks now flow through `scopesService` (`platform.associations`); no longer call the legacy `get_entity_scopes`/`set_entity_scopes`/`list_entities_by_scopes` RPCs |
-| `features/agent-context/redux/scope/scopeContextSlice.ts` | `contextValuesSlice` |
+| `features/agent-context/redux/scope/scopeContextSlice.ts` | DELETED (2026-06-26) — was dead (0 importers); resolution is the `resolve_full_context` RPC, `contextValuesSlice` covers cell reads |
 | `features/agent-context/redux/hierarchySlice.ts` | `scopesSlice` |
 | `features/agent-context/redux/hierarchyThunks.ts` | `features/scopes/redux/thunks/` |
 | `features/agent-context/redux/organizationsSlice.ts` | folded into `scopesSlice` orgs (or moves to `features/organizations` if any logic remains) |
@@ -634,7 +634,7 @@ Lives under `features/scopes/components/active-context/`. The only place allowed
 Lives under `features/scopes/components/pickers/`.
 
 - `<EntityScopeTagger entityType entityId mode="managed" | "controlled" />` — M2M tagger.
-  - `mode="managed"`: writes through to `ctx_scope_assignments` via `setEntityScopes` thunk on confirm.
+  - `mode="managed"`: writes through to `platform.associations` (via `scopesService` `setEntityScopes` thunk) on confirm.
   - `mode="controlled"`: emits `(scopeIds) => void`, caller persists.
 - `<EntityTargetPicker allow={['org' | 'project' | 'task' | 'scope']} onSelect />` — returns `{ kind, id }`. Always controlled.
 
@@ -883,6 +883,7 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 
 ## Change log
 
+- `2026-06-26` — claude: doc cutover — replaced the remaining "Local context is stored via `ctx_scope_assignments`" descriptions (Local-context definition, the invariant, the data-model tree, the resolution-flow diagram, `EntityScopeTagger` managed mode) with the canonical truth: scope tags live in `platform.associations` (table graveyarded), reached via `scopesService`/`associationsService`. Code-side cleanup: deleted the dead `scopeContextSlice` (0 importers) + its `rootReducer` registration; repointed `ScopeAssignmentRow` (`features/scopes/types.ts`) from the soon-to-vanish generated `ctx_scope_assignments` row to a hand-written interface.
 - `2026-06-25` — claude: **Task associations cut over to `platform.associations`; `ctx_project_members` RLS repointed to `iam.memberships`.** (1) The 6 task-assoc RPCs (`get_task_associations`/`get_tasks_for_entity`/`associate_with_task`/`dissociate_from_task`/`create_task_with_association`/`create_tasks_bulk`) now read/write the edge — `migrations/task_associations_canonical_repoint.sql` (applied + ledgered), including a **backfill** of the 13 legacy rows that were never mirrored. Direction is **content=source → target=`task`** (the `target_type` CHECK forbids entity types as targets — a task's note/file/artifact links are `source=<entity> → target=task`; a task's own scope/project tags stay `source=task → target=scope`). RPC shapes unchanged → FE (`taskAssociationsSlice`, `AssociateTaskButton`, canvas `TasksArtifact`, `TaskChecklist`) untouched. Task attachments now also use the edge (file=source, task=target). (2) **RLS correctness:** 13 policies on live tables still subqueried `ctx_project_members` (now stale — membership edits flow only to `iam.memberships`); repointed via the new `public.user_container_ids(container_type, role_filter[])` SECURITY-DEFINER helper (must be in `public`, not `iam` — RLS runs as the invoker and `authenticated` has no `iam` schema USAGE) — `migrations/repoint_project_member_rls_to_iam.sql`. See `docs/db_rebuild/canonical-cutover-plan.md` for the full cutover status.
 - `2026-06-26` — codex: removed the old Personal pseudo-org sentinel contract from scope docs and tree comments. Scope/project grouping now treats the user's personal workspace as a real `organizations.is_personal` org row.
 - `2026-06-25` — claude: **Frontend fully off `ctx_scope_assignments` + batch source RPC shipped.** (1) **New `assoc_for_sources(p_source_type, p_source_ids[], p_target_type?)` RPC** (`migrations/assoc_for_sources_rpc.sql`, applied + ledger-recorded; SECURITY DEFINER, org-gated, target-filtered in the DB) — the batch-by-SOURCE counterpart of `assoc_for_targets`. Wired as `associationsService.listForSources`; `scopesService.bulkEntityScopeIds` now does ONE round-trip for N entities instead of N `assoc_for_entity` calls (kills the regression noted below). NOTE: the live `platform.associations` column is `organization_id` (the older repo `assoc_*` migration files drifted to `org_id`); the new RPC matches live. (2) **Last frontend consumers migrated off the table:** `scopeAssignmentsSlice` thunks now flow through `scopesService` (no more `get_entity_scopes`/`set_entity_scopes`/`list_entities_by_scopes`); `notes/thunks.ts#fetchAllNoteScopes` → new `scopesService.listEntityScopeTags`; `AssignedScopesDisplay` → new `scopesService.getEntityScopeDetails`; `ProjectsHub` ?scope filter → `scopesService.listEntitiesByScopes`. New chokepoint methods `getEntityScopeDetails` / `listEntityScopeTags` (+ `ScopeWithType`/`EntityScopeTag` types) keep the ctx_scopes⋈ctx_scope_types join inside the chokepoint. **No app code references `ctx_scope_assignments` or its RPCs any more** — only DB-side functions remain (see next steps to drop the table).

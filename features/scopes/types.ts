@@ -20,8 +20,19 @@ export type ContextItemRow =
   Database["public"]["Tables"]["ctx_context_items"]["Row"];
 export type ContextItemValueRow =
   Database["public"]["Tables"]["ctx_context_item_values"]["Row"];
-export type ScopeAssignmentRow =
-  Database["public"]["Tables"]["ctx_scope_assignments"]["Row"];
+// `ctx_scope_assignments` is GRAVEYARDED — scope tags now live in
+// `platform.associations` (reached via scopesService / associationsService).
+// The table is slated for drop, so its row vanishes from the generated types
+// on the next `pnpm db-types`. We hand-write the shape (identical to the old
+// generated row) so the build doesn't break when the table disappears.
+export interface ScopeAssignmentRow {
+  id: string;
+  scope_id: string;
+  entity_id: string;
+  entity_type: string;
+  created_by: string | null;
+  created_at: string;
+}
 export type TemplateRow = Database["public"]["Tables"]["ctx_templates"]["Row"];
 export type ContextAccessLogRow =
   Database["public"]["Tables"]["ctx_context_access_log"]["Row"];

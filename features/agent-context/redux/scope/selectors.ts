@@ -31,7 +31,6 @@ type ScopeRootState = {
   scopeAssignments: ReturnType<
     typeof import("./scopeAssignmentsSlice").default
   >;
-  scopeContext: ReturnType<typeof import("./scopeContextSlice").default>;
 };
 
 export const selectEntityScopesWithLabels = createSelector(

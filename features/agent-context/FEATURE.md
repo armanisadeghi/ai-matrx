@@ -74,8 +74,7 @@ See [`features/brokers/INFO.md`](../brokers/INFO.md) for SQL schema, RPC functio
 
 ### Agent context (`features/agent-context/`) — narrowed surface
 
-- `service/contextVariableService.ts` — variable resolution (`resolve_full_context` RPC)
-- `hooks/useContextVariables.ts` — React hook for the variable list / values
+- Variable/context resolution is server-side via the `resolve_full_context` RPC — the FE does not own a `contextVariableService`/`useContextVariables` (those were planned, never built). Callers: the launch flow (`features/agents/redux/execution-system/thunks/execute-instance.thunk.ts`) and scope→conversation sync (`features/scopes/redux/thunks/syncConversationScopes.ts`).
 - `utils/scope-mapping.ts` (in `features/agents/`) — `ApplicationScope` type + resolver used by the launch flow
 - *(post-Phase-5)* the rest of `features/agent-context/` — slices, services, components, scope-related hooks — is **deleted**. Code remaining here is only the broker-consumer + slot-fill surface.
 
@@ -210,16 +209,15 @@ Personal context uses the user's real `organizations.is_personal = true` row. Th
 
 **Primitives introduced** *(post-narrow)*
 
-- `contextVariableService.resolveVariables(...)` — Why a new service surface: variable resolution has a different lifecycle from slot fill (variables block, slots don't). Considered extending: folding into a single resolver. Rejected because: blocking vs non-blocking semantics need to stay distinct at the API.
-- `useContextVariables(...)` — Why a new hook: variable hydration is required before invocation; the hook gates the launch button. No existing hook has this semantics.
+- None. Variable/context resolution stayed server-side in the `resolve_full_context` RPC — no dedicated FE service or hook was added. (A `contextVariableService` / `useContextVariables` pair was once planned for blocking-vs-non-blocking variable hydration; it was never built and the RPC covers the need.)
 
-If this list grows beyond 2-3 entries, re-read PRINCIPLES.md before merging.
+If this list grows, re-read PRINCIPLES.md before merging.
 
 ---
 
 ## Current work / migration state
 
-**Mid-narrow.** This module is shrinking. The scope CRUD that historically lived here has moved or is moving to [`features/scopes/`](../scopes/FEATURE.md). Watch the [scopes plan](../scopes/FEATURE.md#current-work--migration-state) for the phase-by-phase retirement schedule. Phase 5 of that plan removes everything in this folder *except* `service/contextVariableService.ts`, `hooks/useContextVariables.ts`, and any thin broker-consumer code that remains.
+**Mid-narrow.** This module is shrinking. The scope CRUD that historically lived here has moved or is moving to [`features/scopes/`](../scopes/FEATURE.md). Watch the [scopes plan](../scopes/FEATURE.md#current-work--migration-state) for the phase-by-phase retirement schedule. Phase 5 of that plan removes everything in this folder *except* the thin broker-consumer + slot-fill code that remains (variable resolution itself is the `resolve_full_context` RPC, not FE code here).
 
 Until Phase 5 lands:
 
@@ -232,6 +230,7 @@ Until Phase 5 lands:
 
 ## Change log
 
+- `2026-06-26` — claude: corrected stale entry points — `service/contextVariableService.ts` and `hooks/useContextVariables.ts` never existed (planned, never built); variable/context resolution is the server-side `resolve_full_context` RPC, called from the launch thunk + scope→conversation sync. Updated the Primitives-introduced block and the Phase-5 "except" clause to match.
 - `2026-06-26` — codex: removed the frontend Personal pseudo-org sentinel (`PERSONAL_PSEUDO_ORG_ID` / `isPersonalPseudoOrgId`). Personal projects now carry the real personal organization id through nav-tree consumers, project creation, War Room, RAG search context, and `callApi` scope injection.
 - `2026-06-24` — claude: pointer added — durable cross-entity relationships now live in the unified `platform.associations` edge via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs), not in brokers, slots, or `appContextSlice`. One invariant line; full model in the scopes doc.
 - `2026-05-16` — composer: narrowed scope of this doc. All scope CRUD content moved to [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Updated cross-links. Updated `appContextSlice` location (lib). Updated broker hierarchy table to use "Scope" as the level name (was "Workspace"). Added explicit deprecation pointers for everything to be deleted in Phase 5 of the scopes rebuild.

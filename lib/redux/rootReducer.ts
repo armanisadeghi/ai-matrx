@@ -117,7 +117,6 @@ import actionCacheReducer from "./prompt-execution/actionCacheSlice";
 import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
 import scopeAssignmentsReducer from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
-import scopeContextReducer from "@/features/agent-context/redux/scope/scopeContextSlice";
 import contextItemsReducer from "@/features/scope-system/redux/contextItemsSlice";
 import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
 import templatesReducer from "@/features/scope-system/redux/templatesSlice";
@@ -135,7 +134,7 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 // ─── New scopes module (features/scopes) ────────────────────────────
 // Mounted alongside the legacy scope slices until Phase 5 deletes them.
 // New code reads from these three keys exclusively. Legacy keys
-// (scopes, scopeTypes, scopeAssignments, scopeContext, contextItems,
+// (scopes, scopeTypes, scopeAssignments, contextItems,
 // scopeValues, templates) stay live for now so old consumers keep
 // rendering — they are slated for deletion in Phase 5.
 import scopesTreeReducer from "@/features/scopes/redux/scopesSlice";
@@ -349,7 +348,7 @@ export const slimReducerMap = {
 
   // ─── features/scopes (new module) ──────────────────────────────────
   // Phase 5 will delete the legacy `scopes`, `scopeTypes`, `scopeAssignments`,
-  // `scopeContext`, `contextItems`, `scopeValues`, and `templates` keys below
+  // `contextItems`, `scopeValues`, and `templates` keys below
   // and the new `scopesTree` can be renamed to `scopes` at that point.
   scopesTree: scopesTreeReducer,
   contextValues: contextValuesReducer,
@@ -364,7 +363,6 @@ export const slimReducerMap = {
   scopeTypes: scopeTypesReducer,
   scopes: scopesReducer,
   scopeAssignments: scopeAssignmentsReducer,
-  scopeContext: scopeContextReducer,
   contextItems: contextItemsReducer,
   scopeValues: scopeValuesReducer,
   templates: templatesReducer,

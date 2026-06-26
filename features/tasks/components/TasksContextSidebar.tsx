@@ -49,8 +49,10 @@ import type { TaskFilterType } from "@/features/tasks/types";
 import type { TaskSortField } from "@/features/tasks/types/sort";
 import { TASK_SORT_OPTIONS } from "@/features/tasks/types/sort";
 // Surface A: the tasks context sidebar IS an active-context picker — choosing an
-// org/scope sets the global working context and the task list reflects it by design
-// (it reads appContext, not a local filter). Explicit active-context selection.
+// org/scope sets the global working context, and the whole tasks feature reflects
+// it by design (selectFilteredTasks composes selectTaskIdsMatchingAppContextScopes;
+// quick-create / associate default to it). This is NOT a local view filter — that
+// is TaskScopeFilter + taskUiSlice.filterScopeIds, a separate path. Legit global writer.
 // eslint-disable-next-line no-restricted-syntax -- Surface A: tasks active-context picker
 import {
   selectOrganizationId,
