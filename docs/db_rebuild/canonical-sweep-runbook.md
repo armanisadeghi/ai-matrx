@@ -34,6 +34,12 @@
 
 6. **Code cutover** (own worktree): switch FE/Python reads off renamed/removed shapes; nothing is removed in this pass, so most tables need no code change. Commit only your table's files.
 
+## Backend-owned tables — REQUIRED pre-check (before canonicalizing)
+A table the Python backend writes (e.g. `workflow.*`, `runtime.*`, most `cx_*`) needs this BEFORE `apply_rls`:
+- **Does the engine write `created_by`?** aidream does **not** set the Postgres `app.user_id` GUC, so `_stamp_actor` can't fill `created_by` on service-role inserts. If the engine still writes a legacy owner (`user_id`) and not `created_by`, then under canonical RLS every new engine-created row is **owner-less → invisible to its owner**. Fix one of: (a) repoint the engine to write `created_by`, (b) add a transition bridge trigger `created_by := COALESCE(created_by, user_id)` (see `workflow_legacy_owner_bridge.sql`), or (c) make aidream set `app.user_id`.
+- **Does the engine read a legacy owner for authz?** (e.g. `assert_*_owner` comparing `user_id`). Those gates must move to `created_by` *and be deployed* before the legacy column can be dropped.
+- **Do the engine's table references match the live schema?** A rename (`wf_*`→`workflow.*`) can leave raw SQL pointing at dead names. Confirm the live write path works before assuming canonicalization is the only change.
+
 ## Gotchas (each one is a bug we already hit)
 - **Owner short-circuit is mandatory.** `std_select`/`std_update` lead with `created_by = (select auth.uid())`; a `has_access`-only policy 42501s on `INSERT…RETURNING`. (`apply_rls` does this for you — don't hand-write.)
 - **`_stamp_actor` over PostgREST** auto-stamps `created_by` from the JWT (fixed) — but the client may still pass it; either is fine.
