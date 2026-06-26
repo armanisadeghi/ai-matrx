@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { getProject } from "@/features/projects/service";
 import { useProjectUserRole } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
@@ -60,8 +61,8 @@ export function ProjectManage() {
       if (UUID_RE.test(projectParam)) {
         resolved = await getProject(projectParam);
       } else {
-        const { data } = await supabase
-          .from("ctx_projects")
+        const { data } = await workspaceDb(supabase)
+          .from("projects")
           .select("id")
           .eq("slug", projectParam)
           .limit(1)

@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { getProject } from "@/features/projects/service";
 import {
   useProjectMembers,
@@ -128,8 +129,8 @@ export function ProjectWorkspace() {
         resolved = await getProject(projectParam);
       } else {
         // Slug fallback (slugs aren't globally unique; take first match).
-        const { data } = await supabase
-          .from("ctx_projects")
+        const { data } = await workspaceDb(supabase)
+          .from("projects")
           .select("id")
           .eq("slug", projectParam)
           .limit(1)

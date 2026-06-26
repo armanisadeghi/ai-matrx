@@ -62,6 +62,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -151,8 +152,8 @@ export function ProjectsHub({
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("ctx_projects")
+      const { data, error } = await workspaceDb(supabase)
+        .from("projects")
         .select(
           "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
         )
@@ -214,8 +215,8 @@ export function ProjectsHub({
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from("ctx_tasks")
+      const { data } = await workspaceDb(supabase)
+        .from("tasks")
         .select("id, project_id, status, parent_task_id, title")
         .in("project_id", ids);
       if (cancelled) return;

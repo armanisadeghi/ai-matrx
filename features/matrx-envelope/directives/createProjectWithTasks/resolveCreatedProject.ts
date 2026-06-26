@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 
 import type {
   CreateProjectWithTasksItem,
@@ -36,8 +37,8 @@ async function fetchOrgSlug(
 async function fetchTasksForProject(
   projectId: string,
 ): Promise<ResolvedProjectTask[]> {
-  const { data, error } = await supabase
-    .from("ctx_tasks")
+  const { data, error } = await workspaceDb(supabase)
+    .from("tasks")
     .select("id, title, description, status")
     .eq("project_id", projectId)
     .order("created_at", { ascending: true });
@@ -71,8 +72,8 @@ function pickBestProject(
 async function queryProjectRow(
   item: CreateProjectWithTasksItem,
 ): Promise<ProjectRow | null> {
-  let query = supabase
-    .from("ctx_projects")
+  let query = workspaceDb(supabase)
+    .from("projects")
     .select(
       "id, name, slug, description, organization_id, start_date, target_date, created_at",
     )

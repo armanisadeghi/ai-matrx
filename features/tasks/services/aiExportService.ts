@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { getProject, getProjectMembers } from "@/features/projects/service";
 import type { Project, ProjectMemberWithUser } from "@/features/projects/types";
 import {
@@ -100,8 +101,8 @@ async function buildTaskExportNode(
     getTaskComments(task.id),
     getTaskAttachments(task.id),
     fetchNotesForTask(task.id),
-    supabase
-      .from("ctx_tasks")
+    workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("parent_task_id", task.id)
       .order("created_at", { ascending: true })
@@ -190,8 +191,8 @@ export async function fetchProjectExportBundle(
 export async function fetchTaskExportBundle(
   taskId: string,
 ): Promise<TaskExportBundle | null> {
-  const { data: task, error } = await supabase
-    .from("ctx_tasks")
+  const { data: task, error } = await workspaceDb(supabase)
+    .from("tasks")
     .select("*")
     .eq("id", taskId)
     .maybeSingle();

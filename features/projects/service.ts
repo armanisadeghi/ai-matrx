@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -91,8 +92,8 @@ export async function createProject(
 
     const currentUserId = requireUserId();
 
-    const { data: project, error: projectError } = await supabase
-      .from("ctx_projects")
+    const { data: project, error: projectError } = await workspaceDb(supabase)
+      .from("projects")
       .insert({
         name,
         slug,
@@ -176,8 +177,8 @@ export async function updateProject(
     if (updates.targetDate !== undefined)
       updateData.target_date = updates.targetDate || null;
 
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .update(updateData)
       .eq("id", projectId)
       .select()
@@ -202,8 +203,8 @@ export async function deleteProject(
   projectId: string,
 ): Promise<OperationResult> {
   try {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .delete()
       .eq("id", projectId);
     if (error) throw pgErrorToError(error);
@@ -218,8 +219,8 @@ export async function deleteProject(
 
 export async function getProject(projectId: string): Promise<Project | null> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .select("*")
       .eq("id", projectId)
       .single();
@@ -242,8 +243,8 @@ export async function getProjectBySlug(
   organizationId: string,
 ): Promise<Project | null> {
   try {
-    const base = supabase
-      .from("ctx_projects")
+    const base = workspaceDb(supabase)
+      .from("projects")
       .select("*")
       .eq("organization_id", organizationId);
 
@@ -267,8 +268,8 @@ export async function getPersonalProjectBySlug(
     const userId = requireUserId();
     const organizationId = await resolveOrganizationId(null);
 
-    const base = supabase
-      .from("ctx_projects")
+    const base = workspaceDb(supabase)
+      .from("projects")
       .select("*")
       .eq("organization_id", organizationId)
       .eq("created_by", userId);
@@ -314,8 +315,10 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   }
   const projectIds = Array.from(roleById.keys());
 
-  const { data: projectRows, error: projectsError } = await supabase
-    .from("ctx_projects")
+  const { data: projectRows, error: projectsError } = await workspaceDb(
+    supabase,
+  )
+    .from("projects")
     .select(`*, organizations(is_personal)`)
     .in("id", projectIds);
 
@@ -382,7 +385,10 @@ export async function isProjectSlugAvailable(
 ): Promise<boolean> {
   try {
     const orgId = await resolveOrganizationId(organizationId);
-    let query = supabase.from("ctx_projects").select("id").eq("slug", slug);
+    let query = workspaceDb(supabase)
+      .from("projects")
+      .select("id")
+      .eq("slug", slug);
     query = query.eq("organization_id", orgId);
     const { data } = await query.single();
     return !data;

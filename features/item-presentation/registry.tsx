@@ -73,8 +73,14 @@ export interface ItemTypeConfig {
    * — the detail window still opens, just seed-only.
    */
   detailSource?: {
-    /** Public table to `select('*')` from, keyed by `id`. */
+    /** Table to `select('*')` from, keyed by `id`. */
     table: string;
+    /**
+     * Non-`public` Postgres schema `table` lives in, if any. Reached via
+     * `.schema(schemaName)`. Omitted ⇒ `public`. (Set for the workspace domain
+     * after the 2026 restructure moved projects/tasks to the `workspace` schema.)
+     */
+    schemaName?: string;
     /** Column to use as the window title (falls back to the seed name). */
     titleField?: string;
   };
@@ -228,11 +234,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-emerald-500/20",
     },
     open: { kind: "task" },
-    detailSource: { table: "ctx_tasks", titleField: "title" },
+    detailSource: { table: "tasks", schemaName: "workspace", titleField: "title" },
     enrich: (s, id) =>
       fetchRow(
         s,
-        "ctx_tasks",
+        "tasks",
         id,
         "title, description, status, priority",
         (r) => ({
@@ -245,6 +251,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
               : null,
           ].filter(Boolean) as EnrichedItem["details"],
         }),
+        "workspace",
       ),
   },
   project: {
@@ -257,11 +264,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-blue-500/20",
     },
     open: { kind: "project" },
-    detailSource: { table: "ctx_projects", titleField: "name" },
+    detailSource: { table: "projects", schemaName: "workspace", titleField: "name" },
     enrich: (s, id) =>
       fetchRow(
         s,
-        "ctx_projects",
+        "projects",
         id,
         "name, description, status, priority",
         (r) => ({
@@ -271,6 +278,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
             r.status ? { label: "Status", value: titleCase(r.status)! } : null,
           ].filter(Boolean) as EnrichedItem["details"],
         }),
+        "workspace",
       ),
   },
   scope_type: {

@@ -10,6 +10,7 @@
 import React from "react";
 import { ListTodo } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -27,8 +28,8 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("ctx_tasks")
+      const { data } = await workspaceDb(supabase)
+        .from("tasks")
         .select("title, description, created_at")
         .eq("id", id)
         .maybeSingle();

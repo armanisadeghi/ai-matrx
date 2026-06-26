@@ -8,6 +8,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { NavOrganization } from "./hierarchySlice";
 
@@ -118,7 +119,10 @@ export const deleteOrg = createAsyncThunk(
   "organizations/delete",
   async (orgId: string) => {
     // Cascade: delete projects, members, then the org
-    await supabase.from("ctx_projects").delete().eq("organization_id", orgId);
+    await workspaceDb(supabase)
+      .from("projects")
+      .delete()
+      .eq("organization_id", orgId);
     await supabase
       .from("organization_members")
       .delete()

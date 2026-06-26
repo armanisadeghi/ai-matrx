@@ -11,6 +11,7 @@
 import React from "react";
 import { FolderKanban } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -28,8 +29,8 @@ export default function ProjectPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("ctx_projects")
+      const { data } = await workspaceDb(supabase)
+        .from("projects")
         .select("name, description, created_at")
         .eq("id", id)
         .maybeSingle();

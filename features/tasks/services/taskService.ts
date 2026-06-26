@@ -1,5 +1,6 @@
 // Task service for database operations
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
@@ -49,8 +50,8 @@ export async function createTask(
 ): Promise<DatabaseTask | null> {
   try {
     const userId = requireUserId();
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .insert({
         title: input.title,
         description: input.description || null,
@@ -101,8 +102,8 @@ export async function quickCreateTask(
 export async function getUserTasks(): Promise<DatabaseTask[]> {
   try {
     const userId = requireUserId();
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -126,8 +127,8 @@ export async function getProjectTasks(
   projectId: string,
 ): Promise<DatabaseTask[]> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
@@ -156,8 +157,8 @@ export async function getTopLevelProjectTasks(
   projectId: string,
 ): Promise<DatabaseTask[]> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("project_id", projectId)
       .is("parent_task_id", null)
@@ -425,8 +426,8 @@ export async function updateTaskLabels(
   labels: TaskLabel[],
 ): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .update({ settings: { labels } })
       .eq("id", taskId);
     if (error) {
@@ -449,8 +450,8 @@ export async function getTaskById(
   taskId: string,
 ): Promise<DatabaseTask | null> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("id", taskId)
       .single();
@@ -478,16 +479,16 @@ export async function updateTask(
     // If assignee is changing, get the current task first for comparison
     let previousAssigneeId: string | null = null;
     if (updates.assignee_id !== undefined) {
-      const { data: currentTask } = await supabase
-        .from("ctx_tasks")
+      const { data: currentTask } = await workspaceDb(supabase)
+        .from("tasks")
         .select("assignee_id")
         .eq("id", taskId)
         .single();
       previousAssigneeId = currentTask?.assignee_id || null;
     }
 
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .update(updates)
       .eq("id", taskId)
       .select()
@@ -546,8 +547,8 @@ async function sendTaskAssignmentNotification(
  */
 export async function deleteTask(taskId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .delete()
       .eq("id", taskId);
 
@@ -568,8 +569,8 @@ export async function deleteTask(taskId: string): Promise<boolean> {
  */
 export async function getSubtasks(taskId: string): Promise<DatabaseTask[]> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .eq("parent_task_id", taskId)
       .order("created_at", { ascending: true });
@@ -610,8 +611,8 @@ export async function updateSubtaskStatus(
   completed: boolean,
 ): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .update({ status: completed ? "completed" : "incomplete" })
       .eq("id", subtaskId);
 
@@ -655,8 +656,8 @@ export async function getSharedWithMeTasks(): Promise<DatabaseTask[]> {
 
     const taskIds = grants.map((g) => g.resourceId);
 
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select("*")
       .in("id", taskIds)
       .neq("user_id", user.id)
@@ -861,8 +862,8 @@ async function sendTaskCommentNotification(
 ): Promise<void> {
   try {
     // Get the task to find the owner
-    const { data: task } = await supabase
-      .from("ctx_tasks")
+    const { data: task } = await workspaceDb(supabase)
+      .from("tasks")
       .select("id, title, user_id")
       .eq("id", taskId)
       .single();

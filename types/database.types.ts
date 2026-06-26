@@ -2068,24 +2068,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agx_agent_project_fk"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "agx_agent_source_fk"
             columns: ["source_agent_id"]
             isOneToOne: false
             referencedRelation: "agx_agent"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agx_agent_task_fk"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -2273,24 +2259,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agx_agent_templates_project_fk"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "agx_agent_templates_source_agent_fk"
             columns: ["source_agent_id"]
             isOneToOne: false
             referencedRelation: "agx_agent"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agx_agent_templates_task_fk"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -2545,25 +2517,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "agx_shortcut_project_fk"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "agx_shortcut_surface_fk"
             columns: ["surface_name"]
             isOneToOne: false
             referencedRelation: "ui_surface"
             referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "agx_shortcut_task_fk"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "agx_shortcut_version_fk"
@@ -3042,13 +3000,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "ai_runs_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
         ]
       }
       analysis_recipes: {
@@ -3295,20 +3246,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "app_instances_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "app_instances_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -3609,137 +3546,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      audio_label: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      audio_recording: {
-        Row: {
-          created_at: string
-          duration: number | null
-          file_url: string
-          id: string
-          is_public: boolean
-          label: string | null
-          local_path: string | null
-          name: string
-          size: number | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          duration?: number | null
-          file_url: string
-          id?: string
-          is_public?: boolean
-          label?: string | null
-          local_path?: string | null
-          name: string
-          size?: number | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          duration?: number | null
-          file_url?: string
-          id?: string
-          is_public?: boolean
-          label?: string | null
-          local_path?: string | null
-          name?: string
-          size?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "audio_recording_label_fkey"
-            columns: ["label"]
-            isOneToOne: false
-            referencedRelation: "audio_label"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      audio_recording_users: {
-        Row: {
-          created_at: string
-          email: string | null
-          first_name: string | null
-          id: string
-          last_name: string | null
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-        }
-        Relationships: []
-      }
-      audio_transcription_errors: {
-        Row: {
-          api_route: string
-          attempt_number: number | null
-          chunk_index: number | null
-          created_at: string
-          error_code: string
-          error_message: string
-          file_size_bytes: number | null
-          id: string
-          metadata: Json | null
-          user_id: string | null
-        }
-        Insert: {
-          api_route: string
-          attempt_number?: number | null
-          chunk_index?: number | null
-          created_at?: string
-          error_code: string
-          error_message: string
-          file_size_bytes?: number | null
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Update: {
-          api_route?: string
-          attempt_number?: number | null
-          chunk_index?: number | null
-          created_at?: string
-          error_code?: string
-          error_message?: string
-          file_size_bytes?: number | null
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Relationships: []
       }
       auto_ingest_batch: {
         Row: {
@@ -4168,13 +3974,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "canvas_items_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_canvas_items_source_message"
             columns: ["source_message_id"]
             isOneToOne: false
@@ -4538,13 +4337,6 @@ export type Database = {
             referencedRelation: "code_file_folders"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "code_file_folders_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
         ]
       }
       code_file_versions: {
@@ -4685,13 +4477,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "code_files_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "code_files_repository_id_fkey"
             columns: ["repository_id"]
             isOneToOne: false
@@ -4774,13 +4559,6 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "code_repositories_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "code_repositories_root_folder_id_fkey"
             columns: ["root_folder_id"]
@@ -5088,13 +4866,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "content_template_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -5433,97 +5204,6 @@ export type Database = {
           },
         ]
       }
-      ctx_projects: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string
-          name: string
-          organization_id: string | null
-          priority: Database["public"]["Enums"]["task_priority"] | null
-          settings: Json | null
-          slug: string | null
-          start_date: string | null
-          status: string
-          target_date: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          organization_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          settings?: Json | null
-          slug?: string | null
-          start_date?: string | null
-          status?: string
-          target_date?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          organization_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          settings?: Json | null
-          slug?: string | null
-          start_date?: string | null
-          status?: string
-          target_date?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_scope_assignments: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          entity_id: string
-          entity_type: string
-          id: string
-          scope_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          entity_id: string
-          entity_type: string
-          id?: string
-          scope_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          scope_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ctx_scope_assignments_scope_id_fkey"
-            columns: ["scope_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_scopes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ctx_scope_types: {
         Row: {
           color: string
@@ -5656,82 +5336,6 @@ export type Database = {
             columns: ["scope_type_id"]
             isOneToOne: false
             referencedRelation: "ctx_scope_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ctx_tasks: {
-        Row: {
-          assignee_id: string | null
-          created_at: string | null
-          description: string | null
-          due_date: string | null
-          id: string
-          is_public: boolean
-          organization_id: string | null
-          parent_task_id: string | null
-          priority: Database["public"]["Enums"]["task_priority"] | null
-          project_id: string | null
-          settings: Json
-          status: string
-          title: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          assignee_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          parent_task_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          project_id?: string | null
-          settings?: Json
-          status?: string
-          title: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          assignee_id?: string | null
-          created_at?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          parent_task_id?: string | null
-          priority?: Database["public"]["Enums"]["task_priority"] | null
-          project_id?: string | null
-          settings?: Json
-          status?: string
-          title?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_parent_task_id_fkey"
-            columns: ["parent_task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -5910,20 +5514,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_active_context_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_active_context_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -6243,13 +5833,6 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation_summary"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_agent_plan_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -6782,24 +6365,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cx_conversation_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cx_conversation_sandbox_instance_id_fkey"
             columns: ["sandbox_instance_id"]
             isOneToOne: false
             referencedRelation: "sandbox_instances"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_conversation_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -7864,13 +7433,6 @@ export type Database = {
             referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cx_user_todo_ctx_task_id_fkey"
-            columns: ["ctx_task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cx_user_usage_summary: {
@@ -8760,13 +8322,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "flashcard_data_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
         ]
       }
       flashcard_history: {
@@ -8942,13 +8497,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flashcard_sets_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -10564,20 +10112,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notes_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       ops_issue_class: {
@@ -11087,13 +10621,6 @@ export type Database = {
             columns: ["processed_document_id"]
             isOneToOne: false
             referencedRelation: "processed_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "page_extraction_jobs_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
           {
@@ -12240,13 +11767,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prompt_actions_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "prompt_actions_prompt_builtin_id_fkey"
             columns: ["prompt_builtin_id"]
             isOneToOne: false
@@ -12752,13 +12272,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_apps_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
           {
@@ -13309,20 +12822,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "prompts_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompts_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       quiz_sessions: {
@@ -13380,13 +12879,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quiz_sessions_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -14509,13 +14001,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rs_topic_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "rs_topic_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
@@ -14612,20 +14097,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sandbox_instances_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sandbox_instances_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -17166,13 +16637,6 @@ export type Database = {
           skill_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "skl_skill_projects_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "skl_skill_projects_skill_id_fkey"
             columns: ["skill_id"]
@@ -19888,20 +19352,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "transcripts_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transcripts_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       transformer: {
@@ -20140,20 +19590,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_datasets_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_datasets_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
           {
@@ -22088,13 +21524,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "wc_claim_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
         ]
       }
       wc_impairment_definition: {
@@ -22291,140 +21720,6 @@ export type Database = {
         }
         Relationships: []
       }
-      wr_sessions: {
-        Row: {
-          active_thread_id: string | null
-          anchor_id: string | null
-          anchor_type: string
-          color: string | null
-          created_at: string
-          created_by: string
-          deleted_at: string | null
-          description: string | null
-          icon: string | null
-          id: string
-          last_opened_at: string | null
-          organization_id: string
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: "private" | "internal" | "link" | "public"
-        }
-        Insert: {
-          active_thread_id?: string | null
-          anchor_id?: string | null
-          anchor_type?: string
-          color?: string | null
-          created_at?: string
-          created_by: string
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          last_opened_at?: string | null
-          organization_id: string
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Update: {
-          active_thread_id?: string | null
-          anchor_id?: string | null
-          anchor_type?: string
-          color?: string | null
-          created_at?: string
-          created_by?: string
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          last_opened_at?: string | null
-          organization_id?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wr_sessions_active_thread_id_fkey"
-            columns: ["active_thread_id"]
-            isOneToOne: false
-            referencedRelation: "wr_threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wr_sessions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wr_threads: {
-        Row: {
-          active_tab: string
-          anchor_id: string | null
-          anchor_type: string
-          created_at: string
-          created_by: string
-          deleted_at: string | null
-          id: string
-          organization_id: string
-          position: number
-          title: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: "private" | "internal" | "link" | "public"
-        }
-        Insert: {
-          active_tab?: string
-          anchor_id?: string | null
-          anchor_type?: string
-          created_at?: string
-          created_by: string
-          deleted_at?: string | null
-          id?: string
-          organization_id: string
-          position?: number
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Update: {
-          active_tab?: string
-          anchor_id?: string | null
-          anchor_type?: string
-          created_at?: string
-          created_by?: string
-          deleted_at?: string | null
-          id?: string
-          organization_id?: string
-          position?: number
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wr_threads_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       agent_context_menu_view: {
@@ -22589,20 +21884,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_conversation_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_conversation_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -31633,6 +30914,270 @@ export type Database = {
       [_ in never]: never
     }
   }
+  workspace: {
+    Tables: {
+      projects: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          settings: Json | null
+          slug: string | null
+          start_date: string | null
+          status: string
+          target_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          settings?: Json | null
+          slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          settings?: Json | null
+          slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assignee_id: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          is_public: boolean
+          organization_id: string | null
+          parent_task_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          project_id: string | null
+          settings: Json
+          status: string
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          settings?: Json
+          status?: string
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          settings?: Json
+          status?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      threads: {
+        Row: {
+          active_tab: string
+          anchor_id: string | null
+          anchor_type: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          organization_id: string
+          position: number
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          id?: string
+          organization_id: string
+          position?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          active_tab?: string
+          anchor_id?: string | null
+          anchor_type?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          organization_id?: string
+          position?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: []
+      }
+      war_rooms: {
+        Row: {
+          active_thread_id: string | null
+          anchor_id: string | null
+          anchor_type: string
+          color: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          last_opened_at: string | null
+          organization_id: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          active_thread_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string
+          color?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          last_opened_at?: string | null
+          organization_id: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          active_thread_id?: string | null
+          anchor_id?: string | null
+          anchor_type?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          last_opened_at?: string | null
+          organization_id?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wr_sessions_active_thread_id_fkey"
+            columns: ["active_thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
@@ -32413,6 +31958,9 @@ export const Constants = {
     },
   },
   workflow: {
+    Enums: {},
+  },
+  workspace: {
     Enums: {},
   },
 } as const

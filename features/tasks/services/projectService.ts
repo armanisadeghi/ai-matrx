@@ -7,6 +7,7 @@
  */
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
@@ -30,8 +31,8 @@ export async function createProject(
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .insert({
         name,
         description: description ?? null,
@@ -98,8 +99,8 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
       : membersResult.data.memberships.map((m) => m.containerId);
 
     // Also fetch personal projects created by user that may not have members yet
-    const { data: createdProjects, error: createdError } = await supabase
-      .from("ctx_projects")
+    const { data: createdProjects, error: createdError } = await workspaceDb(supabase)
+      .from("projects")
       .select("*")
       .eq("created_by", userId)
       .order("created_at", { ascending: false });
@@ -117,8 +118,8 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
 
     if (allIds.size === 0) return [];
 
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .select("*")
       .in("id", Array.from(allIds))
       .order("created_at", { ascending: false });
@@ -148,9 +149,9 @@ export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
       : membersResult.data.memberships.map((m) => m.containerId);
 
     // Fetch with tasks joined
-    let query = supabase
-      .from("ctx_projects")
-      .select(`*, ctx_tasks(*)`)
+    let query = workspaceDb(supabase)
+      .from("projects")
+      .select(`*, tasks(*)`)
       .order("created_at", { ascending: false });
 
     if (memberProjectIds.length > 0) {
@@ -183,8 +184,8 @@ export async function updateProject(
   updates: { name?: string; description?: string },
 ): Promise<DatabaseProject | null> {
   try {
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .update(updates)
       .eq("id", projectId)
       .select()
@@ -207,8 +208,8 @@ export async function updateProject(
  */
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .delete()
       .eq("id", projectId);
 

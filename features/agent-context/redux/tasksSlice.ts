@@ -8,6 +8,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import {
   getProjectTasks,
@@ -77,8 +78,8 @@ export const fetchTask = createAsyncThunk(
       return null; // already fresh full-data — skip network call
     }
 
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, user_id",
       )
@@ -89,8 +90,8 @@ export const fetchTask = createAsyncThunk(
     // Resolve organization_id: look it up from the project if available
     let organization_id = "";
     if ((data as { project_id?: string | null }).project_id) {
-      const { data: proj } = await supabase
-        .from("ctx_projects")
+      const { data: proj } = await workspaceDb(supabase)
+        .from("projects")
         .select("organization_id")
         .eq("id", (data as { project_id: string }).project_id)
         .single();
@@ -112,8 +113,8 @@ export const fetchTask = createAsyncThunk(
 export const fetchProjectTasks = createAsyncThunk(
   "tasks/fetchByProject",
   async (params: { projectId: string; organizationId: string }) => {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select(
         "id, title, project_id, parent_task_id, status, priority, due_date, assignee_id",
       )
@@ -202,8 +203,8 @@ export const createTaskThunk = createAsyncThunk(
   }) => {
     const userId = requireUserId();
     const { organization_id, priority, ...insertData } = data;
-    const { data: task, error } = await supabase
-      .from("ctx_tasks")
+    const { data: task, error } = await workspaceDb(supabase)
+      .from("tasks")
       .insert({
         ...insertData,
         status: data.status ?? "not_started",
@@ -241,8 +242,8 @@ export const updateTaskThunk = createAsyncThunk(
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .update(patch)
       .eq("id", params.id);
     if (error) throw error;
@@ -253,8 +254,8 @@ export const updateTaskThunk = createAsyncThunk(
 export const deleteTaskThunk = createAsyncThunk(
   "tasks/delete",
   async (taskId: string) => {
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .delete()
       .eq("id", taskId);
     if (error) throw error;

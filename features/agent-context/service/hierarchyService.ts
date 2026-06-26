@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 import type {
@@ -121,8 +122,8 @@ export const hierarchyService = {
   },
 
   async fetchProjects(opts: { orgId?: string }): Promise<HierarchyProject[]> {
-    let query = supabase
-      .from("ctx_projects")
+    let query = workspaceDb(supabase)
+      .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
@@ -140,8 +141,8 @@ export const hierarchyService = {
   async fetchAllUserProjects(): Promise<HierarchyProject[]> {
     const userId = requireUserId();
 
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
@@ -153,8 +154,8 @@ export const hierarchyService = {
   },
 
   async fetchProjectTasks(projectId: string): Promise<HierarchyTask[]> {
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
       )
@@ -168,8 +169,8 @@ export const hierarchyService = {
   async fetchOrphanTasks(): Promise<HierarchyTask[]> {
     const userId = requireUserId();
 
-    const { data, error } = await supabase
-      .from("ctx_tasks")
+    const { data, error } = await workspaceDb(supabase)
+      .from("tasks")
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
       )
@@ -408,8 +409,8 @@ export const hierarchyService = {
     const userId = requireUserId();
 
     const { priority, ...taskRest } = data;
-    const { data: task, error } = await supabase
-      .from("ctx_tasks")
+    const { data: task, error } = await workspaceDb(supabase)
+      .from("tasks")
       .insert({
         ...taskRest,
         status: data.status ?? "not_started",
@@ -443,8 +444,8 @@ export const hierarchyService = {
       organization_id?: string | null;
     },
   ): Promise<void> {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .update(data)
       .eq("id", id);
     if (error) throw error;
@@ -466,8 +467,8 @@ export const hierarchyService = {
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .update(patch)
       .eq("id", id);
     if (error) throw error;
@@ -475,18 +476,24 @@ export const hierarchyService = {
 
   // ─── Delete entity ──────────────────────────────────────────────
   async deleteTask(id: string): Promise<void> {
-    const { error } = await supabase.from("ctx_tasks").delete().eq("id", id);
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
   },
 
   async deleteProject(id: string): Promise<void> {
-    const { error } = await supabase.from("ctx_projects").delete().eq("id", id);
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
   },
 
   async deleteOrganization(id: string): Promise<void> {
-    const { error: projErr } = await supabase
-      .from("ctx_projects")
+    const { error: projErr } = await workspaceDb(supabase)
+      .from("projects")
       .delete()
       .eq("organization_id", id);
     if (projErr) throw projErr;
@@ -523,8 +530,8 @@ export const hierarchyService = {
     projectId: string,
     target: { organization_id?: string | null },
   ): Promise<void> {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .update(target)
       .eq("id", projectId);
     if (error) throw error;
@@ -534,8 +541,8 @@ export const hierarchyService = {
     taskId: string,
     target: { project_id?: string | null; parent_task_id?: string | null },
   ): Promise<void> {
-    const { error } = await supabase
-      .from("ctx_tasks")
+    const { error } = await workspaceDb(supabase)
+      .from("tasks")
       .update(target)
       .eq("id", taskId);
     if (error) throw error;
@@ -547,21 +554,27 @@ export const hierarchyService = {
     id: string,
   ): Promise<string | null> {
     if (type === "user") return null;
-    const table =
-      type === "organization"
-        ? "organizations"
-        : type === "project"
-          ? ("ctx_projects" as const)
-          : ("ctx_tasks" as const);
     const nameCol = type === "task" ? "title" : "name";
 
-    const { data, error } = await supabase
-      .from(table)
-      .select(nameCol)
-      .eq("id", id)
-      .single();
-    if (error) return null;
-    return (data as any)?.[nameCol] ?? null;
+    // organizations live in `public`; projects/tasks moved to the `workspace`
+    // schema. Route each to the right client/table.
+    let row: { data: any; error: any };
+    if (type === "organization") {
+      row = await supabase
+        .from("organizations")
+        .select(nameCol)
+        .eq("id", id)
+        .single();
+    } else {
+      const table = type === "project" ? ("projects" as const) : ("tasks" as const);
+      row = await workspaceDb(supabase)
+        .from(table)
+        .select(nameCol)
+        .eq("id", id)
+        .single();
+    }
+    if (row.error) return null;
+    return (row.data as any)?.[nameCol] ?? null;
   },
 
   async resolveAncestors(
@@ -572,8 +585,8 @@ export const hierarchyService = {
       [];
 
     if (type === "task") {
-      const { data: task } = await supabase
-        .from("ctx_tasks")
+      const { data: task } = await workspaceDb(supabase)
+        .from("tasks")
         .select("title, project_id")
         .eq("id", id)
         .single();
@@ -588,8 +601,8 @@ export const hierarchyService = {
         }
       }
     } else if (type === "project") {
-      const { data: proj } = await supabase
-        .from("ctx_projects")
+      const { data: proj } = await workspaceDb(supabase)
+        .from("projects")
         .select("name, organization_id")
         .eq("id", id)
         .single();

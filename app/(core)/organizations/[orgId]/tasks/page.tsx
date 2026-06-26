@@ -6,13 +6,14 @@ import { ListTodo, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const SELECT_COLS = "id, title, status, priority, due_date, updated_at";
 
 const fetchOwned = async (orgId: string) => {
-  const res = await supabase
-    .from("ctx_tasks")
+  const res = await workspaceDb(supabase)
+    .from("tasks")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
@@ -61,7 +62,7 @@ export default function OrgTasksPage() {
         <OrgResourceList
           orgId={resolvedOrgId}
           resourceType="task"
-          tableName="ctx_tasks"
+          tableName="tasks"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}

@@ -320,7 +320,7 @@
   },
   {
     "resource_type": "task",
-    "table_name": "ctx_tasks",
+    "table_name": "task",
     "id_column": "id",
     "owner_column": "user_id",
     "is_public_column": "is_public",

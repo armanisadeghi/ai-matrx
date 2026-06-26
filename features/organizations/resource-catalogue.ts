@@ -465,7 +465,10 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "container",
     icon: FolderKanban,
     description: "Grouped work with its own members and scope.",
-    table: "ctx_projects",
+    // Physical table is `workspace.projects` after the 2026 restructure; queried
+    // via `.schema("workspace")`.
+    table: "projects",
+    schemaName: "workspace",
     hasOrgColumn: true,
     shareKey: null,
     titleColumn: "name",
@@ -479,9 +482,12 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "container",
     icon: ListTodo,
     description: "Units of work, optionally tied to scopes.",
-    table: "ctx_tasks",
+    // Physical table is `workspace.tasks` after the 2026 restructure; queried via
+    // `.schema("workspace")`. `shareKey` is the canonical permissions key `'task'`.
+    table: "tasks",
+    schemaName: "workspace",
     hasOrgColumn: true,
-    shareKey: "ctx_tasks",
+    shareKey: "task",
     titleColumn: "title",
     orgRoute: "tasks",
     scopeable: true,

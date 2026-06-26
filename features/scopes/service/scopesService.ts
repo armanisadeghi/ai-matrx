@@ -34,6 +34,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -160,8 +161,8 @@ export const scopesService = {
         )
         .order("name", { ascending: true });
 
-      const projectsP = supabase
-        .from("ctx_projects")
+      const projectsP = workspaceDb(supabase)
+        .from("projects")
         .select("id, organization_id, name, slug")
         .order("name", { ascending: true });
 
@@ -268,8 +269,8 @@ export const scopesService = {
 
       let taskIds: string[];
       if (level === "project") {
-        const { data, error } = await supabase
-          .from("ctx_tasks")
+        const { data, error } = await workspaceDb(supabase)
+          .from("tasks")
           .select("id")
           .eq("project_id", id);
         if (error) return err(...mapPgErrorPair(error));
@@ -290,8 +291,8 @@ export const scopesService = {
 
       if (taskIds.length === 0) return ok({ tasks: [] });
 
-      const { data: taskRows, error: taskErr } = await supabase
-        .from("ctx_tasks")
+      const { data: taskRows, error: taskErr } = await workspaceDb(supabase)
+        .from("tasks")
         .select("id, title, status, project_id, organization_id, updated_at")
         .in("id", taskIds);
       if (taskErr) return err(...mapPgErrorPair(taskErr));
@@ -325,8 +326,8 @@ export const scopesService = {
     try {
       requireUserId();
 
-      const { data: projectRows, error: projErr } = await supabase
-        .from("ctx_projects")
+      const { data: projectRows, error: projErr } = await workspaceDb(supabase)
+        .from("projects")
         .select("id, organization_id, name, slug")
         .eq("organization_id", orgId);
       if (projErr) return err(...mapPgErrorPair(projErr));
@@ -833,9 +834,11 @@ export const scopesService = {
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
+    // Workspace-schema table names (project/task moved to `workspace`). Consumed
+    // below via `workspaceDb(supabase).from(table)`.
     const ENTITY_ORG_TABLE: Partial<Record<EntityType, string>> = {
-      project: "ctx_projects",
-      task: "ctx_tasks",
+      project: "projects",
+      task: "tasks",
     };
     try {
       const table = ENTITY_ORG_TABLE[entityType];
@@ -854,7 +857,8 @@ export const scopesService = {
       if (!orgId) return ok({ organization_id: null });
 
       // Adopt ONLY when the container currently has no org (DB-enforced).
-      const { data: updated, error: uErr } = await supabase
+      // project/task live in the `workspace` schema — reach them via workspaceDb.
+      const { data: updated, error: uErr } = await workspaceDb(supabase)
         .from(table as never)
         .update({ organization_id: orgId } as never)
         .eq("id", entityId)

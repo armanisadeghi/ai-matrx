@@ -66,6 +66,12 @@ function firstField(
 interface RecordResolverConfig {
   openItemType: KnownItemType;
   table: string;
+  /**
+   * Non-`public` Postgres schema `table` lives in, if any. Reached via
+   * `.schema(schema)`. Omitted ⇒ `public`. (Set for the workspace domain after
+   * the 2026 restructure moved projects/tasks to the `workspace` schema.)
+   */
+  schema?: string;
   select: string;
   titleFields: string[];
   bodyFields?: string[];
@@ -93,7 +99,8 @@ function createRecordResolver(config: RecordResolverConfig): ReferenceResolver {
     openId: (ref) => ref.id,
     resolveValue: async (supabase, ref) => {
       if (!ref.id) return undefined;
-      const { data, error } = await supabase
+      const db = config.schema ? supabase.schema(config.schema) : supabase;
+      const { data, error } = await db
         .from(config.table)
         .select(config.select)
         .eq("id", ref.id)
@@ -332,7 +339,8 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   // ── RecordRef family (atomic Matrx entities) ───────────────────────────────
   task: createRecordResolver({
     openItemType: "task",
-    table: "ctx_tasks",
+    table: "tasks",
+    schema: "workspace",
     select: "title, description",
     titleFields: ["title"],
     bodyFields: ["description"],
@@ -346,7 +354,8 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   }),
   project: createRecordResolver({
     openItemType: "project",
-    table: "ctx_projects",
+    table: "projects",
+    schema: "workspace",
     select: "name, description",
     titleFields: ["name"],
     bodyFields: ["description"],

@@ -8,6 +8,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { NavProject, ProjectScopeTag } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
@@ -62,8 +63,8 @@ export const fetchProject = createAsyncThunk(
       return null; // already fresh full-data
     }
 
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
@@ -93,8 +94,8 @@ export const fetchProject = createAsyncThunk(
 export const fetchOrgProjects = createAsyncThunk(
   "projects/fetchByOrg",
   async (orgId: string) => {
-    const { data, error } = await supabase
-      .from("ctx_projects")
+    const { data, error } = await workspaceDb(supabase)
+      .from("projects")
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
@@ -126,8 +127,8 @@ export const createProjectThunk = createAsyncThunk(
     description?: string;
   }) => {
     const userId = requireUserId();
-    const { data: proj, error } = await supabase
-      .from("ctx_projects")
+    const { data: proj, error } = await workspaceDb(supabase)
+      .from("projects")
       .insert({ ...data, created_by: userId })
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
@@ -158,8 +159,8 @@ export const updateProjectThunk = createAsyncThunk(
       organization_id?: string | null;
     };
   }) => {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .update(params.patch)
       .eq("id", params.id);
     if (error) throw error;
@@ -170,8 +171,8 @@ export const updateProjectThunk = createAsyncThunk(
 export const deleteProjectThunk = createAsyncThunk(
   "projects/delete",
   async (projectId: string) => {
-    const { error } = await supabase
-      .from("ctx_projects")
+    const { error } = await workspaceDb(supabase)
+      .from("projects")
       .delete()
       .eq("id", projectId);
     if (error) throw error;

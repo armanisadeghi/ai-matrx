@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { workspaceDb } from '@/utils/supabase/workspaceDb';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
 
 export async function POST(request: NextRequest) {
@@ -39,8 +40,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Read-only, RLS-scoped lookup for the email body.
-    const { data: projectData } = await supabase
-      .from('ctx_projects')
+    const { data: projectData } = await workspaceDb(supabase)
+      .from('projects')
       .select('name, organization_id, organizations(name)')
       .eq('id', projectId)
       .single();

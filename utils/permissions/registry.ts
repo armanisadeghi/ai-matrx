@@ -295,8 +295,15 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     rlsUsesHasPermission: true,
   },
   task: {
+    // Canonical now: the workspace domain was moved to the `workspace` schema in
+    // the 2026 restructure (`ctx_tasks`→`workspace.tasks`). `resourceType` /
+    // `tableName` is the canonical permissions key `'task'` (the DB registry row
+    // and `iam.has_access`/share RPCs key on this), while the physical table is
+    // `workspace.tasks`, reached via `.schema('workspace')` (see workspaceDb).
     resourceType: "task",
-    tableName: "ctx_tasks",
+    tableName: "task",
+    schemaName: "workspace",
+    physicalTable: "tasks",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",

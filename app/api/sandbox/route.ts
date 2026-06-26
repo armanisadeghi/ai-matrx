@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import {
   resolveOrchestratorByTier,
   orchestratorJsonHeaders,
@@ -131,8 +132,8 @@ export async function POST(request: NextRequest) {
     };
 
     if (project_id) {
-      const { data: project, error: projectError } = await supabase
-        .from("ctx_projects")
+      const { data: project, error: projectError } = await workspaceDb(supabase)
+        .from("projects")
         .select("id")
         .eq("id", project_id)
         .single();

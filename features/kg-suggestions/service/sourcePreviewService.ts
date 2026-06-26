@@ -22,6 +22,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { filesDb } from "@/features/files/filesDb";
 
 /** Source kinds we can pop into a floating window panel from the decision UI. */
@@ -154,16 +155,16 @@ export async function resolveSourceTitle(
         return data?.label?.trim() || null;
       }
       case "task": {
-        const { data } = await supabase
-          .from("ctx_tasks")
+        const { data } = await workspaceDb(supabase)
+          .from("tasks")
           .select("title")
           .eq("id", id)
           .maybeSingle();
         return data?.title?.trim() || null;
       }
       case "project": {
-        const { data } = await supabase
-          .from("ctx_projects")
+        const { data } = await workspaceDb(supabase)
+          .from("projects")
           .select("name")
           .eq("id", id)
           .maybeSingle();
@@ -345,16 +346,16 @@ async function resolveTitlesForKind(
       return;
     }
     case "task": {
-      const { data } = await supabase
-        .from("ctx_tasks")
+      const { data } = await workspaceDb(supabase)
+        .from("tasks")
         .select("id, title")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
       return;
     }
     case "project": {
-      const { data } = await supabase
-        .from("ctx_projects")
+      const { data } = await workspaceDb(supabase)
+        .from("projects")
         .select("id, name")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.name);
@@ -458,8 +459,8 @@ async function loadNote(id: string): Promise<SourcePreviewDoc> {
 
 async function loadTask(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("task", id);
-  const { data } = await supabase
-    .from("ctx_tasks")
+  const { data } = await workspaceDb(supabase)
+    .from("tasks")
     .select("title, description, created_at")
     .eq("id", id)
     .maybeSingle();
@@ -478,8 +479,8 @@ async function loadTask(id: string): Promise<SourcePreviewDoc> {
 
 async function loadProject(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("project", id);
-  const { data } = await supabase
-    .from("ctx_projects")
+  const { data } = await workspaceDb(supabase)
+    .from("projects")
     .select("name, description, created_at")
     .eq("id", id)
     .maybeSingle();

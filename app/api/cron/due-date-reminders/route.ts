@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
 
 /**
@@ -42,8 +43,8 @@ export async function GET(request: Request) {
     };
 
     // Get tasks with upcoming or past due dates that are not completed
-    const { data: tasks, error } = await supabase
-      .from('ctx_tasks')
+    const { data: tasks, error } = await workspaceDb(supabase)
+      .from('tasks')
       .select('id, title, user_id, due_date, assignee_id')
       .eq('status', 'incomplete')
       .not('due_date', 'is', null)

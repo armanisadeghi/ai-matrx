@@ -40,8 +40,8 @@ export function useTasks() {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
-          table: 'ctx_tasks',
+          schema: 'workspace',
+          table: 'tasks',
         },
         () => {
           loadTasks();
@@ -98,8 +98,8 @@ export function useProjects() {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
-          table: 'ctx_projects',
+          schema: 'workspace',
+          table: 'projects',
         },
         () => {
           loadProjects();
@@ -156,8 +156,8 @@ export function useProjectsWithTasks() {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
-          table: 'ctx_projects',
+          schema: 'workspace',
+          table: 'projects',
         },
         () => {
           loadProjectsWithTasks();
@@ -167,8 +167,8 @@ export function useProjectsWithTasks() {
         'postgres_changes',
         {
           event: '*',
-          schema: 'public',
-          table: 'ctx_tasks',
+          schema: 'workspace',
+          table: 'tasks',
         },
         () => {
           loadProjectsWithTasks();

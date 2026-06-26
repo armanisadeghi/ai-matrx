@@ -152,7 +152,10 @@ function ItemDetailWindowInner({
     // registry's fetchRow, which takes a plain `SupabaseClient` param). The
     // typed `SupabaseClient<Database>` rejects `.from(string)` and blows the
     // instantiation depth resolving the full schema union.
-    const db = supabase as unknown as SupabaseClient;
+    const baseDb = supabase as unknown as SupabaseClient;
+    const db = detailSource.schemaName
+      ? baseDb.schema(detailSource.schemaName)
+      : baseDb;
     const table: string = detailSource.table;
     const selectAll: string = "*";
 

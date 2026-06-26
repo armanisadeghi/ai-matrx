@@ -82,7 +82,7 @@ export function useContainerInventory({
           }
           try {
             const db = (
-              entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
+              entry.schemaName ? supabase.schema(entry.schemaName as "files" | "workspace") : supabase
             ) as typeof supabase;
             let q = db
               .from(entry.table as never)
