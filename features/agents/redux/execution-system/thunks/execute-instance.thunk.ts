@@ -46,7 +46,7 @@ import {
   isFirstTurn,
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
-  selectOrganizationId,
+  selectEffectiveOrganizationId,
   selectProjectId,
   selectScopeSelectionsContext,
   selectTaskId,
@@ -164,7 +164,7 @@ export function assembleRequest(
   // sandbox-fs mints a short-lived bearer token on demand).
 
   // Scope — snapshot from appContextSlice at the moment of execution
-  const organization_id = selectOrganizationId(state) ?? undefined;
+  const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   // Active scope selections (scope_type_id → scope_id). Shipped as a flat

@@ -38,6 +38,15 @@ export interface AppContextState {
   organization_name: string | null;
 
   /**
+   * The user's PERSONAL organization id (is_personal = true). Set once at
+   * shell hydration by the active-org bootstrap; it is NOT the active org and
+   * is NEVER reset by setOrganization. It exists so the API layer can fall
+   * back to a guaranteed-valid org while org enforcement is still soft —
+   * see selectEffectiveOrganizationId. A user always has exactly one.
+   */
+  personal_organization_id: string | null;
+
+  /**
    * Scope selections — MULTI-SELECT (2026-06-12). Keyed by scope id; value is
    * the same scope id (map shape kept for type-compatibility; null values are
    * tolerated and ignored). Any number of scopes across any scope types can
@@ -63,6 +72,7 @@ export interface AppContextState {
 const initialState: AppContextState = {
   organization_id: null,
   organization_name: null,
+  personal_organization_id: null,
   scope_selections: {},
   project_id: null,
   project_name: null,
@@ -87,6 +97,13 @@ const appContextSlice = createSlice({
       state.task_id = null;
       state.task_name = null;
       state.conversation_id = null;
+    },
+    /**
+     * Set the user's personal org id. Independent of the active org — does NOT
+     * touch organization_id or reset any descendants. Set once at hydration.
+     */
+    setPersonalOrganization: (state, action: PayloadAction<string | null>) => {
+      state.personal_organization_id = action.payload;
     },
     setScopeSelections: (
       state,
@@ -132,6 +149,9 @@ const appContextSlice = createSlice({
         state.organization_id = action.payload.organization_id;
       if (action.payload.organization_name !== undefined)
         state.organization_name = action.payload.organization_name;
+      if (action.payload.personal_organization_id !== undefined)
+        state.personal_organization_id =
+          action.payload.personal_organization_id;
       if (action.payload.scope_selections !== undefined)
         state.scope_selections = action.payload.scope_selections;
       if (action.payload.project_id !== undefined)
@@ -151,6 +171,7 @@ const appContextSlice = createSlice({
 
 export const {
   setOrganization,
+  setPersonalOrganization,
   setScopeSelections,
   setProject,
   setTask,
@@ -168,6 +189,31 @@ type StateWithAppContext = { appContext: AppContextState };
 export const selectOrganizationId = (
   state: StateWithAppContext,
 ): string | null => state.appContext.organization_id;
+
+export const selectPersonalOrganizationId = (
+  state: StateWithAppContext,
+): string | null => state.appContext.personal_organization_id;
+
+/**
+ * The org id that should ride along on API calls. Returns the explicitly
+ * selected org when set, otherwise falls back to the user's personal org.
+ * This is the SOFT-enforcement fallback: while we work toward always having
+ * an org selected, every request still carries a valid org id. Read this in
+ * the API/scope layer instead of selectOrganizationId.
+ */
+export const selectEffectiveOrganizationId = (
+  state: StateWithAppContext,
+): string | null =>
+  state.appContext.organization_id ?? state.appContext.personal_organization_id;
+
+/**
+ * True when the user has EXPLICITLY chosen an active org. False means we are
+ * silently falling back to the personal org — the UI surfaces this as a
+ * reminder (red ring on the avatar) so the user picks one.
+ */
+export const selectHasExplicitOrganization = (
+  state: StateWithAppContext,
+): boolean => state.appContext.organization_id != null;
 
 export const selectScopeSelectionsContext = (
   state: StateWithAppContext,

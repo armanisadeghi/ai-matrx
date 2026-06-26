@@ -1,19 +1,34 @@
+"use client";
+
 import Image from "next/image";
 import { User } from "lucide-react";
 import { UserData } from "@/utils/userDataMapper";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectHasExplicitOrganization } from "@/lib/redux/slices/appContextSlice";
 
 interface UserMenuTriggerProps {
   userData: UserData;
 }
 
 export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
+  // Soft org enforcement: ring the avatar red when no org is explicitly
+  // selected, nudging the user to choose one (HeaderOrgIndicator switcher).
+  const hasExplicitOrg = useAppSelector(selectHasExplicitOrganization);
+
   return (
     <label
       htmlFor="shell-user-menu"
       aria-label="User menu"
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 cursor-pointer outline-none"
     >
-      <div className="relative flex h-8 w-8 items-center justify-center rounded-full matrx-glass-thin-border transition-colors overflow-hidden">
+      <div
+        className={[
+          "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors overflow-hidden",
+          hasExplicitOrg
+            ? "matrx-glass-thin-border"
+            : "ring-2 ring-red-500 ring-offset-1 ring-offset-[var(--shell-header-bg,transparent)]",
+        ].join(" ")}
+      >
         {userData?.userMetadata?.avatarUrl ? (
           <Image
             src={userData?.userMetadata.avatarUrl}

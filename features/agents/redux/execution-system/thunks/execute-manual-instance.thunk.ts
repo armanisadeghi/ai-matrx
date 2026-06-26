@@ -102,7 +102,7 @@ import {
   selectEndpointOverrideConfig,
 } from "@/lib/redux/slices/apiConfigSlice";
 import {
-  selectOrganizationId,
+  selectEffectiveOrganizationId,
   selectProjectId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
@@ -425,7 +425,7 @@ export async function assembleManualRequest(
   // and execute-instance already send so the Builder's manual path is not the
   // odd one out (org-id enforcement is coming app-wide). Only fields that are
   // actually set ride the wire; absent ones are omitted.
-  const organization_id = selectOrganizationId(state) ?? undefined;
+  const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   if (organization_id) request.organization_id = organization_id;

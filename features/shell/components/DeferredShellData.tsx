@@ -23,6 +23,7 @@ import {
   getSSRAgentShellData,
 } from "@/utils/supabase/ssrShellData";
 import { mapUserData } from "@/utils/userDataMapper";
+import { bootstrapActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 // Phase 4 PR 4.C: setGlobalUserIdAndToken removed — the dispatch(setUser(...))
 // below already updates the Redux state, and `lib/sync/identity::attachStore`
 // (wired in StoreProvider) makes that state visible to non-React consumers.
@@ -71,6 +72,11 @@ export default function DeferredShellData() {
         const userData = mapUserData(user, accessToken, shellData.is_admin);
 
         dispatch(setUser(userData));
+
+        // Hydrate active-org state: record the personal org (API fallback)
+        // and restore the last-used org. Fire-and-forget — never blocks the
+        // rest of shell hydration.
+        void dispatch(bootstrapActiveOrganization());
 
         if (shellData.preferences_exists && shellData.preferences) {
           for (const [key, value] of Object.entries(shellData.preferences)) {

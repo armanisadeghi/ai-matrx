@@ -31,6 +31,7 @@ import { bootSync } from "@/lib/sync/engine/boot";
 import { syncPolicies } from "@/lib/sync/registry";
 import { attachStore } from "@/lib/sync/identity";
 import { writeThemeCookie, type ThemeMode } from "@/styles/themes/themeSlice";
+import { writeLastOrg } from "@/lib/redux/thunks/activeOrgBootstrap";
 
 // Generic factory shape — both `makeStore` (slim) and `makeEntityStore`
 // (entity) satisfy it. Their return types differ in `getState()` shape, but
@@ -73,11 +74,29 @@ function getOrCreateClientStore(
   // Keep the `theme` cookie in lockstep with Redux so the server-side
   // pre-paint always reflects the user's last choice.
   let lastMode: ThemeMode | undefined = store.getState().theme?.mode;
+  // Persist the active org to localStorage so the user's last-used org is
+  // restored on the next boot (active-org bootstrap reads it). Captures every
+  // writer — sidebar context selector, header switcher, scopes UI — from one
+  // place, the same way the theme cookie stays in lockstep above.
+  let lastOrgId: string | null | undefined =
+    store.getState().appContext?.organization_id;
   store.subscribe(() => {
-    const mode = store.getState().theme?.mode;
+    const state = store.getState();
+
+    const mode = state.theme?.mode;
     if (mode && mode !== lastMode) {
       lastMode = mode;
       writeThemeCookie(mode);
+    }
+
+    const orgId = state.appContext?.organization_id ?? null;
+    if (orgId !== lastOrgId) {
+      lastOrgId = orgId;
+      writeLastOrg(
+        orgId
+          ? { id: orgId, name: state.appContext?.organization_name ?? null }
+          : null,
+      );
     }
   });
 

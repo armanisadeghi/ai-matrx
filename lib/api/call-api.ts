@@ -73,7 +73,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
-  selectOrganizationId,
+  selectEffectiveOrganizationId,
   selectProjectId,
   selectTaskId,
   selectConversationId,
@@ -535,7 +535,12 @@ function resolveScope(
   // Guard defensively so callApi never crashes on a missing key — all fields are nullable.
   const hasAppContext = !!(state as any)?.appContext;
 
-  const rawOrgId = hasAppContext ? selectOrganizationId(state) : undefined;
+  // Effective org = explicitly-selected org, else the user's personal org.
+  // Soft enforcement: every request carries a valid org id even before the
+  // user picks one. See selectEffectiveOrganizationId.
+  const rawOrgId = hasAppContext
+    ? selectEffectiveOrganizationId(state)
+    : undefined;
 
   const resolved: CallScope = {
     user_id: userId,
