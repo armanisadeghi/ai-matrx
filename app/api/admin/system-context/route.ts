@@ -253,16 +253,67 @@ function applyValueToRow(
   }
 }
 
+export interface ResolvedPreviewEntry {
+  key: string;
+  type: string;
+  source: string;
+  description: string | null;
+  value: Json;
+}
+
+// Preview exactly what an agent receives for global system context (no scope
+// selected) — proves the whole feed pipeline end-to-end (ambient computes,
+// manual values, dataset pointers) by calling the live resolver.
+async function buildPreview(
+  admin: AdminClient,
+  userId: string,
+): Promise<NextResponse> {
+  const { data, error } = await admin.rpc("resolve_full_context", {
+    p_user_id: userId,
+    p_entity_type: "conversation",
+    p_entity_id: "00000000-0000-0000-0000-000000000000",
+    p_scope_ids: undefined,
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const variables =
+    data && typeof data === "object" && !Array.isArray(data)
+      ? ((data as Record<string, unknown>).variables as Record<string, unknown>) ?? {}
+      : {};
+  const entries: ResolvedPreviewEntry[] = Object.entries(variables)
+    .map(([key, v]) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return {
+        key,
+        type: typeof o.type === "string" ? o.type : "string",
+        source: typeof o.source === "string" ? o.source : "system",
+        description: typeof o.description === "string" ? o.description : null,
+        value: (o.value ?? null) as Json,
+      };
+    })
+    // Only the global (system-sourced) entries every user receives.
+    .filter((e) => e.source === "system")
+    .sort((a, b) => a.key.localeCompare(b.key));
+
+  return NextResponse.json({ resolved: entries });
+}
+
 // GET /api/admin/system-context — resolve the Matrx System org, its is_system
 // scope types (the "categories"), and every item joined with its current value.
-export async function GET() {
+// GET ?preview=1 — what an agent actually receives for global system context.
+export async function GET(request: NextRequest) {
+  let userId: string;
   try {
-    await requireSuperAdmin();
+    userId = await requireSuperAdmin();
   } catch (e) {
     return errorResponse(e);
   }
 
   const admin = createAdminClient();
+
+  if (new URL(request.url).searchParams.has("preview")) {
+    return buildPreview(admin, userId);
+  }
 
   const { data: org, error: orgError } = await admin
     .from("organizations")
