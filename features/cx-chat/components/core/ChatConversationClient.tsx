@@ -28,6 +28,7 @@ import { selectTurnCount } from "@/features/cx-chat/_legacy-stubs";
 import { ArrowDown } from "lucide-react";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 
 const AgentPickerSheet = dynamic(
   () =>
@@ -205,6 +206,7 @@ export default function ChatConversationClient({
         {/* Input */}
         <div className="shrink-0 p-2 pb-safe">
           <div className="max-w-[800px] mx-auto">
+            <ProposedDirectivesZone conversationId={conversationId} />
             <SmartAgentInput
               conversationId={conversationId}
               surfaceKey={`cx-chat:${agentId}`}

@@ -35,6 +35,7 @@ import { executeInstance } from "@/features/agents/redux/execution-system/thunks
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { PreExecutionAgentInput } from "../inputs/PreExecutionAgentInput";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
+import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 
 interface AgentRunnerProps {
   conversationId: string;
@@ -162,7 +163,8 @@ export function AgentRunner({
 
       {/* Input panel — pinned to bottom, grows upward, never taller than 70% of container */}
       {shouldShowInput && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-center px-3 pb-3 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-stretch justify-end px-3 pb-3 pt-1 bg-gradient-to-t from-background via-background/95 to-transparent max-h-[70%] overflow-hidden">
+          <ProposedDirectivesZone conversationId={conversationId} />
           <SmartAgentInput
             conversationId={conversationId}
             surfaceKey={surfaceKey}
