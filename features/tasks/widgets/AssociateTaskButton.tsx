@@ -36,7 +36,7 @@ import { selectFullContextStatus } from "@/features/agent-context/redux/hierarch
 import type { TaskWithProject } from "@/features/tasks/types";
 
 export interface AssociateTaskButtonProps {
-  /** What we are associating. Writes to ctx_task_associations on pick. */
+  /** What we are associating. Writes a platform.associations edge on pick. */
   entityType: string;
   entityId: string;
   /** Stored on the association row (displayed in the task's attachments panel) */

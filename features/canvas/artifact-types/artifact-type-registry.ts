@@ -70,7 +70,7 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "questionnaire", aliases: ["questionnaire"], standaloneAliases: ["questionnaire"], materializable: true, persistenceStrategy: "generic" },
   // Data-touching (vision R7): NEVER auto-create. Materializes as a tracked
   // proposal; `TasksArtifact` converts to real `ctx_tasks` on explicit user
-  // action, linked via `ctx_task_associations` (entity_type='artifact'). No
+  // action, linked via the `platform.associations` bridge (source=`artifact` → target=`task`). No
   // artifact `adapter` → materialize never creates domain rows for tasks.
   { canvasType: "tasks", aliases: ["tasks", "task"], standaloneAliases: ["tasks"], materializable: true, persistenceStrategy: "custom" },
   // Deliverables — a webpage / a live component IS the artifact, so a bare

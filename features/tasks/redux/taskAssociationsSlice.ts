@@ -13,7 +13,7 @@ import {
 } from "@/features/agent-context/redux/tasksSlice";
 import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsSlice";
 
-/** One row of the generic m2m `ctx_task_associations` table. */
+/** One row of the canonical `platform.associations` edge (source → target=`task`). */
 export interface AssociationRef {
   id: string;
   entity_type: string;

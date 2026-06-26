@@ -64,8 +64,8 @@ import { HTML_ADAPTER } from "./html-adapter";
 
 // NB: `tasks` has NO artifact adapter. Tasks are a data-touching type (vision
 // R7): they are never auto-created on materialize. The tasks artifact converts
-// to real `ctx_tasks` explicitly, linked via the canonical `ctx_task_associations`
-// bridge (`entity_type='artifact'`) and owned by `TasksArtifact` — not by an
+// to real `ctx_tasks` explicitly, linked via the canonical `platform.associations`
+// bridge (source=`artifact` → target=`task`) and owned by `TasksArtifact` — not by an
 // adapter. Materialize resolves `getAdapter(undefined)` → GENERIC (no
 // onMaterialize), so a tasks block materializes as a tracked canvas row only.
 /** adapter key → adapter. */
