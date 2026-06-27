@@ -2,6 +2,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type {
   Note,
   CreateNoteInput,
@@ -75,6 +76,37 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
 }
 
 /**
+ * Assign the caller's personal organization to all of their notes that have no
+ * organization ("homeless" notes). Resolves the personal org via the canonical
+ * session-cached `resolvePersonalOrgId`, so it works regardless of Redux
+ * hydration and without a per-call RPC.
+ *
+ * Returns the personal org id and the ids of the notes that were re-homed.
+ */
+export async function assignHomelessNotesToPersonalOrg(): Promise<{
+  organizationId: string;
+  noteIds: string[];
+}> {
+  const userId = requireUserId();
+
+  const organizationId = await resolvePersonalOrgId();
+
+  const { data, error } = await supabase
+    .from("notes")
+    .update({ organization_id: organizationId })
+    .eq("user_id", userId)
+    .is("organization_id", null)
+    .eq("is_deleted", false)
+    .select("id");
+  if (error) throw error;
+
+  return {
+    organizationId,
+    noteIds: (data ?? []).map((r) => r.id as string),
+  };
+}
+
+/**
  * Create a new note
  * Automatically generates label from content if label is missing or is "New Note"
  * IMPORTANT: Checks for existing empty notes and reuses them to prevent duplicates
@@ -125,6 +157,20 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     }
   }
 
+  // Resolve a home org so notes are never created homeless. If the caller
+  // didn't pass one, default to the user's personal organization (every user
+  // has one) via the canonical session-cached resolver.
+  let organizationId = input.organization_id ?? null;
+  if (!organizationId) {
+    try {
+      organizationId = await resolvePersonalOrgId();
+    } catch (orgError) {
+      // Don't block note creation on org resolution — log loudly and fall back
+      // to homeless (the sidebar's "add to my organization" action recovers it).
+      console.error("Could not resolve personal organization for note:", orgError);
+    }
+  }
+
   // No existing empty note found, create a new one
   const { data, error } = await supabase
     .from("notes")
@@ -146,7 +192,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       // Associations were silently dropped before — a note created with a
       // task_id / org / project now actually persists those links.
       task_id: input.task_id ?? null,
-      organization_id: input.organization_id ?? null,
+      organization_id: organizationId,
       project_id: input.project_id ?? null,
     })
     .select()

@@ -1,5 +1,6 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { createClient } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   WorkflowNode,
   WorkflowNodeCreateInput,
@@ -10,8 +11,8 @@ import {
 } from "./types";
 
 /** Read-only access to preserved workflow node rows in the graveyard schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const graveyardWorkflowNode = () => (createClient() as any).schema("graveyard").from("workflow_node");
+const graveyardWorkflowNode = () =>
+  graveyardDb(createClient()).from("workflow_node");
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
@@ -37,7 +38,10 @@ export const workflowNodeService = {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.warn("[workflow-nodes/service] graveyard.workflow_node fetchAll error:", error);
+        console.warn(
+          "[workflow-nodes/service] graveyard.workflow_node fetchAll error:",
+          error,
+        );
         return [];
       }
       return (data ?? []).map(narrowNode);
@@ -71,7 +75,10 @@ export const workflowNodeService = {
         .order("created_at", { ascending: true });
 
       if (error) {
-        console.warn("[workflow-nodes/service] graveyard.workflow_node fetchByWorkflowId error:", error);
+        console.warn(
+          "[workflow-nodes/service] graveyard.workflow_node fetchByWorkflowId error:",
+          error,
+        );
         return [];
       }
       return (data ?? []).map(narrowNode);

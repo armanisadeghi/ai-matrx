@@ -7,6 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { CodeFile, CodeFolder } from "../redux/code-files.types";
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
@@ -143,6 +144,8 @@ export async function createCodeFile(
   // `path` is NOT NULL in the DB — fall back to the filename (or empty string)
   // so inserts never fail when the caller doesn't care about a folder-like path.
   const path = input.path ?? name;
+  // Never write a null org — fall back to the cached personal org.
+  const organizationId = await ensureOrgId(input.organization_id);
   const { data, error } = await supabase
     .from("code_files")
     .insert({
@@ -153,7 +156,7 @@ export async function createCodeFile(
       content: input.content ?? "",
       folder_id: input.folder_id ?? null,
       repository_id: input.repository_id ?? null,
-      organization_id: input.organization_id ?? null,
+      organization_id: organizationId,
       project_id: input.project_id ?? null,
       task_id: input.task_id ?? null,
       workspace_id: input.workspace_id ?? null,
@@ -224,6 +227,8 @@ export async function createCodeFolder(
   input: CreateCodeFolderInput,
 ): Promise<CodeFolder> {
   const userId = requireUserId();
+  // Never write a null org — fall back to the cached personal org.
+  const organizationId = await ensureOrgId(input.organization_id);
   const { data, error } = await supabase
     .from("code_file_folders")
     .insert({
@@ -231,7 +236,7 @@ export async function createCodeFolder(
       name: input.name,
       description: input.description ?? null,
       parent_folder_id: input.parent_folder_id ?? null,
-      organization_id: input.organization_id ?? null,
+      organization_id: organizationId,
       project_id: input.project_id ?? null,
       workspace_id: input.workspace_id ?? null,
       // `icon_name` is NOT NULL in the DB (default 'Folder'). Don't overwrite

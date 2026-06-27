@@ -26,6 +26,7 @@ import {
   ok,
 } from "@/features/scopes/service/rpcResult";
 import type { ScopesRpcResult } from "@/features/scopes/types";
+import type { Json } from "@/types/database.types";
 
 // ─── Shapes ─────────────────────────────────────────────────────────
 
@@ -38,7 +39,9 @@ export interface Membership {
   role: string;
   status: string;
   createdAt: string;
+  updatedAt: string | null;
   createdBy: string | null;
+  metadata: Json;
 }
 
 export interface MembershipWithUser extends Membership {
@@ -77,10 +80,13 @@ interface MbrListRow {
   role: string;
   status: string;
   created_at: string;
+  updated_at: string | null;
   created_by: string | null;
+  metadata: Json;
 }
 
-interface MbrListWithUsersRow extends Omit<MbrListRow, "container_type"> {
+interface MbrListWithUsersRow
+  extends Omit<MbrListRow, "container_type" | "updated_at" | "metadata"> {
   user_email: string | null;
   user_display_name: string | null;
   user_avatar_url: string | null;
@@ -111,7 +117,9 @@ function toMembership(row: MbrListRow): Membership {
     role: row.role,
     status: row.status,
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? null,
     createdBy: row.created_by ?? null,
+    metadata: (row.metadata ?? {}) as Json,
   };
 }
 

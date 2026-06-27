@@ -25,10 +25,14 @@
  * the same content, so it doesn't trip the "no tabs on mobile" rule.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Cpu, PencilLine, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
+import {
+  isProjectCreateFlow,
+  logProjectCreateAiStage,
+} from "@/features/projects/debug/projectCreateAiDebug";
 import { AgentRunWrapper } from "./AgentRunWrapper";
 
 export type CreateWithAiMode = string;
@@ -140,6 +144,19 @@ export function CreateWithAiTabs({
     () => new Set([defaultMode]),
   );
 
+  useEffect(() => {
+    if (
+      defaultMode === "ai" &&
+      enableAi &&
+      isProjectCreateFlow(sourceFeature, agentId)
+    ) {
+      logProjectCreateAiStage("Use AI tab active on mount", {
+        agentId,
+        sourceFeature,
+      });
+    }
+  }, [agentId, defaultMode, enableAi, sourceFeature]);
+
   const scrollManual = manualScrolls ?? !isMobile;
 
   // With AI off and no extra tabs, there's only one entry method — skip chrome.
@@ -148,6 +165,13 @@ export function CreateWithAiTabs({
   }
 
   const selectMode = (next: CreateWithAiMode) => {
+    if (next === "ai" && isProjectCreateFlow(sourceFeature, agentId)) {
+      logProjectCreateAiStage("Use AI tab selected", {
+        agentId,
+        sourceFeature,
+        alreadyMounted: mountedTabs.has("ai"),
+      });
+    }
     setMountedTabs((prev) => {
       if (prev.has(next)) return prev;
       const nextSet = new Set(prev);

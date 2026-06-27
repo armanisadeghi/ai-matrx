@@ -14,6 +14,7 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
   invitationsService,
@@ -42,23 +43,23 @@ import {
   generateProjectSlug,
 } from "./types";
 
-/** Resolve null to the user's real personal org id (never leave NULL). */
+/**
+ * Resolve null to the user's real personal org id (never leave NULL).
+ * Delegates to the canonical session-cached `ensureOrgId` — no per-call RPC.
+ */
 async function resolveOrganizationId(
   organizationId: string | null | undefined,
 ): Promise<string> {
-  if (organizationId) return organizationId;
-
-  const currentUserId = requireUserId();
-  const { data, error } = await supabase.rpc("ensure_personal_organization", {
-    p_user_id: currentUserId,
-  });
-  if (error || !data) {
-    console.error("Error resolving personal organization:", error?.message);
+  try {
+    return await ensureOrgId(organizationId);
+  } catch (error) {
+    console.error("Error resolving personal organization:", error);
     throw pgErrorToError(
-      error ?? { message: "Could not resolve personal organization" },
+      (error as { message?: string }) ?? {
+        message: "Could not resolve personal organization",
+      },
     );
   }
-  return data as string;
 }
 
 // ============================================================================

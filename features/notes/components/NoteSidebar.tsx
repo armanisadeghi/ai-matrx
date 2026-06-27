@@ -98,7 +98,10 @@ import {
   createFolder,
   renameFolder,
   deleteFolderNotes,
+  assignHomelessNotesToPersonalOrg,
 } from "../service/notesService";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "sonner";
 import { getFolderIconAndColor, isDefaultFolder } from "../utils/folderUtils";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
@@ -182,6 +185,7 @@ export function NoteSidebar({
   // toward assigning context instead of silently losing notes. Display-only:
   // zero effect on any saving behavior.
   const [includeHomeless, setIncludeHomeless] = useState(false);
+  const [claimingHomeless, setClaimingHomeless] = useState(false);
   const { contextFiltered, homelessCount } = useMemo(() => {
     let result = allNotes;
     let homeless: typeof allNotes = [];
@@ -559,6 +563,31 @@ export function NoteSidebar({
     [dispatch, allNotes],
   );
 
+  const handleClaimHomeless = useCallback(async () => {
+    if (claimingHomeless || homelessCount === 0) return;
+    const ok = await confirm({
+      title: `Add ${homelessCount} note${homelessCount === 1 ? "" : "s"} to your organization?`,
+      description:
+        "Notes without an organization will be assigned to your personal organization so they appear in your workspace.",
+      confirmLabel: "Add to my organization",
+    });
+    if (!ok) return;
+    setClaimingHomeless(true);
+    try {
+      const { noteIds } = await assignHomelessNotesToPersonalOrg();
+      await dispatch(fetchNotesList());
+      setIncludeHomeless(false);
+      toast.success(
+        `Added ${noteIds.length} note${noteIds.length === 1 ? "" : "s"} to your organization`,
+      );
+    } catch (err) {
+      console.error("Failed to assign personal organization to notes:", err);
+      toast.error("Couldn't add notes to your organization");
+    } finally {
+      setClaimingHomeless(false);
+    }
+  }, [claimingHomeless, homelessCount, dispatch]);
+
   const toggleAllFolders = useCallback(() => {
     setExpandedFolders((prev) => {
       const allExpanded = folders.every((f) => prev.has(f));
@@ -739,16 +768,30 @@ export function NoteSidebar({
       </div>
 
       {activeOrgId && homelessCount > 0 && (
-        <div className="shrink-0 border-b border-border/20">
+        <div className="shrink-0 flex items-center gap-1.5 border-b border-border/20 px-2.5 py-1">
+          <span className="flex min-w-0 items-center gap-1.5 text-[10px] text-amber-600/80 dark:text-amber-400/80">
+            <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
+            <span className="truncate">
+              {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
+              organization
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={handleClaimHomeless}
+            disabled={claimingHomeless}
+            className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium text-amber-600 hover:bg-amber-500/10 disabled:opacity-50 dark:text-amber-400 transition-colors"
+            title="Assign your personal organization to these notes so they appear in your workspace."
+          >
+            {claimingHomeless ? "Adding…" : "Add to my organization"}
+          </button>
           <button
             type="button"
             onClick={() => setIncludeHomeless((v) => !v)}
-            className="flex w-full items-center gap-1.5 px-2.5 py-1 text-[10px] text-amber-600/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-400 transition-colors"
-            title="These notes have no organization assigned — open one and use its context shield to give it a home."
+            className="shrink-0 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            title={includeHomeless ? "Hide these notes" : "Show these notes in the list"}
           >
-            <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
-            {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
-            organization — {includeHomeless ? "hide" : "show"}
+            {includeHomeless ? "Hide" : "Show"}
           </button>
         </div>
       )}

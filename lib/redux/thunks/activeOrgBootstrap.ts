@@ -46,6 +46,7 @@ import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { getUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
+import { resolvePersonalOrgId, primePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 
 /**
@@ -82,13 +83,30 @@ async function readDefaultOrgIdFromDb(): Promise<string | null> {
 export const bootstrapActiveOrganization =
   () => async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      const orgs = await getUserOrganizations();
-      if (!orgs || orgs.length === 0) return;
+      // Authoritative personal org id straight from the DB (auto-provisioned at
+      // signup, never changes). This is the canonical source — it also primes
+      // the session-wide `personalOrg` cache so service callsites resolving a
+      // null org afterward make zero extra RPC calls. Falls back to the org-list
+      // heuristic only if the RPC is unavailable.
+      let personalOrgId: string | null = null;
+      try {
+        personalOrgId = await resolvePersonalOrgId();
+      } catch (e) {
+        console.warn("[activeOrgBootstrap] current_personal_org_id() failed; falling back to org-list heuristic", e);
+      }
 
-      // Personal-first sort guarantees the personal org is findable; fall back
-      // to the first org if the flag is ever missing.
-      const personal = orgs.find((o) => o.isPersonal) ?? orgs[0];
-      dispatch(setPersonalOrganization(personal?.id ?? null));
+      const orgs = await getUserOrganizations();
+      if (!orgs || orgs.length === 0) {
+        if (personalOrgId) dispatch(setPersonalOrganization(personalOrgId));
+        return;
+      }
+
+      // Prefer the authoritative id; fall back to the personal-flag org, then
+      // the first org if the flag is ever missing.
+      const resolvedPersonalId =
+        personalOrgId ?? (orgs.find((o) => o.isPersonal) ?? orgs[0])?.id ?? null;
+      primePersonalOrgId(resolvedPersonalId);
+      dispatch(setPersonalOrganization(resolvedPersonalId));
 
       // Respect an org that is already actively selected (e.g. a deep-link or a
       // restored full context beat us here).

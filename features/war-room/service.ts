@@ -5,6 +5,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { DEFAULT_SESSION_TITLE } from "./constants";
 import { listThreadIdsForRoom } from "./service/readApi";
 import * as assoc from "./service/associations";
@@ -32,16 +33,8 @@ const NOT_DELETED = { deleted_at: null as null };
 async function resolveOrgIdNeverNull(
   orgIdInput: string | null | undefined,
 ): Promise<string> {
-  if (orgIdInput) return orgIdInput;
-  const userId = requireUserId();
-  const { data, error } = await supabase.rpc("ensure_personal_organization", {
-    p_user_id: userId,
-  });
-  if (error || !data) {
-    console.error("[war-room] resolveOrgIdNeverNull failed:", error?.message);
-    throw error ?? new Error("Could not resolve a war-room organization");
-  }
-  return data as string;
+  // Canonical session-cached personal-org fallback — no per-call RPC.
+  return ensureOrgId(orgIdInput);
 }
 
 function deriveAnchor(input: CreateThreadInput): {

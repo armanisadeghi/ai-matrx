@@ -2,6 +2,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { DatabaseTask } from "../types";
@@ -50,6 +51,8 @@ export async function createTask(
 ): Promise<DatabaseTask | null> {
   try {
     const userId = requireUserId();
+    // Never write a null org — fall back to the cached personal org.
+    const organizationId = await ensureOrgId(input.organization_id);
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .insert({
@@ -62,7 +65,7 @@ export async function createTask(
         assignee_id: input.assignee_id || null,
         status: input.status || "incomplete",
         created_by: userId,
-        organization_id: input.organization_id || null,
+        organization_id: organizationId,
       })
       .select()
       .single();

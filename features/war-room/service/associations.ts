@@ -27,6 +27,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
@@ -173,24 +174,8 @@ async function resolveContainerOrgId(ref: ContainerRef): Promise<string> {
     throw error;
   }
   const orgId = data?.organization_id ?? null;
-  if (orgId) return orgId;
-
-  const userId = requireUserId();
-  const { data: personal, error: e2 } = await supabase.rpc(
-    "ensure_personal_organization",
-    { p_user_id: userId },
-  );
-  if (e2 || !personal) {
-    console.error(
-      "[war-room] resolveContainerOrgId: personal-org fallback failed:",
-      e2,
-    );
-    throw (
-      e2 ??
-      new Error("Could not resolve an organization for the war-room container")
-    );
-  }
-  return personal as string;
+  // Canonical session-cached personal-org fallback — no per-call RPC.
+  return ensureOrgId(orgId);
 }
 
 // ── Reads ─────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
-import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Json } from "@/types/database.types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -207,19 +207,8 @@ export async function createProjectFromJson(
   organizationId: string | null,
 ): Promise<CreateProjectFromJsonResult> {
   try {
-    let resolvedOrganizationId = organizationId;
-    if (!resolvedOrganizationId) {
-      const userId = requireUserId();
-      const { data, error } = await supabase.rpc("ensure_personal_organization", {
-        p_user_id: userId,
-      });
-      if (error || !data) {
-        throw pgErrorToError(
-          error ?? { message: "Could not resolve personal organization" },
-        );
-      }
-      resolvedOrganizationId = data as string;
-    }
+    // Never write a null org — fall back to the session-cached personal org.
+    const resolvedOrganizationId = await ensureOrgId(organizationId);
 
     const { data, error } = await supabase.rpc("create_project_from_json", {
       p_payload: payload as unknown as Json,

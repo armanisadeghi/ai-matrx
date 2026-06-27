@@ -25,11 +25,7 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   destroyInstanceIfAllowed,
   destroyInstanceIfAbandoned,
@@ -48,6 +44,11 @@ import {
   launchAgentExecution,
   LaunchResult,
 } from "../redux/execution-system/thunks/launch-agent-execution.thunk";
+import {
+  isProjectCreateFlow,
+  logProjectCreateAiStage,
+  warnProjectCreateAi,
+} from "@/features/projects/debug/projectCreateAiDebug";
 
 // =============================================================================
 // ConversationInvocation type guard
@@ -285,10 +286,11 @@ export function useAgentLauncher(
     // Reuse branch: a live instance already exists for this surface's id (e.g.
     // a remount where the conversation was retained). Re-point focus if needed
     // and do nothing else — no create, no destroy, no dispatch storm.
-    const existing =
-      store.getState().conversations.byConversationId[targetId];
+    const existing = store.getState().conversations.byConversationId[targetId];
     if (existing) {
-      if (selectFocusedConversation(surfaceKey)(store.getState()) !== targetId) {
+      if (
+        selectFocusedConversation(surfaceKey)(store.getState()) !== targetId
+      ) {
         dispatch(setFocus({ surfaceKey, conversationId: targetId }));
       }
       return;
@@ -302,6 +304,19 @@ export function useAgentLauncher(
     // "PARENT-DRIVEN" runner re-render. The hook already returns `targetId`
     // synchronously via the minted-id ref, so the consumer has the id from the
     // first render regardless.
+    if (isProjectCreateFlow(sourceFeature, agentId)) {
+      logProjectCreateAiStage(
+        "useAgentLauncher → launchAgentExecution starting",
+        {
+          agentId,
+          sourceFeature,
+          surfaceKey,
+          conversationId: targetId,
+          apiEndpointMode,
+        },
+      );
+    }
+
     launchAgent(agentId!, {
       surfaceKey,
       conversationId: targetId,
@@ -316,7 +331,17 @@ export function useAgentLauncher(
       jsonExtraction,
       isEphemeral,
     })
-      .then(() => {
+      .then((result) => {
+        if (isProjectCreateFlow(sourceFeature, agentId)) {
+          logProjectCreateAiStage(
+            "useAgentLauncher → launchAgentExecution succeeded",
+            {
+              agentId,
+              conversationId: result.conversationId,
+              requestId: result.requestId ?? "(none yet)",
+            },
+          );
+        }
         // Torn down before the create resolved (close / route change): the
         // instance just landed under targetId but nothing is mounted on it —
         // reap it per the unmount policy so we don't orphan a Redux record.
@@ -325,9 +350,22 @@ export function useAgentLauncher(
           else dispatch(destroyInstanceIfAllowed(targetId));
         }
       })
-      .catch((err) =>
-        console.error("Failed to create agent conversation:", err),
-      );
+      .catch((err) => {
+        if (isProjectCreateFlow(sourceFeature, agentId)) {
+          warnProjectCreateAi(
+            "useAgentLauncher → launchAgentExecution FAILED",
+            {
+              agentId,
+              sourceFeature,
+              surfaceKey,
+              conversationId: targetId,
+              error: err instanceof Error ? err.message : String(err),
+            },
+          );
+        } else {
+          console.error("Failed to create agent conversation:", err);
+        }
+      });
 
     return () => {
       cancelled = true;

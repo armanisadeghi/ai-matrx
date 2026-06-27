@@ -1,10 +1,27 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import {
+  selectAgentCustomExecutionPayload,
+  selectAgentError,
+  selectAgentFetchStatus,
+} from "@/features/agents/redux/agent-definition/selectors";
+import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectShowFreeformInput,
+  selectShowVariablePanel,
+  selectVariableInputStyle,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import {
+  isProjectCreateFlow,
+  logProjectCreateAiSnapshot,
+  logProjectCreateAiStage,
+} from "@/features/projects/debug/projectCreateAiDebug";
 import { AgentRunner } from "./AgentRunner";
 
 interface AgentRunWrapperProps {
@@ -24,6 +41,8 @@ export function AgentRunWrapper({
   onRunComplete,
 }: AgentRunWrapperProps) {
   const surfaceKey = `${sourceFeature}:${agentId}`;
+  const store = useAppStore();
+  const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);
 
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
@@ -56,17 +75,86 @@ export function AgentRunWrapper({
     }
   }, [status, onRunComplete]);
 
-  // [Track AgentRunWrapper Commit] TEMP — non-invasive render audit (useEffect,
-  // not render body) so React Compiler memoization is preserved.
-  const __wrapCommit = useRef(0);
   useEffect(() => {
-    __wrapCommit.current++;
-    if (typeof window !== "undefined") {
-      console.log(
-        `[Track AgentRunWrapper Commit] #${__wrapCommit.current} id=${conversationId ?? "(null)"}`,
-      );
+    if (!debugProjectCreate) return;
+    logProjectCreateAiStage("AgentRunWrapper mounted", {
+      agentId,
+      sourceFeature,
+      surfaceKey,
+      conversationId: conversationId ?? "(pending)",
+    });
+  }, [agentId, conversationId, debugProjectCreate, sourceFeature, surfaceKey]);
+
+  // One diagnostic snapshot per conversationId — explains why variable fields
+  // may be missing (RLS blocked agx_get_execution_full, empty definitions, etc.).
+  const snapshottedConversationRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!debugProjectCreate || !conversationId) return;
+    if (snapshottedConversationRef.current === conversationId) return;
+
+    const state = store.getState();
+    const agentPayload = selectAgentCustomExecutionPayload(state, agentId);
+    const agentError = selectAgentError(state, agentId);
+    const agentFetchStatus = selectAgentFetchStatus(state, agentId);
+    const definitions =
+      selectInstanceVariableDefinitions(conversationId)(state);
+    const showVariablePanel = selectShowVariablePanel(conversationId)(state);
+    const shouldShowVariables =
+      selectShouldShowVariables(conversationId)(state);
+    const showFreeformInput = selectShowFreeformInput(conversationId)(state);
+    const variablesPanelStyle = selectVariableInputStyle(conversationId)(state);
+    const instanceStatus = selectInstanceStatus(conversationId)(state);
+    const messageCount =
+      state.messages?.byConversationId[conversationId]?.orderedIds?.length ?? 0;
+
+    snapshottedConversationRef.current = conversationId;
+
+    logProjectCreateAiStage("instance ready — checking variable panel inputs", {
+      conversationId,
+      agentExecutionPayloadReady: agentPayload.isReady,
+      agentFetchStatus: agentFetchStatus ?? "(no agent row in Redux)",
+      agentError: agentError ?? "(none)",
+      agentVariableDefinitionCount:
+        agentPayload.variableDefinitions?.length ?? 0,
+      instanceVariableDefinitionCount: definitions.length,
+      showVariablePanel,
+      shouldShowVariables,
+      showFreeformInput,
+      variablesPanelStyle,
+      instanceStatus: instanceStatus ?? "(unset)",
+      messageCount,
+    });
+
+    if (definitions.length === 0 || !shouldShowVariables) {
+      logProjectCreateAiSnapshot("variable panel blocked", {
+        likelyCause:
+          !agentPayload.isReady && agentError
+            ? "agx_get_execution_full failed — check RLS / agent access"
+            : !agentPayload.isReady
+              ? "agent execution payload not loaded yet or returned empty row"
+              : agentPayload.variableDefinitions?.length === 0
+                ? "agent loaded but variable_definitions is empty"
+                : !showVariablePanel
+                  ? "showVariablePanel is false on the instance"
+                  : messageCount > 0
+                    ? "messages already exist — variables hidden after first turn"
+                    : "shouldShowVariables is false for another reason",
+        agentId,
+        conversationId,
+        agentPayloadReady: agentPayload.isReady,
+        agentFetchStatus,
+        agentError,
+        agentVariableDefinitions: agentPayload.variableDefinitions,
+        instanceDefinitions: definitions,
+        showVariablePanel,
+        shouldShowVariables,
+        showFreeformInput,
+        variablesPanelStyle,
+        instanceStatus,
+        messageCount,
+      });
     }
-  });
+  }, [agentId, conversationId, debugProjectCreate, store]);
 
   return (
     <AgentRunner conversationId={conversationId} surfaceKey={surfaceKey} />

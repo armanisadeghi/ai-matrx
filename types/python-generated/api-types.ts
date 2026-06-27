@@ -28367,7 +28367,7 @@ export interface components {
          * SuggestRequest
          * @description Wizard input for the Research Setup Suggest Agent.
          *
-         *     The agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —
+         *     The agent (`agent.definition.id = 4f802fd1-…`, agent_type='builtin') takes ONE variable —
          *     `subject_name_or_description`. The frontend wizard's single textarea
          *     feeds this directly. The user can paste a short name ("Arman Sadeghi"),
          *     a paragraph ("everything we know about photosynthesis cycles…"), or

@@ -21,7 +21,12 @@
  * sections of the same content, so it doesn't trip the "no tabs on mobile" rule.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
+import {
+  logProjectCreateAiStage,
+  PROJECT_CREATE_AGENT_ID,
+  PROJECT_CREATE_SOURCE_FEATURE,
+} from "@/features/projects/debug/projectCreateAiDebug";
 import { FileJson } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -29,14 +34,10 @@ import {
   CreateWithAiTabs,
   type CreateWithAiMode,
 } from "@/features/agents/components/smart/CreateWithAiTabs";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { ProjectFormCore, type ProjectFormCoreProps } from "./ProjectFormCore";
 import { ProjectImportJsonPanel } from "./ProjectImportJsonPanel";
 
-/** The agent that powers the "Use AI" create-project flow. */
-export const PROJECT_CREATE_AGENT_ID = "917074a0-fc06-4ff4-9805-4a517e04d08b";
-/** Source feature reported by traces for the "Use AI" tab. */
-export const PROJECT_CREATE_SOURCE_FEATURE: SourceFeature = "project-create";
+export { PROJECT_CREATE_AGENT_ID, PROJECT_CREATE_SOURCE_FEATURE };
 
 export type ProjectCreateMode = CreateWithAiMode;
 
@@ -66,6 +67,15 @@ export function ProjectCreatePanel({
   ...coreProps
 }: ProjectCreatePanelProps) {
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    logProjectCreateAiStage("panel mounted", {
+      agentId: PROJECT_CREATE_AGENT_ID,
+      sourceFeature: PROJECT_CREATE_SOURCE_FEATURE,
+      enableAi,
+      defaultMode,
+    });
+  }, [defaultMode, enableAi]);
 
   const handleAiRunComplete = useCallback(() => {
     // Refresh the global hierarchy so every nav-tree-derived project consumer

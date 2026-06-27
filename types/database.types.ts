@@ -837,6 +837,56 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_surface: {
+        Row: {
+          agent: Json | null
+          agent_card_visibility:
+            | "private"
+            | "internal"
+            | "link"
+            | "public"
+            | null
+          agent_category: string | null
+          agent_description: string | null
+          agent_id: string | null
+          agent_is_active: boolean | null
+          agent_name: string | null
+          agent_output_schema: Json | null
+          agent_tags: string[] | null
+          agent_type: string | null
+          agent_variable_definitions: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          organization_id: string | null
+          organizations: Json | null
+          project_id: string | null
+          surface_name: string | null
+          task_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          value_mappings: Json | null
+          version: number | null
+          visibility: "private" | "internal" | "link" | "public" | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agx_agent_surface_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_agent_surface_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
@@ -2545,6 +2595,34 @@ export type Database = {
             referencedRelation: "observational_memory"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "observational_memory_event_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observational_memory_event_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observational_memory_event_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "observational_memory_event_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request_summary"
+            referencedColumns: ["id"]
+          },
         ]
       }
       pending_injection: {
@@ -2775,7 +2853,36 @@ export type Database = {
           unified_payload?: Json | null
           user_request_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "request_snapshot_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_snapshot_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_snapshot_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "request_snapshot_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tool_call: {
         Row: {
@@ -3025,7 +3132,22 @@ export type Database = {
           ts?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tool_trace_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_trace_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_request: {
         Row: {
@@ -4842,7 +4964,15 @@ export type Database = {
           path?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "structure_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       uploads_inflight: {
         Row: {
@@ -4908,7 +5038,15 @@ export type Database = {
           upload_offset?: number
           visibility?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "uploads_inflight_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_account: {
         Row: {
@@ -5111,8 +5249,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_safe_webhook_url: { Args: { p_url: string }; Returns: boolean }
       webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
+      webhook_event_payload: {
+        Args: { p_event_id: number; p_webhook_id: string }
+        Returns: Json
+      }
       webhook_reconcile: { Args: never; Returns: number }
+      webhook_send_test: { Args: { p_webhook_id: string }; Returns: string }
       webhook_sign: {
         Args: { p_payload: string; p_secret: string }
         Returns: string
@@ -5324,6 +5468,13 @@ export type Database = {
             columns: ["episode_id"]
             isOneToOne: false
             referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_run_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -6058,7 +6209,15 @@ export type Database = {
           source?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "auto_ingest_cost_event_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bucket_structures: {
         Row: {
@@ -6198,6 +6357,13 @@ export type Database = {
             columns: ["canvas_id"]
             isOneToOne: false
             referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_comments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -6596,7 +6762,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cmp_comparison_sets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cmp_response_feedback: {
         Row: {
@@ -6707,6 +6881,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "code_file_folders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "code_file_folders_parent_folder_id_fkey"
             columns: ["parent_folder_id"]
@@ -6854,6 +7035,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "code_files_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "code_files_repository_id_fkey"
             columns: ["repository_id"]
             isOneToOne: false
@@ -6936,6 +7124,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "code_repositories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "code_repositories_root_folder_id_fkey"
             columns: ["root_folder_id"]
@@ -7305,7 +7500,15 @@ export type Database = {
           sweep_run_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_app_configs: {
         Row: {
@@ -7570,7 +7773,22 @@ export type Database = {
           total?: number | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "derive_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "derive_runs_processed_document_id_fkey"
+            columns: ["processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dev_login_audit: {
         Row: {
@@ -8967,7 +9185,15 @@ export type Database = {
           user_id?: string
           viewed_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       kg_suggestion_ack: {
         Row: {
@@ -9252,7 +9478,15 @@ export type Database = {
           target_slot_key?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kg_value_matches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       library_audit_log: {
         Row: {
@@ -9285,7 +9519,15 @@ export type Database = {
           industry_id?: string | null
           organization_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "library_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       math_course_structure: {
         Row: {
@@ -9600,7 +9842,15 @@ export type Database = {
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ner_canonicalizer_shadow_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       note_devices: {
         Row: {
@@ -9651,7 +9901,15 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "note_devices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       note_directory_mappings: {
         Row: {
@@ -9704,6 +9962,13 @@ export type Database = {
             referencedRelation: "note_folders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "note_directory_mappings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       note_folders: {
@@ -9753,6 +10018,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "note_folders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "note_folders_parent_id_fkey"
             columns: ["parent_id"]
@@ -9824,6 +10096,13 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_shares_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -10625,6 +10904,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_extraction_page_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "page_extraction_page_runs_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -10762,6 +11048,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "page_extraction_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -11115,6 +11408,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pc_studio_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pc_studio_runs_show_id_fkey"
             columns: ["show_id"]
             isOneToOne: false
@@ -11251,6 +11551,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pdf_unified_pages"
             referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_key_escrow_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -11527,6 +11834,13 @@ export type Database = {
             columns: ["canonical_clean_id"]
             isOneToOne: false
             referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -11858,6 +12172,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rs_analysis_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_analysis_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
@@ -11967,6 +12288,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rs_content_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_content_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
@@ -12055,6 +12383,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rs_document_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_document_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
@@ -12119,6 +12454,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "rs_keyword_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rs_keyword_topic_id_fkey"
             columns: ["topic_id"]
@@ -12236,6 +12578,13 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "rs_media_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rs_media_source_id_fkey"
             columns: ["source_id"]
@@ -12397,6 +12746,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rs_source_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_source_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
@@ -12548,6 +12904,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rs_synthesis_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_synthesis_previous_synthesis_id_fkey"
             columns: ["previous_synthesis_id"]
             isOneToOne: false
@@ -12612,6 +12975,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "rs_tag_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rs_tag_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
@@ -12675,7 +13045,15 @@ export type Database = {
           updated_by?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rs_template_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rs_topic: {
         Row: {
@@ -12772,6 +13150,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "rs_topic_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rs_topic_template_id_fkey"
             columns: ["template_id"]
@@ -12979,6 +13364,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sch_run_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sch_run_task_id_fkey"
             columns: ["task_id"]
@@ -13217,7 +13609,15 @@ export type Database = {
           user_id?: string
           viewed_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scope_association_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scope_item_value_suggestions: {
         Row: {
@@ -13301,7 +13701,15 @@ export type Database = {
           user_id?: string
           viewed_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scope_item_value_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scope_suggestions: {
         Row: {
@@ -13364,7 +13772,15 @@ export type Database = {
           sweep_run_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scrape_base_config: {
         Row: {
@@ -13517,6 +13933,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "scrape_cycle_run_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scrape_cycle_run_scrape_cycle_tracker_id_fkey"
             columns: ["scrape_cycle_tracker_id"]
@@ -15600,6 +16023,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "studio_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "studio_documents_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -15779,6 +16209,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "studio_recording_segments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "studio_recording_segments_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -15840,6 +16277,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "studio_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "studio_runs_session_id_fkey"
             columns: ["session_id"]
@@ -15911,6 +16355,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "studio_session_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "studio_session_settings_session_id_fkey"
             columns: ["session_id"]
@@ -16115,7 +16566,15 @@ export type Database = {
           topic?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "study_structured_section_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcategory: {
         Row: {
@@ -16788,6 +17247,13 @@ export type Database = {
             referencedRelation: "udt_datasets"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "udt_dataset_fields_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       udt_dataset_row_versions: {
@@ -16869,6 +17335,13 @@ export type Database = {
             columns: ["table_id"]
             isOneToOne: false
             referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "udt_dataset_rows_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -17043,6 +17516,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "udt_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "udt_documents_original_file_id_fkey"
             columns: ["original_file_id"]
             isOneToOne: false
@@ -17108,6 +17588,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "udt_picklist_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "udt_picklist_items_picklist_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
@@ -17159,7 +17646,15 @@ export type Database = {
           user_id?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "udt_picklists_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       udt_workbook_snapshots: {
         Row: {
@@ -17255,6 +17750,13 @@ export type Database = {
           workbook_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "udt_workbooks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "udt_workbooks_original_file_id_fkey"
             columns: ["original_file_id"]
@@ -18393,6 +18895,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "voices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "voices_sample_file_id_fkey"
             columns: ["sample_file_id"]
             isOneToOne: false
@@ -19412,7 +19921,15 @@ export type Database = {
           suppressed_until: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_kg_alerts: {
         Row: {
@@ -19436,7 +19953,15 @@ export type Database = {
           user_id: string | null
           viewed_at: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_kg_sweep_effectiveness: {
         Row: {
@@ -19493,7 +20018,15 @@ export type Database = {
           target_slot_key: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kg_value_matches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_ner_canonicalizer_shadow: {
         Row: {
@@ -19568,7 +20101,15 @@ export type Database = {
           status?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ner_canonicalizer_shadow_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_scope_suggestion_stats: {
         Row: {
@@ -19639,10 +20180,20 @@ export type Database = {
           suppressed_until: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
+      __dump_schema_ddl: { Args: { p_schema: string }; Returns: string }
+      __dump_schema_routines: { Args: { p_schema: string }; Returns: string }
       __plpgsql_show_dependency_tb:
         | {
             Args: {
@@ -20337,6 +20888,19 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_recent_activity: {
+        Args: { p_action_prefix?: string; p_limit?: number }
+        Returns: {
+          action: string
+          actor_id: string
+          entity_id: string
+          entity_type: string
+          id: number
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+        }[]
       }
       admin_reply_user_review:
         | {
@@ -21397,6 +21961,13 @@ export type Database = {
         }[]
       }
       consume_share_link: { Args: { p_token: string }; Returns: Json }
+      container_resource_counts: {
+        Args: { p_column: string; p_container_id: string }
+        Returns: {
+          n: number
+          resource_key: string
+        }[]
+      }
       convert_compiled_recipe_to_prompt: {
         Args: {
           p_compiled_recipe_id?: string
@@ -21706,6 +22277,7 @@ export type Database = {
         Returns: string
       }
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
+      current_personal_org_id: { Args: never; Returns: string }
       cx_canvas_archive: {
         Args: { p_canvas_id: string; p_include_versions?: boolean }
         Returns: undefined
@@ -28718,6 +29290,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "job_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "checkpoint"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wf_job_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: false
@@ -28779,6 +29358,13 @@ export type Database = {
           step?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "node_events_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "checkpoint"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wf_node_events_run_id_fkey"
             columns: ["run_id"]

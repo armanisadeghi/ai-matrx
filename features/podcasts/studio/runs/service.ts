@@ -8,22 +8,13 @@
 // reopened at /podcast/studio/run/[id].
 
 import { supabase } from "@/utils/supabase/client";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { PcStudioRun } from "@/features/podcasts/types";
 import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types";
 import type { Database } from "@/types/database.types";
 
 type PcStudioRunDbInsert =
   Database["public"]["Tables"]["pc_studio_runs"]["Insert"];
-
-async function resolveOrganizationId(userId: string): Promise<string> {
-  const { data, error } = await supabase.rpc("ensure_personal_organization", {
-    p_user_id: userId,
-  });
-  if (error || !data) {
-    throw error ?? new Error("Could not resolve organization for studio run");
-  }
-  return data;
-}
 
 export type PcStudioRunInsert = {
   status?: PcStudioRun["status"];
@@ -52,7 +43,7 @@ export const studioRunsService = {
     const row: PcStudioRunDbInsert = {
       ...payload,
       user_id: user.id,
-      organization_id: await resolveOrganizationId(user.id),
+      organization_id: await resolvePersonalOrgId(),
     };
 
     const { data, error } = await supabase

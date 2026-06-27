@@ -9,6 +9,11 @@
 > The work = **repoint → verify zero refs → drop.** Remaining shims to kill: **74** reorg
 > compat views (cx 23, agx 8, aga 6, tool 14, skl 6, ai 4, ctx/wr 13). Canonical docs:
 > [`db-canonical-rls.md`](./db-canonical-rls.md), sweep board `iam.canonical_sweep`.
+>
+> **Pre-commit migration drift noise:** `migrations/DB_TRANSITION_DRIFT_OK.txt` lists
+> migration files whose ledger checksums are intentionally out of sync during this
+> transition (`pnpm check:migrations` stays quiet for drift on those files only).
+> Delete the file when reconciling `_schema_migrations` checksums at teardown.
 
 ## 🔴 Teardown plan (IN PROGRESS — order matters, things will break if out of order)
 

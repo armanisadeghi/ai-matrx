@@ -8,6 +8,7 @@
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
@@ -21,12 +22,10 @@ export async function createProject(
 ): Promise<DatabaseProject | null> {
   try {
     const userId = requireUserId();
-    const { data: organizationId, error: orgError } = await supabase.rpc(
-      "ensure_personal_organization",
-      { p_user_id: userId },
-    );
-
-    if (orgError || !organizationId) {
+    let organizationId: string;
+    try {
+      organizationId = await resolvePersonalOrgId();
+    } catch (orgError) {
       console.error("Error resolving personal organization:", orgError);
       return null;
     }

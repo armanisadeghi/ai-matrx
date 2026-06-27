@@ -46,6 +46,7 @@ import {
   BookA,
   ChevronDown,
   CircleStop,
+  GitCompareArrows,
   Layers,
   Loader2,
   PanelLeftOpen,

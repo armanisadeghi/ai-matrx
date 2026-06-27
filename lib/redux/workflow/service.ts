@@ -1,5 +1,6 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { createClient } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   Workflow,
   WorkflowCreateInput,
@@ -10,8 +11,7 @@ import {
 } from "./types";
 
 /** Read-only access to preserved workflow rows in the graveyard schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const graveyardWorkflow = () => (createClient() as any).schema("graveyard").from("workflow");
+const graveyardWorkflow = () => graveyardDb(createClient()).from("workflow");
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
@@ -38,7 +38,10 @@ export const workflowService = {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.warn("[workflow/service] graveyard.workflow fetchAll error:", error);
+        console.warn(
+          "[workflow/service] graveyard.workflow fetchAll error:",
+          error,
+        );
         return [];
       }
       return (data ?? []).map(narrowWorkflow);

@@ -33,6 +33,10 @@
  * A migration intentionally not meant to apply (superseded, destructive, already
  * live) is exempted with `-- migrate: skip: <reason>` in its first 25 lines — the
  * same marker aidream's tooling honors.
+ *
+ * During the 2026 DB transition, checksum drift on shared-main migration files
+ * that were applied via MCP is exempt via `migrations/DB_TRANSITION_DRIFT_OK.txt`
+ * (delete that file when the transition completes and ledger checksums reconcile).
  */
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -164,6 +168,20 @@ function listSql(dir: string): string[] {
     .sort();
 }
 
+const DRIFT_OK_FILE = resolve(MIGRATIONS_DIR, "DB_TRANSITION_DRIFT_OK.txt");
+
+/** Filename allowlist — drift on these files is expected during DB transition. */
+function loadDriftOkSet(): Set<string> {
+  if (!existsSync(DRIFT_OK_FILE)) return new Set();
+  const ok = new Set<string>();
+  for (const line of readFileSync(DRIFT_OK_FILE, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    ok.add(trimmed);
+  }
+  return ok;
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
@@ -197,11 +215,12 @@ async function main(): Promise<number> {
   }
   const ledger = new Map(ledgerRows.map((r) => [r.filename, r.checksum]));
 
+  const driftOk = loadDriftOkSet();
   const pending: string[] = []; // on disk, never recorded
   const drifted: string[] = []; // recorded, but file content changed since
   for (const [f, sum] of local) {
     if (!ledger.has(f)) pending.push(f);
-    else if (ledger.get(f) !== sum) drifted.push(f);
+    else if (ledger.get(f) !== sum && !driftOk.has(f)) drifted.push(f);
   }
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.

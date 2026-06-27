@@ -78685,7 +78685,7 @@
           "subject_name_or_description"
         ],
         "title": "SuggestRequest",
-        "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
+        "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`agent.definition.id = 4f802fd1-…`, agent_type='builtin') takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
       },
       "SupabaseAuthWebhookPayload": {
         "properties": {

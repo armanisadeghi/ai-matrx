@@ -63,6 +63,12 @@ import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import { resolveAgentRuntime } from "@/features/agents/runtime/runtime-resolver";
 import { launchRealtimeSession } from "@/features/agents/runtime/realtime/launchRealtimeSession.thunk";
 import { isRealtimeRuntime } from "@/features/agents/runtime/pickRuntime";
+import {
+  isProjectCreateFlow,
+  logProjectCreateAiSnapshot,
+  logProjectCreateAiStage,
+  warnProjectCreateAi,
+} from "@/features/projects/debug/projectCreateAiDebug";
 
 export interface LaunchResult {
   /** The conversation id — client-generated, honored by the server end-to-end. */
@@ -397,8 +403,67 @@ export const launchAgentExecution = createAsyncThunk<
   if (agentId && !shortcutId) {
     const preState = getState() as RootState;
     const payload = selectAgentCustomExecutionPayload(preState, agentId);
+    const debugProjectCreate = isProjectCreateFlow(sourceFeature, agentId);
+
+    if (debugProjectCreate) {
+      logProjectCreateAiStage("Step 0.5 — agent execution payload pre-check", {
+        agentId,
+        payloadReady: payload.isReady,
+        existingVariableDefinitionCount:
+          payload.variableDefinitions?.length ?? 0,
+      });
+    }
+
     if (!payload.isReady) {
-      await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
+      if (debugProjectCreate) {
+        logProjectCreateAiStage(
+          "Step 0.5 — calling agx_get_execution_full (RLS-sensitive)",
+          { agentId },
+        );
+      }
+      try {
+        await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
+      } catch (err) {
+        if (debugProjectCreate) {
+          warnProjectCreateAi("Step 0.5 — agx_get_execution_full FAILED", {
+            agentId,
+            rpc: "agx_get_execution_full",
+            error: err instanceof Error ? err.message : String(err),
+            hint: "System/builtin agents need agx_get_execution_full RLS or SECURITY DEFINER access. Empty variable fields usually mean this RPC returned nothing.",
+          });
+        }
+        throw err;
+      }
+
+      const postState = getState() as RootState;
+      const postPayload = selectAgentCustomExecutionPayload(postState, agentId);
+      const agentError =
+        postState.agentDefinition.agents?.[agentId]?._error ?? null;
+
+      if (debugProjectCreate) {
+        if (!postPayload.isReady) {
+          warnProjectCreateAi(
+            "Step 0.5 — RPC succeeded but execution payload still NOT ready",
+            {
+              agentId,
+              agentError: agentError ?? "(none)",
+              variableDefinitionCount:
+                postPayload.variableDefinitions?.length ?? 0,
+              hint: "RPC returned no row or missing fields (variable_definitions, model_id, settings, …).",
+            },
+          );
+        } else {
+          logProjectCreateAiSnapshot("Step 0.5 — agent loaded for execution", {
+            agentId,
+            variableDefinitionCount:
+              postPayload.variableDefinitions?.length ?? 0,
+            variableNames:
+              postPayload.variableDefinitions?.map((v) => v.name) ?? [],
+            contextSlotCount: postPayload.contextSlots?.length ?? 0,
+            modelId: postPayload.modelId,
+          });
+        }
+      }
     }
   }
 
@@ -429,9 +494,7 @@ export const launchAgentExecution = createAsyncThunk<
           "Realtime agents must be launched from a surface with a name.",
         );
       }
-      await dispatch(
-        launchRealtimeSession({ agentId, surfaceName }),
-      ).unwrap();
+      await dispatch(launchRealtimeSession({ agentId, surfaceName })).unwrap();
       // The realtime path mounts the session on the voice surface
       // rather than creating a cx_conversation here. Return a marker
       // conversationId so the caller's contract (a string) is honored;
@@ -505,10 +568,7 @@ export const launchAgentExecution = createAsyncThunk<
         // Validation/prompt failures here are intentional launch aborts.
         shortcutSurfaceMappings = await prepareLaunchMappings({
           merged: resolvedLayers.merged,
-          applicationScope: (applicationScope ?? {}) as Record<
-            string,
-            unknown
-          >,
+          applicationScope: (applicationScope ?? {}) as Record<string, unknown>,
           interactive:
             typeof window !== "undefined" &&
             resolvedDisplayMode !== "direct" &&
@@ -594,6 +654,24 @@ export const launchAgentExecution = createAsyncThunk<
     ).unwrap();
 
     onConversationCreated?.(conversationId);
+
+    if (isProjectCreateFlow(sourceFeature, agentId)) {
+      const postCreateState = getState() as RootState;
+      const instanceDefs =
+        postCreateState.instanceVariableValues?.byConversationId[conversationId]
+          ?.definitions ?? [];
+      const uiState =
+        postCreateState.instanceUIState?.byConversationId[conversationId];
+      logProjectCreateAiStage("createManualInstance finished", {
+        conversationId,
+        instanceVariableDefinitionCount: instanceDefs.length,
+        variableNames: instanceDefs.map((v) => v.name),
+        showVariablePanel: uiState?.showVariablePanel,
+        showFreeformInput: uiState?.showFreeformInput,
+        variablesPanelStyle: uiState?.variablesPanelStyle,
+        callerShowVariablePanelOverride: resolvedShowVariablePanel,
+      });
+    }
 
     if (applicationScope) {
       const agState = getState() as RootState;
