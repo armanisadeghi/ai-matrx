@@ -364,14 +364,16 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   }),
   agent: createRecordResolver({
     openItemType: "agent",
-    table: "agx_agent",
+    schema: "agent",
+    table: "definition",
     select: "name, description",
     titleFields: ["name"],
     bodyFields: ["description"],
   }),
   agent_app: createRecordResolver({
     openItemType: "app",
-    table: "aga_apps",
+    schema: "app",
+    table: "definition",
     select: "name, description",
     titleFields: ["name"],
     bodyFields: ["description"],

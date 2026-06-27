@@ -172,7 +172,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     enrich: (s, id) =>
       fetchRow(
         s,
-        "agx_agent",
+        "definition",
         id,
         "name, description, category, model_id",
         (r) => ({
@@ -184,6 +184,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
               : null,
           ].filter(Boolean) as EnrichedItem["details"],
         }),
+        "agent",
       ),
   },
   app: {
@@ -196,12 +197,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-sky-500/20",
     },
     open: { kind: "app" },
-    detailSource: { table: "aga_apps", titleField: "name" },
+    detailSource: { table: "definition", schemaName: "app", titleField: "name" },
     enrich: (s, id) =>
-      fetchRow(s, "aga_apps", id, "name, description", (r) => ({
+      fetchRow(s, "definition", id, "name, description", (r) => ({
         name: clip(r.name, 80),
         about: clip(r.description),
-      })),
+      }), "app"),
   },
   note: {
     type: "note",

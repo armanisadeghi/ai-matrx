@@ -135,13 +135,13 @@ export const aiModelService = {
     const agents = (agentsResult.data ?? []).map((a) => ({
       id: a.id,
       name: a.name ?? a.id,
-      table: "agx_agent" as const,
+      table: "agent.definition" as const,
     }));
 
     const agentTemplates = (agentTemplatesResult.data ?? []).map((t) => ({
       id: t.id,
       name: t.name ?? t.id,
-      table: "agx_agent_templates" as const,
+      table: "agent.template" as const,
     }));
 
     return { prompts, promptBuiltins, agents, agentTemplates };

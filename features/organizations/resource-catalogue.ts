@@ -185,7 +185,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "utility",
     icon: Webhook,
     description: "Custom AI agents the team can run.",
-    table: "agx_agent",
+    // Physical table moved to `agent.definition` in the 2026 schema reorg.
+    table: "definition",
+    schemaName: "agent",
     hasOrgColumn: true,
     archivedColumn: "is_archived",
     shareKey: "agx_agent",
@@ -201,7 +203,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "utility",
     icon: AppWindow,
     description: "Packaged agent experiences — forms, chatbots, widgets.",
-    table: "aga_apps",
+    // Physical table moved to `app.definition` in the 2026 schema reorg.
+    table: "definition",
+    schemaName: "app",
     hasOrgColumn: true,
     shareKey: "aga_apps",
     titleColumn: "name",
@@ -215,7 +219,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "utility",
     icon: Zap,
     description: "One-click prompts and quick actions.",
-    table: "agx_shortcut",
+    // Physical table moved to `agent.shortcut` in the 2026 schema reorg.
+    table: "shortcut",
+    schemaName: "agent",
     hasOrgColumn: true,
     shareKey: null,
     titleColumn: "label",

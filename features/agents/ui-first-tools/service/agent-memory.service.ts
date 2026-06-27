@@ -12,7 +12,7 @@ export async function getMemory(
   key: string,
 ): Promise<unknown> {
   const { data, error } = await scratchpadDb
-    .from("cx_agent_memory")
+    .schema("chat").from("agent_memory")
     .select("value")
     .eq("conversation_id", conversationId)
     .eq("key", key)
@@ -28,7 +28,7 @@ export async function setMemory(
   key: string,
   value: unknown,
 ): Promise<void> {
-  const { error } = await scratchpadDb.from("cx_agent_memory").upsert(
+  const { error } = await scratchpadDb.schema("chat").from("agent_memory").upsert(
     {
       conversation_id: conversationId,
       user_id: userId,
@@ -44,7 +44,7 @@ export async function listMemoryKeys(
   conversationId: string,
 ): Promise<string[]> {
   const { data, error } = await scratchpadDb
-    .from("cx_agent_memory")
+    .schema("chat").from("agent_memory")
     .select("key")
     .eq("conversation_id", conversationId)
     .order("updated_at", { ascending: false });
@@ -57,7 +57,7 @@ export async function deleteMemory(
   key: string,
 ): Promise<void> {
   const { error } = await scratchpadDb
-    .from("cx_agent_memory")
+    .schema("chat").from("agent_memory")
     .delete()
     .eq("conversation_id", conversationId)
     .eq("key", key);
@@ -68,7 +68,7 @@ export async function listMemoryEntries(
   conversationId: string,
 ): Promise<CxAgentMemoryRow[]> {
   const { data, error } = await scratchpadDb
-    .from("cx_agent_memory")
+    .schema("chat").from("agent_memory")
     .select("*")
     .eq("conversation_id", conversationId);
   if (error) throw error;

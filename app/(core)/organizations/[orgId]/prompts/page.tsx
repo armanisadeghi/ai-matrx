@@ -70,7 +70,7 @@ export default function OrgAgentsPage() {
         <OrgResourceList
           orgId={resolvedOrgId}
           resourceType="agent"
-          tableName="agx_agent"
+          tableName="definition"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}

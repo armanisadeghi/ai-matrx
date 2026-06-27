@@ -1155,6 +1155,9 @@ export const aiAgent = {
         ],
     } as const;
 
+// NOTE (2026 schema reorg): ai_endpoint physical table moved to `ai.endpoint`.
+// The legacy entity system queries via `public.ai_endpoint` compat view until
+// entity-layer schema support is added (TODO: add schemaName to entity fixtures).
 export const aiEndpoint = {
         schemaType: 'table' as const,
         entityName: 'aiEndpoint',
@@ -1731,6 +1734,9 @@ export const aiEndpoint = {
         ],
     } as const;
 
+// NOTE (2026 schema reorg): ai_model physical table moved to `ai.model`.
+// The legacy entity system queries via `public.ai_model` compat view until
+// entity-layer schema support is added (TODO: add schemaName to entity fixtures).
 export const aiModel = {
         schemaType: 'table' as const,
         entityName: 'aiModel',
@@ -3530,6 +3536,9 @@ export const aiModelEndpoint = {
         ],
     } as const;
 
+// NOTE (2026 schema reorg): ai_provider physical table moved to `ai.provider`.
+// The legacy entity system queries via `public.ai_provider` compat view until
+// entity-layer schema support is added (TODO: add schemaName to entity fixtures).
 export const aiProvider = {
         schemaType: 'table' as const,
         entityName: 'aiProvider',

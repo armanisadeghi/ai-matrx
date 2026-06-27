@@ -85,7 +85,13 @@ export interface ShareableResourceEntry {
 export const SHAREABLE_RESOURCE_REGISTRY = {
   agent: {
     resourceType: "agent",
+    // `tableName` is the canonical permissions/RLS key (matches the DB
+    // `shareable_resource_registry` value the parity test checks). The physical
+    // table moved to `agent.definition` in the 2026 schema reorg, reached via
+    // `.schema('agent')` — mirror of the file/folder pattern.
     tableName: "agx_agent",
+    schemaName: "agent",
+    physicalTable: "definition",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -95,7 +101,11 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   agent_app: {
     resourceType: "agent_app",
+    // `tableName` is the canonical permissions/RLS key. Physical table moved to
+    // `app.definition` in the 2026 schema reorg, reached via `.schema('app')`.
     tableName: "aga_apps",
+    schemaName: "app",
+    physicalTable: "definition",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -145,7 +155,11 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   conversation: {
     resourceType: "conversation",
+    // `tableName` is the canonical permissions/RLS key. Physical table moved to
+    // `chat.conversation` in the 2026 schema reorg, reached via `.schema('chat')`.
     tableName: "cx_conversation",
+    schemaName: "chat",
+    physicalTable: "conversation",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",

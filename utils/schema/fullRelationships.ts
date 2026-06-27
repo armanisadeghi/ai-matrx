@@ -869,6 +869,9 @@ export const entityRelationships = {
     inverseReferences: ["aiSettings", "aiModel"],
     relationshipDetails: {
       entityName: "aiProvider",
+      // Physical table moved to `ai.provider` in the 2026 schema reorg.
+      // The legacy entity system queries via `public.ai_provider` compat view
+      // until entity-layer schema support is added (TODO: add schemaName support).
       tableName: "ai_provider",
       foreignKeys: {},
       referencedBy: {
@@ -974,6 +977,9 @@ export const entityRelationships = {
     inverseReferences: ["aiModelEndpoint", "aiSettings"],
     relationshipDetails: {
       entityName: "aiEndpoint",
+      // Physical table moved to `ai.endpoint` in the 2026 schema reorg.
+      // The legacy entity system queries via `public.ai_endpoint` compat view
+      // until entity-layer schema support is added (TODO: add schemaName support).
       tableName: "ai_endpoint",
       foreignKeys: {},
       referencedBy: {
@@ -1044,6 +1050,9 @@ export const entityRelationships = {
     inverseReferences: ["aiModelEndpoint", "aiSettings", "recipeModel"],
     relationshipDetails: {
       entityName: "aiModel",
+      // Physical table moved to `ai.model` in the 2026 schema reorg.
+      // The legacy entity system queries via `public.ai_model` compat view
+      // until entity-layer schema support is added (TODO: add schemaName support).
       tableName: "ai_model",
       foreignKeys: {
         aiProvider: {
