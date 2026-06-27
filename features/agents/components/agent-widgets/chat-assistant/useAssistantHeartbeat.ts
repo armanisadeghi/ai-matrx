@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectModeState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { updateModeState } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
@@ -12,25 +11,12 @@ export function useAssistantHeartbeat(conversationId: string) {
   const modeState = useAppSelector(selectModeState(conversationId));
   const heartbeatInterval = (modeState?.heartbeatInterval as number) ?? 0;
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    if (heartbeatInterval <= 0) return;
-
-    intervalRef.current = setInterval(() => {
-      // Skeleton: heartbeat fires but does nothing yet.
-      // Future: dispatch context push or trigger execution here.
-    }, heartbeatInterval * 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [heartbeatInterval]);
+  // NOTE: there is intentionally no setInterval here. The heartbeat feature is
+  // not implemented yet — the previous skeleton spun a real timer with an empty
+  // body, so any session with a non-zero heartbeat setting burned a ticking,
+  // re-creating interval that did nothing. The interval (with real
+  // context-push/trigger logic) must be (re)added here WHEN the feature is
+  // wired; until then the setting is just persisted state driving the UI below.
 
   const setHeartbeatInterval = (seconds: number) => {
     dispatch(
