@@ -39,11 +39,17 @@ export type GuestPromotionResult =
     };
 
 /** Minimal server-side fingerprint sanity check (mirrors fingerprint-service
- *  without importing the browser-only FingerprintJS module). */
+ *  without importing the browser-only FingerprintJS module).
+ *
+ *  SECURITY: `temp_<timestamp>_<rand>` fallback ids are REJECTED as promotion
+ *  tokens — their millisecond timestamp is guessable, which would let an
+ *  attacker enumerate a window and hijack a guest's anonymous account. A high-
+ *  entropy FingerprintJS visitorId is the only accepted promotion key; a guest
+ *  on the temp fallback simply gets a normal fresh sign-up. */
 function looksLikeFingerprint(fp: string | undefined | null): fp is string {
   if (!fp || typeof fp !== "string") return false;
+  if (fp.startsWith("temp_")) return false;
   if (fp.length < 16) return false;
-  if (fp.startsWith("temp_")) return true;
   return /^[a-zA-Z0-9]+$/.test(fp);
 }
 

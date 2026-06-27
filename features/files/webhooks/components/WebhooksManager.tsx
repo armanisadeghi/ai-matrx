@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   RotateCw,
+  Send,
   Copy,
   Check,
   ChevronDown,
@@ -32,6 +33,7 @@ import {
   listDeliveries,
   listWebhooks,
   rotateWebhookSecret,
+  sendTestWebhook,
   updateWebhook,
 } from "../service";
 import {
@@ -133,6 +135,18 @@ function WebhookCard({
       toast.success("Secret rotated");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Rotate failed");
+    }
+  };
+
+  const handleTest = async () => {
+    try {
+      await sendTestWebhook(webhook.id);
+      toast.success("Test event sent — watch Recent deliveries");
+      setExpanded(true);
+      // Give the delivery a moment to be recorded, then refresh the list.
+      setTimeout(() => void loadDeliveries(), 600);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Test failed");
     }
   };
 
@@ -289,7 +303,7 @@ export function WebhooksManager() {
         description: description.trim() || null,
         event_types: allEvents ? null : Array.from(selected),
       });
-      setJustCreatedSecret(created.secret);
+      setJustCreatedSecret(created.secret ?? null);
       setUrl("");
       setDescription("");
       setSelected(new Set());

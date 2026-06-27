@@ -10,7 +10,12 @@ export interface Webhook {
   id: string;
   owner_id: string;
   target_url: string;
-  secret: string;
+  /**
+   * The HMAC signing secret. ONLY returned at create / rotate time (shown to
+   * the user once). List reads omit it — never surface a stored secret in a
+   * network response after creation.
+   */
+  secret?: string;
   description: string | null;
   is_active: boolean;
   /** null = subscribe to ALL event types. Otherwise an allow-list of actions. */

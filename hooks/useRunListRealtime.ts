@@ -47,7 +47,10 @@ export function useRunListRealtime({
   onChangeRef.current = onChange;
 
   useEffect(() => {
-    if (!enabled || !userId) return;
+    // Guard hard against a missing/empty id — an empty filter (`user_id=eq.`)
+    // is malformed and would silently never match.
+    if (!enabled || typeof userId !== "string" || userId.length === 0) return;
+
     let timer: ReturnType<typeof setTimeout> | null = null;
     const fire = () => {
       if (timer) clearTimeout(timer);
@@ -58,9 +61,22 @@ export function useRunListRealtime({
       .channel(`run-list-${table}-${userId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table, filter }, fire)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table, filter }, fire)
-      .subscribe();
+      .subscribe((status) => {
+        // Realtime can drop silently (network blip, server restart). On a
+        // recovered subscription, refetch once so the list can't stay frozen
+        // on a status the missed events would have changed.
+        if (status === "SUBSCRIBED") fire();
+      });
+
+    // A backgrounded tab also misses events; refetch when it regains focus.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fire();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [enabled, userId, table, ownerColumn, debounceMs]);
