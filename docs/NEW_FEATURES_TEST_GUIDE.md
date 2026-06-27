@@ -73,7 +73,7 @@ If someone uses the app as a **guest** (not logged in) and creates files or chat
 ## Known gaps (honest status)
 - **AI Runs list is broken right now** — its database table (`ai_runs`) was moved to `graveyard` by the ongoing DB migration; the feature needs repointing. This is separate from the work above and is on the DB team's plate.
 - **OAuth guest preservation** — Google/Apple/GitHub sign-up doesn't yet keep guest work (only email/password does).
-- **A couple of minor polls remain** — the podcast *detail* page and the project-creation resolver still poll; low impact, the always-on list pollers are the ones that were killed.
+- **Remaining polls are intentional** — the only always-on poller that needed killing was the podcast runs list (done). The podcast *detail* page polls only as a fallback when its live stream disconnects, and the project-creation resolver is a brief one-shot wait for a new record; both are appropriate and were deliberately left as-is.
 
 ---
 
