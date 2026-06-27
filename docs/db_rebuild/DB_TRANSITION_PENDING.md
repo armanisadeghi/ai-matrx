@@ -40,6 +40,20 @@ The bulk repoint subagents reliably do literal `.from()` swaps but **miss**:
 
 > Also: **add the new schema to `pnpm db-types`** (`--schema <x>`) or every `.schema('<x>')` call fails to type — `ai` was missing.
 
+## ✅ PROGRESS (2026-06-26, this session)
+- **FE repointed off the shims** — `cx_/agx_/aga_/ai_model` config-indirection + missed `.from()` + embeds → new schemas. FE old-name `.from()` count = **0**.
+- **~80 DB functions repointed** — 24 `cx_`→`chat.*`, 33 `agx_`→`agent.*`, 6 `aga_`→`app.*`, 11 `tool_def`→`tool.*`, ctx_→`workspace.*`/`context.*`, ai_→`ai.*`, `build_category_hierarchy`→`skill.*`. Verified zero old TABLE refs (RPC function NAMES kept — FE `.rpc()` still works).
+- **3 skill SELECT policies** `task_id` branch → `workspace.tasks.created_by` (unblocks the tasks-column drop).
+- Dead `ctx_context_variables` loop removed from `resolve_full_context`.
+
+## ⛔ SHIM DROP — REMAINING GATES (do NOT drop the 74 views until BOTH clear)
+1. **aidream backend** must be off the old names — matrx-orm models + raw SQL for `cx_/agx_/aga_/tool_/ai_/skl_` regenerated to the new schemas and **deployed**. Dropping a public shim breaks aidream (PostgREST/ORM) if it still reads it. **This is the gate — confirm with the backend agents per domain before dropping.**
+2. **Legacy entity system** (`utils/schema/fullRelationships.ts`, `initialTableSchemas.ts`) reads via `supabase.from(name)` with **no `.schema()` support**, so it still needs the `ai_*` (and any other entity-registered old-name) compat views. Either add schema support to the entity layer or keep those specific views. (Most other consumers are clear.)
+
+Per-domain drop recipe: re-run the FE grep + a DB `pg_proc/pg_policy/pg_views` scan for that family → if **0** + aidream confirmed off it → `DROP VIEW public.<oldname> CASCADE`-check, then drop. The `.rpc()` function names can be renamed in a later pass (not blocking).
+
+---
+
 ## THE WORK (teardown audit, 2026-06-26 — what to repoint to finish)
 
 ### A. View-drop blockers — FE (break when `public.<old>` shims drop)
