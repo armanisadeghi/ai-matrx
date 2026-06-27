@@ -1,10 +1,14 @@
-# DB Transition — PENDING TASKS (temporary, everyone working the rebuild read this)
+# DB Transition — FINISH IT (temporary; everyone working the rebuild read this)
 
-> **TEMPORARY tracker.** The big 2026 DB changeover (schemas reorg + canonical RLS) is
-> mid-flight across `matrx-frontend` + `aidream` on a shared `main` with many concurrent
-> agents. This is the live "what's not done / what's about to break" list. Delete it when
-> the teardown is complete. Canonical mechanism docs: [`db-canonical-rls.md`](./db-canonical-rls.md),
-> [`canonical-sweep-runbook.md`](./canonical-sweep-runbook.md), sweep board = `iam.canonical_sweep`.
+> **🚨 THE APP HAS BEEN DOWN ~48h. The ONLY exit is finishing the transition — forward only.**
+> Move every consumer off the old names → drop the shims → drop the legacy columns. No
+> rollback, no half-states. **RLS / security is NOT a priority right now** — do not spend
+> time on it (the one exception worth a single `apply_rls` call is noted at the very bottom).
+> `public.scrape_*` is being **deleted** (new `scraper` schema) — ignore it entirely.
+>
+> The work = **repoint → verify zero refs → drop.** Remaining shims to kill: **74** reorg
+> compat views (cx 23, agx 8, aga 6, tool 14, skl 6, ai 4, ctx/wr 13). Canonical docs:
+> [`db-canonical-rls.md`](./db-canonical-rls.md), sweep board `iam.canonical_sweep`.
 
 ## 🔴 Teardown plan (IN PROGRESS — order matters, things will break if out of order)
 
@@ -18,7 +22,7 @@
    c. Drop `workspace.tasks.user_id` and `is_public`.
 3. **Same legacy-column drop for every other table canonicalized with a transitional bridge** (see §RLS below).
 
-## 🔴 RLS / canonical — open items
+## ⏸️ RLS / canonical — DEFERRED (do NOT work these until the app is back up; only `ai.*` apply_rls is a one-liner if you have a spare moment). Of the list below, only the **Workflow legacy-column drop** is part of the teardown (it's in §D); the rest wait.
 
 - **`_stamp_actor` can't stamp `created_by` for the BACKEND.** aidream never sets the Postgres `app.user_id` GUC, so service-role inserts get `created_by = NULL` → owner-less rows under canonical RLS. Fixed for the PostgREST path (auth.uid() fallback). **TODO:** make aidream set `app.user_id` per request (the systemic fix) so every backend-written canonical table stamps its actor. Until then, backend-owned tables need a `created_by := COALESCE(created_by, user_id)` bridge trigger.
 - **Workflow legacy-column drop** (`workflow.{definition,run,trigger}.user_id`, `workflow.definition.is_public`). The matrx-graph raw stores + auth gates were repointed to `created_by`/`visibility` this session; a `workflow._bridge_legacy_owner` trigger keeps the canonical cols synced meanwhile. **TODO after aidream deploys:** drop the bridge, drop the legacy columns, repoint `iam.can_access_run` + `public.agx_usage_scan_core` (both still read `user_id`), and update workflow `OPERATING_PRIORITIES.md` #7 (`user_id` → `created_by`).
@@ -36,10 +40,7 @@ The bulk repoint subagents reliably do literal `.from()` swaps but **miss**:
 
 > Also: **add the new schema to `pnpm db-types`** (`--schema <x>`) or every `.schema('<x>')` call fails to type — `ai` was missing.
 
-## Found problems (teardown audit, 2026-06-26 — 4 parallel agents)
-
-### 🔴 SECURITY (do first) — 30 API-exposed tables with RLS DISABLED (anon+authenticated)
-`ai.endpoint/model/provider`; `public.scrape_domain_settings/_failure_log/_path_override/_retry_queue` (anon-**writable**!), `message_template`, `ui_surface`, `ui_client`, `category`/`subcategory`, `display_option`, `extractor`/`transformer`/`processor`/`system_function`, `schema_templates`, `site_metadata`, `bucket_structures`, `full_spectrum_positions`, `wc_impairment_definition`, `ai_model_endpoint`, `ai_model_pricing`, `applet_containers`/`container_fields`, `prompt_app_categories`, `schema_migrations`/`_schema_migrations`. → enable RLS (`iam.apply_rls` or a read policy per the P1 reference-catalog decision).
+## THE WORK (teardown audit, 2026-06-26 — what to repoint to finish)
 
 ### A. View-drop blockers — FE (break when `public.<old>` shims drop)
 - **`utils/permissions/registry.ts`** — highest-leverage single file: `cx_conversation` (L148), `agx_agent` (L88), `aga_apps` (L98), `skl_definitions` (L470) in `tableName` config → add `schemaName`+`physicalTable` (skill already done as the model).
