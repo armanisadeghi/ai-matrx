@@ -39,12 +39,19 @@ External systems (the Chrome extension, partner backends, user automations) regi
 - **Delivery secrets are shown once.** `webhooks.secret` is never surfaced in a list view after creation; rotate via `rotateWebhookSecret`.
 - **One delivery per `(webhook_id, activity_log_id)`** — the unique index makes re-dispatch safe.
 
-## Roadmap (pending — see KNOWN_DEFECTS.md)
+## Phase 1 — run-lifecycle producers (PARTIAL — live on canonical-ready tables)
 
-- **Phase 1 — producers emit run lifecycle.** Run tables (`agent_run`, `ai_runs`, `pc_studio_runs`, `page_extraction_runs`, `wf_run`, `kg_sweep_run`, `scrape_cycle_run`, `derive_runs`, `studio_runs`, `legal.ingest_runs`, `scraper.crawl_runs`, `files.file_rag_jobs`) write `<domain>.run.{started,progress,completed,failed}` to `activity_log` on status change. **Blocked/coordinate:** these tables lack a clean `organization_id` (e.g. `agent_run` has only `user_id`), so the trigger needs org resolution through the in-flux `iam` model — do alongside the DB changeover, not against it. Until then, webhooks fire only for events already in the spine (file/share/permission via the Python audit bridge).
+Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a terminal status transition, with `actor_id` = the run owner (so owner webhooks match). [migrations/run_lifecycle_activity_events.sql](../../../migrations/run_lifecycle_activity_events.sql): a canonical 6-arg `platform.log_activity` overload (explicit actor — the base 5-arg stamps `auth.uid()`, NULL in a trigger) + one generic `platform.emit_run_lifecycle()` trigger reading the canonical columns (`status`, `organization_id`, `user_id`, `id`).
+
+- **Live:** `files.file_rag_jobs`, `public.kg_sweep_run` (verified end-to-end: completion → `run.completed` event with owner actor). Adding a retrofitted table = one more `create trigger … emit_run_lifecycle()` line.
+- **Not a producer:** `public.ai_runs` — its `status` is `active/archived/deleted` (record state, not job progress).
+- **Blocked on the DB changeover** (need `organization_id` + an owner column before the trigger can attach) — exact list in **KNOWN_DEFECTS D19**: `agent_run`, `pc_studio_runs`, `sch_run` (need org); `scrape_cycle_run`, `scraper.crawl_runs` (need org + a status col); `studio_runs`, `page_extraction_runs`, `page_extraction_page_runs`, `derive_runs`, `legal.ingest_runs` (need org + owner). When the DB agent retrofits one, attach the trigger.
+
+## Roadmap (pending — see KNOWN_DEFECTS.md)
 - **Transport 1 — Realtime kills in-app polling.** Convert the polling surfaces (podcast runs `useStudioRuns`/`useStudioRun`, `ai-runs` `useAiRunsList`/`useAiTasks`, RAG safety-net, project-init resolver) to Supabase Realtime on their run tables (the proven `features/scheduling/hooks/useRunStream.ts` pattern), deleting every `setInterval`/`refetchInterval`. Needs run tables added to the `supabase_realtime` publication + owner-read RLS. Generalize a single `useRunRealtime` hook rather than per-feature copies.
 - **Webhook depth:** org-wide fan-out (deliver on any org member's action — needs iam membership), manual **redeliver** button + RPC, populate `actor_id` on the Python file-audit events (currently null → those events don't match owner webhooks), `latency_ms` capture, per-feature admin-map entry.
 
 ## Change log
 
+- **2026-06-26** — Phase 1 partial: `files.file_rag_jobs` + `public.kg_sweep_run` emit `run.completed`/`run.failed` to `activity_log` (owner actor) via `platform.emit_run_lifecycle()` + a 6-arg `log_activity` overload. Verified end-to-end. Remaining run tables blocked on the changeover retrofit (KNOWN_DEFECTS D19). `ai_runs` excluded (record-state status).
 - **2026-06-26** — Built Transport 2 (DB-native outbound webhooks) on `platform.activity_log`; verified end-to-end live. Repointed `files.webhook_deliveries` off graveyarded `cld_events`. FE CRUD + `/files/webhooks` UI. Phase 1 (run-lifecycle producers) + Transport 1 (Realtime) documented as pending.
