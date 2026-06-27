@@ -144,6 +144,11 @@ const AgentConvertSystemWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
   { ssr: false },
 );
+const SystemInstructionWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/agents/SystemInstructionWindow"),
+  { ssr: false },
+);
 const AgentCreateAppWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentCreateAppWindow"),
   { ssr: false },
@@ -1029,6 +1034,9 @@ export default function OverlayController() {
     dictionarySelectorWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "dictionarySelectorWindow"),
     ),
+    systemInstructionWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "systemInstructionWindow"),
+    ),
   };
 
   const dataById = {
@@ -1278,6 +1286,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     dictionarySelectorWindow: useAppSelector((s) =>
       selectOverlayData(s, "dictionarySelectorWindow"),
+    ) as Record<string, unknown> | null,
+    systemInstructionWindow: useAppSelector((s) =>
+      selectOverlayData(s, "systemInstructionWindow"),
     ) as Record<string, unknown> | null,
   };
 
@@ -1701,6 +1712,28 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "agentConvertSystemWindow" }))
             }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
+          />
+        );
+      })()}
+
+      {/* systemInstructionWindow */}
+      {(() => {
+        const isOpen = isOpenById.systemInstructionWindow;
+        const data = dataById.systemInstructionWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const conversationId =
+          typeof data?.conversationId === "string" ? data.conversationId : "";
+        if (!conversationId) return null;
+        return (
+          <SystemInstructionWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "systemInstructionWindow" }))
+            }
+            conversationId={conversationId}
           />
         );
       })()}

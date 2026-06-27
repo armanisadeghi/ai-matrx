@@ -100,6 +100,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  systemInstructionWindow: {
+    label: "Structured System Instruction Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentCreateAppWindow: {
     label: "Agent Create App Window",
     instanceMode: "singleton",

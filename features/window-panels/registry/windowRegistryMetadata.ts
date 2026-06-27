@@ -1577,6 +1577,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
     instanceMode: "singleton",
   },
+
+  // ── Structured System Instruction ─────────────────────────────────────────
+  {
+    slug: "system-instruction-window",
+    overlayId: "systemInstructionWindow",
+    kind: "window",
+    label: "Structured System Instruction",
+    defaultData: { conversationId: "" },
+    // Ephemeral: the editor reads/writes the conversation's structured
+    // instruction in Redux; the window itself carries no state worth
+    // restoring on reload (and the conversationId is caller-supplied).
+    ephemeral: true,
+    // Settings/form-heavy surface → bottom-sheet on mobile.
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+  },
 ];
 
 // ─── Lookup maps ──────────────────────────────────────────────────────────────

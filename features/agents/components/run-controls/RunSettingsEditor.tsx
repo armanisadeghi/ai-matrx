@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, FileText, Wand2, Route } from "lucide-react";
+import { Brain, FileText, PanelRight, Wand2, Route } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +41,7 @@ import { ENDPOINTS, SPINE_V2_PATH_OVERRIDES } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
+import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
 import { NumberStepper } from "@/components/official-candidate/NumberStepper";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { MemoryControls } from "@/features/agents/components/observational-memory/components/MemoryControls";
@@ -119,6 +120,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
     }
   };
   const [sysModalOpen, setSysModalOpen] = useState(false);
+  const openSystemInstructionWindow = useOpenSystemInstructionWindow();
 
   const openMemoryInspector = () =>
     dispatch(
@@ -208,15 +210,26 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
         />
 
         {settings.useStructuredSystemInstruction && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-7 text-xs mt-1"
-            onClick={() => setSysModalOpen(true)}
-          >
-            <FileText className="w-3 h-3 mr-1.5" />
-            Configure instruction fields
-          </Button>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-7 text-xs min-w-0"
+              onClick={() => setSysModalOpen(true)}
+            >
+              <FileText className="w-3 h-3 mr-1.5 shrink-0" />
+              <span className="truncate">Dialog</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-7 text-xs min-w-0"
+              onClick={() => openSystemInstructionWindow({ conversationId })}
+            >
+              <PanelRight className="w-3 h-3 mr-1.5 shrink-0" />
+              <span className="truncate">Window</span>
+            </Button>
+          </div>
         )}
 
         <Separator className="!my-1.5" />
