@@ -20,7 +20,8 @@ export async function POST(
 
     // Fetch the source agent — RLS ensures user can only read agents they own or have access to
     const { data: agent, error: fetchError } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .select("*")
       .eq("id", id)
       .single();
@@ -35,7 +36,8 @@ export async function POST(
 
     // Check for a name collision and append date if needed
     const { data: existing } = await supabase
-      .from("agx_agent_templates")
+      .schema("agent")
+      .from("template")
       .select("id")
       .eq("name", agent.name)
       .eq("user_id", user.id)
@@ -46,7 +48,8 @@ export async function POST(
       : agent.name;
 
     const { data: newTemplate, error: insertError } = await supabase
-      .from("agx_agent_templates")
+      .schema("agent")
+      .from("template")
       .insert({
         name: templateName,
         description:

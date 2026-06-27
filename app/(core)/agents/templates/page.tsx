@@ -9,7 +9,8 @@ export default async function AgentTemplatesPage() {
   const supabase = await createClient();
 
   const { data: templates, error } = await supabase
-    .from("agx_agent_templates")
+    .schema("agent")
+    .from("template")
     .select(
       "id, name, description, category, is_featured, use_count, created_at, updated_at",
     )

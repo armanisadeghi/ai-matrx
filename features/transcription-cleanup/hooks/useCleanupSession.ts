@@ -131,7 +131,8 @@ async function fetchAgentNames(ids: string[]): Promise<Record<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return {};
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select("id, name")
     .in("id", unique);
   if (error || !data) return {};

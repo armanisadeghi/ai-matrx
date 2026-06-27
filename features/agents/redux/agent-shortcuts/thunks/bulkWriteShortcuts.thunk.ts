@@ -38,7 +38,8 @@ export const bulkCreateShortcuts = createAsyncThunk<
   );
 
   const { data, error } = await supabase
-    .from("agx_shortcut")
+    .schema("agent")
+    .from("shortcut")
     .insert(rows)
     .select();
   if (error) throw pgErrorToError(error);
@@ -69,7 +70,8 @@ export const bulkUpdateShortcuts = createAsyncThunk<
   }));
 
   const { data, error } = await supabase
-    .from("agx_shortcut")
+    .schema("agent")
+    .from("shortcut")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .upsert(rows as any, { onConflict: "id" })
     .select();

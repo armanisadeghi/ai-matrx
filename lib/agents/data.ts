@@ -52,7 +52,8 @@ export const getSystemAgentListSeed = cache(async () => {
 export const getAgent = cache(async (id: string): Promise<AgentDefinition> => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select("*")
     .eq("id", id)
     .single();

@@ -29,7 +29,8 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("agx_shortcut")
+        .schema("agent")
+        .from("shortcut")
         .select("label, description, created_at")
         .eq("id", id)
         .maybeSingle();

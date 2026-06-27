@@ -21,7 +21,8 @@ const SELECT_COLS = "id, name, description, category, tags, updated_at";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .eq("is_archived", false)

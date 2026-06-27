@@ -132,21 +132,25 @@ export function CreateAgentAppFormWrapper({
       if (agentRow && agentRow.id === id) return agentRow;
       setAgentRowLoading(true);
       try {
-        const { data, error } = await (
-          supabase as unknown as {
-            from: (t: string) => {
-              select: (s: string) => {
-                eq: (
-                  c: string,
-                  v: string,
-                ) => {
-                  single: () => Promise<{ data: any; error: any }>;
-                };
+        type AgentRowQuery = {
+          from: (t: string) => {
+            select: (s: string) => {
+              eq: (
+                c: string,
+                v: string,
+              ) => {
+                single: () => Promise<{ data: any; error: any }>;
               };
             };
+          };
+        };
+        const { data, error } = await (
+          supabase as unknown as {
+            schema: (s: string) => AgentRowQuery;
           }
         )
-          .from("agx_agent")
+          .schema("agent")
+          .from("definition")
           .select("*")
           .eq("id", id)
           .single();

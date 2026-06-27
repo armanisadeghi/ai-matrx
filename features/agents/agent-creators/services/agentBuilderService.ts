@@ -126,7 +126,8 @@ export async function createAgentFromBuilder(
     } satisfies AgentInsert;
 
     const { data, error: insertError } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .insert(payload)
       .select("id")
       .single();

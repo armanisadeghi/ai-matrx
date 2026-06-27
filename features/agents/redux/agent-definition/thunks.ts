@@ -324,7 +324,8 @@ export const fetchFullAgent = createAsyncThunk<void, string, ThunkApi>(
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 
     const { data, error } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .select("*")
       .eq("id", agentId)
       .single();
@@ -447,7 +448,8 @@ export const saveAgentField = createAsyncThunk<
     dispatch(setAgentField({ id: agentId, field, value }));
 
     const { data, error } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .update(
         agentDefinitionToUpdate({ [field]: value } as Partial<AgentDefinition>),
       )
@@ -504,7 +506,8 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
     if (isSyntheticAgentId(agentId)) return;
 
     const { data: current, error: readError } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .select("tool_config")
       .eq("id", agentId)
       .single();
@@ -523,7 +526,8 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
         : {};
 
     const { data, error } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .update({
         tool_config: {
           ...existingConfig,
@@ -579,7 +583,8 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
     dispatch(setAgentLoading({ id: agentId, loading: true }));
 
     const { data, error } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .update(agentDefinitionToUpdate(dirtyPartial))
       .eq("id", agentId)
       .select("version, updated_at")
@@ -689,7 +694,8 @@ export const createAgent = createAsyncThunk<
   };
 
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .insert(agentDefinitionToInsert(draft))
     .select()
     .single();
@@ -708,7 +714,8 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
   "agentDefinition/delete",
   async (agentId, { dispatch }) => {
     const { error } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .delete()
       .eq("id", agentId);
 
@@ -1120,7 +1127,8 @@ export const fetchLinkedCounterpart = createAsyncThunk<
   const uid = selectUserId(getState());
 
   const { data: selfRow, error: selfErr } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select(LINKED_REF_COLS)
     .eq("id", agentId)
     .maybeSingle<LinkedRefRow>();
@@ -1130,7 +1138,8 @@ export const fetchLinkedCounterpart = createAsyncThunk<
   let source: LinkedAgentRef | null = null;
   if (selfRow.source_agent_id) {
     const { data: srcRow, error: srcErr } = await supabase
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .select(LINKED_REF_COLS)
       .eq("id", selfRow.source_agent_id)
       .maybeSingle<LinkedRefRow>();
@@ -1139,7 +1148,8 @@ export const fetchLinkedCounterpart = createAsyncThunk<
   }
 
   const { data: derivedRows, error: derErr } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select(LINKED_REF_COLS)
     .eq("source_agent_id", agentId)
     .eq("is_archived", false)
@@ -1211,7 +1221,8 @@ export const createPersonalCopy = createAsyncThunk<
 
     if (uid) {
       const { data: existing, error: existErr } = await supabase
-        .from("agx_agent")
+        .schema("agent")
+        .from("definition")
         .select("id")
         .eq("source_agent_id", systemAgentId)
         .eq("user_id", uid)

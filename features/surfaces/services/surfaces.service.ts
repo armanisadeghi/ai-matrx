@@ -52,7 +52,7 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
       .select("surface_name, always_include_tools, always_include_bundles"),
     c.schema("tool").from("bundle_member").select("bundle_id"),
     c.schema("tool").from("bundle").select("id, name"),
-    c.from("agx_agent_surface").select("surface_name"),
+    c.schema("agent").from("agent_surface").select("surface_name"),
     c.from("ui_surface_value").select("surface_name"),
   ]);
   if (surfacesRes.error) throw surfacesRes.error;
@@ -448,7 +448,8 @@ export async function listSurfaceValues(
 /** List the agent ↔ surface bindings for a surface (admin overview). */
 export async function listAgentBindings(surfaceName: string) {
   const { data, error } = await sb()
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .select(
       "id, agent_id, user_id, organization_id, project_id, task_id, value_mappings",
     )

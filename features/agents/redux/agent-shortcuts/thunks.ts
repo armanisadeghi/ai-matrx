@@ -480,7 +480,8 @@ export const fetchFullShortcut = createAsyncThunk<void, string, ThunkApi>(
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
     const { data, error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .select("*")
       .eq("id", shortcutId)
       .single();
@@ -519,7 +520,8 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
     dispatch(setShortcutLoading({ id: shortcutId, loading: true }));
 
     const { error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .update(agentShortcutToUpdate(dirtyPartial))
       .eq("id", shortcutId);
 
@@ -557,7 +559,8 @@ export const saveShortcutField = createAsyncThunk<
     dispatch(setShortcutField({ id: shortcutId, field, value }));
 
     const { error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .update(
         agentShortcutToUpdate({ [field]: value } as Partial<AgentShortcut>),
       )
@@ -595,7 +598,8 @@ export const createShortcut = createAsyncThunk<
   };
 
   const { data, error } = await supabase
-    .from("agx_shortcut")
+    .schema("agent")
+    .from("shortcut")
     .insert(agentShortcutToInsert(draft))
     .select()
     .single();
@@ -614,7 +618,8 @@ export const deleteShortcut = createAsyncThunk<void, string, ThunkApi>(
   "agentShortcut/delete",
   async (shortcutId, { dispatch }) => {
     const { error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .delete()
       .eq("id", shortcutId);
 

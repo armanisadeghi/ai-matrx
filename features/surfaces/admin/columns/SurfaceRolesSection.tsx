@@ -79,7 +79,8 @@ export function SurfaceRolesSection({
     if (missing.length === 0) return;
     void (async () => {
       const { data, error } = await createClient()
-        .from("agx_agent")
+        .schema("agent")
+        .from("definition")
         .select("id, name")
         .in("id", missing);
       if (error || !data) return;

@@ -39,7 +39,8 @@ export async function GET(request: Request) {
     }
 
     const { data, error } = await adminClient
-      .from("agx_agent")
+      .schema("agent")
+      .from("definition")
       .select(
         "id, name, description, category, tags, version, source_agent_id, source_snapshot_at, created_at, updated_at, variable_definitions",
       )

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const placementType = searchParams.get("placement_type");
     const isActive = searchParams.get("is_active");
 
-    let query = supabase.from("agx_shortcut").select("*");
+    let query = supabase.schema("agent").from("shortcut").select("*");
 
     if (scope === "global") {
       query = query
@@ -177,7 +177,8 @@ export async function POST(request: NextRequest) {
     if (scoped instanceof NextResponse) return scoped;
 
     const { data, error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .insert(scoped as never)
       .select()
       .single();

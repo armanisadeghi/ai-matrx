@@ -68,7 +68,8 @@ export async function fetchSurfaceBindingLayers(
   surfaceName: string,
 ): Promise<MappingLayer[]> {
   const { data, error } = await sb()
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .select(
       "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
     )
@@ -113,7 +114,8 @@ export async function listAgentSurfaceBindings(
   agentId: string,
 ): Promise<AgentSurfaceBinding[]> {
   const { data, error } = await sb()
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .select(
       "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
     )
@@ -145,7 +147,8 @@ export async function upsertAgentSurfaceBinding(args: {
 
   if (existing) {
     const { data, error } = await sb()
-      .from("agx_agent_surface")
+      .schema("agent")
+      .from("agent_surface")
       .update({ value_mappings: valueMappings })
       .eq("id", existing.id)
       .select(
@@ -157,7 +160,8 @@ export async function upsertAgentSurfaceBinding(args: {
   }
 
   const { data, error } = await sb()
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .insert({
       agent_id: agentId,
       surface_name: surfaceName,
@@ -181,7 +185,8 @@ async function findBinding(
   scope: ScopeInput,
 ): Promise<AgentSurfaceBinding | null> {
   let query = sb()
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .select(
       "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
     )
@@ -212,7 +217,11 @@ async function findBinding(
 }
 
 export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
-  const { error } = await sb().from("agx_agent_surface").delete().eq("id", id);
+  const { error } = await sb()
+    .schema("agent")
+    .from("agent_surface")
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
 

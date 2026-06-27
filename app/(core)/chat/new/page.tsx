@@ -15,7 +15,8 @@ import { WorkspaceConversionNudge } from "@/features/auth/components/conversion/
 async function resolveDefaultAgentName(): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select("name")
     .eq("id", DEFAULT_NEW_CHAT_AGENT_ID)
     .maybeSingle();

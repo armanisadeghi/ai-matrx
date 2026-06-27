@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       src = agent_data;
     } else {
       const { data: agent, error: fetchError } = await adminClient
-        .from("agx_agent")
+        .schema("agent").from("definition")
         .select("*")
         .eq("id", agent_id)
         .single();
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       // the source agent. Prevents admins from accidentally (or intentionally)
       // clobbering an unrelated system agent via a stale/forged id.
       const { data: target, error: targetError } = await adminClient
-        .from("agx_agent")
+        .schema("agent").from("definition")
         .select("id, agent_type, source_agent_id")
         .eq("id", system_agent_id)
         .single();
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
       }
 
       const { error: updateError } = await adminClient
-        .from("agx_agent")
+        .schema("agent").from("definition")
         .update({
           ...snapshot,
           source_agent_id: agent_id,
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     } else {
       // CREATE new system agent
       const { data: created, error: insertError } = await adminClient
-        .from("agx_agent")
+        .schema("agent").from("definition")
         .insert({
           ...snapshot,
           agent_type: "builtin",

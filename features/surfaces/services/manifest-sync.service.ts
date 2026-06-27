@@ -220,7 +220,8 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
       sb.from("ui_surface_agent_role").select("*"),
       sb.from("ui_surface_config").select("namespace"),
       sb
-        .from("agx_agent_surface")
+        .schema("agent")
+        .from("agent_surface")
         .select("id, surface_name, value_mappings")
         .neq("value_mappings", "{}"),
     ]);
@@ -507,7 +508,8 @@ export async function remediateBrokenMapping(
   const { bindingId, mappingKey, remediation } = args;
 
   const { data: row, error: readErr } = await sb
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .select("id, value_mappings")
     .eq("id", bindingId)
     .single();
@@ -527,7 +529,8 @@ export async function remediateBrokenMapping(
     );
   }
   const { error: writeErr } = await sb
-    .from("agx_agent_surface")
+    .schema("agent")
+    .from("agent_surface")
     .update({ value_mappings: next as unknown as Json })
     .eq("id", bindingId);
   if (writeErr) throw writeErr;

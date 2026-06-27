@@ -63,7 +63,8 @@ export async function GET(
     }
 
     const { data, error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .select("*")
       .eq("id", id)
       .maybeSingle();
@@ -130,7 +131,8 @@ export async function PATCH(
     }
 
     const { data, error } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .update(updatePayload as never)
       .eq("id", id)
       .select()
@@ -182,7 +184,8 @@ export async function DELETE(
     }
 
     const { error, count } = await supabase
-      .from("agx_shortcut")
+      .schema("agent")
+      .from("shortcut")
       .delete({ count: "exact" })
       .eq("id", id);
 

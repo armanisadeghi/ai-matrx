@@ -31,9 +31,15 @@ export async function GET() {
       client
         .from("shortcut_categories")
         .select("*", { count: "exact", head: true }),
-      client.from("agx_shortcut").select("*", { count: "exact", head: true }),
+      client
+        .schema("agent")
+        .from("shortcut")
+        .select("*", { count: "exact", head: true }),
       client.from("content_blocks").select("*", { count: "exact", head: true }),
-      client.from("agx_agent").select("*", { count: "exact", head: true }),
+      client
+        .schema("agent")
+        .from("definition")
+        .select("*", { count: "exact", head: true }),
       client
         .from("shortcut_categories")
         .select(
@@ -41,7 +47,8 @@ export async function GET() {
         )
         .limit(10),
       client
-        .from("agx_shortcut")
+        .schema("agent")
+        .from("shortcut")
         .select(
           "id,label,category_id,agent_id,is_active,user_id,organization_id",
         )

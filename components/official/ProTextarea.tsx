@@ -365,7 +365,8 @@ export const ProTextarea = React.forwardRef<
       let cancelled = false;
       void (async () => {
         const { data } = await supabase
-          .from("agx_agent")
+          .schema("agent")
+          .from("definition")
           .select("name")
           .eq("id", selectedAgent)
           .maybeSingle();

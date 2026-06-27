@@ -71,7 +71,8 @@ export async function createAgentFromSeed(
   }
 
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .insert({ ...seedToInsertPayload(seed), user_id: user.id })
     .select("id")
     .single();
@@ -107,7 +108,8 @@ export async function createSystemAgentFromSeed(
 
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .insert({
       ...seedToInsertPayload(seed),
       agent_type: "builtin",

@@ -192,7 +192,8 @@ export const fetchDriftAlerts = createAsyncThunk<void, { force?: boolean } | voi
     dispatch(alertsPending());
     try {
       const { data, error } = await supabase
-        .from("agx_drift_alert")
+        .schema("agent")
+        .from("drift_alert")
         .select("*")
         .in("status", ["pending", "acknowledged"])
         .order("detected_at", { ascending: false });
@@ -210,7 +211,8 @@ export const markDriftAlertViewed = createAsyncThunk<void, string, ThunkApi>(
   async (alertId, { dispatch }) => {
     dispatch(alertViewed(alertId));
     const { error } = await supabase
-      .from("agx_drift_alert")
+      .schema("agent")
+      .from("drift_alert")
       .update({ viewed_at: new Date().toISOString() })
       .eq("id", alertId)
       .is("viewed_at", null);
@@ -227,7 +229,8 @@ export const dismissDriftAlert = createAsyncThunk<
 >("agentUsages/dismissAlert", async ({ alertId, previousStatus }, { dispatch }) => {
   dispatch(alertDismissed(alertId));
   const { error } = await supabase
-    .from("agx_drift_alert")
+    .schema("agent")
+    .from("drift_alert")
     .update({ status: "dismissed", dismissed_at: new Date().toISOString() })
     .eq("id", alertId);
   if (error) {

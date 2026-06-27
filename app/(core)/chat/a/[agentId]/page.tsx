@@ -16,7 +16,8 @@ interface DirectAgentChatPageProps {
 async function resolveAgentName(agentId: string): Promise<string | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("agx_agent")
+    .schema("agent")
+    .from("definition")
     .select("name")
     .eq("id", agentId)
     .maybeSingle();
