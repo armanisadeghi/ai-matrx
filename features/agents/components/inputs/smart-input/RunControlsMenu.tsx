@@ -25,6 +25,7 @@
  */
 
 import { useState, type ComponentType, type ReactNode } from "react";
+import { PromptPreviewModal } from "@/features/agents/prompt-preview/PromptPreviewModal";
 import {
   SlidersHorizontal,
   Plus,
@@ -36,6 +37,7 @@ import {
   Layers,
   Crown,
   Bug,
+  ScrollText,
   SlidersVertical,
   FileText,
   Maximize2,
@@ -170,6 +172,7 @@ function RunControlsTabPanel({
     fullscreen ? "min-h-0 flex-1" : "h-96",
   );
   const scrollClass = "h-full overflow-y-auto overscroll-contain";
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   return (
     <div className={panelClass}>
@@ -288,6 +291,29 @@ function RunControlsTabPanel({
               </span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-500">
+              <ScrollText className="h-5 w-5" />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-sm font-medium text-foreground">
+                Preview full prompt
+              </span>
+              <span className="text-xs text-muted-foreground">
+                See exactly what goes to the model — context, system prompt, tools
+              </span>
+            </span>
+          </button>
+          <PromptPreviewModal
+            conversationId={conversationId}
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+          />
         </div>
       )}
     </div>
