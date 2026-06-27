@@ -39,13 +39,14 @@ External systems (the Chrome extension, partner backends, user automations) regi
 - **Delivery secrets are shown once.** `webhooks.secret` is never surfaced in a list view after creation; rotate via `rotateWebhookSecret`.
 - **One delivery per `(webhook_id, activity_log_id)`** — the unique index makes re-dispatch safe.
 
-## Phase 1 — run-lifecycle producers (PARTIAL — live on canonical-ready tables)
+## Phase 1 — run-lifecycle producers (COMPLETE)
 
-Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a terminal status transition, with `actor_id` = the run owner (so owner webhooks match). [migrations/run_lifecycle_activity_events.sql](../../../migrations/run_lifecycle_activity_events.sql): a canonical 6-arg `platform.log_activity` overload (explicit actor — the base 5-arg stamps `auth.uid()`, NULL in a trigger) + one generic `platform.emit_run_lifecycle()` trigger reading the canonical columns (`status`, `organization_id`, `user_id`, `id`).
+Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a terminal status transition, with `actor_id` = the run owner (so owner webhooks match). [migrations/run_lifecycle_activity_events.sql](../../../migrations/run_lifecycle_activity_events.sql): a canonical 6-arg `platform.log_activity` overload (explicit actor — the base 5-arg stamps `auth.uid()`, NULL in a trigger) + one **generic** `platform.emit_run_lifecycle()` trigger that reads canonical fields from `to_jsonb(NEW)` by name — so it tolerates either owner column (`owner = coalesce(user_id, triggered_by)`) and any future run table.
 
-- **Live:** `files.file_rag_jobs`, `public.kg_sweep_run` (verified end-to-end: completion → `run.completed` event with owner actor). Adding a retrofitted table = one more `create trigger … emit_run_lifecycle()` line.
+- **Attached to 12 tables** (verified end-to-end for both owner shapes): `files.file_rag_jobs`, `public.kg_sweep_run`, `public.agent_run`, `public.pc_studio_runs`, `public.sch_run`, `public.scrape_cycle_run`, `scraper.crawl_runs`, `public.studio_runs`, `public.page_extraction_runs` (owner `triggered_by`), `public.page_extraction_page_runs`, `public.derive_runs`, `legal.ingest_runs` (owner `triggered_by`).
+- **Add a new run table:** one line in the `do` block (`('schema','table')`) — no function change.
 - **Not a producer:** `public.ai_runs` — its `status` is `active/archived/deleted` (record state, not job progress).
-- **Blocked on the DB changeover** (need `organization_id` + an owner column before the trigger can attach) — exact list in **KNOWN_DEFECTS D19**: `agent_run`, `pc_studio_runs`, `sch_run` (need org); `scrape_cycle_run`, `scraper.crawl_runs` (need org + a status col); `studio_runs`, `page_extraction_runs`, `page_extraction_page_runs`, `derive_runs`, `legal.ingest_runs` (need org + owner). When the DB agent retrofits one, attach the trigger.
+- **Caveat:** `organization_id` is nullable on most run tables (parents carry no org); existing rows are NULL → the trigger skips them (org-null guard). The app populates org on new runs going forward; events only fire once a run has an org.
 
 ## Roadmap (pending — see KNOWN_DEFECTS.md)
 - **Transport 1 — Realtime kills in-app polling.** Convert the polling surfaces (podcast runs `useStudioRuns`/`useStudioRun`, `ai-runs` `useAiRunsList`/`useAiTasks`, RAG safety-net, project-init resolver) to Supabase Realtime on their run tables (the proven `features/scheduling/hooks/useRunStream.ts` pattern), deleting every `setInterval`/`refetchInterval`. Needs run tables added to the `supabase_realtime` publication + owner-read RLS. Generalize a single `useRunRealtime` hook rather than per-feature copies.
@@ -53,5 +54,5 @@ Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a termin
 
 ## Change log
 
-- **2026-06-26** — Phase 1 partial: `files.file_rag_jobs` + `public.kg_sweep_run` emit `run.completed`/`run.failed` to `activity_log` (owner actor) via `platform.emit_run_lifecycle()` + a 6-arg `log_activity` overload. Verified end-to-end. Remaining run tables blocked on the changeover retrofit (KNOWN_DEFECTS D19). `ai_runs` excluded (record-state status).
+- **2026-06-26** — Phase 1 **complete**: all 12 canonical run tables emit `run.completed`/`run.failed` (owner actor) via the generic `platform.emit_run_lifecycle()` trigger (`to_jsonb(NEW)`, owner = `coalesce(user_id, triggered_by)`) + a 6-arg `log_activity` overload. Both owner shapes verified end-to-end. `ai_runs` excluded (record-state status).
 - **2026-06-26** — Built Transport 2 (DB-native outbound webhooks) on `platform.activity_log`; verified end-to-end live. Repointed `files.webhook_deliveries` off graveyarded `cld_events`. FE CRUD + `/files/webhooks` UI. Phase 1 (run-lifecycle producers) + Transport 1 (Realtime) documented as pending.
