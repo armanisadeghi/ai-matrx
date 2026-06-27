@@ -21,8 +21,15 @@ import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatal
 import { ActionCatalogGrid } from "@/features/action-catalog/components/ActionCatalogGrid";
 import { ActionBuilderPanel } from "@/features/action-catalog/components/ActionBuilderPanel";
 
-/** Light polling so the grid reflects the live backend without a redeploy. */
-const POLL_MS = 30_000;
+/**
+ * No polling. The action catalog is static metadata — the set of registered
+ * Python functions only changes on a backend redeploy, never at runtime. A 30s
+ * timer hitting the (agent-saturated) Python backend forever, from an always-
+ * open admin page, to re-read data that didn't change, is pure waste (rule 3:
+ * don't poll the server). The manual Refresh button covers the rare
+ * post-redeploy case. `0` disables the interval in `useActionCatalog`.
+ */
+const POLL_MS = 0;
 
 export function ActionCatalogClient() {
   // The route group is super-admin gated; this is the single, obvious in-page
