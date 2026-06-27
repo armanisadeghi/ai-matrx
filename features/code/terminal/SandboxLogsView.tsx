@@ -82,7 +82,8 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
   // component stays mounted (CSS-hidden) when the user switches to another
   // bottom-panel tab, and a 3s log poll against the orchestrator has no reason
   // to run for a panel nobody is looking at. Becoming visible re-runs this
-  // effect and refetches immediately, so the buffer is current on return.
+  // effect and (unless the user has paused) refetches immediately, so the
+  // buffer is current on return.
   useEffect(() => {
     if (paused || !visible) return;
     void fetchOnce();

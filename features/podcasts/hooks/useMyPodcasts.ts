@@ -6,7 +6,7 @@
 // (stamped via pc_episodes.user_id) plus the shows available to host new
 // episodes. Used by the Studio dashboard and the generator's show picker.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { podcastService } from "@/features/podcasts/service";
@@ -92,20 +92,31 @@ export function useMyPodcasts(): UseMyPodcasts {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // One mount flag for BOTH the initial load and the public refresh(), so
+  // neither setState path fires after unmount (refresh can be awaited by a
+  // caller whose component unmounts mid-flight).
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const load = useCallback(
-    async (force: boolean, isMounted: () => boolean) => {
+    async (force: boolean) => {
       setLoading(true);
       setError(null);
       try {
         const data = await loadMyPodcasts(userId, force);
-        if (!isMounted()) return;
+        if (!mountedRef.current) return;
         setEpisodes(data.episodes);
         setShows(data.shows);
       } catch (e) {
-        if (!isMounted()) return;
+        if (!mountedRef.current) return;
         setError(e instanceof Error ? e.message : "Failed to load your podcasts");
       } finally {
-        if (isMounted()) setLoading(false);
+        if (mountedRef.current) setLoading(false);
       }
     },
     [userId],
@@ -114,15 +125,11 @@ export function useMyPodcasts(): UseMyPodcasts {
   // Public refresh forces past the cache (e.g. after creating an episode
   // elsewhere); the mount load reuses the shared cache/in-flight entry.
   const refresh = useCallback(async () => {
-    await load(true, () => true);
+    await load(true);
   }, [load]);
 
   useEffect(() => {
-    let mounted = true;
-    void load(false, () => mounted);
-    return () => {
-      mounted = false;
-    };
+    void load(false);
   }, [load]);
 
   const registerShow = useCallback(
