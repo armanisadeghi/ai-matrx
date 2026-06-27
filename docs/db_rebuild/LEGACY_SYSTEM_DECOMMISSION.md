@@ -65,11 +65,23 @@ _(populate: slices, hooks, utils, components, types, routes; mark imported-by-ne
 - `features/chat/` (legacy) ← live markdown-render blocks + `features/conversation/`.
 - **Implication:** no bulk folder delete is safe; each needs per-importer rework first. Big-bang = prod break. Execute as careful waves with tsc + adversarial check between each. The 380K-line entity removal is a coordinated effort, NOT an autonomous one-shot.
 
-## Workflow KEEP target (render fixes) — `/legacy/workflows-new/[id]` (xyflow v12)
-- ⬜ Unblock layout gate `app/(legacy)/legacy/workflows-new/WorkflowsNewLayoutClient.tsx` (`useCombinedFunctionsWithArgs` never resolves → canvas never mounts).
-- ⬜ Point `lib/redux/workflow/service.ts` + `workflow-nodes/service.ts` at `graveyard.workflow`/`workflow_node`.
-- ⬜ Guard dead entity fetches in `features/workflows-xyflow/hooks/useCategoryNodeData.ts`.
-- ⬜ Stub `features/workflows/service/recipe-service.ts:125` (`compiled_recipe`).
+## Workflow KEEP target — `/legacy/workflows-new/[id]` (xyflow v12) — ✅ RENDERS (tsc clean)
+- ✅ Unblocked layout gate (dropped the 3 deleted-table emptiness checks); ✅ services read `graveyard.workflow`/`workflow_node`; ✅ guarded `useCategoryNodeData`; ✅ stubbed `recipe-service.ts` compiled_recipe.
+- ⏸️ **Data visibility (user call):** 52 rows exist in `graveyard.workflow` (RLS on, owner=`user_id`) but `graveyard` likely isn't PostgREST-exposed → list shows empty (no crash). To show data: scoped `SECURITY DEFINER` read RPC (preferred) OR expose graveyard (security trade-off — exposes all dead tables). NOT auto-done.
+
+## Adversarial verdict (verified) — NO safe bulk delete; unblock reworks required
+- `features/workflows/` (old) — BLOCKED: `lib/redux/workflows/db-function-node/dbFunctionNodeSlice.ts` is in the MAIN store (all core routes) + `components/ui/broker-selector*`. Rework: rewrite slice off `features/workflows` imports; port the 4 `workflows-xyflow` cross-imports into xyflow.
+- `features/prompts/` — HARD BLOCKED: Resource cluster + `DesktopFilterPanel` + `SystemPromptOptimizer` (core agents), `ResourceChips`+`Resource` (core chat), `LegacyPromptOverlaysController` (`app/DeferredSingletons.tsx` root), public-chat, prompt redux slices in main store.
+- `features/prompt-builtins/` — BLOCKED: live (admin) routes + admin API.
+- `features/recipes/` — BLOCKED: (admin) `multi-applet-selector` → applet builder → recipes types.
+- `features/chat/` — NOT a delete target (live; markdown print blocks depend on it).
+- Self-contained ROUTE folders deletable (with their feature islands): `(transitional)/ai/recipes`, `(transitional)/ai/prompts`, `(transitional)/prompt-apps`. Feature islands `features/registered-function/` + `hooks/run-recipe/` deletable WITH their transitional/dev consumers (must delete together or transitional build breaks).
+
+## Unblock reworks (do these to enable deletion; build-verifiable, low runtime risk)
+1. 🔄 **Resource cluster → agent system**: copy `features/prompts/{types/resources.ts,utils/resource-formatting.ts,components/resource-display/ResourceChips.tsx}` (+ ResourcesContainer/resource-parsing used by public-chat) into `features/agents/`; repoint LIVE importers (agents, chat, public-chat, cx-chat). Unblocks prompt-feature deletion.
+2. ⬜ Move `DesktopFilterPanel`, `SystemPromptOptimizer` → shared/agents (used by core agents).
+3. ⬜ Extract `MatrxRecordId` (`= string`) → shared `types/` (cuts entity blockers 3/6/7).
+4. ⬜ Rewrite `dbFunctionNodeSlice` off `features/workflows` imports (unblocks old-workflow delete).
 
 ## Open questions for user
 - ⬜ TBD
