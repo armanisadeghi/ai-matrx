@@ -34,8 +34,9 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Check, X, Loader2, Copy, Zap, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter, usePathname } from "next/navigation";
-import { createUserPrompt } from "@/lib/redux/thunks/promptCrudThunks";
+import { usePathname } from "next/navigation";
+// TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is graveyarded.
+// Replace with agent.definition upsert once the prompt-to-agent migration completes.
 import { FullPromptOptimizer } from "./FullPromptOptimizer";
 import MarkdownStream from "@/components/MarkdownStream";
 
@@ -72,8 +73,7 @@ export function SystemPromptOptimizer({
 }: SystemPromptOptimizerProps) {
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();
-  const router = useRouter();
-  const basePath = usePromptsBasePath();
+  // NOTE: router / basePath removed — previously used by the graveyarded "Save as Copy" path.
 
   const [additionalGuidance, setAdditionalGuidance] = useState("");
   const [showGuidanceInput, setShowGuidanceInput] = useState(false);
@@ -187,76 +187,16 @@ export function SystemPromptOptimizer({
   };
 
   const handleSaveAsCopy = async () => {
-    if (!streamingText.trim()) {
-      toast.error("No optimized text to save");
-      return;
-    }
-
-    if (!fullPromptObject) {
-      toast.error("Cannot save as copy - full prompt data not available");
-      return;
-    }
-
-    setIsSavingCopy(true);
-
-    try {
-      // Prepare the name with " (v2)" suffix
-      const newName = `${fullPromptObject.name || "Untitled"} (v2)`;
-
-      // Get all messages and update the system message
-      const messages = Array.isArray(fullPromptObject.messages)
-        ? [...fullPromptObject.messages]
-        : [];
-
-      // Find and update system message, or add it if it doesn't exist
-      const systemMessageIndex = messages.findIndex(
-        (m: any) => m.role === "system",
-      );
-      if (systemMessageIndex !== -1) {
-        messages[systemMessageIndex] = {
-          ...messages[systemMessageIndex],
-          content: streamingText,
-        };
-      } else {
-        // Add system message at the beginning if it doesn't exist
-        messages.unshift({ role: "system", content: streamingText });
-      }
-
-      // Create new prompt data
-      const promptData = {
-        name: newName,
-        description: fullPromptObject.description,
-        messages,
-        variableDefaults:
-          fullPromptObject.variableDefaults ||
-          fullPromptObject.variable_defaults ||
-          [],
-        settings: fullPromptObject.settings || {},
-      };
-
-      // Create the new prompt
-      const result = await dispatch(
-        createUserPrompt(promptData as any),
-      ).unwrap();
-
-      if (result?.id) {
-        toast.success("Copy created successfully", {
-          description: "Opening the new prompt...",
-        });
-        handleClose();
-        // Route to the newly created prompt's edit page
-        router.push(`${basePath}/edit/${result.id}`);
-      } else {
-        throw new Error("Failed to create prompt copy");
-      }
-    } catch (error) {
-      console.error("Error creating prompt copy:", error);
-      toast.error("Failed to create copy", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    } finally {
-      setIsSavingCopy(false);
-    }
+    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+    // The old createUserPrompt path is broken. This flow needs to be rewritten
+    // to create an agent.definition row instead. Until then, surface a clear error
+    // so users know "Save as Copy" is temporarily unavailable rather than seeing
+    // a silent failure or a cryptic Supabase 404.
+    toast.error("Save as Copy is temporarily unavailable", {
+      description:
+        "The prompt storage system is being migrated. Use 'Accept' to apply the optimization directly to your agent.",
+      duration: 6000,
+    });
   };
 
   const handleClose = () => {

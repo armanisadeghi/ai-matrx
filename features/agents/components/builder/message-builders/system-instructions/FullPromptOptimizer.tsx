@@ -11,14 +11,16 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+// TODO(prompt-to-agent-sweep): re-enable useAppDispatch when handleOptimize is re-wired
+import { useAppSelector } from "@/lib/redux/hooks";
+// TODO(prompt-to-agent-sweep): re-enable when handleOptimize is re-wired to agent.definition
+// import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
 import {
   selectPrimaryResponseTextByTaskId,
   selectPrimaryResponseEndedByTaskId,
 } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
-import { supabase } from "@/utils/supabase/client";
-import { v4 as uuidv4 } from "uuid";
+// TODO(prompt-to-agent-sweep): re-add supabase import when re-wiring to agent.definition
+// import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +93,8 @@ export function FullPromptOptimizer({
   onAccept,
   onAcceptAsCopy,
 }: FullPromptOptimizerProps) {
-  const dispatch = useAppDispatch();
+  // TODO(prompt-to-agent-sweep): re-enable when handleOptimize is re-wired
+  // const dispatch = useAppDispatch();
   const [additionalGuidance, setAdditionalGuidance] = useState("");
   const [showGuidanceInput, setShowGuidanceInput] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -151,80 +154,17 @@ export function FullPromptOptimizer({
       return;
     }
 
-    setIsOptimizing(true);
-    setExtractedJson(null);
-    setExtractionError(null);
-
-    try {
-      // 1. Fetch prompt
-      const { data: prompt, error: promptError } = await supabase
-        .from("prompts")
-        .select("*")
-        .eq("id", FULL_OPTIMIZER_PROMPT_ID)
-        .single();
-
-      if (promptError || !prompt) {
-        throw new Error("Full optimizer prompt not found");
-      }
-
-      const templateMessages = normalizePromptMessagesFromDb(prompt.messages);
-      const templateSettings = normalizePromptSettingsFromDb(prompt.settings);
-
-      // 2. Prepare the current prompt object as a string
-      const promptObjectString = JSON.stringify(currentPromptObject, null, 2);
-
-      // 3. Replace variables in messages
-      const messages = templateMessages.map((msg) => {
-        let content = msg.content;
-        content = content.replace(
-          /{{current_prompt_object}}/g,
-          promptObjectString,
-        );
-        if (additionalGuidance.trim()) {
-          content = content.replace(
-            /{{additional_guidance}}/g,
-            additionalGuidance,
-          );
-        }
-        return {
-          role: msg.role,
-          content,
-        };
-      });
-
-      // 4. Build chat config
-      const modelId = (templateSettings as any).model_id;
-      if (!modelId) {
-        throw new Error("No model specified in prompt");
-      }
-
-      const chatConfig = {
-        model_id: modelId,
-        messages,
-        stream: true,
-        ...templateSettings,
-      };
-
-      // 5. Submit task — set taskId BEFORE dispatch so streaming UI mounts immediately
-      const taskId = uuidv4();
-      setCurrentTaskId(taskId);
-
-      await dispatch(
-        createAndSubmitTask({
-          service: "chat_service",
-          taskName: "direct_chat",
-          taskData: { chat_config: chatConfig },
-          customTaskId: taskId,
-        }),
-      ).unwrap();
-    } catch (error) {
-      console.error("Optimization error:", error);
-      toast.error("Failed to optimize", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-      setIsOptimizing(false);
-      setCurrentTaskId(null);
-    }
+    // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+    // Re-wire this to fetch from agent.definition (same UUID, agent_type='builtin'):
+    //   supabase.schema("agent").from("definition")
+    //     .select("messages, settings").eq("id", FULL_OPTIMIZER_PROMPT_ID).single()
+    // Until then surface a clear error rather than a silent Supabase 404.
+    toast.error("Full Prompt Optimizer is temporarily unavailable", {
+      description:
+        "The underlying prompt template is being migrated to the agent system.",
+      duration: 6000,
+    });
+    return;
   };
 
   const handleAccept = () => {

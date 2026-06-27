@@ -30,18 +30,11 @@ async function getResourceDetails(
   try {
     switch (resourceType) {
       case "prompt": {
-        const { data } = await supabase
-          .from("prompts")
-          .select("name")
-          .eq("id", resourceId)
-          .single();
-
-        return data
-          ? {
-              title: data.name ?? "Untitled Prompt",
-              url: `${siteUrl}/prompts/${resourceId}`,
-            }
-          : null;
+        // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+        // Prompt sharing notifications are temporarily disabled until the lookup
+        // is re-wired to agent.definition (same UUIDs, agent_type varies).
+        console.warn("[emailService] prompt sharing notification skipped — public.prompts graveyarded");
+        return null;
       }
 
       case "canvas": {

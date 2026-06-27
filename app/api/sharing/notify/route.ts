@@ -31,18 +31,10 @@ async function getResourceDetails(
   try {
     switch (resourceType) {
       case 'prompt': {
-        const { data } = await supabase
-          .from('prompts')
-          .select('title')
-          .eq('id', resourceId)
-          .single();
-        
-        return data
-          ? {
-              title: data.title || 'Untitled Prompt',
-              url: `${siteUrl}/prompts/${resourceId}`,
-            }
-          : null;
+        // TODO(prompt-to-agent-sweep): public.prompts is graveyarded.
+        // Re-wire to agent.definition (same UUIDs) when the migration completes.
+        console.warn('[sharing/notify] prompt sharing notification skipped — public.prompts graveyarded');
+        return null;
       }
 
       case 'canvas': {

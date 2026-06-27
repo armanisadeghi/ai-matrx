@@ -88,12 +88,10 @@ export const aiModelService = {
   },
 
   async fetchUsage(modelId: string): Promise<ModelUsageResult> {
-    const [promptsResult, builtinsResult, agentsResult, agentTemplatesResult] =
+    // NOTE: public.prompts was moved to graveyard.prompts — that leg is intentionally
+    // removed. All user-owned prompts have been migrated to agent.definition.
+    const [builtinsResult, agentsResult, agentTemplatesResult] =
       await Promise.all([
-        supabase
-          .from("prompts")
-          .select("id, name, model_id")
-          .or(`model_id.eq.${modelId},settings->>model_id.eq.${modelId}`),
         // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
         supabase
           .schema("agent")
@@ -117,16 +115,12 @@ export const aiModelService = {
           ),
       ]);
 
-    if (promptsResult.error) throw promptsResult.error;
     if (builtinsResult.error) throw builtinsResult.error;
     if (agentsResult.error) throw agentsResult.error;
     if (agentTemplatesResult.error) throw agentTemplatesResult.error;
 
-    const prompts = (promptsResult.data ?? []).map((p) => ({
-      id: p.id,
-      name: p.name ?? p.id,
-      table: "prompts" as const,
-    }));
+    // public.prompts is graveyarded — return empty array; no live prompt rows remain.
+    const prompts: ModelUsageResult["prompts"] = [];
 
     const promptBuiltins = (builtinsResult.data ?? []).map((b) => ({
       id: b.id,
@@ -151,37 +145,14 @@ export const aiModelService = {
   },
 
   async replaceModelInPrompts(
-    oldId: string,
-    newId: string,
-    newSettings?: PromptSettings,
+    _oldId: string,
+    _newId: string,
+    _newSettings?: PromptSettings,
   ): Promise<number> {
-    // Fetch all rows where either the column or settings->model_id matches
-    const { data: rows, error: fetchErr } = await supabase
-      .from("prompts")
-      .select("id, model_id, settings")
-      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`);
-    if (fetchErr) throw fetchErr;
-    if (!rows || rows.length === 0) return 0;
-
-    const updates = rows.map((row) => {
-      const hasColumn = row.model_id === oldId;
-      // When newSettings provided, replace entire settings object (strip old model's stale keys).
-      // Otherwise patch only model_id into existing settings.
-      const settings = newSettings
-        ? { ...newSettings, model_id: newId }
-        : typeof row.settings === "object" && row.settings !== null
-          ? { ...(row.settings as Record<string, unknown>), model_id: newId }
-          : { model_id: newId };
-      const payload: Record<string, unknown> = { settings };
-      if (hasColumn) payload.model_id = newId;
-      return supabase.from("prompts").update(payload).eq("id", row.id);
-    });
-
-    const results = await Promise.all(updates);
-    const firstError = results.find((r) => r.error);
-    if (firstError?.error) throw firstError.error;
-
-    return rows.length;
+    // public.prompts was moved to graveyard.prompts — no live rows to update.
+    // All prompt model references are now on agent.definition and handled by replaceModelInBuiltins.
+    console.warn("[aiModelService.replaceModelInPrompts] public.prompts is graveyarded — no-op, returning 0");
+    return 0;
   },
 
   async replaceModelInBuiltins(
