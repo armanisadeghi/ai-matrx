@@ -143,13 +143,21 @@ export const loadAgentSettings = createAsyncThunk(
           variable_defaults: result.data.variable_definitions,
         } : null;
       } else {
+        // user prompts migrated 1:1 to agent.definition (agent_type='user'), same UUIDs.
+        // agent.definition uses `variable_definitions` instead of `variable_defaults`.
         const result = await supabase
-          .from("prompts")
-          .select("id, settings, variable_defaults")
+          .schema("agent")
+          .from("definition")
+          .select("id, settings, variable_definitions")
           .eq("id", agentId)
+          .eq("agent_type", "user")
           .single();
         error = result.error;
-        data = result.data;
+        data = result.data ? {
+          id: result.data.id,
+          settings: result.data.settings,
+          variable_defaults: result.data.variable_definitions,
+        } : null;
       }
 
       if (error) throw error;
@@ -341,14 +349,18 @@ export const saveAgentSettings = createAsyncThunk(
           .eq("id", agentId);
         error = result.error;
       } else {
+        // user prompts migrated 1:1 to agent.definition (agent_type='user'), same UUIDs.
+        // agent.definition uses `variable_definitions` instead of `variable_defaults`.
         const result = await supabase
-          .from("prompts")
+          .schema("agent")
+          .from("definition")
           .update({
             settings: settingsToSave as unknown as Json,
-            variable_defaults: entry.variable_defaults as unknown as Json[],
+            variable_definitions: entry.variable_defaults as unknown as Json,
             updated_at: now,
           })
-          .eq("id", agentId);
+          .eq("id", agentId)
+          .eq("agent_type", "user");
         error = result.error;
       }
 

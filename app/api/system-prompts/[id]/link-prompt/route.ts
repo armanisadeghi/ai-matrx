@@ -73,14 +73,16 @@ export async function POST(
       );
     }
 
-    // Fetch the source AI prompt
-    const { data: sourcePrompt, error: sourcePromptError } = await supabase
-      .from("prompts")
-      .select("*")
+    // Fetch the source AI prompt — prompts migrated 1:1 to agent.definition (same UUIDs)
+    // agent.definition uses `variable_definitions` instead of `variable_defaults`
+    const { data: sourceAgent, error: sourcePromptError } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select("id, name, description, messages, settings, variable_definitions")
       .eq("id", body.prompt_id)
       .single();
 
-    if (sourcePromptError || !sourcePrompt) {
+    if (sourcePromptError || !sourceAgent) {
       return NextResponse.json(
         {
           error: "Source prompt not found",
@@ -89,6 +91,12 @@ export async function POST(
         { status: 404 },
       );
     }
+
+    // Normalize to match the existing shape expected below
+    const sourcePrompt = {
+      ...sourceAgent,
+      variable_defaults: sourceAgent.variable_definitions,
+    };
 
     const variables = new Set(
       collectMustacheVariableNamesFromMessagesJson(sourcePrompt.messages),

@@ -1,9 +1,12 @@
+// NOTE: Most `prompt_app_*` tables (categories, errors, executions, rate_limits, prompt_apps itself)
+// have been moved to the graveyard schema and are no longer reachable via PostgREST.
+// Functions that hit those tables are stubbed to return empty/throw clearly.
+// `prompt_app_analytics` remains in the public schema and still works.
 import { createClient } from "@/utils/supabase/client";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
-import { requireUserId } from "@/utils/auth/getUserId";
-import type { DbRpcRow } from "@/types/supabase-rpc";
 
-// Helper to get the right client based on context
+// Helper to get the right client based on context (used only by fetchAnalytics which hits
+// prompt_app_analytics, the one table still in the public schema)
 function getClient() {
   if (typeof window !== "undefined") {
     return createClient();
@@ -12,18 +15,8 @@ function getClient() {
   }
 }
 
-// ============================================================================
-// RPC row types
-// ============================================================================
-
-interface UserEmailRow {
-  display_name: string;
-  email: string;
-  id: string;
-}
-type _CheckUserEmailRow = UserEmailRow extends DbRpcRow<"get_user_emails_by_ids"> ? true : false;
-declare const _userEmailRow: _CheckUserEmailRow;
-true satisfies typeof _userEmailRow;
+const DECOMMISSION_WARN = (fn: string) =>
+  console.warn(`[prompt-apps-admin-service] ${fn}: table is in graveyard schema — returning empty`);
 
 // ============================================================================
 // Types
@@ -161,91 +154,33 @@ export interface UpdateAppAdminInput {
 // ============================================================================
 
 export async function fetchCategories(): Promise<PromptAppCategory[]> {
-  const supabase = getClient();
-  console.log("Fetching categories...");
-  const { data, error } = await supabase
-    .from("prompt_app_categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching categories:", error);
-    throw error;
-  }
-  console.log("Categories fetched:", data?.length || 0);
-  return data as PromptAppCategory[];
+  DECOMMISSION_WARN("fetchCategories()");
+  return [];
 }
 
 export async function getCategoryById(
   id: string,
 ): Promise<PromptAppCategory | null> {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("prompt_app_categories")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw error;
-  }
-  return data as PromptAppCategory;
+  DECOMMISSION_WARN(`getCategoryById(${id})`);
+  return null;
 }
 
 export async function createCategory(
   input: CreateCategoryInput,
 ): Promise<PromptAppCategory> {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("prompt_app_categories")
-    .insert([
-      {
-        id: input.id,
-        name: input.name,
-        description: input.description || null,
-        icon: input.icon || null,
-        sort_order: input.sort_order || 0,
-      },
-    ])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppCategory;
+  DECOMMISSION_WARN(`createCategory(${input.id})`);
+  throw new Error("prompt_app_categories table is in graveyard schema — decommissioned");
 }
 
 export async function updateCategory(
   input: UpdateCategoryInput,
 ): Promise<PromptAppCategory> {
-  const supabase = getClient();
-  const updateData: any = {};
-
-  if (input.name !== undefined) updateData.name = input.name;
-  if (input.description !== undefined)
-    updateData.description = input.description;
-  if (input.icon !== undefined) updateData.icon = input.icon;
-  if (input.sort_order !== undefined) updateData.sort_order = input.sort_order;
-
-  const { data, error } = await supabase
-    .from("prompt_app_categories")
-    .update(updateData)
-    .eq("id", input.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppCategory;
+  DECOMMISSION_WARN(`updateCategory(${input.id})`);
+  throw new Error("prompt_app_categories table is in graveyard schema — decommissioned");
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const supabase = getClient();
-  const { error } = await supabase
-    .from("prompt_app_categories")
-    .delete()
-    .eq("id", id);
-
-  if (error) throw error;
+  DECOMMISSION_WARN(`deleteCategory(${id})`);
 }
 
 // ============================================================================
@@ -258,82 +193,21 @@ export async function fetchErrors(filters?: {
   resolved?: boolean;
   limit?: number;
 }): Promise<PromptAppError[]> {
-  const supabase = getClient();
-  let query = supabase
-    .from("prompt_app_errors")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (filters?.app_id) query = query.eq("app_id", filters.app_id);
-  if (filters?.error_type) query = query.eq("error_type", filters.error_type);
-  if (filters?.resolved !== undefined)
-    query = query.eq("resolved", filters.resolved);
-  if (filters?.limit) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("Error fetching errors:", error);
-    throw error;
-  }
-
-  // Fetch app names separately if we have errors
-  if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e) => e.app_id))];
-    const { data: apps } = await supabase
-      .from("prompt_apps")
-      .select("id, name, slug")
-      .in("id", appIds);
-
-    const appMap = new Map(apps?.map((app) => [app.id, app]) || []);
-
-    return data.map((item) => ({
-      ...item,
-      app_name: appMap.get(item.app_id)?.name,
-      app_slug: appMap.get(item.app_id)?.slug,
-    })) as PromptAppError[];
-  }
-
-  return data as PromptAppError[];
+  DECOMMISSION_WARN("fetchErrors()");
+  void filters;
+  return [];
 }
 
 export async function resolveError(
   input: ResolveErrorInput,
 ): Promise<PromptAppError> {
-  const supabase = getClient();
-  const userId = requireUserId();
-
-  const { data, error } = await supabase
-    .from("prompt_app_errors")
-    .update({
-      resolved: true,
-      resolved_at: new Date().toISOString(),
-      resolved_by: userId,
-      resolution_notes: input.resolution_notes || null,
-    })
-    .eq("id", input.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppError;
+  DECOMMISSION_WARN(`resolveError(${input.id})`);
+  throw new Error("prompt_app_errors table is in graveyard schema — decommissioned");
 }
 
 export async function unresolveError(id: string): Promise<PromptAppError> {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("prompt_app_errors")
-    .update({
-      resolved: false,
-      resolved_at: null,
-      resolved_by: null,
-      resolution_notes: null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppError;
+  DECOMMISSION_WARN(`unresolveError(${id})`);
+  throw new Error("prompt_app_errors table is in graveyard schema — decommissioned");
 }
 
 // ============================================================================
@@ -345,41 +219,9 @@ export async function fetchExecutions(filters?: {
   success?: boolean;
   limit?: number;
 }): Promise<PromptAppExecution[]> {
-  const supabase = getClient();
-  let query = supabase
-    .from("prompt_app_executions")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (filters?.app_id) query = query.eq("app_id", filters.app_id);
-  if (filters?.success !== undefined)
-    query = query.eq("success", filters.success);
-  if (filters?.limit) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("Error fetching executions:", error);
-    throw error;
-  }
-
-  // Fetch app names separately if we have executions
-  if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e) => e.app_id))];
-    const { data: apps } = await supabase
-      .from("prompt_apps")
-      .select("id, name, slug")
-      .in("id", appIds);
-
-    const appMap = new Map(apps?.map((app) => [app.id, app]) || []);
-
-    return data.map((item) => ({
-      ...item,
-      app_name: appMap.get(item.app_id)?.name,
-      app_slug: appMap.get(item.app_id)?.slug,
-    })) as PromptAppExecution[];
-  }
-
-  return data as PromptAppExecution[];
+  DECOMMISSION_WARN("fetchExecutions()");
+  void filters;
+  return [];
 }
 
 // ============================================================================
@@ -391,62 +233,16 @@ export async function fetchRateLimits(filters?: {
   is_blocked?: boolean;
   limit?: number;
 }): Promise<PromptAppRateLimit[]> {
-  const supabase = getClient();
-  let query = supabase
-    .from("prompt_app_rate_limits")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (filters?.app_id) query = query.eq("app_id", filters.app_id);
-  if (filters?.is_blocked !== undefined)
-    query = query.eq("is_blocked", filters.is_blocked);
-  if (filters?.limit) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("Error fetching rate limits:", error);
-    throw error;
-  }
-
-  // Fetch app names separately if we have rate limits
-  if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e) => e.app_id))];
-    const { data: apps } = await supabase
-      .from("prompt_apps")
-      .select("id, name, slug")
-      .in("id", appIds);
-
-    const appMap = new Map(apps?.map((app) => [app.id, app]) || []);
-
-    return data.map((item) => ({
-      ...item,
-      app_name: appMap.get(item.app_id)?.name,
-      app_slug: appMap.get(item.app_id)?.slug,
-    })) as PromptAppRateLimit[];
-  }
-
-  return data as PromptAppRateLimit[];
+  DECOMMISSION_WARN("fetchRateLimits()");
+  void filters;
+  return [];
 }
 
 export async function unblockRateLimit(
   id: string,
 ): Promise<PromptAppRateLimit> {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("prompt_app_rate_limits")
-    .update({
-      is_blocked: false,
-      blocked_until: null,
-      blocked_reason: null,
-      execution_count: 0,
-      window_start_at: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppRateLimit;
+  DECOMMISSION_WARN(`unblockRateLimit(${id})`);
+  throw new Error("prompt_app_rate_limits table is in graveyard schema — decommissioned");
 }
 
 export async function blockRateLimit(
@@ -454,20 +250,9 @@ export async function blockRateLimit(
   reason?: string,
   blockedUntil?: Date,
 ): Promise<PromptAppRateLimit> {
-  const supabase = getClient();
-  const { data, error } = await supabase
-    .from("prompt_app_rate_limits")
-    .update({
-      is_blocked: true,
-      blocked_until: blockedUntil?.toISOString() || null,
-      blocked_reason: reason || null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppRateLimit;
+  DECOMMISSION_WARN(`blockRateLimit(${id})`);
+  void reason; void blockedUntil;
+  throw new Error("prompt_app_rate_limits table is in graveyard schema — decommissioned");
 }
 
 // ============================================================================
@@ -481,75 +266,16 @@ export async function fetchAppsAdmin(filters?: {
   category?: string;
   limit?: number;
 }): Promise<PromptAppAdminView[]> {
-  const supabase = getClient();
-  let query = supabase
-    .from("prompt_apps")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (filters?.status) query = query.eq("status", filters.status);
-  if (filters?.is_featured !== undefined)
-    query = query.eq("is_featured", filters.is_featured);
-  if (filters?.is_verified !== undefined)
-    query = query.eq("is_verified", filters.is_verified);
-  if (filters?.category) query = query.eq("category", filters.category);
-  if (filters?.limit) query = query.limit(filters.limit);
-
-  const { data, error } = await query;
-  if (error) {
-    console.error("Error fetching apps:", error);
-    throw error;
-  }
-
-  // Fetch user emails separately if we have apps (using RPC to access auth.users securely)
-  if (data && data.length > 0) {
-    const userIds = [...new Set(data.map((app) => app.user_id))];
-    const { data: users } = await supabase.rpc("get_user_emails_by_ids", {
-      user_ids: userIds,
-    });
-
-    if (users && users.length > 0) {
-      const userMap = new Map(
-        (users as unknown as UserEmailRow[]).map((user) => [
-          user.id,
-          user,
-        ]),
-      );
-
-      return data.map((item) => ({
-        ...item,
-        creator_email: userMap.get(item.user_id)?.email,
-      })) as PromptAppAdminView[];
-    }
-  }
-
-  return data.map((item) => ({
-    ...item,
-    creator_email: undefined,
-  })) as PromptAppAdminView[];
+  DECOMMISSION_WARN("fetchAppsAdmin()");
+  void filters;
+  return [];
 }
 
 export async function updateAppAdmin(
   input: UpdateAppAdminInput,
 ): Promise<PromptAppAdminView> {
-  const supabase = getClient();
-  const updateData: any = {};
-
-  if (input.status !== undefined) updateData.status = input.status;
-  if (input.is_verified !== undefined)
-    updateData.is_verified = input.is_verified;
-  if (input.is_featured !== undefined)
-    updateData.is_featured = input.is_featured;
-
-  const { data, error } = await supabase
-    .from("prompt_apps")
-    .update(updateData)
-    .eq("id", input.id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as PromptAppAdminView;
+  DECOMMISSION_WARN(`updateAppAdmin(${input.id})`);
+  throw new Error("prompt_apps table is in graveyard schema — decommissioned");
 }
 
 // ============================================================================

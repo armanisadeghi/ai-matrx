@@ -96,12 +96,15 @@ export async function GET(
     const requiredVars: string[] = functionality.required_variables ?? [];
     const optionalVars: string[] = functionality.optional_variables ?? [];
 
-    // Fetch all prompts (we'll filter for compatibility)
-    const { data: allPrompts, error: promptsError } = await supabase
-      .from("prompts")
+    // Fetch all user agents (prompts migrated 1:1 to agent.definition, agent_type='user', same UUIDs)
+    // agent.definition uses `variable_definitions` instead of `variable_defaults`
+    const { data: allAgents, error: promptsError } = await supabase
+      .schema("agent")
+      .from("definition")
       .select(
-        "id, name, description, messages, settings, variable_defaults, updated_at, user_id",
+        "id, name, description, messages, settings, variable_definitions, updated_at, user_id",
       )
+      .eq("agent_type", "user")
       .order("updated_at", { ascending: false });
 
     if (promptsError) {
@@ -113,6 +116,12 @@ export async function GET(
         { status: 500 },
       );
     }
+
+    // Normalize to the shape the rest of this handler expects
+    const allPrompts = (allAgents ?? []).map((a) => ({
+      ...a,
+      variable_defaults: a.variable_definitions,
+    }));
 
     // Extract variables and validate each prompt
     const compatible: any[] = [];

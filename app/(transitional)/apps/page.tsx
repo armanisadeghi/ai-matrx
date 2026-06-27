@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, ExternalLink, Calendar, BarChart3, Edit } from "lucide-react";
+// PromptApp type kept so the template below compiles (apps is always empty now)
 import type { PromptApp } from "@/features/prompt-apps/types/promptAppTypes";
 
 export default async function AppsListPage() {
@@ -20,12 +21,10 @@ export default async function AppsListPage() {
     redirect("/login");
   }
 
-  // Fetch user's apps
-  const { data: apps } = await supabase
-    .from("prompt_apps")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false });
+  // NOTE: The `prompt_apps` table has been moved to the graveyard schema.
+  // The Prompt Apps surface is decommissioned — always return empty until removed.
+  console.warn("[apps/page] prompt_apps table is in graveyard schema — returning empty list");
+  const apps: PromptApp[] = [];
 
   return (
     <div className="h-page flex flex-col overflow-hidden bg-textured">

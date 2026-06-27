@@ -243,16 +243,21 @@ export default function ChatTestClient() {
             data: { user },
           } = await supabase.auth.getUser();
           if (user) {
-            const { data: userPrompts, error } = await supabase
-              .from("prompts")
+            // user prompts migrated 1:1 to agent.definition (agent_type='user'), same UUIDs.
+            // agent.definition uses `variable_definitions` instead of `variable_defaults`.
+            const { data: userAgents, error } = await supabase
+              .schema("agent")
+              .from("definition")
               .select(
-                "id, name, messages, settings, variable_defaults, description",
+                "id, name, messages, settings, variable_definitions, description",
               )
+              .eq("agent_type", "user")
               .eq("user_id", user.id)
               .order("updated_at", { ascending: false });
 
-            if (!error && userPrompts) {
-              setPrompts(userPrompts);
+            if (!error && userAgents) {
+              // Normalize to the shape the rest of this component expects
+              setPrompts(userAgents.map((a) => ({ ...a, variable_defaults: a.variable_definitions })));
             }
           }
         } catch (e) {

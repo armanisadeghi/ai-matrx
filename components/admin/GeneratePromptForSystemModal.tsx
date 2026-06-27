@@ -197,16 +197,22 @@ export function GeneratePromptForSystemModal({
     setExtractionError(null);
 
     try {
-      // 1. Fetch prompt template
+      // 1. Fetch prompt template — prompts migrated 1:1 to agent.definition (same UUIDs)
       const { data: prompt, error: promptError } = await supabase
-        .from("prompts")
-        .select("*")
+        .schema("agent")
+        .from("definition")
+        .select("id, messages, settings, variable_definitions")
         .eq("id", PROMPT_GENERATOR_PROMPT_ID)
         .single();
 
       if (promptError || !prompt) {
         throw new Error("Prompt generator template not found");
       }
+      // Normalize field names: agent.definition uses variable_definitions instead of variable_defaults
+      const promptNormalized = {
+        ...prompt,
+        variable_defaults: (prompt as Record<string, unknown>).variable_definitions,
+      };
 
       // 2. Build the full prompt_purpose value
       let fullPurpose = `**Primary Purpose:**\n${promptPurpose}`;
@@ -216,7 +222,7 @@ export function GeneratePromptForSystemModal({
       }
 
       // 3. Replace variables in messages
-      const messages = normalizePromptMessagesFromDb(prompt.messages).map(
+      const messages = normalizePromptMessagesFromDb(promptNormalized.messages).map(
         (msg) => {
           const content = msg.content.replace(
             /{{prompt_purpose}}/g,
@@ -230,7 +236,7 @@ export function GeneratePromptForSystemModal({
       );
 
       // 4. Build chat config
-      const settings = normalizePromptSettingsFromDb(prompt.settings);
+      const settings = normalizePromptSettingsFromDb(promptNormalized.settings);
       const modelId = settings.model_id;
       if (!modelId || typeof modelId !== "string") {
         throw new Error("No model specified in prompt");
@@ -276,87 +282,20 @@ export function GeneratePromptForSystemModal({
       return;
     }
 
-    setIsSaving(true);
-
-    try {
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Create new prompt
-      const promptId = uuidv4();
-      const dbPromptData = {
-        id: promptId,
-        user_id: user.id,
-        name: promptName.trim(),
-        description: extractedJson.description || null,
-        messages: extractedJson.messages || [],
-        variable_defaults:
-          extractedJson.variableDefaults || extractedJson.variables || [],
-        settings: extractedJson.settings || {},
-      };
-
-      const { error: insertError } = await supabase
-        .from("prompts")
-        .insert([dbPromptData]);
-
-      if (insertError) {
-        throw insertError;
-      }
-
-      toast.success("Prompt created successfully!", {
-        description: "Linking to system prompt...",
-      });
-
-      // Auto-link to system prompt
-      const linkResponse = await fetch(
-        `/api/system-prompts/${systemPrompt.id}/link-prompt`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt_id: promptId,
-            update_notes: "Auto-linked AI-generated prompt",
-          }),
-        },
-      );
-
-      if (!linkResponse.ok) {
-        const errorData = await linkResponse.json().catch(() => ({}));
-
-        // If validation failed, show detailed error
-        if (errorData.validation) {
-          const val = errorData.validation;
-          let detailMsg = `The generated prompt is missing required variables:\n\n`;
-          if (val.missing_variables?.length > 0) {
-            detailMsg += `Missing Required: ${val.missing_variables.join(", ")}\n`;
-          }
-          if (val.extra_variables?.length > 0) {
-            detailMsg += `\nNote: Extra variables are allowed (may have defaults): ${val.extra_variables.join(", ")}\n`;
-          }
-          detailMsg += `\nPrompt was created but not linked. You can manually edit it and try again.`;
-          throw new Error(detailMsg);
-        }
-
-        throw new Error(
-          errorData.details || errorData.error || "Failed to link prompt",
-        );
-      }
-
-      toast.success("Successfully created and linked prompt!");
-      onSuccess(promptId);
-      handleClose();
-    } catch (error) {
-      console.error("Error creating and linking prompt:", error);
-      toast.error("Failed to create/link prompt", {
-        description: error instanceof Error ? error.message : "Unknown error",
-        duration: 8000,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    // NOTE: The prompt-authoring admin is being decommissioned. The `prompts` table
+    // has been moved to the graveyard schema. Creating new user prompts here is no
+    // longer supported — new prompts are agents (agent.definition, agent_type='user').
+    // This "Create & Link" flow needs a full rework wired to agent.definition inserts.
+    console.warn(
+      "[GeneratePromptForSystemModal] handleCreateAndLink: prompt insert path is decommissioned. " +
+      "The `prompts` table is in the graveyard schema. This UI needs to be updated to create " +
+      "an agent.definition row instead.",
+    );
+    toast.error("Prompt creation temporarily unavailable", {
+      description:
+        "The prompt authoring system is being migrated. Please contact an admin.",
+      duration: 8000,
+    });
   };
 
   const handleClose = () => {
