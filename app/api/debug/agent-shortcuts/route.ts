@@ -16,6 +16,7 @@ export async function GET() {
     const client = supabase as unknown as {
       from: (name: string) => any;
       rpc: (name: string, args?: any) => any;
+      schema: (name: string) => { from: (name: string) => any };
     };
 
     const [

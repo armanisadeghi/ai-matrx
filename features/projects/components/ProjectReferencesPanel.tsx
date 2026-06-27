@@ -82,7 +82,7 @@ const CATEGORY_BG_COLORS: Record<string, string> = {
 };
 
 const TABLE_META: Record<string, TableMeta> = {
-  ctx_tasks: {
+  task: {
     label: "Tasks",
     icon: CheckSquare,
     category: "Work",

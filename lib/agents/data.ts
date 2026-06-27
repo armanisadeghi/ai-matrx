@@ -95,16 +95,18 @@ export const getAppsForAgent = cache(async (agentId: string) => {
   const supabase = await createClient();
   const { data, error } = await (
     supabase as unknown as {
-      from: (table: string) => {
-        select: (columns: string) => {
-          eq: (
-            column: string,
-            value: string,
-          ) => {
-            order: (
+      schema: (name: string) => {
+        from: (table: string) => {
+          select: (columns: string) => {
+            eq: (
               column: string,
-              opts: { ascending: boolean },
-            ) => Promise<{ data: unknown; error: unknown }>;
+              value: string,
+            ) => {
+              order: (
+                column: string,
+                opts: { ascending: boolean },
+              ) => Promise<{ data: unknown; error: unknown }>;
+            };
           };
         };
       };

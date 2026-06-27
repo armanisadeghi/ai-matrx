@@ -10,7 +10,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 type AgentInsert = Omit<
-  Database["public"]["Tables"]["agx_agent"]["Insert"],
+  Database["agent"]["Tables"]["definition"]["Insert"],
   "id" | "created_at" | "updated_at" | "source_agent_id" | "source_snapshot_at"
 >;
 

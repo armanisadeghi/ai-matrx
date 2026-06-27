@@ -7,7 +7,7 @@ import type { Database } from "@/types/database.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { stripNullish } from "@/utils/supabase/payload";
 
-type AgentInsert = Database["public"]["Tables"]["agx_agent"]["Insert"];
+type AgentInsert = Database["agent"]["Tables"]["definition"]["Insert"];
 
 export interface AgentBuilderConfig {
   name: string;

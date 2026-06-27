@@ -13,17 +13,19 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface SupabaseRowClient {
-  from: (table: string) => {
-    select: (columns: string) => {
-      eq: (
-        column: string,
-        value: string,
-      ) => {
-        single?: () => Promise<{ data: AgentApp | null; error: unknown }>;
-        order?: (
+  schema: (name: string) => {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (
           column: string,
-          opts: { ascending: boolean },
-        ) => Promise<{ data: AgentAppVersionRow[] | null; error: unknown }>;
+          value: string,
+        ) => {
+          single?: () => Promise<{ data: AgentApp | null; error: unknown }>;
+          order?: (
+            column: string,
+            opts: { ascending: boolean },
+          ) => Promise<{ data: AgentAppVersionRow[] | null; error: unknown }>;
+        };
       };
     };
   };
@@ -102,20 +104,22 @@ export interface AgentAppVersionDetail {
 }
 
 interface SupabaseEqClient {
-  from: (table: string) => {
-    select: (cols: string) => {
-      eq: (
-        c: string,
-        v: string,
-      ) => {
+  schema: (name: string) => {
+    from: (table: string) => {
+      select: (cols: string) => {
         eq: (
           c: string,
-          v: number,
+          v: string,
         ) => {
-          single: () => Promise<{
-            data: AgentAppVersionDetail | null;
-            error: unknown;
-          }>;
+          eq: (
+            c: string,
+            v: number,
+          ) => {
+            single: () => Promise<{
+              data: AgentAppVersionDetail | null;
+              error: unknown;
+            }>;
+          };
         };
       };
     };

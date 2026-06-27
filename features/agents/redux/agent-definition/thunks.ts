@@ -532,7 +532,7 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
         tool_config: {
           ...existingConfig,
           auto_tools_disabled: disabled,
-        } as Database["public"]["Tables"]["agx_agent"]["Update"]["tool_config"],
+        } as Database["agent"]["Tables"]["definition"]["Update"]["tool_config"],
       })
       .eq("id", agentId)
       .select("version, updated_at")
