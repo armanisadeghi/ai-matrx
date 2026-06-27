@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     // Get tasks with upcoming or past due dates that are not completed
     const { data: tasks, error } = await workspaceDb(supabase)
       .from('tasks')
-      .select('id, title, user_id, due_date, assignee_id')
+      .select('id, title, created_by, due_date, assignee_id')
       .eq('status', 'incomplete')
       .not('due_date', 'is', null)
       .lte('due_date', dayAfterTomorrow.toISOString())
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
       }
 
       // Determine who to notify (assignee if assigned, otherwise owner)
-      const notifyUserId = task.assignee_id || task.user_id;
+      const notifyUserId = task.assignee_id || task.created_by;
       if (!notifyUserId) {
         results.skipped++;
         continue;

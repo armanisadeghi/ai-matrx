@@ -62,8 +62,8 @@ export const selectProjects = createSelector(
       parentTaskId: rec.parent_task_id ?? null,
       subtasks: [],
       updatedAt: rec.updated_at ?? null,
-      userId: rec.user_id ?? null,
-      isPublic: false,
+      userId: rec.created_by ?? null,
+      isPublic: rec.visibility === "public",
       settings: ((rec.settings as { labels?: string[] } | undefined) ??
         {}) as Task["settings"],
     });

@@ -55,7 +55,7 @@ export type HierarchyTask = {
   assignee_id: string | null;
   settings: Record<string, unknown> | null;
   created_at: string | null;
-  user_id: string | null;
+  created_by: string | null;
 };
 
 // ─── Tree node ──────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ export const hierarchyService = {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
       )
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
@@ -172,10 +172,10 @@ export const hierarchyService = {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
       )
       .is("project_id", null)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -415,7 +415,7 @@ export const hierarchyService = {
         ...taskRest,
         status: data.status ?? "not_started",
         priority: toTaskPriority(priority),
-        user_id: userId,
+        created_by: userId,
         settings: {},
       })
       .select()

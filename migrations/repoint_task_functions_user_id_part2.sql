@@ -1,0 +1,7 @@
+-- Part 2 of the tasks user_id -> created_by function repoint: create_project_from_json
+-- (2 INSERT column lists) and get_user_full_context (4x t.user_id). See part 1 sibling file.
+-- Applied via Supabase MCP; bodies captured from the live definitions with only
+-- workspace.tasks.user_id refs changed to created_by.
+-- (Full bodies applied live; this file documents the change for the ledger/repro.)
+-- create_project_from_json: INSERT INTO workspace.tasks (... user_id ...) -> created_by  (x2)
+-- get_user_full_context:    t.user_id -> t.created_by  (all_tasks + personal_tasks_v CTEs)

@@ -30,7 +30,7 @@ export interface CreateTaskInput {
   priority?: "low" | "medium" | "high" | null;
   assignee_id?: string | null;
   status?: string;
-  user_id?: string | null;
+  created_by?: string | null;
 }
 
 // Full task creation with all options

@@ -270,7 +270,7 @@ export const createTaskWithAssociation = createAsyncThunk<
     description: string | null;
     settings: Record<string, unknown> | null;
     created_at: string | null;
-    user_id: string | null;
+    created_by: string | null;
   };
   const record: TaskRecord = {
     id: rec.id,
@@ -285,7 +285,7 @@ export const createTaskWithAssociation = createAsyncThunk<
     description: rec.description,
     settings: rec.settings,
     created_at: rec.created_at,
-    user_id: rec.user_id,
+    created_by: rec.created_by,
   };
   dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
   if (record.project_id) {
@@ -362,7 +362,7 @@ export const createTasksBulk = createAsyncThunk<
       description: string | null;
       settings: Record<string, unknown> | null;
       created_at: string | null;
-      user_id: string | null;
+      created_by: string | null;
     };
     return {
       id: r.id,
@@ -377,7 +377,7 @@ export const createTasksBulk = createAsyncThunk<
       description: r.description,
       settings: r.settings,
       created_at: r.created_at,
-      user_id: r.user_id,
+      created_by: r.created_by,
     };
   });
   for (const record of tasks) {

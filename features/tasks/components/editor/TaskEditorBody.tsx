@@ -164,7 +164,7 @@ export function TaskEditorBody({
                 (row as { settings?: Record<string, unknown> }).settings ??
                 null,
               created_at: row.created_at ?? null,
-              user_id: row.user_id,
+              created_by: row.created_by,
             },
             level: "full-data",
           }),
@@ -701,9 +701,9 @@ export function TaskEditorBody({
                 )}
               </PropertyRow>
               <PropertyRow label="Owner" last compact={compact}>
-                {task.user_id ? (
+                {task.created_by ? (
                   <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded">
-                    {task.user_id}
+                    {task.created_by}
                   </code>
                 ) : metadataPending ? (
                   <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />

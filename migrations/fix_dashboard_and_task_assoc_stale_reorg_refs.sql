@@ -1,0 +1,8 @@
+-- Fix pre-existing reorg breakage in two FE-owned functions, surfaced while testing the
+-- tasks cutover (independent of it). Applied via Supabase MCP; full bodies live in the DB.
+--   get_task_associations:      join cld_files (gone) -> join files.files
+--   get_user_dashboard_metrics: chat.conversation.user_id -> created_by;
+--                               cld_files/owner_id -> files.files/created_by;
+--                               public.prompt_apps (graveyarded) -> app.definition/created_by;
+--                               agent.definition/agent.shortcut/notes user_id -> created_by
+-- Source of truth is the live DB (pg_get_functiondef); re-capture there if reproducing.

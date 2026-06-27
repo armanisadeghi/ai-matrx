@@ -20,7 +20,7 @@ export interface CreateTaskInput {
   priority?: "low" | "medium" | "high" | null;
   assignee_id?: string | null;
   status?: "incomplete" | "completed";
-  user_id?: string | null;
+  created_by?: string | null;
   organization_id?: string | null;
 }
 
@@ -33,7 +33,7 @@ export interface UpdateTaskInput {
   priority?: "low" | "medium" | "high" | null;
   assignee_id?: string | null;
   status?: "incomplete" | "completed";
-  user_id?: string | null;
+  created_by?: string | null;
 }
 
 export interface CreateTaskOptions {
@@ -61,7 +61,7 @@ export async function createTask(
         priority: input.priority || null,
         assignee_id: input.assignee_id || null,
         status: input.status || "incomplete",
-        user_id: userId,
+        created_by: userId,
         organization_id: input.organization_id || null,
       })
       .select()
@@ -105,7 +105,7 @@ export async function getUserTasks(): Promise<DatabaseTask[]> {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -660,7 +660,7 @@ export async function getSharedWithMeTasks(): Promise<DatabaseTask[]> {
       .from("tasks")
       .select("*")
       .in("id", taskIds)
-      .neq("user_id", user.id)
+      .neq("created_by", user.id)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -729,7 +729,7 @@ export async function shareTask(
 }
 
 /**
- * Make a task publicly accessible (sets is_public = true on the task row).
+ * Make a task publicly accessible (sets visibility = 'public' on the task row).
  */
 export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("make_resource_public", {
@@ -746,7 +746,7 @@ export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
 }
 
 /**
- * Make a task private (sets is_public = false on the task row).
+ * Make a task private (sets visibility = 'private' on the task row).
  */
 export async function makeTaskPrivate(
   taskId: string,
@@ -864,17 +864,17 @@ async function sendTaskCommentNotification(
     // Get the task to find the owner
     const { data: task } = await workspaceDb(supabase)
       .from("tasks")
-      .select("id, title, user_id")
+      .select("id, title, created_by")
       .eq("id", taskId)
       .single();
 
-    if (!task?.user_id) return;
+    if (!task?.created_by) return;
 
     await fetch("/api/notifications/comment-added", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        resourceOwnerId: task.user_id,
+        resourceOwnerId: task.created_by,
         commentText,
         resourceTitle: task.title,
         resourceType: "task",

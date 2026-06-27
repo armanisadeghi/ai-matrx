@@ -28997,7 +28997,6 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
-          is_public: boolean
           organization_id: string | null
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
@@ -29006,7 +29005,6 @@ export type Database = {
           status: string
           title: string
           updated_at: string | null
-          user_id: string | null
           version: number
           visibility: "private" | "internal" | "link" | "public"
         }
@@ -29018,7 +29016,6 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
-          is_public?: boolean
           organization_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -29027,7 +29024,6 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string | null
-          user_id?: string | null
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
@@ -29039,7 +29035,6 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
-          is_public?: boolean
           organization_id?: string | null
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -29048,7 +29043,6 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string | null
-          user_id?: string | null
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }

@@ -154,7 +154,7 @@ function toTaskRecord(
     description: row.description,
     settings: (row as { settings?: Record<string, unknown> }).settings ?? null,
     created_at: row.created_at ?? null,
-    user_id: row.user_id,
+    created_by: row.created_by,
   } satisfies TaskRecord;
 }
 

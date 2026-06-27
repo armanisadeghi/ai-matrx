@@ -35,7 +35,7 @@ export interface TaskRecord {
   settings?: Record<string, unknown> | null;
   created_at?: string | null;
   created_by?: string | null;
-  user_id?: string | null;
+  visibility?: string | null;
   updated_at?: string | null;
 }
 
@@ -81,7 +81,7 @@ export const fetchTask = createAsyncThunk(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility",
       )
       .eq("id", taskId)
       .single();
@@ -156,7 +156,7 @@ export const loadProjectTopLevelTasks = createAsyncThunk(
       parent_task_id: t.parent_task_id,
       organization_id: t.organization_id ?? params.organizationId ?? "",
       created_at: t.created_at,
-      user_id: t.user_id,
+      created_by: t.created_by,
     }));
     return tasks;
   },
@@ -184,7 +184,7 @@ export const loadProjectTasks = createAsyncThunk(
       parent_task_id: t.parent_task_id,
       organization_id: t.organization_id ?? params.organizationId ?? "",
       created_at: t.created_at,
-      user_id: t.user_id,
+      created_by: t.created_by,
     }));
     return tasks;
   },
@@ -209,11 +209,11 @@ export const createTaskThunk = createAsyncThunk(
         ...insertData,
         status: data.status ?? "not_started",
         priority: toTaskPriority(priority),
-        user_id: userId,
+        created_by: userId,
         settings: {},
       })
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility",
       )
       .single();
     if (error) throw error;
