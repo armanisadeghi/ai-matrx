@@ -68,7 +68,8 @@ begin
       ('canvas',           'public',    'canvas_items',      'is_archived'),
       ('research',         'public',    'rs_topic',          null),
       ('project',          'workspace', 'projects',          null),
-      ('task',             'workspace', 'tasks',             null)
+      ('task',             'workspace', 'tasks',             null),
+      ('workflow',         'workflow',  'definition',        null)
     ) as t(k, sch, tbl, arch)
   loop
     begin
@@ -104,9 +105,15 @@ begin
       resource_key := rec.k;
       n := v_count;
       return next;
-    exception when others then
-      -- table moved / no access / column race during the migration → omit it.
-      continue;
+    exception
+      -- Only the EXPECTED schema/permission cases (table moved or dropped
+      -- mid-reorg, the column doesn't exist, or the caller lacks SELECT) are
+      -- swallowed → omit that entry (FE shows the informational tile). A
+      -- statement_timeout / query_canceled is deliberately NOT caught: it
+      -- signals a real problem and should surface rather than silently
+      -- undercount.
+      when undefined_table or undefined_column or insufficient_privilege then
+        continue;
     end;
   end loop;
 end;

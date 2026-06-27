@@ -97,7 +97,12 @@ export function useContainerInventory({
         );
         if (!error) {
           for (const row of (data ?? []) as unknown as ContainerCountRow[]) {
-            ownedByKey.set(row.resource_key, Number(row.n));
+            // Guard the untyped RPC rows: a future signature change would
+            // otherwise silently yield NaN counts. Skip anything malformed.
+            if (!row || typeof row.resource_key !== "string") continue;
+            const num = Number(row.n);
+            if (!Number.isFinite(num)) continue;
+            ownedByKey.set(row.resource_key, num);
           }
         } else {
           console.error("[useContainerInventory] count rpc failed:", error);

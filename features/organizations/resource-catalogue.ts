@@ -333,7 +333,10 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: List,
     description: "Reusable option lists and picklists.",
     table: "udt_picklists",
-    hasOrgColumn: false,
+    // udt_picklists DOES carry organization_id (verified live 2026-06-27); the
+    // prior `false` was stale catalogue drift that hid org-owned picklists from
+    // both the inventory count and the org shared-items list.
+    hasOrgColumn: true,
     shareKey: "udt_picklists",
     titleColumn: "description",
     orgRoute: null,
@@ -463,7 +466,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     icon: Microscope,
     description: "Synthesized research topics.",
     table: "rs_topic",
-    hasOrgColumn: false,
+    // rs_topic DOES carry organization_id (verified live 2026-06-27); the prior
+    // `false` was stale catalogue drift.
+    hasOrgColumn: true,
     shareKey: null,
     titleColumn: "name",
     orgRoute: null,
