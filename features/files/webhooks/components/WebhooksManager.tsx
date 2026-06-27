@@ -218,6 +218,14 @@ function WebhookCard({
           <Button
             size="icon"
             variant="ghost"
+            onClick={handleTest}
+            title="Send a test event to this endpoint"
+          >
+            <Send className="size-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
             onClick={handleRotate}
             title="Rotate signing secret"
           >
@@ -442,9 +450,12 @@ export function WebhooksManager() {
                   (prev ?? []).map((x) => (x.id === updated.id ? updated : x)),
                 )
               }
-              onDelete={(id) =>
-                setWebhooks((prev) => (prev ?? []).filter((x) => x.id !== id))
-              }
+              onDelete={(id) => {
+                setWebhooks((prev) => (prev ?? []).filter((x) => x.id !== id));
+                // The one-time secret banner belongs to a webhook that may now
+                // be gone — clear it so it can't linger past deletion.
+                setJustCreatedSecret(null);
+              }}
             />
           ))}
         </div>
