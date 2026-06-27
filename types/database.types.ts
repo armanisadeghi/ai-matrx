@@ -28560,6 +28560,99 @@ export type Database = {
           user_id: string
         }[]
       }
+      org_admin_list_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          account_bytes_used: number
+          account_files_count: number
+          avatar_url: string
+          cost_24h_mcents: number
+          display_name: string
+          email: string
+          joined_at: string
+          last_org_activity_at: string
+          last_request_at: string
+          member_level: string
+          monthly_budget_mcents: number
+          org_bytes_used: number
+          org_files_count: number
+          requests_24h: number
+          requests_6h: number
+          role: string
+          status: string
+          storage_cap_bytes: number
+          tier_override: string
+          user_id: string
+        }[]
+      }
+      org_admin_overview: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      org_admin_get_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: Json
+      }
+      org_admin_list_member_resources: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: {
+          count: number
+          display_label: string
+          resource_type: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      org_admin_reassign_member_resources: {
+        Args: {
+          p_org_id: string
+          p_from_user: string
+          p_to_user: string
+          p_resource_types?: string[]
+        }
+        Returns: {
+          reassigned: number
+          resource_type: string
+        }[]
+      }
+      org_admin_set_member_controls: {
+        Args: {
+          p_org_id: string
+          p_user_id: string
+          p_member_level?: string
+          p_tier_override?: string
+          p_storage_cap_bytes?: number
+          p_monthly_budget_mcents?: number
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      org_admin_set_member_status: {
+        Args: {
+          p_org_id: string
+          p_user_id: string
+          p_status: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      org_admin_remove_member: {
+        Args: { p_org_id: string; p_user_id: string; p_reassign_to?: string }
+        Returns: Json
+      }
+      org_admin_list_audit: {
+        Args: { p_org_id: string; p_limit?: number }
+        Returns: {
+          action: string
+          actor_email: string
+          actor_user_id: string
+          created_at: string
+          detail: Json
+          id: string
+          target_email: string
+          target_user_id: string
+        }[]
+      }
       get_pending_feedback: {
         Args: never
         Returns: {

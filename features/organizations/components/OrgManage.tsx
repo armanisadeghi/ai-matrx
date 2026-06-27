@@ -30,6 +30,7 @@ import {
   SlidersHorizontal,
   BookA,
   User as UserIcon,
+  UserCog,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -182,12 +183,22 @@ export function OrgManage({
                 Manage this organization&apos;s identity, members, and settings.
               </p>
             </div>
-            <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link href={`/organizations/${slug}`} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                Workspace
-              </Link>
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              {canManageMembers && !displayOrganization.isPersonal && (
+                <Button asChild variant="default" size="sm">
+                  <Link href={`/organizations/${slug}/admin`}>
+                    <UserCog className="h-3.5 w-3.5 mr-1.5" />
+                    Manage users
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/organizations/${slug}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  Workspace
+                </Link>
+              </Button>
+            </div>
           </div>
         </Card>
 
