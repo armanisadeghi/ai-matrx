@@ -16,7 +16,8 @@ export type CloudFilesSection =
   | "requests"
   | "trash"
   | "starred"
-  | "activity";
+  | "activity"
+  | "webhooks";
 
 export interface SectionNavEntry {
   key: CloudFilesSection;
@@ -37,4 +38,5 @@ export const PRIMARY_SECTIONS: SectionNavEntry[] = [
     label: "File requests",
   },
   { key: "trash", href: "/files/trash", label: "Deleted files" },
+  { key: "webhooks", href: "/files/webhooks", label: "Webhooks" },
 ];
