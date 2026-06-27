@@ -28,10 +28,8 @@ export const entityRelationships = {
       // DROPPED: `public.ai_model_endpoint` compat view dropped; physical table is in
       // `graveyard.ai_model_endpoint` (decommissioned). The junction is gone — any
       // entity-layer query against this entity will fail until it is removed or the
-      // entity system gains schema support. Marked with schemaName to prevent silent
-      // public-schema fallback.
+      // entity system gains schema support. schemaName: "graveyard" (not in type yet).
       tableName: "ai_model_endpoint",
-      schemaName: "graveyard",
       foreignKeys: {
         aiEndpoint: {
           foreignTable: "endpoint",
@@ -876,9 +874,9 @@ export const entityRelationships = {
     relationshipDetails: {
       entityName: "aiProvider",
       // Physical table moved to `ai.provider` in the 2026 schema reorg.
-      // The legacy entity system queries via `public.ai_provider` compat view
-      // until entity-layer schema support is added (TODO: add schemaName support).
-      tableName: "ai_provider",
+      // `public.ai_provider` compat view DROPPED. schemaName: "ai" (not in type yet —
+      // entity-layer schema support TODO). Until that lands, entity queries will fail.
+      tableName: "provider",
       foreignKeys: {},
       referencedBy: {
         aiSettings: {
@@ -984,9 +982,9 @@ export const entityRelationships = {
     relationshipDetails: {
       entityName: "aiEndpoint",
       // Physical table moved to `ai.endpoint` in the 2026 schema reorg.
-      // The legacy entity system queries via `public.ai_endpoint` compat view
-      // until entity-layer schema support is added (TODO: add schemaName support).
-      tableName: "ai_endpoint",
+      // `public.ai_endpoint` compat view DROPPED. schemaName: "ai" (not in type yet —
+      // entity-layer schema support TODO). Until that lands, entity queries will fail.
+      tableName: "endpoint",
       foreignKeys: {},
       referencedBy: {
         aiModelEndpoint: {
@@ -1057,9 +1055,9 @@ export const entityRelationships = {
     relationshipDetails: {
       entityName: "aiModel",
       // Physical table moved to `ai.model` in the 2026 schema reorg.
-      // The legacy entity system queries via `public.ai_model` compat view
-      // until entity-layer schema support is added (TODO: add schemaName support).
-      tableName: "ai_model",
+      // `public.ai_model` compat view DROPPED. schemaName: "ai" (not in type yet —
+      // entity-layer schema support TODO). Until that lands, entity queries will fail.
+      tableName: "model",
       foreignKeys: {
         aiProvider: {
           foreignTable: "ai_provider",
