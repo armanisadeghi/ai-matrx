@@ -119,13 +119,13 @@ interactive per-hunk Monaco surfaces stay on Monaco.
 | A3 | `features/notes/utils/diffAnalysis.ts` | 3rd LCS | migrate engine; keep thin `analyzeDiff` stats wrapper |
 | A4 | `features/code-editor/components/DiffView.tsx` | LCS + Prism, inline | `DiffViewer light` (monaco for big code) |
 | A5 | `features/code-editor/agent-code-editor/components/parts/DiffView.tsx` | copy of A4 | same as A4 |
-| A6 | `features/research/components/document/VersionDiff.tsx` | `react-diff-viewer-continued` | `DiffViewer light`; drop dep |
-| A7 | `features/agents/route/AgentVersionsWorkspace.tsx` | `react-diff-viewer-continued` (**dead**) | delete |
+| A6 | `features/research/components/document/VersionDiff.tsx` | ~~`react-diff-viewer-continued`~~ | **✓ done** → `DiffViewer light` (inline) |
+| A7 | ~~`features/agents/route/AgentVersionsWorkspace.tsx`~~ | dead | **✓ done** — deleted |
 | A8 | `features/versioning/components/VersionDiffView.tsx` | raw `<pre>`/spans | text→`light`, JSON→structured/`monaco` |
 | A9 | `features/notes/components/NoteConflictWindow.tsx` | `diffAnalysis` segments | diff tab→`light`; keep resolution actions |
 | A10 | `features/notes/components/diff/adapters/NoteContentAdapter.tsx` | custom row renderer | inner renderer→`TextDiff` inside structured adapter |
 | A11 | `features/agents/components/diff/adapters/MessagesAdapter.tsx` | colored `<pre>`, no LCS | per-message text→`TextDiff`; keep message matching |
-| A12 | `components/diff/views/RawJsonView.tsx` | direct Monaco `DiffEditor` | `CodeDiff` |
+| A12 | `components/diff/views/RawJsonView.tsx` | ~~direct Monaco~~ | **✓ done** → consumes `CodeDiff` |
 | A13 | `components/mardown-display/chat-markdown/diff-blocks/renderers/SearchReplaceDiffRenderer.tsx` | A1+A4 on complete | complete-state→`DiffViewer light`; keep streaming SM |
 | A14 | `features/canvas/custom-components/CodePreviewCanvas.tsx` | A4 + stats | diff tab→`DiffViewer monaco` |
 | A15 | `features/code-editor/components/AICodeEditor.tsx` | A4 | `DiffViewer` when touched |
@@ -144,7 +144,9 @@ A23 `JsonComparator`, A24 `ManifestDriftDialog`; plus `ComparisonTableBlock`,
 `features/agent-comparison` battle UX, `cx-chat/utils/settings-diff.ts`,
 `RecentChangeOverlay`/`diffRange.ts`.
 
-**Dep cleanup:** remove `react-diff-viewer-continued` from `package.json` after A6 + A7.
+**Dep cleanup:** **✓ done** — `react-diff-viewer-continued` removed from
+`package.json` + lockfile. Its three users (A6, A7, and the markdown ` ```diff `
+block renderer `DiffCanvas` — not previously inventoried) are all migrated off it.
 
 ### Category B — surfaces missing a Compare (new adoption)
 
@@ -164,8 +166,39 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 `B27` PD-ratings draft↔saved · `B28` content-templates/skills body edits ·
 `B29` `PromptGenerator` generated↔current · `B30` `stringTransformDisplay` util result.
 
+**✓ Shipped (2026-06-27 rollout):** `B6` ContextVersionHistory · `B7` canvas
+artifact versions · `B10`/`B11`/`B12` RAG raw↔cleaned (DocumentViewer, library
+preview, detail sheet) — plus surfaces not in the original list: **Quick Save
+overwrite confirms** (note + code, compare-before-apply), **transcript
+CleanupPad** (raw↔cleaned), **SystemPromptOptimizer** (current↔optimized).
+**Still open (high-value next):** `B4` agent-app version page · `B13` RAG ingest
+preview · `B16`/`B17`/`B18` data-table + transcript-studio · `B28` content
+templates · `B29` PromptGenerator · notes Find/Replace-All preview. Plus
+Category-A replacements `A4`/`A5` (code-editor `DiffView` dup → delete `A1`/`A2`
+LCS), `A9`+`A3` (notes conflict/`diffAnalysis`), `A13`/`A14`. Expansions:
+per-hunk accept/reject (resurrect dead `features/text-diff` `applyDiffs`),
+`<CompareTwoPicker>`, standalone `/compare` route, agent-emittable `matrx-diff`
+block, 3-way merge.
+
 ## Change Log
 
+- 2026-06-27 — Universal-rollout pass (foundation + 9 surfaces). **Foundation:**
+  Monaco now loads via a single `next/dynamic({ssr:false})` in `CodeDiff` +
+  `RawJsonView` (was `React.lazy` — rule violation); verified Monaco renders both
+  inline and through the overlay window (`lazyOverlay`) with no nesting breakage.
+  Extracted the GitHub palette into one source of truth `text/diffColors.ts`
+  (`LINE_BG`/`WORD_BG`/`GUTTER`/`INLINE_BG` + `splitSideTint`/`wordSegmentClass`);
+  `TextDiff` **and** `InlineTextDiff` consume it — the latter had missed the
+  2026-06-26 color fix and still had the invisible palette + muddy amber.
+  **Replacements:** research `VersionDiff`→light (A6); deleted dead
+  `AgentVersionsWorkspace` (A7); `RawJsonView`→`CodeDiff` (A12); markdown
+  ` ```diff ` block `DiffCanvas`→`InlineTextDiff`; **`react-diff-viewer-continued`
+  removed from package.json + lockfile.** **New Compare surfaces** (all via
+  `useOpenDiffViewerWindow()`): Quick Save Note + Code overwrite confirms
+  (compare-before-apply, data-loss guard), RAG raw↔cleaned ×3, transcript
+  `CleanupPad`, `SystemPromptOptimizer`, `ContextVersionHistory`,
+  `ArtifactVersionHistory`. Driven by the adversarial discovery workflow's ranked
+  plan; remaining waves tracked in the Category A/B "Still open" note above.
 - 2026-06-26 — Clipboard compare direction fix + legible diff colors + Swap
   toggle. **Direction:** clipboard compare was backwards (clipboard as
   original/old, current as modified/new) — fixed at all four callsites
