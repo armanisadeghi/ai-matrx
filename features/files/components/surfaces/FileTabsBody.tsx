@@ -136,6 +136,32 @@ export function FileTabsBody({
     onTabChange?.(next);
   };
 
+  // ── Lazy-mount-then-keep-alive ─────────────────────────────────────────────
+  //
+  // Tab bodies stay mounted once visited (so switching Versions → Preview
+  // doesn't re-download a 10 MB PDF), but a tab the user has NEVER opened is
+  // not mounted at all. This is the difference between "keep the blob alive"
+  // (correct, post-visit) and "fetch every tab's data on first click"
+  // (the bug): mounting Analysis + Knowledge + Info eagerly fired
+  // `/files/{id}/analysis`, `/annotations`, and `/rag-status` on a plain
+  // preview click — three server round-trips for tabs the user never saw.
+  //
+  // `mountedTabs` grows monotonically: it starts with whatever tab is active
+  // on first paint (honours `?tab=` deep links + the active-tab change effect
+  // below) and never shrinks, so the keep-alive guarantee holds.
+  const [mountedTabs, setMountedTabs] = useState<ReadonlySet<FileTab>>(
+    () => new Set<FileTab>([activeTab]),
+  );
+  useEffect(() => {
+    setMountedTabs((prev) => {
+      if (prev.has(activeTab)) return prev;
+      const next = new Set(prev);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
+  const isMounted = (tab: FileTab) => mountedTabs.has(tab);
+
   // Honour `?tab=` on remount (file id change or first paint with deep link).
   // Controlled mode skips this — the parent owns the URL contract.
   useEffect(() => {
@@ -227,14 +253,19 @@ export function FileTabsBody({
         />
       </div>
 
-      {/* Body — all tabs stay MOUNTED, only their visibility toggles.
+      {/* Body — a tab mounts on FIRST activation and then stays mounted
+       * (only its visibility toggles thereafter). See the
+       * lazy-mount-then-keep-alive note above.
        *
-       * Why: every fetch-based previewer (PDF, Markdown, Code, Text, Data)
-       * goes through `useFileBlob`, which fetches the bytes and revokes
-       * the blob URL on unmount. If we conditionally rendered tabs, the
-       * Preview tab would unmount whenever the user clicked Versions —
-       * losing a 10 MB PDF download and forcing a full re-fetch on
-       * return. Always-mounted with `hidden` keeps the blob alive.
+       * Keep-alive (post-visit): every fetch-based previewer (PDF, Markdown,
+       * Code, Text, Data) goes through `useFileBlob`, which fetches the bytes
+       * and revokes the blob URL on unmount. Once a tab has been opened we
+       * keep it mounted with `hidden` so switching Versions → Preview doesn't
+       * lose a 10 MB PDF download and re-fetch on return.
+       *
+       * Lazy (pre-visit): a tab the user has never opened is not rendered, so
+       * its data fetch never fires. This is what stops a plain preview click
+       * from hitting `/analysis`, `/annotations`, and `/rag-status`.
        *
        * Each tab has its own error boundary so a crash in one doesn't
        * blank the other.
@@ -245,65 +276,79 @@ export function FileTabsBody({
           hidden={activeTab !== "preview"}
           aria-hidden={activeTab !== "preview"}
         >
-          <PreviewErrorBoundary fileId={fileId}>
-            <FilePreview fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
+          {isMounted("preview") ? (
+            <PreviewErrorBoundary fileId={fileId}>
+              <FilePreview fileId={fileId} className="h-full w-full" />
+            </PreviewErrorBoundary>
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "edit"}
           aria-hidden={activeTab !== "edit"}
         >
-          <PreviewErrorBoundary fileId={fileId}>
-            <EditTabContent fileId={fileId} />
-          </PreviewErrorBoundary>
+          {isMounted("edit") ? (
+            <PreviewErrorBoundary fileId={fileId}>
+              <EditTabContent fileId={fileId} />
+            </PreviewErrorBoundary>
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "document"}
           aria-hidden={activeTab !== "document"}
         >
-          <PreviewErrorBoundary fileId={fileId}>
-            <DocumentTab
-              fileId={fileId}
-              active={activeTab === "document"}
-              initialPage={deepLink.page}
-              initialChunkId={deepLink.chunk}
-              className="h-full w-full"
-            />
-          </PreviewErrorBoundary>
+          {isMounted("document") ? (
+            <PreviewErrorBoundary fileId={fileId}>
+              <DocumentTab
+                fileId={fileId}
+                active={activeTab === "document"}
+                initialPage={deepLink.page}
+                initialChunkId={deepLink.chunk}
+                className="h-full w-full"
+              />
+            </PreviewErrorBoundary>
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "analysis"}
           aria-hidden={activeTab !== "analysis"}
         >
-          <PreviewErrorBoundary fileId={fileId}>
-            <AnalysisTab fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
+          {isMounted("analysis") ? (
+            <PreviewErrorBoundary fileId={fileId}>
+              <AnalysisTab fileId={fileId} className="h-full w-full" />
+            </PreviewErrorBoundary>
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "share"}
           aria-hidden={activeTab !== "share"}
         >
-          <PreviewErrorBoundary fileId={fileId}>
-            <FileShareTab fileId={fileId} className="h-full w-full" />
-          </PreviewErrorBoundary>
+          {isMounted("share") ? (
+            <PreviewErrorBoundary fileId={fileId}>
+              <FileShareTab fileId={fileId} className="h-full w-full" />
+            </PreviewErrorBoundary>
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "info"}
           aria-hidden={activeTab !== "info"}
         >
-          <FileInfoTab fileId={fileId} className="h-full w-full" />
+          {isMounted("info") ? (
+            <FileInfoTab fileId={fileId} className="h-full w-full" />
+          ) : null}
         </div>
         <div
           className="absolute inset-0 overflow-hidden"
           hidden={activeTab !== "versions"}
           aria-hidden={activeTab !== "versions"}
         >
-          <FileVersionsList fileId={fileId} className="h-full w-full" />
+          {isMounted("versions") ? (
+            <FileVersionsList fileId={fileId} className="h-full w-full" />
+          ) : null}
         </div>
       </div>
     </div>
