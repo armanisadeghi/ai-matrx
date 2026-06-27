@@ -79,7 +79,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     if (!userId) return [];
     if (args.parentId !== null) return []; // flat — no folders
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select(COLUMNS)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
@@ -106,7 +106,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
 
   async read(supabase, _userId, id): Promise<VirtualContent> {
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select(COLUMNS)
       .eq("id", id)
       .maybeSingle();
@@ -126,7 +126,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
 
   async write(supabase, _userId, args: WriteArgs) {
     let query = supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update({ component_code: args.content })
       .eq("id", args.id);
     if (args.expectedUpdatedAt) {
@@ -141,7 +141,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
 
   async rename(supabase, userId, args: RenameArgs) {
     let query = supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update({
         name: args.newName,
         updated_at: new Date().toISOString(),
@@ -159,7 +159,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
   async delete(supabase, userId, id) {
     // Soft-delete via status column when available; otherwise hard-delete.
     const { error } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update({ status: "archived", updated_at: new Date().toISOString() })
       .eq("id", id)
       .eq("user_id", userId);

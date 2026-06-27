@@ -41,7 +41,8 @@ export async function POST(
     // RLS scoping is fine here — the user must already be able to read the
     // source row to duplicate it.
     const { data: original, error: fetchError } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .select("*")
       .eq("id", id)
       .single();
@@ -60,7 +61,8 @@ export async function POST(
     const MAX_ATTEMPTS = 25;
     while (attempt < MAX_ATTEMPTS) {
       const { data: existing, error: slugCheckError } = await admin
-        .from("aga_apps")
+        .schema("app")
+        .from("definition")
         .select("id")
         .eq("slug", slug)
         .maybeSingle();
@@ -80,7 +82,8 @@ export async function POST(
     // org / project / task ownership, and `aga_apps_insert` policy
     // requires user_id = auth.uid() with the other scope keys NULL.
     const { data: newApp, error: insertError } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .insert({
         user_id: user.id,
         organization_id: null,

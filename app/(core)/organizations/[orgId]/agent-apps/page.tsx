@@ -6,13 +6,14 @@ import { LayoutGrid, Loader2 } from "lucide-react";
 import { OrgResourceLayout } from "../OrgResourceLayout";
 import { OrgResourceList } from "@/features/organizations/components/OrgResourceList";
 import { supabase } from "@/utils/supabase/client";
+import { appDb } from "@/utils/supabase/appDb";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 const SELECT_COLS = "id, name, tagline, updated_at, category, tags";
 
 const fetchOwned = async (orgId: string) => {
-  const res = await supabase
-    .from("aga_apps")
+  const res = await appDb(supabase)
+    .from("definition")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });

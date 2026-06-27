@@ -47,7 +47,8 @@ export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
   const supabase = (await createClient()) as unknown as SupabaseRowClient;
   const column = UUID_RE.test(idOrSlug) ? "id" : "slug";
   const result = await (supabase
-    .from("aga_apps")
+    .schema("app")
+    .from("definition")
     .select("*")
     .eq(column, idOrSlug)
     .single?.() as Promise<{ data: AgentApp | null; error: unknown }>);
@@ -64,7 +65,8 @@ export async function getAgentAppVersions(
 ): Promise<AgentAppVersionRow[]> {
   const supabase = (await createClient()) as unknown as SupabaseRowClient;
   const result = await (supabase
-    .from("aga_versions")
+    .schema("app")
+    .from("definition_version")
     .select(
       "id, app_id, version_number, changed_at, change_note, name, agent_id, agent_version_id, status, pinned_version",
     )
@@ -130,7 +132,8 @@ export async function getAgentAppVersion(
 ): Promise<AgentAppVersionDetail | null> {
   const supabase = (await createClient()) as unknown as SupabaseEqClient;
   const result = await supabase
-    .from("aga_versions")
+    .schema("app")
+    .from("definition_version")
     .select(
       "id, app_id, version_number, changed_at, change_note, name, tagline, description, category, tags, status, agent_id, agent_version_id, pinned_version, component_code, component_language, layout_config, styling_config, variable_schema",
     )

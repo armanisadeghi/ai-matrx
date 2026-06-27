@@ -141,7 +141,7 @@ export async function fetchAgentAppCategories(): Promise<
 > {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_categories")
+    .schema("app").from("category")
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) throw error;
@@ -153,7 +153,7 @@ export async function createAgentAppCategory(
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_categories")
+    .schema("app").from("category")
     .insert([
       {
         id: input.id,
@@ -179,7 +179,7 @@ export async function updateAgentAppCategory(
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.sort_order !== undefined) patch.sort_order = input.sort_order;
   const { data, error } = await supabase
-    .from("aga_categories")
+    .schema("app").from("category")
     .update(patch)
     .eq("id", input.id)
     .select()
@@ -190,7 +190,7 @@ export async function updateAgentAppCategory(
 
 export async function deleteAgentAppCategory(id: string): Promise<void> {
   const supabase = getClient();
-  const { error } = await supabase.from("aga_categories").delete().eq("id", id);
+  const { error } = await supabase.schema("app").from("category").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -206,7 +206,7 @@ export async function fetchAgentAppsAdmin(filters?: {
 }): Promise<AgentAppAdminView[]> {
   const supabase = getClient();
   let query = supabase
-    .from("aga_apps")
+    .schema("app").from("definition")
     .select("*")
     .order("updated_at", { ascending: false });
 
@@ -251,7 +251,7 @@ export async function getAgentAppById(
 ): Promise<AgentAppAdminView | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_apps")
+    .schema("app").from("definition")
     .select("*")
     .eq("id", id)
     .single();
@@ -279,7 +279,7 @@ export async function updateAgentAppAdmin(
     patch.rate_limit_authenticated = input.rate_limit_authenticated;
 
   const { data, error } = await supabase
-    .from("aga_apps")
+    .schema("app").from("definition")
     .update(patch)
     .eq("id", input.id)
     .select()
@@ -295,7 +295,7 @@ export async function fetchAgentAppExecutions(filters?: {
 }): Promise<AgentAppExecutionRow[]> {
   const supabase = getClient();
   let query = supabase
-    .from("aga_executions")
+    .schema("app").from("execution")
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -310,7 +310,7 @@ export async function fetchAgentAppExecutions(filters?: {
   if (data && data.length > 0) {
     const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
     const { data: apps } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
     const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
@@ -331,7 +331,7 @@ export async function fetchAgentAppErrors(filters?: {
 }): Promise<AgentAppErrorRow[]> {
   const supabase = getClient();
   let query = supabase
-    .from("aga_errors")
+    .schema("app").from("error")
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -347,7 +347,7 @@ export async function fetchAgentAppErrors(filters?: {
   if (data && data.length > 0) {
     const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
     const { data: apps } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
     const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
@@ -367,7 +367,7 @@ export async function resolveAgentAppError(input: {
   const supabase = getClient();
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("aga_errors")
+    .schema("app").from("error")
     .update({
       resolved: true,
       resolved_at: new Date().toISOString(),
@@ -386,7 +386,7 @@ export async function unresolveAgentAppError(
 ): Promise<AgentAppErrorRow> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_errors")
+    .schema("app").from("error")
     .update({
       resolved: false,
       resolved_at: null,
@@ -407,7 +407,7 @@ export async function fetchAgentAppRateLimits(filters?: {
 }): Promise<AgentAppRateLimitRow[]> {
   const supabase = getClient();
   let query = supabase
-    .from("aga_rate_limits")
+    .schema("app").from("rate_limit")
     .select("*")
     .order("updated_at", { ascending: false });
 
@@ -422,7 +422,7 @@ export async function fetchAgentAppRateLimits(filters?: {
   if (data && data.length > 0) {
     const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
     const { data: apps } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
     const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
@@ -440,7 +440,7 @@ export async function unblockAgentAppRateLimit(
 ): Promise<AgentAppRateLimitRow> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_rate_limits")
+    .schema("app").from("rate_limit")
     .update({
       is_blocked: false,
       blocked_until: null,
@@ -462,7 +462,7 @@ export async function blockAgentAppRateLimit(
 ): Promise<AgentAppRateLimitRow> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("aga_rate_limits")
+    .schema("app").from("rate_limit")
     .update({
       is_blocked: true,
       blocked_until: blockedUntil?.toISOString() ?? null,

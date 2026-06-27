@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import { appDb } from "@/utils/supabase/appDb";
 import { AgentAppErrorBoundary } from "../components/AgentAppErrorBoundary";
 import { AgentAppPublicRenderer } from "../components/AgentAppPublicRenderer";
 import type { PublicAgentApp, AgentApp } from "../types";
@@ -23,8 +24,8 @@ export function AgentAppRenderPreview({ rowId, code }: RenderPreviewerProps) {
   useEffect(() => {
     let cancelled = false;
     const supabase = createClient();
-    void supabase
-      .from("aga_apps")
+    void appDb(supabase)
+      .from("definition")
       .select("*")
       .eq("id", rowId)
       .single()

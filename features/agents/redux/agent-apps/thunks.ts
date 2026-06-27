@@ -49,7 +49,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
     dispatch(agentAppActions.setAppsError(null));
 
     const { data, error } = await db()
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select("*")
       .order("updated_at", { ascending: false });
 
@@ -78,7 +78,7 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
     dispatch(agentAppActions.setAppError({ id: appId, error: null }));
 
     const { data, error } = await db()
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select("*")
       .eq("id", appId)
       .single();
@@ -129,7 +129,7 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
     dispatch(agentAppActions.setAppError({ id: appId, error: null }));
 
     const { error } = await db()
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update(patch)
       .eq("id", appId);
 
@@ -156,7 +156,7 @@ export const saveAppField = createAsyncThunk<
   ThunkApi
 >("agentApp/saveField", async ({ appId, field, value }, { dispatch }) => {
   const { error } = await db()
-    .from("aga_apps")
+    .schema("app").from("definition")
     .update({ [field]: value })
     .eq("id", appId);
 
@@ -196,7 +196,7 @@ export const createApp = createAsyncThunk<
   };
 
   const { data, error } = await db()
-    .from("aga_apps")
+    .schema("app").from("definition")
     .insert(insert)
     .select()
     .single();
@@ -224,7 +224,7 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
     if (!userId) throw new Error("Not authenticated");
 
     const { error } = await db()
-      .from("aga_apps")
+      .schema("app").from("definition")
       .delete()
       .eq("id", appId)
       .eq("user_id", userId);

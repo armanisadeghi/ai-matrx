@@ -139,7 +139,8 @@ export async function POST(
       }
 
       const { error } = await admin
-        .from("aga_executions")
+        .schema("app")
+        .from("execution")
         .update(patch)
         .eq("task_id", body.taskId)
         .eq("app_id", appId);
@@ -177,7 +178,7 @@ export async function POST(
       metadata: body.metadata ?? {},
     };
 
-    const { error } = await admin.from("aga_executions").insert(insertPayload);
+    const { error } = await admin.schema("app").from("execution").insert(insertPayload);
 
     if (error) {
       // Rate-limit trigger may raise check_violation for legitimate

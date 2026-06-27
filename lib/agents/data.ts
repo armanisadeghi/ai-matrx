@@ -109,7 +109,8 @@ export const getAppsForAgent = cache(async (agentId: string) => {
       };
     }
   )
-    .from("aga_apps")
+    .schema("app")
+    .from("definition")
     .select(
       "id, slug, name, tagline, description, category, tags, preview_image_url, favicon_url, status, is_public, is_featured, total_executions, last_execution_at, agent_id, agent_version_id, use_latest, created_at, updated_at",
     )

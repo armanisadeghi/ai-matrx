@@ -12,6 +12,7 @@
 import React from "react";
 import { AppWindow } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
+import { appDb } from "@/utils/supabase/appDb";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -29,8 +30,8 @@ export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("aga_apps")
+      const { data } = await appDb(supabase)
+        .from("definition")
         .select("name, description, created_at")
         .eq("id", id)
         .maybeSingle();

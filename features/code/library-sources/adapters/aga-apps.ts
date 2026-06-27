@@ -58,7 +58,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
   ): Promise<SourceEntry[]> {
     if (!userId) return [];
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select(COLUMNS)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
@@ -85,7 +85,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     rowId: string,
   ): Promise<LoadedSourceEntry> {
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .select(COLUMNS)
       .eq("id", rowId)
       .single();
@@ -121,7 +121,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     args: SaveSourceArgs,
   ): Promise<SaveSourceResult> {
     let query = supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update({ component_code: args.content })
       .eq("id", args.rowId);
 
@@ -169,7 +169,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     }
 
     let query = supabase
-      .from("aga_apps")
+      .schema("app").from("definition")
       .update(update)
       .eq("id", args.rowId);
 

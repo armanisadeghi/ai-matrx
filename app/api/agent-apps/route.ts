@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
     // Surface the common "slug already taken" error with a clear message
     // instead of a raw Postgres unique-violation payload.
     const { data: existing, error: existingError } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .select("id")
       .eq("slug", normalizedSlug)
       .maybeSingle();
@@ -165,8 +166,9 @@ export async function POST(request: NextRequest) {
     // Global apps bypass RLS via the admin client because user_id = null
     // would fail a typical owner-check INSERT policy.
     const writer = isGlobal ? createAdminClient() : supabase;
-    const { data, error } = await writer
-      .from("aga_apps")
+    const { data, error } = await (writer as any)
+      .schema("app")
+      .from("definition")
       .insert(insertPayload)
       .select()
       .single();

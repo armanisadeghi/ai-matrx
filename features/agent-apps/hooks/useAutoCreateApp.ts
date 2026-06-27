@@ -295,7 +295,8 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         const { data: appData, error: insertError } = await (
           supabase as unknown as any
         )
-          .from("aga_apps")
+          .schema("app")
+          .from("definition")
           .insert({
             user_id: userId,
             agent_id: data.agent.id,

@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
     // uploaded via the user's session so RLS + ownership line up correctly.
     const adminClient = createAdminClient() as unknown as any;
     const { data: app, error: appError } = await adminClient
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .select("id, user_id")
       .eq("id", appId)
       .single();
@@ -156,7 +157,8 @@ export async function POST(request: NextRequest) {
     });
 
     const { error: updateError } = await adminClient
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .update({ favicon_url: shareUrl })
       .eq("id", appId);
 

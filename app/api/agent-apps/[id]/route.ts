@@ -19,7 +19,8 @@ export async function GET(
     }
 
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .select("*")
       .eq("id", id)
       .single();
@@ -67,7 +68,8 @@ export async function PATCH(
     const body = await request.json();
 
     const { data, error } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .update(body)
       .eq("id", id)
       .select()
@@ -109,7 +111,8 @@ export async function DELETE(
 
     // Look up the row to decide which deletion path applies.
     const { data: existing, error: fetchError } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .select("id, user_id")
       .eq("id", id)
       .maybeSingle();
@@ -144,7 +147,7 @@ export async function DELETE(
         "@/utils/supabase/adminClient"
       );
       const admin = createAdminClient() as unknown as any;
-      const { error } = await admin.from("aga_apps").delete().eq("id", id);
+      const { error } = await admin.schema("app").from("definition").delete().eq("id", id);
       if (error) {
         return NextResponse.json(
           { error: "Failed to delete system agent app", details: error.message },
@@ -157,7 +160,8 @@ export async function DELETE(
     // Belt-and-suspenders ownership check on top of RLS — matches the legacy
     // prompt-apps DELETE handler.
     const { error } = await supabase
-      .from("aga_apps")
+      .schema("app")
+      .from("definition")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);
