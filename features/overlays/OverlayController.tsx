@@ -420,6 +420,13 @@ const FilePreviewWindow = lazyOverlay(
     import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
   { ssr: false },
 );
+const SourceInspectorWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/source-inspector/SourceInspectorWindow"
+    ),
+  { ssr: false },
+);
 const ItemDetailWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
   { ssr: false },
@@ -912,6 +919,9 @@ export default function OverlayController() {
     filePreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
+    sourceInspectorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "sourceInspectorWindow"),
+    ),
     findReplace: useAppSelector((s) => selectIsOverlayOpen(s, "findReplace")),
     surfaceContextInspector: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextInspector"),
@@ -1161,6 +1171,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     filePreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    sourceInspectorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "sourceInspectorWindow"),
     ) as Record<string, unknown> | null,
     findReplace: useAppSelector((s) =>
       selectOverlayData(s, "findReplace"),
@@ -2901,6 +2914,51 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))
             }
             fileId={typeof data?.fileId === "string" ? data.fileId : null}
+          />
+        );
+      })()}
+
+      {/* sourceInspectorWindow */}
+      {(() => {
+        const isOpen = isOpenById.sourceInspectorWindow;
+        const data = dataById.sourceInspectorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const pageNumbers = Array.isArray(data?.pageNumbers)
+          ? (data.pageNumbers as unknown[]).filter(
+              (n): n is number => typeof n === "number",
+            )
+          : null;
+        return (
+          <SourceInspectorWindow
+            // Data-derived key: this is a SINGLETON overlay, so opening a new
+            // citation while one is open re-renders in place. Keying on the
+            // source identity forces a clean remount, resetting the pane's
+            // activePage / active tab to the new citation (otherwise they stay
+            // stuck on the previous source — see review P1).
+            key={`${typeof data?.sourceId === "string" ? data.sourceId : ""}:${
+              typeof data?.chunkId === "string" ? data.chunkId : ""
+            }:${typeof data?.pageNumber === "number" ? data.pageNumber : ""}`}
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "sourceInspectorWindow" }))
+            }
+            sourceKind={
+              typeof data?.sourceKind === "string" ? data.sourceKind : null
+            }
+            sourceId={typeof data?.sourceId === "string" ? data.sourceId : null}
+            chunkId={typeof data?.chunkId === "string" ? data.chunkId : null}
+            pageNumber={
+              typeof data?.pageNumber === "number" ? data.pageNumber : null
+            }
+            pageNumbers={pageNumbers}
+            snippet={typeof data?.snippet === "string" ? data.snippet : null}
+            fileName={typeof data?.fileName === "string" ? data.fileName : null}
+            score={typeof data?.score === "number" ? data.score : null}
+            query={typeof data?.query === "string" ? data.query : null}
+            href={typeof data?.href === "string" ? data.href : null}
           />
         );
       })()}

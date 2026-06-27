@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ExternalLink, PanelRight } from "lucide-react";
-import { useFileNode, openFilePreview } from "@/features/files";
+import { useFileNode } from "@/features/files";
+import { useOpenSourceInspectorWindow } from "@/features/overlays/openers/sourceInspectorWindow";
 import { cn } from "@/lib/utils";
 import type { ToolAccent } from "../../types";
 import { ToolGlyph } from "../_shared-entity/ToolGlyph";
@@ -38,12 +39,14 @@ function RagPeekBody({
   hit,
   href,
   topScore,
-  isFile,
+  canInspect,
+  onInspect,
 }: {
   hit: NormalizedHit;
   href: string;
   topScore: number;
-  isFile: boolean;
+  canInspect: boolean;
+  onInspect: () => void;
 }) {
   const tier = scoreTier(hit.score);
   const rel = relativeStrength(hit.score, topScore);
@@ -114,14 +117,14 @@ function RagPeekBody({
 
       {/* Actions */}
       <div className="flex items-center gap-2 border-t border-border pt-2">
-        {isFile ? (
+        {canInspect ? (
           <button
             type="button"
-            onClick={() => openFilePreview(hit.source_id)}
+            onClick={onInspect}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
           >
             <PanelRight className="h-3.5 w-3.5" />
-            Open in window
+            {hit.page_number != null ? `Inspect page ${hit.page_number}` : "Inspect source"}
           </button>
         ) : null}
         <a
@@ -141,21 +144,44 @@ function RagPeekBody({
 export function RagSourceCard({
   hit,
   topScore,
+  query,
 }: {
   hit: NormalizedHit;
   /** Top score in the result set, for the relative relevance bar. */
   topScore: number;
+  /** The originating search query — threaded into the source inspector. */
+  query?: string | null;
 }) {
   const g = kindGlyph(hit.source_kind);
   const Icon = g.icon;
   const href = hrefForNormalized(hit);
   const isFile = hit.source_kind === "cld_file";
+  // Document-backed sources (a real file or a library doc) have page-anchored
+  // extraction, so they open the rich Source Inspector; everything else just
+  // deep-links its own viewer in a new tab.
+  const canInspect =
+    hit.source_kind === "cld_file" || hit.source_kind === "library_doc";
 
   // Resolve a friendly name: the hit's own name → the eagerly-loaded cloud-files
   // record (so "File · e9868104" becomes the real filename) → a kind + id
   // fallback. useFileNode is a no-op read for non-file ids.
   const { file } = useFileNode(hit.source_id);
   const resolvedName = hit.file_name ?? (isFile ? file?.fileName ?? null : null);
+
+  const openInspector = useOpenSourceInspectorWindow();
+  const inspect = () =>
+    openInspector({
+      sourceKind: hit.source_kind,
+      sourceId: hit.source_id,
+      chunkId: hit.chunk_id,
+      pageNumber: hit.page_number,
+      pageNumbers: hit.page_number != null ? [hit.page_number] : null,
+      snippet: hit.snippet,
+      fileName: resolvedName ?? hit.file_name ?? null,
+      score: hit.score,
+      query: query ?? null,
+      href,
+    });
   // Fallback title is a bare id ref — the kind is carried by the glyph + the
   // subtitle, so we never echo "File … / File · Page".
   const title = resolvedName ?? `#${hit.source_id.slice(0, 8)}`;
@@ -175,7 +201,13 @@ export function RagSourceCard({
         </span>
       }
       body={
-        <RagPeekBody hit={hit} href={href} topScore={topScore} isFile={isFile} />
+        <RagPeekBody
+          hit={hit}
+          href={href}
+          topScore={topScore}
+          canInspect={canInspect}
+          onInspect={inspect}
+        />
       }
     >
       <div className="group/row flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:bg-muted/40">
@@ -201,16 +233,21 @@ export function RagSourceCard({
           {hit.score.toFixed(2)}
         </span>
 
-        {/* Open — file → in-app window; everything else → deep-link new tab */}
-        {isFile ? (
+        {/* Open — document sources → Source Inspector (lands on the cited page);
+            everything else → deep-link its viewer in a new tab. */}
+        {canInspect ? (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              openFilePreview(hit.source_id);
+              inspect();
             }}
-            title="Open file in a window"
-            aria-label="Open file in a window"
+            title={
+              hit.page_number != null
+                ? `Inspect page ${hit.page_number} of the source`
+                : "Inspect source"
+            }
+            aria-label="Open source inspector"
             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <PanelRight className="h-4 w-4" />

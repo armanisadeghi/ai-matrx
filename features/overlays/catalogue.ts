@@ -340,6 +340,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  sourceInspectorWindow: {
+    label: "Source Inspector",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   findReplace: {
     label: "Find & Replace",
     instanceMode: "singleton",

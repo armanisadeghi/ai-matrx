@@ -44,7 +44,12 @@ export function RagSearchOverlay({ entry }: ToolRendererProps) {
       </div>
       <div className="space-y-1.5">
         {data.hits.map((h, i) => (
-          <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} topScore={topScore} />
+          <RagSourceCard
+            key={`${h.chunk_id}-${i}`}
+            hit={h}
+            topScore={topScore}
+            query={data.query}
+          />
         ))}
       </div>
     </div>

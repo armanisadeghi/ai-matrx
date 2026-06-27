@@ -22,6 +22,7 @@ import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { getJson } from "@/lib/python-client";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import {
@@ -58,11 +59,34 @@ function formatPages(pages: number[] | null): string | null {
 // Card
 // ---------------------------------------------------------------------------
 
-export function ChunkCard({ chunk }: { chunk: ChunkLike }) {
+export function ChunkCard({
+  chunk,
+  highlighted = false,
+}: {
+  chunk: ChunkLike;
+  /** Mark this as the chunk a citation matched — a primary ring + a "Matched"
+   *  badge so the user can tell the retrieved segment from its page siblings. */
+  highlighted?: boolean;
+}) {
   const pageLabel = formatPages(chunk.page_numbers);
   return (
-    <div className="border border-border rounded-md p-2 space-y-1 bg-card">
+    <div
+      className={cn(
+        "rounded-md p-2 space-y-1 bg-card",
+        highlighted
+          ? "border border-primary/50 ring-1 ring-primary/30 bg-primary/[0.06]"
+          : "border border-border",
+      )}
+    >
       <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+        {highlighted && (
+          <Badge
+            variant="default"
+            className="text-[10px] px-1.5 py-0 font-semibold"
+          >
+            Matched
+          </Badge>
+        )}
         {/* Page provenance first — the user's #1 question is "where did this
             come from?", so it leads. */}
         {pageLabel && (
@@ -120,9 +144,12 @@ interface ApiChunksResponse {
 export function ChunksOnPage({
   documentId,
   pageNumber,
+  highlightChunkId = null,
 }: {
   documentId: string;
   pageNumber: number;
+  /** When set, that chunk floats to the top and renders as the "Matched" card. */
+  highlightChunkId?: string | null;
 }) {
   const [chunks, setChunks] = useState<ChunkLike[]>([]);
   const [total, setTotal] = useState(0);
@@ -169,9 +196,20 @@ export function ChunksOnPage({
             No {RAG_VOCAB.segmentsShort.toLowerCase()} for page {pageNumber}.
           </p>
         )}
-        {chunks.map((c) => (
-          <ChunkCard key={c.id} chunk={c} />
-        ))}
+        {[...chunks]
+          .sort((a, b) => {
+            // Float the matched chunk to the top; keep the rest in order.
+            if (a.id === highlightChunkId) return -1;
+            if (b.id === highlightChunkId) return 1;
+            return 0;
+          })
+          .map((c) => (
+            <ChunkCard
+              key={c.id}
+              chunk={c}
+              highlighted={highlightChunkId != null && c.id === highlightChunkId}
+            />
+          ))}
         {total > chunks.length && (
           <p className="text-xs text-muted-foreground italic">
             Showing first {chunks.length} of {total}.

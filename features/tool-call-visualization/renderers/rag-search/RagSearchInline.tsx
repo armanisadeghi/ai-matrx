@@ -77,7 +77,12 @@ export function RagSearchInline({
       {data.hits.length ? (
         <div className="max-h-[440px] space-y-1.5 overflow-y-auto p-2">
           {shown.map((h, i) => (
-            <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} topScore={topScore} />
+            <RagSourceCard
+              key={`${h.chunk_id}-${i}`}
+              hit={h}
+              topScore={topScore}
+              query={data.query}
+            />
           ))}
           {hasMore && onOpenOverlay ? (
             <button

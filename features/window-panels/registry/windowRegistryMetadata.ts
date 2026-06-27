@@ -251,6 +251,31 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "file_preview" },
   },
 
+  // ── Source Inspector ──────────────────────────────────────────────────────
+  // Citation landing surface: opens to the exact page of a cited source and
+  // unifies the matched chunk + raw/clean extraction + page extractions.
+  // Transient (multi-field, non-restorable from a single id) → no url-sync.
+  {
+    slug: "source-inspector-window",
+    overlayId: "sourceInspectorWindow",
+    kind: "window",
+    label: "Source inspector",
+    defaultData: {
+      sourceKind: null,
+      sourceId: null,
+      chunkId: null,
+      pageNumber: null,
+      pageNumbers: null,
+      snippet: null,
+      fileName: null,
+      score: null,
+      query: null,
+      href: null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Item Detail ───────────────────────────────────────────────────────────
   // Generic fallback detail view for an item_presentation entity (task,
   // project, scope, document, …) that has no bespoke window yet. Tied to the
