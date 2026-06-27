@@ -1,20 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAppSelector } from "@/lib/redux/hooks";
+// components/diff/views/RawJsonView.tsx
+//
+// Raw JSON side-by-side diff for the STRUCTURED diff system (DiffViewerShell).
+// A thin JSON-stringify wrapper around the canonical heavy engine `CodeDiff`
+// (Monaco, behind its own single `next/dynamic({ssr:false})` boundary) — no
+// second Monaco wrapper of its own. (FEATURE.md A12.)
 
-// Monaco is browser-only and ~2MB — one `next/dynamic({ssr:false})` boundary
-// (never React.lazy) keeps it off the server render and out of the bundle
-// until this raw-JSON diff view actually renders.
-const MonacoDiffEditor = dynamic(
-  () => import("@monaco-editor/react").then((mod) => mod.DiffEditor),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[400px] w-full" />,
-  },
-);
+import { useMemo } from "react";
+import { CodeDiff } from "@/components/diff/code/CodeDiff";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 interface RawJsonViewProps {
   oldValue: unknown;
@@ -34,32 +29,17 @@ export function RawJsonView({
   const newJson = useMemo(() => JSON.stringify(newValue, null, 2), [newValue]);
 
   return (
-    <div className="h-full min-h-[400px] flex flex-col">
-      <div className="flex items-center gap-4 px-4 py-1.5 border-b border-border bg-muted/20 text-xs text-muted-foreground">
-        <span>{oldLabel}</span>
-        <span className="flex-1" />
-        <span>{newLabel}</span>
-      </div>
-      <div className="flex-1 min-h-0">
-        <MonacoDiffEditor
-          original={oldJson}
-          modified={newJson}
-          language="json"
-          theme={mode === "dark" ? "vs-dark" : "vs"}
-          options={{
-            readOnly: true,
-            renderSideBySide: true,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 12,
-            lineNumbers: "on",
-            folding: true,
-            wordWrap: "on",
-            automaticLayout: true,
-          }}
-          height="100%"
-        />
-      </div>
+    <div className="h-full min-h-[400px]">
+      <CodeDiff
+        original={oldJson}
+        modified={newJson}
+        language="json"
+        originalLabel={oldLabel}
+        modifiedLabel={newLabel}
+        view="split"
+        theme={mode === "dark" ? "dark" : "light"}
+        showLabels
+      />
     </div>
   );
 }
