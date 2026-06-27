@@ -26,6 +26,11 @@ export const WAR_ROOM_ROOM_AGENT_ID = "7239e128-2a07-4d68-8292-0f530be6f754";
 export const WAR_ROOM_MASTER_AGENT_ID = "639af529-62cc-4c8e-a169-6c9bd5215ae7";
 
 // ── Gallery layout tuning (consumed by the generic gallery engine) ───
+// The floor is the SMALLEST a thread card may get before the grid scrolls
+// instead of shrinking. A thread is an operable card (header + tab body), so the
+// floor is sized to stay usable — below this a card can't show its content and
+// the gallery becomes "too small to use". Comfortable is the live default; the
+// density dial swaps in the Spacious/Compact floors (see roomViewContext).
 export const GALLERY_GAP_PX = 12;
-export const GALLERY_MIN_THREAD = { width: 300, height: 220 };
+export const GALLERY_MIN_THREAD = { width: 340, height: 290 };
 export const GALLERY_TARGET_ASPECT = 4 / 3;

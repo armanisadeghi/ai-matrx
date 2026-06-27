@@ -16,7 +16,7 @@
 // clean URL):
 //   • thread  — the staged tile id (only when the user has explicitly chosen one)
 //   • view    — "grid" (omitted for the default "stage")
-//   • density — "compact" (omitted for the default "comfortable")
+//   • density — "spacious" | "compact" (omitted for the default "comfortable")
 //
 // Mechanics mirror the canonical NoteTabBar URL sync: a one-shot HYDRATE from
 // the URL on mount (so a refresh/shared link wins), then a Redux→URL push via
@@ -35,7 +35,7 @@ function isMode(v: string | null): v is RoomMode {
   return v === "stage" || v === "grid";
 }
 function isDensity(v: string | null): v is Density {
-  return v === "comfortable" || v === "compact";
+  return v === "spacious" || v === "comfortable" || v === "compact";
 }
 
 export function useRoomUrlSync(sessionId: string) {
@@ -95,7 +95,7 @@ export function useRoomUrlSync(sessionId: string) {
     if (mode === "grid") params.set("view", "grid");
     else params.delete("view");
 
-    if (density === "compact") params.set("density", "compact");
+    if (density !== "comfortable") params.set("density", density);
     else params.delete("density");
 
     const qs = params.toString();

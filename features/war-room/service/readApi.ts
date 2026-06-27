@@ -74,9 +74,17 @@ export async function fetchThreadContents(
   }
 
   const modules: ThreadContentModule[] = [];
+  // Dedup by (module_type, module_id): a resource attached BOTH directly to the
+  // thread AND to its anchor (task/project) must appear ONCE, not twice — else
+  // it renders as a duplicate tab and inflates every count. Direct attachment
+  // wins (seen first), so the anchor-inherited copy is skipped.
+  const seen = new Set<string>();
 
   for (const edge of threadEdgesRes.data.edges) {
     if (!isTabModuleSourceType(edge.sourceType)) continue;
+    const key = `${edge.sourceType}:${edge.sourceId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     modules.push({
       module_type: edge.sourceType,
       module_id: edge.sourceId,
@@ -97,6 +105,9 @@ export async function fetchThreadContents(
     }
     for (const edge of anchorRes.data.edges) {
       if (!isTabModuleSourceType(edge.sourceType)) continue;
+      const key = `${edge.sourceType}:${edge.sourceId}`;
+      if (seen.has(key)) continue; // already attached directly to the thread
+      seen.add(key);
       modules.push({
         module_type: edge.sourceType,
         module_id: edge.sourceId,

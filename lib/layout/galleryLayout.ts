@@ -225,11 +225,14 @@ export function computeGalleryLayout(input: GalleryInput): GalleryLayout {
     };
   }
 
-  // Scroll mode: as many columns as fit at minTile width, fixed-height rows.
-  const scrollCols = Math.max(
-    1,
-    Math.min(cols, Math.floor((w + gap) / (minTile.width + gap))),
-  );
+  // Scroll mode: fill the width with as many usable-width columns as actually
+  // fit at the minTile floor, capped only by the item count. (Previously this
+  // was capped at the area-maximizer's `cols`, which is chosen to fit everything
+  // in ONE screen and is therefore often FEWER than the width allows — leaving
+  // wide empty gutters. Once we've committed to scrolling, the right move is to
+  // pack the width, not honor the no-scroll column count.)
+  const fitCols = Math.max(1, Math.floor((w + gap) / (minTile.width + gap)));
+  const scrollCols = Math.max(1, Math.min(fitCols, count));
   const scrollRows = Math.ceil(count / scrollCols);
   return {
     cols: scrollCols,

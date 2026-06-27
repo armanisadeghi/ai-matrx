@@ -13,7 +13,7 @@
 //
 // "Create" stays put for rapid adds; "Create & open" stages the new thread.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plus,
   Loader2,
@@ -56,11 +56,17 @@ export function QuickAddThread({
   variant = "card",
   /** Promote a freshly-created thread to the Stage ("Create and Open"). */
   onOpen,
+  /** Render the composer expanded with no collapsed trigger (e.g. inside a
+   *  popover). `onCollapse` fires on Cancel / Escape / Create-and-open. */
+  embedded = false,
+  onCollapse,
 }: {
   sessionId: string;
   nextPosition: number;
   variant?: QuickAddVariant;
   onOpen?: (threadId: string) => void;
+  embedded?: boolean;
+  onCollapse?: () => void;
 }) {
   const dispatch = useAppDispatch();
 
@@ -84,6 +90,12 @@ export function QuickAddThread({
     requestAnimationFrame(() => nameRef.current?.focus());
   }
 
+  // Embedded (popover) mode renders the composer immediately — autofocus the name
+  // field on mount so the user can type right away.
+  useEffect(() => {
+    if (embedded) requestAnimationFrame(() => nameRef.current?.focus());
+  }, [embedded]);
+
   function resetFields() {
     setName("");
     setDescription("");
@@ -97,10 +109,14 @@ export function QuickAddThread({
   }
 
   function collapse() {
-    setEditing(false);
     resetFields();
     resetAnchors();
     setFlavor("canvas");
+    if (embedded) {
+      onCollapse?.();
+      return;
+    }
+    setEditing(false);
   }
 
   function onFlavorChange(next: ThreadPickerOption) {
@@ -221,7 +237,7 @@ export function QuickAddThread({
         : "Name this thread…";
 
   // ── Collapsed trigger ──────────────────────────────────────────────
-  if (!editing) {
+  if (!editing && !embedded) {
     if (variant === "rail") {
       return (
         <button
@@ -266,7 +282,7 @@ export function QuickAddThread({
     <div
       className={cn(
         "flex flex-col gap-2 rounded-xl border border-border bg-card p-2.5 shadow-sm",
-        variant === "card" && "h-full min-h-0 justify-center",
+        variant === "card" && !embedded && "h-full min-h-0 justify-center",
       )}
     >
       <div

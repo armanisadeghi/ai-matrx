@@ -3,12 +3,14 @@
 // features/war-room/components/room/WarRoomGallery.tsx
 //
 // Grid mode: the bird's-eye gallery of every thread, all at once. Orders tiles
-// (pinned first), appends the always-present "new" tile, and lays everything out
-// with the generic gallery-layout engine so the grid fills the viewport —
-// beautiful at three, dense at twelve, scrolling beyond. The Comfortable/Compact
-// density dial (from useRoomView) retunes the engine's minTile floor; a
-// double-click or the tile "focus" button promotes any card to the Stage. Parked
-// (hidden) threads dock in the bottom tray.
+// (pinned first) and lays them out with the generic gallery-layout engine so the
+// grid fills the viewport — beautiful at three, and past the point where cards
+// would shrink below a usable size it SCROLLS at that floor instead of cramming.
+// The Spacious/Comfortable/Compact density dial (from useRoomView) swaps the
+// minTile floor; a double-click or the tile "focus" button promotes any card to
+// the Stage. The "+new" affordance is NOT a grid cell — it lives in the room
+// header (it used to distort the layout at low counts and steal a prime cell);
+// an empty room shows the composer inline. Parked threads dock in the bottom tray.
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useGalleryLayout } from "@/hooks/useGalleryLayout";
@@ -20,7 +22,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import type { GalleryPlacement } from "@/lib/layout/galleryLayout";
 import { WarRoomThread } from "../thread/WarRoomThread";
-import { NewThread } from "../thread/NewThread";
+import { QuickAddThread } from "../thread/QuickAddThread";
 import { HiddenThreadsTray } from "./HiddenThreadsTray";
 import { useRoomView, DENSITY_LAYOUT } from "./roomViewContext";
 import { ThreadSortable, SortableThread } from "./threadDrag";
@@ -49,11 +51,10 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
   const searching = threadQuery.trim().length > 0;
   const gridIds = searching ? matchedIds : visibleIds;
 
-  // +1 for the always-present "new" tile (only when not searching).
-  const count = gridIds.length + (searching ? 0 : 1);
-  const { ref, layout } = useGalleryLayout(count, floors);
-
-  const newThreadPlacement = layout.placements[gridIds.length];
+  // The grid lays out ONLY real threads now — the "+new" affordance moved to the
+  // room header (it used to spend a full area-maximized cell here, distorting the
+  // layout at low counts and shrinking the real threads).
+  const { ref, layout } = useGalleryLayout(gridIds.length, floors);
 
   // Searching with zero matches → a clean message instead of an empty grid.
   if (searching && gridIds.length === 0) {
@@ -63,6 +64,31 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
           <p className="text-sm text-muted-foreground">
             No threads match “{threadQuery.trim()}”.
           </p>
+        </div>
+        <HiddenThreadsTray sessionId={sessionId} threads={hidden} />
+      </div>
+    );
+  }
+
+  // No visible threads (not searching) → an inviting empty state with the
+  // composer right there, instead of a blank grid.
+  if (gridIds.length === 0) {
+    return (
+      <div className="h-full flex flex-col min-h-0">
+        <div className="flex-1 min-h-0 grid place-items-center px-4">
+          <div className="w-full max-w-sm">
+            <p className="mb-1 text-center text-sm font-medium text-foreground">
+              {hidden.length > 0 ? "No active threads" : "No threads yet"}
+            </p>
+            <p className="mb-3 text-center text-xs text-muted-foreground">
+              Spin up a thread — a task, a project, or a freeform canvas.
+            </p>
+            <QuickAddThread
+              sessionId={sessionId}
+              nextPosition={allIds.length}
+              onOpen={(id) => stageThread(id)}
+            />
+          </div>
         </div>
         <HiddenThreadsTray sessionId={sessionId} threads={hidden} />
       </div>
@@ -131,20 +157,6 @@ export function WarRoomGallery({ sessionId }: { sessionId: string }) {
             {threadCells}
           </ThreadSortable>
         )}
-
-        {!searching ? (
-          <div
-            key="__new_thread__"
-            style={cellStyle(newThreadPlacement)}
-            className="min-h-0"
-          >
-            <NewThread
-              sessionId={sessionId}
-              nextPosition={allIds.length}
-              onCreated={(threadId) => stageThread(threadId)}
-            />
-          </div>
-        ) : null}
       </div>
 
       <HiddenThreadsTray sessionId={sessionId} threads={hidden} />

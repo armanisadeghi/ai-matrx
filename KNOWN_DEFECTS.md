@@ -17,6 +17,31 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D23 — `assoc_for_*` read RPCs gate on org-membership only, NOT per-resource visibility → latent cross-user content exposure
+**Severity: medium-HIGH (security, latent — does NOT leak today, but one visibility flip away from doing so). Found 2026-06-27 by an adversarial audit of the War Room read path.**
+
+**What.** The canonical edge-read RPCs `assoc_for_targets` / `assoc_for_sources` / `assoc_for_entity` (the only browser path to `platform.associations`) filter solely on `iam.has_org_access(a.organization_id)` — they do NOT re-check `iam.has_access(source_type, source_id, 'viewer')` on the JOINED content entity. So an edge's mere existence + shared org membership surfaces the attached note/task/file, regardless of that resource's own ACL. (Contrast the unused SQL funcs `war_room_threads`/`thread_contents`, which DO gate per-resource via `iam.has_access`.)
+
+**Why it doesn't leak now.** War Room's entry points are independently RLS-gated (`listAllUserThreads` + room `std_select` use `iam.has_access(...,'viewer')`), and **every** thread in a multi-member org is currently `visibility='private'`, so a non-owner never reaches a thread to call `assoc_for_targets` on it. The hole opens the moment a thread is set `internal`/`public`, or a second org-owner/admin is added (the `is_org_admin` read-any-row branch in `iam.has_access`): the org-only edge gate becomes the ONLY check on the attached content, and a private note/file belonging to another user renders as a tab.
+
+**The fence / fix.** Add an entity-visibility gate INSIDE the read RPCs (join + `iam.has_access` per source), or restore the per-resource-gated `thread_contents`/`war_room_threads` path (fix their grants rather than bypassing them). Defense-in-depth: the content-resolution layer should re-check `iam.has_access` per attached entity before rendering, never trusting an edge's existence. **Cross-cutting** — `assoc_for_*` is the shared scopes/war-room chokepoint, so the change needs owner sign-off (auth-sensitive) before touching it.
+
+### D22 — `platform.associations` edges leak when a CONTENT entity (note/task/file/…) is soft/hard-deleted elsewhere → phantom attachments
+**Severity: medium — a deleted note/task can render as a live attachment + inflate counts. War-room thread/room deletes are now structurally GC'd (D-fix below); this is the REMAINING, platform-wide half.**
+
+**What.** `platform.associations` is polymorphic (no FK), so nothing reaps an entity's edges when that entity is deleted. The 2026-06-27 fix added `platform._gc_entity_associations()` (a generic, token-parameterized GC trigger) and attached it to `workspace.threads`/`war_rooms`, so deleting a THREAD or ROOM reaps its edges. But deleting the OTHER endpoint — a note/task/file/conversation/studio_session attached to a thread — still leaves a dangling content edge → `thread_contents` (which does NOT filter the source's `deleted_at`/`is_deleted`) surfaces it as a phantom tab. 5 such phantom note edges were found + cleaned live on 2026-06-27.
+
+**The fence / fix (two layers).** (1) Attach `platform._gc_entity_associations('<token>')` to each content base-entity table (`notes`, `workspace.tasks`, `files.files`, …) — the primitive is ready; tables using `deleted_at` work as-is, `is_deleted`-boolean tables (notes) need a sibling trigger fn or a `deleted_at` column. (2) Backstop in the read paths: filter the source entity's deleted flag in `thread_contents()` and in the FE `assoc_for_targets` resolution. Either layer alone stops the symptom.
+
+### D21 — War-room active-pointer + gallery position are assigned by a non-atomic client read-modify-write → races corrupt them
+**Severity: medium — under concurrent attaches a thread can get TWO `is_active` members (wrong one shown) or colliding `position`s (unstable order). Both repaired in live data 2026-06-27; recurrence not yet prevented.**
+
+**What.** `service/associations.ts` `createAssignment` + `setActiveAssignment` do `list → compute demote/position → Promise.all(assoc_add …)` — a read-modify-write with no transaction/lock. Two concurrent attaches (or `setActiveAssignment`'s own concurrent `Promise.all` of demote+promote) each act on the pre-state and both write `is_active:true`, or both claim `position = sameType.length`. Live data had 1 double-active note + 5 position collisions (both cleaned).
+
+**Why a partial unique index is NOT the fix.** `setActiveAssignment` flips old→false and new→true CONCURRENTLY (`Promise.all`), so a `UNIQUE … WHERE is_active` index would reject the normal single-user flow, not just the race.
+
+**The fence / fix.** One atomic RPC `assoc_set_active(p_target_type, p_target_id, p_source_type, p_active_source_id)` that, in a single statement, sets `metadata.is_active = (source_id = p_active_source_id)` across every same-(target,source_type) edge; add it to `associationsService` and replace the client-side demote loops in `createAssignment`/`setActiveAssignment`. For position, assign server-side (`coalesce(max(position),-1)+1`) or use a fractional rank. Until then, the bug is rare (needs concurrency) and self-heals on the next `setActive`.
+
 ### D20 — Guest→user in-place promotion is email/password only; OAuth signup still orphans guest work
 **Severity: medium — a guest who signs up via Google/GitHub/Apple loses every file/conversation they created as a guest. Email/password signup is fully handled (2026-06-26).**
 

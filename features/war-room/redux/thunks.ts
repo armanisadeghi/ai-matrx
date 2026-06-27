@@ -308,9 +308,19 @@ export const persistActiveThread =
 export const deleteSession =
   (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     const prior = getState().warRoom.sessionsById[id];
+    // The room's threads SURVIVE the room (content intact) — they become orphans
+    // in the Unassigned holding area. The DB GC trigger reaps the membership
+    // edges on soft-delete; mirror that in Redux NOW so the threads relocate to
+    // Unassigned immediately instead of vanishing until the next full reload.
+    const memberIds = [...(getState().warRoom.threadIdsByRoom[id] ?? [])];
+    for (const threadId of memberIds) {
+      dispatch(threadOrphaned({ threadId, fromRoomId: id }));
+    }
     dispatch(sessionRemoved(id));
     try {
       await service.softDeleteSession(id);
+      // Belt-and-suspenders: the DB trigger is authoritative, this just removes
+      // the edges a beat sooner for any concurrent reader. Loud only in the log.
       void assoc.purgeContainerEdges(roomRef(id)).catch((edgeErr) =>
         reportWarRoomError("deleteSession:purgeEdges", edgeErr, {
           toast: false,
@@ -318,8 +328,10 @@ export const deleteSession =
       );
       toast.success("War Room deleted");
     } catch (err) {
+      // Session + thread membership both changed optimistically — resync from
+      // the server to restore a consistent state.
       if (prior) dispatch(sessionUpserted(prior));
-      else dispatch(loadSessionsList());
+      dispatch(loadSessionsList());
       reportWarRoomError("deleteSession", err, {
         toast: "Couldn't delete the War Room",
       });

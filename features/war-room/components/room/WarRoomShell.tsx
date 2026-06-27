@@ -28,6 +28,7 @@ import {
   LayoutPanelLeft,
   Loader2,
   MoreHorizontal,
+  Plus,
   Trash2,
   Circle,
   Pin,
@@ -44,6 +45,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { cn } from "@/lib/utils";
 import {
@@ -51,8 +57,10 @@ import {
   selectOrderedGalleryThreadIds,
   selectPinnedThreadCount,
   selectSessionById,
+  selectThreadIdsForRoom,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
+import { QuickAddThread } from "../thread/QuickAddThread";
 import {
   deleteSession,
   leaveWarRoomSession,
@@ -236,6 +244,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           <div className="ml-auto shrink-0 flex items-center gap-1.5">
             {ready ? <ThreadSearchBox /> : null}
             <ModeSwitch />
+            {ready ? <NewThreadButton sessionId={sessionId} /> : null}
             {ready ? <InstrumentProjector /> : null}
             {ready ? <DensityDial /> : null}
             <RoomIdentityButton sessionId={sessionId} />
@@ -447,11 +456,54 @@ function InstrumentProjector() {
   );
 }
 
-// ── Density dial (refine) — Comfortable ⇄ Compact ───────────────────────────
+// ── New thread — header affordance + inline composer popover ─────────────────
+// Grid mode no longer spends a gallery cell on a "+new" tile (it distorted the
+// layout at low counts and shrank the real threads). The create flow lives here
+// instead — always available in BOTH modes, costing zero grid space.
+function NewThreadButton({ sessionId }: { sessionId: string }) {
+  const [open, setOpen] = useState(false);
+  const { stageThread } = useRoomView();
+  const threadIds = useAppSelector(selectThreadIdsForRoom(sessionId));
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            open
+              ? "border-primary/70 text-primary"
+              : "border-primary/60 text-primary hover:bg-primary/[0.06]",
+          )}
+          title="Start a new thread"
+        >
+          <Plus className="size-3.5 shrink-0" />
+          <span className="@max-xl:hidden">New thread</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[340px] p-0 border-none bg-transparent shadow-none">
+        <QuickAddThread
+          sessionId={sessionId}
+          nextPosition={threadIds.length}
+          embedded
+          onCollapse={() => setOpen(false)}
+          onOpen={(threadId) => {
+            setOpen(false);
+            stageThread(threadId);
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ── Density dial (refine) — Spacious ⇄ Comfortable ⇄ Compact ─────────────────
 function DensityDial() {
   const { density, setDensity } = useRoomView();
   const options: { id: Density; label: string; Icon: typeof Maximize2 }[] = [
-    { id: "comfortable", label: "Comfortable", Icon: Maximize2 },
+    { id: "spacious", label: "Spacious", Icon: Maximize2 },
+    { id: "comfortable", label: "Comfortable", Icon: LayoutGrid },
     { id: "compact", label: "Compact", Icon: Minimize2 },
   ];
   return (

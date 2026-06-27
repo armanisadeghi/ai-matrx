@@ -29,7 +29,14 @@ import {
 } from "@/features/war-room/constants";
 
 export type RoomMode = "stage" | "grid";
-export type Density = "comfortable" | "compact";
+export type Density = "spacious" | "comfortable" | "compact";
+
+/** Cycle order for the density dial / toggle. */
+export const DENSITY_ORDER: readonly Density[] = [
+  "spacious",
+  "comfortable",
+  "compact",
+];
 
 export interface RoomViewState {
   mode: RoomMode;
@@ -81,7 +88,10 @@ export function RoomViewProvider({ children }: { children: React.ReactNode }) {
       density,
       setDensity,
       toggleDensity: () =>
-        setDensity((d) => (d === "compact" ? "comfortable" : "compact")),
+        setDensity((d) => {
+          const i = DENSITY_ORDER.indexOf(d);
+          return DENSITY_ORDER[(i + 1) % DENSITY_ORDER.length];
+        }),
       threadQuery,
       setThreadQuery,
       dismissedAnchorPrompts,
@@ -137,9 +147,11 @@ export function resolveStagedId(
 }
 
 // ── Layout floors per density (consumed by the gallery engine in Grid mode) ──
-// Comfortable IS the live default, single-sourced from the gallery tuning
-// constants; compact lowers the floor so more threads pack into the viewport
-// before the grid switches to scrolling.
+// Each floor is the SMALLEST a card may shrink to before the grid scrolls — so
+// every tier stays operable; the dial trades cards-per-screen for card size,
+// never legibility. Comfortable IS the live default, single-sourced from the
+// gallery tuning constants. Spacious = a few big cards (focus); Compact = more
+// per screen but still readable (NOT micro — that was the old "too small" trap).
 export const DENSITY_LAYOUT: Record<
   Density,
   {
@@ -148,6 +160,11 @@ export const DENSITY_LAYOUT: Record<
     targetAspect: number;
   }
 > = {
+  spacious: {
+    gap: 14,
+    minTile: { width: 420, height: 340 },
+    targetAspect: 4 / 3,
+  },
   comfortable: {
     gap: GALLERY_GAP_PX,
     minTile: GALLERY_MIN_THREAD,
@@ -155,7 +172,7 @@ export const DENSITY_LAYOUT: Record<
   },
   compact: {
     gap: 8,
-    minTile: { width: 236, height: 172 },
+    minTile: { width: 272, height: 232 },
     targetAspect: 3 / 2,
   },
 };
