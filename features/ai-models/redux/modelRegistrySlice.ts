@@ -322,6 +322,10 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     pricing: null,
     guest_fallback_id: null,
     mid_fallback_id: null,
+    organization_id: null,
+    created_by: null,
+    deleted_at: null,
+    visibility: "private",
   };
 }
 

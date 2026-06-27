@@ -34,6 +34,22 @@ import type {
 /** Default claim lease — matches Python scanner.DEFAULT_LEASE_SECONDS. */
 const DEFAULT_LEASE_SECONDS = 600;
 
+async function resolveOrganizationIdForUser(
+    supabase: SupabaseClient,
+    userId: string,
+): Promise<string> {
+    const { data, error } = await supabase.rpc("ensure_personal_organization", {
+        p_user_id: userId,
+    });
+    if (error || !data) {
+        throw new SchedulerClientError(
+            `Could not resolve organization for user ${userId}: ${error?.message ?? "unknown"}`,
+            error ?? undefined,
+        );
+    }
+    return data;
+}
+
 // ── claimTask ──────────────────────────────────────────────────────────────
 
 export interface ClaimTaskOptions {
@@ -69,10 +85,16 @@ export async function claimTask(
     const lease = opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
     const expires = new Date(now.getTime() + lease * 1000);
 
+    const organizationId = await resolveOrganizationIdForUser(
+        supabase,
+        opts.task.user_id,
+    );
+
     const row: SchRunInsert = {
         task_id: opts.task.id,
         trigger_id: opts.triggerId ?? null,
         user_id: opts.task.user_id,
+        organization_id: organizationId,
         status: "claimed" satisfies RunStatus,
         surface: opts.surface,
         queue: opts.queue ?? null,
