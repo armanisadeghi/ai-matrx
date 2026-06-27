@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useRouter } from "next/navigation";
 import useChatBasics from "@/features/chat/hooks/useChatBasics";
@@ -24,35 +24,36 @@ export function useExistingChat({ existingConversationId }: ExistingChatProps) {
 
   const { chatActions, conversationId, routeLoadComplete, messageKey } = useChatBasics();
 
-  const handlerCoordinatedFetch = useCallback(() => {
-    dispatch(chatActions.coordinateActiveConversationAndMessageFetch(existingConversationId));
+  // Coordinate (active-conversation switch + message fetch) EXACTLY ONCE per
+  // URL conversation id. The old code fired on mount, then a second effect
+  // re-fired it as soon as `firstLoadComplete` flipped — because the Redux
+  // active `conversationId` hadn't caught up to `existingConversationId` yet,
+  // so `existingConversationId !== conversationId` was transiently true. That
+  // re-fetched the whole conversation a second time on every open (the
+  // "SHOULD NOT SEE THIS" path). Gating on a ref keyed by the URL id means a
+  // lagging Redux value can never trigger a fetch — only a genuine id change
+  // (navigating to a different existing conversation) does.
+  const coordinatedIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (coordinatedIdRef.current === existingConversationId) return;
+    coordinatedIdRef.current = existingConversationId;
+    dispatch(
+      chatActions.coordinateActiveConversationAndMessageFetch(existingConversationId),
+    );
     setFirstLoadComplete(true);
   }, [existingConversationId, dispatch, chatActions]);
 
-  useEffect(() => {
-    handlerCoordinatedFetch()
-  }, []);
-
+  // Reflect external-loading purely from whether the Redux active conversation
+  // has caught up to the URL id. This only toggles a flag — it never triggers
+  // a fetch — so the lag window shows a spinner instead of double-fetching.
   useEffect(() => {
     if (!firstLoadComplete) return;
-
-    if (existingConversationId !== conversationId) {
-      console.log(
-        "SHOULD NOT SEE THIS!!! --- Check The Code --- USE EXISTING CHAT. Fetching Records Again!. ===== This is probably not good ===="
-      );
-      dispatch(chatActions.setExternalConversationLoading(true));
-      handlerCoordinatedFetch();
-    } else {
-      dispatch(chatActions.setExternalConversationLoading(false));
-    }
-  }, [existingConversationId, conversationId, firstLoadComplete]);
-
-  // Additional effect to ensure external loading is cleared when conversation data loads
-  useEffect(() => {
-    if (firstLoadComplete && conversationId === existingConversationId) {
-      dispatch(chatActions.setExternalConversationLoading(false));
-    }
-  }, [conversationId, existingConversationId, firstLoadComplete, dispatch, chatActions]);
+    dispatch(
+      chatActions.setExternalConversationLoading(
+        existingConversationId !== conversationId,
+      ),
+    );
+  }, [existingConversationId, conversationId, firstLoadComplete, dispatch, chatActions]);
 
   const submitChatMessage = useCallback(async () => {
     try {
