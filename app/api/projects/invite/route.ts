@@ -40,9 +40,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch project + org details for the email body (read-only, RLS-scoped).
+    // `projects` lives in `workspace`, `organizations` in `public` — PostgREST
+    // resource embedding is single-schema, so the org name is fetched in a
+    // separate `public` query and merged in JS.
     const { data: projectData } = await workspaceDb(supabase)
       .from('projects')
-      .select('name, organization_id, organizations(name)')
+      .select('name, organization_id')
       .eq('id', projectId)
       .single();
 
@@ -50,10 +53,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 });
     }
 
+    let orgName = 'your organization';
+    if (projectData.organization_id) {
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', projectData.organization_id)
+        .maybeSingle();
+      if (orgData?.name) orgName = orgData.name;
+    }
+
     const inviterName =
       user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email ?? 'Someone';
-
-    const orgName = (projectData.organizations as { name?: string } | null)?.name ?? 'your organization';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.aimatrx.com';
     const invitationUrl = `${siteUrl}/invitations/project/accept/${token}`;
     const expiry = expiresAt
