@@ -242,6 +242,21 @@ export const fetchConversationHistory = createAsyncThunk<
       replace,
     };
   },
+  {
+    // In-flight dedup: if a fetch for this scope is already running, don't fire
+    // a second parallel Supabase read. Guards against the same scopeId being
+    // dispatched twice before the first resolves (effect dep churn, rapid
+    // mount/remount). `loadMore` is naturally serialized — it dispatches from a
+    // click after the previous page settled — so blocking while "loading-more"
+    // is safe too. (Distinct scopeIds are independent and not deduped here.)
+    condition: (args, { getState }) => {
+      const scope = getState().conversationHistory.scopes[args.scopeId];
+      if (scope?.status === "loading" || scope?.status === "loading-more") {
+        return false;
+      }
+      return true;
+    },
+  },
 );
 
 /**
