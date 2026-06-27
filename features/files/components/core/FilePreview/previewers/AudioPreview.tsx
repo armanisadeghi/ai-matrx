@@ -33,6 +33,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 export interface AudioPreviewProps {
   url: string | null;
@@ -59,6 +60,14 @@ export function AudioPreview({
 }: AudioPreviewProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  // Media durability: an audio file served by a signed (expiring) URL re-mints
+  // from its file_id on a load failure instead of dead-ending — a user's own
+  // file never just "expires". `src` is the (possibly re-minted) URL to play;
+  // `remintOnError` is wired to the <audio> error event; `remintFailed` flips
+  // true only after re-mint is exhausted. Durable/foreign URLs pass through.
+  const { src, onError: remintOnError, failed: remintFailed } =
+    useRemintableSrc(url);
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -99,10 +108,10 @@ export function AudioPreview({
     };
     const onWaiting = () => setLoading(true);
     const onCanPlay = () => setLoading(false);
-    const onErr = () => {
-      setError("This audio file failed to load.");
-      setLoading(false);
-    };
+    // The load-error path is handled by the <audio onError> prop
+    // (`remintOnError`), which re-mints an expired owned URL before giving up.
+    // The terminal "failed to load" message derives from the hook's
+    // `remintFailed` (see `loadFailed`/`displayError` below).
 
     audio.addEventListener("loadedmetadata", onLoadedMeta);
     audio.addEventListener("timeupdate", onTime);
@@ -112,7 +121,6 @@ export function AudioPreview({
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("waiting", onWaiting);
     audio.addEventListener("canplay", onCanPlay);
-    audio.addEventListener("error", onErr);
 
     return () => {
       audio.removeEventListener("loadedmetadata", onLoadedMeta);
@@ -123,7 +131,6 @@ export function AudioPreview({
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("waiting", onWaiting);
       audio.removeEventListener("canplay", onCanPlay);
-      audio.removeEventListener("error", onErr);
     };
   }, [scrubbing]);
 
@@ -226,6 +233,12 @@ export function AudioPreview({
   const positionPct = duration > 0 ? (position / duration) * 100 : 0;
   const bufferedPct = duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0;
 
+  // Terminal error shown to the user: a playback failure (`error`) OR an
+  // exhausted re-mint of an expired owned URL (`remintFailed`). A recoverable
+  // signed-URL expiry never reaches here — the hook re-mints first.
+  const displayError =
+    error ?? (remintFailed ? "This audio file failed to load." : null);
+
   return (
     <div
       className={cn(
@@ -250,9 +263,10 @@ export function AudioPreview({
       {url ? (
         <audio
           ref={audioRef}
-          src={url}
+          src={src}
           preload="metadata"
           className="hidden"
+          onError={remintOnError}
         />
       ) : null}
 
@@ -302,7 +316,7 @@ export function AudioPreview({
         <ControlButton
           label="Skip back 10s"
           onClick={() => skip(-10)}
-          disabled={!url || !!error}
+          disabled={!url || !!displayError}
         >
           <RotateCcw className="h-4 w-4" />
           <span className="text-[10px] font-semibold">10</span>
@@ -311,14 +325,14 @@ export function AudioPreview({
         <button
           type="button"
           onClick={togglePlay}
-          disabled={!url || !!error}
+          disabled={!url || !!displayError}
           aria-label={playing ? "Pause" : "Play"}
           className={cn(
             "flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow",
             "hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          {loading && url && !error ? (
+          {loading && url && !displayError ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : playing ? (
             <Pause className="h-5 w-5" />
@@ -330,7 +344,7 @@ export function AudioPreview({
         <ControlButton
           label="Skip forward 10s"
           onClick={() => skip(10)}
-          disabled={!url || !!error}
+          disabled={!url || !!displayError}
         >
           <RotateCw className="h-4 w-4" />
           <span className="text-[10px] font-semibold">10</span>
@@ -399,9 +413,9 @@ export function AudioPreview({
         </button>
       </div>
 
-      {error ? (
+      {displayError ? (
         <p className="text-xs text-destructive" role="alert">
-          {error}
+          {displayError}
         </p>
       ) : null}
     </div>

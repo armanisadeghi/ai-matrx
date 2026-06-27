@@ -314,14 +314,13 @@ URLs and work fine; the new pipeline regressed.
   4. **CLAUDE.md rule** — a one-sentence firm statement of the invariant added to
      the Media durability section.
 - **What's still open (low severity, self-recovering).**
-  - **File-preview previewers** (`FilePreview/previewers/SvgPreview.tsx`,
-    `AudioPreview.tsx`) and **`MediaThumbnail` (`ImageThumb`)** render from a signed
-    `url` / `publicUrl` with a *terminal* `onError` (icon/error UI, no in-view
-    re-mint). They are NOT the dark-forever bug — the parent re-mints from `file_id`
-    on every mount, so they recover on reopen; only an *in-view* expiry of a
-    long-open preview fails to recover, and `publicUrl` is durable by the DB guard.
-    Cheap fix when desired: route the element through `useRemintableSrc` (it
-    recovers the `file_id` from the signed URL).
+  - **File-preview previewers + `MediaThumbnail` — RESOLVED 2026-06-27.**
+    `FilePreview/previewers/SvgPreview.tsx` (`SvgRenderedView`), `AudioPreview.tsx`
+    (the custom `<audio>` engine), and `MediaThumbnail` (`ImageThumb` +
+    `VideoPosterThumb`) now route their `url` through `useRemintableSrc`, so an
+    *in-view* signed-URL expiry re-mints from the recovered `file_id` instead of
+    dead-ending at the icon/error UI. Durable/foreign URLs pass through untouched;
+    the terminal error/fallback only shows after re-mint is exhausted (`failed`).
   - **`MediaVariableInput`** previously handed `<InlineMediaRef>` the resolved
     signed-URL string instead of the `file_id` (losing re-mint ability) — **fixed**
     2026-06-21 (now passes the bare `file_id`).

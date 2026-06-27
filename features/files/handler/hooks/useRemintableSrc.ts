@@ -25,7 +25,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { useRef, useState, type SyntheticEvent } from "react";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import {
   getOrMintSignedUrl,
@@ -64,11 +64,17 @@ export function useRemintableSrc(
   const remintAttempts = useRef(0);
 
   // A different URL deserves a fresh chance — clear any prior re-mint / failure.
-  useEffect(() => {
+  // Done DURING render (React's "adjust state when a prop changes" pattern,
+  // guarded by a ref so it runs once per change and can't loop) rather than in a
+  // post-paint effect — an effect-based reset would render one frame of the prior
+  // `failed` state (e.g. a flash of the icon fallback) before clearing it.
+  const lastRawSrc = useRef(rawSrc);
+  if (lastRawSrc.current !== rawSrc) {
+    lastRawSrc.current = rawSrc;
     setOverride(null);
     setFailed(false);
     remintAttempts.current = 0;
-  }, [rawSrc]);
+  }
 
   const onError = (event: MediaErrorEvent) => {
     if (ownedFileId && remintAttempts.current < MAX_REMINT_ATTEMPTS) {

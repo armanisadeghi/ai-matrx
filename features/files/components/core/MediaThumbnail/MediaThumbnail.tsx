@@ -29,9 +29,10 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
@@ -185,25 +186,22 @@ function ImageThumb({
   alt: string;
   fallback: React.ReactNode;
 }) {
-  const [errored, setErrored] = useState(false);
-  // Reset the error state if the URL changes (signed-URL refresh, file swap).
-  const lastUrlRef = useRef(url);
-  if (lastUrlRef.current !== url && errored) {
-    lastUrlRef.current = url;
-    setErrored(false);
-  } else if (lastUrlRef.current !== url) {
-    lastUrlRef.current = url;
-  }
+  // Media durability: a thumbnail served by a signed (expiring) URL re-mints
+  // from its file_id on load failure instead of falling straight to the icon —
+  // a user's own file never just "expires". The hook also resets on URL change
+  // (signed-URL refresh / file swap), so no manual error/last-url bookkeeping.
+  // Durable/foreign URLs pass through untouched.
+  const { src, onError, failed } = useRemintableSrc(url);
 
-  if (errored) return <>{fallback}</>;
+  if (failed) return <>{fallback}</>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={url}
+      src={src}
       alt={alt}
       loading="lazy"
       className="h-full w-full object-cover"
-      onError={() => setErrored(true)}
+      onError={onError}
     />
   );
 }
@@ -215,7 +213,9 @@ function VideoPosterThumb({
   url: string;
   fallback: React.ReactNode;
 }) {
-  const [errored, setErrored] = useState(false);
+  // Same self-heal contract as ImageThumb — re-mint an expired owned video URL
+  // before showing the icon fallback.
+  const { src, onError, failed } = useRemintableSrc(url);
   const ref = useRef<HTMLVideoElement | null>(null);
 
   // Some browsers refuse to render a frame until they explicitly know how
@@ -235,16 +235,16 @@ function VideoPosterThumb({
     return () => v.removeEventListener("loadedmetadata", onMeta);
   }, []);
 
-  if (errored) return <>{fallback}</>;
+  if (failed) return <>{fallback}</>;
   return (
     <video
       ref={ref}
-      src={url}
+      src={src}
       className="h-full w-full object-cover pointer-events-none"
       preload="metadata"
       muted
       playsInline
-      onError={() => setErrored(true)}
+      onError={onError}
     />
   );
 }

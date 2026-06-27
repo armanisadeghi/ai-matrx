@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Code2, ImageIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 type View = "rendered" | "source";
 
@@ -43,7 +44,6 @@ export function SvgPreview({
   className,
 }: SvgPreviewProps) {
   const [view, setView] = useState<View>("rendered");
-  const [errored, setErrored] = useState(false);
 
   return (
     <div
@@ -55,12 +55,7 @@ export function SvgPreview({
       <SvgViewToggle view={view} onChange={setView} />
 
       {view === "rendered" ? (
-        <SvgRenderedView
-          url={url}
-          fileName={fileName}
-          errored={errored}
-          onError={() => setErrored(true)}
-        />
+        <SvgRenderedView url={url} fileName={fileName} />
       ) : (
         <SvgSourceView fileId={fileId} />
       )}
@@ -75,16 +70,18 @@ export function SvgPreview({
 interface SvgRenderedViewProps {
   url: string | null;
   fileName: string;
-  errored: boolean;
-  onError: () => void;
 }
 
-function SvgRenderedView({
-  url,
-  fileName,
-  errored,
-  onError,
-}: SvgRenderedViewProps) {
+function SvgRenderedView({ url, fileName }: SvgRenderedViewProps) {
+  // Media durability: an SVG served by a signed (expiring) S3 URL must
+  // re-mint from its file_id on an in-view load failure rather than show a
+  // terminal error — a user's own file never just "expires". `useRemintableSrc`
+  // recovers the file_id from the URL and re-mints; for a durable/foreign URL
+  // it's a transparent passthrough. `failed` flips only after re-mint is
+  // exhausted. Hook called unconditionally (before the early returns) to respect
+  // the rules of hooks.
+  const { src, onError, failed } = useRemintableSrc(url);
+
   if (!url) {
     return (
       <div className="flex flex-1 items-center justify-center bg-muted/30">
@@ -93,7 +90,7 @@ function SvgRenderedView({
     );
   }
 
-  if (errored) {
+  if (failed) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 bg-muted/30 text-muted-foreground">
         <AlertCircle className="h-6 w-6" />
@@ -109,7 +106,7 @@ function SvgRenderedView({
     <div className="flex flex-1 items-center justify-center overflow-auto bg-checkerboard p-4">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={url}
+        src={src}
         alt={fileName}
         className="max-h-full max-w-full object-contain drop-shadow-sm"
         onError={onError}
