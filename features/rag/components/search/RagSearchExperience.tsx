@@ -728,6 +728,17 @@ function SearchTab({ scope }: { scope: Scope }) {
     }
   }, [query, scope, router, searchContext]);
 
+  // Arriving with a `?q=` deep link (e.g. from the document viewer's "AI
+  // search — everything" hand-off) auto-runs the search once, so the user
+  // lands on results rather than a pre-filled box they must re-submit.
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    if (!initialQuery.trim()) return;
+    autoRanRef.current = true;
+    runSearch();
+  }, [initialQuery, runSearch]);
+
   // Live input ref — `getApplicationScope` reads the selection off it at
   // click-time so surface scope is never stale React state.
   const queryInputRef = useRef<HTMLInputElement | null>(null);

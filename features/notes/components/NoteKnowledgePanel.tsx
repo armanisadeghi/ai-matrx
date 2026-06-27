@@ -3,9 +3,9 @@
 // NoteKnowledgePanel — a note's RAG / knowledge-base surface, mirroring the
 // file "Document" tab (DocumentTab): index it, see its status, re-index, and —
 // once indexed — engage with it via the canonical RAG document viewer
-// (LibraryPreviewPage embedded: chunks, raw/cleaned text, and a per-document
-// "Test search" so you can probe what it retrieves). Hosted in a pop-out
-// SidePanelSurface via the `noteKnowledgePanel` overlay.
+// (LibraryPreviewPage embedded: chunks, raw/cleaned text, and in-document
+// search that highlights matches + summarizes which pages they're on). Hosted
+// in a pop-out SidePanelSurface via the `noteKnowledgePanel` overlay.
 
 import { Database, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -64,7 +64,8 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
     );
   }
 
-  // Indexed — header chrome + the canonical RAG viewer (chunks + test search).
+  // Indexed — header chrome + the canonical RAG viewer (chunks + in-document
+  // search with highlighting).
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">

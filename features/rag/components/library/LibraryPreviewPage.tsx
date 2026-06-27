@@ -22,11 +22,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   GitFork,
   Loader2,
   Search as SearchIcon,
@@ -36,15 +38,25 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson } from "@/lib/python-client";
+import { computeMatches } from "@/features/notes/utils/findMatches";
+import { HighlightedText } from "@/components/text/HighlightedText";
 import { forkProcessedDocument } from "@/features/rag/api/fork";
 import { StatusBadge } from "./StatusBadge";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { useLibraryDoc } from "@/features/rag/hooks/useLibrary";
+import {
+  useDocumentSearch,
+  type UseDocumentSearch,
+} from "@/features/rag/hooks/useDocumentSearch";
+import {
+  DocumentSearchBar,
+  DocumentSearchSummary,
+  DocumentSearchResultsList,
+} from "./DocumentSearch";
 import type { DocStatus } from "@/features/rag/types/library";
 import { ChunksOnPage } from "./ChunkList";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -63,22 +75,6 @@ interface ApiFullPage {
   section_title: string | null;
   is_continuation: boolean;
   has_image: boolean;
-}
-
-interface ApiTestSearchHit {
-  chunk_id: string;
-  chunk_index: number | null;
-  score: number;
-  page_numbers: number[] | null;
-  section_kind: string | null;
-  content_text: string;
-}
-
-interface ApiTestSearchResponse {
-  document_id: string;
-  query: string;
-  hits: ApiTestSearchHit[];
-  total_chunks_in_doc: number;
 }
 
 export interface LibraryPreviewPageProps {
@@ -104,6 +100,28 @@ export function LibraryPreviewPage({
   // Knowledge Assets drawer — opens the builder alongside (not over) the doc,
   // so pages + text stay visible behind the resizable panel.
   const [assetsOpen, setAssetsOpen] = useState(false);
+
+  // In-document search — lifted to the viewer so one query drives the page-text
+  // highlights, the summary banner, the per-page match stepper, and the ranked
+  // results list at once.
+  const search = useDocumentSearch(documentId);
+
+  const jumpToPage = useCallback((pageNumber: number) => {
+    setActivePageIndex(Math.max(0, pageNumber - 1));
+  }, []);
+
+  // Run the search, then land on the first page that contains the term so
+  // highlights are visible immediately (unless the current page already
+  // matched). Driven by the returned page list — no reactive effect needed.
+  const { run } = search;
+  const handleSearch = useCallback(async () => {
+    const matchedPages = await run();
+    setActivePageIndex((cur) =>
+      matchedPages.length > 0 && !matchedPages.includes(cur + 1)
+        ? matchedPages[0] - 1
+        : cur,
+    );
+  }, [run]);
 
   // "Make my copy" — fork this (read-only) shared document into a user-owned
   // copy and open it in the studio, where the user can run their own agents /
@@ -183,20 +201,46 @@ export function LibraryPreviewPage({
         </header>
       )}
 
-      {/* Embedded surfaces (the /files Knowledge tab) drop the header, so the
-          Knowledge Assets entry rides as a compact floating button that
-          doesn't steal vertical space from the doc. */}
-      {embedded && doc && !docError && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setAssetsOpen(true)}
-          className="absolute right-3 top-2 z-10 h-7 px-2 text-xs shadow-sm"
-          title="Build premium knowledge representations from this document"
-        >
-          <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
-          Knowledge Assets
-        </Button>
+      {/* In-document search — present in both modes. In embedded surfaces (the
+          /files Knowledge tab) the document header is dropped, so the Knowledge
+          Assets entry rides along as the bar's trailing slot instead of a
+          floating button. */}
+      {doc && !docError && (
+        <>
+          <DocumentSearchBar
+            query={search.query}
+            onQueryChange={search.setQuery}
+            onSubmit={handleSearch}
+            onClear={search.clear}
+            loading={search.loading}
+            hasSearched={search.hasSearched}
+            summary={search.summary}
+            rightSlot={
+              embedded ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAssetsOpen(true)}
+                  className="h-7 px-2 text-xs shrink-0"
+                  title="Build premium knowledge representations from this document"
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1 text-primary" />
+                  Knowledge Assets
+                </Button>
+              ) : undefined
+            }
+          />
+          {search.hasSearched && (
+            <DocumentSearchSummary
+              activeQuery={search.activeQuery}
+              summary={search.summary}
+              loading={search.loading}
+              error={search.error}
+              activePageNumber={activePageIndex + 1}
+              onJumpToPage={jumpToPage}
+            />
+          )}
+        </>
       )}
 
       {docError && (
@@ -222,21 +266,26 @@ export function LibraryPreviewPage({
             seedPages={doc?.pages ?? []}
           />
 
-          {/* Middle: chunks + test-search — sits next to Pages so the user
-              sees the page-by-page chunk breakdown directly alongside the
-              page list, without the wide page-text panel in between. */}
+          {/* Middle: per-page segments + ranked search results — sits next to
+              Pages so the user sees the page-by-page breakdown directly
+              alongside the page list, without the wide page-text panel in
+              between. */}
           <RightRail
             documentId={documentId}
             activePageNumber={activePageIndex + 1}
+            search={search}
+            onJumpToPage={jumpToPage}
           />
 
           {/* Right: page text — gets the remaining 1fr and is the place to
-              read the cleaned / raw text of the active page. */}
+              read the cleaned / raw text of the active page, with the active
+              search term highlighted in place. */}
           <PageContent
             documentId={documentId}
             pageIndex={activePageIndex}
             totalPages={doc?.pagesPersisted ?? 0}
             onPageChange={setActivePageIndex}
+            query={search.activeQuery}
           />
         </div>
       )}
@@ -368,22 +417,26 @@ function PageContent({
   pageIndex,
   totalPages,
   onPageChange,
+  query,
 }: {
   documentId: string;
   pageIndex: number;
   totalPages: number;
   onPageChange: (idx: number) => void;
+  /** Active search term — literal matches are highlighted in the page text. */
+  query: string;
 }) {
   const [page, setPage] = useState<ApiFullPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"cleaned" | "raw">("cleaned");
+  const [activeMatch, setActiveMatch] = useState(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (totalPages === 0) {
-      setPage(null);
-      return;
-    }
+    // When there are no persisted pages, the empty-state render below owns the
+    // output and `page` is never read — so no synchronous reset is needed here.
+    if (totalPages === 0) return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -401,6 +454,54 @@ function PageContent({
       cancelled = true;
     };
   }, [documentId, pageIndex, totalPages]);
+
+  const shownText = useMemo(() => {
+    if (!page) return "";
+    return tab === "cleaned" ? page.cleaned_text || "" : page.raw_text || "";
+  }, [page, tab]);
+
+  // Literal matches in the page text — exactly what the user typed, so the
+  // highlight is precise (the server lexical hits power the cross-page summary;
+  // this powers the in-place highlighting + the per-page stepper).
+  const matches = useMemo(
+    () =>
+      query
+        ? computeMatches(shownText, query, {
+            caseSensitive: false,
+            useRegex: false,
+            wholeWord: false,
+          })
+        : [],
+    [shownText, query],
+  );
+
+  // Reset to the first match whenever the navigation context changes (new page
+  // / query / cleaned↔raw toggle). Render-time prev-value pattern — the React-
+  // recommended alternative to a reset effect.
+  const navKey = `${pageIndex}|${tab}|${query}`;
+  const [lastNavKey, setLastNavKey] = useState(navKey);
+  if (navKey !== lastNavKey) {
+    setLastNavKey(navKey);
+    setActiveMatch(0);
+  }
+
+  // Keep the active match scrolled into view.
+  useEffect(() => {
+    if (!query || matches.length === 0) return;
+    const el = scrollRef.current?.querySelector<HTMLElement>(
+      `mark[data-match-index="${activeMatch}"]`,
+    );
+    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [activeMatch, matches, query]);
+
+  const stepMatch = useCallback(
+    (dir: 1 | -1) => {
+      setActiveMatch((i) =>
+        matches.length === 0 ? 0 : (i + dir + matches.length) % matches.length,
+      );
+    },
+    [matches.length],
+  );
 
   if (totalPages === 0) {
     return (
@@ -450,6 +551,43 @@ function PageContent({
           className="ml-2 w-16 h-7 text-xs border rounded px-2 bg-background"
         />
 
+        {/* Match stepper — only while a search is active. Steps through every
+            literal occurrence on THIS page; jump across pages from the summary
+            chips above. */}
+        {query && (
+          <div className="flex items-center gap-0.5 shrink-0 rounded-md border bg-card px-1">
+            {matches.length > 0 ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={() => stepMatch(-1)}
+                  title="Previous match on this page"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </Button>
+                <span className="text-[11px] tabular-nums text-muted-foreground px-0.5">
+                  {activeMatch + 1}/{matches.length}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={() => stepMatch(1)}
+                  title="Next match on this page"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            ) : (
+              <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 whitespace-nowrap">
+                0 on this page
+              </span>
+            )}
+          </div>
+        )}
+
         {page?.section_kind && (
           <Badge variant="info" className="ml-2 shrink-0">
             {page.section_kind}
@@ -490,7 +628,7 @@ function PageContent({
         </Tabs>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto p-4">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-4">
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -504,18 +642,23 @@ function PageContent({
         )}
         {!loading && !error && page && (
           <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">
-            {tab === "cleaned"
-              ? page.cleaned_text || (
-                  <span className="italic text-muted-foreground">
-                    (cleaned text empty — toggle to Raw to see what was
-                    extracted)
-                  </span>
-                )
-              : page.raw_text || (
-                  <span className="italic text-muted-foreground">
-                    (raw text empty)
-                  </span>
-                )}
+            {shownText ? (
+              query ? (
+                <HighlightedText
+                  text={shownText}
+                  matches={matches}
+                  activeIndex={activeMatch}
+                />
+              ) : (
+                shownText
+              )
+            ) : (
+              <span className="italic text-muted-foreground">
+                {tab === "cleaned"
+                  ? "(cleaned text empty — toggle to Raw to see what was extracted)"
+                  : "(raw text empty)"}
+              </span>
+            )}
           </pre>
         )}
       </div>
@@ -524,22 +667,35 @@ function PageContent({
 }
 
 // ---------------------------------------------------------------------------
-// Right rail — chunks for active page + test-search
+// Right rail — segments for the active page + ranked search results
 // ---------------------------------------------------------------------------
 
 function RightRail({
   documentId,
   activePageNumber,
+  search,
+  onJumpToPage,
 }: {
   documentId: string;
   activePageNumber: number;
+  search: UseDocumentSearch;
+  onJumpToPage: (pageNumber: number) => void;
 }) {
-  const [tab, setTab] = useState<"chunks" | "search">("chunks");
+  const [tab, setTab] = useState<"chunks" | "results">("chunks");
+
+  // Surface the ranked results the moment a search completes. Render-time
+  // prev-value pattern — no reset effect.
+  const [seenNonce, setSeenNonce] = useState(search.resultNonce);
+  if (search.resultNonce !== seenNonce) {
+    setSeenNonce(search.resultNonce);
+    setTab("results");
+  }
+
   return (
     <div className="flex flex-col min-h-0">
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as "chunks" | "search")}
+        onValueChange={(v) => setTab(v as "chunks" | "results")}
         className="flex-1 flex flex-col min-h-0"
       >
         <div className="border-b px-3 py-2">
@@ -547,9 +703,10 @@ function RightRail({
             <TabsTrigger value="chunks" className="h-6 text-xs">
               {RAG_VOCAB.segmentsShort} (this page)
             </TabsTrigger>
-            <TabsTrigger value="search" className="h-6 text-xs">
+            <TabsTrigger value="results" className="h-6 text-xs">
               <SearchIcon className="h-3 w-3 mr-1" />
-              Test search
+              Results
+              {search.hits ? ` (${search.hits.length})` : ""}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -557,120 +714,17 @@ function RightRail({
         <TabsContent value="chunks" className="flex-1 min-h-0 m-0">
           <ChunksOnPage documentId={documentId} pageNumber={activePageNumber} />
         </TabsContent>
-        <TabsContent value="search" className="flex-1 min-h-0 m-0">
-          <TestSearchPanel documentId={documentId} />
+        <TabsContent value="results" className="flex-1 min-h-0 m-0">
+          <DocumentSearchResultsList
+            hits={search.hits}
+            activeQuery={search.activeQuery}
+            loading={search.loading}
+            error={search.error}
+            hasSearched={search.hasSearched}
+            onJumpToPage={onJumpToPage}
+          />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function TestSearchPanel({ documentId }: { documentId: string }) {
-  const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<ApiTestSearchHit[] | null>(null);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const run = async () => {
-    if (!query.trim()) return;
-    setLoading(true);
-    setError(null);
-    setHits(null);
-    try {
-      const { data } = await postJson<
-        ApiTestSearchResponse,
-        { query: string; limit: number }
-      >(`/rag/library/${documentId}/test-search`, {
-        query: query.trim(),
-        limit: 10,
-      });
-      setHits(Array.isArray(data?.hits) ? data.hits : []);
-      setTotal(
-        typeof data?.total_chunks_in_doc === "number"
-          ? data.total_chunks_in_doc
-          : 0,
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="border-b p-3 space-y-2">
-        <p className="text-xs text-muted-foreground">
-          Lexical search over this document's {total || "—"}{" "}
-          {RAG_VOCAB.segmentsShort.toLowerCase()}. This is what an agent scoped
-          to this doc would retrieve.
-        </p>
-        <div className="flex gap-2">
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. 'opioid management'"
-            className="h-8"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") run();
-            }}
-          />
-          <Button size="sm" onClick={run} disabled={!query.trim() || loading}>
-            {loading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <SearchIcon className="h-3 w-3" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
-          {error && (
-            <p className="text-sm text-destructive">
-              <strong>Error:</strong> {error}
-            </p>
-          )}
-          {!error && hits && hits.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">
-              No matches. Try a different query, or simpler keywords.
-            </p>
-          )}
-          {hits?.map((h, i) => (
-            <div
-              key={h.chunk_id}
-              className="border rounded-md p-2 space-y-1 bg-card"
-            >
-              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
-                <Badge variant="outline" className="text-[10px] px-1 py-0">
-                  #{i + 1}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] px-1 py-0">
-                  score {h.score.toFixed(3)}
-                </Badge>
-                {h.page_numbers && h.page_numbers.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] px-1 py-0">
-                    p.{h.page_numbers[0]}
-                    {h.page_numbers.length > 1
-                      ? `–${h.page_numbers[h.page_numbers.length - 1]}`
-                      : ""}
-                  </Badge>
-                )}
-                {h.section_kind && (
-                  <Badge variant="info" className="text-[10px] px-1 py-0">
-                    {h.section_kind}
-                  </Badge>
-                )}
-              </div>
-              <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans overflow-x-auto">
-                {h.content_text}
-              </pre>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
     </div>
   );
 }
