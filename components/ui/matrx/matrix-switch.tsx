@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { Sun, Moon } from "lucide-react";
 import { ComponentSize } from "@/types/componentConfigTypes";
 
-// TODO: The switches are completely messed up because in my testing, some idiot had skewed their size and messed them up and I didn't notice
-// TODO: So they are all  built based on strange, messed up translate properties.
-// TODO: Need to fix that here and in the normal switch component
-
+// Thumb travel matches the canonical `components/ui/switch.tsx`: a `w-9` track
+// (border-2) with a `w-4` thumb slides `translate-x-0` → `translate-x-4` (16px),
+// keeping the thumb symmetric inside the track. (Earlier these carried a skewed
+// `-6px`/`10px` offset that pushed the thumb 6px too far left in both states.)
 
 // Common types
 interface BaseMatrxSwitchProps extends React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root> {
@@ -33,7 +33,7 @@ const Switch = React.forwardRef<
     >
         <SwitchPrimitives.Thumb
             className={cn(
-                "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[10px] data-[state=unchecked]:-translate-x-[6px]"
+                "pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
             )}
         />
     </SwitchPrimitives.Root>
@@ -101,7 +101,7 @@ const MatrxIconSwitch = React.forwardRef<
         >
             <SwitchPrimitives.Thumb
                 className={cn(
-                    "pointer-events-none flex items-center justify-center h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[10px] data-[state=unchecked]:-translate-x-[6px]"
+                    "pointer-events-none flex items-center justify-center h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0"
                 )}
             >
                 <div className="text-primary">
