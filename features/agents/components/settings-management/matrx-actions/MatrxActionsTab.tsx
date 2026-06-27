@@ -26,17 +26,22 @@ import {
   X,
   Pencil,
   Zap,
+  ListPlus,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentMatrxActions,
   selectAgentOutputSchema,
+  selectAgentMessages,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   setAgentMatrxActions,
   setAgentOutputSchema,
+  setAgentMessages,
 } from "@/features/agents/redux/agent-definition/slice";
 import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
+import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
 import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
 import { buildDirectiveOptions, groupDirectiveOptions } from "./directiveOptions";
 import {
@@ -44,6 +49,7 @@ import {
   isActionOutputSchema,
   actionTypeOfSchema,
 } from "./actionSchema";
+import { buildActionsGuidance, ACTIONS_GUIDANCE_MARKER } from "./actionsGuidance";
 
 type Policy = "default" | "auto" | "ask" | "off";
 
@@ -84,6 +90,7 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
   );
+  const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
 
   const policy = derivePolicy(cfg);
   const actionType = actionTypeOfSchema(outputSchema);
@@ -132,6 +139,47 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
     setPicking(false);
   };
 
+  // Phase 1 (test): inject the action's structure guidance as plain text into
+  // the agent's system message. Idempotent — replaces a prior injected block
+  // (keyed off ACTIONS_GUIDANCE_MARKER) instead of stacking duplicates.
+  const injectGuidance = () => {
+    const types = [actionType, cfg.directive].filter(
+      (t): t is string => typeof t === "string" && t.length > 0,
+    );
+    const guidance = buildActionsGuidance(types);
+    if (!guidance) return;
+
+    const msgs = (messages ?? []) as AgentDefinitionMessage[];
+    const sys = msgs.find((m) => m.role === "system");
+    const nonSystem = msgs.filter((m) => m.role !== "system");
+    const rawBlocks = (sys?.content ?? []) as unknown as Record<string, unknown>[];
+    const textBlock = rawBlocks.find((b) => b.type === "text");
+    const nonText = rawBlocks.filter((b) => b.type !== "text");
+    const existing =
+      typeof textBlock?.text === "string"
+        ? textBlock.text
+        : typeof textBlock?.content === "string"
+          ? (textBlock.content as string)
+          : "";
+    const before = existing.split(ACTIONS_GUIDANCE_MARKER)[0].trimEnd();
+    const nextText = before ? `${before}\n\n${guidance}` : guidance;
+
+    const newContent = [
+      { type: "text", text: nextText },
+      ...nonText,
+    ] as unknown as AgentDefinitionMessage["content"];
+    dispatch(
+      setAgentMessages({
+        id: agentId,
+        messages: [
+          { role: "system", content: newContent },
+          ...nonSystem,
+        ] as AgentDefinitionMessage[],
+      }),
+    );
+    toast.success("Action structure guidance added to the system prompt");
+  };
+
   const clearDirective = () => {
     const { directive: _omit, ...rest } = cfg;
     void _omit;
@@ -176,6 +224,19 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
               <X className="h-3 w-3" /> Remove
             </button>
           </div>
+        )}
+
+        {/* Inject structure guidance as text into the system prompt (Phase 1 test) */}
+        {(actionType || cfg.directive) && !showPicker && (
+          <button
+            type="button"
+            onClick={injectGuidance}
+            title="Append guidance describing this action's envelope structure to the agent's system prompt."
+            className="inline-flex w-fit items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ListPlus className="h-3.5 w-3.5" />
+            Insert structure guidance into system prompt
+          </button>
         )}
 
         {/* Registry picker */}
