@@ -32,6 +32,11 @@ export interface NormalizedHit {
   vector_rank: number | null;
   lexical_rank: number | null;
   rerank_score: number | null;
+  /** Rank in the KG entity-recall lane (1 = best); non-null only when the hit
+   * was surfaced because its source mentions a matched entity. */
+  entity_rank: number | null;
+  /** Entity names this chunk mentions (KG) — the per-hit "why it ranked". */
+  entities: string[];
   metadata: Record<string, unknown>;
 }
 
@@ -47,6 +52,8 @@ interface RawHit {
   vector_rank?: number | null;
   lexical_rank?: number | null;
   rerank_score?: number | null;
+  entity_rank?: number | null;
+  entities?: string[] | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -67,18 +74,27 @@ function normalizeHit(raw: RawHit, index: number): NormalizedHit {
     }
     return null;
   })();
+  // Both `score` and `page_number` are untrusted JSON off the wire (streamed
+  // hits may omit or malform them). Coerce here so no render path hits
+  // `undefined.toFixed()` or prints "NaN" / "Page NaN".
+  const rawPage =
+    typeof raw.page_number === "number" && Number.isFinite(raw.page_number)
+      ? raw.page_number
+      : null;
   return {
     rank: raw.rank ?? index + 1,
     chunk_id: raw.chunk_id,
     source_kind: raw.source_kind,
     source_id: raw.source_id,
     snippet: raw.snippet,
-    score: raw.score,
+    score: Number.isFinite(raw.score) ? raw.score : 0,
     file_name: raw.file_name ?? fileNameFromMeta,
-    page_number: raw.page_number ?? pageFromMeta,
+    page_number: rawPage ?? pageFromMeta,
     vector_rank: raw.vector_rank ?? null,
     lexical_rank: raw.lexical_rank ?? null,
     rerank_score: raw.rerank_score ?? null,
+    entity_rank: raw.entity_rank ?? null,
+    entities: raw.entities ?? [],
     metadata: meta,
   };
 }

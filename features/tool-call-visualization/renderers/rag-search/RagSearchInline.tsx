@@ -46,6 +46,7 @@ export function RagSearchInline({
 
   const shown = data.hits.slice(0, MAX_INLINE);
   const hasMore = data.hits.length > shown.length;
+  const topScore = data.hits.reduce((m, h) => Math.max(m, h.score), 0);
 
   const subtitleParts: string[] = [
     `${data.hits.length} ${data.hits.length === 1 ? "source" : "sources"}`,
@@ -76,7 +77,7 @@ export function RagSearchInline({
       {data.hits.length ? (
         <div className="max-h-[440px] space-y-1.5 overflow-y-auto p-2">
           {shown.map((h, i) => (
-            <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} />
+            <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} topScore={topScore} />
           ))}
           {hasMore && onOpenOverlay ? (
             <button

@@ -179,6 +179,9 @@ export {
   PreviewPane,
   type PreviewPaneProps,
 } from "@/features/files/components/surfaces/PreviewPane";
+// Imperative "open this file's preview from anywhere" — dispatches the
+// filePreviewWindow overlay (non-blocking WindowPanel wrapping PreviewPane).
+export { openFilePreview } from "@/features/files/components/preview/openFilePreview";
 export {
   WindowPanelShell,
   type WindowPanelShellProps,

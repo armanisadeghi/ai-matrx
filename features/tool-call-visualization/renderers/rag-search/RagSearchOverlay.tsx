@@ -21,6 +21,8 @@ export function RagSearchOverlay({ entry }: ToolRendererProps) {
     );
   }
 
+  const topScore = data.hits.reduce((m, h) => Math.max(m, h.score), 0);
+
   const meta: string[] = [
     `${data.hits.length} ${data.hits.length === 1 ? "source" : "sources"}`,
   ];
@@ -42,7 +44,7 @@ export function RagSearchOverlay({ entry }: ToolRendererProps) {
       </div>
       <div className="space-y-1.5">
         {data.hits.map((h, i) => (
-          <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} />
+          <RagSourceCard key={`${h.chunk_id}-${i}`} hit={h} topScore={topScore} />
         ))}
       </div>
     </div>

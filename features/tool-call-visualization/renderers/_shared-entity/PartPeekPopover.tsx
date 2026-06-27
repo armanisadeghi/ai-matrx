@@ -23,6 +23,7 @@ export function PartPeekPopover({
   side = "top",
   align = "start",
   className,
+  headerClassName,
 }: {
   children: React.ReactNode;
   header?: React.ReactNode;
@@ -30,6 +31,9 @@ export function PartPeekPopover({
   side?: "top" | "right" | "bottom" | "left";
   align?: "start" | "center" | "end";
   className?: string;
+  /** Tint the header strip (e.g. a per-kind accent wash). Replaces the default
+   * muted background when set — keep it light/dark safe. */
+  headerClassName?: string;
 }) {
   return (
     <HoverCard openDelay={140} closeDelay={80}>
@@ -40,7 +44,12 @@ export function PartPeekPopover({
         className={cn("w-72 overflow-hidden p-0", className)}
       >
         {header ? (
-          <div className="border-b border-border bg-muted/40 px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <div
+            className={cn(
+              "border-b border-border px-3 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
+              headerClassName ?? "bg-muted/40",
+            )}
+          >
             {header}
           </div>
         ) : null}
