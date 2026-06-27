@@ -1,0 +1,27 @@
+-- shortcut_categories_drop_permissive_select.sql
+--
+-- KNOWN_DEFECTS D5 (frontend): retire the legacy permissive SELECT policy
+-- `shortcut_categories_select_any` (cmd SELECT, role `public`, USING (true)).
+-- Because RLS policies OR together, this policy made EVERY category row readable
+-- by everyone — including other users' personal category LABELS (e.g. "School",
+-- "Learn Coding") — leaking names + rendering empty foreign groups in the unified
+-- context menu (the per-category ITEMS are already correctly RLS-filtered).
+--
+-- The scoped replacements already exist and fully cover every legitimate read:
+--   - shortcut_categories_read      (authenticated): global (all-NULL) OR own
+--                                     (user_id = auth.uid()) OR org-member rows
+--   - shortcut_categories_read_anon (anon):          active global rows
+--   - shortcut_categories_service_role (service_role): full access (admin client)
+--
+-- Verified safe before drop (2026-06-27, project txzxabzwovsujtloxrus):
+--   * 0 project/task-only rows exist, so the scoped policy's lack of a
+--     project/task branch hides nothing that exists today.
+--   * 54 global + 5 user + 8 org rows all remain readable via the scoped policy.
+--   * The /api/agent-shortcut-categories route only ever filters scope=user to
+--     user.id (own) — no admin path lists other users' categories via the user
+--     client; admin/content-block flows read GLOBAL rows (covered) or use the
+--     service-role client (bypasses RLS).
+--
+-- Idempotent: safe to re-apply.
+
+DROP POLICY IF EXISTS shortcut_categories_select_any ON public.shortcut_categories;
