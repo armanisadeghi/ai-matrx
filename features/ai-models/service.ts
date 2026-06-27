@@ -11,6 +11,27 @@ import type {
 } from "./types";
 import type { PromptSettings } from "@/features/prompts/types/core";
 
+// Minimal row shapes for the agent.definition / agent.template usage queries.
+// Pinned via `.returns<>()` because the large cross-schema FK graph (added in the
+// 2026 reorg) pushes the inferred `.select().or()` result past TS's recursion
+// depth (TS2589). The queries and data are unchanged; only inference is overridden.
+type AgentUsageRow = {
+  id: string;
+  name: string | null;
+  model_id: string | null;
+};
+type AgentBuiltinUsageRow = {
+  id: string;
+  name: string | null;
+  source_agent_id: string | null;
+  settings: Record<string, unknown> | null;
+};
+type AgentBuiltinSettingsRow = {
+  id: string;
+  model_id: string | null;
+  settings: Record<string, unknown> | null;
+};
+
 export const aiModelService = {
   async fetchAll(): Promise<AiModel[]> {
     const { data, error } = await supabase
@@ -98,21 +119,24 @@ export const aiModelService = {
           .from("definition")
           .select("id, name, source_agent_id, settings")
           .eq("agent_type", "builtin")
-          .or(`model_id.eq.${modelId},settings->>model_id.eq.${modelId}`),
+          .or(`model_id.eq.${modelId},settings->>model_id.eq.${modelId}`)
+          .returns<AgentBuiltinUsageRow[]>(),
         supabase
           .schema("agent")
           .from("definition")
           .select("id, name, model_id")
           .or(
             `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>primary_model_id.eq.${modelId}`,
-          ),
+          )
+          .returns<AgentUsageRow[]>(),
         supabase
           .schema("agent")
           .from("template")
           .select("id, name, model_id")
           .or(
             `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>primary_model_id.eq.${modelId}`,
-          ),
+          )
+          .returns<AgentUsageRow[]>(),
       ]);
 
     if (builtinsResult.error) throw builtinsResult.error;
@@ -166,7 +190,8 @@ export const aiModelService = {
       .from("definition")
       .select("id, model_id, settings")
       .eq("agent_type", "builtin")
-      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`);
+      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`)
+      .returns<AgentBuiltinSettingsRow[]>();
     if (fetchErr) throw fetchErr;
     if (!rows || rows.length === 0) return 0;
 
