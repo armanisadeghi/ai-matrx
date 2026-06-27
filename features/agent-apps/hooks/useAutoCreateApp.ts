@@ -299,6 +299,8 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           .from("definition")
           .insert({
             user_id: userId,
+            // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
+            created_by: userId,
             agent_id: data.agent.id,
             agent_version_id: null,
             use_latest: true,

@@ -110,10 +110,12 @@ export async function DELETE(
     }
 
     // Look up the row to decide which deletion path applies.
+    // Select both created_by (canonical) and user_id (bridge) — global rows
+    // have user_id = null (the original global marker); created_by may be set.
     const { data: existing, error: fetchError } = await supabase
       .schema("app")
       .from("definition")
-      .select("id, user_id")
+      .select("id, user_id, created_by")
       .eq("id", id)
       .maybeSingle();
 
@@ -127,6 +129,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // Global apps were created with user_id = null (system scope marker).
     const isGlobal = existing.user_id === null;
     if (isGlobal) {
       // Global (system-scope) apps can only be deleted by admins. Use the
@@ -157,14 +160,16 @@ export async function DELETE(
       return NextResponse.json({ success: true });
     }
 
-    // Belt-and-suspenders ownership check on top of RLS — matches the legacy
-    // prompt-apps DELETE handler.
+    // Canonical RLS std_delete checks created_by = auth.uid() — that IS the
+    // ownership guard. Add created_by filter explicitly so an accidental
+    // mismatch (e.g., shared-edit row) silently deletes 0 rows rather than
+    // succeeding. user_id equality is no longer the canonical owner signal.
     const { error } = await supabase
       .schema("app")
       .from("definition")
       .delete()
       .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("created_by", user.id);
 
     if (error) {
       return NextResponse.json(

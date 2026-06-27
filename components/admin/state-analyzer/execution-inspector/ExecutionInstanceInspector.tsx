@@ -1082,12 +1082,13 @@ export default function ExecutionInstanceInspector({
       (agentInstanceCount[inst.agentId] || 0) + 1;
   }
 
+  const agentFilterLower = agentFilter.toLowerCase();
   const agentList = Object.values(agents)
-    .filter(
-      (a) =>
-        a.name?.toLowerCase().includes(agentFilter.toLowerCase()) ||
-        a.id?.toLowerCase().includes(agentFilter.toLowerCase()),
-    )
+    .filter((a) => {
+      const name = a.name?.toLowerCase() ?? "";
+      const id = a.id?.toLowerCase() ?? "";
+      return name.includes(agentFilterLower) || id.includes(agentFilterLower);
+    })
     .sort((a, b) => {
       const ac = agentInstanceCount[a.id] || 0;
       const bc = agentInstanceCount[b.id] || 0;

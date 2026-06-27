@@ -45,6 +45,25 @@ interface UrConversationInfo {
   provider: string | null;
 }
 
+// chat.* tables have cross-schema FKs to ai.model (chat→ai schema boundary).
+// PostgREST cannot auto-resolve cross-schema FK embeds, so we fetch model info
+// separately via `.schema("ai").from("model")` and join in JS.
+async function resolveAiModels(
+  supabase: ServerSupabase,
+  modelIds: (string | null | undefined)[],
+): Promise<Map<string, { common_name: string | null; provider: string | null; name: string | null }>> {
+  const ids = [...new Set(modelIds.filter((id): id is string => !!id))];
+  if (ids.length === 0) return new Map();
+  const { data } = await supabase
+    .schema("ai")
+    .from("model")
+    .select("id, common_name, provider, name")
+    .in("id", ids);
+  const map = new Map<string, { common_name: string | null; provider: string | null; name: string | null }>();
+  for (const m of data || []) map.set(m.id, { common_name: m.common_name ?? null, provider: m.provider ?? null, name: (m as any).name ?? null });
+  return map;
+}
+
 async function resolveUserRequestConversations(
   supabase: ServerSupabase,
   userRequestIds: string[],
@@ -77,11 +96,15 @@ async function resolveUserRequestConversations(
   const conversationIds = Array.from(new Set(urToConv.values()));
   const convMap = new Map<string, any>();
   if (conversationIds.length > 0) {
-    const { data: convs } = (await supabase
+    const { data: convs } = await supabase
       .schema("chat").from("conversation")
-      .select("id, title, ai_model:last_model_id(common_name, provider)")
-      .in("id", conversationIds)) as any;
-    for (const c of convs || []) convMap.set(c.id, c);
+      .select("id, title, last_model_id")
+      .in("id", conversationIds);
+    const modelMap = await resolveAiModels(supabase, (convs || []).map((c: any) => c.last_model_id));
+    for (const c of convs || []) {
+      const m = c.last_model_id ? modelMap.get(c.last_model_id) : null;
+      convMap.set(c.id, { ...c, ai_model: m ?? null });
+    }
   }
 
   for (const urId of userRequestIds) {
@@ -138,11 +161,16 @@ export async function fetchOverviewKpis(
     .select("id")
     .is("deleted_at", null);
 
-  // Model usage
-  const { data: modelUsage } = (await supabase
+  // Model usage — cross-schema FK (chat→ai), fetch model info separately.
+  const { data: modelUsageRaw } = await supabase
     .schema("chat").from("request")
-    .select("ai_model_id, cost, ai_model(common_name, provider)")
-    .is("deleted_at", null)) as any;
+    .select("ai_model_id, cost")
+    .is("deleted_at", null);
+  const modelUsageModelMap = await resolveAiModels(supabase, (modelUsageRaw || []).map((r: any) => r.ai_model_id));
+  const modelUsage = (modelUsageRaw || []).map((r: any) => ({
+    ...r,
+    ai_model: r.ai_model_id ? (modelUsageModelMap.get(r.ai_model_id) ?? null) : null,
+  })) as any[];
 
   // Tool usage
   const { data: toolUsage } = await supabase
@@ -314,11 +342,10 @@ export async function fetchConversations(
   const perPage = filters.per_page || 50;
   const offset = (page - 1) * perPage;
 
+  // cross-schema FK (chat→ai): fetch without embed, resolve models separately.
   let query = supabase
     .schema("chat").from("conversation")
-    .select("*, ai_model:last_model_id(common_name, provider)", {
-      count: "exact",
-    })
+    .select("*", { count: "exact" })
     .is("deleted_at", null)
     .order(filters.sort_by || "created_at", {
       ascending: filters.sort_dir === "asc",
@@ -349,10 +376,11 @@ export async function fetchConversations(
   const { data, count, error } = await query;
   if (error) throw error;
 
+  const convModelMap = await resolveAiModels(supabase, (data || []).map((c: any) => c.last_model_id));
   const conversations = (data || []).map((c: any) => ({
     ...c,
-    model_name: c.ai_model?.common_name || null,
-    provider: c.ai_model?.provider || null,
+    model_name: c.last_model_id ? (convModelMap.get(c.last_model_id)?.common_name ?? null) : null,
+    provider: c.last_model_id ? (convModelMap.get(c.last_model_id)?.provider ?? null) : null,
   }));
 
   return {
@@ -369,11 +397,12 @@ export async function fetchConversations(
 export async function fetchConversationDetail(id: string) {
   const supabase = await createClient();
 
+  // cross-schema FK (chat→ai): fetch conversations without embed, resolve models separately.
   const [convResult, messagesResult, reqLinksResult, childConvsResult] =
     await Promise.all([
       supabase
         .schema("chat").from("conversation")
-        .select("*, ai_model:last_model_id(common_name, provider)")
+        .select("*")
         .eq("id", id)
         .single(),
       supabase
@@ -392,11 +421,18 @@ export async function fetchConversationDetail(id: string) {
         .is("deleted_at", null),
       supabase
         .schema("chat").from("conversation")
-        .select("*, ai_model:last_model_id(common_name, provider)")
+        .select("*")
         .eq("parent_conversation_id", id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true }),
     ]);
+
+  const conv = convResult.data as any;
+  const childConvs = childConvsResult.data || [];
+
+  // Resolve AI model info for this conversation and children in one batch.
+  const modelIdsToFetch = [conv?.last_model_id, ...childConvs.map((c: any) => c.last_model_id)];
+  const detailModelMap = await resolveAiModels(supabase, modelIdsToFetch);
 
   const userRequestIds = Array.from(
     new Set(
@@ -421,21 +457,20 @@ export async function fetchConversationDetail(id: string) {
     }));
   }
 
-  const conv = convResult.data as any;
   return {
     conversation: conv
       ? {
           ...conv,
-          model_name: conv.ai_model?.common_name,
-          provider: conv.ai_model?.provider,
+          model_name: conv.last_model_id ? (detailModelMap.get(conv.last_model_id)?.common_name ?? null) : null,
+          provider: conv.last_model_id ? (detailModelMap.get(conv.last_model_id)?.provider ?? null) : null,
         }
       : null,
     messages: (messagesResult.data || []) as CxMessage[],
     user_requests: userRequests,
-    child_conversations: (childConvsResult.data || []).map((c: any) => ({
+    child_conversations: childConvs.map((c: any) => ({
       ...c,
-      model_name: c.ai_model?.common_name,
-      provider: c.ai_model?.provider,
+      model_name: c.last_model_id ? (detailModelMap.get(c.last_model_id)?.common_name ?? null) : null,
+      provider: c.last_model_id ? (detailModelMap.get(c.last_model_id)?.provider ?? null) : null,
     })) as CxConversation[],
   };
 }
@@ -518,11 +553,12 @@ export async function fetchUserRequests(
 export async function fetchUserRequestDetail(id: string) {
   const supabase = await createClient();
 
+  // cross-schema FK (chat→ai): fetch request rows without embed, resolve models separately.
   const [urResult, requestsResult, toolCallsResult] = await Promise.all([
     supabase.schema("chat").from("user_request").select("*").eq("id", id).single(),
     supabase
       .schema("chat").from("request")
-      .select("*, ai_model:ai_model_id(common_name, provider, name)")
+      .select("*")
       .eq("user_request_id", id)
       .is("deleted_at", null)
       .order("iteration", { ascending: true }),
@@ -536,9 +572,10 @@ export async function fetchUserRequestDetail(id: string) {
   ]);
 
   const ur = urResult.data as any;
-  const urConvInfo = ur
-    ? (await resolveUserRequestConversations(supabase, [ur.id])).get(ur.id)
-    : null;
+  const [urConvInfo, requestModelMap] = await Promise.all([
+    ur ? resolveUserRequestConversations(supabase, [ur.id]).then((m) => m.get(ur.id)) : Promise.resolve(undefined),
+    resolveAiModels(supabase, (requestsResult.data || []).map((r: any) => r.ai_model_id)),
+  ]);
 
   // Cost verification
   const requestCosts = (requestsResult.data || []).reduce(
@@ -578,11 +615,10 @@ export async function fetchUserRequestDetail(id: string) {
                 : null,
         }
       : null,
-    requests: (requestsResult.data || []).map((r: any) => ({
-      ...r,
-      model_name: r.ai_model?.common_name,
-      provider: r.ai_model?.provider,
-    })) as CxRequest[],
+    requests: (requestsResult.data || []).map((r: any) => {
+      const m = r.ai_model_id ? requestModelMap.get(r.ai_model_id) : null;
+      return { ...r, model_name: m?.common_name ?? null, provider: m?.provider ?? null };
+    }) as CxRequest[],
     tool_calls: (toolCallsResult.data || []) as CxToolCall[],
     cost_verification: costVerification,
   };
@@ -650,10 +686,11 @@ export async function fetchErrors(filters: CxFilters) {
 export async function fetchUsageAnalytics(filters: CxFilters) {
   const supabase = await createClient();
 
-  // All requests with model info for usage analytics
+  // All requests with model info for usage analytics.
+  // cross-schema FK (chat→ai): fetch without embed, resolve models separately.
   let query = supabase
     .schema("chat").from("request")
-    .select("*, ai_model:ai_model_id(common_name, provider, name)")
+    .select("*")
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
@@ -672,7 +709,12 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
       .lte("created_at", filters.end_date);
   }
 
-  const { data: requests } = await query;
+  const { data: rawRequests } = await query;
+  const analyticsModelMap = await resolveAiModels(supabase, (rawRequests || []).map((r: any) => r.ai_model_id));
+  const requests = (rawRequests || []).map((r: any) => ({
+    ...r,
+    ai_model: r.ai_model_id ? (analyticsModelMap.get(r.ai_model_id) ?? null) : null,
+  }));
 
   // Aggregate by model
   const byModel = new Map<

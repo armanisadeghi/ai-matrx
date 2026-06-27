@@ -2,6 +2,7 @@ import { UserData } from "@/utils/userDataMapper";
 import { OverlayMenuItem } from "./OverlayMenuItem";
 import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
+import { ErrorInspectorMenuItem } from "./ErrorInspectorMenuItem";
 import { NotificationsMenuItem } from "./NotificationsMenuItem";
 import { MessagesMenuItem } from "./MessagesMenuItem";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
@@ -77,6 +78,7 @@ export default function UserMenuPanel({ userData }: UserMenuPanelProps) {
               className="[&_svg]:text-amber-500"
             />
             <AdminIndicatorMenuItem />
+            <ErrorInspectorMenuItem />
           </MenuGroup>
         </>
       )}

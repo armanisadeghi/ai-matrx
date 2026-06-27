@@ -129,6 +129,9 @@ export async function POST(request: NextRequest) {
       agent_version_id: agent_version_id ?? null,
       use_latest: use_latest ?? true,
       user_id: isGlobal ? null : user.id,
+      // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
+      // Global apps use the admin client (bypasses RLS), so created_by stays null there.
+      created_by: isGlobal ? null : user.id,
       organization_id: null,
       project_id: null,
       task_id: null,

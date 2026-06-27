@@ -85,32 +85,39 @@ export interface ShareableResourceEntry {
 export const SHAREABLE_RESOURCE_REGISTRY = {
   agent: {
     resourceType: "agent",
-    // `tableName` is the canonical permissions/RLS key (matches the DB
-    // `shareable_resource_registry` value the parity test checks). The physical
-    // table moved to `agent.definition` in the 2026 schema reorg, reached via
-    // `.schema('agent')` — mirror of the file/folder pattern.
-    tableName: "agx_agent",
+    // `tableName` matches DB shareable_resource_registry.table_name = 'definition'.
+    // Physical table is `agent.definition`, reached via `.schema('agent')`.
+    // The parity test maps by resourceType key ('agent'), not tableName.
+    tableName: "definition",
     schemaName: "agent",
     physicalTable: "definition",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
+    // DB canonical (live DB + registry): owner_column = created_by.
+    ownerColumn: "created_by",
+    // DB canonical: agent.definition uses visibility enum, not is_public bool.
+    isPublicColumn: null,
     displayLabel: "Agent",
-    urlPathTemplate: "/agents/{id}/edit",
+    // DB snapshot has "/agents/{id}" — keep aligned with DB registry.
+    urlPathTemplate: "/agents/{id}",
     rlsUsesHasPermission: true,
   },
   agent_app: {
     resourceType: "agent_app",
-    // `tableName` is the canonical permissions/RLS key. Physical table moved to
-    // `app.definition` in the 2026 schema reorg, reached via `.schema('app')`.
-    tableName: "aga_apps",
+    // NOTE: The DB registry uses resource_type='app' (not 'agent_app'). The FE
+    // key 'agent_app' has no matching DB row — the parity test will flag this as
+    // "missing from DB". This is pre-existing drift from before this audit.
+    // Do NOT change the FE key to 'app' without updating all call sites.
+    // tableName must match DB table_name for the app resource = 'definition'.
+    tableName: "definition",
     schemaName: "app",
     physicalTable: "definition",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Agent App",
-    urlPathTemplate: "/agent-apps/{id}",
+    // DB canonical: app.definition uses created_by (not user_id).
+    ownerColumn: "created_by",
+    // DB canonical (new snapshot): is_public_column = null for 'app'.
+    isPublicColumn: null,
+    displayLabel: "App",
+    urlPathTemplate: "/apps/{id}",
     rlsUsesHasPermission: true,
   },
   prompt: {
@@ -155,9 +162,10 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   conversation: {
     resourceType: "conversation",
-    // `tableName` is the canonical permissions/RLS key. Physical table moved to
-    // `chat.conversation` in the 2026 schema reorg, reached via `.schema('chat')`.
-    tableName: "cx_conversation",
+    // `tableName` is the value passed as `p_resource_type` to the share RPCs.
+    // DB `shareable_resource_registry` row: resource_type='conversation', table_name='conversation',
+    // schema_name='chat'. Physical table is `chat.conversation`, reached via `.schema('chat')`.
+    tableName: "conversation",
     schemaName: "chat",
     physicalTable: "conversation",
     idColumn: "id",
@@ -309,18 +317,19 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     rlsUsesHasPermission: true,
   },
   task: {
-    // Canonical now: the workspace domain was moved to the `workspace` schema in
-    // the 2026 restructure (`ctx_tasks`→`workspace.tasks`). `resourceType` /
-    // `tableName` is the canonical permissions key `'task'` (the DB registry row
-    // and `iam.has_access`/share RPCs key on this), while the physical table is
+    // Canonical: workspace domain moved to `workspace` schema; physical table is
     // `workspace.tasks`, reached via `.schema('workspace')` (see workspaceDb).
+    // tableName matches DB shareable_resource_registry.table_name = 'tasks'.
     resourceType: "task",
-    tableName: "task",
+    tableName: "tasks",
     schemaName: "workspace",
     physicalTable: "tasks",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
+    // DB canonical: workspace.tasks has NO user_id column. RLS and DB registry
+    // both use created_by. isResourceOwner() queries created_by.
+    ownerColumn: "created_by",
+    // workspace.tasks uses visibility enum, no is_public column.
+    isPublicColumn: null,
     displayLabel: "Task",
     urlPathTemplate: "/tasks/{id}",
     rlsUsesHasPermission: true,
@@ -487,11 +496,10 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   skill: {
     resourceType: "skill",
-    // `tableName` is the canonical permissions/RLS key (matches the DB
-    // `shareable_resource_registry` value the parity test checks). The physical
-    // table moved to `skill.definition` in the 2026 schema reorg, reached via
-    // `.schema('skill')` — mirror of the file/folder pattern above.
-    tableName: "skl_definitions",
+    // `tableName` is the value passed as `p_resource_type` to the share RPCs.
+    // DB `shareable_resource_registry` row: resource_type='skill', table_name='definition',
+    // schema_name='skill'. Physical table is `skill.definition`, reached via `.schema('skill')`.
+    tableName: "skill",
     schemaName: "skill",
     physicalTable: "definition",
     idColumn: "id",

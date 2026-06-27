@@ -190,7 +190,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     schemaName: "agent",
     hasOrgColumn: true,
     archivedColumn: "is_archived",
-    shareKey: "agx_agent",
+    shareKey: "agent",
     titleColumn: "name",
     orgRoute: "prompts",
     scopeable: true,
@@ -207,7 +207,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     table: "definition",
     schemaName: "app",
     hasOrgColumn: true,
-    shareKey: "aga_apps",
+    // DB resource_type is 'app' but FE registry key is 'agent_app' (pre-existing drift).
+    // getShareableResource looks up by resourceType key first, so use 'agent_app'.
+    shareKey: "agent_app",
     titleColumn: "name",
     orgRoute: "agent-apps",
     scopeable: true,
@@ -405,7 +407,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     table: "conversation",
     schemaName: "chat",
     hasOrgColumn: true,
-    shareKey: "cx_conversation",
+    shareKey: "conversation",
     titleColumn: "title",
     orgRoute: null,
     scopeable: true,

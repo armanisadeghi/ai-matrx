@@ -79,6 +79,7 @@ export const OVERLAY_IDS = [
   "diffViewerWindow",
   "emailDialog",
   "emailDialogWindow",
+  "errorInspectorWindow",
   "executionInspectorWindow",
   "feedbackDialog",
   "filePreviewWindow",

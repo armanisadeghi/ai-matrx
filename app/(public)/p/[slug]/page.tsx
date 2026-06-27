@@ -23,13 +23,16 @@ async function resolveAgentAppMetadata(slug: string): Promise<{
   const isId = isUUID(slug);
   const column = isId ? "id" : "slug";
 
+  // Canonical: app.definition uses visibility enum (not is_public bool).
+  // make_resource_public sets visibility='public'; is_public is a bridge column
+  // that the DB registry no longer populates for the 'app' resource type.
   const { data } = await supabase
     .schema("app")
     .from("definition")
     .select("name, tagline, description, preview_image_url, favicon_url")
     .eq(column, slug)
     .eq("status", "published")
-    .eq("is_public", true)
+    .eq("visibility", "public")
     .maybeSingle();
 
   return (data as typeof data) ?? null;

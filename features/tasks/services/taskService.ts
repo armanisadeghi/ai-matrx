@@ -714,7 +714,8 @@ export async function shareTask(
   level: "viewer" | "editor" | "admin" = "viewer",
 ): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("share_resource_with_user", {
-    p_resource_type: "tasks",
+    // Canonical resource_type is 'task' (singular) — matches DB shareable_resource_registry.
+    p_resource_type: "task",
     p_resource_id: taskId,
     p_target_user_id: targetUserId,
     p_permission_level: level,
@@ -733,7 +734,8 @@ export async function shareTask(
  */
 export async function makeTaskPublic(taskId: string): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("make_resource_public", {
-    p_resource_type: "tasks",
+    // Canonical resource_type is 'task' (singular).
+    p_resource_type: "task",
     p_resource_id: taskId,
   });
   if (error) return { success: false, error: error.message };
@@ -752,7 +754,8 @@ export async function makeTaskPrivate(
   taskId: string,
 ): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("make_resource_private", {
-    p_resource_type: "tasks",
+    // Canonical resource_type is 'task' (singular).
+    p_resource_type: "task",
     p_resource_id: taskId,
   });
   if (error) return { success: false, error: error.message };
@@ -773,7 +776,7 @@ export async function revokeTaskAccess(
   targetUserId: string,
 ): Promise<TaskShareResult> {
   const { data, error } = await supabase.rpc("revoke_resource_access", {
-    p_resource_type: "tasks",
+    p_resource_type: "task",
     p_resource_id: taskId,
     p_target_user_id: targetUserId,
   });
@@ -792,7 +795,7 @@ export async function revokeTaskAccess(
  */
 export async function getTaskPermissions(taskId: string) {
   const { data, error } = await supabase.rpc("get_resource_permissions", {
-    p_resource_type: "tasks",
+    p_resource_type: "task",
     p_resource_id: taskId,
   });
   if (error) {

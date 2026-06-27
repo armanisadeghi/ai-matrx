@@ -25,10 +25,16 @@ export const entityRelationships = {
     inverseReferences: [],
     relationshipDetails: {
       entityName: "aiModelEndpoint",
+      // DROPPED: `public.ai_model_endpoint` compat view dropped; physical table is in
+      // `graveyard.ai_model_endpoint` (decommissioned). The junction is gone — any
+      // entity-layer query against this entity will fail until it is removed or the
+      // entity system gains schema support. Marked with schemaName to prevent silent
+      // public-schema fallback.
       tableName: "ai_model_endpoint",
+      schemaName: "graveyard",
       foreignKeys: {
         aiEndpoint: {
-          foreignTable: "ai_endpoint",
+          foreignTable: "endpoint",
           foreignEntity: "aiEndpoint",
           column: "ai_endpoint_id",
           fieldName: "aiEndpointId",
@@ -38,7 +44,7 @@ export const entityRelationships = {
           constraintName: "ai_model_endpoint_ai_endpoint_id_fkey",
         },
         aiModel: {
-          foreignTable: "ai_model",
+          foreignTable: "model",
           foreignEntity: "aiModel",
           column: "ai_model_id",
           fieldName: "aiModelId",

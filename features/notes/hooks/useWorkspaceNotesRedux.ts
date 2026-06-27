@@ -304,6 +304,8 @@ export function useWorkspaceNotesRedux() {
         .from("notes")
         .insert({
           user_id: userId,
+          // Canonical RLS std_insert requires created_by = auth.uid().
+          created_by: userId,
           label: record.label === "New Note" ? "New Note" : `${record.label} (Copy)`,
           content: record.content,
           folder_name: record.folder_name,
@@ -350,6 +352,8 @@ export function useWorkspaceNotesRedux() {
         .from("notes")
         .insert({
           user_id: userId,
+          // Canonical RLS std_insert requires created_by = auth.uid().
+          created_by: userId,
           label: "New Note",
           content: "",
           folder_name: folder || "Draft",

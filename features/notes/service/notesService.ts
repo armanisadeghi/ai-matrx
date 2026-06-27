@@ -130,6 +130,10 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     .from("notes")
     .insert({
       user_id: userId,
+      // Canonical RLS std_insert requires created_by = auth.uid(). The
+      // _stamp_actor trigger fills this too, but set it explicitly so the
+      // INSERT passes with_check even if the trigger order ever changes.
+      created_by: userId,
       label: finalLabel,
       content: content,
       folder_name: targetFolder,

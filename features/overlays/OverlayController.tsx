@@ -404,6 +404,10 @@ const ExecutionInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/admin/ExecutionInspectorWindow"),
   { ssr: false },
 );
+const ErrorInspectorWindow = lazyOverlay(
+  () => import("@/features/admin/error-inspector/ErrorInspectorWindow"),
+  { ssr: false },
+);
 const FeedbackWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/FeedbackWindow").then((m) => ({
@@ -896,6 +900,9 @@ export default function OverlayController() {
     emailDialogWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "emailDialogWindow"),
     ),
+    errorInspectorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "errorInspectorWindow"),
+    ),
     executionInspectorWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "executionInspectorWindow"),
     ),
@@ -1142,6 +1149,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     emailDialogWindow: useAppSelector((s) =>
       selectOverlayData(s, "emailDialogWindow"),
+    ) as Record<string, unknown> | null,
+    errorInspectorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "errorInspectorWindow"),
     ) as Record<string, unknown> | null,
     executionInspectorWindow: useAppSelector((s) =>
       selectOverlayData(s, "executionInspectorWindow"),
@@ -2820,6 +2830,24 @@ export default function OverlayController() {
               typeof data?.submitLabel === "string"
                 ? data.submitLabel
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* errorInspectorWindow */}
+      {(() => {
+        const isOpen = isOpenById.errorInspectorWindow;
+        const data = dataById.errorInspectorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ErrorInspectorWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "errorInspectorWindow" }))
             }
           />
         );

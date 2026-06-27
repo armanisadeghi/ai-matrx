@@ -117,6 +117,14 @@ const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>([
   // `make_resource_*` RPCs, which only touch the now-ignored `is_public`.
   "file",
   "folder",
+  // The 2026 canonical reorg moved these tables onto the platform.visibility
+  // enum. RLS uses `visibility` (via iam.has_access), not `is_public`. The
+  // make_resource_public/private RPCs still update visibility correctly via
+  // the DB's resolve_shareable_resource, but isResourceOwner() on the FE must
+  // use ownerColumn = "created_by", which the registry already reflects.
+  "task",
+  "agent",
+  "agent_app",
 ]);
 
 function usesVisibilityEnum(resourceType: ResourceType): boolean {

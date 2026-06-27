@@ -19745,7 +19745,7 @@
           "RAG"
         ],
         "summary": "Test Search Library Document",
-        "description": "Run a quick lexical search against just THIS document's chunks.\n\nLightweight — uses Postgres full-text search (the existing ``content_tsv``\ncolumn on ``rag.kg_chunks``). Surfaces what an agent WOULD retrieve\nif scoped to this single doc, so the user can validate ingestion\nquality without setting up a data store.\n\nWhy lexical-only? Vector retrieval requires picking an embedder, hitting\nOpenAI, and is overkill for a \"does this work?\" smoke test. The lexical\nscore is a strong-enough proxy on extracted/cleaned PDF content.",
+        "description": "Run a quick lexical search against just THIS document's chunks.\n\nLightweight — uses Postgres full-text search (the existing ``content_tsv``\ncolumn on ``rag.kg_chunks``). Surfaces what an agent WOULD retrieve\nif scoped to this single doc, so the user can validate ingestion\nquality without setting up a data store.\n\nWhy lexical-only? Vector retrieval requires picking an embedder, hitting\nOpenAI, and is overkill for a \"does this work?\" smoke test. Uses the\nsame ``websearch_to_tsquery('simple', ...)`` path as production lexical\nrecall (must match ``content_tsv``'s ``to_tsvector('simple', ...)``).",
         "operationId": "test_search_library_document_rag_library__processed_document_id__test_search_post",
         "parameters": [
           {
@@ -39314,6 +39314,11 @@
             "title": "Debug",
             "default": false
           },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
           "tools": {
             "items": {
               "oneOf": [
@@ -46571,6 +46576,11 @@
           "debug": {
             "type": "boolean",
             "title": "Debug",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
             "default": false
           },
           "system_instruction": {

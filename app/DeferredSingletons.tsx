@@ -62,6 +62,14 @@ const LazyKgNewSuggestionNotifier = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Admin-only floating chip that appears the moment a Supabase error is captured
+// anywhere in the app and opens the Error Inspector. Self-gates on admin + on
+// having at least one captured error, so it renders nothing for everyone else.
+const LazyErrorInspectorBadge = dynamic(
+  () => import("@/features/admin/error-inspector/ErrorInspectorBadge"),
+  { ssr: false, loading: () => null },
+);
+
 // Selector that returns true if ANY overlay instance is currently open.
 // Used by OverlayControllerGate below to defer mounting OverlayController
 // (and its Impl chunk's 111-window lazy graph) until the user actually
@@ -263,6 +271,7 @@ export default function DeferredSingletons() {
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />
+      <LazyErrorInspectorBadge />
     </>
   );
 }

@@ -1,23 +1,23 @@
 [
   {
     "resource_type": "agent",
-    "table_name": "agx_agent",
+    "table_name": "definition",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Agent",
-    "url_path_template": "/agents/{id}/edit",
+    "url_path_template": "/agents/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
   {
-    "resource_type": "agent_app",
-    "table_name": "aga_apps",
+    "resource_type": "agent_card",
+    "table_name": "card",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "Agent App",
-    "url_path_template": "/agent-apps/{id}",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Agent Card",
+    "url_path_template": "/agents/card/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -30,6 +30,17 @@
     "display_label": "Analysis Recipe",
     "url_path_template": "/settings/analysis/recipes/{id}",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "app",
+    "table_name": "definition",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "App",
+    "url_path_template": "/apps/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -67,7 +78,7 @@
   },
   {
     "resource_type": "conversation",
-    "table_name": "cx_conversation",
+    "table_name": "conversation",
     "id_column": "id",
     "owner_column": "user_id",
     "is_public_column": "is_public",
@@ -78,7 +89,7 @@
   },
   {
     "resource_type": "file",
-    "table_name": "file",
+    "table_name": "files",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
@@ -89,7 +100,7 @@
   },
   {
     "resource_type": "file_analysis",
-    "table_name": "file_analysis",
+    "table_name": "analysis",
     "id_column": "file_id",
     "owner_column": "owner_id",
     "is_public_column": null,
@@ -100,7 +111,7 @@
   },
   {
     "resource_type": "file_entities",
-    "table_name": "file_entities",
+    "table_name": "entities",
     "id_column": "id",
     "owner_column": "owner_id",
     "is_public_column": null,
@@ -111,7 +122,7 @@
   },
   {
     "resource_type": "file_overrides",
-    "table_name": "file_overrides",
+    "table_name": "overrides",
     "id_column": "id",
     "owner_column": "owner_id",
     "is_public_column": null,
@@ -122,7 +133,7 @@
   },
   {
     "resource_type": "file_page_annotations",
-    "table_name": "file_page_annotations",
+    "table_name": "page_annotations",
     "id_column": "id",
     "owner_column": "owner_id",
     "is_public_column": null,
@@ -133,7 +144,7 @@
   },
   {
     "resource_type": "file_pages",
-    "table_name": "file_pages",
+    "table_name": "pages",
     "id_column": "id",
     "owner_column": "owner_id",
     "is_public_column": null,
@@ -155,7 +166,7 @@
   },
   {
     "resource_type": "folder",
-    "table_name": "folder",
+    "table_name": "folders",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
@@ -265,7 +276,7 @@
   },
   {
     "resource_type": "scraper_preset",
-    "table_name": "scraper.crawl_presets",
+    "table_name": "crawl_presets",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": "is_public",
@@ -276,7 +287,7 @@
   },
   {
     "resource_type": "scraper_run",
-    "table_name": "scraper.crawl_runs",
+    "table_name": "crawl_runs",
     "id_column": "id",
     "owner_column": "user_id",
     "is_public_column": "is_public",
@@ -287,7 +298,7 @@
   },
   {
     "resource_type": "scraper_schedule",
-    "table_name": "scraper.crawl_schedules",
+    "table_name": "crawl_schedules",
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": "is_public",
@@ -298,7 +309,7 @@
   },
   {
     "resource_type": "scraper_site",
-    "table_name": "scraper.sites",
+    "table_name": "sites",
     "id_column": "id",
     "owner_column": "owner_user_id",
     "is_public_column": "is_public",
@@ -309,10 +320,10 @@
   },
   {
     "resource_type": "skill",
-    "table_name": "skl_definitions",
+    "table_name": "definition",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Skill",
     "url_path_template": "/skills/{id}",
     "rls_uses_has_permission": true,
@@ -320,10 +331,10 @@
   },
   {
     "resource_type": "task",
-    "table_name": "task",
+    "table_name": "tasks",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Task",
     "url_path_template": "/tasks/{id}",
     "rls_uses_has_permission": true,
@@ -404,13 +415,13 @@
     "display_label": "Workflow",
     "url_path_template": "/workflows/{id}",
     "rls_uses_has_permission": false,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "wf_run",
-    "table_name": "wf_run",
+    "table_name": "run",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Run",
     "url_path_template": "/runs/{id}",
@@ -419,9 +430,9 @@
   },
   {
     "resource_type": "wf_trigger",
-    "table_name": "wf_trigger",
+    "table_name": "trigger",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Trigger",
     "url_path_template": "/workflows/{id}/triggers/{id}",
@@ -430,7 +441,7 @@
   },
   {
     "resource_type": "workflow",
-    "table_name": "workflow",
+    "table_name": "definition",
     "id_column": "id",
     "owner_column": "user_id",
     "is_public_column": "is_public",

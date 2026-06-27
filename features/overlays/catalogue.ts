@@ -320,6 +320,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  errorInspectorWindow: {
+    label: "Supabase Error Inspector",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   executionInspectorWindow: {
     label: "Execution Inspector Window",
     instanceMode: "singleton",

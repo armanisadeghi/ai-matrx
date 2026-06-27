@@ -9,11 +9,18 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
+import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
 
 export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim(),
+  // Wrapped for global error capture: every .from()/.rpc()/.schema() error is
+  // recorded into the diagnostics store (lib/diagnostics/errorCaptureStore.ts)
+  // and surfaced in the admin Error Inspector. The wrapper is a no-op on the
+  // server and never alters query behavior — see supabaseErrorCapture.ts.
+  return wrapClientForCapture(
+    createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim(),
+    ),
   );
 }
 

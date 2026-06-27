@@ -41,11 +41,12 @@ function TabIndex({
 
   const sorted = [...tabs]
     .filter((t) => t.id !== TAB_INDEX_ID)
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => (a.label ?? "").localeCompare(b.label ?? ""));
 
-  const filtered = sorted.filter((t) =>
-    t.label.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = sorted.filter((t) => {
+    const label = t.label?.toLowerCase() ?? "";
+    return label.includes(search.toLowerCase());
+  });
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-zinc-800 rounded-lg overflow-hidden">

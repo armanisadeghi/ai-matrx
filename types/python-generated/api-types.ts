@@ -7311,8 +7311,9 @@ export interface paths {
          *     quality without setting up a data store.
          *
          *     Why lexical-only? Vector retrieval requires picking an embedder, hitting
-         *     OpenAI, and is overkill for a "does this work?" smoke test. The lexical
-         *     score is a strong-enough proxy on extracted/cleaned PDF content.
+         *     OpenAI, and is overkill for a "does this work?" smoke test. Uses the
+         *     same ``websearch_to_tsquery('simple', ...)`` path as production lexical
+         *     recall (must match ``content_tsv``'s ``to_tsvector('simple', ...)``).
          */
         post: operations["test_search_library_document_rag_library__processed_document_id__test_search_post"];
         delete?: never;
@@ -13999,6 +14000,11 @@ export interface components {
              */
             debug: boolean;
             /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /**
              * Tools
              * @default []
              */
@@ -16631,6 +16637,11 @@ export interface components {
              * @default false
              */
             debug: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
             /** System Instruction */
             system_instruction?: string | components["schemas"]["SystemInstructionInput"] | null;
             /**
