@@ -46,7 +46,14 @@ The bulk repoint subagents reliably do literal `.from()` swaps but **miss**:
 - **3 skill SELECT policies** `task_id` branch → `workspace.tasks.created_by` (unblocks the tasks-column drop).
 - Dead `ctx_context_variables` loop removed from `resolve_full_context`.
 
-## ⛔ SHIM DROP — REMAINING GATES (do NOT drop the 74 views until BOTH clear)
+## ✅ SHIMS DROPPED (2026-06-26): cx (21), agx (7), aga (6), tool (14), skl (6) = **54 views gone**
+Verified before drop: FE old-name `.from()`=0, aidream ORM on new schemas + raw refs fixed (`dictionary.py`), ~80 DB functions + 3 skill policies repointed, not in the legacy entity fixtures. `agent.definition` etc. read live. **Kept (not shims):** `agx_context_menu_view`, `cx_conversation_summary`, `cx_user_request_summary` (real views/tables). `.rpc()` function names unchanged (still work).
+
+### Still to drop
+- **`ai_*` (4 views)** — held: the **live** legacy entity system (`utils/schema/*`) still pins `ai_model/provider/endpoint` via schema-less `.from()`. **Drop the moment the entity system is taken offline** (it has no other consumer — aidream/DB/FE are clear).
+- **`ctx_*` / `wr_*` (13 views)** — the separate workspace/context domain. Its DB functions are repointed (ctx_ → `workspace.*`/`context.*`); verify the War Room FE + aidream are off `ctx_*`/`wr_*`, then drop.
+
+## ⛔ (historical) SHIM DROP — gates (kept for reference)
 1. **aidream backend** must be off the old names — matrx-orm models + raw SQL for `cx_/agx_/aga_/tool_/ai_/skl_` regenerated to the new schemas and **deployed**. Dropping a public shim breaks aidream (PostgREST/ORM) if it still reads it. **This is the gate — confirm with the backend agents per domain before dropping.**
 2. **Legacy entity system** (`utils/schema/fullRelationships.ts`, `initialTableSchemas.ts`) reads via `supabase.from(name)` with **no `.schema()` support**, so it still needs the `ai_*` (and any other entity-registered old-name) compat views. Either add schema support to the entity layer or keep those specific views. (Most other consumers are clear.)
 
