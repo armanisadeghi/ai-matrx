@@ -29,6 +29,7 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronDown,
+  GitCompareArrows,
   GitFork,
   Loader2,
   Search as SearchIcon,
@@ -42,6 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getJson } from "@/lib/python-client";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { computeMatches } from "@/features/notes/utils/findMatches";
 import { HighlightedText } from "@/components/text/HighlightedText";
 import { forkProcessedDocument } from "@/features/rag/api/fork";
@@ -460,6 +462,24 @@ function PageContent({
     return tab === "cleaned" ? page.cleaned_text || "" : page.raw_text || "";
   }, [page, tab]);
 
+  // The Cleaned/Raw tabs show one OR the other — never both. Compare opens the
+  // canonical diff so the user sees what the LLM cleanup changed. raw=baseline,
+  // cleaned=new.
+  const openDiff = useOpenDiffViewerWindow();
+  const handleCompare = useCallback(() => {
+    if (!page?.raw_text || !page?.cleaned_text) return;
+    openDiff({
+      original: page.raw_text,
+      modified: page.cleaned_text,
+      originalLabel: "Raw",
+      modifiedLabel: "Cleaned",
+      title: `Raw vs cleaned · page ${pageIndex + 1}`,
+      engine: "light",
+      language: "markdown",
+      defaultView: "split",
+    });
+  }, [openDiff, page, pageIndex]);
+
   // Literal matches in the page text — exactly what the user typed, so the
   // highlight is precise (the server lexical hits power the cross-page summary;
   // this powers the in-place highlighting + the per-page stepper).
@@ -612,20 +632,34 @@ function PageContent({
           </span>
         )}
 
-        <Tabs
-          value={tab}
-          onValueChange={(v) => setTab(v as "cleaned" | "raw")}
-          className="ml-auto shrink-0"
-        >
-          <TabsList className="h-7">
-            <TabsTrigger value="cleaned" className="h-6 text-xs">
-              Cleaned
-            </TabsTrigger>
-            <TabsTrigger value="raw" className="h-6 text-xs">
-              Raw
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {page?.raw_text && page?.cleaned_text && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCompare}
+              className="h-7 gap-1.5"
+              title="Compare the raw extraction with the cleaned text"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Compare
+            </Button>
+          )}
+          <Tabs
+            value={tab}
+            onValueChange={(v) => setTab(v as "cleaned" | "raw")}
+            className="shrink-0"
+          >
+            <TabsList className="h-7">
+              <TabsTrigger value="cleaned" className="h-6 text-xs">
+                Cleaned
+              </TabsTrigger>
+              <TabsTrigger value="raw" className="h-6 text-xs">
+                Raw
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-4">

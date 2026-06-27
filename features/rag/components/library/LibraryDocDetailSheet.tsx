@@ -44,8 +44,10 @@ import {
   Sparkles,
   Wand2,
   Binary,
+  GitCompareArrows,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { del, getJson, patchJson, postJson } from "@/lib/python-client";
 import { StatusBadge } from "./StatusBadge";
 import { StageStatusPills } from "./StageStatusPills";
@@ -973,6 +975,7 @@ function SheetFullPagePreviews({
   const [raw, setRaw] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const openDiff = useOpenDiffViewerWindow();
 
   useEffect(() => {
     let cancelled = false;
@@ -1025,9 +1028,36 @@ function SheetFullPagePreviews({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-      <PreviewBlock label="Cleaned" text={cleaned} />
-      <PreviewBlock label="Raw" text={raw} />
+    <div className="space-y-2 text-xs">
+      {cleaned && raw && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              openDiff({
+                original: raw,
+                modified: cleaned,
+                originalLabel: "Raw",
+                modifiedLabel: "Cleaned",
+                title: `Raw vs cleaned · page ${pageIndex + 1}`,
+                engine: "light",
+                language: "markdown",
+                defaultView: "split",
+              })
+            }
+            className="h-7 gap-1.5"
+            title="Compare the raw extraction with the cleaned text"
+          >
+            <GitCompareArrows className="h-3.5 w-3.5" />
+            Compare
+          </Button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <PreviewBlock label="Cleaned" text={cleaned} />
+        <PreviewBlock label="Raw" text={raw} />
+      </div>
     </div>
   );
 }

@@ -25,8 +25,9 @@
  */
 
 import { useCallback, useState } from "react";
-import { Database, ExternalLink } from "lucide-react";
+import { Database, ExternalLink, GitCompareArrows } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   Dialog,
   DialogContent,
@@ -101,6 +102,22 @@ export function DocumentViewer({
 
   const totalPages = doc.data?.total_pages ?? doc.data?.pages.length ?? 0;
 
+  const openDiff = useOpenDiffViewerWindow();
+  const canCompare = Boolean(page.data?.raw_text && page.data?.cleaned_text);
+  const handleCompare = useCallback(() => {
+    if (!page.data?.raw_text || !page.data?.cleaned_text) return;
+    openDiff({
+      original: page.data.raw_text,
+      modified: page.data.cleaned_text,
+      originalLabel: "Raw extraction",
+      modifiedLabel: "LLM cleaned",
+      title: `Raw vs cleaned · page ${activePageIndex + 1}`,
+      engine: "light",
+      language: "markdown",
+      defaultView: "split",
+    });
+  }, [openDiff, page.data, activePageIndex]);
+
   return (
     <div className="flex flex-col h-full bg-background">
       <header className="flex items-center justify-between px-4 py-2 border-b border-border">
@@ -123,6 +140,18 @@ export function DocumentViewer({
           />
           {doc.data && (
             <BindButton documentId={doc.data.id} documentName={doc.data.name} />
+          )}
+          {canCompare && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCompare}
+              className="gap-1.5"
+              title="Compare raw extraction with the cleaned text for this page"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Compare
+            </Button>
           )}
           <PageNav
             current={activePageIndex}
