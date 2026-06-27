@@ -17,6 +17,21 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D22 — Pre-existing auth-action issues surfaced by adversarial review (not from the event/webhook work)
+**Severity: high (one open-redirect) + medium. In `actions/auth.actions.ts`. Found 2026-06-27 during the webhook security review; flagged for the auth owner.**
+
+- **FIXED (2026-06-27):** open redirect in `forgotPasswordAction` — `callbackUrl` from the form was passed straight to `redirect()`; now restricted to same-site relative paths.
+- **OPEN — `redirectTo` open-redirect surface:** `signUpAction`/`signInAction` do `redirect(redirectTo)` where `redirectTo` is a form field. An absolute URL would be followed. The OAuth actions legitimately `redirect(data.url)` (provider URL) so a blanket block is wrong — validate `redirectTo`/`callbackUrl` are relative, leave the provider redirects alone.
+- **OPEN — `resetPasswordAction` missing `return`s** before each `encodedRedirect` (lines ~330-351). Not currently exploitable (`redirect()` throws, halting execution) but fragile — add `return`s.
+- **OPEN — PII in logs:** `console.log("SignUpAction - Email:", email)` etc. log email addresses to server stdout; gate behind `NODE_ENV==='development'`.
+
+### D21 — AI Runs feature is broken at runtime — reads the graveyarded `ai_runs` table
+**Severity: high — every AI-Runs list/create/update/delete op fails (PostgREST "relation does not exist"). The DB changeover moved `public.ai_runs` → `graveyard.ai_runs`.**
+
+**What.** `features/ai-runs/services/ai-runs-service.ts` (has `// @ts-nocheck` masking it) + `features/ai-runs/hooks/useAiRunsList.ts` read `supabase.from("ai_runs")`. `public.ai_runs` no longer exists. The 10s poll loops on dead queries.
+
+**Fix.** Repoint reads to `public.ai_runs_summary` (the replacement view) and writes to `agent_run` (the canonical run table `useStudioRuns` already uses), then remove `@ts-nocheck`. This is the DB-changeover owner's call (their migration graveyarded the table) — not done here to avoid guessing the intended write semantics. Until then the AI-Runs surface is non-functional; its Realtime conversion (D19) is blocked on this.
+
 ### D20 — Guest→user in-place promotion is email/password only; OAuth signup still orphans guest work
 **Severity: medium — a guest who signs up via Google/GitHub/Apple loses every file/conversation they created as a guest. Email/password signup is fully handled (2026-06-26).**
 

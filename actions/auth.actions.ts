@@ -310,7 +310,9 @@ export async function forgotPasswordAction(formData: FormData) {
     );
   }
 
-  if (callbackUrl) {
+  // Only follow same-site relative paths — never an attacker-controlled
+  // absolute URL from the form (open-redirect / phishing vector).
+  if (callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")) {
     return redirect(callbackUrl);
   }
 
