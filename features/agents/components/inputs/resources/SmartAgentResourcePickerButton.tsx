@@ -35,7 +35,7 @@ const ResourcePickerWindow = dynamic(
     ),
   { ssr: false },
 );
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 
 interface SmartAgentResourcePickerButtonProps {
   conversationId: string;

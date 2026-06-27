@@ -4,7 +4,7 @@
 // harmless (no reducer handles them); selectors return empty defaults.
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 import type { CxContentHistoryEntry } from "./types/cx-tables";
 
 // ────────────────────────────────────────────────────────────────────────────

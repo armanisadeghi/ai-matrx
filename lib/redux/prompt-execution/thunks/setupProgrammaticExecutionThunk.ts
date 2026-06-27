@@ -41,7 +41,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '../../store';
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 import type { ExecutionConfig } from '../types';
 import { startPromptInstance } from './startInstanceThunk';
 

@@ -39,8 +39,8 @@ import {
   parseResourcesFromMessage,
   extractMessageWithoutResources,
   messageContainsResources,
-} from "@/features/prompts/utils/resource-parsing";
-import { ResourcesContainer } from "@/features/prompts/components/resource-display/ResourceDisplay";
+} from "@/features/agents/resources/utils";
+import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
 import { InlineMediaRef } from "@/features/files";
 
 // ============================================================================

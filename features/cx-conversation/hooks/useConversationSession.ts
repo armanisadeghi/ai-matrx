@@ -40,7 +40,7 @@ import type {
   ConversationResource,
 } from "../_legacy-stubs";
 import type { PromptVariable } from "@/features/prompts/types/core";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 
 // ============================================================================
 // CONFIGURATION

@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 
 interface InputBottomControlsProps {
   isDisabled: boolean;

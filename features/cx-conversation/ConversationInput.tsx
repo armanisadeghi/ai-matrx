@@ -73,7 +73,7 @@ import {
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
+import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
@@ -82,7 +82,7 @@ import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLo
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 import type {
   PromptSettings,
   PromptVariable,

@@ -7,7 +7,7 @@
  * - This separation prevents re-renders when typing in input fields
  */
 import { PromptSettings, PromptVariable } from "@/features/prompts/types/core";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 import type { ArchivedContextsMap } from "./types/dynamic-context";
 
 export interface ExecutionConfig {

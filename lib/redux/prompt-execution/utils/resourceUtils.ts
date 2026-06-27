@@ -7,7 +7,7 @@
  * @module resourceUtils
  */
 
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 
 /**
  * Serialize resources for API consumption

@@ -34,7 +34,7 @@ import {
   refineBlockType,
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
 import type { MediaRef } from "@/features/files";
 

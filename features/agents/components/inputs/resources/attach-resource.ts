@@ -18,7 +18,7 @@ import {
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
 
 /** Map prompt-system resource types to agent ResourceBlockType. */

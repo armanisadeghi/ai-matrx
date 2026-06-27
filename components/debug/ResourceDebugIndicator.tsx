@@ -5,7 +5,7 @@ import { Database, ChevronRight, Copy, Check, Eye, Loader2, ChevronDown, X } fro
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { extractSettingsAttachments, extractMessageMetadata } from '@/features/prompts/utils/resource-formatting';
+import { extractSettingsAttachments, extractMessageMetadata } from '@/features/agents/resources/utils';
 import { processMessagesForExecution } from '@/lib/redux/prompt-execution/utils/message-builder';
 import { useAppSelector } from '@/lib/redux/hooks';
 import {

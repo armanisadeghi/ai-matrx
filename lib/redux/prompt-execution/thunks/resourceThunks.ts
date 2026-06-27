@@ -16,7 +16,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppDispatch, RootState } from '../../store';
 import { addResource, removeResource, setResources } from '../slice';
 import { validateResource, deduplicateResources } from '../utils/resourceUtils';
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 
 /**
  * Upload file and add to resources

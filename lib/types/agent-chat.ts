@@ -42,10 +42,9 @@ export type { LLMParams as PromptSettings } from "@/lib/api/types";
 
 // ── Resources ───────────────────────────────────────────────────────────────
 
-// The Resource type from features/prompts/types/resources is still the
-// canonical resource shape for cx-chat until Gap 8 (component migration).
-// Re-exporting here keeps the import path consistent for new files.
-export type { Resource } from "@/features/prompts/types/resources";
+// Canonical resource shape — now lives in features/agents/resources/types.ts.
+// Re-exporting here keeps the import path consistent for existing consumers.
+export type { Resource } from "@/features/agents/resources/types";
 
 // ── Agent identity ──────────────────────────────────────────────────────────
 

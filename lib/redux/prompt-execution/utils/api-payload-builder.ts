@@ -12,7 +12,7 @@
  */
 
 import type { ConversationMessage } from '../types';
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 import { processMessagesForExecution } from './message-builder';
 
 export interface APIPayloadBuilderOptions {

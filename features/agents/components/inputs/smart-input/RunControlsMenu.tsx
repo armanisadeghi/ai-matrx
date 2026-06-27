@@ -88,7 +88,7 @@ import {
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 
 type Tab =
   | "attach"

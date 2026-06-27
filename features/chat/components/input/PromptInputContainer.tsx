@@ -12,9 +12,9 @@ import { EnhancedFileDetails } from "@/utils/file-operations/constants";
 import useChatBasics from "@/features/chat/hooks/useChatBasics";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileManagement } from "@/hooks/ai/chat/useFileManagement";
-import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
-import type { Resource } from "@/features/prompts/types/resources";
-import { formatResourcesToXml } from "@/features/prompts/utils/resource-formatting";
+import { ResourceChips } from "@/features/agents/resources/ResourceChips";
+import type { Resource } from "@/features/agents/resources/types";
+import { formatResourcesToXml } from "@/features/agents/resources/utils";
 import {
   saveDraft,
   clearDraft,

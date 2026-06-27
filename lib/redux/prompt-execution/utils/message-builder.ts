@@ -8,12 +8,12 @@
  * Both executeMessageThunk and debug components MUST use this.
  */
 
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 import type { ConversationMessage } from '../types';
 import type { DynamicContextsMap } from '../types/dynamic-context';
 import { replaceVariablesInText } from '@/features/prompts/utils/variable-resolver';
 import { fetchResourcesData } from '@/features/prompts/utils/resource-data-fetcher';
-import { formatResourcesToXml, appendResourcesToMessage } from '@/features/prompts/utils/resource-formatting';
+import { formatResourcesToXml, appendResourcesToMessage } from '@/features/agents/resources/utils';
 import {
   buildContextSection,
   hasContextXml,

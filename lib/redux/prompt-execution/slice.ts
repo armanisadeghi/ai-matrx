@@ -25,7 +25,7 @@ import type {
   SetCurrentInputPayload,
   InstanceUIState,
 } from './types';
-import type { Resource } from '@/features/prompts/types/resources';
+import type { Resource } from '@/features/agents/resources/types';
 import type {
   DynamicContextState,
   DynamicContextsMap,

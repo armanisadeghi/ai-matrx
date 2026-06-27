@@ -19,7 +19,7 @@ import {
   extractMessageWithoutResources,
   messageContainsResources,
 } from "@/features/conversation/utils/resource-parsing";
-import { ResourcesContainer } from "@/features/prompts/components/resource-display/ResourceDisplay"; // shared UI component
+import { ResourcesContainer } from "@/features/agents/resources/ResourceDisplay";
 import { InlineMediaRef } from "@/features/files";
 import type {
   ConversationMessage,

@@ -72,7 +72,7 @@ import {
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
+import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
@@ -83,7 +83,7 @@ import type {
   ManagedResource,
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
-import type { Resource } from "@/features/prompts/types/resources";
+import type { Resource } from "@/features/agents/resources/types";
 
 /** Map user-upload MIME to API content-block type (see ResourceBlockType). */
 function uploadMimeToBlockType(mime: string): ResourceBlockType {
