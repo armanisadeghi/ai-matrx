@@ -57,7 +57,11 @@ async function fetchCostSummaryShared(
     costCache.set(topicId, { at: Date.now(), data });
     return data;
   })().finally(() => {
-    costInflight.delete(topicId);
+    // Delete only if THIS promise is still the registered in-flight one. A
+    // force-refresh can overwrite the entry with a newer promise while we were
+    // pending; an unconditional delete here would evict that newer entry and
+    // break dedup for callers arriving in the gap.
+    if (costInflight.get(topicId) === promise) costInflight.delete(topicId);
   });
   costInflight.set(topicId, promise);
   return promise;

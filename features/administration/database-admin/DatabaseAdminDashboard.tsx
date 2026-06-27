@@ -62,11 +62,16 @@ const DatabaseAdminDashboard = () => {
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      // Refresh only what's been loaded — never trigger the permissions fetch
-      // from a refresh on the Functions tab.
+      // Refresh functions always; refresh permissions if they've been loaded
+      // OR the user is currently on the Permissions tab. The latter is what
+      // lets the in-tab Refresh button RETRY after a failed first load (a
+      // failure leaves permissionsLoaded false, so a `permissionsLoaded`-only
+      // gate would make Refresh a no-op on exactly the screen that needs it).
       await Promise.all([
         loadFunctions(),
-        permissionsLoaded ? loadPermissions() : Promise.resolve(),
+        permissionsLoaded || activeTab === "permissions"
+          ? loadPermissions()
+          : Promise.resolve(),
       ]);
     } catch (err) {
       console.error("Failed to refresh data:", err);

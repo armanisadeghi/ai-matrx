@@ -22,6 +22,7 @@ import {
   createSessionThunk,
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
+import { selectRawSegmentCount } from "@/features/transcript-studio/redux/selectors";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
@@ -856,7 +857,13 @@ export const ensureThreadAudioSession =
   ): Promise<string | null> => {
     const active = selectActiveAudioSessionId(threadId)(getState());
     if (active) {
-      dispatch(fetchRawSegmentsThunk({ sessionId: active }));
+      // Only pull raw segments if we haven't already loaded them for this
+      // session. In gallery mode every tile mounts its audio tab and calls
+      // this; without the guard a single "switch all tiles to audio" broadcast
+      // fired N parallel fetchRawSegments for sessions already in Redux.
+      if (selectRawSegmentCount(active)(getState()) === 0) {
+        dispatch(fetchRawSegmentsThunk({ sessionId: active }));
+      }
       return active;
     }
     return dispatch(addAudioSessionToThread(threadId));
