@@ -52,10 +52,24 @@ const ChatStreamDisplay: React.FC<ChatStreamDisplayProps> = memo(
     const settings = useAppSelector(chatSelectors.activeMessageSettings);
     const shouldShowLoader = useAppSelector(chatSelectors.shouldShowLoader);
 
+    // A stream signals "done" two independent ways: the final data chunk
+    // carries `end: true` AND the `isStreamEnded` flag flips. On a normal
+    // completion BOTH fire, so without a guard we re-fetch the entire active
+    // conversation's messages TWICE for every single AI response. This ref
+    // collapses the redundant end-signals into exactly one message fetch per
+    // stream lifecycle (this component is keyed per-taskId, and a task ends
+    // once, so an instance-scoped ref is the correct grain).
+    const fetchedOnEndRef = React.useRef(false);
+    const fetchMessagesOnce = () => {
+      if (fetchedOnEndRef.current) return;
+      fetchedOnEndRef.current = true;
+      dispatch(chatActions.fetchMessagesForActiveConversation());
+    };
+
     const handleStreamEnd = () => {
       dispatch(chatActions.setIsNotStreaming());
       dispatch(chatActions.updateMessageStatus({ status: "completed" }));
-      dispatch(chatActions.fetchMessagesForActiveConversation());
+      fetchMessagesOnce();
     };
 
     const handleNewDataContent = (dataContent: any) => {
@@ -65,7 +79,7 @@ const ChatStreamDisplay: React.FC<ChatStreamDisplayProps> = memo(
         dataContent?.end === "True";
       if (isEnd) {
         dispatch(chatActions.setIsNotStreaming());
-        dispatch(chatActions.fetchMessagesForActiveConversation());
+        fetchMessagesOnce();
       }
     };
 
