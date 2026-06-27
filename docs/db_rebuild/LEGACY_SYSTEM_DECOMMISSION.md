@@ -14,11 +14,27 @@
 | System | Disposition | DB tables | Status |
 |---|---|---|---|
 | Entities system | DELETE entirely (coordinated) | n/a (FE construct) | 🔄 mapping |
-| Prompt system | Mostly delete; preserve best components → agent system; UUID-swap integrations | prompts/prompt_apps/prompt_versions/prompt_builtins/prompt_shortcuts (deleted) | 🔄 mapping |
-| Brokers | Classify: new-module usage → agent/context; else delete | broker_values/data_broker (deleted) | 🔄 mapping |
+| Prompt system | Mapped: migrate Resource cluster first → then delete `features/prompts/`+`features/prompt-builtins/`+transitional routes | prompts/prompt_apps/prompt_versions/prompt_builtins/prompt_shortcuts (deleted) | 🔄 mapped |
+| Brokers | SPLIT: keep `lib/redux/brokerSlice/` (live, 80+ files); delete `features/brokers/services/` (dead DB layer) | broker_values/data_broker (deleted) | 🔄 mapped |
 | Workflow | KEEP, get rendering | workflow (graveyard) | 🔄 mapping |
-| Recipe / automation / registered_function | DELETE (dead) | recipe*/automation_*/registered_function (deleted) | ⬜ |
-| Dead DB legacy CRUD fns (~131) | DROP after FE cleanup | — | ⬜ |
+| Recipe / automation / registered_function | DELETE (dead) | recipe*/automation_*/registered_function (deleted) | 🔄 mapped |
+| **Workflow — TWO systems** | DELETE `features/workflows/` (old react-flow); **KEEP `features/workflows-xyflow/`** (the loved UI) + get rendering | registered_node/workflow (graveyard) | 🔄 mapped |
+| Dead DB legacy CRUD fns | DROP after FE cleanup | — | ⬜ |
+
+## Removal wave plan (execute in order; tsc + adversarial check each wave)
+0. ✅/🔄 **Resource-cluster migration** — move `features/prompts/{types/resources.ts,utils/resource-formatting.ts,components/resource-display/ResourceChips.tsx}` (+ DesktopFilterPanel, SystemPromptOptimizer) into `features/agents/`; repoint ~8 prod importers (B13–B20). UNBLOCKS prompt deletion.
+1. **Wave A — isolated dead folders** (HIGH confidence, no core/admin importers): `features/recipes/`, `features/workflows/` (OLD react-flow), `features/registered-function/`, `lib/redux/workflows/`, `app/api/recipes/`, `app/(transitional)/ai/recipes/`, `hooks/run-recipe/`.
+2. **Wave B — prompt system**: `features/prompts/`, `features/prompt-builtins/`, transitional prompt routes (`(transitional)/ai/prompts`, `prompt-apps`), `app/api/prompts*`, prompt redux slices/thunks/selectors (D21–D32).
+3. **Wave C — broker services**: `features/brokers/services/` (keep `lib/redux/brokerSlice/`).
+4. **Wave D — ENTITY SYSTEM (big)**: `lib/redux/entity*/`, `utils/schema/` giant types, EntityProviders, store registration, `(legacy)` entity routes. Most careful.
+5. **Workflow preservation**: make `features/workflows-xyflow/` render; fix its `registered_node`/`registered_function` reads.
+6. **Active-break fixes** (runtime errors NOW): `lib/redux/middleware/apiThunks.ts` (`registered_function`), applet RPCs `add_groups_to_applet`/`refresh_field_in_group`, recipe convert-to-prompt.
+7. **DB**: drop orphaned dead functions after FE cleanup.
+
+## Preserve-then-transition (compile for user review — don't lose)
+- C1–C5 versioning UI: `features/versioning/components/{VersionHistoryPanel,VersionDiffView,VersionBadge,DriftWarningBanner}.tsx` + `hooks/useVersionHistory.ts` — generic, reusable for agent versioning.
+- C6–C8 (REQUIRED move, not optional): `Resource` type + `formatResourcesToXml` + `ResourceChips` — used by 8 prod agent/chat files.
+- C9 `DesktopFilterPanel`, C10 `SystemPromptOptimizer`, C11 `useContextMenuShortcuts`, C12 `execution-modes.ts` types — used by agents.
 
 ## Easy UUID-swap items (prompt ID / shortcut → agent / agent-shortcut)
 _(populate from discovery — these are quick wins)_
@@ -30,6 +46,30 @@ _(populate from discovery — these are quick wins)_
 ## Entities system removal inventory
 _(populate: slices, hooks, utils, components, types, routes; mark imported-by-new vs pure-legacy)_
 - ⬜ TBD
+
+## Brokers detail (mapped)
+- ✅ KEEP `lib/redux/brokerSlice/` — alive, no DB calls, powers applet/workflow field inputs (80+ importers). Do NOT delete.
+- ⬜ DELETE `features/brokers/services/core-broker-crud.ts` + `resolution-service.ts` — 6 dead RPCs to `broker_values`/`data_broker`. Coupled to prompt-execution removal.
+- ⚠️ Live leak: `lib/redux/prompt-execution/thunks/startPromptActionThunk.ts:22` calls `resolveBrokersForContext` → silently throws → prompt actions resolve broker vars to `{}`. (Goes away with prompt-execution removal; new path = `resolve_full_context` RPC.)
+- Stale doc: `features/brokers/INFO.md` documents deleted SQL schema.
+
+## Entity system (mapped) — ~690 files / ~380K lines
+- IDE killer: `utils/schema/initialSchemas.ts` (116K), `initialTableSchemas.ts` (109K), `lookupSchema.ts` (29K), `initialSchemas.json` (39K) = 293K lines. Imported only by the entity engine (also deleting) — but the engine feeds the 7 blockers below, so NOT deletable in isolation.
+- Engine: `lib/redux/entity*/` (~95 files), providers (`app/EntityProviders.tsx`, `providers/EntitySystemProvider.tsx`, packs), UI (`components/matrx/{Entity,ArmaniForm,EntityTable}/` ~300 files), `app/entities/` (175 files), `app/(legacy)/` routes, type files (`types/{entityTypes,AutomationSchemaTypes,entities,...}.ts`).
+- **7 BLOCKERS (live code imports entity stuff — rework before deleting types):** ①`features/chat/` (8 files, chatActions/chatSelectors) ②`features/workflows*` (entity hooks — incl. the KEPT xyflow) ③top-level `hooks/` (MatrxRecordId + domain types, 16) ④`constants/chat.ts` ⑤`lib/redux/ui/uiTypes.ts`+`uiSagas.ts` ⑥`preferences/userPreferencesSlice.ts` (MatrxRecordId) ⑦`features/rich-text-editor/` (MatrxRecordId+QuickReferenceRecord).
+- LIGHT coupling = `MatrxRecordId` (a string alias) — relocate to a shared `types/` to cut most blockers cheaply.
+
+## ⚠️ ENTANGLEMENT — deletions are NOT isolated (verified)
+- `features/recipes/` ← applet builder + `PageSpecificHeader` (layout).
+- `features/workflows/` (old) ← KEPT `features/workflows-xyflow/` + `features/scraper/` + `components/ui/broker-selector`.
+- `features/chat/` (legacy) ← live markdown-render blocks + `features/conversation/`.
+- **Implication:** no bulk folder delete is safe; each needs per-importer rework first. Big-bang = prod break. Execute as careful waves with tsc + adversarial check between each. The 380K-line entity removal is a coordinated effort, NOT an autonomous one-shot.
+
+## Workflow KEEP target (render fixes) — `/legacy/workflows-new/[id]` (xyflow v12)
+- ⬜ Unblock layout gate `app/(legacy)/legacy/workflows-new/WorkflowsNewLayoutClient.tsx` (`useCombinedFunctionsWithArgs` never resolves → canvas never mounts).
+- ⬜ Point `lib/redux/workflow/service.ts` + `workflow-nodes/service.ts` at `graveyard.workflow`/`workflow_node`.
+- ⬜ Guard dead entity fetches in `features/workflows-xyflow/hooks/useCategoryNodeData.ts`.
+- ⬜ Stub `features/workflows/service/recipe-service.ts:125` (`compiled_recipe`).
 
 ## Open questions for user
 - ⬜ TBD
