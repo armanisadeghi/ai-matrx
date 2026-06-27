@@ -290,6 +290,21 @@ function RichHitCard({
     hit.chunk_id,
   );
 
+  // Lane provenance — why did this hit surface? A hit with no vector/lexical
+  // rank that arrived purely via KG entity co-occurrence is the classic
+  // "a 3-word title outranks real content" failure; flag it so the user can
+  // judge the hit instead of trusting an opaque score.
+  const vectorRank =
+    "vector_rank" in hit && hit.vector_rank != null ? hit.vector_rank : null;
+  const lexicalRank =
+    "lexical_rank" in hit && hit.lexical_rank != null ? hit.lexical_rank : null;
+  const entityRank =
+    "entity_rank" in hit && hit.entity_rank != null ? hit.entity_rank : null;
+  const entityNames =
+    "entities" in hit && Array.isArray(hit.entities) ? hit.entities : [];
+  const entityOnly =
+    vectorRank === null && lexicalRank === null && entityRank !== null;
+
   return (
     <div className="rounded-md border bg-card overflow-hidden">
       {/* Header — wraps on phones so chips never overflow horizontally */}
@@ -326,6 +341,15 @@ function RichHitCard({
         >
           score {hit.score.toFixed(3)}
         </Badge>
+        {entityOnly && (
+          <Badge
+            variant="warning"
+            className="text-[10px] px-1.5 py-0"
+            title="Surfaced only because its source mentions a matched entity — no semantic (vector) or keyword (lexical) match. Treat with care."
+          >
+            entity match only
+          </Badge>
+        )}
         {href && (
           <a
             href={href}
@@ -374,6 +398,12 @@ function RichHitCard({
             tone="default"
           />
           <ScoreBar
+            label="Entity rank"
+            value={entityRank}
+            max={20}
+            tone="amber"
+          />
+          <ScoreBar
             label="Rerank score"
             value={
               "rerank_score" in hit && hit.rerank_score != null
@@ -383,6 +413,22 @@ function RichHitCard({
             max={1}
             tone="amber"
           />
+          {entityNames.length > 0 && (
+            <div className="flex items-center gap-1 pt-1 flex-wrap">
+              <span className="text-[10px] text-muted-foreground mr-0.5">
+                entities
+              </span>
+              {entityNames.slice(0, 6).map((name) => (
+                <Badge
+                  key={name}
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  {name}
+                </Badge>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-2 pt-1 text-[10px] text-muted-foreground">
             <code className="font-mono">chunk_id</code>
             <code className="font-mono truncate flex-1">{hit.chunk_id}</code>
@@ -674,6 +720,86 @@ function KindToggle({
 // Tab 1 — Search
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// Scope summary — the legible "what am I actually searching?" line. Sits under
+// the search box so the user can SEE the resolved retrieval scope (store, org,
+// scope tags, source kinds) before trusting any result. Kills the #1 confusion:
+// an empty org filter means "ALL my orgs", not "nothing".
+// ---------------------------------------------------------------------------
+
+function SearchScopeSummary({
+  scope,
+  storeName,
+  scopeIds,
+  organizationId,
+}: {
+  scope: Scope;
+  storeName: string | undefined;
+  scopeIds: string[] | null | undefined;
+  organizationId: string | null | undefined;
+}) {
+  const scopeCount = scopeIds?.length ?? 0;
+  const kindLabel =
+    scope.kindFilter === "all"
+      ? "all kinds"
+      : scope.kindFilter === "cld_file"
+        ? "files"
+        : scope.kindFilter === "note"
+          ? "notes"
+          : "code";
+
+  return (
+    <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+      <span className="uppercase tracking-wide text-[10px] font-medium">
+        Searching
+      </span>
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+        {storeName ? `store · ${storeName}` : "all accessible content"}
+      </Badge>
+      <span aria-hidden>·</span>
+      <Badge
+        variant={organizationId ? "secondary" : "outline"}
+        className="text-[10px] px-1.5 py-0 font-normal"
+        title={
+          organizationId
+            ? "Restricted to one organization."
+            : "No org filter — searching across EVERY organization you belong to plus your personal content and the global library."
+        }
+      >
+        {organizationId ? "1 org" : "all your orgs"}
+      </Badge>
+      {scopeCount > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-1.5 py-0 font-normal"
+            title="Structural filter: only sources tagged to these scopes are eligible (combined with the semantic query)."
+          >
+            {scopeCount} scope{scopeCount === 1 ? "" : "s"}
+          </Badge>
+        </>
+      )}
+      <span aria-hidden>·</span>
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+        {kindLabel}
+      </Badge>
+      {scope.adminBypass && (
+        <>
+          <span aria-hidden>·</span>
+          <Badge
+            variant="warning"
+            className="text-[10px] px-1.5 py-0 font-normal"
+            title="Admin ACL bypass is ON — results include content you would not normally be permitted to see."
+          >
+            ACL bypass
+          </Badge>
+        </>
+      )}
+    </div>
+  );
+}
+
 function SearchTab({ scope }: { scope: Scope }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -710,6 +836,12 @@ function SearchTab({ scope }: { scope: Scope }) {
         query: trimmed,
         limit: 25,
         rerank: scope.rerank,
+        // Honor the sidebar Pipeline controls in the plain Search tab too —
+        // previously HyDE / multi-query / MMR were wired only into the Agent
+        // tabs, so toggling them here silently did nothing.
+        use_hyde: scope.useHyde,
+        multi_query: scope.multiQuery,
+        use_mmr: true,
         only_children: true,
         data_store_id: scope.storeId ?? undefined,
         admin_bypass_acl: scope.adminBypass || undefined,
@@ -834,6 +966,12 @@ function SearchTab({ scope }: { scope: Scope }) {
             {running ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
           </Button>
         </form>
+        <SearchScopeSummary
+          scope={scope}
+          storeName={storeName}
+          scopeIds={searchContext.scope_ids ?? searchContext.filters?.scope_ids}
+          organizationId={searchContext.filters?.organization_id}
+        />
       </header>
 
       <ScrollArea className="flex-1">

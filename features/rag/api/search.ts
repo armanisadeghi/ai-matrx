@@ -23,6 +23,16 @@ export interface RagSearchHit {
   vector_rank: number | null;
   lexical_rank: number | null;
   rerank_score: number | null;
+  /**
+   * Rank within the KG entity-recall lane (1 = best). Non-null only when the
+   * hit was surfaced because its source mentions a matched entity. A hit with
+   * `vector_rank == null && lexical_rank == null && entity_rank != null` reached
+   * the results *purely* via entity co-occurrence — the UI flags this so the
+   * user understands why an otherwise-thin chunk (e.g. a short title) ranked.
+   */
+  entity_rank: number | null;
+  /** Entity names this chunk mentions (KG), for the per-hit "why" display. */
+  entities: string[];
   metadata: Record<string, unknown>;
 }
 
@@ -48,7 +58,12 @@ export interface RagSearchRequest {
   rerank?: boolean;
   only_children?: boolean;
   embedding_models?: string[];
-  multi_query?: boolean;
+  /**
+   * Paraphrase fan-out: rewrite the query into N variants (1–5), each embedded
+   * and fused via RRF for higher recall. The backend expects an integer count
+   * (1 = off), NOT a boolean.
+   */
+  multi_query?: number;
   use_hyde?: boolean;
   use_mmr?: boolean;
   filters?: RagSearchFilters;
