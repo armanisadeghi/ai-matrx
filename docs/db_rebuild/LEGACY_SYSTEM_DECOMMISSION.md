@@ -81,9 +81,13 @@ _(populate: slices, hooks, utils, components, types, routes; mark imported-by-ne
 
 ## Unblock reworks (do these to enable deletion; build-verifiable, low runtime risk)
 1. ✅ **Resource cluster → agent system** (DONE, build-verified): now `features/agents/resources/` (types/utils/ResourceChips/ResourceDisplay); 22 live importers repointed; `features/prompts/` left intact (delete its copies with the feature). First prompt-deletion blocker cleared.
-2. ⬜ Move `DesktopFilterPanel`, `SystemPromptOptimizer` → shared/agents (used by core agents).
-3. ⬜ Extract `MatrxRecordId` (`= string`) → shared `types/` (cuts entity blockers 3/6/7).
-4. ⬜ Rewrite `dbFunctionNodeSlice` off `features/workflows` imports (unblocks old-workflow delete).
+2. ✅ Moved `DesktopFilterPanel` + `SystemPromptOptimizer` → `features/agents/` (build-verified, committed).
+2b. ✅ Print utils → `lib/block-print/` (16 importers), `InputControlsSettings` → `lib/types/`, Resource-miss fixed, dead `uiSagas.ts` deleted (committed). features/chat now has only 5 UI-component importers left (tool-viz news-api, PageSpecificHeader dynamic, prompts/workflows being-deleted, hooks/.../unused).
+3. 🔄 Extract `MatrxRecordId` (`= string`) → `types/records.ts` (cuts entity blockers 3/6/7).
+4. ⬜ Rewrite `dbFunctionNodeSlice` off `features/workflows`; stub kept-xyflow entity hooks to empty.
+5. ⬜ Relocate `QuickReferenceRecord` (rich-text) + remaining hooks/ domain types.
+6. ⬜ Free features/chat last 5 importers (tool-viz news-api MessageOptionsMenu/AssistantMessage; PageSpecificHeader dynamic ChatHeaderCompact).
+THEN deletions: dead islands → prompt feature → features/chat → entity engine + 293K schema files (IDE relief).
 
 ## Open questions for user
 - ⬜ TBD
