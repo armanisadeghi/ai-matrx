@@ -12,8 +12,7 @@ import { Label } from "@/components/ui/label";
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
-// OLD: Need to be replaced
-import { SystemPromptOptimizer } from "@/features/prompts/components/actions/prompt-optimizers/SystemPromptOptimizer";
+import { SystemPromptOptimizer } from "@/features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer";
 
 // Agent Types
 import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";

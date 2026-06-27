@@ -28,7 +28,7 @@ import {
   Webhook,
   Users,
 } from "lucide-react";
-import { DesktopFilterPanel } from "@/features/prompts/components/layouts/DesktopFilterPanel";
+import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import {
   AlertDialog,
   AlertDialogAction,
