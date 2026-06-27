@@ -1,69 +1,43 @@
 "use client";
 
 /**
- * MatrxActionsTab — define the action this agent performs + how it applies.
+ * MatrxActionsTab — the actions this agent can perform + how they apply.
  *
- * Two decisions, in the user's mental order:
- *   1. WHAT action does this agent do? — pick from the live registry (built-in
- *      directives + every wired `verb:noun` action in the action catalog).
- *      Picking one wires the agent's `output_schema` to emit that directive
- *      envelope (so the model produces it); the user never thinks about schemas.
- *   2. HOW does it apply? — the apply-policy cascade's agent layer
- *      (`agx_agent.matrx_actions`): Default / Auto-apply / Ask first / Off.
+ * An agent may list MANY actions (no cap): canonical `verb:noun` actions from the
+ * live action catalog, named built-in directives, AND custom free-form types.
+ * The list is stored in `matrx_actions.actions`; the apply policy in
+ * `matrx_actions.apply_policy`.
  *
- * The action lives in `output_schema` (canonical envelope path); the policy lives
- * in `matrx_actions`. The retired legacy `directive` raw-output path is surfaced
- * read-only with a Clear.
+ * IMPORTANT: this tab NEVER edits the agent's authored system prompt. Structure
+ * guidance for these actions is injected at RUNTIME by the system-prompt builder
+ * (`SystemInstruction.action_types` → "## Available Matrx Actions") — preview
+ * exactly what the model receives via "Preview full prompt".
  */
 
 import { useState } from "react";
-import {
-  PlayCircle,
-  CircleHelp,
-  Ban,
-  Info,
-  Search,
-  X,
-  Pencil,
-  Zap,
-  ListPlus,
-} from "lucide-react";
-import { toast } from "sonner";
+import { PlayCircle, CircleHelp, Ban, Info, Search, X, Plus, Check } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectAgentMatrxActions,
-  selectAgentOutputSchema,
-  selectAgentMessages,
-} from "@/features/agents/redux/agent-definition/selectors";
-import {
-  setAgentMatrxActions,
-  setAgentOutputSchema,
-  setAgentMessages,
-} from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentMatrxActions } from "@/features/agents/redux/agent-definition/selectors";
+import { setAgentMatrxActions } from "@/features/agents/redux/agent-definition/slice";
 import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
-import type { AgentDefinitionMessage } from "@/features/agents/types/agent-message-types";
 import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
 import { buildDirectiveOptions, groupDirectiveOptions } from "./directiveOptions";
-import {
-  buildActionOutputSchema,
-  isActionOutputSchema,
-  actionTypeOfSchema,
-} from "./actionSchema";
-import { buildActionsGuidance, ACTIONS_GUIDANCE_MARKER } from "./actionsGuidance";
 
 type Policy = "default" | "auto" | "ask" | "off";
 
 function derivePolicy(cfg: MatrxActionsConfig): Policy {
-  if (cfg.apply_policy === "auto" || cfg.auto_apply === true || Array.isArray(cfg.allow))
-    return "auto";
+  if (cfg.apply_policy === "auto" || cfg.auto_apply === true) return "auto";
   if (cfg.apply_policy === "ask") return "ask";
   if (cfg.apply_policy === "off") return "off";
   return "default";
 }
 
-/** Preserve the legacy `directive` (if any) across policy edits. */
-function policyBase(cfg: MatrxActionsConfig): MatrxActionsConfig {
-  return cfg.directive ? { directive: cfg.directive } : {};
+/** The agent's action list — `actions`, with back-compat for legacy shapes. */
+function deriveActions(cfg: MatrxActionsConfig): string[] {
+  if (Array.isArray(cfg.actions)) return cfg.actions;
+  if (Array.isArray(cfg.allow)) return cfg.allow;
+  if (cfg.directive) return [cfg.directive];
+  return [];
 }
 
 const POLICY_OPTIONS: {
@@ -73,9 +47,9 @@ const POLICY_OPTIONS: {
   hint: string;
 }[] = [
   { id: "default", label: "Default", icon: <Info className="h-3.5 w-3.5" />, hint: "Use the system default — ask the user before applying." },
-  { id: "auto", label: "Auto-apply", icon: <PlayCircle className="h-3.5 w-3.5" />, hint: "Apply the action automatically, no confirmation." },
-  { id: "ask", label: "Ask first", icon: <CircleHelp className="h-3.5 w-3.5" />, hint: "Propose the action; apply only when the user approves." },
-  { id: "off", label: "Off", icon: <Ban className="h-3.5 w-3.5" />, hint: "Never apply — the action is inert." },
+  { id: "auto", label: "Auto-apply", icon: <PlayCircle className="h-3.5 w-3.5" />, hint: "Apply the agent's actions automatically, no confirmation." },
+  { id: "ask", label: "Ask first", icon: <CircleHelp className="h-3.5 w-3.5" />, hint: "Propose each action; apply only when the user approves." },
+  { id: "off", label: "Off", icon: <Ban className="h-3.5 w-3.5" />, hint: "Never apply — actions are inert." },
 ];
 
 interface MatrxActionsTabProps {
@@ -87,21 +61,18 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
   const cfg = useAppSelector((state) =>
     selectAgentMatrxActions(state, agentId),
   ) as MatrxActionsConfig;
-  const outputSchema = useAppSelector((state) =>
-    selectAgentOutputSchema(state, agentId),
-  );
-  const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
 
+  const actions = deriveActions(cfg);
   const policy = derivePolicy(cfg);
-  const actionType = actionTypeOfSchema(outputSchema);
-  const hasCustomSchema = outputSchema != null && !isActionOutputSchema(outputSchema);
 
   const { catalog, isLoading, error } = useActionCatalog();
   const [query, setQuery] = useState("");
-  // Show the picker when no action is set, or when the user clicks "Change".
-  const [picking, setPicking] = useState(false);
+  const [custom, setCustom] = useState("");
 
   const options = buildDirectiveOptions(catalog);
+  const labelFor = (type: string) =>
+    options.find((o) => o.type === type)?.label ?? type;
+
   const q = query.trim().toLowerCase();
   const filtered = q
     ? options.filter(
@@ -112,239 +83,172 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
       )
     : options;
   const groups = groupDirectiveOptions(filtered);
-  const selectedLabel =
-    options.find((o) => o.type === actionType)?.label ?? actionType ?? "";
 
-  const setPolicy = (p: Policy) => {
-    const b = policyBase(cfg);
-    if (p === "default") return dispatch(setAgentMatrxActions({ id: agentId, matrxActions: b }));
-    const next: MatrxActionsConfig =
-      p === "auto" ? { ...b, apply_policy: "auto" } : { ...b, apply_policy: p };
+  // Single canonical write — actions list + policy, preserving a legacy directive.
+  const write = (nextActions: string[], nextPolicy: Policy) => {
+    const next: MatrxActionsConfig = {};
+    if (cfg.directive) next.directive = cfg.directive;
+    if (nextActions.length) next.actions = nextActions;
+    if (nextPolicy === "auto") next.apply_policy = "auto";
+    else if (nextPolicy === "ask") next.apply_policy = "ask";
+    else if (nextPolicy === "off") next.apply_policy = "off";
     dispatch(setAgentMatrxActions({ id: agentId, matrxActions: next }));
   };
 
-  const chooseAction = (type: string) => {
-    dispatch(
-      setAgentOutputSchema({ id: agentId, outputSchema: buildActionOutputSchema(type) }),
-    );
-    setPicking(false);
-    setQuery("");
+  const toggle = (type: string) => {
+    const has = actions.includes(type);
+    write(has ? actions.filter((a) => a !== type) : [...actions, type], policy);
   };
-
-  const removeAction = () => {
-    // Only clear a schema THIS tab generated — never a custom user schema.
-    if (isActionOutputSchema(outputSchema)) {
-      dispatch(setAgentOutputSchema({ id: agentId, outputSchema: null }));
-    }
-    setPicking(false);
+  const remove = (type: string) => write(actions.filter((a) => a !== type), policy);
+  const addCustom = () => {
+    const t = custom.trim();
+    setCustom("");
+    if (!t || actions.includes(t)) return;
+    write([...actions, t], policy);
   };
-
-  // Phase 1 (test): inject the action's structure guidance as plain text into
-  // the agent's system message. Idempotent — replaces a prior injected block
-  // (keyed off ACTIONS_GUIDANCE_MARKER) instead of stacking duplicates.
-  const injectGuidance = () => {
-    const types = [actionType, cfg.directive].filter(
-      (t): t is string => typeof t === "string" && t.length > 0,
-    );
-    const guidance = buildActionsGuidance(types);
-    if (!guidance) return;
-
-    const msgs = (messages ?? []) as AgentDefinitionMessage[];
-    const sys = msgs.find((m) => m.role === "system");
-    const nonSystem = msgs.filter((m) => m.role !== "system");
-    const rawBlocks = (sys?.content ?? []) as unknown as Record<string, unknown>[];
-    const textBlock = rawBlocks.find((b) => b.type === "text");
-    const nonText = rawBlocks.filter((b) => b.type !== "text");
-    const existing =
-      typeof textBlock?.text === "string"
-        ? textBlock.text
-        : typeof textBlock?.content === "string"
-          ? (textBlock.content as string)
-          : "";
-    const before = existing.split(ACTIONS_GUIDANCE_MARKER)[0].trimEnd();
-    const nextText = before ? `${before}\n\n${guidance}` : guidance;
-
-    const newContent = [
-      { type: "text", text: nextText },
-      ...nonText,
-    ] as unknown as AgentDefinitionMessage["content"];
-    dispatch(
-      setAgentMessages({
-        id: agentId,
-        messages: [
-          { role: "system", content: newContent },
-          ...nonSystem,
-        ] as AgentDefinitionMessage[],
-      }),
-    );
-    toast.success("Action structure guidance added to the system prompt");
-  };
-
-  const clearDirective = () => {
-    const { directive: _omit, ...rest } = cfg;
-    void _omit;
-    dispatch(setAgentMatrxActions({ id: agentId, matrxActions: rest }));
-  };
-
-  const showPicker = picking || (!actionType && !cfg.directive);
+  const setPolicy = (p: Policy) => write(actions, p);
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[11px] text-muted-foreground leading-snug">
-        <span className="font-medium text-foreground">Matrx Actions</span> let this
-        agent perform an action from its output — create a task or project, write a
-        record, and more. Pick the action and choose how it applies; both are saved
-        with the agent automatically.
+        <span className="font-medium text-foreground">Matrx Actions</span> are the
+        things this agent can do from its output — create tasks or projects, write
+        records, run custom actions. List as many as you need. Guidance for them is
+        added to the system prompt <span className="font-medium">automatically at
+        run time</span> — your authored prompt is never modified.
       </p>
 
-      {/* ── 1. The action ─────────────────────────────────────────────────── */}
+      {/* ── Selected actions ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-semibold text-foreground">Action</span>
-
-        {/* Selected action (envelope path) */}
-        {actionType && !showPicker && (
-          <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2">
-            <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="flex-1 text-xs font-medium text-foreground">
-              {selectedLabel}
-            </span>
-            <code className="font-mono text-[10px] text-muted-foreground">{actionType}</code>
-            <button
-              type="button"
-              onClick={() => setPicking(true)}
-              className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <Pencil className="h-3 w-3" /> Change
-            </button>
-            <button
-              type="button"
-              onClick={removeAction}
-              className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <X className="h-3 w-3" /> Remove
-            </button>
-          </div>
-        )}
-
-        {/* Inject structure guidance as text into the system prompt (Phase 1 test) */}
-        {(actionType || cfg.directive) && !showPicker && (
-          <button
-            type="button"
-            onClick={injectGuidance}
-            title="Append guidance describing this action's envelope structure to the agent's system prompt."
-            className="inline-flex w-fit items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <ListPlus className="h-3.5 w-3.5" />
-            Insert structure guidance into system prompt
-          </button>
-        )}
-
-        {/* Registry picker */}
-        {showPicker && (
-          <div className="flex flex-col gap-2">
-            {hasCustomSchema && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-                This agent already has a custom Output Schema. Choosing an action
-                will replace it with the action&apos;s envelope.
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search actions…"
-                  className="w-full rounded-md border border-border bg-background py-1.5 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              {actionType && (
+        <span className="text-xs font-semibold text-foreground">
+          Actions this agent can perform{actions.length ? ` (${actions.length})` : ""}
+        </span>
+        {actions.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            None yet — pick from the catalog below or add a custom one.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {actions.map((type) => (
+              <span
+                key={type}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 py-0.5 pl-2 pr-1 text-[11px] text-foreground"
+              >
+                <span className="font-medium">{labelFor(type)}</span>
+                <code className="font-mono text-[10px] text-muted-foreground">{type}</code>
                 <button
                   type="button"
-                  onClick={() => { setPicking(false); setQuery(""); }}
-                  className="rounded border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+                  onClick={() => remove(type)}
+                  aria-label={`Remove ${type}`}
+                  className="rounded-full p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
-                  Cancel
+                  <X className="h-3 w-3" />
                 </button>
-              )}
-            </div>
-
-            {error ? (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-                Couldn&apos;t load the live action catalog ({error}). Built-in
-                actions are still available below.
-              </div>
-            ) : null}
-
-            {isLoading && !catalog ? (
-              <div className="flex flex-col gap-1">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-7 animate-pulse rounded bg-muted/60" />
-                ))}
-              </div>
-            ) : (
-              <div className="max-h-60 overflow-y-auto rounded-md border border-border">
-                {groups.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                    No actions match &ldquo;{query}&rdquo;.
-                  </div>
-                ) : (
-                  groups.map((group) => (
-                    <div key={group.family}>
-                      <div className="sticky top-0 bg-muted/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
-                        {group.family}
-                      </div>
-                      {group.options.map((opt) => (
-                        <button
-                          key={opt.type}
-                          type="button"
-                          onClick={() => chooseAction(opt.type)}
-                          className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent ${
-                            opt.type === actionType ? "bg-primary/5" : ""
-                          }`}
-                        >
-                          <span className="flex-1 text-foreground">{opt.label}</span>
-                          <code className="font-mono text-[10px] text-muted-foreground">
-                            {opt.type}
-                          </code>
-                        </button>
-                      ))}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-            <p className="text-[11px] text-muted-foreground">
-              Picking an action sets up the agent&apos;s output to emit it. The
-              agent&apos;s instructions should tell it when to produce the action.
-            </p>
-          </div>
-        )}
-
-        {/* Legacy declared-directive — read-only */}
-        {cfg.directive && !actionType && (
-          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
-            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <div className="flex-1 leading-snug text-muted-foreground">
-              Legacy declared-directive:{" "}
-              <code className="font-mono text-foreground">{cfg.directive}</code>. Pick
-              an action above to move it onto the modern path.
-            </div>
-            <button
-              type="button"
-              onClick={clearDirective}
-              className="shrink-0 rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              Clear
-            </button>
+              </span>
+            ))}
           </div>
         )}
       </div>
 
-      {/* ── 2. The policy ─────────────────────────────────────────────────── */}
+      {/* ── Registry picker + custom add ───────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search actions…"
+            className="w-full rounded-md border border-border bg-background py-1.5 pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        {error ? (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+            Couldn&apos;t load the live action catalog ({error}). Built-in actions
+            are still available below.
+          </div>
+        ) : null}
+
+        {isLoading && !catalog ? (
+          <div className="flex flex-col gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-7 animate-pulse rounded bg-muted/60" />
+            ))}
+          </div>
+        ) : (
+          <div className="max-h-52 overflow-y-auto rounded-md border border-border">
+            {groups.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                No catalog actions match &ldquo;{query}&rdquo; — add it as a custom
+                action below.
+              </div>
+            ) : (
+              groups.map((group) => (
+                <div key={group.family}>
+                  <div className="sticky top-0 bg-muted/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
+                    {group.family}
+                  </div>
+                  {group.options.map((opt) => {
+                    const checked = actions.includes(opt.type);
+                    return (
+                      <button
+                        key={opt.type}
+                        type="button"
+                        onClick={() => toggle(opt.type)}
+                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent"
+                      >
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                            checked
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background"
+                          }`}
+                        >
+                          {checked && <Check className="h-3 w-3" />}
+                        </span>
+                        <span className="flex-1 text-foreground">{opt.label}</span>
+                        <code className="font-mono text-[10px] text-muted-foreground">
+                          {opt.type}
+                        </code>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Custom action add */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
+            placeholder="Custom action type (e.g. create:invoice)"
+            className="flex-1 rounded-md border border-border bg-background py-1.5 px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <button
+            type="button"
+            onClick={addCustom}
+            disabled={!custom.trim()}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </button>
+        </div>
+      </div>
+
+      {/* ── Policy ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5 border-t border-border pt-3">
-        <span className="text-xs font-semibold text-foreground">How it applies</span>
+        <span className="text-xs font-semibold text-foreground">How they apply</span>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {POLICY_OPTIONS.map((opt) => {
             const active = policy === opt.id;

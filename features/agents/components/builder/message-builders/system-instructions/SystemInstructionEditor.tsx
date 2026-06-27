@@ -139,12 +139,6 @@ export function SystemInstructionEditor({
             checked={data.include_context_block ?? true}
             onChange={(v) => update({ include_context_block: v })}
           />
-          <ToggleRow
-            id={`include-actions-${conversationId}`}
-            label="Include Matrx Actions guidance"
-            checked={data.include_actions_guidance ?? false}
-            onChange={(v) => update({ include_actions_guidance: v })}
-          />
         </div>
       </Section>
 

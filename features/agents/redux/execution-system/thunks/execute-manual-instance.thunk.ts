@@ -411,6 +411,12 @@ export async function assembleManualRequest(
     request.system_instruction =
       structuredSystemInstruction as unknown as string;
   }
+  // Matrx Actions: carry the agent's action repertoire so the server injects the
+  // "## Available Matrx Actions" guidance at runtime (additive — never edits the
+  // authored prompt). ChatRequest is extra-allow; not in the generated type.
+  if (agent.matrxActions && Object.keys(agent.matrxActions).length > 0) {
+    (request as Record<string, unknown>).matrx_actions = agent.matrxActions;
+  }
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
 

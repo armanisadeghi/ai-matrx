@@ -16,11 +16,19 @@
 export type MatrxActionApplyPolicy = "auto" | "ask" | "off";
 
 export interface MatrxActionsConfig {
+  /** The action types this agent can perform — `verb:noun` (canonical catalog),
+   *  named built-in directives, or custom free-form types. An agent may list as
+   *  many as it needs (mixed normal + custom). This is the guidance source: the
+   *  system-prompt builder injects structure guidance for each at RUNTIME (it
+   *  never edits the authored prompt). The apply policy below governs how they
+   *  apply. */
+  actions?: string[];
   /** Explicit apply policy; wins over auto_apply/allow. Applies to ALL action types. */
   apply_policy?: MatrxActionApplyPolicy;
   /** Opt ALL action types into auto-apply. */
   auto_apply?: boolean;
-  /** Opt only these directive types (`verb:noun` or named built-ins) into auto-apply. */
+  /** Opt only these directive types into auto-apply (legacy per-type scope; the
+   *  modern UI uses `actions` + `apply_policy`). */
   allow?: string[];
   /** Legacy agent-declared raw-output directive — read-only in the UI; being retired. */
   directive?: string;
