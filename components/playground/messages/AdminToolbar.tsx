@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrokerMetaData, ChipData, ContentMode, EditorState } from '@/types/editor.types';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { EditorLineInfo, getEditorLineInfo } from '@/features/rich-text-editor/admin/new-test-util';
 import CompactTable from '@/components/matrx/CompactTable';
 import { useEditorContext } from '@/providers/rich-text-editor/Provider';

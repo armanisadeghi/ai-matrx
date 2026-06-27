@@ -19,7 +19,7 @@ import {
   useDataBrokersWithFetch,
   UseDataBrokersWithFetchReturn,
 } from "@/lib/redux/entity/hooks/useAllData";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 
 export type BrokerValuePayload = {
   tempId: string;

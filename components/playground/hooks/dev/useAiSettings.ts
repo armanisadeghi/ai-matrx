@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";
 import { useMemo } from 'react';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { AiAgentDataRequired, AiSettingsDataRequired } from '@/types/AutomationSchemaTypes';
 import { useAiAgents } from './useAiAgents';
 import { useSynchronizedAiAgents } from './useSynchronizedAiAgents';

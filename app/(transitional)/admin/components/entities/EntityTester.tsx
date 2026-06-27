@@ -28,7 +28,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Loader2 } from "lucide-react";
 import type { EntityKeys, EntityData } from "@/types/entityTypes";
 import { useEntity } from "@/lib/redux/entity/hooks/useEntity";
-import { MatrxRecordId } from "@/lib/redux/entity/types/stateTypes";
+import { MatrxRecordId } from "@/types/records";
 import { createRecordKey } from "@/lib/redux/entity/utils/stateHelpUtils";
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
 import { EditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";

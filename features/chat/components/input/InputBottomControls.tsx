@@ -5,7 +5,7 @@ import { TbVariablePlus } from "react-icons/tb";
 import { LiaLightbulbSolid } from "react-icons/lia";
 import { HiOutlineLightBulb } from "react-icons/hi";
 import { LuSearchCheck } from "react-icons/lu";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import ToggleButton from "@/components/matrx/toggles/ToggleButton";
 import ModelSelection from "@/features/chat/components/input/ModelSelection";
 import { FaMicrophoneLines } from "react-icons/fa6";

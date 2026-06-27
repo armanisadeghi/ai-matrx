@@ -5,7 +5,7 @@ import { useGetorFetchRecords, useGetOrFetchRecord } from "@/app/entities/hooks/
 import { createEntitySelectors } from "@/lib/redux/entity/selectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useDebounce } from "@uidotdev/usehooks";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { DataInputComponentRecordWithKey, RecipeRecordWithKey, AppletRecordWithKey } from "@/types/AutomationSchemaTypes";
 import { BrokerWithComponentsMap, CompiledRecipeEntry, CompiledRecipeRecordWithKey } from "./types";
 

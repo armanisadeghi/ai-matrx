@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";
 import React, { useEffect, useCallback } from 'react';
 import { useRecipe } from './useRecipe';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { AiAgentDataRequired, AiSettingsDataRequired } from '@/types/AutomationSchemaTypes';
 
 export function useAiAgents() {

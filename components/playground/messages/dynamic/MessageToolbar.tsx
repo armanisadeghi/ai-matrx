@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import DynamicToolbar from '../../components/dynamic/DynamicToolbar';
 import { BaseToolbarProps } from '../../components/dynamic/PanelContent';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 
 export interface MessageToolbarProps extends BaseToolbarProps {
     messageRecordId: MatrxRecordId;

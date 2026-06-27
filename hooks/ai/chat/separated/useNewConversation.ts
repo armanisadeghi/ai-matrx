@@ -1,5 +1,5 @@
 import { useOneRelationship } from "@/lib/redux/entity/hooks/useOneRelationship";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Conversation, Message, MessageRole } from "@/types/chat/chat.types";
 import { useCreateConvoAndMessage } from "@/app/entities/hooks/crud/by-relationships/useCreateConvoAndMessage";

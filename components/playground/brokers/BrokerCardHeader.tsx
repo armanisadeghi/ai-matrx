@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle2, XCircle, ChevronUp, ChevronDown, Frown } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { TailwindColor, COLOR_STYLES_DIRECT } from '@/constants/rich-text-constants';
 import { ChipData } from '@/types/editor.types';
 import { findChipsByBrokerIdGlobal } from '@/features/rich-text-editor/utils/chipFilnder';

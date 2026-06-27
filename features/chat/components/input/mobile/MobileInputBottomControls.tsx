@@ -5,7 +5,7 @@ import ToggleButton from "@/components/matrx/toggles/ToggleButton";
 import AIToolsSheet from "@/features/chat/components/input/AIToolsSheet";
 import { FaMicrophoneLines } from "react-icons/fa6";
 import { CgAttachment } from "react-icons/cg";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import ModelSelection from "@/features/chat/components/input/ModelSelection";
 import MobileMenu from "./MatrxMobileMenu";
 import BrokerSheet from "@/features/chat/components/input/BrokerSheet";

@@ -7,7 +7,7 @@ import { selectFormattedEntityOptions } from "@/lib/redux/schema/globalCacheSele
 import { createEntitySelectors } from "@/lib/redux/entity/selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { UniversalJsonGroup } from "@/components/ui/JsonComponents/UniversalJsonGroup";
-import { MatrxRecordId } from "@/lib/redux/entity/types/stateTypes";
+import { MatrxRecordId } from "@/types/records";
 import { getEntitySlice } from "@/lib/redux/entity/entitySlice";
 import { QueryOptions } from "@/lib/redux/entity/types/stateTypes";
 

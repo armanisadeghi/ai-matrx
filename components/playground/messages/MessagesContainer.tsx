@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Panel, Separator, GroupImperativeHandle, PanelImperativeHandle } from "react-resizable-panels";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import ConfirmationDialog, { DialogType } from "../components/ConfirmationDialog";
 import MessageEditor from "./MessageEditor";
 import { CockpitControls } from "../types";

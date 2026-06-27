@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { QuickReferenceRecord } from "@/lib/redux/entity/types/stateTypes";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import {
     AiSettingsData,
     BrokerValueData,

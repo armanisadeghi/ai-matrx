@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { RecipeMessageRecordWithKey } from '@/types/AutomationSchemaTypes';
 import { useDeleteRecord } from '@/app/entities/hooks/crud/useDeleteRecord';
 import { useAppDispatch } from "@/lib/redux/hooks";

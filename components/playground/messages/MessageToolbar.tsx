@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/lib/redux/store";
 import { useUser } from "@/lib/hooks/useUser";

@@ -4,7 +4,7 @@ import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";
 import { useUpdateRecord } from "@/app/entities/hooks/crud/useUpdateRecord";
 import { EditorWithProviders } from "@/providers/rich-text-editor/withManagedEditor";
 import { Card } from "@/components/ui/card";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { MessageTemplateProcessed } from "@/types/AutomationSchemaTypes";
 import MessageToolbar, { DisplayOption } from "./MessageToolbar";
 import DebugPanel from "./AdminToolbar";

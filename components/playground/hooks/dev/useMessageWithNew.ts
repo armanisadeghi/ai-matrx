@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { EntityKeys, EntityDataWithKey, MatrxRecordId } from '@/types/entityTypes';
+import { EntityKeys, EntityDataWithKey } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { DataBrokerDataRequired, MessageBrokerDataRequired, MessageTemplateDataOptional } from '@/types/AutomationSchemaTypes';
 import { GetOrFetchSelectedRecordsPayload } from "@/lib/redux/entity/actions";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

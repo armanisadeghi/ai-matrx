@@ -2,7 +2,8 @@
 
 import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { UnifiedLayoutProps } from '@/components/matrx/Entity/prewired-components/layouts/types';
-import { EntityKeys, MatrxRecordId } from '@/types/entityTypes';
+import { EntityKeys } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { MessageBrokerDataOptional } from '@/types/AutomationSchemaTypes';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";

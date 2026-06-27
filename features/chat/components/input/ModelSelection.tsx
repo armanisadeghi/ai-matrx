@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ChevronDown, X } from "lucide-react";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import {
     DeepSeek,

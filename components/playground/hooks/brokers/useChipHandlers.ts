@@ -1,6 +1,6 @@
 import { useChipMenu } from '@/features/rich-text-editor/components/ChipContextMenu';
 import { BrokerMetaData } from '@/types/editor.types';
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { useCallback, useState } from 'react';
 
 

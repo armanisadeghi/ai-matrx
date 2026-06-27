@@ -4,7 +4,7 @@ import { FetchMode } from "@/lib/redux/entity/actions";
 import { EntitySelectors } from "@/lib/redux/entity/selectors";
 import { QuickReferenceRecord } from "@/lib/redux/entity/types/stateTypes";
 import { DataOutputComponentData } from "@/types/AutomationSchemaTypes";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { useEntityWithFetch } from "@/lib/redux/entity/hooks/useAllData";
 
 

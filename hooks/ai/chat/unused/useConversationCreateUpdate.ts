@@ -1,7 +1,7 @@
 import useCreateUpdateRecord  from "@/app/entities/hooks/crud/useCreateUpdateRecord";
 import { getPermanentId } from "@/lib/redux/entity/utils/stateHelpUtils";
 import { useMemo, useCallback } from 'react';
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { ChatMode, Conversation } from "@/types/chat/chat.types";
 
 const NEW_CONVERSATION_DATA: Partial<Conversation> = {

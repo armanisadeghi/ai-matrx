@@ -13,7 +13,7 @@ import {
 // rather than at module load. This keeps unit tests — which mount the slice
 // without the browser Supabase env — from blowing up at import time.
 import { AIProvider } from "@/lib/ai/aiChat.types";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 // Favorites speak the canonical entity vocabulary. `FavoriteKind` is defined
 // ONCE in features/scopes/types.ts (`EntityType | "nav"`) and re-exported below
 // so `FavoriteItem.kind` and existing importers stay stable — no parallel union.

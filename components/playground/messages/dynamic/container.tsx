@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { generateMessage } from '../prompts';
-import type { MatrxRecordId } from '@/types/entityTypes';
+import type { MatrxRecordId } from '@/types/records';
 import type { AddMessagePayload } from '../../hooks/messages/useAddMessage';
 import { CockpitControls } from '../../types';
 import EmptyMessagesCard from '../EmptyMessagesCard';

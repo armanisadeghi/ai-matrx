@@ -5,7 +5,8 @@ import { DEFAULT_NEW_MESSAGE } from "@/constants/chat";
 import { Message } from "@/types/chat/chat.types";
 import { getEntitySlice } from "@/lib/redux/entity/entitySlice";
 import { createAppThunk } from "@/lib/redux/utils";
-import { EntityKeys, MatrxRecordId } from "@/types/entityTypes";
+import { EntityKeys } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { ConversationData } from "@/types/AutomationSchemaTypes";
 import {
   SaveCallbackResult,

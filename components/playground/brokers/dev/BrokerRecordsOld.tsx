@@ -2,7 +2,8 @@
 
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { UnifiedLayoutProps } from '@/components/matrx/Entity/prewired-components/layouts/types';
-import { EntityKeys, MatrxRecordId } from '@/types/entityTypes';
+import { EntityKeys } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import { useQuickRef } from '@/app/entities/hooks/useQuickRef';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useEntityTools } from "@/lib/redux/entity/hooks/coreHooks";

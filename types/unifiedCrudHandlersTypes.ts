@@ -1,4 +1,4 @@
-import type { MatrxRecordId } from "@/lib/redux/entity/types/stateTypes";
+import type { MatrxRecordId } from "@/types/records";
 
 /** Shared with layout + componentConfigTypes without importing layout UI modules. */
 export interface UnifiedCrudHandlers {

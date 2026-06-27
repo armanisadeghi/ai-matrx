@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Link, LetterText, Radiation, SquareRadical, Eye } from 'lucide-react';
 
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 import DraggableToolbar, { ToolbarAction } from '../DraggableToolbar';
 
 export interface MessageToolbarProps {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useThrottle } from "@uidotdev/usehooks";
 import { useCreateAssociatedValueBrokers } from "./useCreateAssociatedValueBrokers";
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 import { UseDataBrokersWithFetchReturn, UseBrokerValuesWithFetchReturn } from "@/lib/redux/entity/hooks/useAllData";
 
 const DEBUG_MODE = false;

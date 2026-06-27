@@ -1,4 +1,4 @@
-import { MatrxRecordId } from '@/types/entityTypes';
+import { MatrxRecordId } from '@/types/records';
 
 import { cn } from '@/lib/utils';
 import { getColorClassName } from './colorUitls';

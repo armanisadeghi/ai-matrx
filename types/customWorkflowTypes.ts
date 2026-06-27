@@ -1,4 +1,4 @@
-import { MatrxRecordId } from "@/types/entityTypes";
+import { MatrxRecordId } from "@/types/records";
 
 export type WorkflowData = {
     id: string;
