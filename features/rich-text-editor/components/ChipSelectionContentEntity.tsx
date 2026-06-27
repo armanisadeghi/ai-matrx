@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EntityShowSelectedAccordion from "@/components/matrx/Entity/prewired-components/EntityShowSelectedAccordion";
 import QuickRefSelect from "@/app/entities/quick-reference/QuickRefSelectFloatingLabel";
-import { QuickReferenceRecord } from "@/lib/redux/entity/types/stateTypes";
+import { QuickReferenceRecord } from "@/types/records";
 import {
   getUnifiedLayoutProps,
   getUpdatedUnifiedLayoutProps,
