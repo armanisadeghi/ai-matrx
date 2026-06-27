@@ -48,12 +48,19 @@ Run/job tables emit `run.completed` / `run.failed` to `activity_log` on a termin
 - **Not a producer:** `public.ai_runs` — its `status` is `active/archived/deleted` (record state, not job progress).
 - **`organization_id` is REQUIRED (NOT NULL) on all 12** (`migrations/run_org_required.sql`): backfilled from the owner's personal org (`ensure_personal_organization`), ownerless rows → the Matrx System org. A DB-edge `platform.stamp_run_org()` BEFORE INSERT trigger fills org when an insert leaves it NULL (owner's personal org, else system org), so the app's explicit org always wins and NOT NULL can never break an insert. Every run now has an org → every terminal transition emits.
 
+## Transport 1 — Realtime kills in-app polling (STARTED)
+
+Generic primitive: [`hooks/useRunListRealtime.ts`](../../../hooks/useRunListRealtime.ts) — subscribe to owner-scoped INSERT/UPDATE on any run table in the `supabase_realtime` publication, debounced `onChange` refetch. One hook for every "my runs" list (no per-feature channel copies).
+
+- **Live:** podcast runs (`useStudioRuns`) — 15s `setInterval` deleted, now Realtime on `agent_run` (added to the publication; owner RLS `user_id = auth.uid()`). Verified end-to-end: an authenticated owner subscription receives an `agent_run` change.
+- **Pending:** `useStudioRun` (detail-page poll — detached-disconnect fallback during streaming; lower priority), RAG safety-net (`useFileRagStatus`, already Realtime-primary), `useResolveCreatedProject`. **Blocked:** the AI-runs list (`useAiRunsList`) — `ai_runs` is graveyarded (`graveyard.ai_runs`) and mid-migration; convert once it resettles on its canonical table.
+
 ## Roadmap (pending — see KNOWN_DEFECTS.md)
-- **Transport 1 — Realtime kills in-app polling.** Convert the polling surfaces (podcast runs `useStudioRuns`/`useStudioRun`, `ai-runs` `useAiRunsList`/`useAiTasks`, RAG safety-net, project-init resolver) to Supabase Realtime on their run tables (the proven `features/scheduling/hooks/useRunStream.ts` pattern), deleting every `setInterval`/`refetchInterval`. Needs run tables added to the `supabase_realtime` publication + owner-read RLS. Generalize a single `useRunRealtime` hook rather than per-feature copies.
 - **Webhook depth:** org-wide fan-out (deliver on any org member's action — needs iam membership), manual **redeliver** button + RPC, populate `actor_id` on the Python file-audit events (currently null → those events don't match owner webhooks), `latency_ms` capture, per-feature admin-map entry.
 
 ## Change log
 
+- **2026-06-26** — Transport 1 started: generic `hooks/useRunListRealtime.ts` + `agent_run` added to `supabase_realtime`; podcast runs list (`useStudioRuns`) off its 15s poll onto Realtime (verified live). `ai_runs` list blocked (graveyarded).
 - **2026-06-26** — `organization_id` made REQUIRED on all 12 run tables (`migrations/run_org_required.sql`): backfilled from owner's personal org (ownerless → Matrx System org) + `platform.stamp_run_org()` insert-default trigger + NOT NULL. Verified: 0 NULLs, both owned/ownerless insert paths stamp correctly.
 - **2026-06-26** — Phase 1 **complete**: all 12 canonical run tables emit `run.completed`/`run.failed` (owner actor) via the generic `platform.emit_run_lifecycle()` trigger (`to_jsonb(NEW)`, owner = `coalesce(user_id, triggered_by)`) + a 6-arg `log_activity` overload. Both owner shapes verified end-to-end. `ai_runs` excluded (record-state status).
 - **2026-06-26** — Built Transport 2 (DB-native outbound webhooks) on `platform.activity_log`; verified end-to-end live. Repointed `files.webhook_deliveries` off graveyarded `cld_events`. FE CRUD + `/files/webhooks` UI. Phase 1 (run-lifecycle producers) + Transport 1 (Realtime) documented as pending.
