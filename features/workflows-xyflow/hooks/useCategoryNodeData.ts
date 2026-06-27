@@ -247,13 +247,19 @@ export const useCategoryNodeData = (workflowId?: string) => {
 
     try {
       const registeredNode = getRegisteredNodeById(nodeId);
-      const nodeCategory = categoryRecords[registeredNode.category];
-      const nodeType = registeredNode.nodeType as XyFlowNodeType;
+      // nodeCategory may be undefined when registered_node/node_category tables
+      // are gone (graveyard-only era) — fall back to a safe empty name.
+      const nodeCategory = categoryRecords[registeredNode?.category];
+      const categoryName = nodeCategory?.name ?? registeredNode?.category ?? "unknown";
+      const nodeType = (registeredNode?.nodeType ?? "functionNode") as XyFlowNodeType;
+      if (!registeredNode) {
+        throw new Error(`Registered node not found for id: ${nodeId}`);
+      }
       const newNodeData = createCustomInputNode(
         registeredNode,
         workflowId,
         userId,
-        nodeCategory.name,
+        categoryName,
         nodeType,
       );
       const newNode = await dispatch(createWorkflowNode(newNodeData)).unwrap();

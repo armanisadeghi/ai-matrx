@@ -35,12 +35,10 @@ function WorkflowLayoutInner({ children }: { children: React.ReactNode }) {
     aiModelHook.fetchAiModelAll();
   }, []);
 
-  if (
-    isLoading ||
-    combinedFunctions.length === 0 ||
-    Object.keys(categoryHook.nodeCategoryRecordsById).length === 0 ||
-    Object.keys(registeredNodeHook.registeredNodeRecordsById).length === 0
-  ) {
+  // Only block on genuine in-flight loads. combinedFunctions, nodeCategory and
+  // registeredNode all read deleted tables and will always return empty — do NOT
+  // gate rendering on their length or the canvas never mounts.
+  if (isLoading) {
     return (
       <WorkflowLoading
         title="Loading Workflow System"

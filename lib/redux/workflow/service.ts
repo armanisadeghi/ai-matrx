@@ -1,4 +1,5 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { createClient } from "@/utils/supabase/client";
 import {
   Workflow,
   WorkflowCreateInput,
@@ -7,6 +8,10 @@ import {
   WorkflowRowUpdate,
   WorkflowUpdateInput,
 } from "./types";
+
+/** Read-only access to preserved workflow rows in the graveyard schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const graveyardWorkflow = () => (createClient() as any).schema("graveyard").from("workflow");
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
@@ -27,28 +32,25 @@ const toUpdate = (updates: WorkflowUpdateInput): WorkflowRowUpdate =>
 export const workflowService = {
   async fetchAll(): Promise<Workflow[]> {
     try {
-      const { data, error } = await fromDeprecatedTable(
-        "workflow_data",
-        "lib/redux/workflow/service.ts:fetchAll",
-      )
+      const { data, error } = await graveyardWorkflow()
         .select("*")
         .eq("is_deleted", false)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn("[workflow/service] graveyard.workflow fetchAll error:", error);
+        return [];
+      }
       return (data ?? []).map(narrowWorkflow);
     } catch (error) {
       console.error("Error fetching workflows:", error);
-      throw error;
+      return [];
     }
   },
 
   async fetchOne(id: string): Promise<Workflow> {
     try {
-      const { data, error } = await fromDeprecatedTable(
-        "workflow_data",
-        "lib/redux/workflow/service.ts:fetchOne",
-      )
+      const { data, error } = await graveyardWorkflow()
         .select("*")
         .eq("id", id)
         .eq("is_deleted", false)

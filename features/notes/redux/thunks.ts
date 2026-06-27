@@ -127,7 +127,7 @@ export const fetchNoteContent = createAsyncThunk<Note | null, string>(
       .from("notes")
       .select("*")
       .eq("id", noteId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     if (!data) throw new Error("Note not found");
@@ -171,7 +171,7 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
       .from("notes")
       .select("*")
       .eq("id", noteId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     if (!data) throw new Error("Note not found");

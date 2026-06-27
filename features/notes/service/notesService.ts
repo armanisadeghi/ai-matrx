@@ -64,7 +64,7 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
     .select("*")
     .eq("id", id)
     .eq("is_deleted", false)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Error fetching note:", error);
@@ -231,7 +231,7 @@ export async function copyNote(id: string): Promise<Note> {
     .from("notes")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !original) {
     console.error("Error fetching note to copy:", fetchError);
@@ -281,7 +281,7 @@ export async function acceptSharedNote(
     .from("notes")
     .select("shared_with")
     .eq("id", noteId)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !note) {
     console.error("Error fetching note:", fetchError);
@@ -403,7 +403,7 @@ export async function createFolder(name: string): Promise<string> {
     .eq("name", name)
     .eq("is_deleted", false)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (existing?.id) return existing.id;
 

@@ -1,4 +1,5 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { createClient } from "@/utils/supabase/client";
 import {
   WorkflowNode,
   WorkflowNodeCreateInput,
@@ -7,6 +8,10 @@ import {
   WorkflowNodeRowUpdate,
   WorkflowNodeUpdateInput,
 } from "./types";
+
+/** Read-only access to preserved workflow node rows in the graveyard schema. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const graveyardWorkflowNode = () => (createClient() as any).schema("graveyard").from("workflow_node");
 
 /**
  * JSON columns come back as `unknown` from the generated DB types. At the
@@ -27,27 +32,24 @@ const toUpdate = (updates: WorkflowNodeUpdateInput): WorkflowNodeRowUpdate =>
 export const workflowNodeService = {
   async fetchAll(): Promise<WorkflowNode[]> {
     try {
-      const { data, error } = await fromDeprecatedTable(
-        "workflow_node_data",
-        "lib/redux/workflow-nodes/service.ts:fetchAll",
-      )
+      const { data, error } = await graveyardWorkflowNode()
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.warn("[workflow-nodes/service] graveyard.workflow_node fetchAll error:", error);
+        return [];
+      }
       return (data ?? []).map(narrowNode);
     } catch (error) {
       console.error("Error fetching workflow nodes:", error);
-      throw error;
+      return [];
     }
   },
 
   async fetchOne(id: string): Promise<WorkflowNode> {
     try {
-      const { data, error } = await fromDeprecatedTable(
-        "workflow_node_data",
-        "lib/redux/workflow-nodes/service.ts:fetchOne",
-      )
+      const { data, error } = await graveyardWorkflowNode()
         .select("*")
         .eq("id", id)
         .single();
@@ -63,19 +65,19 @@ export const workflowNodeService = {
 
   async fetchByWorkflowId(workflowId: string): Promise<WorkflowNode[]> {
     try {
-      const { data, error } = await fromDeprecatedTable(
-        "workflow_node_data",
-        "lib/redux/workflow-nodes/service.ts:fetchByWorkflowId",
-      )
+      const { data, error } = await graveyardWorkflowNode()
         .select("*")
         .eq("workflow_id", workflowId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.warn("[workflow-nodes/service] graveyard.workflow_node fetchByWorkflowId error:", error);
+        return [];
+      }
       return (data ?? []).map(narrowNode);
     } catch (error) {
       console.error("Error fetching workflow nodes by workflow ID:", error);
-      throw error;
+      return [];
     }
   },
 

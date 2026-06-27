@@ -116,33 +116,39 @@ const convertDbResponseForSourceConfigs = (data: any): RecipeConfig => {
 };
 
 /**
- * Fetches a specific compiled recipe by recipe ID and version
+ * Fetches a specific compiled recipe by recipe ID and version.
+ * compiled_recipe may be absent (table deleted/moved) — returns null on any error.
  */
 export const getCompiledRecipeByVersionWithNeededBrokers = async (
     recipeId: string,
     version?: number
 ): Promise<RecipeConfig | null> => {
-    let query = supabase.from("compiled_recipe").select("*").eq("recipe_id", recipeId);
+    try {
+        let query = supabase.from("compiled_recipe").select("*").eq("recipe_id", recipeId);
 
-    if (version) {
-        query = query.eq("version", version);
-    } else {
-        query = query.order("version", { ascending: false }).limit(1);
-    }
+        if (version) {
+            query = query.eq("version", version);
+        } else {
+            query = query.order("version", { ascending: false }).limit(1);
+        }
 
-    const { data, error } = await query;
+        const { data, error } = await query;
 
-    console.log("fetching recipe with id and version", recipeId, version);
+        console.log("fetching recipe with id and version", recipeId, version);
 
-    if (error) {
-        console.error("Error fetching compiled recipe:", error);
-        throw error;
-    }
+        if (error) {
+            console.warn("[recipe-service] compiled_recipe query error (table may be absent):", error);
+            return null;
+        }
 
-    if (!data || data.length === 0) {
-        console.warn(`No compiled recipe found for recipe ID: ${recipeId}${version ? ` version: ${version}` : ''}`);
+        if (!data || data.length === 0) {
+            console.warn(`No compiled recipe found for recipe ID: ${recipeId}${version ? ` version: ${version}` : ''}`);
+            return null;
+        }
+
+        return convertDbResponseForSourceConfigs(data[0]);
+    } catch (err) {
+        console.warn("[recipe-service] getCompiledRecipeByVersionWithNeededBrokers caught:", err);
         return null;
     }
-
-    return convertDbResponseForSourceConfigs(data[0]);
 };
