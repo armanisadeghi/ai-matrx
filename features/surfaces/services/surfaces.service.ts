@@ -319,7 +319,7 @@ export async function getSurfaceUsage(
       const { data: bundleRows, error: bErr } = await c
         .schema("tool").from("bundle")
         .select(
-          "name, members:tool_bundle_member(tool:tool_def(id, name, description, is_active))",
+          "name, members:bundle_member(tool:definition(id, name, description, is_active))",
         )
         .in("name", defaultsRes.data.always_include_bundles);
       if (bErr) throw bErr;

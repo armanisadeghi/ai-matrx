@@ -73,6 +73,50 @@ type BindingRow = {
   organization: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
+/**
+ * A row from the pre-joined `agent.menu_surface` view. The view resolves the
+ * organization and the agent identity in SQL (no cross-schema embeds), and only
+ * returns a surface row when the agent's card is visible to the current user.
+ * Agent identity comes from the safe `agent.card` — body fields (messages,
+ * settings, tools, model_id, …) are deliberately absent.
+ */
+type MenuSurfaceRow = {
+  id: string;
+  agent_id: string;
+  surface_name: string;
+  organization_id: string | null;
+  user_id: string | null;
+  agent_name: string;
+  agent_type: string;
+  agent_is_active: boolean;
+  /** Full safe-card object; `created_by` is the agent's owner. */
+  agent: { created_by: string | null } | null;
+  organizations:
+    | { id: string; name: string }
+    | null;
+};
+
+/** Map a `menu_surface` view row into the internal binding shape the bucketing
+ * logic consumes. Agent ownership comes from the card's `created_by` (the
+ * column the old `definition.user_id` embed exposed). */
+function toBindingRow(row: MenuSurfaceRow): BindingRow {
+  return {
+    id: row.id,
+    agent_id: row.agent_id,
+    surface_name: row.surface_name,
+    organization_id: row.organization_id,
+    user_id: row.user_id,
+    agent: {
+      id: row.agent_id,
+      name: row.agent_name,
+      agent_type: row.agent_type,
+      user_id: row.agent?.created_by ?? null,
+      is_active: row.agent_is_active,
+    },
+    organization: row.organizations,
+  };
+}
+
 function unwrapOne<T>(value: T | T[] | null): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -182,33 +226,20 @@ async function fetchMenuAgentsFromDb(
   const allNames = [...(surfaceName ? [surfaceName] : []), ...defaultNames];
   if (allNames.length === 0) return [];
 
+  // Reads the pre-joined `agent.menu_surface` view: the organization and the
+  // agent identity are resolved in SQL, so there is no cross-schema embed for
+  // PostgREST to choke on (the old `organizations(*)` embed threw PGRST200 once
+  // `agent_surface` moved into the `agent` schema). The view also inner-joins
+  // the safe agent card, so it only returns surfaces whose agent is visible to
+  // the current user — agents you can't access simply won't appear.
   const { data, error } = await supabase
-    .schema("agent").from("agent_surface")
-    .select(
-      `
-      id,
-      agent_id,
-      surface_name,
-      organization_id,
-      user_id,
-      agent:definition!inner (
-        id,
-        name,
-        agent_type,
-        user_id,
-        is_active
-      ),
-      organization:organizations (
-        id,
-        name
-      )
-    `,
-    )
+    .schema("agent").from("menu_surface")
+    .select("*")
     .in("surface_name", allNames);
 
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as BindingRow[];
+  const rows = ((data ?? []) as unknown as MenuSurfaceRow[]).map(toBindingRow);
   const surfaceRows = surfaceName
     ? rows.filter((r) => r.surface_name === surfaceName)
     : [];
