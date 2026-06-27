@@ -89,6 +89,19 @@ _(populate: slices, hooks, utils, components, types, routes; mark imported-by-ne
 6. ⬜ Free features/chat last 5 importers (tool-viz news-api MessageOptionsMenu/AssistantMessage; PageSpecificHeader dynamic ChatHeaderCompact).
 THEN deletions: dead islands → prompt feature → features/chat → entity engine + 293K schema files (IDE relief).
 
+## Entity-engine deletion — DEFINITIVE remaining live blockers (scan result)
+Build-safe relocations DONE: Resource cluster, DesktopFilterPanel/SystemPromptOptimizer, print-utils→lib/block-print, InputControlsSettings, MatrxRecordId, QuickReferenceRecord, dead uiSagas. Remaining couplings before the engine + 293K schema files can delete:
+- **LIGHT / build-safe (do next):**
+  - `app/(core)/layout.tsx` + `app/(admin)/layout.tsx` → `getEmptyGlobalCache` (utils/schema) — remove the entity-only cache init.
+  - `components/ui/JsonComponents/SchemaBasedJsonEditor.tsx` (`generateJsonTemplate`), `components/flashcard-app/**` (`ensureId`) → relocate the 2 small `utils/schema/schemaUtils` helpers to a neutral util.
+  - `constants/chat.ts`, type files (`componentConfigTypes`, `AutomationSchemaTypes`, `schema.ts`, `applets/types`) → relocate/inline the entity types used.
+  - `providers/rich-text-editor/useProviderChips.ts` → entity hooks (rich-text live).
+- **RISKY / needs running-app verification (the real frontier):**
+  - `components/mardown-display/chat-markdown/analyzer/MarkdownAnalyzer.tsx` → `createChatSelectors` (LIVE chat render).
+  - `components/mardown-display/blocks/brokers/**` (2) → `useDataBrokerWithFetch` (LIVE, lazy-loaded in chat markdown).
+  - These read entity Redux state in the live chat-rendering path; rewriting them off entity selectors is the one part tsc can't fully verify — DO WITH THE RUNNING APP.
+- **Dead (delete with their owners, not rework):** `features/chat/` data layer (9 files), `lib/redux/features/aiChats/thunks/entity/`, `lib/redux/ui/uiTypes.ts`, `lib/redux/schema/`, `lib/redux/sagas/entity-rootSaga.ts`, `lib/redux/concepts/fields/`, `providers/packs/EntityPack.tsx`, `components/admin/redux/` analyzers, `components/applet/entity/`.
+
 ## Open questions for user
 - ⬜ TBD
 
