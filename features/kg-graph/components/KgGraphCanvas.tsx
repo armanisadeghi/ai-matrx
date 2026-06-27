@@ -145,6 +145,16 @@ export function KgGraphCanvas({
   // else the user/route-selected filter (null = org-wide).
   const effectiveScopeId = mode === "scope" ? (scopeId ?? null) : scopeFilter;
 
+  // Debounce the Detail control: dragging the slider walks through many values,
+  // and each one used to fire a full /kg/graph fetch (AbortController cancelled
+  // the stale ones, but every step still opened a round-trip). Only refetch once
+  // the user settles on a value. The other fetch deps stay immediate.
+  const [debouncedDetail, setDebouncedDetail] = useState(detail);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedDetail(detail), 350);
+    return () => clearTimeout(t);
+  }, [detail]);
+
   useEffect(() => {
     const controller = new AbortController();
     setStatus("loading");
@@ -159,7 +169,7 @@ export function KgGraphCanvas({
         depth: KG_DEFAULT_DEPTH,
         // Only the top-N most-connected nodes — a smaller budget = a far faster
         // first paint. The user dials in more via the "Detail" control.
-        limit: kgDetailLimit(detail),
+        limit: kgDetailLimit(debouncedDetail),
       },
       { signal: controller.signal },
     )
@@ -173,7 +183,7 @@ export function KgGraphCanvas({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [mode, orgFilter, effectiveScopeId, reloadKey, detail]);
+  }, [mode, orgFilter, effectiveScopeId, reloadKey, debouncedDetail]);
 
   // Available kinds for the filter dropdown.
   const kinds = useMemo(() => {
