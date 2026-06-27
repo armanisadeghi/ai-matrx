@@ -16,6 +16,7 @@ import {
   X,
   Copy,
   RotateCcw,
+  GitCompareArrows,
 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ import {
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import type { Note } from "@/features/notes/types";
 import { useQuickNoteSave } from "./useQuickNoteSave";
 
@@ -140,6 +142,22 @@ export function QuickNoteSaveCore({
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const openDiff = useOpenDiffViewerWindow();
+
+  // Compare-before-apply: the existing note content is the baseline (old); the
+  // content about to overwrite it is the incoming version (new), so the diff
+  // reads as additions/removals the overwrite will make.
+  const handlePreviewOverwrite = useCallback(() => {
+    openDiff({
+      original: selectedNote?.content ?? "",
+      modified: workingContent,
+      originalLabel: selectedNote?.label ?? "Current note",
+      modifiedLabel: "Incoming",
+      title: "Preview overwrite",
+      engine: "light",
+      defaultView: "split",
+    });
+  }, [openDiff, selectedNote, workingContent]);
 
   const handleSaveClick = useCallback(async () => {
     if (mode === "update" && updateMethod === "overwrite" && selectedNoteId) {
@@ -588,6 +606,14 @@ export function QuickNoteSaveCore({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <Button
+                  variant="outline"
+                  onClick={handlePreviewOverwrite}
+                  className="gap-1.5"
+                >
+                  <GitCompareArrows className="h-4 w-4" />
+                  Preview changes
+                </Button>
                 <AlertDialogAction
                   onClick={handleOverwriteConfirm}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

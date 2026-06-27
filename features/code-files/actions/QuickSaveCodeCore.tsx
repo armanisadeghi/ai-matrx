@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Check,
   FolderPlus,
+  GitCompareArrows,
   LayoutPanelLeft,
   Save,
   X,
@@ -42,6 +43,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import type { CodeFile } from "../redux/code-files.types";
 import { useQuickSaveCode } from "./useQuickSaveCode";
 
@@ -104,6 +106,7 @@ export function QuickSaveCodeCore({
   });
 
   const [showOverwrite, setShowOverwrite] = React.useState(false);
+  const openDiff = useOpenDiffViewerWindow();
   const [isCreatingFolder, setIsCreatingFolder] = React.useState(false);
   const [newFolderName, setNewFolderName] = React.useState("");
   const [folderCreateBusy, setFolderCreateBusy] = React.useState(false);
@@ -142,6 +145,22 @@ export function QuickSaveCodeCore({
     setShowOverwrite(false);
     await save();
   }, [save]);
+
+  // Compare-before-apply: existing file body is the baseline (old); the content
+  // about to overwrite it is the incoming version (new). engine="auto"+language
+  // routes recognized code to Monaco, plain text to the light engine.
+  const handlePreviewOverwrite = useCallback(() => {
+    openDiff({
+      original: selectedFile?.content ?? "",
+      modified: content,
+      originalLabel: selectedFile?.name ?? "Current file",
+      modifiedLabel: "Incoming",
+      title: "Preview overwrite",
+      engine: "auto",
+      language,
+      defaultView: "split",
+    });
+  }, [openDiff, selectedFile, content, language]);
 
   const handlePostSaveAction = useCallback(
     (action: CodePostSaveAction) => {
@@ -529,6 +548,14 @@ export function QuickSaveCodeCore({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={handlePreviewOverwrite}
+              className="gap-1.5"
+            >
+              <GitCompareArrows className="h-4 w-4" />
+              Preview changes
+            </Button>
             <AlertDialogAction
               onClick={handleConfirmOverwrite}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
