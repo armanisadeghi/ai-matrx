@@ -104,8 +104,6 @@ import type {
   DeactivateShareLinkArg,
   DeleteFileArg,
   GrantPermissionArg,
-  MigrateGuestToUserArg,
-  MigrateGuestToUserResponse,
   MoveFileArg,
   RenameFileArg,
   RestoreVersionArg,
@@ -1838,52 +1836,3 @@ export const bulkMoveFolders = createAsyncThunk<
   }
 });
 
-// ---------------------------------------------------------------------------
-// Guest → user migration
-// ---------------------------------------------------------------------------
-
-/**
- * Claim every file/folder owned by a guest fingerprint for the currently
- * authenticated user. Call this once on first sign-in/sign-up after a guest
- * session — the request is authed as the new user and carries the OLD
- * fingerprint via header + body.
- *
- * After the call returns, the caller should re-load the user file tree
- * (`loadUserFileTree({ userId })`) so the previously-guest-owned items
- * appear in the user's tree.
- */
-export const migrateGuestToUser = createAsyncThunk<
-  MigrateGuestToUserResponse,
-  MigrateGuestToUserArg,
-  ThunkApi
->("cloudFiles/migrateGuestToUser", async (arg) => {
-  if (!arg.guestFingerprint) {
-    throw new Error("guestFingerprint is required");
-  }
-  if (!arg.newUserId) {
-    throw new Error("newUserId is required");
-  }
-  const requestId = newRequestId();
-  registerRequest({
-    requestId,
-    kind: "migrate-guest",
-    resourceId: null,
-    resourceType: null,
-  });
-
-  try {
-    // Body carries the AUTHED user's id (server cross-checks against the
-    // JWT subject). Fingerprint goes in the X-Guest-Fingerprint header
-    // — it's the server-bound proof of guest identity.
-    const { data } = await Files.migrateGuestToUser(
-      {
-        new_user_id: arg.newUserId,
-        guest_id: arg.guestId,
-      },
-      { requestId, guestFingerprint: arg.guestFingerprint },
-    );
-    return data;
-  } finally {
-    releaseRequest(requestId);
-  }
-});

@@ -30,8 +30,6 @@ import type {
   FilePatchRequest,
   FileRecordApi,
   FileUploadResponse,
-  MigrateGuestToUserRequest,
-  MigrateGuestToUserResponse,
   PermissionLevel,
   RenameFileRequest,
   SearchFilesParams,
@@ -335,40 +333,6 @@ export async function bulkMoveFiles(
 ): Promise<{ data: BulkResponse; meta: ResponseMeta }> {
   return postJson<BulkResponse, BulkMoveFilesRequest>(
     "/files/bulk/move",
-    body,
-    opts,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Guest → user migration
-// ---------------------------------------------------------------------------
-
-/**
- * Claim every file/folder/group/permission/share owned by a guest
- * fingerprint for the currently authenticated user.
- *
- * Contract:
- *   - Body: `{ new_user_id, guest_id? }` — `new_user_id` MUST equal the
- *     authed user_id (server enforces). `guest_id` is optional; when
- *     provided, the backend cross-checks against the resolved fingerprint.
- *   - Header: `X-Guest-Fingerprint` (passed via `opts.guestFingerprint`)
- *     is REQUIRED — it's the server-bound proof of guest identity.
- *   - Idempotent on `(authed_user_id, fingerprint)`. Re-calls with the
- *     same `new_user_id` return the original payload. Re-calls with a
- *     DIFFERENT `new_user_id` return `409 guest_locked`.
- */
-export async function migrateGuestToUser(
-  body: MigrateGuestToUserRequest,
-  opts: RequestOptions = {},
-): Promise<{ data: MigrateGuestToUserResponse; meta: ResponseMeta }> {
-  if (!opts.guestFingerprint) {
-    throw new Error(
-      "migrateGuestToUser: opts.guestFingerprint is required (sent as X-Guest-Fingerprint).",
-    );
-  }
-  return postJson<MigrateGuestToUserResponse, MigrateGuestToUserRequest>(
-    "/files/migrate-guest-to-user",
     body,
     opts,
   );

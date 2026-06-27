@@ -919,50 +919,6 @@ export interface BulkResponse {
 }
 
 // ---------------------------------------------------------------------------
-// 10d. Guest → user migration
-// ---------------------------------------------------------------------------
-
-/**
- * Request body for `POST /files/migrate-guest-to-user`.
- *
- * **The fingerprint is sent as the `X-Guest-Fingerprint` HEADER** (the
- * client adds it from `RequestOptions.guestFingerprint`), not in the
- * body. The backend resolves the fingerprint server-side, refuses if
- * the resolved guest UUID does not match `guest_id`, and records the
- * migration in `cld_guest_migrations` — so a second call with a
- * different `new_user_id` returns `409 guest_locked`.
- */
-export interface MigrateGuestToUserRequest {
-  /** Must equal the authenticated user_id (server verifies). */
-  new_user_id: string;
-  /**
-   * Optional. When provided, the backend cross-checks that the
-   * server-resolved fingerprint maps to this guest UUID. Mismatch → 403.
-   * When omitted, the server relies entirely on the fingerprint header.
-   */
-  guest_id?: string;
-}
-
-/**
- * Response body for the migration endpoint. Both legacy and current
- * field names are present (the backend returns both for transition).
- */
-export interface MigrateGuestToUserResponse {
-  // Counts (current shape)
-  files: number;
-  folders: number;
-  groups: number;
-  perms: number;
-  shares: number;
-  // Counts (alias shape kept for FE compatibility)
-  files_migrated: number;
-  folders_migrated: number;
-  groups_migrated: number;
-  permissions_migrated: number;
-  shares_migrated: number;
-}
-
-// ---------------------------------------------------------------------------
 // 10e. Storage usage / quotas / tier (GET /files/usage)
 // ---------------------------------------------------------------------------
 
@@ -1069,17 +1025,6 @@ export interface UpdateFolderArg {
   };
 }
 
-export interface MigrateGuestToUserArg {
-  /** Authenticated user id files are being claimed FOR. */
-  newUserId: string;
-  /** Optional cross-check. Backend resolves the fingerprint anyway. */
-  guestId?: string;
-  /**
-   * Server-bound proof of guest identity. Sent as the
-   * `X-Guest-Fingerprint` header by the client. Required by the backend.
-   */
-  guestFingerprint: string;
-}
 
 // ---------------------------------------------------------------------------
 // 10i. Rename / copy thunk args (camelCase mirrors)
@@ -1135,8 +1080,7 @@ export type RequestKind =
   | "file-copy"
   | "file-restore"
   | "bulk-move-files"
-  | "bulk-move-folders"
-  | "migrate-guest";
+  | "bulk-move-folders";
 
 export interface LedgerEntry {
   requestId: string;

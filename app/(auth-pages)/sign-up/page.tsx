@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { IconBrandGithub, IconBrandGoogle, IconBrandApple } from "@tabler/icons-react";
 import AuthPageContainer from "@/components/auth/auth-page-container";
+import { GuestFingerprintField } from "./GuestFingerprintField";
 
 
 interface SignUpProps {
@@ -54,6 +55,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
             message={message as AuthMessageType}
         >
             <form action={signUpAction} className="space-y-6" suppressHydrationWarning={true}>
+                <GuestFingerprintField />
                 <div>
                     <Label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Email address

@@ -6,6 +6,7 @@ import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { promoteGuestToUser } from "@/lib/services/guest-promotion";
 
 export async function signUpAction(formData: FormData): Promise<void> {
   const email = formData.get("email")?.toString();
@@ -34,6 +35,50 @@ export async function signUpAction(formData: FormData): Promise<void> {
   if (password.length < 6) {
     console.error("SignUpAction - Password too short");
     return encodedRedirect("error", "/sign-up", "Password must be at least 6 characters long");
+  }
+
+  // Guest → user in-place promotion. If this visitor created files /
+  // conversations as a guest, their work is owned by a server-minted
+  // anonymous auth UUID (keyed off the browser fingerprint). Promoting that
+  // SAME UUID to a real account keeps every guest-owned row. A fresh signUp()
+  // would mint a new UUID and silently orphan all of it.
+  const guestFingerprint = formData.get("guestFingerprint")?.toString();
+  if (guestFingerprint) {
+    const promotion = await promoteGuestToUser({
+      fingerprint: guestFingerprint,
+      email,
+      password,
+    });
+
+    if (promotion.promoted) {
+      // Account is real + email already confirmed. Sign them in on the
+      // cookie-bound SSR client (same UUID → all their work is theirs) and
+      // skip the email-confirmation gate entirely.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        console.error("SignUpAction - promotion ok but auto sign-in failed:", signInError.message);
+        return encodedRedirect(
+          "success",
+          "/login",
+          "Your account is ready. Please sign in to continue.",
+        );
+      }
+      console.log("SignUpAction - guest promoted in place, signed in:", promotion.userId);
+      return redirect(redirectTo);
+    }
+
+    if (promotion.reason === "email_in_use") {
+      return encodedRedirect(
+        "error",
+        "/sign-up",
+        "That email already has an account. Please sign in instead.",
+      );
+    }
+    // no_guest / already_converted / not_anonymous / error → fall through to
+    // the normal sign-up path below.
   }
 
   // Use the confirm URL for email verification (PKCE flow)

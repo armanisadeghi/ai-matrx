@@ -244,8 +244,8 @@ export interface RequestOptions {
   /**
    * Override the guest fingerprint sent as `X-Guest-Fingerprint`. By default
    * we read it synchronously from the fingerprint service. Pass an explicit
-   * value when calling from a context that has a different identity (e.g.
-   * the migrate-guest-to-user endpoint, which needs the OLD fingerprint).
+   * value when calling from a context that has a different guest identity
+   * than the current browser.
    */
   guestFingerprint?: string;
   /**
