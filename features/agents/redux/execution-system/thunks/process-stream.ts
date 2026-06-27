@@ -939,6 +939,45 @@ export async function processStream({
               }),
             }),
           );
+
+          // Mirror a completed tool's result into observability.toolCalls the
+          // MOMENT it streams — not only at the end-of-stream flush. The
+          // fullscreen overlay / window panel and any post-prune persisted
+          // render read the observability row (via `persistedToolEntry`);
+          // without this early write a result that streamed fine inline was
+          // missing there until a full page reload re-fetched cx_tool_call from
+          // the DB. The end-of-stream flush still runs as a backstop.
+          if (toolData.event === "tool_completed") {
+            const dbId = toolCallIdByProviderCallId.get(toolData.call_id);
+            const rawResult = (
+              toolData.data as Record<string, unknown> | null
+            )?.result;
+            if (dbId && rawResult != null) {
+              const outputStr =
+                typeof rawResult === "string"
+                  ? rawResult
+                  : JSON.stringify(rawResult);
+              dispatch(
+                patchToolCall({
+                  id: dbId,
+                  patch: {
+                    status: "completed",
+                    success: true,
+                    output: outputStr,
+                    outputChars: outputStr.length,
+                  },
+                }),
+              );
+            } else if (!dbId && rawResult != null) {
+              // Loud recovery: the call_id ↔ record_id mapping is missing, so
+              // the streamed result can't be parked on its observability row —
+              // the end-of-stream flush will miss it too. Surface it.
+              console.warn(
+                "[process-stream] tool_completed result not stored to observability — no record id for call_id",
+                toolData.call_id,
+              );
+            }
+          }
         }
 
         dispatch(
@@ -1971,6 +2010,11 @@ export async function processStream({
             outputChars: outputStr?.length ?? 0,
             outputPreview: (lc.resultPreview ??
               null) as CxToolCallRecord["outputPreview"],
+            // Carry the streamed event log too, so a persisted (post-prune /
+            // committed) render gets the SAME events live as it would after a
+            // DB reload — renderers that read `events` weren't empty there.
+            executionEvents: (lc.events ??
+              []) as CxToolCallRecord["executionEvents"],
             durationMs,
             ...(startedAt ? { startedAt } : {}),
             ...(completedAt ? { completedAt } : {}),
