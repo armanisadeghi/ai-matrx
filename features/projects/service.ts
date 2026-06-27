@@ -319,12 +319,34 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     supabase,
   )
     .from("projects")
-    .select(`*, organizations(is_personal)`)
+    .select(`*`)
     .in("id", projectIds);
 
   if (projectsError) {
     console.error("Error fetching projects:", projectsError.message);
     return [];
+  }
+
+  // `organizations.is_personal` lives in `public.organizations`. PostgREST
+  // embedding is single-schema, so a `workspace.projects → public.organizations`
+  // embed fails ("no relationship in schema cache"). Fetch the orgs separately
+  // and map `is_personal` back by organization_id.
+  const orgIds = Array.from(
+    new Set(
+      (projectRows ?? [])
+        .map((r: Record<string, unknown>) => r.organization_id as string | null)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const personalByOrg = new Map<string, boolean>();
+  if (orgIds.length > 0) {
+    const { data: orgs } = await supabase
+      .from("organizations")
+      .select("id, is_personal")
+      .in("id", orgIds);
+    for (const o of orgs ?? []) {
+      personalByOrg.set(o.id as string, o.is_personal === true);
+    }
   }
 
   const countsResult = await membershipsService.counts("project", projectIds);
@@ -339,6 +361,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
     const proj = transformProjectFromDb(row);
     return {
       ...proj,
+      isPersonal: personalByOrg.get(row.organization_id as string) ?? false,
       role: roleById.get(proj.id) ?? ("member" as ProjectRole),
       memberCount: countById.get(proj.id) ?? 0,
     };
