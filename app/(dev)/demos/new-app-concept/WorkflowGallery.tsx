@@ -74,23 +74,23 @@ function cardStyle(variant: Variant, i: number, n: number, active: boolean): CSS
       return {
         transform: `translateY(${i % 2 === 0 ? -10 : 10}px) rotate(${i % 2 === 0 ? -2 : 1.5}deg)`,
       };
-    // Radial fan: rotation is linear (constant angular step) but the vertical
-    // rise COMPOUNDS as offset² — each tier builds on the previous one's lift,
-    // so the center sits low and the ends sweep up to keep the cards tangent to
-    // a single arc (left card tilts CW, right card CCW).
+    // Radial fan: rotation is linear (constant angular step) and the vertical
+    // rise compounds as offset², so the cards stay tangent to one shallow arc —
+    // a slight, consistent curve. Keep the coefficients small so the ends don't
+    // run ahead of their neighbours (left card tilts CW, right card CCW).
     case "fan-up":
       return {
-        transform: `translateY(${offset * offset * -16}px) rotate(${-offset * 9}deg)`,
+        transform: `translateY(${offset * offset * -7}px) rotate(${-offset * 5}deg)`,
         transformOrigin: "center bottom",
-        marginLeft: i === 0 ? 0 : -16,
+        marginLeft: i === 0 ? 0 : -12,
         zIndex: active ? 20 : 10 - Math.abs(offset),
       };
-    // Mirror: center high, ends sweep down along the arch.
+    // Mirror: center high, ends settle down along the same shallow arch.
     case "fan-down":
       return {
-        transform: `translateY(${offset * offset * 16}px) rotate(${offset * 9}deg)`,
+        transform: `translateY(${offset * offset * 7}px) rotate(${offset * 5}deg)`,
         transformOrigin: "center top",
-        marginLeft: i === 0 ? 0 : -16,
+        marginLeft: i === 0 ? 0 : -12,
         zIndex: active ? 20 : 10 - Math.abs(offset),
       };
     case "spotlight":
@@ -218,7 +218,7 @@ export function WorkflowGallery({ items, activeId, onSelect }: WorkflowGalleryPr
       ) : (
         <div
           className={cn(
-            "flex h-64 w-full items-center justify-center overflow-visible px-2",
+            "flex h-56 w-full items-center justify-center overflow-visible px-2",
             variant === "fan-up" || variant === "fan-down"
               ? "flex-nowrap gap-0"
               : "flex-wrap gap-3 sm:gap-4",
