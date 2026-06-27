@@ -23,6 +23,9 @@ Concise, append-only record of **frontend/app** cutover work that is shipped, so
 
 **→ Files/notes cutover CLOSED on the FE.** (Remaining: D18 RLS = DB agent, reported done; browser spot-check pending.)
 
+- **`workspace` schema cutover — FE done (whole domain).** DB moved `ctx_projects`→`workspace.projects`, `ctx_tasks`→`workspace.tasks`, `wr_sessions`→`workspace.war_rooms`, `wr_threads`→`workspace.threads` (tile tables graveyarded; tile content already canonical via associations). FE repointed via new `utils/supabase/workspaceDb.ts` (~32 files): projects, tasks, war-room, agent-context, dashboard, scopes, config registries; type refs → `Database['workspace']`; realtime `schema:'workspace'`; tokens `project`/`task` unchanged; parity 45/45. Fixed the live `getSession {}` war-room error. `workspace` schema verified exposed in PostgREST. `db-types` now pulls `public+files+workflow+workspace`. **Full type-check: 0 errors.**
+- **audio errors → canonical `system_error`** — `audio_transcription_errors` graveyarded; `audioErrorLogger` (service-role) now writes `public.system_error` (`kind='audio_transcription'`, specifics in `context`).
+
 ## Flags for the DB / your side
 - **Registry data-quality (from parity sync):** `folder` `url_path_template` (`/files/folder/{id}`) ≠ live route (`/files/folders/`); `wf_trigger` template has two `{id}` but the consumer replaces only the first; 3 list/settings rows have no `{id}` (fine). Reconcile in the DB registry.
 - **PostgREST must expose the `files` schema** (`db-schemas` setting) for `.schema('files')` to resolve at runtime — DB-config side.
