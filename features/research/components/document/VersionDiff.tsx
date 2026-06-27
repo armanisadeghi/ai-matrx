@@ -1,14 +1,10 @@
 "use client";
 
-import { lazy, Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { DiffViewer } from "@/components/diff/DiffViewer";
 import type { ResearchDocument } from "../../types";
-
-const ReactDiffViewer = lazy(() => import("react-diff-viewer-continued"));
 
 interface VersionDiffProps {
   oldDoc: ResearchDocument;
@@ -17,7 +13,6 @@ interface VersionDiffProps {
 }
 
 export function VersionDiff({ oldDoc, newDoc, onClose }: VersionDiffProps) {
-  const mode = useAppSelector((s) => s.theme.mode);
   return (
     <div className="flex flex-col h-full min-h-0 p-4 sm:p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -36,15 +31,15 @@ export function VersionDiff({ oldDoc, newDoc, onClose }: VersionDiffProps) {
           <Badge variant="default">v{newDoc.version}</Badge>
         </div>
       </div>
-      <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border">
-        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <ReactDiffViewer
-            oldValue={oldDoc.content}
-            newValue={newDoc.content}
-            splitView={false}
-            useDarkTheme={mode === "dark"}
-          />
-        </Suspense>
+      <div className="flex-1 min-h-0 overflow-hidden rounded-lg border border-border">
+        <DiffViewer
+          original={oldDoc.content}
+          modified={newDoc.content}
+          originalLabel={`v${oldDoc.version}`}
+          modifiedLabel={`v${newDoc.version}`}
+          engine="light"
+          defaultView="inline"
+        />
       </div>
     </div>
   );
