@@ -607,7 +607,8 @@ export function SidebarChats({
                 {
                   id: row.id,
                   title: row.title || "New chat",
-                  status: (row.status || "active") as ConversationItem["status"],
+                  status: (row.status ||
+                    "active") as CxConversationSummary["status"],
                   message_count: row.message_count ?? 0,
                   created_at: row.created_at || new Date().toISOString(),
                   updated_at: row.updated_at || new Date().toISOString(),

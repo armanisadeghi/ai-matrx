@@ -113,6 +113,18 @@ export const selectRawSegmentCount =
     return state.transcriptStudio.rawIdsBySession[sessionId]?.length ?? 0;
   };
 
+/**
+ * Has this session's raw segments been fetched at all? Distinguishes a
+ * legitimately-empty session (fetched → key present as `[]`, count 0) from one
+ * never loaded (key absent). Gate a fetch on this — NOT on `count === 0` — so an
+ * empty session isn't re-fetched on every mount.
+ */
+export const selectRawSegmentsLoaded =
+  (sessionId: string | null) =>
+  (state: RootState): boolean =>
+    !!sessionId &&
+    state.transcriptStudio.rawIdsBySession[sessionId] !== undefined;
+
 // ── Cleaned segments ────────────────────────────────────────────────
 
 const EMPTY_CLEANED: CleanedSegment[] = [];
