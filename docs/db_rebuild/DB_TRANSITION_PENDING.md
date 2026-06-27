@@ -46,6 +46,14 @@ The bulk repoint subagents reliably do literal `.from()` swaps but **miss**:
 - **3 skill SELECT policies** `task_id` branch → `workspace.tasks.created_by` (unblocks the tasks-column drop).
 - Dead `ctx_context_variables` loop removed from `resolve_full_context`.
 
+## ✅ AGENT schema dual-audience rebuild — FE/DB matched (2026-06-26)
+The `agent.*` rebuild added a body/card split (`agent.definition` body capped **non-public** via CHECK; `agent.card` security-definer view of safe columns; `card_visibility` for the card audience; tokens `agent`/`agent_template`/`agent_surface_binding`/`agent_shortcut` + `agent_definition_version`/`_drift_alert`/`_usage`). Caught + fixed after the agx_ shims dropped:
+- **13 functions** referenced the dropped `agx_*` shims — 4 genuinely broken (`get_agent_usage_stats`, `get_agent_conversations`, `agx_usage_history_counts`, `get_user_dashboard_metrics`) repointed to `agent.*` (these broke `agx_get_list`/`shared`/dashboard at runtime → agents were down).
+- **Permission token unified on `agent`**: 9 functions' `'agx_agent'`/`'agx_shortcut'`/`'agx_agent_templates'` literals → `agent`/`agent_shortcut`/`agent_template`, and **30 grants re-keyed** (`agx_*`→`agent`). FE registry + ShareButton already pass `resourceType="agent"`. aidream + FE = 0 agx_ table refs.
+- `agx_get_shared_with_me`/`_for_chat` confirmed to project only safe columns (no body leak).
+
+**Remaining agent gap (1):** `features/agents/components/sharing/AgentSharePanel.tsx` `makePublic` → the canonical `make_resource_public('agent')` would set `visibility='public'` and **hit the body's non-public CHECK (error)**. "Make agent public" must instead set **`card_visibility='public'`** (publish the card, not the body). Fix = teach `make_resource_public` to drive `card_visibility` when the table has it (canonical, like the is_public→visibility reconciliation), then the agent toggle works. (The 81 already-public cards were set by the migration and work; this only affects making a *new* one public.) Outsider/anon agent pages, if any, should read `agent.card` (FE doesn't use it yet; shared display goes through the safe RPCs).
+
 ## ✅ SHIMS DROPPED (2026-06-26): cx (21), agx (7), aga (6), tool (14), skl (6) = **54 views gone**
 Verified before drop: FE old-name `.from()`=0, aidream ORM on new schemas + raw refs fixed (`dictionary.py`), ~80 DB functions + 3 skill policies repointed, not in the legacy entity fixtures. `agent.definition` etc. read live. **Kept (not shims):** `agx_context_menu_view`, `cx_conversation_summary`, `cx_user_request_summary` (real views/tables). `.rpc()` function names unchanged (still work).
 
