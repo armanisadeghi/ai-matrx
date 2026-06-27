@@ -32,7 +32,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
-import { Check, X, Loader2, Copy, Zap, AlertTriangle } from "lucide-react";
+import {
+  Check,
+  X,
+  Loader2,
+  Copy,
+  Zap,
+  AlertTriangle,
+  GitCompareArrows,
+} from "lucide-react";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 // TODO(prompt-to-agent-sweep): createUserPrompt writes to public.prompts which is graveyarded.
@@ -216,6 +225,23 @@ export function SystemPromptOptimizer({
   const hasOptimizedText = streamingText.trim().length > 0;
   const showExperimentalButton = fullPromptObject && onAcceptFullPrompt;
 
+  // Review-before-accept: current prompt = baseline, optimized = new. Opens the
+  // canonical diff window (word-level, markdown) so the user sees exactly what
+  // the optimizer changed before Accept & Replace.
+  const openDiff = useOpenDiffViewerWindow();
+  const handleCompareOptimized = () => {
+    openDiff({
+      original: currentSystemMessage,
+      modified: streamingText,
+      originalLabel: "Current",
+      modifiedLabel: "Optimized",
+      title: "Optimized prompt diff",
+      engine: "light",
+      language: "markdown",
+      defaultView: "highlight",
+    });
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -271,9 +297,21 @@ export function SystemPromptOptimizer({
 
             {/* Optimized System Message */}
             <div className="flex flex-col min-h-0">
-              <Label className="text-sm font-medium mb-2">
-                Optimized Version
-              </Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-sm font-medium">Optimized Version</Label>
+                {hasOptimizedText && !isOptimizing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCompareOptimized}
+                    className="h-7 gap-1.5"
+                    title="Compare the current prompt with the optimized version"
+                  >
+                    <GitCompareArrows className="h-3.5 w-3.5" />
+                    Compare
+                  </Button>
+                )}
+              </div>
               <div className="flex-1 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/30 dark:to-blue-950/30 border border-purple-200 dark:border-purple-700 rounded-lg p-3 overflow-y-auto relative">
                 {hasOptimizedText || isOptimizing ? (
                   <>

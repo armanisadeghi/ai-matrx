@@ -54,11 +54,7 @@ async function resolveOrganizationId(
     return await ensureOrgId(organizationId);
   } catch (error) {
     console.error("Error resolving personal organization:", error);
-    throw pgErrorToError(
-      (error as { message?: string }) ?? {
-        message: "Could not resolve personal organization",
-      },
-    );
+    throw pgErrorToError(error);
   }
 }
 
@@ -128,7 +124,7 @@ export async function createProject(
       containerId: project.id,
       userId: currentUserId,
       role: "owner",
-      orgId: organizationId,
+      organizationId: organizationId,
     });
     if (isScopesRpcErr(memberResult)) {
       console.error(

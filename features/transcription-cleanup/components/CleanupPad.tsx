@@ -84,6 +84,7 @@ import {
 } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -720,6 +721,23 @@ export default function CleanupPad({
   );
   const responseValue = editedResponse ?? strippedClean;
   responseRef.current = responseValue;
+
+  // One-click raw↔cleaned compare: the raw transcript is the baseline (old),
+  // the AI-cleaned text is the new version, so the diff reads as what cleanup
+  // changed. (ContentActionBar still offers clipboard/base compares too.)
+  const openDiff = useOpenDiffViewerWindow();
+  const handleCompareClean = useCallback(() => {
+    openDiff({
+      original: baseTextRef.current,
+      modified: responseRef.current,
+      originalLabel: "Raw transcript",
+      modifiedLabel: "Cleaned",
+      title: "Raw vs cleaned",
+      engine: "light",
+      language: "markdown",
+      defaultView: "highlight",
+    });
+  }, [openDiff]);
 
   /** Display value for a slot: user edit / loaded text, else its live stream. */
   const slotValue = (idx: number): string => {
@@ -2090,6 +2108,18 @@ export default function CleanupPad({
               cleanBusyEarly || cleanThinking ? "animate-spin" : "invisible",
             )}
           />
+          {responseValue.trim().length > 0 &&
+            baseTextRef.current.trim().length > 0 && (
+              <button
+                type="button"
+                onClick={handleCompareClean}
+                title="Compare the raw transcript with the cleaned text"
+                className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" />
+                Compare
+              </button>
+            )}
           {responseValue.trim().length > 0 && (
             <ContentActionBar
               content={responseValue}
