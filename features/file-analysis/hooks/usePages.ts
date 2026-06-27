@@ -40,8 +40,8 @@ function attachRealtime(fileId: string): void {
       "postgres_changes",
       {
         event: "*",
-        schema: "public",
-        table: "file_pages",
+        schema: "files",
+        table: "pages",
         filter: `file_id=eq.${fileId}`,
       },
       // Coalesce write bursts. Backend analysis flows update many rows per

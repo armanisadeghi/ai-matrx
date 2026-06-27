@@ -52,8 +52,8 @@ function attachRealtime(fileId: string): void {
       "postgres_changes",
       {
         event: "UPDATE",
-        schema: "public",
-        table: "file_analysis",
+        schema: "files",
+        table: "analysis",
         filter: `file_id=eq.${fileId}`,
       },
       // Backend analysis flows mutate the same `file_analysis` row many
@@ -65,8 +65,8 @@ function attachRealtime(fileId: string): void {
       "postgres_changes",
       {
         event: "INSERT",
-        schema: "public",
-        table: "file_analysis_result",
+        schema: "files",
+        table: "analysis_result",
         filter: `file_id=eq.${fileId}`,
       },
       (payload) => {

@@ -49,8 +49,8 @@ function attachRealtime(fileId: string): void {
       "postgres_changes",
       {
         event: "*",
-        schema: "public",
-        table: "file_page_annotations",
+        schema: "files",
+        table: "page_annotations",
         filter: `file_id=eq.${fileId}`,
       },
       // Coalesce bursts (bulk annotation imports, AI detector batch

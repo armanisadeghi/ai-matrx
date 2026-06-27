@@ -348,6 +348,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   file_analysis: {
     resourceType: "file_analysis",
     tableName: "file_analysis",
+    schemaName: "files",
+    physicalTable: "analysis",
     idColumn: "file_id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -358,6 +360,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   file_entities: {
     resourceType: "file_entities",
     tableName: "file_entities",
+    schemaName: "files",
+    physicalTable: "entities",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -368,6 +372,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   file_overrides: {
     resourceType: "file_overrides",
     tableName: "file_overrides",
+    schemaName: "files",
+    physicalTable: "overrides",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -378,6 +384,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   file_page_annotations: {
     resourceType: "file_page_annotations",
     tableName: "file_page_annotations",
+    schemaName: "files",
+    physicalTable: "page_annotations",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -388,6 +396,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   file_pages: {
     resourceType: "file_pages",
     tableName: "file_pages",
+    schemaName: "files",
+    physicalTable: "pages",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
