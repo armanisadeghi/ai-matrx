@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { acceptInvitation } from "@/features/organizations/service";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { OrganizationInvitationWithOrg } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files";
@@ -164,15 +165,17 @@ export default function AcceptInvitationPage() {
         return;
       }
 
-      // Check if user is already a member
-      const { data: memberData } = await supabase
-        .from("organization_members")
-        .select("id")
-        .eq("organization_id", data.organization_id)
-        .eq("user_id", user.id)
-        .single();
+      // Check if user is already a member — canonical membership read
+      // (iam.memberships via the mbr_* RPCs).
+      const myOrgsResult = await membershipsService.forUser("organization");
+      const alreadyMember =
+        !myOrgsResult.ok
+          ? false
+          : myOrgsResult.data.memberships.some(
+              (m) => m.containerId === data.organization_id,
+            );
 
-      if (memberData) {
+      if (alreadyMember) {
         setError("You are already a member of this organization");
         return;
       }

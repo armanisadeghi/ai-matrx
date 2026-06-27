@@ -38,6 +38,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { contextDb } from "@/utils/supabase/contextDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
   ContextItemRow,
@@ -119,31 +120,34 @@ export const scopesService = {
    */
   async getScopeTree(): Promise<ScopesRpcResult<ScopeTreeResponse>> {
     try {
-      const userId = requireUserId();
+      requireUserId();
 
-      // NOTE: `organization_members` has a permissive SELECT RLS policy
-      // (`true`) so any member of an org can read every other member row
-      // for that org. We MUST filter by user_id explicitly — without
-      // this, the join below produces one row per (user, org) member
-      // pair, duplicating each org in the result.
-      const orgsP = supabase
-        .from("organization_members")
-        .select(
-          `role,
-           organizations!inner ( id, name, slug, is_personal )`,
-        )
-        .eq("user_id", userId)
-        .returns<
-          Array<{
-            role: string;
-            organizations: {
-              id: string;
-              name: string;
-              slug: string;
-              is_personal: boolean | null;
-            };
-          }>
-        >();
+      // The current user's org memberships via the canonical membership RPC
+      // (iam.memberships); org identity is resolved from the public
+      // organizations table below (no cross-schema embed).
+      const orgMembersRes = await membershipsService.forUser("organization");
+      if (isScopesRpcErr(orgMembersRes)) return orgMembersRes;
+      const roleByOrgId = new Map<string, string>();
+      for (const m of orgMembersRes.data.memberships) {
+        roleByOrgId.set(m.containerId, m.role);
+      }
+      const orgIds = [...roleByOrgId.keys()];
+
+      const orgsP =
+        orgIds.length > 0
+          ? supabase
+              .from("organizations")
+              .select("id, name, slug, is_personal")
+              .in("id", orgIds)
+          : Promise.resolve({
+              data: [] as Array<{
+                id: string;
+                name: string;
+                slug: string;
+                is_personal: boolean | null;
+              }>,
+              error: null,
+            });
 
       const scopeTypesP = contextDb(supabase)
         .from("scope_types")
@@ -231,14 +235,13 @@ export const scopesService = {
       }
 
       const organizations: OrgNode[] = (orgsRes.data ?? []).map((row) => ({
-        id: row.organizations.id,
-        name: row.organizations.name,
-        slug: row.organizations.slug,
-        is_personal: !!row.organizations.is_personal,
-        // organization_members.role is NOT NULL — no fallback needed.
-        role: row.role as OrgNode["role"],
-        scope_types: scopeTypesByOrg.get(row.organizations.id) ?? [],
-        projects: projectsByOrg.get(row.organizations.id) ?? [],
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        is_personal: !!row.is_personal,
+        role: (roleByOrgId.get(row.id) ?? "member") as OrgNode["role"],
+        scope_types: scopeTypesByOrg.get(row.id) ?? [],
+        projects: projectsByOrg.get(row.id) ?? [],
       }));
 
       // Stable ordering: personal first, then alpha.

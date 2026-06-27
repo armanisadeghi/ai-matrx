@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { NavOrganization } from "./hierarchySlice";
 
 // ─── Data level system ─────────────────────────────────────────────────────
@@ -85,17 +86,17 @@ export const fetchOrg = createAsyncThunk(
       .single();
     if (error) throw error;
 
-    // Also get the user's role in this org
-    const { data: memberData } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", orgId)
-      .eq("user_id", requireUserId())
-      .single();
+    // Also get the user's role in this org — canonical membership read.
+    requireUserId();
+    const membersResult = await membershipsService.forUser("organization");
+    const role = membersResult.ok
+      ? (membersResult.data.memberships.find((m) => m.containerId === orgId)
+          ?.role ?? "member")
+      : "member";
 
     return {
       ...(data as Omit<OrgRecord, "role">),
-      role: memberData?.role ?? "member",
+      role,
     } as OrgRecord;
   },
 );
@@ -118,13 +119,11 @@ export const updateOrg = createAsyncThunk(
 export const deleteOrg = createAsyncThunk(
   "organizations/delete",
   async (orgId: string) => {
-    // Cascade: delete projects, members, then the org
+    // Delete projects, then the org. Membership rows (iam.memberships) are
+    // removed by an ON DELETE CASCADE on memberships.organization_id (pending
+    // DB follow-up) — there is no client grant / public hard-delete RPC for them.
     await workspaceDb(supabase)
       .from("projects")
-      .delete()
-      .eq("organization_id", orgId);
-    await supabase
-      .from("organization_members")
       .delete()
       .eq("organization_id", orgId);
     const { error } = await supabase

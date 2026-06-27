@@ -9,6 +9,7 @@ import type {
   FullContextResponse,
 } from "@/features/agent-context/redux/hierarchySlice";
 import { createProject as createProjectCanonical } from "@/features/projects/service";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { generateProjectSlug } from "@/features/projects/types";
 
 function toTaskPriority(
@@ -98,26 +99,30 @@ export const hierarchyService = {
   },
 
   async fetchUserOrganizations(): Promise<HierarchyOrg[]> {
-    const userId = requireUserId();
+    requireUserId();
+
+    // Canonical membership read (iam.memberships via mbr_* RPCs); org identity
+    // resolved from the public organizations table (no cross-schema embed).
+    const membersResult = await membershipsService.forUser("organization");
+    if (!membersResult.ok) throw new Error(membersResult.error.message);
+    const roleByOrgId = new Map<string, string>();
+    for (const m of membersResult.data.memberships) {
+      roleByOrgId.set(m.containerId, m.role);
+    }
+    const orgIds = [...roleByOrgId.keys()];
+    if (orgIds.length === 0) return [];
 
     const { data, error } = await supabase
-      .from("organization_members")
+      .from("organizations")
       .select(
-        `
-        role,
-        organizations!inner (
-          id, name, slug, description, logo_url, is_personal, settings, created_at
-        )
-      `,
+        "id, name, slug, description, logo_url, is_personal, settings, created_at",
       )
-      .eq("user_id", userId);
-
+      .in("id", orgIds);
     if (error) throw error;
-    if (!data) return [];
 
-    return data.map((row: any) => ({
-      ...row.organizations,
-      role: row.role,
+    return (data ?? []).map((org: any) => ({
+      ...org,
+      role: roleByOrgId.get(org.id) ?? "member",
     }));
   },
 
@@ -352,11 +357,17 @@ export const hierarchyService = {
       .single();
     if (error) throw error;
 
-    await supabase.from("organization_members").insert({
-      organization_id: org.id,
-      user_id: userId,
+    // Owner membership via the canonical mbr_* RPC (iam.memberships); the client
+    // has no direct grant on the table. mbr_add honors organizations.created_by
+    // to bootstrap the first owner of a just-created org.
+    const ownerResult = await membershipsService.add({
+      containerType: "organization",
+      containerId: org.id,
+      userId,
+      organizationId: org.id,
       role: "owner",
     });
+    if (!ownerResult.ok) throw new Error(ownerResult.error.message);
 
     return { ...org, role: "owner" } as HierarchyOrg;
   },
@@ -498,12 +509,10 @@ export const hierarchyService = {
       .eq("organization_id", id);
     if (projErr) throw projErr;
 
-    const { error: memErr } = await supabase
-      .from("organization_members")
-      .delete()
-      .eq("organization_id", id);
-    if (memErr) throw memErr;
-
+    // Membership rows live in iam.memberships (no client grant; no public
+    // hard-delete RPC). They must be removed by an ON DELETE CASCADE on
+    // memberships.organization_id — pending DB follow-up. Until that lands this
+    // delete will fail loudly on the FK rather than silently orphan rows.
     const { error } = await supabase
       .from("organizations")
       .delete()

@@ -13,6 +13,8 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
+import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   Organization,
   OrganizationWithRole,
@@ -112,20 +114,23 @@ export async function createOrganization(
       };
     }
 
-    // Add creator as owner
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({
-        organization_id: org.id,
-        user_id: currentUserId,
-        role: "owner",
-      });
+    // Add creator as owner. Canonical membership write via the `mbr_*` RPCs
+    // (iam.memberships) — the client has no direct grant on the table. The org
+    // row stamps `created_by = auth.uid()`, which mbr_add honors to bootstrap
+    // the first owner of a just-created org.
+    const ownerResult = await membershipsService.add({
+      containerType: "organization",
+      containerId: org.id,
+      userId: currentUserId,
+      organizationId: org.id,
+      role: "owner",
+    });
 
-    if (memberError) {
-      console.error("Error adding member:", memberError.message);
+    if (isScopesRpcErr(ownerResult)) {
+      console.error("Error adding owner membership:", ownerResult.error);
       return {
         success: false,
-        error: memberError.message || "Failed to add you as organization owner",
+        error: "Failed to add you as organization owner",
       };
     }
 
@@ -305,50 +310,57 @@ export async function getOrganizationBySlugOrId(
  */
 export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    const { data, error } = await supabase
-      .from("organization_members")
-      .select(
-        `
-        role,
-        organizations (
-          *
-        )
-      `,
-      )
-      .eq("user_id", currentUserId);
-
-    if (error) {
-      console.error("Error fetching user organizations:", error.message);
-      throw pgErrorToError(error);
-    }
-
-    if (!data || data.length === 0) {
+    // Canonical membership read — the current user's org memberships from
+    // iam.memberships via the mbr_* RPCs (org membership row: container_type
+    // 'organization', container_id = organization_id). No cross-schema embed of
+    // `organizations` — we resolve those in a second public-table read.
+    const membersResult = await membershipsService.forUser("organization");
+    if (isScopesRpcErr(membersResult)) {
+      console.error(
+        "Error fetching user organizations:",
+        membersResult.error,
+      );
       return [];
     }
 
-    const orgs: OrganizationWithRole[] = await Promise.all(
-      (data || []).map(async (item: any) => {
-        const org = transformOrganizationFromDb(item.organizations);
+    const memberships = membersResult.data.memberships;
+    if (memberships.length === 0) return [];
 
-        // Get member count
-        const { count, error: countError } = await supabase
-          .from("organization_members")
-          .select("*", { count: "exact", head: true })
-          .eq("organization_id", org.id);
+    const roleByOrgId = new Map<string, OrgRole>();
+    for (const m of memberships) {
+      roleByOrgId.set(m.containerId, m.role as OrgRole);
+    }
+    const orgIds = [...roleByOrgId.keys()];
 
-        if (countError) {
-          console.error("Error fetching member count:", countError.message);
-        }
+    // Resolve the org rows (public table — direct read, RLS-scoped).
+    const { data: orgRows, error: orgsError } = await supabase
+      .from("organizations")
+      .select("*")
+      .in("id", orgIds);
+    if (orgsError) {
+      console.error("Error fetching organizations:", orgsError.message);
+      throw pgErrorToError(orgsError);
+    }
 
-        return {
-          ...org,
-          role: item.role as OrgRole,
-          memberCount: count || 0,
-        };
-      }),
-    );
+    // Batch member counts — one round-trip instead of N.
+    const countsResult = await membershipsService.counts("organization", orgIds);
+    const countByOrgId = new Map<string, number>();
+    if (!isScopesRpcErr(countsResult)) {
+      for (const c of countsResult.data.counts) {
+        countByOrgId.set(c.containerId, c.memberCount);
+      }
+    }
+
+    const orgs: OrganizationWithRole[] = (orgRows ?? []).map((row) => {
+      const org = transformOrganizationFromDb(row);
+      return {
+        ...org,
+        role: roleByOrgId.get(org.id) ?? ("member" as OrgRole),
+        memberCount: countByOrgId.get(org.id) ?? 0,
+      };
+    });
 
     // Sort: personal first, then by name
     return orgs.sort((a, b) => {
@@ -449,50 +461,44 @@ export async function updateMemberRole(
   newRole: OrgRole,
 ): Promise<OperationResult> {
   try {
-    // Prevent changing the last owner
+    // Prevent changing the last owner. Read the org's members via the canonical
+    // membership RPC (iam.memberships).
     if (newRole !== "owner") {
-      const { data: owners } = await supabase
-        .from("organization_members")
-        .select("id")
-        .eq("organization_id", orgId)
-        .eq("role", "owner");
-
-      if (owners && owners.length === 1) {
-        const { data: member } = await supabase
-          .from("organization_members")
-          .select("role")
-          .eq("organization_id", orgId)
-          .eq("user_id", userId)
-          .single();
-
-        if (member?.role === "owner") {
-          return {
-            success: false,
-            error: "Cannot change role of the last owner",
-          };
-        }
+      const membersResult = await membershipsService.listForContainer(
+        "organization",
+        orgId,
+      );
+      if (isScopesRpcErr(membersResult)) {
+        return { success: false, error: membersResult.error.message };
+      }
+      const owners = membersResult.data.members.filter(
+        (m) => m.role === "owner",
+      );
+      const target = membersResult.data.members.find(
+        (m) => m.userId === userId,
+      );
+      if (owners.length === 1 && target?.role === "owner") {
+        return {
+          success: false,
+          error: "Cannot change role of the last owner",
+        };
       }
     }
 
-    // Use .select() to return updated rows - this helps verify the update actually worked
-    // When RLS blocks an update, Supabase returns success but updates 0 rows
-    const { data: updatedRows, error } = await supabase
-      .from("organization_members")
-      .update({ role: newRole })
-      .eq("organization_id", orgId)
-      .eq("user_id", userId)
-      .select();
+    // Canonical role update (org-access checked inside the RPC).
+    const updateResult = await membershipsService.updateRole({
+      containerType: "organization",
+      containerId: orgId,
+      userId,
+      role: newRole,
+    });
 
-    if (error) throw pgErrorToError(error);
-
-    // Check if any rows were actually updated
-    if (!updatedRows || updatedRows.length === 0) {
-      console.error(
-        "Update returned no rows - RLS may be blocking the operation",
-      );
+    if (isScopesRpcErr(updateResult)) {
+      console.error("Error updating member role:", updateResult.error);
       return {
         success: false,
         error:
+          updateResult.error.message ||
           "Unable to update member role. You may not have permission to perform this action.",
       };
     }
@@ -521,48 +527,37 @@ export async function removeMember(
   userId: string,
 ): Promise<OperationResult> {
   try {
-    // Prevent removing the last owner
-    const { data: member } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", orgId)
-      .eq("user_id", userId)
-      .single();
-
-    if (member?.role === "owner") {
-      const { data: owners } = await supabase
-        .from("organization_members")
-        .select("id")
-        .eq("organization_id", orgId)
-        .eq("role", "owner");
-
-      if (owners && owners.length === 1) {
-        return {
-          success: false,
-          error: "Cannot remove the last owner",
-        };
+    // Prevent removing the last owner. Read members via the canonical RPC.
+    const membersResult = await membershipsService.listForContainer(
+      "organization",
+      orgId,
+    );
+    if (isScopesRpcErr(membersResult)) {
+      return { success: false, error: membersResult.error.message };
+    }
+    const target = membersResult.data.members.find((m) => m.userId === userId);
+    if (target?.role === "owner") {
+      const owners = membersResult.data.members.filter(
+        (m) => m.role === "owner",
+      );
+      if (owners.length === 1) {
+        return { success: false, error: "Cannot remove the last owner" };
       }
     }
 
-    // Use .select() to return deleted rows - this helps verify the delete actually worked
-    // When RLS blocks a delete, Supabase returns success but deletes 0 rows
-    const { data: deletedRows, error } = await supabase
-      .from("organization_members")
-      .delete()
-      .eq("organization_id", orgId)
-      .eq("user_id", userId)
-      .select();
+    // Canonical soft-delete (org-access checked inside the RPC).
+    const removeResult = await membershipsService.remove({
+      containerType: "organization",
+      containerId: orgId,
+      userId,
+    });
 
-    if (error) throw pgErrorToError(error);
-
-    // Check if any rows were actually deleted
-    if (!deletedRows || deletedRows.length === 0) {
-      console.error(
-        "Delete returned no rows - RLS may be blocking the operation",
-      );
+    if (isScopesRpcErr(removeResult)) {
+      console.error("Error removing member:", removeResult.error);
       return {
         success: false,
         error:
+          removeResult.error.message ||
           "Unable to remove member. You may not have permission to perform this action.",
       };
     }
@@ -608,16 +603,15 @@ export async function leaveOrganization(
  */
 export async function getUserRole(orgId: string): Promise<OrgRole | null> {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    const { data } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("organization_id", orgId)
-      .eq("user_id", currentUserId)
-      .single();
-
-    return (data?.role as OrgRole) || null;
+    // The current user's org memberships (canonical RPC); find this org.
+    const membersResult = await membershipsService.forUser("organization");
+    if (isScopesRpcErr(membersResult)) return null;
+    const membership = membersResult.data.memberships.find(
+      (m) => m.containerId === orgId,
+    );
+    return (membership?.role as OrgRole) ?? null;
   } catch (error) {
     console.error("Error fetching user role:", error);
     return null;
