@@ -78,7 +78,7 @@ _(populate: slices, hooks, utils, components, types, routes; mark imported-by-ne
 - Self-contained ROUTE folders deletable (with their feature islands): `(transitional)/ai/recipes`, `(transitional)/ai/prompts`, `(transitional)/prompt-apps`. Feature islands `features/registered-function/` + `hooks/run-recipe/` deletable WITH their transitional/dev consumers (must delete together or transitional build breaks).
 
 ## Unblock reworks (do these to enable deletion; build-verifiable, low runtime risk)
-1. 🔄 **Resource cluster → agent system**: copy `features/prompts/{types/resources.ts,utils/resource-formatting.ts,components/resource-display/ResourceChips.tsx}` (+ ResourcesContainer/resource-parsing used by public-chat) into `features/agents/`; repoint LIVE importers (agents, chat, public-chat, cx-chat). Unblocks prompt-feature deletion.
+1. ✅ **Resource cluster → agent system** (DONE, build-verified): now `features/agents/resources/` (types/utils/ResourceChips/ResourceDisplay); 22 live importers repointed; `features/prompts/` left intact (delete its copies with the feature). First prompt-deletion blocker cleared.
 2. ⬜ Move `DesktopFilterPanel`, `SystemPromptOptimizer` → shared/agents (used by core agents).
 3. ⬜ Extract `MatrxRecordId` (`= string`) → shared `types/` (cuts entity blockers 3/6/7).
 4. ⬜ Rewrite `dbFunctionNodeSlice` off `features/workflows` imports (unblocks old-workflow delete).
