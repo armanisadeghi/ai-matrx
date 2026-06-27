@@ -77,6 +77,7 @@ import {
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
+import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
 const AUTOSAVE_MS = 700;
@@ -119,17 +120,26 @@ export function useWorkingDocumentContextSync(
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
   const content = useAppSelector(selectWorkingDocContent(conversationId, kind));
   const binding = useAppSelector(selectWorkingDocBinding(conversationId, kind));
+  // `cacheOnly` is true until the server confirms the cx_conversation row exists.
+  const isCacheOnly = useAppSelector(selectIsCacheOnly(conversationId));
 
   // When enabled and not yet bound to a durable source, provision the backing
   // `cx_working_documents` row + junction link (the Scribe pattern). For the
   // working kind this flips the published value to `persist: "auto"` so the
   // agent's ctx_patch edits persist server-side and round-trip back. Never
   // overrides an explicit note binding the user picked.
+  //
+  // Gate on the conversation being server-confirmed (`!isCacheOnly`): until then
+  // chat.conversation has no row for this id, so provisioning would insert a
+  // working_documents row whose conversation_id FK can't resolve — it now fails
+  // loudly (23503) and historically leaked orphan rows (docs toggled on a new
+  // chat before its first message). The doc's content lives in Redux meanwhile
+  // and is flushed up by this same effect once the conversation is confirmed.
   useEffect(() => {
-    if (enabled && binding.kind === "none") {
+    if (enabled && binding.kind === "none" && !isCacheOnly) {
       void dispatch(ensureConversationDocumentThunk({ conversationId, kind }));
     }
-  }, [dispatch, conversationId, kind, enabled, binding.kind]);
+  }, [dispatch, conversationId, kind, enabled, binding.kind, isCacheOnly]);
 
   // Live channel: edits to the bound document (the agent's ctx_patch writes for
   // the working kind, or edits from another conversation linked to the same

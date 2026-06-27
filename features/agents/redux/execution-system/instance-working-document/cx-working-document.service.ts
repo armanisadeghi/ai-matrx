@@ -302,6 +302,17 @@ export async function getOrCreateConversationDocument(
     .select("*")
     .single();
   if (docError || !docData) {
+    // 23503 = FK violation on conversation_id: the chat.conversation row isn't
+    // committed yet (a working doc was provisioned before its conversation
+    // persisted). Callers gate on `!isCacheOnly`, so this is the narrow
+    // client/server commit-ordering race, not the steady-state bug. Surface it
+    // loudly (recovery scream) and let the caller retry once the conversation
+    // lands — never silently leak an orphan (the FK now forbids it anyway).
+    if (docError?.code === "23503") {
+      throw new Error(
+        `[cx-working-document] provision deferred: conversation ${conversationId} not persisted yet (FK 23503) — will retry when server-confirmed`,
+      );
+    }
     throw new Error(
       `[cx-working-document] create failed: ${docError?.message ?? "no row"}`,
     );
