@@ -17,6 +17,24 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D24 — `ContentHistoryViewer` is a live overlay backed by no-op stubs → shows empty history, "restore" does nothing
+**Severity: medium — the message content-history overlay is silently non-functional (no error, just empty). Found 2026-06-27 during the KNOWN_DEFECTS sweep.**
+
+**What.** `features/agents/components/TO-BE-ORGANIZED/ContentHistoryViewer.tsx` is reachable via the `contentHistory` overlay (`features/overlays/openers/contentHistory.tsx` + `OverlayController`), but its `selectMessageContentHistory` selector and `editMessage` action are **local no-op stubs** (the file says "Broken after agents refactor — legacy-shim was deleted; these stubs keep the component type-checking until it is rewired"). So the viewer always lists zero versions and "restore" does nothing.
+
+**Why it's not fixed here.** The real machinery exists — `editMessage` (`features/agents/redux/execution-system/message-crud/edit-message.thunk.ts`, a `createAsyncThunk` keyed by `conversationId`, that auto-archives into `content_history`) and per-message `contentHistory` on the messages slice (`chat.message.content_history` jsonb). But the rewire crosses three unverified assumptions on the delicate agents streaming system: (a) the component's `sessionId` prop ↔ the thunk's `conversationId`, (b) the slice's `contentHistory` shape vs the component's expected `CxContentHistoryEntry[]` (`content` + `saved_at`), (c) whether history is even hydrated into the slice on load. A wrong rewire crashes the overlay (worse than the current empty state), and it can't be browser-verified here. Owner: agents-system.
+
+**Fix.** Replace the two stubs with the real selector (read `state.messages.byConversationId[conversationId].byId[messageId].contentHistory`, mapping to `CxContentHistoryEntry`) + `dispatch(editMessage({ conversationId, messageId, newContent }))`, after confirming the `contentHistory` row shape and that it's loaded by `conversation-bundle`/`load-conversation`.
+
+### D23 — Task attachments are not persisted (data loss on reload)
+**Severity: medium — adding/removing a task attachment is lost on reload. Found 2026-06-27 during the KNOWN_DEFECTS sweep.**
+
+**What.** `features/tasks/components/TaskDetails.tsx` `handleFileUpload` / `handleRemoveAttachment` only mutate local React state (`setAttachments`) — explicit `// TODO: Update task in database` markers. The attachment list resets to `task.attachments` on the next mount.
+
+**Why it's not a simple column patch.** `features/tasks/services/taskService.ts:186` documents that task attachments are now backed by the **canonical association system** (reads come from `get_task_associations`), not a `tasks.attachments` column — so the upload must associate the cloud-file to the task via the canonical association write path. Deferred from the sweep because it's entangled with the in-flight junction-table/association cutover (its owner controls that write path). Also a media-durability angle: `FileUploadWithStorage` returns `{ name, url, … }` where `url` may be a signed/expiring URL — persist a durable `file_id` ref, not the signed URL (CLAUDE.md "Media durability").
+
+**Fix.** Route the upload through the canonical task-association write (mirroring how reads use `get_task_associations`) and persist a durable file reference; then the attachment survives reload and never expires.
+
 ### D22 — Auth-action open-redirect + PII-log hardening — RESOLVED 2026-06-27 (residual: trusted `x-forwarded-host`)
 **Severity was: high (open-redirect) + medium. Closed below; one infra-mitigated defense-in-depth item left open.**
 
