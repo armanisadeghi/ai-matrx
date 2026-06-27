@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * DiffCanvas — the react-diff-viewer-continued renderer for a DiffBlock.
+ * DiffCanvas — the diff renderer for a DiffBlock (```diff fences).
  *
- * BUNDLE POLICY: the diff lib is the only thing imported here, loaded EXCLUSIVELY
- * via `next/dynamic ssr:false` from DiffBlock, so it stays out of the server
- * build / initial bundle.
+ * Self-sizing, chrome-less light-engine diff (DiffBlock provides the card,
+ * title, split/unified toggle, and copy). Uses the canonical InlineTextDiff so
+ * it shares the one diff engine + GitHub-style color palette with the rest of
+ * the app — no third-party diff library. DiffBlock still loads this file via
+ * `next/dynamic ssr:false`, the single boundary for this subtree.
  */
 
 import React from "react";
-import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
-
-import { useAppSelector } from "@/lib/redux/hooks";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 export default function DiffCanvas({
   oldValue,
@@ -22,17 +22,12 @@ export default function DiffCanvas({
   newValue: string;
   split: boolean;
 }) {
-  const isDark = useAppSelector((s) => s.theme.mode) === "dark";
   return (
-    <div className="overflow-auto text-[13px] [&_pre]:!font-mono">
-      <ReactDiffViewer
-        oldValue={oldValue}
-        newValue={newValue}
-        splitView={split}
-        useDarkTheme={isDark}
-        compareMethod={DiffMethod.WORDS}
-        leftTitle={split ? "Before" : undefined}
-        rightTitle={split ? "After" : undefined}
+    <div className="px-1 py-1 text-[13px]">
+      <InlineTextDiff
+        original={oldValue}
+        modified={newValue}
+        view={split ? "split" : "inline"}
       />
     </div>
   );

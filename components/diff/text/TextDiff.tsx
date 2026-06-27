@@ -25,6 +25,14 @@ import type {
   TextDiffOptions,
   WordSegment,
 } from "./engine/types";
+import {
+  GUTTER,
+  INLINE_BG,
+  LINE_BG,
+  WORD_BG,
+  splitSideTint,
+  wordSegmentClass,
+} from "./diffColors";
 
 // "highlight" is the reader's view: a SINGLE-PANE rendering of the *new*
 // document (the after) with only the added/changed regions tinted inline — no
@@ -54,29 +62,9 @@ export interface TextDiffProps {
   className?: string;
 }
 
-// GitHub-style diff palette \u2014 the de-facto enterprise standard, legible in
-// both light and dark. Three intensities per color, layered:
-//   LINE_BG  \u2014 the whole changed line, the faintest tint.
-//   WORD_BG  \u2014 the exact changed words, layered on top of LINE_BG so the edit
-//              pops out of the line.
-//   GUTTER   \u2014 the +/- markers and other foreground accents.
-// Reds = removed (old-only), greens = added (new-only). Dark mode uses a bright
-// hue at low opacity (green-500/15) rather than a near-black 950 shade, which
-// is what made the previous scheme invisible.
-const LINE_BG = {
-  added: "bg-green-100 dark:bg-green-500/15",
-  removed: "bg-red-100 dark:bg-red-500/15",
-} as const;
-
-const WORD_BG = {
-  added: "bg-green-300 dark:bg-green-500/40",
-  removed: "bg-red-300 dark:bg-red-500/40",
-} as const;
-
-const GUTTER = {
-  added: "text-green-700 dark:text-green-400",
-  removed: "text-red-700 dark:text-red-400",
-} as const;
+// Diff colors come from the shared ./diffColors module (LINE_BG / WORD_BG /
+// GUTTER / INLINE_BG / splitSideTint / wordSegmentClass) so every renderer
+// stays in lockstep \u2014 see that file.
 
 function renderSegments(
   cell: DiffCell,
@@ -93,40 +81,18 @@ function renderSegments(
     }
     if (seg.type !== keep) return null;
     return (
-      <span
-        key={i}
-        className={cn(
-          "rounded-[2px]",
-          side === "left" ? WORD_BG.removed : WORD_BG.added,
-        )}
-      >
+      <span key={i} className={cn("rounded-[2px]", wordSegmentClass(side))}>
         {seg.value}
       </span>
     );
   });
 }
 
-// Per-side tint for the split (side-by-side) view: the OLD column reads red on
-// removed/modified rows, the NEW column reads green on added/modified rows \u2014
-// the way every modern side-by-side diff works. Absent cells (a line that
-// exists only on the other side) get a neutral fill so the gap is obvious.
+// Per-side tint for the split (side-by-side) view, from the shared module.
 function splitTint(row: DiffRow, side: "left" | "right"): string {
   const cell = side === "left" ? row.left : row.right;
-  if (cell.content === null) return "bg-muted/40";
-  if (side === "left" && (row.type === "removed" || row.type === "modified"))
-    return LINE_BG.removed;
-  if (side === "right" && (row.type === "added" || row.type === "modified"))
-    return LINE_BG.added;
-  return "";
+  return splitSideTint(row.type, side, cell.content === null);
 }
-
-// Tint for the inline (unified) view, keyed by the line's own type. Inline
-// never emits "modified" \u2014 a change becomes a removed line then an added line.
-const INLINE_BG = {
-  added: LINE_BG.added,
-  removed: LINE_BG.removed,
-  unchanged: "",
-} as const;
 
 /**
  * Render one new-side line for the single-pane "highlight" view: the document
@@ -146,7 +112,7 @@ function renderHighlightLine(
   }
   if (!segments || segments.length === 0) {
     return (
-      <span className="rounded-[2px] bg-green-100 dark:bg-green-500/15">
+      <span className={cn("rounded-[2px]", LINE_BG.added)}>
         {content === "" ? " " : content}
       </span>
     );

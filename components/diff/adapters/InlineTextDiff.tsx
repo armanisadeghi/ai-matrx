@@ -22,6 +22,12 @@ import type {
   TextDiffOptions,
   WordSegment,
 } from "../text/engine/types";
+import {
+  GUTTER,
+  INLINE_BG,
+  splitSideTint,
+  wordSegmentClass,
+} from "../text/diffColors";
 
 const BASE_OPTIONS: Omit<TextDiffOptions, "ignoreTrailingWhitespace"> = {
   wordLevel: true,
@@ -41,27 +47,12 @@ function renderSegments(
     if (seg.type === "unchanged") return <span key={i}>{seg.value}</span>;
     if (seg.type !== keep) return null;
     return (
-      <span
-        key={i}
-        className={cn(
-          "rounded-[2px]",
-          side === "left"
-            ? "bg-red-300/60 dark:bg-red-500/40"
-            : "bg-green-300/60 dark:bg-green-500/40",
-        )}
-      >
+      <span key={i} className={cn("rounded-[2px]", wordSegmentClass(side))}>
         {seg.value}
       </span>
     );
   });
 }
-
-const ROW_TINT = {
-  added: "bg-green-50 dark:bg-green-950/30",
-  removed: "bg-red-50 dark:bg-red-950/30",
-  modified: "bg-amber-50/60 dark:bg-amber-950/20",
-  unchanged: "",
-} as const;
 
 interface InlineTextDiffProps {
   original: string;
@@ -119,13 +110,13 @@ export function InlineTextDiff({
         {result.inline.map((line, i) => (
           <div
             key={i}
-            className={cn("flex items-start px-2", ROW_TINT[line.type])}
+            className={cn("flex items-start px-2", INLINE_BG[line.type])}
           >
             <span
               className={cn(
                 "select-none shrink-0 w-4 text-center",
-                line.type === "added" && "text-green-600 dark:text-green-400",
-                line.type === "removed" && "text-red-600 dark:text-red-400",
+                line.type === "added" && GUTTER.added,
+                line.type === "removed" && GUTTER.removed,
                 line.type === "unchanged" && "text-transparent",
               )}
             >
@@ -159,8 +150,7 @@ export function InlineTextDiff({
             <td
               className={cn(
                 "align-top px-3 py-0.5 border-r border-border w-1/2 whitespace-pre-wrap break-words",
-                ROW_TINT[row.left.content === null ? "unchanged" : row.type],
-                row.left.content === null && "bg-muted/20",
+                splitSideTint(row.type, "left", row.left.content === null),
               )}
             >
               {renderSegments(row.left, "left")}
@@ -168,8 +158,7 @@ export function InlineTextDiff({
             <td
               className={cn(
                 "align-top px-3 py-0.5 w-1/2 whitespace-pre-wrap break-words",
-                ROW_TINT[row.right.content === null ? "unchanged" : row.type],
-                row.right.content === null && "bg-muted/20",
+                splitSideTint(row.type, "right", row.right.content === null),
               )}
             >
               {renderSegments(row.right, "right")}
