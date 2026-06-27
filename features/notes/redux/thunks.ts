@@ -75,10 +75,10 @@ export const fetchNotesList = createAsyncThunk<void, void>(
     const { data, error } = await supabase
       .from("notes")
       .select(
-        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version",
+        "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
       )
-      .eq("user_id", userId)
-      .eq("is_deleted", false)
+      .eq("created_by", userId)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -92,7 +92,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
     for (const note of notes) {
       dispatch(
         upsertNoteFromServer({
-          note: { ...note, user_id: userId },
+          note: { ...note, created_by: userId },
           fetchStatus: "list",
         }),
       );
@@ -292,9 +292,9 @@ async function resolveFolderId(
   const { data: existing } = await supabase
     .from("note_folders")
     .select("id")
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("name", folderName)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .limit(1)
     .single();
 
@@ -304,7 +304,7 @@ async function resolveFolderId(
   const { data: created, error } = await supabase
     .from("note_folders")
     .insert({
-      user_id: userId,
+      created_by: userId,
       name: folderName,
       path: folderName,
       position: 0,
@@ -335,7 +335,8 @@ export const createNewNote = createAsyncThunk<
   const { data, error } = await supabase
     .from("notes")
     .insert({
-      user_id: userId,
+      // Canonical RLS std_insert requires created_by = auth.uid().
+      created_by: userId,
       label: input.label ?? "New Note",
       content: input.content ?? "",
       folder_name: folderName,
@@ -376,7 +377,7 @@ export const createNewNote = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 /**
- * Soft delete a note (set is_deleted = true).
+ * Soft delete a note (set deleted_at = now).
  * Dispatches removeNote and custom event "notes:deleted".
  */
 export const deleteNote = createAsyncThunk<void, string>(
@@ -384,7 +385,7 @@ export const deleteNote = createAsyncThunk<void, string>(
   async (noteId, { dispatch }) => {
     const { error } = await supabase
       .from("notes")
-      .update({ is_deleted: true })
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", noteId);
 
     if (error) throw error;
@@ -419,7 +420,8 @@ export const copyNote = createAsyncThunk<Note, string>(
     const { data, error } = await supabase
       .from("notes")
       .insert({
-        user_id: userId,
+        // Canonical RLS std_insert requires created_by = auth.uid().
+        created_by: userId,
         label: copyLabel,
         content: record.content,
         folder_name: record.folder_name,
@@ -472,7 +474,7 @@ export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
         record.label === "New Note" &&
         (!record.content || record.content.trim() === "") &&
         record.folder_name === folder &&
-        !record.is_deleted
+        !record.deleted_at
       ) {
         dispatch(addTab(record.id));
         dispatch(setActiveNote(record.id));
@@ -562,14 +564,14 @@ export const saveNoteField = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 /**
- * Restore a soft-deleted note — sets is_deleted back to false and re-adds to Redux.
+ * Restore a soft-deleted note — clears deleted_at and re-adds to Redux.
  */
 export const restoreNote = createAsyncThunk<void, string>(
   "notes/restoreNote",
   async (noteId, { dispatch }) => {
     const { data, error } = await supabase
       .from("notes")
-      .update({ is_deleted: false })
+      .update({ deleted_at: null })
       .eq("id", noteId)
       .select("*")
       .single();
@@ -597,10 +599,10 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
     const { data, error } = await supabase
       .from("notes")
       .select(
-        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, is_public, is_deleted, version",
+        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, visibility, deleted_at, version",
       )
-      .eq("user_id", userId)
-      .eq("is_deleted", true)
+      .eq("created_by", userId)
+      .not("deleted_at", "is", null)
       .order("updated_at", { ascending: false });
 
     if (error) throw error;
@@ -608,7 +610,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
     for (const note of data ?? []) {
       dispatch(
         upsertNoteFromServer({
-          note: { ...note, user_id: userId },
+          note: { ...note, created_by: userId },
           fetchStatus: "full",
         }),
       );

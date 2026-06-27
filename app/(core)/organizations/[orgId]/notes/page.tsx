@@ -9,7 +9,7 @@ import { OrgResourceList } from "@/features/organizations/components/OrgResource
 import { supabase } from "@/utils/supabase/client";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
-const SELECT_COLS = "id, label, updated_at, organization_id, user_id, tags";
+const SELECT_COLS = "id, label, updated_at, organization_id, created_by, tags";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase

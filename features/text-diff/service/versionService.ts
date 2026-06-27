@@ -114,10 +114,10 @@ export async function createManualVersion(
     diff_metadata?: Record<string, any>;
   } = {},
 ): Promise<NoteVersion> {
-  // Get the note's user_id
+  // Get the note's owner
   const { data: note, error: noteError } = await supabase
     .from("notes")
-    .select("user_id")
+    .select("created_by")
     .eq("id", noteId)
     .single();
 
@@ -133,7 +133,7 @@ export async function createManualVersion(
     .from("note_versions")
     .insert({
       note_id: noteId,
-      user_id: note.user_id,
+      user_id: note.created_by,
       content,
       label,
       version_number: nextVersion,

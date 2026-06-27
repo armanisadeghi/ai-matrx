@@ -2,7 +2,7 @@ import type { DiffOptions } from "@/components/diff/engine/types";
 
 export const NOTE_EXCLUDE_PATHS = new Set([
   "id",
-  "user_id",
+  "created_by",
   "created_at",
   "updated_at",
   "version",
@@ -10,7 +10,7 @@ export const NOTE_EXCLUDE_PATHS = new Set([
   "content_hash",
   "last_device_id",
   "position",
-  "is_deleted",
+  "deleted_at",
   "file_path",
 ]);
 

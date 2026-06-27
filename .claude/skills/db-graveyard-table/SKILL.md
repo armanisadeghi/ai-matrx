@@ -28,7 +28,9 @@ select * from public.shareable_resource_registry where table_name='<table>';
 -- is anything still actually reading it? (needs pg_stat_statements)
 select calls, query from pg_stat_statements where query ~* '\m<table>\M' order by calls desc limit 20;
 ```
-Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<table>')`, generated type names, Python model/manager names (`aidream/db/models*.py`, `db/managers/**`), package wiring in `aidream/package_integration.py`.
+Code (both repos): grep `<table>` for `.from('<table>')`, `.schema(...).from('<table>')`, generated type names, Python model/manager names (`aidream/db/models*.py`, `db/managers/**`), package wiring in `aidream/package_integration.py`, **and raw SQL strings** (`from <table>`, `SELECT 1 FROM <table>` ACL joins in `.py`/`.sql`).
+
+> **A 0-row table can still be LIVE.** Verified: `note_shares` had 0 rows but was joined by RAG-search ACL (`matrx-rag/search.py: SELECT 1 FROM public.note_shares`) — graveyarding it turned an empty result into a missing-relation error, breaking search. **Row count ≠ usage.** The query string is what breaks; grep it before you move. (Recovery: `alter table graveyard.<t> set schema public` — reversible, which is why we never `DROP`.)
 
 ## Step 2 — Confirm it's truly dead
 If reads remain: repoint or delete those consumers if quick; otherwise graveyard now (reversible) and **track the remaining cleanup** in `docs/db_rebuild/CHANGEOVER_PROGRESS.md`. Do not block the move on a long repoint — but never graveyard a table with live, load-bearing reads you haven't accounted for.

@@ -30,8 +30,9 @@ select tgname from pg_trigger where tgrelid='public.<table>'::regclass and not t
 ```
 Grep both repos for `<table>` usages (FE `.from`, Python models/managers, package wiring).
 
-## Step 2 — Ensure the target schema is ready
-`create schema if not exists <new>;` · expose it to PostgREST if FE-read · add it to the `db-types` `--schema` list · add to aidream `matrx_orm.yaml`.
+## Step 2 — Ensure the target schema is ready (the EXPOSURE BLOCKER)
+`create schema if not exists <new>;` + grant `usage` to `authenticated, anon, service_role` + default privileges · add it to the `db-types` `--schema` list · add to aidream `matrx_orm.yaml`.
+> ⛔ **You CANNOT expose a new schema via the MCP.** Supabase's PostgREST exposed-schema list is **platform config**, not a role GUC (verified: nothing on `authenticator.rolconfig`), so no `execute_sql`/`apply_migration` reaches it. It must be added via the **dashboard (Settings → API → Exposed schemas)** or the **management API** (`PATCH /v1/projects/{ref}/postgrest`, preserving the existing list). **A FE-read table moved into an unexposed schema 404s for every user the instant it moves.** So: get the schema exposed FIRST (ask the user / use the mgmt API), confirm, *then* move. Don't blind-`ALTER ROLE authenticator SET pgrst.db_schemas` — you don't know the full current list and will silently un-expose other schemas.
 
 ## Step 3 — Move + verify it followed
 ```sql

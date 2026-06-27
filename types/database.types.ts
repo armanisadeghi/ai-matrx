@@ -2242,6 +2242,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "conversation_documents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_documents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cx_conversation_documents_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
@@ -3411,7 +3425,22 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "working_documents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "working_documents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -7220,6 +7249,141 @@ export type Database = {
           label?: string | null
           name?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      note_devices: {
+        Row: {
+          base_path: string | null
+          created_at: string
+          created_by: string | null
+          device_id: string
+          device_name: string
+          id: string
+          is_active: boolean
+          last_seen: string
+          organization_id: string | null
+          platform: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          base_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id: string
+          device_name?: string
+          id?: string
+          is_active?: boolean
+          last_seen?: string
+          organization_id?: string | null
+          platform?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          base_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id?: string
+          device_name?: string
+          id?: string
+          is_active?: boolean
+          last_seen?: string
+          organization_id?: string | null
+          platform?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      note_directory_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          device_id: string
+          folder_id: string
+          id: string
+          is_active: boolean
+          local_path: string
+          organization_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          device_id: string
+          folder_id: string
+          id?: string
+          is_active?: boolean
+          local_path: string
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          device_id?: string
+          folder_id?: string
+          id?: string
+          is_active?: boolean
+          local_path?: string
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      note_sync_log: {
+        Row: {
+          action: string
+          content_hash: string | null
+          created_at: string
+          details: Json | null
+          device_id: string
+          folder_id: string | null
+          id: string
+          note_id: string | null
+          sync_version: number | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          content_hash?: string | null
+          created_at?: string
+          details?: Json | null
+          device_id: string
+          folder_id?: string | null
+          id?: string
+          note_id?: string | null
+          sync_version?: number | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          content_hash?: string | null
+          created_at?: string
+          details?: Json | null
+          device_id?: string
+          folder_id?: string | null
+          id?: string
+          note_id?: string | null
+          sync_version?: number | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -14011,131 +14175,13 @@ export type Database = {
           },
         ]
       }
-      note_devices: {
-        Row: {
-          base_path: string | null
-          created_at: string
-          created_by: string | null
-          device_id: string
-          device_name: string
-          id: string
-          is_active: boolean
-          last_seen: string
-          organization_id: string | null
-          platform: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          base_path?: string | null
-          created_at?: string
-          created_by?: string | null
-          device_id: string
-          device_name?: string
-          id?: string
-          is_active?: boolean
-          last_seen?: string
-          organization_id?: string | null
-          platform?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          base_path?: string | null
-          created_at?: string
-          created_by?: string | null
-          device_id?: string
-          device_name?: string
-          id?: string
-          is_active?: boolean
-          last_seen?: string
-          organization_id?: string | null
-          platform?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_devices_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      note_directory_mappings: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          device_id: string
-          folder_id: string
-          id: string
-          is_active: boolean
-          local_path: string
-          organization_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          device_id: string
-          folder_id: string
-          id?: string
-          is_active?: boolean
-          local_path: string
-          organization_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          device_id?: string
-          folder_id?: string
-          id?: string
-          is_active?: boolean
-          local_path?: string
-          organization_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_directory_mappings_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "note_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "note_directory_mappings_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       note_folders: {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
-          is_deleted: boolean
+          metadata: Json
           name: string
           organization_id: string | null
           parent_id: string | null
@@ -14143,14 +14189,15 @@ export type Database = {
           position: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: "private" | "internal" | "link" | "public"
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
-          is_deleted?: boolean
+          metadata?: Json
           name: string
           organization_id?: string | null
           parent_id?: string | null
@@ -14158,14 +14205,15 @@ export type Database = {
           position?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: "private" | "internal" | "link" | "public"
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
-          is_deleted?: boolean
+          metadata?: Json
           name?: string
           organization_id?: string | null
           parent_id?: string | null
@@ -14173,8 +14221,8 @@ export type Database = {
           position?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: "private" | "internal" | "link" | "public"
         }
         Relationships: [
           {
@@ -14266,60 +14314,6 @@ export type Database = {
           },
         ]
       }
-      note_sync_log: {
-        Row: {
-          action: string
-          content_hash: string | null
-          created_at: string
-          details: Json | null
-          device_id: string
-          folder_id: string | null
-          id: string
-          note_id: string | null
-          sync_version: number | null
-          user_id: string
-        }
-        Insert: {
-          action: string
-          content_hash?: string | null
-          created_at?: string
-          details?: Json | null
-          device_id: string
-          folder_id?: string | null
-          id?: string
-          note_id?: string | null
-          sync_version?: number | null
-          user_id: string
-        }
-        Update: {
-          action?: string
-          content_hash?: string | null
-          created_at?: string
-          details?: Json | null
-          device_id?: string
-          folder_id?: string | null
-          id?: string
-          note_id?: string | null
-          sync_version?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_sync_log_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "note_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "note_sync_log_note_id_fkey"
-            columns: ["note_id"]
-            isOneToOne: false
-            referencedRelation: "notes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       note_versions: {
         Row: {
           change_note: string | null
@@ -14376,25 +14370,22 @@ export type Database = {
           content_hash: string | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           file_path: string | null
           folder_id: string | null
           folder_name: string | null
           id: string
-          is_deleted: boolean | null
-          is_public: boolean
           label: string
           last_device_id: string | null
           metadata: Json | null
           organization_id: string | null
           position: number | null
           project_id: string | null
-          shared_with: Json | null
           sync_version: number
           tags: string[] | null
           task_id: string | null
           updated_at: string | null
           updated_by: string | null
-          user_id: string
           version: number
           visibility: "private" | "internal" | "link" | "public"
         }
@@ -14403,25 +14394,22 @@ export type Database = {
           content_hash?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           file_path?: string | null
           folder_id?: string | null
           folder_name?: string | null
           id?: string
-          is_deleted?: boolean | null
-          is_public?: boolean
           label?: string
           last_device_id?: string | null
           metadata?: Json | null
           organization_id?: string | null
           position?: number | null
           project_id?: string | null
-          shared_with?: Json | null
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
@@ -14430,25 +14418,22 @@ export type Database = {
           content_hash?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           file_path?: string | null
           folder_id?: string | null
           folder_name?: string | null
           id?: string
-          is_deleted?: boolean | null
-          is_public?: boolean
           label?: string
           last_device_id?: string | null
           metadata?: Json | null
           organization_id?: string | null
           position?: number | null
           project_id?: string | null
-          shared_with?: Json | null
           sync_version?: number
           tags?: string[] | null
           task_id?: string | null
           updated_at?: string | null
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
@@ -14711,41 +14696,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_members: {
-        Row: {
-          id: string
-          invited_by: string | null
-          joined_at: string | null
-          organization_id: string
-          role: Database["public"]["Enums"]["org_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          organization_id: string
-          role?: Database["public"]["Enums"]["org_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          invited_by?: string | null
-          joined_at?: string | null
-          organization_id?: string
-          role?: Database["public"]["Enums"]["org_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -29513,6 +29463,96 @@ export type Database = {
         Returns: undefined
       }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
+      org_admin_get_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: Json
+      }
+      org_admin_list_audit: {
+        Args: { p_limit?: number; p_org_id: string }
+        Returns: {
+          action: string
+          actor_email: string
+          actor_user_id: string
+          created_at: string
+          detail: Json
+          id: string
+          target_email: string
+          target_user_id: string
+        }[]
+      }
+      org_admin_list_member_resources: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: {
+          count: number
+          display_label: string
+          resource_type: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      org_admin_list_members: {
+        Args: { p_org_id: string }
+        Returns: {
+          account_bytes_used: number
+          account_files_count: number
+          avatar_url: string
+          cost_24h_mcents: number
+          display_name: string
+          email: string
+          joined_at: string
+          last_org_activity_at: string
+          last_request_at: string
+          member_level: string
+          monthly_budget_mcents: number
+          org_bytes_used: number
+          org_files_count: number
+          requests_24h: number
+          requests_6h: number
+          role: string
+          status: string
+          storage_cap_bytes: number
+          tier_override: string
+          user_id: string
+        }[]
+      }
+      org_admin_overview: { Args: { p_org_id: string }; Returns: Json }
+      org_admin_reassign_member_resources: {
+        Args: {
+          p_from_user: string
+          p_org_id: string
+          p_resource_types?: string[]
+          p_to_user: string
+        }
+        Returns: {
+          reassigned: number
+          resource_type: string
+        }[]
+      }
+      org_admin_remove_member: {
+        Args: { p_org_id: string; p_reassign_to?: string; p_user_id: string }
+        Returns: Json
+      }
+      org_admin_set_member_controls: {
+        Args: {
+          p_member_level?: string
+          p_monthly_budget_mcents?: number
+          p_notes?: string
+          p_org_id: string
+          p_storage_cap_bytes?: number
+          p_tier_override?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      org_admin_set_member_status: {
+        Args: {
+          p_org_id: string
+          p_reason?: string
+          p_status: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       page_extraction_clear_job_results: {
         Args: { p_job_id: string }
         Returns: undefined

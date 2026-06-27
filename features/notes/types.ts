@@ -18,15 +18,10 @@ export type NoteShareRow = Database["public"]["Tables"]["note_shares"]["Row"];
 export type Note = NoteRow;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
-// `metadata` and `shared_with` are Json columns — the generated type is
-// `unknown`. Consumers use these helpers to read them as a structured object.
+// `metadata` is a Json column — the generated type is `unknown`. Consumers use
+// this helper to read it as a structured object.
 export interface NoteMetadata {
     lastEditorMode?: string;
-    [key: string]: unknown;
-}
-
-export interface NoteSharedWith {
-    userIds?: string[];
     [key: string]: unknown;
 }
 
@@ -40,22 +35,12 @@ export function getNoteMetadata(
     return {};
 }
 
-export function getNoteSharedWith(
-    note: Pick<Note, "shared_with"> | null | undefined,
-): NoteSharedWith {
-    const raw = note?.shared_with;
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-        return raw as NoteSharedWith;
-    }
-    return {};
-}
-
 // ── Sidebar list projection (subset returned by fetchNotesList) ─────────────
 // Only fields selected in the list query — keep in sync with thunks.ts.
 export type NoteListItem = Pick<
     Note,
     | "id"
-    | "user_id"
+    | "created_by"
     | "label"
     | "folder_name"
     | "folder_id"
@@ -65,7 +50,7 @@ export type NoteListItem = Pick<
     | "organization_id"
     | "project_id"
     | "task_id"
-    | "is_public"
+    | "visibility"
     | "version"
 >;
 
@@ -99,7 +84,6 @@ export type CreateNoteInput = Pick<
     | "tags"
     | "metadata"
     | "position"
-    | "is_public"
     | "visibility"
 >;
 
@@ -115,7 +99,6 @@ export type UpdateNoteInput = Pick<
     | "tags"
     | "metadata"
     | "position"
-    | "is_public"
     | "visibility"
 >;
 

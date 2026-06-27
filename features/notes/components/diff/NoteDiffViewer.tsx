@@ -6,7 +6,6 @@ import { createAdapterRegistry } from "@/components/diff/adapters/registry";
 import { DiffViewerShell } from "@/components/diff/views/DiffViewerShell";
 import {
   TextFieldAdapter,
-  BooleanFieldAdapter,
   TagsFieldAdapter,
   JsonObjectAdapter,
 } from "@/components/diff/adapters/defaults";
@@ -35,8 +34,7 @@ function buildNoteAdapterRegistry() {
   registry.register("folder_name", { ...TextFieldAdapter, label: "Folder" });
   registry.register("folder_id", { ...TextFieldAdapter, label: "Folder ID" });
   registry.register("tags", { ...TagsFieldAdapter, label: "Tags" });
-  registry.register("is_public", { ...BooleanFieldAdapter, label: "Public" });
-  registry.register("shared_with", { ...JsonObjectAdapter, label: "Shared With" });
+  registry.register("visibility", { ...TextFieldAdapter, label: "Visibility" });
   registry.register("metadata", { ...JsonObjectAdapter, label: "Metadata" });
 
   // Context relationships

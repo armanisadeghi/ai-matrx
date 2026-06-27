@@ -84,9 +84,11 @@ export default function MobileNotesList({
     }
 
     if (filters.sharedOnly) {
-      result = result.filter(
-        (n) => n.shared_with && Object.keys(n.shared_with).length > 0,
-      );
+      // Canonical sharing lives in the `permissions` table, not on the note
+      // row (the legacy `shared_with` column has been dropped). The in-memory
+      // notes list carries no permission data, so this filter currently has
+      // nothing to match against — sharing surfacing is a follow-up.
+      result = [];
     }
 
     if (searchQuery.trim()) {

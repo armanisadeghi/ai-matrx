@@ -60,7 +60,7 @@ async function fetchNotesForProject(
       .from("notes")
       .select("id, label, content, updated_at, task_id, project_id, tags")
       .eq("project_id", projectId)
-      .eq("is_deleted", false)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -80,7 +80,7 @@ async function fetchNotesForTask(taskId: string): Promise<NoteExportRow[]> {
       .from("notes")
       .select("id, label, content, updated_at, task_id, project_id, tags")
       .eq("task_id", taskId)
-      .eq("is_deleted", false)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false });
 
     if (error) {

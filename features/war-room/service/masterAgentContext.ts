@@ -347,7 +347,7 @@ export async function buildMasterAgentContext(
       .from("notes")
       .select("id,content")
       .in("id", noteIds)
-      .eq("is_deleted", false);
+      .is("deleted_at", null);
     if (error) {
       console.error("[war-room/master] notes snippet read failed:", error);
     } else {

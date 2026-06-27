@@ -96,18 +96,18 @@ const notesAdapter: VirtualSourceAdapter = {
       const [folderRows, noteFolders] = await Promise.all([
         supabase
           .from("note_folders")
-          .select("folder_name")
-          .eq("user_id", userId),
+          .select("name")
+          .eq("created_by", userId),
         supabase
           .from("notes")
           .select("folder_name")
-          .eq("user_id", userId)
-          .eq("is_deleted", false),
+          .eq("created_by", userId)
+          .is("deleted_at", null),
       ]);
       const names = new Set<string>();
       let hasUnfiled = false;
       for (const row of folderRows.data ?? []) {
-        if (row.folder_name) names.add(row.folder_name);
+        if (row.name) names.add(row.name);
       }
       for (const row of noteFolders.data ?? []) {
         if (row.folder_name) names.add(row.folder_name);
@@ -136,8 +136,10 @@ const notesAdapter: VirtualSourceAdapter = {
     let query = supabase
       .from("notes")
       .select("id, label, updated_at, version, folder_name")
-      .eq("user_id", userId)
-      .eq("is_deleted", args.includeDeleted ? true : false);
+      .eq("created_by", userId);
+    query = args.includeDeleted
+      ? query.not("deleted_at", "is", null)
+      : query.is("deleted_at", null);
     if (folderName === null) {
       query = query.is("folder_name", null);
     } else {
@@ -164,7 +166,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .from("notes")
       .select("id, label, content, updated_at")
       .eq("id", id)
-      .eq("user_id", userId)
+      .eq("created_by", userId)
       .maybeSingle();
     if (error || !data) {
       throw new Error(`Note not found: ${id}`);
@@ -190,7 +192,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .from("notes")
       .update(update)
       .eq("id", args.id)
-      .eq("user_id", userId);
+      .eq("created_by", userId);
     if (args.expectedUpdatedAt) {
       query = query.eq("updated_at", args.expectedUpdatedAt);
     }
@@ -212,7 +214,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .from("notes")
       .update(update)
       .eq("id", args.id)
-      .eq("user_id", userId);
+      .eq("created_by", userId);
     if (args.expectedUpdatedAt) {
       query = query.eq("updated_at", args.expectedUpdatedAt);
     }
@@ -238,7 +240,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .from("notes")
       .update(update)
       .eq("id", args.id)
-      .eq("user_id", userId);
+      .eq("created_by", userId);
     if (args.expectedUpdatedAt) {
       query = query.eq("updated_at", args.expectedUpdatedAt);
     }
@@ -257,15 +259,15 @@ const notesAdapter: VirtualSourceAdapter = {
         .from("notes")
         .delete()
         .eq("id", id)
-        .eq("user_id", userId);
+        .eq("created_by", userId);
       if (error) throw error;
       return;
     }
     const { error } = await supabase
       .from("notes")
-      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("id", id)
-      .eq("user_id", userId);
+      .eq("created_by", userId);
     if (error) throw error;
   },
 
@@ -274,16 +276,16 @@ const notesAdapter: VirtualSourceAdapter = {
       // note_folders is the materialized list — insert and return as a node.
       const { data, error } = await supabase
         .from("note_folders")
-        .insert({ user_id: userId, folder_name: args.name })
-        .select("id, folder_name")
+        .insert({ created_by: userId, name: args.name, path: args.name })
+        .select("id, name")
         .maybeSingle();
       if (error || !data) {
         throw new Error(error?.message ?? "Folder create failed");
       }
       return {
-        id: folderVidFromName(data.folder_name ?? args.name),
+        id: folderVidFromName(data.name ?? args.name),
         kind: "folder" as const,
-        name: data.folder_name ?? args.name,
+        name: data.name ?? args.name,
         parentId: null,
       };
     }
@@ -294,7 +296,8 @@ const notesAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .from("notes")
       .insert({
-        user_id: userId,
+        // Canonical RLS std_insert requires created_by = auth.uid().
+        created_by: userId,
         label: args.name,
         content: args.content ?? "",
         folder_name: folderName,

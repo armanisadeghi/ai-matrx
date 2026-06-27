@@ -38,7 +38,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
           event: "*",
           schema: "public",
           table: "notes",
-          filter: `user_id=eq.${userId}`,
+          filter: `created_by=eq.${userId}`,
         },
         (payload) => {
           const state = storeApi.getState() as RootState;
@@ -57,7 +57,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
             }
 
             // Skip soft-deleted
-            if (newRecord.is_deleted) {
+            if (newRecord.deleted_at) {
               storeApi.dispatch(removeNote(noteId));
               return;
             }
@@ -87,7 +87,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
           }
 
           if (eventType === "INSERT" && newRecord) {
-            if (newRecord.is_deleted) return;
+            if (newRecord.deleted_at) return;
             console.log("[Notes RT] INSERT", newRecord.id);
             storeApi.dispatch(
               upsertNoteFromServer({

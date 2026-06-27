@@ -86,17 +86,25 @@ select iam.apply_rls('<schema>','<table>','<token>','<entity|component|ledger>')
 create trigger _history after insert or update or delete on <schema>.<table>
 for each row execute function platform._version_capture('<token>');
 ```
-Confirm the current month's `history.row_versions` partition exists (verified: capture starts only from when `_history` is attached — pre-existing rows are NOT backfilled into history). (Optional `_gc` → `platform._gc_entity_associations('<token>')` to clean association edges on delete.)
+Confirm the current month's `history.row_versions` partition exists (capture starts only when `_history` is attached — pre-existing rows are NOT auto-backfilled). **Backfilling old versions** (retiring a per-feature `*_versions` table): `history.row_versions` is **monthly RANGE-partitioned**, so first pre-create a partition for EVERY month in the source's date range (`min(created_at)..max`) or the INSERT fails with a no-partition error (verified — `note_versions` spanned 7 months, only 2 partitions existed). Map `row_id`/`version`/`occurred_at`/`actor_id`; stash extra fields under reserved `_*` keys in `row_data`; verify `count(history)=count(source)`. (Optional `_gc` → `platform._gc_entity_associations('<token>')` cleans association edges on delete.)
 
 ## Step 6 — Replace the feature's bespoke subsystems with the platform satellites
 If the feature has its OWN comments / associations-relationships / categories / activity-log / favorites-pins, **migrate the rows into the platform tables keyed by `(entity_type='<token>', entity_id)`** and graveyard the old tables (use `db-graveyard-table`). Behavior must be identical afterward — verify the UI shows the same comments/tags/relationships. (`platform.comments`, `platform.associations`, `platform.categories`, `platform.activity_log`, `platform.user_entity_state` — shapes in TOOLKIT.md §1.) Permissions/shares → migrate into `public.permissions` (TOOLKIT.md §3).
+
+## Step 6.5 — Drop the legacy columns (reach zero-WARN)
+In downtime, once consumers are repointed, drop `user_id`/`owner_id`, `is_public`, `is_deleted`, `shared_with` to clear the legacy WARNs. **Each drop has couplings — check first (all bit us on `notes`):**
+- **Backfill with triggers OFF:** wrap the `is_deleted→deleted_at` / `is_public→visibility` UPDATE in `alter table … disable trigger user; … ; enable trigger user;`, else `_touch_row` churns `version`/`updated_at` and the version/sync/ingest triggers fire on every touched row.
+- **Triggers that read the column:** `grep` `new\.<col>` in functions — a version/audit trigger may do `NEW.user_id`. Patch it to `created_by` **before** dropping, or the trigger breaks.
+- **RLS on OTHER tables:** a child policy may reference this column via subquery (`… WHERE notes.user_id = auth.uid()`). `DROP COLUMN` fails `2BP01` and lists them — repoint each to `created_by`; **never blind-`CASCADE`** (it silently drops the policy).
+- **Indexes:** `DROP COLUMN` auto-drops indexes that include it. Recreate the useful composites on `created_by` (owner/sync/folder lookups) first.
+- **Prove safe first:** `count(*) filter (where created_by is distinct from <owner_col>)=0`, `is_public`/`shared_with` empty — then the drop loses nothing.
 
 ## Step 7 — Verify (the acceptance gate)
 ```sql
 select * from iam.verify_canonical('<schema>','<table>','<token>');   -- read EVERY row
 select iam.verify_canonical_ok('<schema>','<table>','<token>');        -- floor: no FAIL
 ```
-**Bar (verified live):** clear every WARN you *can* clear by actually adding the columns — `col_visibility`, `soft_delete`, `timestamps` must reach PASS. The only WARNs allowed to remain are **`legacy_owner_col`** (`user_id`/`owner_id` still present) and **`legacy_is_public`** (`is_public` still present) — these are *required* through the soak and only clear when those columns are dropped (gated, later/Wave-5). So the transition-state "done" = **zero FAIL + at most those two legacy WARNs.** Don't report "canonical" with a `col_visibility`/`soft_delete` WARN still showing. Then impersonate a normal user and confirm they still read their own rows (RLS didn't hide data):
+**Bar (verified live):** `col_visibility`, `soft_delete`, `timestamps` must reach PASS (add the columns — never leave them WARN). The three legacy WARNs — **`legacy_owner_col`** (`user_id`/`owner_id`), **`legacy_is_public`**, **`legacy_is_deleted`** (added to `verify_canonical` 2026-06-27) — clear only when those columns are dropped (Step 6.5). **Full canonical = zero FAIL + zero WARN**, achievable in one pass when you do the drops (proven on `notes`+`note_folders`); if the drops must wait, the transition-state floor is zero FAIL + only those legacy WARNs. Don't report "canonical" with a `col_visibility`/`soft_delete` WARN showing. Then impersonate a normal user and confirm they still read their own rows (RLS didn't hide data):
 ```sql
 select set_config('request.jwt.claims', json_build_object('sub','<a real user uuid>')::text, true);
 select count(*) from <schema>.<table>;   -- expect their visible rows, not 0

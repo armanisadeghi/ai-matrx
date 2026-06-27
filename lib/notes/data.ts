@@ -19,10 +19,10 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
     const { data, error } = await supabase
         .from("notes")
         .select(
-            "id, user_id, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version",
+            "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
         )
-        .eq("user_id", user.id)
-        .eq("is_deleted", false)
+        .eq("created_by", user.id)
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false })
         .limit(100);
 

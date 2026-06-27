@@ -276,7 +276,7 @@ export async function buildRoomAgentContext(
       .from("notes")
       .select("id,content")
       .in("id", noteIds)
-      .eq("is_deleted", false);
+      .is("deleted_at", null);
     if (error) {
       console.error("[war-room/room-agent] notes snippet read failed:", error);
     } else {

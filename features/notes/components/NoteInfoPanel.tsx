@@ -148,7 +148,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
   const stats = useMemo(() => computeNoteStats(content), [content]);
 
   const folder = note?.folder_name ?? "Draft";
-  const isPublic = note?.is_public ?? false;
+  const isPublic = note?.visibility === "public";
 
   const handleFolderChange = useCallback(
     (f: string) => {

@@ -285,7 +285,7 @@ export function useWorkspaceNotesRedux() {
     async (noteId: string) => {
       await supabase
         .from("notes")
-        .update({ is_deleted: true })
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", noteId);
       dispatch(removeNote(noteId));
       window.dispatchEvent(
@@ -303,7 +303,6 @@ export function useWorkspaceNotesRedux() {
       const { data, error } = await supabase
         .from("notes")
         .insert({
-          user_id: userId,
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
           label: record.label === "New Note" ? "New Note" : `${record.label} (Copy)`,
@@ -351,7 +350,6 @@ export function useWorkspaceNotesRedux() {
       const { data, error } = await supabase
         .from("notes")
         .insert({
-          user_id: userId,
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
           label: "New Note",

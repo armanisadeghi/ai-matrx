@@ -64,7 +64,7 @@ export const selectAllNotesList = createSelector(
   [selectNotesMap],
   (notes): NoteRecord[] =>
     Object.values(notes)
-      .filter((n) => !n.is_deleted)
+      .filter((n) => !n.deleted_at)
       .sort((a, b) => {
         if (a.position !== b.position) return a.position - b.position;
         return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
@@ -91,7 +91,7 @@ export const selectAllFolders = createSelector(
 
 export const selectDeletedNotesList = createSelector(
   [selectNotesMap],
-  (notes): NoteRecord[] => Object.values(notes).filter((n) => n.is_deleted),
+  (notes): NoteRecord[] => Object.values(notes).filter((n) => !!n.deleted_at),
 );
 
 export const selectNotesListStatus = createSelector(

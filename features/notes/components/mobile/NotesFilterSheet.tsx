@@ -77,7 +77,11 @@ export default function NotesFilterSheet({
     return Array.from(s).sort();
   }, [notes]);
 
-  const hasShared = notes.some(n => n.shared_with && Object.keys(n.shared_with).length > 0);
+  // Canonical sharing lives in the `permissions` table, not on the note row
+  // (the legacy `shared_with` column has been dropped). The in-memory notes
+  // list carries no permission data, so there is nothing to detect here yet —
+  // keeps the "(sharing coming soon)" hint, matching prior behavior.
+  const hasShared = false;
 
   const isDefaultState =
     local.folder === 'all' &&

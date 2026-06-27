@@ -14,7 +14,7 @@ import { findEmptyNewNote } from "../utils/noteUtils";
 
 /**
  * Fetch all notes owned by the current user (excluding deleted).
- * Explicitly scoped to user_id — RLS now also grants access to shared notes
+ * Explicitly scoped to created_by — RLS now also grants access to shared notes
  * via hierarchy, so without this filter "my notes" would include all accessible ones.
  */
 export async function fetchNotes(): Promise<Note[]> {
@@ -22,8 +22,8 @@ export async function fetchNotes(): Promise<Note[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("*")
-    .eq("user_id", userId)
-    .eq("is_deleted", false)
+    .eq("created_by", userId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -42,10 +42,10 @@ export async function fetchNoteListItems(): Promise<NoteListItem[]> {
   const { data, error } = await supabase
     .from("notes")
     .select(
-      "id, user_id, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version",
+      "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
     )
-    .eq("user_id", userId)
-    .eq("is_deleted", false)
+    .eq("created_by", userId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -64,7 +64,7 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
     .from("notes")
     .select("*")
     .eq("id", id)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
@@ -94,9 +94,9 @@ export async function assignHomelessNotesToPersonalOrg(): Promise<{
   const { data, error } = await supabase
     .from("notes")
     .update({ organization_id: organizationId })
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .is("organization_id", null)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .select("id");
   if (error) throw error;
 
@@ -175,7 +175,6 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
   const { data, error } = await supabase
     .from("notes")
     .insert({
-      user_id: userId,
       // Canonical RLS std_insert requires created_by = auth.uid(). The
       // _stamp_actor trigger fills this too, but set it explicitly so the
       // INSERT passes with_check even if the trigger order ever changes.
@@ -246,7 +245,7 @@ export async function updateNote(
 export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase
     .from("notes")
-    .update({ is_deleted: true })
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) {
@@ -316,48 +315,27 @@ export function generateShareLink(noteId: string): string {
 }
 
 /**
- * Accept a shared note (adds current user to shared_with)
+ * Accept a shared note. Canonical sharing lives in the `permissions` table
+ * (granted at share time), so accepting is simply resolving the note the link
+ * points to — RLS grants the recipient read access via the permission grant.
+ * The legacy `shared_with` JSONB column has been dropped.
  */
 export async function acceptSharedNote(
   noteId: string,
-  userId: string,
+  _userId: string,
 ): Promise<Note> {
-  // First get the current shared_with array
-  const { data: note, error: fetchError } = await supabase
+  const { data: note, error } = await supabase
     .from("notes")
-    .select("shared_with")
+    .select("*")
     .eq("id", noteId)
     .maybeSingle();
 
-  if (fetchError || !note) {
-    console.error("Error fetching note:", fetchError);
-    throw fetchError || new Error("Note not found");
+  if (error || !note) {
+    console.error("Error accepting shared note:", error);
+    throw error || new Error("Note not found");
   }
 
-  const currentSharedWith = (note.shared_with as any) || {};
-  const userIds = currentSharedWith.userIds || [];
-
-  // Add user if not already in the list
-  if (!userIds.includes(userId)) {
-    userIds.push(userId);
-  }
-
-  // Update the note
-  const { data: updated, error: updateError } = await supabase
-    .from("notes")
-    .update({
-      shared_with: { ...currentSharedWith, userIds },
-    })
-    .eq("id", noteId)
-    .select()
-    .single();
-
-  if (updateError) {
-    console.error("Error accepting shared note:", updateError);
-    throw updateError;
-  }
-
-  return updated;
+  return note;
 }
 
 /**
@@ -381,8 +359,8 @@ export async function fetchSharedNotes(userId: string): Promise<Note[]> {
     .from("notes")
     .select("*")
     .in("id", noteIds)
-    .neq("user_id", userId)
-    .eq("is_deleted", false)
+    .neq("created_by", userId)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -401,8 +379,8 @@ export async function fetchFolderNames(): Promise<string[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("folder_name")
-    .eq("user_id", userId)
-    .eq("is_deleted", false);
+    .eq("created_by", userId)
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error fetching folder names:", error);
@@ -421,8 +399,8 @@ export async function fetchTags(): Promise<string[]> {
   const { data, error } = await supabase
     .from("notes")
     .select("tags")
-    .eq("user_id", userId)
-    .eq("is_deleted", false);
+    .eq("created_by", userId)
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error fetching tags:", error);
@@ -445,9 +423,9 @@ export async function createFolder(name: string): Promise<string> {
   const { data: existing } = await supabase
     .from("note_folders")
     .select("id")
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("name", name)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
 
@@ -456,7 +434,7 @@ export async function createFolder(name: string): Promise<string> {
   const { data, error } = await supabase
     .from("note_folders")
     .insert({
-      user_id: userId,
+      created_by: userId,
       name,
       path: name,
       position: 0,
@@ -486,17 +464,17 @@ export async function renameFolder(
   await supabase
     .from("note_folders")
     .update({ name: newName, path: newName })
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("name", oldName)
-    .eq("is_deleted", false);
+    .is("deleted_at", null);
 
   // Update the denormalized folder_name on all notes
   const { error } = await supabase
     .from("notes")
     .update({ folder_name: newName })
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("folder_name", oldName)
-    .eq("is_deleted", false);
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error renaming folder:", error);
@@ -514,19 +492,20 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
   const { data: notesToDelete } = await supabase
     .from("notes")
     .select("id")
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("folder_name", folderName)
-    .eq("is_deleted", false);
+    .is("deleted_at", null);
 
   const count = notesToDelete?.length || 0;
 
   // Soft-delete the notes
+  const deletedAt = new Date().toISOString();
   const { error } = await supabase
     .from("notes")
-    .update({ is_deleted: true })
-    .eq("user_id", userId)
+    .update({ deleted_at: deletedAt })
+    .eq("created_by", userId)
     .eq("folder_name", folderName)
-    .eq("is_deleted", false);
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error deleting folder notes:", error);
@@ -536,10 +515,10 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
   // Soft-delete the folder record
   await supabase
     .from("note_folders")
-    .update({ is_deleted: true })
-    .eq("user_id", userId)
+    .update({ deleted_at: deletedAt })
+    .eq("created_by", userId)
     .eq("name", folderName)
-    .eq("is_deleted", false);
+    .is("deleted_at", null);
 
   return count;
 }

@@ -2,7 +2,7 @@
 
 **One-liner:** Create the new `workbench` schema, make `notes` its founding member (fully canonical, zero-WARN), migrate `note_versions` into the central `history.row_versions`, and retire the dead cluster tables — preserving all user-visible behavior.
 **Change types:** canonicalize · move-schema · migrate (versions) · graveyard
-**Status:** ⏳ awaiting GO
+**Status:** 🟡 IN PROGRESS (2026-06-27) — canonicalization DONE; schema move BLOCKED on PostgREST exposure; version cutover + extend/local STAGED. See **Execution log** at the bottom.
 **Evidence:** live DB reads (2026-06-27) + `db-table-refs` across matrx-frontend, aidream, matrx-extend, matrx-local.
 
 ## 1. Scope — the cluster (7 tables in `public`)
@@ -85,4 +85,23 @@
 Per-phase: `apply_migration` + ledger. End: `pnpm db-types` (add `workbench`) → repoint FE → `pnpm sync-types`. aidream `matrx_orm.yaml` (+ workbench block, empty prefix) → `python db/generate.py` → fix `package_integration.py` + managers + 2 hardcoded refs → `detect_applied.py` → `run.py`. Repoint matrx-extend `lib/notes/queries.ts` + matrx-local Supabase sync client. Commit + push `main` (frontend + aidream; extend + local as able). Update `features/notes/FEATURE.md`, `SCHEMA_MAP.md` (workbench now live), `CHANGEOVER_PROGRESS.md`.
 
 ---
-**Reply `go` to execute, or tell me what to change.**
+
+## Execution log (2026-06-27) — GO given, all 5 decisions approved
+
+**DONE (applied live to `txzxabzwovsujtloxrus` + code repointed + verified):**
+- ✅ **`notes` + `note_folders` fully canonical** — added/normalized `deleted_at` (154 notes migrated from `is_deleted`), dropped legacy `user_id`/`is_public`/`is_deleted`/`shared_with` (notes) + `user_id`/`is_deleted` (folders); registered `note_folder` entity + sharing + `apply_rls`; recreated composite indexes on `created_by`. `verify_canonical` = **zero FAIL, zero WARN** on both.
+- ✅ **Version history migrated** — all **5,166** `note_versions` backfilled into `history.row_versions` (`entity_type='note'`, lossless, count-verified); pre-created 7 monthly partitions (2025-11..2026-05) the backfill needed. Version triggers patched to `created_by` so the current version system keeps working.
+- ✅ **`workbench` schema created** (empty, granted) + semantic comment.
+- ✅ **Graveyarded** `note_devices`, `note_directory_mappings`, `note_sync_log` (0 rows, no live consumers).
+- ✅ **FE repointed** (19 files, `tsc` 0 source errors) + **aidream repointed** (models regenerated, 5 files, boots clean) for the dropped columns.
+- Applied migrations (Supabase history): `workbench_notes_p1_add_deleted_at`, `history_row_versions_backfill_partitions_2025_11_to_2026_05`, `workbench_notes_p2_version_history_backfill`, `workbench_notes_p3a_decouple_userid_canonicalize_folders`, `workbench_notes_p3b_replace_indexes_drop_legacy_cols`, `workbench_schema_create_and_graveyard_empty_note_tables`, `workbench_notes_ungraveyard_note_shares_live_acl`.
+
+**CORRECTION applied:** `note_shares` (0 rows) was graveyarded then **un-graveyarded** — it's empty but **live-queried** as a share-based ACL by RAG search (`matrx-rag/search.py`, `rag_search_lab.py`). Kept in `public`. (D1 assumed all 4 sibling tables were inert Local scaffolding; `note_shares` is not.)
+
+**BLOCKED (needs a non-MCP action):**
+- ⛔ **The schema MOVE** of `notes`/`note_folders` into `workbench` — PostgREST exposed-schemas is Supabase platform config, not MCP-reachable. **Add `workbench` to Settings → API → Exposed schemas** (or via management API), then the move + `.schema('workbench')` repoint (68 FE calls + extend + local) can land.
+
+**STAGED (own verified passes):**
+- ⏳ **Version-system cutover** — swap version triggers → `_history`, repoint the 6 version RPCs' `note` branch + FE version reads (it's a full create/delete/compare/restore CRUD surface + shared multi-entity dispatchers + a pre-write→post-write semantics shift; data already in `history`, ready). Forward-design D5: write the change-note into `notes.metadata` so `_version_capture` snapshots it.
+- ⏳ **matrx-extend + matrx-local** repoint for the dropped columns + (later) the schema move. Local SQLite unaffected; its Supabase sync client needs `created_by`/`deleted_at`/`visibility`.
+- ⏳ **`note_shares` ACL → `iam.permissions`** in RAG search, then retire `note_shares`.

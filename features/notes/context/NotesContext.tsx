@@ -196,7 +196,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           event: "*",
           schema: "public",
           table: "notes",
-          filter: `user_id=eq.${userId}`,
+          filter: `created_by=eq.${userId}`,
         },
         (payload) => {
           if (payload.eventType === "UPDATE") {
@@ -255,7 +255,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
           if (payload.eventType === "INSERT") {
             const newNote = payload.new as Note;
-            if (!newNote?.id || newNote.is_deleted) return;
+            if (!newNote?.id || newNote.deleted_at) return;
 
             setNotes((prev) => {
               if (prev.some((n) => n.id === newNote.id)) return prev;

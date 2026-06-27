@@ -36,7 +36,7 @@ export interface NotesEditorNotesMapEntry {
   label?: string;
   folder_name?: string;
   updated_at?: string;
-  is_deleted?: boolean;
+  deleted_at?: string | null;
 }
 
 export interface BuildNotesEditorContextDataArgs {
@@ -116,7 +116,7 @@ export function buildNotesEditorContextData(
     ? Object.values(notesMap)
         .filter(
           (n) =>
-            !n.is_deleted && n.folder_name === currentFolder && n.id !== noteId,
+            !n.deleted_at && n.folder_name === currentFolder && n.id !== noteId,
         )
         .map((n) => n.id!)
         .filter(Boolean)
