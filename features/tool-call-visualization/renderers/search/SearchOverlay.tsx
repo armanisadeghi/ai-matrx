@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { ToolRendererProps } from "../../types";
+import { PartPeekPopover } from "../_shared-entity/PartPeekPopover";
 import { resultAsString } from "../_shared";
 import {
     parseSearch,
@@ -123,6 +124,31 @@ const ResultRow: React.FC<{ source: SearchSource; rank?: number }> = ({ source, 
     const date = formatDate(source.date);
     const siteName = getSiteName(source.url) || source.domain;
     return (
+        <PartPeekPopover
+            className="w-[380px]"
+            header={
+                <span className="flex items-center gap-1.5 normal-case">
+                    <Favicon url={source.url} className="h-4 w-4 rounded" />
+                    <span className="truncate font-medium text-foreground">
+                        {siteName}
+                    </span>
+                </span>
+            }
+            body={
+                <div className="space-y-1.5">
+                    <div className="font-medium leading-snug text-foreground">
+                        {source.title}
+                    </div>
+                    {source.snippet ? (
+                        <div className="max-h-56 overflow-y-auto whitespace-pre-wrap text-muted-foreground">
+                            {source.snippet}
+                        </div>
+                    ) : (
+                        <div className="text-muted-foreground">{source.domain}</div>
+                    )}
+                </div>
+            }
+        >
         <div className="group/result flex gap-3">
             {rank !== undefined && (
                 <span className="w-6 flex-shrink-0 pt-0.5 text-right text-xs tabular-nums text-muted-foreground/70">
@@ -162,6 +188,7 @@ const ResultRow: React.FC<{ source: SearchSource; rank?: number }> = ({ source, 
                 {date && <div className="mt-1.5 text-xs text-muted-foreground opacity-80">{date}</div>}
             </div>
         </div>
+        </PartPeekPopover>
     );
 };
 
