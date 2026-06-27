@@ -36,7 +36,7 @@ export async function PATCH(
 
     const supabase = createAdminClient();
     const { error } = await supabase
-      .from("tool_bundle_member")
+      .schema("tool").from("bundle_member")
       .update({ local_alias: body.local_alias })
       .eq("bundle_id", bundleId)
       .eq("tool_id", toolId);
@@ -72,7 +72,7 @@ export async function DELETE(
 
     const supabase = createAdminClient();
     const { error } = await supabase
-      .from("tool_bundle_member")
+      .schema("tool").from("bundle_member")
       .delete()
       .eq("bundle_id", bundleId)
       .eq("tool_id", toolId);

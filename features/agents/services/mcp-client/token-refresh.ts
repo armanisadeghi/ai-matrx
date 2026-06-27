@@ -91,7 +91,7 @@ export async function refreshAccessToken(
 
     // Look up client_secret from env for Basic Auth
     const { data: serverRow } = await supabase
-      .from("tool_mcp_server")
+      .schema("tool").from("mcp_server")
       .select("slug")
       .eq("id", serverId)
       .single();

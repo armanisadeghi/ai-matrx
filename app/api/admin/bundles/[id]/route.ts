@@ -49,7 +49,7 @@ export async function PATCH(
 
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .from("tool_bundle")
+      .schema("tool").from("bundle")
       .update(patch)
       .eq("id", id)
       .select()

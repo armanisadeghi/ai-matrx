@@ -5,9 +5,10 @@ import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
-export type BundleRow = Tables["tool_bundle"]["Row"];
-export type BundleMemberRow = Tables["tool_bundle_member"]["Row"];
-export type BundleUpsert = Tables["tool_bundle"]["Insert"];
+type ToolTables = Database["tool"]["Tables"];
+export type BundleRow = ToolTables["bundle"]["Row"];
+export type BundleMemberRow = ToolTables["bundle_member"]["Row"];
+export type BundleUpsert = ToolTables["bundle"]["Insert"];
 
 export interface BundleMemberWithTool {
   member: BundleMemberRow;
@@ -25,7 +26,7 @@ export async function listBundles(opts?: {
   includeInactive?: boolean;
 }): Promise<BundleRow[]> {
   let q = sb()
-    .from("tool_bundle")
+    .schema("tool").from("bundle")
     .select("*")
     .order("name", { ascending: true });
   if (!opts?.includeInactive) {
@@ -38,7 +39,7 @@ export async function listBundles(opts?: {
 
 export async function getBundle(id: string): Promise<BundleRow> {
   const { data, error } = await sb()
-    .from("tool_bundle")
+    .schema("tool").from("bundle")
     .select("*")
     .eq("id", id)
     .single();
@@ -108,13 +109,13 @@ export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {
   const client = sb();
   const [bundlesRes, membersRes] = await Promise.all([
     client
-      .from("tool_bundle")
+      .schema("tool").from("bundle")
       .select("*")
       .eq("is_active", true)
       .order("is_system", { ascending: true })
       .order("name", { ascending: true }),
     client
-      .from("tool_bundle_member")
+      .schema("tool").from("bundle_member")
       .select("bundle_id, tool_id, sort_order, tool:tool_def(id, name, is_active)")
       .order("sort_order", { ascending: true }),
   ]);
@@ -195,7 +196,7 @@ export async function listBundleMembers(
   bundleId: string,
 ): Promise<BundleMemberWithTool[]> {
   const { data, error } = await sb()
-    .from("tool_bundle_member")
+    .schema("tool").from("bundle_member")
     .select("*, tool:tool_def(id, name, description, is_active)")
     .eq("bundle_id", bundleId)
     .order("sort_order", { ascending: true })
@@ -246,7 +247,7 @@ export async function updateBundle(
     name: string;
     description: string;
     is_active: boolean;
-    metadata: Database["public"]["Tables"]["tool_bundle"]["Update"]["metadata"];
+    metadata: Database["tool"]["Tables"]["bundle"]["Update"]["metadata"];
     lister_tool_id: string | null;
   }>,
 ): Promise<BundleRow> {
@@ -297,7 +298,7 @@ export async function searchToolsForBundle(
   query: string,
 ): Promise<{ id: string; name: string; description: string }[]> {
   let q = sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("id, name, description")
     .eq("is_active", true);
   if (query.trim()) {

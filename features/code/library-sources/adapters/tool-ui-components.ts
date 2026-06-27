@@ -133,7 +133,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
     // assets shared across the app. List every active row so editors with
     // table-level privileges can open any of them.
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select(LIST_COLUMNS)
       .eq("is_active", true)
       .order("display_name", { ascending: true })
@@ -181,7 +181,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
     }
 
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select(LOAD_COLUMNS)
       .eq("id", rowId)
       .single();
@@ -222,7 +222,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
     const patch: Record<string, string> = { [field.column]: args.content };
 
     let query = supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .update(patch)
       .eq("id", args.rowId);
 
@@ -265,7 +265,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
       dot > 0 && dot < trimmed.length - 1 ? trimmed.slice(0, dot) : trimmed;
 
     let query = supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .update({ display_name: baseName })
       .eq("id", args.rowId);
     if (args.expectedUpdatedAt) {

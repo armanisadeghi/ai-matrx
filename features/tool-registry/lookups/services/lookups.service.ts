@@ -4,13 +4,14 @@ import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
+type ToolTables = Database["tool"]["Tables"];
 export type UiClientRow = Tables["ui_client"]["Row"];
 export type UiSurfaceRow = Tables["ui_surface"]["Row"];
-export type ToolExecutorRow = Tables["tool_executor"]["Row"];
+export type ToolExecutorRow = ToolTables["executor"]["Row"];
 
 export type UiClientUpsert = Tables["ui_client"]["Insert"];
 export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
-export type ToolExecutorUpsert = Tables["tool_executor"]["Insert"];
+export type ToolExecutorUpsert = ToolTables["executor"]["Insert"];
 
 const sb = () => createClient();
 
@@ -37,7 +38,7 @@ export async function listUiSurfaces(): Promise<UiSurfaceRow[]> {
 
 export async function listToolExecutors(): Promise<ToolExecutorRow[]> {
   const { data, error } = await sb()
-    .from("tool_executor")
+    .schema("tool").from("executor")
     .select("*")
     .order("name", { ascending: true });
   if (error) throw error;
@@ -77,7 +78,7 @@ export async function upsertToolExecutor(
   row: ToolExecutorUpsert,
 ): Promise<ToolExecutorRow> {
   const { data, error } = await sb()
-    .from("tool_executor")
+    .schema("tool").from("executor")
     .upsert(row, { onConflict: "name" })
     .select()
     .single();
@@ -117,7 +118,7 @@ export async function setToolExecutorActive(
   isActive: boolean,
 ): Promise<void> {
   const { error } = await sb()
-    .from("tool_executor")
+    .schema("tool").from("executor")
     .update({ is_active: isActive })
     .eq("name", name);
   if (error) throw error;

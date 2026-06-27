@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get("active_only");
 
     let query = supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select("*")
       .order("tool_name", { ascending: true });
 
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     };
 
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .insert([componentData])
       .select()
       .single();

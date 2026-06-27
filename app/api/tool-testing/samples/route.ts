@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
 
     const { data, error } = await adminClient
-      .from("tool_test_sample")
+      .schema("tool").from("test_sample")
       .insert({
         tool_name: body.tool_name,
         tool_id: body.tool_id ?? null,

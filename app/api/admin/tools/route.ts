@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const active_only = searchParams.get("active_only");
 
     let query = supabase
-      .from("tool_def")
+      .schema("tool").from("definition")
       .select("*")
       .order("category", { ascending: true })
       .order("name", { ascending: true });
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     };
 
     const { data, error } = await supabase
-      .from("tool_def")
+      .schema("tool").from("definition")
       .insert([toolData])
       .select()
       .single();

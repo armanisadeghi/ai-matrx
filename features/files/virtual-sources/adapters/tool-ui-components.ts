@@ -111,7 +111,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
     if (args.parentId === null) {
       // Root — list every active row as a folder.
       const { data, error } = await supabase
-        .from("tool_ui")
+        .schema("tool").from("ui")
         .select(LIST_COLUMNS)
         .eq("is_active", true)
         .order("display_name", { ascending: true })
@@ -140,7 +140,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
     }
     // Listing inside a row — emit one leaf per field.
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select(LIST_COLUMNS)
       .eq("id", args.parentId)
       .maybeSingle();
@@ -175,7 +175,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
       throw new VirtualSourceError("validation", "read", `Unknown field ${fieldId}`);
     }
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select(LIST_COLUMNS)
       .eq("id", id)
       .maybeSingle();
@@ -209,7 +209,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
       );
     }
     let query = supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .update({ [field.column]: args.content, updated_at: new Date().toISOString() })
       .eq("id", args.id);
     if (args.expectedUpdatedAt) {

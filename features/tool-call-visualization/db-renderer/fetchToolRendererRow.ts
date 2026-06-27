@@ -27,7 +27,7 @@ export async function fetchToolRendererRow(
   toolName: string,
 ): Promise<ToolRendererRow | null> {
   const { data, error } = await supabase
-    .from("tool_ui")
+    .schema("tool").from("ui")
     .select(
       "inline_code, allowed_imports, display_name, results_label, header_subtitle_code, keep_expanded_on_stream",
     )

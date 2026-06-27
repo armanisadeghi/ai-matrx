@@ -35,7 +35,7 @@ export async function POST(
     }
 
     const supabase = createAdminClient();
-    const { error } = await supabase.from("tool_bundle_member").insert({
+    const { error } = await supabase.schema("tool").from("bundle_member").insert({
       bundle_id: bundleId,
       tool_id,
       local_alias,

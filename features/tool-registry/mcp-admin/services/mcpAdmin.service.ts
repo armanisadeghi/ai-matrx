@@ -4,14 +4,15 @@ import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
-export type McpServerRow = Tables["tool_mcp_server"]["Row"];
-export type McpConfigRow = Tables["tool_mcp_config"]["Row"];
+type ToolTables = Database["tool"]["Tables"];
+export type McpServerRow = ToolTables["mcp_server"]["Row"];
+export type McpConfigRow = ToolTables["mcp_config"]["Row"];
 
 const sb = () => createClient();
 
 export async function listServers(): Promise<McpServerRow[]> {
   const { data, error } = await sb()
-    .from("tool_mcp_server")
+    .schema("tool").from("mcp_server")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -21,7 +22,7 @@ export async function listServers(): Promise<McpServerRow[]> {
 
 export async function listServerConfigs(serverId: string): Promise<McpConfigRow[]> {
   const { data, error } = await sb()
-    .from("tool_mcp_config")
+    .schema("tool").from("mcp_config")
     .select("*")
     .eq("server_id", serverId)
     .order("is_default", { ascending: false })
@@ -39,7 +40,7 @@ export async function listServerTools(
   serverId: string,
 ): Promise<{ id: string; name: string; description: string; is_active: boolean | null }[]> {
   const { data, error } = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("id, name, description, is_active")
     .eq("managed_by_server_id", serverId)
     .order("name", { ascending: true });
@@ -49,7 +50,7 @@ export async function listServerTools(
 
 export async function countConnectedUsers(serverId: string): Promise<number> {
   const { count, error } = await sb()
-    .from("tool_mcp_user_conn")
+    .schema("tool").from("mcp_user_conn")
     .select("id", { count: "exact", head: true })
     .eq("server_id", serverId);
   if (error) throw error;
@@ -60,13 +61,13 @@ export async function setServerStatus(
   serverId: string,
   status: Database["public"]["Enums"]["mcp_server_status"],
 ): Promise<void> {
-  const { error } = await sb().from("tool_mcp_server").update({ status }).eq("id", serverId);
+  const { error } = await sb().schema("tool").from("mcp_server").update({ status }).eq("id", serverId);
   if (error) throw error;
 }
 
 // ─── tool_mcp_config CRUD ────────────────────────────────────────────────────
 
-export type McpConfigUpsert = Database["public"]["Tables"]["tool_mcp_config"]["Insert"];
+export type McpConfigUpsert = Database["tool"]["Tables"]["mcp_config"]["Insert"];
 
 export async function createServerConfig(args: {
   serverId: string;
@@ -74,7 +75,7 @@ export async function createServerConfig(args: {
   configType: string;
   command: string;
   argsArr: string[];
-  envSchema?: Database["public"]["Tables"]["tool_mcp_config"]["Insert"]["env_schema"];
+  envSchema?: Database["tool"]["Tables"]["mcp_config"]["Insert"]["env_schema"];
   isDefault?: boolean;
   npmPackage?: string | null;
   pipPackage?: string | null;
@@ -85,13 +86,13 @@ export async function createServerConfig(args: {
   // If this row is being set default, unset the others on the same server first.
   if (args.isDefault) {
     const { error: clearErr } = await sb()
-      .from("tool_mcp_config")
+      .schema("tool").from("mcp_config")
       .update({ is_default: false })
       .eq("server_id", args.serverId);
     if (clearErr) throw clearErr;
   }
   const { data, error } = await sb()
-    .from("tool_mcp_config")
+    .schema("tool").from("mcp_config")
     .insert({
       server_id: args.serverId,
       label: args.label,
@@ -119,7 +120,7 @@ export async function updateServerConfig(
     config_type: string;
     command: string;
     args: string[];
-    env_schema: Database["public"]["Tables"]["tool_mcp_config"]["Update"]["env_schema"];
+    env_schema: Database["tool"]["Tables"]["mcp_config"]["Update"]["env_schema"];
     is_default: boolean;
     npm_package: string | null;
     pip_package: string | null;
@@ -131,31 +132,31 @@ export async function updateServerConfig(
   // If we're setting default, clear the others on the same server first.
   if (patch.is_default) {
     const { data: row, error: lookupErr } = await sb()
-      .from("tool_mcp_config")
+      .schema("tool").from("mcp_config")
       .select("server_id")
       .eq("id", configId)
       .single();
     if (lookupErr) throw lookupErr;
     const { error: clearErr } = await sb()
-      .from("tool_mcp_config")
+      .schema("tool").from("mcp_config")
       .update({ is_default: false })
       .eq("server_id", row.server_id)
       .neq("id", configId);
     if (clearErr) throw clearErr;
   }
-  const { error } = await sb().from("tool_mcp_config").update(patch).eq("id", configId);
+  const { error } = await sb().schema("tool").from("mcp_config").update(patch).eq("id", configId);
   if (error) throw error;
 }
 
 export async function deleteServerConfig(configId: string): Promise<void> {
-  const { error } = await sb().from("tool_mcp_config").delete().eq("id", configId);
+  const { error } = await sb().schema("tool").from("mcp_config").delete().eq("id", configId);
   if (error) throw error;
 }
 
 /** Count of user connections referencing a specific config (used in the delete confirm). */
 export async function countConfigUserConnections(configId: string): Promise<number> {
   const { count, error } = await sb()
-    .from("tool_mcp_user_conn")
+    .schema("tool").from("mcp_user_conn")
     .select("id", { count: "exact", head: true })
     .eq("config_id", configId);
   if (error) throw error;

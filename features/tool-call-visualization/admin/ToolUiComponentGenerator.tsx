@@ -676,7 +676,7 @@ export function ToolUiComponentGenerator({
       try {
         const [samplesResult, dbResult] = await Promise.all([
           supabase
-            .from("tool_test_sample")
+            .schema("tool").from("test_sample")
             .select("*")
             .or(`tool_name.eq.${toolName},tool_id.eq.${toolId}`)
             .order("created_at", { ascending: false })

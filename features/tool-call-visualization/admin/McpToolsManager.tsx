@@ -225,10 +225,10 @@ export function McpToolsManager() {
     async function fetchCounts() {
       const [samplesRes, uiRes] = await Promise.all([
         supabase
-          .from("tool_test_sample")
+          .schema("tool").from("test_sample")
           .select("tool_name")
           .in("tool_name", toolNames),
-        supabase.from("tool_ui").select("tool_name").in("tool_name", toolNames),
+        supabase.schema("tool").from("ui").select("tool_name").in("tool_name", toolNames),
       ]);
 
       const counts: Record<string, ToolCounts> = {};
@@ -891,7 +891,7 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: updErr } = await supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .update({ is_active: active })
         .in("id", targetIds);
       if (updErr) throw updErr;
@@ -929,7 +929,7 @@ export function McpToolsManager() {
     setBulkBusy(true);
     try {
       const { error: delErr } = await supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .delete()
         .in("id", targetIds);
       if (delErr) throw delErr;

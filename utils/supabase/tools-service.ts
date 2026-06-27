@@ -5,7 +5,7 @@ import { buildSearchOr } from "@/utils/supabase-search";
 import { createClient } from "./client";
 
 // Source of truth: the DB row. Any schema change surfaces here automatically.
-export type DatabaseTool = Database["public"]["Tables"]["tool_def"]["Row"];
+export type DatabaseTool = Database["tool"]["Tables"]["definition"]["Row"];
 
 export interface Tool {
   id: string;
@@ -31,7 +31,7 @@ export class ToolsService {
   async fetchTools(): Promise<DatabaseTool[]> {
     try {
       const { data, error } = await this.supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("*")
         .eq("is_active", true)
         .order("category", { ascending: true })
@@ -55,7 +55,7 @@ export class ToolsService {
   async fetchToolsByCategory(category: string): Promise<DatabaseTool[]> {
     try {
       const { data, error } = await this.supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("*")
         .eq("is_active", true)
         .eq("category", category)
@@ -81,7 +81,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("*")
         .in("id", toolIds)
         .eq("is_active", true);
@@ -109,7 +109,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("*")
         .in("id", toolIds);
 
@@ -139,7 +139,7 @@ export class ToolsService {
 
     try {
       const { data, error } = await this.supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("*")
         .eq("is_active", true)
         .or(buildSearchOr(query, ["name", "description"]))

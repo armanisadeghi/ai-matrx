@@ -1511,7 +1511,7 @@ function OrphanedToolsBanner({
     setLookupStatus("loading");
     const supabase = createClient();
     supabase
-      .from("tool_def")
+      .schema("tool").from("definition")
       .select("*")
       .in("id", orphanedTools)
       .then(({ data, error }) => {

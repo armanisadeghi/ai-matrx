@@ -28,7 +28,7 @@ import type { Database } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ToolRow = Database["public"]["Tables"]["tool_def"]["Row"];
+type ToolRow = Database["tool"]["Tables"]["definition"]["Row"];
 
 interface Props {
   tool: ToolRow;

@@ -8,12 +8,13 @@ import type {
 } from "@/features/surfaces/types";
 
 type Tables = Database["public"]["Tables"];
+type ToolTables = Database["tool"]["Tables"];
 export type UiSurfaceRow = Tables["ui_surface"]["Row"];
 export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
 export type UiSurfaceValueRow = Tables["ui_surface_value"]["Row"];
-export type ToolSurfaceDefaultsRow = Tables["tool_surface_defaults"]["Row"];
+export type ToolSurfaceDefaultsRow = ToolTables["surface_defaults"]["Row"];
 export type ToolSurfaceDefaultsUpsert =
-  Tables["tool_surface_defaults"]["Insert"];
+  ToolTables["surface_defaults"]["Insert"];
 
 export interface SurfaceWithStats extends UiSurfaceRow {
   /**
@@ -47,10 +48,10 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
     c
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .select("surface_name, always_include_tools, always_include_bundles"),
-    c.from("tool_bundle_member").select("bundle_id"),
-    c.from("tool_bundle").select("id, name"),
+    c.schema("tool").from("bundle_member").select("bundle_id"),
+    c.schema("tool").from("bundle").select("id, name"),
     c.from("agx_agent_surface").select("surface_name"),
     c.from("ui_surface_value").select("surface_name"),
   ]);
@@ -283,7 +284,7 @@ export async function getSurfaceUsage(
   const c = sb();
   const [defaultsRes, agentsRes, uiRes] = await Promise.all([
     c
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .select("always_include_tools, always_include_bundles")
       .eq("surface_name", surfaceName)
       .maybeSingle(),
@@ -292,7 +293,7 @@ export async function getSurfaceUsage(
       .select("agent:agx_agent(id, name)")
       .eq("surface_name", surfaceName),
     c
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select("id, tool_name, display_name, is_active")
       .eq("surface_name", surfaceName)
       .order("tool_name", { ascending: true }),
@@ -306,7 +307,7 @@ export async function getSurfaceUsage(
   if (defaultsRes.data) {
     if (defaultsRes.data.always_include_tools.length > 0) {
       const { data: directTools, error } = await c
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("id, name, description, is_active")
         .in("name", defaultsRes.data.always_include_tools);
       if (error) throw error;
@@ -316,7 +317,7 @@ export async function getSurfaceUsage(
     }
     if (defaultsRes.data.always_include_bundles.length > 0) {
       const { data: bundleRows, error: bErr } = await c
-        .from("tool_bundle")
+        .schema("tool").from("bundle")
         .select(
           "name, members:tool_bundle_member(tool:tool_def(id, name, description, is_active))",
         )
@@ -466,7 +467,7 @@ export async function listAgentBindings(surfaceName: string) {
  */
 export async function listToolBindings(surfaceName: string) {
   const defaultsRes = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .select("always_include_tools, arg_defaults")
     .eq("surface_name", surfaceName)
     .maybeSingle();
@@ -481,7 +482,7 @@ export async function listToolBindings(surfaceName: string) {
   if (toolNames.length === 0) return [];
 
   const toolsRes = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("id, name, category, is_active")
     .in("name", toolNames);
   if (toolsRes.error) throw toolsRes.error;
@@ -503,7 +504,7 @@ export async function getSurfaceToolDefaults(
   surfaceName: string,
 ): Promise<ToolSurfaceDefaultsRow | null> {
   const { data, error } = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .select("*")
     .eq("surface_name", surfaceName)
     .maybeSingle();
@@ -521,7 +522,7 @@ export async function upsertSurfaceToolDefaults(
   patch: Partial<Omit<ToolSurfaceDefaultsUpsert, "surface_name">>,
 ): Promise<ToolSurfaceDefaultsRow> {
   const { data, error } = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .upsert(
       { surface_name: surfaceName, ...patch },
       { onConflict: "surface_name" },

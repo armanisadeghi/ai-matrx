@@ -23,7 +23,7 @@
     "clean:turbo": "rimraf .next/dev/cache/turbopack",
     "clean:deep": "rimraf .next .turbo node_modules/.cache tsconfig.tsbuildinfo",
     "clean:worktrees": "find .claude/worktrees -type d \\( -name .next -o -name .turbo -o -name node_modules \\) -prune -exec rm -rf {} + 2>/dev/null; echo 'worktree caches cleared'",
-    "db-types": "npx supabase gen types typescript --project-id txzxabzwovsujtloxrus --schema public --schema files --schema workflow --schema workspace > types/database.types.ts && bash scripts/fix-encoding.sh && bash scripts/patch-db-types.sh",
+    "db-types": "npx supabase gen types typescript --project-id txzxabzwovsujtloxrus --schema public --schema files --schema workflow --schema workspace --schema app --schema skill --schema tool --schema agent > types/database.types.ts && bash scripts/fix-encoding.sh && bash scripts/patch-db-types.sh",
     "analyze": "ANALYZE=true pnpm build",
     "analyze:win": "set ANALYZE=true && pnpm build",
     "migrate-content-blocks": "npx tsx scripts/migrate-content-blocks.ts",

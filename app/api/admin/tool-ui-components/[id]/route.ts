@@ -23,7 +23,7 @@ export async function GET(
     const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .select("*")
       .eq("id", id)
       .single();
@@ -94,7 +94,7 @@ export async function PUT(
     }
 
     const { data, error } = await supabase
-      .from("tool_ui")
+      .schema("tool").from("ui")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -133,7 +133,7 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createAdminClient();
 
-    const { error } = await supabase.from("tool_ui").delete().eq("id", id);
+    const { error } = await supabase.schema("tool").from("ui").delete().eq("id", id);
 
     if (error) {
       return NextResponse.json(

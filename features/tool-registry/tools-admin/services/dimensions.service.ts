@@ -11,12 +11,13 @@ import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
+type ToolTables = Database["tool"]["Tables"];
 
-export type ToolBindingRow = Tables["tool_binding"]["Row"];
-export type ToolSurfaceDefaultsRow = Tables["tool_surface_defaults"]["Row"];
-export type ToolBundleMemberRow = Tables["tool_bundle_member"]["Row"];
-export type ToolBundleRow = Tables["tool_bundle"]["Row"];
-export type ToolDefRow = Tables["tool_def"]["Row"];
+export type ToolBindingRow = ToolTables["binding"]["Row"];
+export type ToolSurfaceDefaultsRow = ToolTables["surface_defaults"]["Row"];
+export type ToolBundleMemberRow = ToolTables["bundle_member"]["Row"];
+export type ToolBundleRow = ToolTables["bundle"]["Row"];
+export type ToolDefRow = ToolTables["definition"]["Row"];
 
 export interface BundleMembership {
   member: ToolBundleMemberRow;
@@ -43,7 +44,7 @@ const sb = () => createClient();
 
 export async function listToolBindings(toolId: string): Promise<ToolBindingRow[]> {
   const { data, error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .select("*")
     .eq("tool_id", toolId)
     .order("executor_name", { ascending: true });
@@ -57,7 +58,7 @@ export async function addToolBinding(args: {
   isActive?: boolean;
 }): Promise<ToolBindingRow> {
   const { data, error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .insert({
       tool_id: args.toolId,
       executor_name: args.executorName,
@@ -75,7 +76,7 @@ export async function updateToolBinding(args: {
   isActive: boolean;
 }): Promise<void> {
   const { error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .update({ is_active: args.isActive })
     .eq("tool_id", args.toolId)
     .eq("executor_name", args.executorName);
@@ -87,7 +88,7 @@ export async function removeToolBinding(args: {
   executorName: string;
 }): Promise<void> {
   const { error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .delete()
     .eq("tool_id", args.toolId)
     .eq("executor_name", args.executorName);
@@ -110,7 +111,7 @@ export async function listSurfacesIncludingTool(
 ): Promise<SurfaceInclusion[]> {
   // Need the tool's name first — surface defaults reference tools by name, not id.
   const toolRes = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("name")
     .eq("id", toolId)
     .single();
@@ -120,12 +121,12 @@ export async function listSurfacesIncludingTool(
   const [directRes, bundleRes] = await Promise.all([
     // Direct inclusion: surface_defaults.always_include_tools contains the tool name.
     sb()
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .select("surface_name")
       .contains("always_include_tools", [toolName]),
     // Bundle inclusion: find bundles that contain this tool, then surfaces that include those bundles.
     sb()
-      .from("tool_bundle_member")
+      .schema("tool").from("bundle_member")
       .select("bundle:tool_bundle(name)")
       .eq("tool_id", toolId),
   ]);
@@ -144,7 +145,7 @@ export async function listSurfacesIncludingTool(
 
   if (bundleNames.length > 0) {
     const surfacesViaBundle = await sb()
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .select("surface_name, always_include_bundles")
       .overlaps("always_include_bundles", bundleNames);
     if (surfacesViaBundle.error) throw surfacesViaBundle.error;
@@ -173,7 +174,7 @@ export async function addToolToSurface(args: {
   surfaceName: string;
 }): Promise<void> {
   const toolRes = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("name")
     .eq("id", args.toolId)
     .single();
@@ -181,7 +182,7 @@ export async function addToolToSurface(args: {
   const toolName = toolRes.data.name;
 
   const defaultsRes = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .select("always_include_tools")
     .eq("surface_name", args.surfaceName)
     .maybeSingle();
@@ -190,7 +191,7 @@ export async function addToolToSurface(args: {
   if (defaultsRes.data) {
     if (defaultsRes.data.always_include_tools.includes(toolName)) return;
     const { error } = await sb()
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .update({
         always_include_tools: [...defaultsRes.data.always_include_tools, toolName],
       })
@@ -198,7 +199,7 @@ export async function addToolToSurface(args: {
     if (error) throw error;
   } else {
     const { error } = await sb()
-      .from("tool_surface_defaults")
+      .schema("tool").from("surface_defaults")
       .insert({
         surface_name: args.surfaceName,
         always_include_tools: [toolName],
@@ -213,7 +214,7 @@ export async function removeToolFromSurface(args: {
   surfaceName: string;
 }): Promise<void> {
   const toolRes = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("name")
     .eq("id", args.toolId)
     .single();
@@ -221,7 +222,7 @@ export async function removeToolFromSurface(args: {
   const toolName = toolRes.data.name;
 
   const defaultsRes = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .select("always_include_tools")
     .eq("surface_name", args.surfaceName)
     .maybeSingle();
@@ -232,7 +233,7 @@ export async function removeToolFromSurface(args: {
   if (filtered.length === defaultsRes.data.always_include_tools.length) return;
 
   const { error } = await sb()
-    .from("tool_surface_defaults")
+    .schema("tool").from("surface_defaults")
     .update({ always_include_tools: filtered })
     .eq("surface_name", args.surfaceName);
   if (error) throw error;
@@ -242,7 +243,7 @@ export async function removeToolFromSurface(args: {
 
 export async function listToolBundleMemberships(toolId: string): Promise<BundleMembership[]> {
   const { data, error } = await sb()
-    .from("tool_bundle_member")
+    .schema("tool").from("bundle_member")
     .select("*, bundle:tool_bundle(*)")
     .eq("tool_id", toolId)
     .order("created_at", { ascending: false });
@@ -281,7 +282,7 @@ export function parseGating(gating: unknown): ToolGateEntry[] {
 
 export async function setToolGating(toolId: string, gates: ToolGateEntry[]): Promise<void> {
   const { error } = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .update({ gating: gates as never })
     .eq("id", toolId);
   if (error) throw error;
@@ -312,7 +313,7 @@ export async function listAllUiSurfaceNames(): Promise<string[]> {
 
 export async function listAllExecutorNames(): Promise<string[]> {
   const { data, error } = await sb()
-    .from("tool_executor")
+    .schema("tool").from("executor")
     .select("name")
     .eq("is_active", true)
     .order("name", { ascending: true });
@@ -336,7 +337,7 @@ export interface ToolCatalogOption {
  */
 export async function listAllToolOptions(): Promise<ToolCatalogOption[]> {
   const { data, error } = await sb()
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("id, name, category, description, is_active, source_kind")
     .order("category", { ascending: true })
     .order("name", { ascending: true });

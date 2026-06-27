@@ -84,7 +84,7 @@ export const fetchAvailableTools = createAsyncThunk(
     try {
       const supabase = createClient();
       const { data, error } = await supabase
-        .from("tool_def")
+        .schema("tool").from("definition")
         .select("id, name, description, category, icon")
         .eq("is_active", true)
         .order("category", { ascending: true })

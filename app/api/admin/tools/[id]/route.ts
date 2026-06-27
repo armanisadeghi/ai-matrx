@@ -26,7 +26,7 @@ export async function GET(
     const supabase = await createClient();
 
     const { data, error } = await supabase
-      .from("tool_def")
+      .schema("tool").from("definition")
       .select("*")
       .eq("id", id)
       .single();
@@ -100,7 +100,7 @@ export async function PUT(
     if (updateData.icon === "") updateData.icon = null;
 
     const { data, error } = await supabase
-      .from("tool_def")
+      .schema("tool").from("definition")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -144,7 +144,7 @@ export async function DELETE(
     const { id } = await params;
     const supabase = createAdminClient();
 
-    const { error } = await supabase.from("tool_def").delete().eq("id", id);
+    const { error } = await supabase.schema("tool").from("definition").delete().eq("id", id);
 
     if (error) {
       console.error("Error deleting tool:", error);

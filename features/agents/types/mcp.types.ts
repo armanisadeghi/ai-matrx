@@ -86,7 +86,7 @@ export function catalogEntryFromRpc(row: CatalogRpcRow): McpCatalogEntry {
 // ---------------------------------------------------------------------------
 
 type ServerConfigRow =
-  Database["public"]["Tables"]["tool_mcp_config"]["Row"];
+  Database["tool"]["Tables"]["mcp_config"]["Row"];
 
 export interface McpServerConfigEntry {
   id: string;

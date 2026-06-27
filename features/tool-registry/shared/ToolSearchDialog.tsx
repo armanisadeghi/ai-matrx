@@ -31,7 +31,7 @@ export interface ToolSearchOption {
   description?: string | null;
   is_active?: boolean | null;
   source_kind?:
-    | Database["public"]["Tables"]["tool_def"]["Row"]["source_kind"]
+    | Database["tool"]["Tables"]["definition"]["Row"]["source_kind"]
     | null;
 }
 

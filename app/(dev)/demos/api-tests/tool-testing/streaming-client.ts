@@ -99,7 +99,7 @@ export async function executeToolTest(
  */
 export async function fetchToolsFromDatabase(): Promise<ToolDefinition[]> {
   const { data, error } = await supabase
-    .from("tool_def")
+    .schema("tool").from("definition")
     .select("*")
     .eq("is_active", true)
     .order("category", { ascending: true })

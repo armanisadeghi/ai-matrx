@@ -25,7 +25,7 @@ export async function fetchEmitRendererRow(
   componentRef: string,
 ): Promise<EmitRendererRow | null> {
   const { data, error } = await supabase
-    .from("tool_ui")
+    .schema("tool").from("ui")
     .select("inline_code, allowed_imports")
     .eq("tool_name", componentRef)
     .eq("surface_name", WORKFLOW_EMIT_SURFACE)

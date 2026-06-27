@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Verify server exists
   const { data: server, error: serverError } = await supabase
-    .from("tool_mcp_server")
+    .schema("tool").from("mcp_server")
     .select("name, slug, auth_strategy")
     .eq("id", serverId)
     .single();

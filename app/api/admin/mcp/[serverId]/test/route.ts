@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // Load the server row (RLS will gate; the page that calls this is /admin/* anyway)
   const { data: server, error: serverError } = await supabase
-    .from("tool_mcp_server")
+    .schema("tool").from("mcp_server")
     .select("id, slug, name, transport, endpoint_url")
     .eq("id", serverId)
     .single();
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   // tool_mcp_server is RLS-protected with no write policy — use the admin client.
   const admin = createAdminClient();
   await admin
-    .from("tool_mcp_server")
+    .schema("tool").from("mcp_server")
     .update({
       last_tested_at: new Date().toISOString(),
       last_test_ok: result.ok,

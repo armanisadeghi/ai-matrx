@@ -26,10 +26,11 @@ import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
+type ToolTables = Database["tool"]["Tables"];
 
-export type ToolExecutorRow = Tables["tool_executor"]["Row"];
-export type ToolBindingRow = Tables["tool_binding"]["Row"];
-export type ToolDefRow = Tables["tool_def"]["Row"];
+export type ToolExecutorRow = ToolTables["executor"]["Row"];
+export type ToolBindingRow = ToolTables["binding"]["Row"];
+export type ToolDefRow = ToolTables["definition"]["Row"];
 
 /** A `tool_executor` row plus aggregate counts used in the master list. */
 export interface ExecutorWithStats extends ToolExecutorRow {
@@ -77,8 +78,8 @@ const sb = () => createClient();
  */
 export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
   const [execRes, bindRes] = await Promise.all([
-    sb().from("tool_executor").select("*").order("name", { ascending: true }),
-    sb().from("tool_binding").select("executor_name, is_active"),
+    sb().schema("tool").from("executor").select("*").order("name", { ascending: true }),
+    sb().schema("tool").from("binding").select("executor_name, is_active"),
   ]);
   if (execRes.error) throw execRes.error;
   if (bindRes.error) throw bindRes.error;
@@ -109,7 +110,7 @@ export async function listBindingsForExecutor(
   executorName: string,
 ): Promise<ExecutorBindingRow[]> {
   const { data, error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .select(
       "tool_id, executor_name, is_active, updated_at, tool:tool_def(name, category, description, is_active, source_kind)",
     )
@@ -159,11 +160,11 @@ export async function listUnboundToolsForExecutor(
 ): Promise<UnboundToolRow[]> {
   const [toolsRes, boundRes] = await Promise.all([
     sb()
-      .from("tool_def")
+      .schema("tool").from("definition")
       .select("id, name, category, description, is_active, source_kind")
       .order("category", { ascending: true })
       .order("name", { ascending: true }),
-    sb().from("tool_binding").select("tool_id").eq("executor_name", executorName),
+    sb().schema("tool").from("binding").select("tool_id").eq("executor_name", executorName),
   ]);
   if (toolsRes.error) throw toolsRes.error;
   if (boundRes.error) throw boundRes.error;
@@ -180,7 +181,7 @@ export async function addBinding(args: {
   isActive?: boolean;
 }): Promise<ToolBindingRow> {
   const { data, error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .insert({
       tool_id: args.toolId,
       executor_name: args.executorName,
@@ -198,7 +199,7 @@ export async function updateBinding(args: {
   isActive: boolean;
 }): Promise<void> {
   const { error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .update({ is_active: args.isActive })
     .eq("tool_id", args.toolId)
     .eq("executor_name", args.executorName);
@@ -210,7 +211,7 @@ export async function removeBinding(args: {
   executorName: string;
 }): Promise<void> {
   const { error } = await sb()
-    .from("tool_binding")
+    .schema("tool").from("binding")
     .delete()
     .eq("tool_id", args.toolId)
     .eq("executor_name", args.executorName);

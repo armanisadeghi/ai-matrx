@@ -574,7 +574,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from("tool_test_sample")
+                .schema("tool").from("test_sample")
                 .select("*")
                 .or(`tool_name.eq.${toolName},tool_id.eq.${toolId}`)
                 .order("created_at", { ascending: false });
@@ -592,7 +592,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
 
     const handleUpdate = useCallback(async (id: string, patch: Partial<ToolTestSample>) => {
         const { error } = await supabase
-            .from("tool_test_sample")
+            .schema("tool").from("test_sample")
             .update(patch)
             .eq("id", id);
 
