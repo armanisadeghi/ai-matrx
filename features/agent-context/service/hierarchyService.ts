@@ -358,8 +358,10 @@ export const hierarchyService = {
     if (error) throw error;
 
     // Owner membership via the canonical mbr_* RPC (iam.memberships); the client
-    // has no direct grant on the table. mbr_add honors organizations.created_by
-    // to bootstrap the first owner of a just-created org.
+    // has no direct grant on the table.
+    // NOTE: bootstrapping the FIRST owner of a just-created org requires mbr_add
+    // to accept the org's `created_by` as access (pending DB follow-up); until
+    // that lands this throws (42501) and org creation fails here loudly.
     const ownerResult = await membershipsService.add({
       containerType: "organization",
       containerId: org.id,

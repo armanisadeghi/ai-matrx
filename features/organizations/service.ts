@@ -115,9 +115,10 @@ export async function createOrganization(
     }
 
     // Add creator as owner. Canonical membership write via the `mbr_*` RPCs
-    // (iam.memberships) — the client has no direct grant on the table. The org
-    // row stamps `created_by = auth.uid()`, which mbr_add honors to bootstrap
-    // the first owner of a just-created org.
+    // (iam.memberships) — the client has no direct grant on the table.
+    // NOTE: bootstrapping the FIRST owner of a just-created org requires mbr_add
+    // to accept the org's `created_by` as access (pending DB follow-up); until
+    // that lands this raises 42501 and org creation fails here loudly.
     const ownerResult = await membershipsService.add({
       containerType: "organization",
       containerId: org.id,
