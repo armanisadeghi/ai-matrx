@@ -139,7 +139,7 @@ export type ChatRequestPayload = NonNullableFields<
  *
  * Rendered order on the server:
  *   intro → date → prepend_sections → base_instruction → tools_list
- *   → code_guidelines → safety_guidelines → content_blocks
+ *   → actions_guidance → code_guidelines → safety_guidelines → content_blocks
  *   → append_sections → outro
  */
 export interface SystemInstruction {
@@ -154,6 +154,11 @@ export interface SystemInstruction {
   include_date?: boolean;
   include_code_guidelines?: boolean;
   include_safety_guidelines?: boolean;
+  /** Auto-include a Matrx Actions guidance section. The server derives the
+   *  agent's available action type(s) from its output_directive output_schema
+   *  and renders an "## Available Matrx Actions" section (like tools_list).
+   *  Non-chat models drop it automatically. */
+  include_actions_guidance?: boolean;
   /** Auto-injected context-awareness block (`<deferred_context_available>` +
    *  scope/labels). Default true. Turn off for agents that should never receive
    *  the deferred-context preamble. (Non-chat TTS/image/video models drop it
