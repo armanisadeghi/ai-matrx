@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { PromptRunPage } from "@/features/prompts/components/PromptRunPage";
 import { Suspense } from "react";
 import type { PromptAccessInfo } from "@/features/prompts/types/shared";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 // Cache AI models data for 12 hours
 export const revalidate = 43200;
@@ -20,7 +21,7 @@ export async function generateMetadata({
   const supabase = await createClient();
 
   // Fetch prompt for metadata
-  const { data: prompt } = await supabase
+  const { data: prompt } = await graveyardDb(supabase)
     .from("prompts")
     .select("name, description")
     .eq("id", id)
@@ -56,7 +57,7 @@ export default async function RunPromptPage({
 
   // Fetch prompt by ID and access level in parallel (RLS handles access control)
   const [promptResult, accessLevelResult] = await Promise.all([
-    supabase.from("prompts").select("*").eq("id", id).single(),
+    graveyardDb(supabase).from("prompts").select("*").eq("id", id).single(),
     supabase.rpc("get_prompt_access_level", { prompt_id: id }),
   ]);
 

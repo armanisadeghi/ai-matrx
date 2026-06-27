@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
 // and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: prompts, error } = await supabase
+    const { data: prompts, error } = await graveyardDb(supabase)
       .from("prompts")
       .select(
         "id, name, description, variable_defaults, updated_at, created_at",
@@ -67,9 +68,18 @@ export async function GET(request: NextRequest) {
     }
 
     const promptsWithVariables = (prompts ?? []).map((prompt) => {
-      const variables = (prompt.variable_defaults || []).map(
-        (v: { name: string }) => v.name,
-      );
+      const defaults = prompt.variable_defaults;
+      const variables = Array.isArray(defaults)
+        ? defaults
+            .filter(
+              (v): v is { name: string } =>
+                typeof v === "object" &&
+                v !== null &&
+                "name" in v &&
+                typeof (v as { name: unknown }).name === "string",
+            )
+            .map((v) => v.name)
+        : [];
       return {
         id: prompt.id,
         name: prompt.name,

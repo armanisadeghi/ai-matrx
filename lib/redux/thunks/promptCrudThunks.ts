@@ -14,6 +14,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "../store";
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   cachePrompt,
   removePrompt,
@@ -121,7 +122,7 @@ export const fetchAllUserPrompts = createAsyncThunk<
     throw new Error("Not authenticated");
   }
 
-  const { data: rows, error } = await supabase
+  const { data: rows, error } = await graveyardDb(supabase)
     .from("prompts")
     .select<"*", PromptDb>("*")
     .eq("user_id", userId)
@@ -156,7 +157,7 @@ export const fetchUserPrompt = createAsyncThunk<
   string, // promptId
   { dispatch: AppDispatch; state: RootState }
 >("promptCrud/fetchOne", async (promptId, { dispatch }) => {
-  const { data: row, error } = await supabase
+  const { data: row, error } = await graveyardDb(supabase)
     .from("prompts")
     .select("*")
     .eq("id", promptId)
@@ -186,7 +187,7 @@ export const createUserPrompt = createAsyncThunk<
   const userId = (getState() as RootState).userAuth.id;
   if (!userId) throw new Error("Not authenticated");
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await graveyardDb(supabase)
     .from("prompts")
     .insert({ ...toDbInsert(data), user_id: userId })
     .select()
@@ -229,7 +230,7 @@ export const updateUserPrompt = createAsyncThunk<
   // prompt before the update resolves (race condition guard)
   dispatch(markPromptStale(id));
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await graveyardDb(supabase)
     .from("prompts")
     .update(patch)
     .eq("id", id)
@@ -267,7 +268,7 @@ export const upsertUserPrompt = createAsyncThunk<
 
   if (data.id) dispatch(markPromptStale(data.id));
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await graveyardDb(supabase)
     .from("prompts")
     .upsert(payload, { onConflict: "id" })
     .select()
@@ -293,7 +294,7 @@ export const deleteUserPrompt = createAsyncThunk<
   string, // promptId
   { dispatch: AppDispatch; state: RootState }
 >("promptCrud/delete", async (id, { dispatch }) => {
-  const { error } = await supabase.from("prompts").delete().eq("id", id);
+  const { error } = await graveyardDb(supabase).from("prompts").delete().eq("id", id);
 
   if (error) throw new Error(error.message ?? JSON.stringify(error));
 
@@ -425,7 +426,7 @@ export const updateSharedPrompt = createAsyncThunk<
 
   dispatch(markPromptStale(id));
 
-  const { data: row, error } = await supabase
+  const { data: row, error } = await graveyardDb(supabase)
     .from("prompts")
     .update(patch)
     .eq("id", id)
@@ -477,7 +478,7 @@ export const deleteSharedPrompt = createAsyncThunk<
   }
 
   // ── DB delete ────────────────────────────────────────────────────────
-  const { error } = await supabase.from("prompts").delete().eq("id", id);
+  const { error } = await graveyardDb(supabase).from("prompts").delete().eq("id", id);
 
   if (error) throw new Error(error.message ?? JSON.stringify(error));
 

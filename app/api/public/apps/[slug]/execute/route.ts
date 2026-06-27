@@ -6,6 +6,7 @@ import { isValidFingerprint, isTempFingerprint } from '@/lib/services/fingerprin
 import { getPublicAppsRatelimiter } from '@/lib/rate-limit/client';
 import { ipRateLimit } from '@/lib/rate-limit/helpers';
 import crypto from 'crypto';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 /**
  * Create backup identifier from IP + User Agent
@@ -151,7 +152,7 @@ export async function POST(
                     const taskId = uuidv4();
                     
                     // Track failed execution due to guest limit (fire-and-forget)
-                    supabase.from('prompt_app_executions').insert({
+                    graveyardDb(supabase).from("prompt_app_executions").insert({
                         app_id,
                         user_id: null,
                         fingerprint: primaryIdentifier,
@@ -206,8 +207,8 @@ export async function POST(
         const taskId = uuidv4();
 
         // OPTIMIZATION: Record execution - FIRE AND FORGET (non-blocking)
-        supabase
-            .from('prompt_app_executions')
+        graveyardDb(supabase)
+            .from("prompt_app_executions")
             .insert({
                 app_id,
                 user_id: user?.id || null,
@@ -318,8 +319,8 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: 'task_id is required' }, { status: 400 });
         }
 
-        const { error: updateError } = await supabase
-            .from('prompt_app_executions')
+        const { error: updateError } = await graveyardDb(supabase)
+            .from("prompt_app_executions")
             .update({
                 success: false,
                 error_type: error_type || 'stream_error',
@@ -355,8 +356,8 @@ export async function GET(
     const { slug } = await params;
     const supabase = await createClient();
 
-    const { data: app, error } = await supabase
-        .from('prompt_apps')
+    const { data: app, error } = await graveyardDb(supabase)
+        .from("prompt_apps")
         .select(`
             id,
             slug,

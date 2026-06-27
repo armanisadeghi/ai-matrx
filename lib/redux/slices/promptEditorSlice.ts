@@ -7,6 +7,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { createClient } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   PromptMessage,
   PromptVariable,
@@ -81,7 +82,7 @@ export const initializePromptEditor = createAsyncThunk(
       }
 
       const supabase = createClient();
-      const { data, error } = await supabase
+      const { data, error } = await graveyardDb(supabase)
         .from("prompts")
         .select("*")
         .eq("id", id)
@@ -123,7 +124,7 @@ export const savePrompt = createAsyncThunk(
       let result;
       if (id) {
         // Update
-        const { data, error } = await supabase
+        const { data, error } = await graveyardDb(supabase)
           .from("prompts")
           .update(payload)
           .eq("id", id)
@@ -134,7 +135,7 @@ export const savePrompt = createAsyncThunk(
         result = data;
       } else {
         // Insert
-        const { data, error } = await supabase
+        const { data, error } = await graveyardDb(supabase)
           .from("prompts")
           .insert({
             ...payload,

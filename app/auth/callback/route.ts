@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { extractErrorMessage } from "@/utils/errors";
+import { safeRelativePath } from "@/utils/auth/safe-redirect";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -18,9 +19,13 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
 
     const redirectToParam = searchParams.get("redirectTo");
-    let redirectTo = redirectToParam
-      ? decodeURIComponent(redirectToParam)
-      : "/dashboard";
+    // Validate to a same-site relative path BEFORE it is concatenated into the
+    // final redirect URL — an absolute / userinfo-trick value (e.g. "@evil.com")
+    // would otherwise produce an off-site open redirect (`${baseUrl}@evil.com`).
+    let redirectTo = safeRelativePath(
+      redirectToParam ? decodeURIComponent(redirectToParam) : "/dashboard",
+      "/dashboard",
+    );
 
     if (
       redirectTo === "/" ||
@@ -62,7 +67,11 @@ export async function GET(request: Request) {
       }
 
       console.log(
-        `[${timestamp}] Auth callback - Successfully exchanged code for session, user: ${data.user?.email}`,
+        `[${timestamp}] Auth callback - Successfully exchanged code for session${
+          process.env.NODE_ENV === "development"
+            ? `, user: ${data.user?.email}`
+            : ""
+        }`,
       );
 
       // Apple-specific: Persist user's name on first sign-in.

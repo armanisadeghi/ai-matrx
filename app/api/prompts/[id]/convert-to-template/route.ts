@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export async function POST(
     request: NextRequest,
@@ -32,7 +33,7 @@ export async function POST(
         }
 
         // Fetch the original prompt
-        const { data: originalPrompt, error: fetchError } = await supabase
+        const { data: originalPrompt, error: fetchError } = await graveyardDb(supabase)
             .from("prompts")
             .select("*")
             .eq("id", id)
@@ -44,7 +45,7 @@ export async function POST(
         }
 
         // Check if a template with this name already exists
-        const { data: existingTemplate } = await adminClient
+        const { data: existingTemplate } = await graveyardDb(adminClient)
             .from("prompt_templates")
             .select("id")
             .eq("name", originalPrompt.name)
@@ -57,7 +58,7 @@ export async function POST(
         }
 
         // Create a new template using admin client (bypasses RLS on prompt_templates)
-        const { data: newTemplate, error: insertError } = await adminClient
+        const { data: newTemplate, error: insertError } = await graveyardDb(adminClient)
             .from("prompt_templates")
             .insert({
                 name: templateName,

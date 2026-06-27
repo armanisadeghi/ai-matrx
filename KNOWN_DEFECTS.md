@@ -17,13 +17,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
-### D22 — Pre-existing auth-action issues surfaced by adversarial review (not from the event/webhook work)
-**Severity: high (one open-redirect) + medium. In `actions/auth.actions.ts`. Found 2026-06-27 during the webhook security review; flagged for the auth owner.**
+### D22 — Auth-action open-redirect + PII-log hardening — RESOLVED 2026-06-27 (residual: trusted `x-forwarded-host`)
+**Severity was: high (open-redirect) + medium. Closed below; one infra-mitigated defense-in-depth item left open.**
 
-- **FIXED (2026-06-27):** open redirect in `forgotPasswordAction` — `callbackUrl` from the form was passed straight to `redirect()`; now restricted to same-site relative paths.
-- **OPEN — `redirectTo` open-redirect surface:** `signUpAction`/`signInAction` do `redirect(redirectTo)` where `redirectTo` is a form field. An absolute URL would be followed. The OAuth actions legitimately `redirect(data.url)` (provider URL) so a blanket block is wrong — validate `redirectTo`/`callbackUrl` are relative, leave the provider redirects alone.
-- **OPEN — `resetPasswordAction` missing `return`s** before each `encodedRedirect` (lines ~330-351). Not currently exploitable (`redirect()` throws, halting execution) but fragile — add `return`s.
-- **OPEN — PII in logs:** `console.log("SignUpAction - Email:", email)` etc. log email addresses to server stdout; gate behind `NODE_ENV==='development'`.
+- **FIXED (2026-06-27, this wave).** The open-redirect CLASS is killed by one shared primitive `safeRelativePath` (`utils/auth/safe-redirect.ts`), applied at every sink that follows a user-supplied `redirectTo`/`callbackUrl`: `actions/auth.actions.ts` (signUp/signIn), `app/(auth-pages)/login/actions.ts` (login/signup), `app/auth/confirm/route.ts`, and `app/auth/callback/route.ts` (the `${baseUrl}${redirectTo}` concat). OAuth *provider* redirects (`redirect(data.url)`) are intentionally left untouched (commented). `resetPasswordAction` now `return`s before each `encodedRedirect`. PII logs (emails) gated behind `NODE_ENV==='development'` across all five files. Guard rejects `https://`, `//`, `/\`, `/%2F`/`/%5C`, `@evil`, and whitespace-after-slash vectors.
+- **OPEN (low, defense-in-depth):** `app/auth/callback/route.ts` still trusts `x-forwarded-host` to build `baseUrl`, so a spoofed header would defeat the guard — but on Vercel the edge overwrites this header (a browser can't inject it), so it's infra-mitigated. A host-allowlist check is the durable fix; deferred to avoid breaking preview-branch OAuth with a blind allowlist.
 
 ### D21 — AI Runs feature is broken at runtime — reads the graveyarded `ai_runs` table
 **Severity: high — every AI-Runs list/create/update/delete op fails (PostgREST "relation does not exist"). The DB changeover moved `public.ai_runs` → `graveyard.ai_runs`.**
@@ -49,27 +47,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 - **Transport 1 — Realtime kills in-app polling — STARTED.** Generic primitive shipped: `hooks/useRunListRealtime.ts` (owner-scoped Realtime → debounced refetch). **Podcast runs list (`useStudioRuns`) converted** — 15s poll deleted, `agent_run` added to `supabase_realtime`, verified live. The other "polls" are intentional and left as-is: `useStudioRun` (detail — disconnect-recovery fallback during streaming), `useResolveCreatedProject` (bounded one-shot wait for a new record, keyed on slug/name — no id to subscribe to), RAG safety-net (already Realtime-primary). **Only real blocker:** `useAiRunsList` — `ai_runs` is graveyarded (D21); convert once the feature is repointed. To convert a surface: add its run table to the publication (if absent), call `useRunListRealtime({table, onChange: refetch})`, delete the interval.
 - **Webhook depth:** org-wide fan-out (needs iam membership for arbitrary (user,org)); the Python file-audit events (`audit_bridge.py`) write `actor_id = null`, so they don't match owner webhooks yet — populate the actor; manual redeliver button + RPC; `latency_ms` capture; per-feature admin-map entry; **browser-UI verification of `/files/webhooks` still pending** (blocked at build time by a concurrent dev server; backend pipeline verified live).
 
-### D18 — `files.share_links` + `files.file_versions` deny SELECT to the owner (RLS gap) → full-page file detail shows "File not found"
-**Severity: medium — owner cannot open the full-page file viewer route `/files/f/[fileId]`; side-panel viewer (from `/files` Recents) still works. Found during the files-schema cutover QA, 2026-06-26.**
+### D18 — `files.share_links` + `files.file_versions` owner SELECT RLS gap — RESOLVED 2026-06-27
+**Severity was: medium (`/files/f/[fileId]` showed "File not found").** Verified 2026-06-27: both tables now carry the full canonical policy set incl. `std_select` (authenticated via `iam.has_access` + `created_by` owner check), matching `files.files`/`folders` — the RLS gap is closed (a later canonical RLS pass applied it). The companion FE swallow at `SingleFileShell.tsx` is also fixed — it now `console.error`-screams on a real query error and only stays quiet on a clean `!data` not-found.
 
-**What.** After the `cld_* → files` schema move, two satellite tables in the `files` schema deny SELECT to the authenticated **owner**. Live evidence (admin@admin.com, user `87a6e699-…`, dev port 3007):
-- `GET https://db.matrxserver.com/rest/v1/share_links → 403`
-- `GET https://db.matrxserver.com/rest/v1/file_versions → 403`
-
-Both tables exist, RLS is ON, grants to `authenticated` are full — but the SELECT policies are wrong/missing: `files.share_links` has only **1** policy, `files.file_versions` **2**, vs. `files.files`/`files.folders` which have **5** each and read fine. A **403** (not 404 / PGRST106) proves the `files` schema IS exposed in PostgREST — this is purely an RLS policy gap, almost certainly the canonical `iam.apply_rls` v2 not (re)applied to these two tables after the rename.
-
-**Why it happened.** The retrofit/RLS pass applied canonical owner+has_access policies to `files.files`/`folders` but missed the two satellites.
-
-**Impact.** `/files/f/[fileId]` (`SingleFileShell`) renders "File not found" for a file the user owns (row verified present, `deleted_at` null, `created_by` = the user; `get_user_file_tree` returns it; `permissions` reads 200). The same file opens fine in the side-panel viewer, so the `files.files` row reads — the detail shell's versions + share-link reads are what 403. Compounded by D-class swallow below.
-
-**The fence / fix.** Apply `iam.apply_rls` v2 to `files.share_links` and `files.file_versions` so owner/has_access SELECT is granted, matching `files.files`/`folders`. Then re-verify `/files/f/[fileId]` loads and the Share tab reads current visibility.
-
-**What's open.** The RLS fix (DB), plus a related FE swallow: `features/files/components/surfaces/single-file/SingleFileShell.tsx:100` does `if (error || !data) return;` on the deep-link self-heal `filesDb` read — a real error is silently swallowed (violates the loud-recovery doctrine; the `console.warn` only fires on success). Make it scream on `error`.
-
-### D17 — `userPreferencesSlice.resetToLoadedPreferences` drops the `sandbox` module
-**Severity: low — pre-existing, spotted while wiring the directive apply-policy setting (2026-06-24).**
-
-The `sandbox` preference module is present in the type, `defaultUserPreferences`, and the rehydrate handler, but the `resetToLoadedPreferences` reducer's per-module copy list omits it — so a reset silently loses the user's sandbox prefs. Unrelated to the directive work; not touched. Fix: add `sandbox` to that reducer's module copy list (mirror the other modules). File: `lib/redux/preferences/userPreferencesSlice.ts`.
+### D17 — `userPreferencesSlice` module-coverage gaps — RESOLVED 2026-06-27
+**Severity was: low.** `sandbox`, `transcription`, and `agentConnections` were each missing from one or more of the four module lists in `lib/redux/preferences/userPreferencesSlice.ts`. Fixed: all three added to `resetToLoadedPreferences`, the REHYDRATE merge, and `PREFERENCE_MODULE_KEYS` (partialize) — so they now persist to the server/IDB, hydrate on boot, and reset correctly, matching every other module. (Also closes the D5-mermaid "Also noted" sub-item that flagged the same partialize omission.)
 
 ### D16 — Scribe (and other direct `executeInstance` senders) don't split the composer onto a new conversation, so the success-path `clearUserInput` fires the smart-input draft protection
 **Severity: low — the draft is PRESERVED by the protection (no data loss); the symptom is a loud `console.error` ("[smart-input/PROTECTED] clearUserInput tried to clear a live composer draft…") whenever the user types a next-message draft while the assistant is streaming.**
@@ -202,12 +184,8 @@ The `sandbox` preference module is present in the type, `defaultUserPreferences`
 
 **Fence.** Capture already never loses audio locally (IndexedDB-first). The gap is *recovery linkage* (safety_id on the row) and *interruption visibility* (loud track-end handling). Both are additive — neither weakens the existing safety net.
 
-### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
-**Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
-
-**What.** `WindowPersistenceManager` builds restore entries keyed by `overlayId` (`windowEntries[overlayId] = { id: overlayId, … }`) and `restoreWindowState` only applies geometry when `state.windows[overlayId]` exists. But `WindowPanel` registers in `windowManagerSlice` under its `id` prop (the registry **slug**), which differs from `overlayId` for many windows — e.g. `agentSettingsWindow` registers as `agent-settings-window`. For those, the saved rect/state is silently skipped on load (the window opens at its default center instead). Discovered while fixing the silent-render class (D-fix 2026-06-14); the new render watchdog side-steps it for *detection* via `ackOverlayRender` (resolves the real window id), but persistence restore itself is still mismatched.
-
-**Fence.** Cosmetic only — the window still opens and is visible (the silent-render guard guarantees that); just not at its remembered geometry. Fix is to key restore by the slug-derived window id (the same id `WindowPanel` uses), in `WindowPersistenceManager` + `restoreWindowState`.
+### D6 — Window geometry restore key mismatch (`overlayId` vs slug) — RESOLVED 2026-06-27
+**Severity was: low (saved size/position silently didn't restore for windows whose slug ≠ overlayId, e.g. `agentSettingsWindow`/`agent-settings-window`).** Fixed in `WindowPersistenceManager.tsx`: the `windowEntries` restore map is now keyed by `regEntry.slug` (the id `WindowPanel` registers under in `windowManagerSlice`) instead of `overlayId`, so `restoreWindowState` matches the registered window and applies the saved rect. No migration needed — DB `window_type` always stored the slug; only the in-memory key was wrong. `sessionMapRef` (save/close) stays keyed by `overlayId` (unchanged).
 
 ### D3 — Agent Find Usages + Drift: never browser/prod-verified + DM sender identity
 **Severity: low — built, every RPC server-verified; full checklist in [`docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md`](docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md).**
@@ -441,11 +419,10 @@ PDF page-1 grid thumbnails.
    filtering is the documented v2 (dynamic-contexts extension of
    `useUnifiedAgentContextMenu`).
 
-**Also noted (pre-existing, surfaced by this build):** `PREFERENCE_MODULE_KEYS`
-in `userPreferencesSlice.ts` omits `sandbox` / `transcription` /
-`agentConnections` — those modules never persist via partialize. The new
-`mermaid` module WAS added (it persists); the older three are an unrelated gap
-left untouched.
+**Also noted (pre-existing, surfaced by this build) — RESOLVED 2026-06-27 (see D17):**
+`PREFERENCE_MODULE_KEYS` in `userPreferencesSlice.ts` omitted `sandbox` /
+`transcription` / `agentConnections` (they never persisted via partialize). All
+three are now in partialize, the REHYDRATE merge, and `resetToLoadedPreferences`.
 
 **The fence.** Each item is a clean one-step unlock (flip a row + add a renderer;
 add a resource injection path; build dynamic-context menu filtering) — none block

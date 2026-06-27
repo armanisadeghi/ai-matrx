@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect } from "react";
 import { UniversalPromptEditor } from "./UniversalPromptEditor";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   normalizePromptData,
   type UniversalPromptData,
@@ -83,7 +84,7 @@ export function ExamplePromptEditor({ promptId }: { promptId: string }) {
       setTools(toolsData);
 
       // Load prompt
-      const { data: promptRecord } = await supabase
+      const { data: promptRecord } = await graveyardDb(supabase)
         .from("prompts")
         .select("*")
         .eq("id", promptId)
@@ -101,7 +102,7 @@ export function ExamplePromptEditor({ promptId }: { promptId: string }) {
   async function handleSave(updated: UniversalPromptData) {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompts")
         .update({
           name: updated.name,
@@ -169,7 +170,7 @@ export function ExampleTemplateEditor({ templateId }: { templateId: string }) {
       setModels(modelsData);
 
       // Load template
-      const { data: templateRecord } = await supabase
+      const { data: templateRecord } = await graveyardDb(supabase)
         .from("prompt_templates")
         .select("*")
         .eq("id", templateId)
@@ -186,7 +187,7 @@ export function ExampleTemplateEditor({ templateId }: { templateId: string }) {
 
   async function handleSave(updated: UniversalPromptData) {
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompt_templates")
         .update({
           name: updated.name,
@@ -254,7 +255,7 @@ export function ExampleBuiltinEditor({ builtinId }: { builtinId: string }) {
       setTools(toolsData);
 
       // Load builtin
-      const { data: builtinRecord } = await supabase
+      const { data: builtinRecord } = await graveyardDb(supabase)
         .from("prompt_builtins")
         .select("*")
         .eq("id", builtinId)
@@ -271,7 +272,7 @@ export function ExampleBuiltinEditor({ builtinId }: { builtinId: string }) {
 
   async function handleSave(updated: UniversalPromptData) {
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompt_builtins")
         .update({
           name: updated.name,
@@ -346,7 +347,7 @@ export function ExampleCreatePrompt() {
 
   async function handleSave(updated: UniversalPromptData) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await graveyardDb(supabase)
         .from("prompts")
         .insert({
           name: updated.name,
@@ -423,7 +424,7 @@ export function ExampleAdvancedEditor({ promptId }: { promptId: string }) {
 
     // Proceed with save
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompts")
         .update({
           name: updated.name,

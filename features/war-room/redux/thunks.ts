@@ -685,7 +685,7 @@ function toTaskRecord(
     organization_id: t.organization_id ?? "",
     description: t.description,
     created_at: t.created_at,
-    user_id: t.user_id,
+    created_by: t.created_by ?? null,
   };
 }
 

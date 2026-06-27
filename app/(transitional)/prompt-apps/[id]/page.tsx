@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import { PromptAppEditor } from '@/features/prompt-apps/components/PromptAppEditor';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface PromptAppPageProps {
   params: Promise<{
@@ -23,8 +24,8 @@ export default async function PromptAppPage({ params }: PromptAppPageProps) {
   const column = isId ? 'id' : 'slug';
 
   // RLS ensures user can only fetch their own apps
-  const { data: app, error } = await supabase
-    .from('prompt_apps')
+  const { data: app, error } = await graveyardDb(supabase)
+    .from("prompt_apps")
     .select('*')
     .eq(column, id)
     .single();

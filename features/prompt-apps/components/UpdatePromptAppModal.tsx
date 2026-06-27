@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   Dialog,
   DialogContent,
@@ -204,7 +205,7 @@ export function UpdatePromptAppModal({
 
       const userId = requireUserId();
 
-      const { data: apps, error: queryError } = await supabase
+      const { data: apps, error: queryError } = await graveyardDb(supabase)
         .from("prompt_apps")
         .select("*")
         .eq("prompt_id", promptId)

@@ -174,6 +174,8 @@ export function hrefForNormalized(hit: NormalizedHit): string {
     vector_rank: hit.vector_rank,
     lexical_rank: hit.lexical_rank,
     rerank_score: hit.rerank_score,
+    entity_rank: null,
+    entities: [],
     metadata:
       hit.page_number != null && hit.metadata["page_number"] === undefined
         ? { ...hit.metadata, page_number: hit.page_number }

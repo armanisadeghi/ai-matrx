@@ -141,6 +141,8 @@ export function evidenceHref(
     vector_rank: null,
     lexical_rank: null,
     rerank_score: null,
+    entity_rank: null,
+    entities: [],
     metadata: {},
   };
   let href = citationHrefFor(hit);
@@ -363,9 +365,15 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
 
                   <div className="divide-y divide-border/40">
                     {group.occurrences.map((occ) => (
-                      <div key={occ.key} className="group/occ relative px-2.5 py-2">
+                      <div
+                        key={occ.key}
+                        className="group/occ relative px-2.5 py-2"
+                      >
                         <p className="pr-5 text-xs leading-snug text-foreground/90">
-                          {highlightEntity(occ.snippet || "(no snippet)", node.name)}
+                          {highlightEntity(
+                            occ.snippet || "(no snippet)",
+                            node.name,
+                          )}
                         </p>
                         <div className="mt-1 flex items-center gap-2">
                           {occ.dupCount > 1 ? (

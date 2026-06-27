@@ -19,6 +19,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { executeBuiltinWithCodeExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithCodeExtractionThunk";
 import { executeBuiltinWithJsonExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithJsonExtractionThunk";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   validateSlugsInBatch,
   generateSlugCandidates,
@@ -276,7 +277,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
 
         const userId = requireUserId();
 
-        const { data: appData, error: insertError } = await supabase
+        const { data: appData, error: insertError } = await graveyardDb(supabase)
           .from("prompt_apps")
           .insert({
             user_id: userId,

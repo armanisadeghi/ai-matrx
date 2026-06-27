@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface TemplateEditorProps {
   templateId: string;
@@ -73,7 +74,7 @@ export function TemplateEditor({
         fetch("/api/tools")
           .then((r) => r.json())
           .catch(() => ({ tools: [] })),
-        supabase
+        graveyardDb(supabase)
           .from("prompt_templates")
           .select("*")
           .eq("id", templateId)
@@ -100,7 +101,7 @@ export function TemplateEditor({
   async function handleSave(updated: UniversalPromptData) {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompt_templates")
         .update({
           name: updated.name,

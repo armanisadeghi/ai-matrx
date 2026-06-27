@@ -7,6 +7,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import type {
   PromptImportResult,
   PromptBatchImportResult,
@@ -138,7 +139,7 @@ export async function importPrompt(
     };
 
     // Check if prompt with this ID already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await graveyardDb(supabase)
       .from("prompts")
       .select("id")
       .eq("id", promptId)
@@ -146,7 +147,7 @@ export async function importPrompt(
 
     if (existing) {
       // Update existing prompt
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompts")
         .update(dbPromptData)
         .eq("id", promptId);
@@ -161,7 +162,7 @@ export async function importPrompt(
       };
     } else {
       // Insert new prompt
-      const { error } = await supabase.from("prompts").insert(dbPromptData);
+      const { error } = await graveyardDb(supabase).from("prompts").insert(dbPromptData);
 
       if (error) throw error;
 
@@ -215,7 +216,7 @@ export async function exportPromptAsJSON(
   promptId: string,
 ): Promise<PromptData | null> {
   try {
-    const { data: prompt, error } = await supabase
+    const { data: prompt, error } = await graveyardDb(supabase)
       .from("prompts")
       .select("*")
       .eq("id", promptId)

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { TemplatesGrid } from "@/features/agents/agent-creators/templates/TemplatesGrid";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export const metadata = createRouteMetadata("/agents/templates", {
   title: "Templates | Agents | AI Matrx",
@@ -15,7 +16,7 @@ export default async function AgentTemplatesPage() {
   const supabase = await createClient();
 
   // Fetch all templates (public templates)
-  const { data: templates, error } = await supabase
+  const { data: templates, error } = await graveyardDb(supabase)
     .from("prompt_templates")
     .select(
       "id, name, description, category, is_featured, use_count, created_at, updated_at",

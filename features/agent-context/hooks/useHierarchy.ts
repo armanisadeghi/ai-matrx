@@ -223,7 +223,7 @@ export function useCreateTask() {
             description: task.description ?? null,
             settings: task.settings ?? undefined,
             created_at: task.created_at ?? null,
-            user_id: task.user_id ?? null,
+            created_by: task.created_by ?? null,
           },
           level: "full-data",
         }),

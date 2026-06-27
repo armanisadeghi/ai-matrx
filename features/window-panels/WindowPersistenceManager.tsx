@@ -269,7 +269,10 @@ export function WindowPersistenceManager({
         const sessions = await loadWindowSessions(userId!);
         if (cancelled) return;
 
-        // Geometry restore payload: overlayId → WindowEntry shape
+        // Geometry restore payload: slug → WindowEntry shape.
+        // Keys must be the window manager id (slug, e.g. "agent-settings-window"),
+        // not the overlayId (e.g. "agentSettingsWindow") — WindowPanel registers
+        // in windowManagerSlice under its `id` prop which is always the slug.
         const windowEntries: Record<string, WindowEntry> = {};
 
         for (const session of sessions) {
@@ -295,11 +298,17 @@ export function WindowPersistenceManager({
           // Build the geometry entry for windowManagerSlice. Clamp the
           // restored rect into the current viewport — a rect saved at a
           // larger screen can land off-screen on a smaller device.
+          //
+          // Key by regEntry.slug (e.g. "agent-settings-window"), NOT by
+          // overlayId (e.g. "agentSettingsWindow"). WindowPanel registers in
+          // windowManagerSlice under its `id` prop, which window components
+          // set to the kebab-case slug — restoreWindowState skips any entry
+          // whose key doesn't match an already-registered window id. (D6)
           const ps = session.panel_state as PanelState | null;
           if (ps?.rect) {
             const clamped = clampRectToCurrentViewport(ps.rect);
-            windowEntries[overlayId] = {
-              id: overlayId,
+            windowEntries[regEntry.slug] = {
+              id: regEntry.slug,
               title: session.label ?? regEntry.label,
               state: ps.windowState ?? "windowed",
               windowed: clamped,

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
+import { safeRelativePath } from "@/utils/auth/safe-redirect";
 
 // Dynamic baseUrl that works with Vercel deployments (including preview branches)
 const getBaseUrl = async () => {
@@ -66,14 +67,12 @@ export async function login(redirectToArg: string, formData: FormData) {
     revalidatePath("/", "layout");
 
     // CRITICAL: Never redirect to homepage, login, or sign-up after successful login
-    // This prevents infinite redirect loops and ensures users always land on a protected page
-    let finalRedirect = redirectTo || "/dashboard";
-    if (finalRedirect === '/' || finalRedirect === '/login' || finalRedirect === '/sign-up' || finalRedirect === '') {
-        console.log(`[${timestamp}] Login action - Invalid redirectTo (${finalRedirect}), using /dashboard`);
+    // This prevents infinite redirect loops and ensures users always land on a protected page.
+    // safeRelativePath also blocks open-redirect to an off-site absolute URL.
+    let finalRedirect = safeRelativePath(redirectTo, "/dashboard");
+    if (finalRedirect === '/' || finalRedirect === '/login' || finalRedirect === '/sign-up') {
         finalRedirect = '/dashboard';
     }
-
-    console.log(`[${timestamp}] Login action - final redirect:`, finalRedirect);
 
     // Redirect to the original URL if available, otherwise to dashboard
     redirect(finalRedirect);
@@ -100,24 +99,23 @@ export async function signup(redirectToArg: string, formData: FormData) {
     };
 
     const { data, error } = await supabase.auth.signUp(Props);
-    console.log(`[${timestamp}] Signup result - User:`, data?.user?.email, 'Error:', error);
+    if (process.env.NODE_ENV === "development") {
+        console.log(`[${timestamp}] Signup result - User:`, data?.user?.email, 'Error:', error);
+    }
 
     if (error) {
-        console.error(`[${timestamp}] Signup error:`, error);
+        console.error(`[${timestamp}] Signup error:`, error.message);
         redirect(`/sign-up?error=${encodeURIComponent(error.message)}`);
     }
 
-    console.log(`[${timestamp}] Signup successful for:`, Props.email);
     revalidatePath("/", "layout");
 
-    // CRITICAL: Never redirect to homepage, login, or sign-up after successful signup
-    let finalRedirect = redirectTo || "/dashboard";
-    if (finalRedirect === '/' || finalRedirect === '/login' || finalRedirect === '/sign-up' || finalRedirect === '') {
-        console.log(`[${timestamp}] Signup action - Invalid redirectTo (${finalRedirect}), using /dashboard`);
+    // CRITICAL: Never redirect to homepage, login, or sign-up after successful signup.
+    // safeRelativePath also blocks open-redirect to an off-site absolute URL.
+    let finalRedirect = safeRelativePath(redirectTo, "/dashboard");
+    if (finalRedirect === '/' || finalRedirect === '/login' || finalRedirect === '/sign-up') {
         finalRedirect = '/dashboard';
     }
-
-    console.log(`[${timestamp}] Signup action - final redirect:`, finalRedirect);
 
     // Redirect to the original URL if available, otherwise to dashboard
     redirect(finalRedirect);

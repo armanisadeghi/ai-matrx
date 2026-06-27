@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export async function POST(
     request: NextRequest,
@@ -20,7 +21,7 @@ export async function POST(
         }
 
         // Fetch the template
-        const { data: template, error: fetchError } = await supabase
+        const { data: template, error: fetchError } = await graveyardDb(supabase)
             .from("prompt_templates")
             .select("*")
             .eq("id", id)
@@ -32,7 +33,7 @@ export async function POST(
         }
 
         // Create a new prompt from the template
-        const { data: newPrompt, error: insertError } = await supabase
+        const { data: newPrompt, error: insertError } = await graveyardDb(supabase)
             .from("prompts")
             .insert({
                 user_id: user.id,
@@ -55,7 +56,7 @@ export async function POST(
         }
 
         // Increment the use count for the template
-        await supabase
+        await graveyardDb(supabase)
             .from("prompt_templates")
             .update({ use_count: (template.use_count || 0) + 1 })
             .eq("id", id);

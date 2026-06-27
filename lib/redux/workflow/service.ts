@@ -1,14 +1,16 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { createClient } from "@/utils/supabase/client";
 import { graveyardDb } from "@/utils/supabase/graveyardDb";
+import type { Database } from "@/types/database.types";
 import {
   Workflow,
   WorkflowCreateInput,
-  WorkflowRow,
   WorkflowRowInsert,
   WorkflowRowUpdate,
   WorkflowUpdateInput,
 } from "./types";
+
+type GraveyardWorkflowRow = Database["graveyard"]["Tables"]["workflow"]["Row"];
 
 /** Read-only access to preserved workflow rows in the graveyard schema. */
 const graveyardWorkflow = () => graveyardDb(createClient()).from("workflow");
@@ -20,7 +22,7 @@ const graveyardWorkflow = () => graveyardDb(createClient()).from("workflow");
  * pure type assertion; if a non-JSON DB column is renamed or removed, the
  * Workflow shape (derived from the DB row) surfaces the drift at compile time.
  */
-const narrowWorkflow = (row: WorkflowRow): Workflow =>
+const narrowWorkflow = (row: GraveyardWorkflowRow): Workflow =>
   row as unknown as Workflow;
 
 const toInsert = (workflow: WorkflowCreateInput): WorkflowRowInsert =>

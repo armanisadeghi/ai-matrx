@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { History, ChevronDown, FilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +53,7 @@ export function PromptRunsSidebar({
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        const { data, error } = await supabase
+        const { data, error } = await graveyardDb(supabase)
           .from("prompts")
           .select("id, name, description")
           .eq("user_id", user?.id)

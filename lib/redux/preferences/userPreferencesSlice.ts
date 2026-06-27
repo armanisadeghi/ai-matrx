@@ -874,12 +874,19 @@ const userPreferencesSlice = createSlice({
           ...state._meta.loadedPreferences.textGeneration,
         };
         state.coding = { ...state._meta.loadedPreferences.coding };
+        state.sandbox = { ...state._meta.loadedPreferences.sandbox };
         state.flashcard = { ...state._meta.loadedPreferences.flashcard };
         state.playground = { ...state._meta.loadedPreferences.playground };
         state.aiModels = { ...state._meta.loadedPreferences.aiModels };
         state.system = { ...state._meta.loadedPreferences.system };
         state.messaging = { ...state._meta.loadedPreferences.messaging };
         state.agentContext = { ...state._meta.loadedPreferences.agentContext };
+        state.transcription = {
+          ...state._meta.loadedPreferences.transcription,
+        };
+        state.agentConnections = {
+          ...state._meta.loadedPreferences.agentConnections,
+        };
         state.mermaid = { ...state._meta.loadedPreferences.mermaid };
         state.conversationFilters = {
           ...state._meta.loadedPreferences.conversationFilters,
@@ -1006,6 +1013,16 @@ const userPreferencesSlice = createSlice({
         state.messaging = { ...state.messaging, ...loaded.messaging };
       if (loaded.agentContext)
         state.agentContext = { ...state.agentContext, ...loaded.agentContext };
+      if (loaded.transcription)
+        state.transcription = {
+          ...state.transcription,
+          ...loaded.transcription,
+        };
+      if (loaded.agentConnections)
+        state.agentConnections = {
+          ...state.agentConnections,
+          ...loaded.agentConnections,
+        };
       if (loaded.mermaid)
         state.mermaid = { ...state.mermaid, ...loaded.mermaid };
       if (loaded.conversationFilters)
@@ -1083,12 +1100,15 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "imageGeneration",
   "textGeneration",
   "coding",
+  "sandbox",
   "flashcard",
   "playground",
   "aiModels",
   "system",
   "messaging",
   "agentContext",
+  "transcription",
+  "agentConnections",
   "mermaid",
   "conversationFilters",
   "audioDevices",

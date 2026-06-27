@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 /**
  * POST /api/admin/prompt-builtins/create-from-ai
@@ -33,8 +34,8 @@ export async function POST(request: Request) {
     }
 
     // Create the builtin using admin client (bypasses RLS on prompt_builtins)
-    const { data: builtin, error: createError } = await adminClient
-      .from('prompt_builtins')
+    const { data: builtin, error: createError } = await graveyardDb(adminClient)
+      .from("prompt_builtins")
       .insert([{
         name,
         description: description || null,
@@ -75,8 +76,8 @@ export async function POST(request: Request) {
 
     // If shortcut_id provided, link the builtin to the shortcut (admin client for prompt_shortcuts)
     if (shortcut_id) {
-      const { error: linkError } = await adminClient
-        .from('prompt_shortcuts')
+      const { error: linkError } = await graveyardDb(adminClient)
+        .from("prompt_shortcuts")
         .update({ 
           prompt_builtin_id: builtin.id,
         })

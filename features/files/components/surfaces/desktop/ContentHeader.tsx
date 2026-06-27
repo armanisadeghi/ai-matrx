@@ -65,6 +65,7 @@ const SECTION_TITLES: Record<CloudFilesSection, string> = {
   trash: "Deleted files",
   starred: "Starred",
   activity: "Activity",
+  webhooks: "Webhooks",
 };
 
 export interface ContentHeaderProps {

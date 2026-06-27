@@ -5,6 +5,7 @@ import { addMessage, completeExecution, setInstanceStatus } from '../slice';
 import { selectInstance, selectDynamicContexts, selectHasDynamicContexts } from '../selectors';
 import { createClient } from '@/utils/supabase/client';
 import { detectAndUpdateContextsFromResponse } from './detectContextUpdatesThunk';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface FinalizeExecutionPayload {
     runId: string;
@@ -82,8 +83,8 @@ export const finalizeExecution = createAsyncThunk<
                     updateData.dynamic_contexts = dynamicContexts;
                 }
 
-                const { error } = await supabase
-                    .from('ai_runs')
+                const { error } = await graveyardDb(supabase)
+                    .from("ai_runs")
                     .update(updateData)
                     .eq('id', runId);
 

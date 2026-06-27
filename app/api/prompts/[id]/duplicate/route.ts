@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export async function POST(
     request: NextRequest,
@@ -24,7 +25,7 @@ export async function POST(
         // 1. Own the prompt
         // 2. Have permission (viewer/editor/admin) via permissions table
         // 3. Prompt is public
-        const { data: originalPrompt, error: fetchError } = await supabase
+        const { data: originalPrompt, error: fetchError } = await graveyardDb(supabase)
             .from("prompts")
             .select("*")
             .eq("id", id)
@@ -38,7 +39,7 @@ export async function POST(
         // Create a duplicate owned by the current user
         // Note: The new copy is always owned by the current user regardless of who
         // owned the original prompt - this is the "Copy to My Prompts" functionality
-        const { data: newPrompt, error: insertError } = await supabase
+        const { data: newPrompt, error: insertError } = await graveyardDb(supabase)
             .from("prompts")
             .insert({
                 name: `${originalPrompt.name} (Copy)`,

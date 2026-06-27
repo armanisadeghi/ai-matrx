@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Copy, Star } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export default async function PromptTemplatePage({
   params,
@@ -14,7 +15,7 @@ export default async function PromptTemplatePage({
   const supabase = await createClient();
 
   // Fetch template details
-  const { data: template, error } = await supabase
+  const { data: template, error } = await graveyardDb(supabase)
     .from("prompt_templates")
     .select("*")
     .eq("id", id)

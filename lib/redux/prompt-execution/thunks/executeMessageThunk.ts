@@ -11,6 +11,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import type { RootState, AppDispatch } from "../../store";
 import type { ExecuteMessagePayload, ConversationMessage } from "../types";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   addMessage,
   clearMessages,
@@ -37,7 +38,11 @@ import {
   generateRunNameFromMessage,
 } from "@/features/ai-runs/utils/name-generator";
 import { createClient } from "@/utils/supabase/client";
+import type { Database, Json } from "@/types/database.types";
 import { processMessagesForExecution } from "../utils/message-builder";
+
+type AiRunInsert = Database["graveyard"]["Tables"]["ai_runs"]["Insert"];
+type AiRunUpdate = Database["graveyard"]["Tables"]["ai_runs"]["Update"];
 
 /**
  * Async DB save (non-blocking)
@@ -55,25 +60,27 @@ async function saveRunToDBAsync(
 ) {
   try {
     const supabase = createClient();
+    if (!userId) {
+      console.error("❌ DB save skipped: missing user id");
+      return;
+    }
 
-    const insertData: Record<string, any> = {
+    const insertData: AiRunInsert = {
       id: runId,
       user_id: userId,
       source_type: sourceType,
       source_id: sourceId,
       name: runName,
-      messages,
-      settings,
-      variable_values: variables,
+      messages: messages as unknown as Json,
+      settings: settings as Json,
+      variable_values: variables as Json,
       status: "active",
+      ...(dynamicContexts && Object.keys(dynamicContexts).length > 0
+        ? { dynamic_contexts: dynamicContexts as Json }
+        : {}),
     };
 
-    // Include dynamic contexts if they exist
-    if (dynamicContexts && Object.keys(dynamicContexts).length > 0) {
-      insertData.dynamic_contexts = dynamicContexts;
-    }
-
-    await supabase.from("ai_runs").insert(insertData as any);
+    await graveyardDb(supabase).from("ai_runs").insert(insertData);
 
     console.log(
       "✅ Run saved to DB",
@@ -97,17 +104,15 @@ async function updateRunMessagesInDBAsync(
   try {
     const supabase = createClient();
 
-    const updateData: Record<string, any> = {
-      messages,
+    const updateData: AiRunUpdate = {
+      messages: messages as unknown as Json,
       status: "active",
+      ...(dynamicContexts !== undefined
+        ? { dynamic_contexts: dynamicContexts as Json }
+        : {}),
     };
 
-    // Include dynamic contexts if they exist
-    if (dynamicContexts !== undefined) {
-      updateData.dynamic_contexts = dynamicContexts;
-    }
-
-    await supabase.from("ai_runs").update(updateData).eq("id", runId);
+    await graveyardDb(supabase).from("ai_runs").update(updateData).eq("id", runId);
 
     console.log(
       "✅ Run updated in DB",

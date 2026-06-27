@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { createClient } from "@/utils/supabase/client";
-import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   mapAiRunRow,
   mapAiTaskRow,
@@ -35,7 +33,7 @@ export const aiRunsService = {
 
     const userId = requireUserId();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .insert({
         user_id: userId,
@@ -63,7 +61,7 @@ export const aiRunsService = {
   async get(runId: string): Promise<AiRun | null> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .select("*")
       .eq("id", runId)
@@ -84,7 +82,7 @@ export const aiRunsService = {
     const supabase = createClient();
 
     // Get run
-    const { data: run, error: runError } = await supabase
+    const { data: run, error: runError } = await graveyardDb(supabase)
       .from("ai_runs")
       .select("*")
       .eq("id", runId)
@@ -96,10 +94,8 @@ export const aiRunsService = {
     }
 
     // Get tasks
-    const { data: tasks, error: tasksError } = await fromDeprecatedTable(
-      "ai_tasks",
-      "features/ai-runs/services/ai-runs-service.ts:getWithTasks",
-    )
+    const { data: tasks, error: tasksError } = await graveyardDb(supabase)
+      .from("ai_tasks")
       .select("*")
       .eq("run_id", runId)
       .order("created_at", { ascending: true });
@@ -130,7 +126,7 @@ export const aiRunsService = {
       order_direction = "desc",
     } = filters;
 
-    let query = supabase.from("ai_runs").select("*", { count: "exact" });
+    let query = graveyardDb(supabase).from("ai_runs").select("*", { count: "exact" });
 
     // Apply filters
     if (source_type) query = query.eq("source_type", source_type);
@@ -164,7 +160,7 @@ export const aiRunsService = {
   async update(runId: string, input: UpdateAiRunInput): Promise<AiRun> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update(input)
       .eq("id", runId)
@@ -181,7 +177,7 @@ export const aiRunsService = {
   async delete(runId: string): Promise<void> {
     const supabase = createClient();
 
-    const { error } = await supabase
+    const { error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ status: "deleted" })
       .eq("id", runId);
@@ -195,7 +191,7 @@ export const aiRunsService = {
   async hardDelete(runId: string): Promise<void> {
     const supabase = createClient();
 
-    const { error } = await supabase.from("ai_runs").delete().eq("id", runId);
+    const { error } = await graveyardDb(supabase).from("ai_runs").delete().eq("id", runId);
 
     if (error) throw error;
   },
@@ -207,7 +203,7 @@ export const aiRunsService = {
     const supabase = createClient();
 
     // Get current state
-    const { data: current, error: getError } = await supabase
+    const { data: current, error: getError } = await graveyardDb(supabase)
       .from("ai_runs")
       .select("is_starred")
       .eq("id", runId)
@@ -216,7 +212,7 @@ export const aiRunsService = {
     if (getError) throw getError;
 
     // Toggle
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ is_starred: !current.is_starred })
       .eq("id", runId)
@@ -234,7 +230,7 @@ export const aiRunsService = {
     const supabase = createClient();
 
     // Get current messages
-    const { data: current, error: getError } = await supabase
+    const { data: current, error: getError } = await graveyardDb(supabase)
       .from("ai_runs")
       .select("messages")
       .eq("id", runId)
@@ -246,7 +242,7 @@ export const aiRunsService = {
     const updatedMessages = [...runMessagesFromJson(current.messages), message];
 
     // Update
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ messages: updatedMessages })
       .eq("id", runId)
@@ -263,7 +259,7 @@ export const aiRunsService = {
   async archive(runId: string): Promise<AiRun> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ status: "archived" })
       .eq("id", runId)
@@ -280,7 +276,7 @@ export const aiRunsService = {
   async restore(runId: string): Promise<AiRun> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ status: "active" })
       .eq("id", runId)
@@ -297,7 +293,7 @@ export const aiRunsService = {
   async updateMessages(runId: string, messages: RunMessage[]): Promise<AiRun> {
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("ai_runs")
       .update({ messages })
       .eq("id", runId)

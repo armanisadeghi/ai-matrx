@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { promoteGuestToUser } from "@/lib/services/guest-promotion";
+import { safeRelativePath } from "@/utils/auth/safe-redirect";
 
 export async function signUpAction(formData: FormData): Promise<void> {
   const email = formData.get("email")?.toString();
@@ -16,11 +17,12 @@ export async function signUpAction(formData: FormData): Promise<void> {
   const supabase = await createClient();
 
   const origin = (await headers()).get("origin");
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const safeRedirectTo = safeRelativePath(formData.get("redirectTo")?.toString(), "/dashboard");
 
-  console.log("SignUpAction - Email:", email);
-  console.log("SignUpAction - RedirectTo:", redirectTo);
-  console.log("SignUpAction - Origin:", origin);
+  if (process.env.NODE_ENV === "development") {
+    console.log("SignUpAction - RedirectTo:", safeRedirectTo);
+    console.log("SignUpAction - Origin:", origin);
+  }
 
   if (!email || !password || !confirmPassword) {
     console.error("SignUpAction - Missing required fields");
@@ -77,11 +79,10 @@ export async function signUpAction(formData: FormData): Promise<void> {
           "Your account is ready. Please sign in to continue.",
         );
       }
-      console.log(
-        "SignUpAction - guest promoted in place, signed in:",
-        promotion.userId,
-      );
-      return redirect(redirectTo);
+      if (process.env.NODE_ENV === "development") {
+        console.log("SignUpAction - guest promoted in place, signed in");
+      }
+      return redirect(safeRedirectTo);
     }
 
     if (promotion.promoted === false && promotion.reason === "email_in_use") {
@@ -96,18 +97,18 @@ export async function signUpAction(formData: FormData): Promise<void> {
   }
 
   // Use the confirm URL for email verification (PKCE flow)
-  const confirmUrl = `${origin}/auth/confirm?redirectTo=${encodeURIComponent(redirectTo)}`;
-  console.log("SignUpAction - Using confirm URL:", confirmUrl);
+  const confirmUrl = `${origin}/auth/confirm?redirectTo=${encodeURIComponent(safeRedirectTo)}`;
 
   // Test Supabase connection first
   try {
-    console.log("SignUpAction - Testing Supabase connection...");
     const { data: testData, error: testError } =
       await supabase.auth.getSession();
-    console.log("SignUpAction - Connection test result:", {
-      testData: !!testData,
-      testError: !!testError,
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("SignUpAction - Connection test result:", {
+        testData: !!testData,
+        testError: !!testError,
+      });
+    }
   } catch (connError) {
     console.error("SignUpAction - Connection test failed:", connError);
     return encodedRedirect(
@@ -125,26 +126,14 @@ export async function signUpAction(formData: FormData): Promise<void> {
     },
   });
 
-  console.log("SignUpAction - Response data:", data);
-  console.log("SignUpAction - Error details:", {
-    error: error,
-    code: error?.code,
-    message: error?.message,
-    status: error?.status,
-    isAuthError: error instanceof Error && "status" in error,
-  });
-
   if (error) {
-    console.error("SignUpAction - Full error object:", error);
+    console.error("SignUpAction - Auth error:", error.code, error.message);
 
     // Handle specific error types
     if (error.status === 504) {
       // For email signup, a 504 might mean the user was created but email sending timed out
       // Check if we have user data despite the timeout
       if (data.user) {
-        console.log(
-          "SignUpAction - User created despite timeout, email may still be sent",
-        );
         return encodedRedirect(
           "success",
           "/sign-up",
@@ -177,7 +166,6 @@ export async function signUpAction(formData: FormData): Promise<void> {
   // For email signup with confirmation enabled, data.user will exist but data.session will be null
   // This is expected behavior - the user needs to confirm their email first
   if (data.user && !data.session) {
-    console.log("SignUpAction - User created, confirmation email sent");
     return encodedRedirect(
       "success",
       "/sign-up",
@@ -187,12 +175,11 @@ export async function signUpAction(formData: FormData): Promise<void> {
 
   // If we have both user and session, the user is immediately signed in (confirmation disabled)
   if (data.user && data.session) {
-    console.log("SignUpAction - User created and signed in immediately");
-    return redirect(redirectTo);
+    return redirect(safeRedirectTo);
   }
 
   // If we get here, something unexpected happened
-  console.error("SignUpAction - Unexpected response:", data);
+  console.error("SignUpAction - Unexpected response: no user or session returned");
   return encodedRedirect(
     "error",
     "/sign-up",
@@ -203,8 +190,7 @@ export async function signUpAction(formData: FormData): Promise<void> {
 export async function signInAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
-  console.log("SignInAction - RedirectTo:", redirectTo); // Debug log
+  const safeRedirectTo = safeRelativePath(formData.get("redirectTo")?.toString(), "/dashboard");
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -216,19 +202,21 @@ export async function signInAction(formData: FormData) {
     return encodedRedirect("error", "/login", error.message);
   }
 
-  return redirect(redirectTo);
+  return redirect(safeRedirectTo);
 }
 
 export async function signInWithGoogleAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
+  // NOTE: `redirectTo` is intentionally NOT validated here — it never reaches a
+  // bare redirect() in this function. It is carried as a query param into the
+  // trusted /auth/callback route, which re-validates it via safeRelativePath
+  // before redirecting. Do NOT wrap callbackUrl in safeRelativePath (it is an
+  // absolute provider-callback URL and that would break the OAuth flow).
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
-  console.log("SignInWithGoogleAction - RedirectTo:", redirectTo); // Debug log
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
-
-  console.log("Callback URL:", callbackUrl.toString()); // Debug log
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -238,16 +226,14 @@ export async function signInWithGoogleAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Error in signInWithGoogleAction:", error); // Debug log
+    console.error("signInWithGoogleAction OAuth error:", error.message);
     return encodedRedirect("error", "/login", error.message);
   }
 
   if (data?.url) {
-    console.log("Redirecting to OAuth URL:", data.url); // Debug log
     return redirect(data.url);
   }
 
-  console.error("Failed to initiate Google sign-in"); // Debug log
   return encodedRedirect(
     "error",
     "/login",
@@ -259,7 +245,6 @@ export async function signInWithGithubAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
-  console.log("SignInWithGithubAction - RedirectTo:", redirectTo); // Debug log
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -276,7 +261,6 @@ export async function signInWithGithubAction(formData: FormData) {
   }
 
   if (data?.url) {
-    console.log("Redirecting to OAuth URL:", data.url); // Debug log
     return redirect(data.url);
   }
 
@@ -312,8 +296,9 @@ export async function forgotPasswordAction(formData: FormData) {
 
   // Only follow same-site relative paths — never an attacker-controlled
   // absolute URL from the form (open-redirect / phishing vector).
-  if (callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")) {
-    return redirect(callbackUrl);
+  const safeCallback = callbackUrl ? safeRelativePath(callbackUrl, "") : "";
+  if (safeCallback) {
+    return redirect(safeCallback);
   }
 
   return encodedRedirect(
@@ -330,7 +315,7 @@ export async function resetPasswordAction(formData: FormData) {
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!password || !confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
       "/reset-password",
       "Password and confirm password are required",
@@ -338,7 +323,7 @@ export async function resetPasswordAction(formData: FormData) {
   }
 
   if (password !== confirmPassword) {
-    encodedRedirect("error", "/reset-password", "Passwords do not match");
+    return encodedRedirect("error", "/reset-password", "Passwords do not match");
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -346,10 +331,10 @@ export async function resetPasswordAction(formData: FormData) {
   });
 
   if (error) {
-    encodedRedirect("error", "/reset-password", "Password update failed");
+    return encodedRedirect("error", "/reset-password", "Password update failed");
   }
 
-  encodedRedirect("success", "/reset-password", "Password updated");
+  return encodedRedirect("success", "/reset-password", "Password updated");
 }
 
 export async function signOutAction() {
@@ -422,7 +407,6 @@ export async function signInWithAppleAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
-  console.log("SignInWithAppleAction - RedirectTo:", redirectTo);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -439,7 +423,6 @@ export async function signInWithAppleAction(formData: FormData) {
   }
 
   if (data?.url) {
-    console.log("Redirecting to Apple OAuth URL:", data.url);
     return redirect(data.url);
   }
 

@@ -136,7 +136,9 @@ function toMembershipWithUser(
     role: row.role,
     status: row.status,
     createdAt: row.created_at,
+    updatedAt: null,
     createdBy: row.created_by ?? null,
+    metadata: {} as Json,
     user: {
       id: row.user_id,
       email: row.user_email ?? "",
@@ -238,6 +240,34 @@ export const membershipsService = {
   },
 
   // ──────────────────────────────────────────────────────────────────
+  //  READ — every membership of an EXPLICIT user (canonical Part-0a API).
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Every live membership held by `userId`, optionally narrowed to one
+   * `containerType`, org-filtered by RLS inside the RPC. Unlike `forUser`
+   * (which is scoped to the CURRENT user via auth.uid()), this takes an
+   * explicit user id — the canonical "memberships for any user" read.
+   */
+  async listForUser(
+    userId: string,
+    containerType?: string,
+  ): Promise<ScopesRpcResult<{ members: Membership[] }>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("mbr_list_for_user", {
+        p_user_id: userId,
+        ...(containerType ? { p_container_type: containerType } : {}),
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      const rows = (Array.isArray(data) ? data : []) as MbrListRow[];
+      return ok({ members: rows.map(toMembership) });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
   //  READ — BATCH member counts for many containers, one round-trip.
   // ──────────────────────────────────────────────────────────────────
 
@@ -277,16 +307,18 @@ export const membershipsService = {
 
   /**
    * Add `userId` to `${containerType}:${containerId}` with `role`. Idempotent
-   * (reactivates a soft-deleted row). When `orgId` is omitted the RPC resolves
-   * org from the container (project/task). Returns the membership id.
+   * (reactivates a soft-deleted row + updates role/status/metadata on conflict).
+   * `organizationId` is required and verified for org access by the RPC
+   * (raises forbidden_org otherwise). Returns the membership id.
    */
   async add(args: {
     containerType: string;
     containerId: string;
     userId: string;
+    organizationId: string;
     role?: string;
-    orgId?: string | null;
     status?: string;
+    metadata?: Json;
   }): Promise<ScopesRpcResult<{ id: string }>> {
     try {
       requireUserId();
@@ -294,9 +326,10 @@ export const membershipsService = {
         p_container_type: args.containerType,
         p_container_id: args.containerId,
         p_user_id: args.userId,
+        p_organization_id: args.organizationId,
         p_role: args.role ?? "member",
-        p_org_id: args.orgId ?? null,
         p_status: args.status ?? "active",
+        p_metadata: args.metadata ?? {},
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {
@@ -312,8 +345,11 @@ export const membershipsService = {
   //  WRITE — change a member's role.
   // ──────────────────────────────────────────────────────────────────
 
-  /** Set the role of `userId` in `${containerType}:${containerId}`. */
-  async setRole(args: {
+  /**
+   * Set the role of `userId` in `${containerType}:${containerId}` (canonical
+   * Part-0a name). Org-checked inside the RPC.
+   */
+  async updateRole(args: {
     containerType: string;
     containerId: string;
     userId: string;
@@ -321,7 +357,7 @@ export const membershipsService = {
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
-      const { error } = await supabase.rpc("mbr_set_role", {
+      const { error } = await supabase.rpc("mbr_update_role", {
         p_container_type: args.containerType,
         p_container_id: args.containerId,
         p_user_id: args.userId,
@@ -332,6 +368,16 @@ export const membershipsService = {
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
+  },
+
+  /** @deprecated Use {@link updateRole}. Thin alias kept for existing callers. */
+  async setRole(args: {
+    containerType: string;
+    containerId: string;
+    userId: string;
+    role: string;
+  }): Promise<ScopesRpcResult<null>> {
+    return membershipsService.updateRole(args);
   },
 
   // ──────────────────────────────────────────────────────────────────

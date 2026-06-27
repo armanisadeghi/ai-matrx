@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { CreatePromptAppFormWrapper } from "@/features/prompt-apps/components/CreatePromptAppFormWrapper";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface NewPromptAppPageProps {
   searchParams: Promise<{ promptId?: string }>;
@@ -16,15 +17,15 @@ export default async function NewPromptAppPage({ searchParams }: NewPromptAppPag
   const promptId = params.promptId;
   
   // Fetch user's prompts for selection - get all fields for auto-create
-  const { data: prompts } = await supabase
-    .from('prompts')
+  const { data: prompts } = await graveyardDb(supabase)
+    .from("prompts")
     .select('*')
     .eq('user_id', user!.id)
     .order('updated_at', { ascending: false });
   
   // Fetch categories
-  const { data: categories } = await supabase
-    .from('prompt_app_categories')
+  const { data: categories } = await graveyardDb(supabase)
+    .from("prompt_app_categories")
     .select('*')
     .order('sort_order');
   

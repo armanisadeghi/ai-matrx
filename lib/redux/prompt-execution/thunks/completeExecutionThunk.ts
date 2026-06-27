@@ -13,6 +13,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState, AppDispatch } from "../../store";
 import type { CompleteExecutionPayload, ConversationMessage } from "../types";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   selectInstance,
   addMessage,
@@ -96,7 +97,7 @@ export const completeExecutionThunk = createAsyncThunk<
 
           // Add assistant message to run
           // Note: instance.messages is the direct array now, not nested
-          const { error: updateError } = await supabase
+          const { error: updateError } = await graveyardDb(supabase)
             .from("ai_runs")
             .update({
               messages: [...instance.messages, assistantMessage],

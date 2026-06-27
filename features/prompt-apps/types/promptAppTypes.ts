@@ -76,7 +76,8 @@ export interface AppMetadata {
 // Core Types
 // ============================================================================
 
-export type PromptAppRow = Database["public"]["Tables"]["prompt_apps"]["Row"];
+export type PromptAppRow =
+  Database["graveyard"]["Tables"]["prompt_apps"]["Row"];
 
 /** Single source of truth: `prompt_apps` row, plus optional embedded prompt from RPCs. */
 export type PromptApp = PromptAppRow & {

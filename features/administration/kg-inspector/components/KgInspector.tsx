@@ -209,6 +209,8 @@ function mentionHref(m: KgMentionRow): string | null {
     vector_rank: null,
     lexical_rank: null,
     rerank_score: null,
+    entity_rank: null,
+    entities: [],
     metadata: {},
   };
   return citationHrefFor(hit);

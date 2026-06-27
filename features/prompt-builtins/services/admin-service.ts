@@ -1,6 +1,7 @@
 import { getAdminSupabaseClient } from '@/utils/supabase/getScriptClient';
 import { buildSearchOr } from '@/utils/supabase-search';
 import { requireUserId } from '@/utils/auth/getUserId';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   ShortcutCategory,
   PromptBuiltin,
@@ -261,8 +262,8 @@ export async function checkCategoryDependencies(categoryId: string): Promise<{
   }
 
   // Check for prompt shortcuts using this category
-  const { count: shortcutsCount, error: psError } = await supabase
-    .from('prompt_shortcuts')
+  const { count: shortcutsCount, error: psError } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .select('id', { count: 'exact', head: true })
     .eq('category_id', categoryId);
 
@@ -365,8 +366,8 @@ export async function fetchPromptBuiltins(filters?: {
   limit?: number;
 }): Promise<PromptBuiltin[]> {
   const supabase = getClient();
-  let query = supabase
-    .from('prompt_builtins')
+  let query = graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('*')
     .order('name', { ascending: true });
 
@@ -437,8 +438,8 @@ export async function fetchPromptBuiltinsWithSource(filters?: {
 
 export async function getPromptBuiltinById(id: string): Promise<PromptBuiltin | null> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .from('prompt_builtins')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('*')
     .eq('id', id)
     .single();
@@ -478,8 +479,8 @@ export async function createPromptBuiltin(input: CreatePromptBuiltinInput): Prom
     insertData.id = input.id;
   }
 
-  const { data, error } = await supabase
-    .from('prompt_builtins')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .insert([insertData])
     .select()
     .single();
@@ -511,8 +512,8 @@ export async function updatePromptBuiltin(input: UpdatePromptBuiltinInput): Prom
   if (input.is_favorite !== undefined) updateData.is_favorite = input.is_favorite;
   if (input.is_archived !== undefined) updateData.is_archived = input.is_archived;
 
-  const { data, error } = await supabase
-    .from('prompt_builtins')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .update(updateData)
     .eq('id', input.id)
     .select()
@@ -530,8 +531,8 @@ export async function deletePromptBuiltin(id: string): Promise<void> {
   const supabase = getClient();
   
   // First, verify the builtin exists
-  const { data: existingBuiltin, error: fetchError } = await supabase
-    .from('prompt_builtins')
+  const { data: existingBuiltin, error: fetchError } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('id, name')
     .eq('id', id)
     .single();
@@ -549,8 +550,8 @@ export async function deletePromptBuiltin(id: string): Promise<void> {
   }
 
   // Perform the delete
-  const { error: deleteError } = await supabase
-    .from('prompt_builtins')
+  const { error: deleteError } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .delete()
     .eq('id', id);
 
@@ -566,8 +567,8 @@ export async function deletePromptBuiltin(id: string): Promise<void> {
   }
 
   // Verify deletion succeeded
-  const { data: verifyDeleted } = await supabase
-    .from('prompt_builtins')
+  const { data: verifyDeleted } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('id')
     .eq('id', id)
     .single();
@@ -597,8 +598,8 @@ export async function activatePromptBuiltin(id: string): Promise<PromptBuiltin> 
  */
 export async function getBuiltinsBySourcePromptId(sourcePromptId: string): Promise<PromptBuiltin[]> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .from('prompt_builtins')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('*')
     .eq('source_prompt_id', sourcePromptId)
     .eq('is_active', true)
@@ -623,8 +624,8 @@ export async function fetchPromptShortcuts(filters?: {
   limit?: number;
 }): Promise<PromptShortcut[]> {
   const supabase = getClient();
-  let query = supabase
-    .from('prompt_shortcuts')
+  let query = graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .select('*')
     .order('sort_order', { ascending: true });
 
@@ -656,8 +657,8 @@ export async function fetchPromptShortcuts(filters?: {
 
 export async function getPromptShortcutById(id: string): Promise<PromptShortcut | null> {
   const supabase = getClient();
-  const { data, error } = await supabase
-    .from('prompt_shortcuts')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .select('*')
     .eq('id', id)
     .single();
@@ -699,8 +700,8 @@ export async function createPromptShortcut(input: CreatePromptShortcutInput): Pr
     insertData.id = input.id;
   }
 
-  const { data, error } = await supabase
-    .from('prompt_shortcuts')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .insert([insertData])
     .select()
     .single();
@@ -775,8 +776,8 @@ export async function updatePromptShortcut(input: UpdatePromptShortcutInput): Pr
   if (input.apply_variables !== undefined) updateData.apply_variables = input.apply_variables;
   if (input.is_active !== undefined) updateData.is_active = input.is_active;
 
-  const { data, error } = await supabase
-    .from('prompt_shortcuts')
+  const { data, error } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .update(updateData)
     .eq('id', input.id)
     .select()
@@ -792,8 +793,8 @@ export async function updatePromptShortcut(input: UpdatePromptShortcutInput): Pr
 
 export async function deletePromptShortcut(id: string): Promise<void> {
   const supabase = getClient();
-  const { error } = await supabase
-    .from('prompt_shortcuts')
+  const { error } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .delete()
     .eq('id', id);
 
@@ -870,8 +871,8 @@ export async function fetchShortcutsWithRelations(filters?: {
 
   // Fetch related builtins
   const builtinIds = [...new Set(shortcuts.map(s => s.prompt_builtin_id))].filter(Boolean);
-  const { data: builtins } = await supabase
-    .from('prompt_builtins')
+  const { data: builtins } = await graveyardDb(supabase)
+    .from("prompt_builtins")
     .select('*')
     .in('id', builtinIds);
 
@@ -902,8 +903,8 @@ export async function fetchCategoriesWithShortcutCounts(placementType?: string):
   const supabase = getClient();
   const categoryIds = categories.map(c => c.id);
 
-  const { data: shortcuts } = await supabase
-    .from('prompt_shortcuts')
+  const { data: shortcuts } = await graveyardDb(supabase)
+    .from("prompt_shortcuts")
     .select('category_id')
     .in('category_id', categoryIds)
     .eq('is_active', true);

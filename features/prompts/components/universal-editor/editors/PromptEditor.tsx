@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useModels } from "@/features/ai-models/hooks/useModels";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface PromptEditorProps {
   promptId: string;
@@ -73,7 +74,7 @@ export function PromptEditor({
         fetch("/api/tools")
           .then((r) => r.json())
           .catch(() => ({ tools: [] })),
-        supabase.from("prompts").select("*").eq("id", promptId).single(),
+        graveyardDb(supabase).from("prompts").select("*").eq("id", promptId).single(),
       ]);
 
       setTools(toolsRes?.tools || []);
@@ -96,7 +97,7 @@ export function PromptEditor({
   async function handleSave(updated: UniversalPromptData) {
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompts")
         .update({
           name: updated.name,

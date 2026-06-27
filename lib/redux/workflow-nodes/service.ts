@@ -1,14 +1,17 @@
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
 import { createClient } from "@/utils/supabase/client";
 import { graveyardDb } from "@/utils/supabase/graveyardDb";
+import type { Database } from "@/types/database.types";
 import {
   WorkflowNode,
   WorkflowNodeCreateInput,
-  WorkflowNodeRow,
   WorkflowNodeRowInsert,
   WorkflowNodeRowUpdate,
   WorkflowNodeUpdateInput,
 } from "./types";
+
+type GraveyardWorkflowNodeRow =
+  Database["graveyard"]["Tables"]["workflow_node"]["Row"];
 
 /** Read-only access to preserved workflow node rows in the graveyard schema. */
 const graveyardWorkflowNode = () =>
@@ -21,7 +24,7 @@ const graveyardWorkflowNode = () =>
  * pure type assertion; if a DB column is renamed or removed, the WorkflowNode
  * shape (derived from the DB row) will surface the drift at compile time.
  */
-const narrowNode = (row: WorkflowNodeRow): WorkflowNode =>
+const narrowNode = (row: GraveyardWorkflowNodeRow): WorkflowNode =>
   row as unknown as WorkflowNode;
 
 const toInsert = (node: WorkflowNodeCreateInput): WorkflowNodeRowInsert =>

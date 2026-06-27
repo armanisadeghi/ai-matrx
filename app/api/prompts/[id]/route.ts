@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
 // and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
@@ -48,7 +49,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("prompts")
       .select("*")
       .eq("id", id)
@@ -90,7 +91,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { error } = await supabase
+    const { error } = await graveyardDb(supabase)
       .from("prompts")
       .delete()
       .eq("id", id)

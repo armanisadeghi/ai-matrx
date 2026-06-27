@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   selectPrimaryResponseTextByTaskId,
   selectPrimaryResponseEndedByTaskId,
@@ -186,7 +187,7 @@ export function PromptGenerator({ isOpen, onClose }: PromptGeneratorProps) {
 
     try {
       // 1. Fetch prompt template
-      const { data: prompt, error: promptError } = await supabase
+      const { data: prompt, error: promptError } = await graveyardDb(supabase)
         .from("prompt_builtins")
         .select("*")
         .eq("id", PROMPT_BUILTINS.FULL_PROMPT_STRUCTURE_BUILDER.id)
@@ -290,7 +291,7 @@ export function PromptGenerator({ isOpen, onClose }: PromptGeneratorProps) {
         // created_at and updated_at are automatically set by the database
       };
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await graveyardDb(supabase)
         .from("prompts")
         .insert([dbPromptData]);
 

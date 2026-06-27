@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   Select,
   SelectTrigger,
@@ -199,7 +200,7 @@ export function CreatePromptAppForm({
         // Get current user
         const userId = requireUserId();
 
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await graveyardDb(supabase)
           .from("prompt_apps")
           .insert({
             user_id: userId, // REQUIRED for RLS policy

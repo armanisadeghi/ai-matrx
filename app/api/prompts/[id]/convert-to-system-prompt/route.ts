@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { collectMustacheVariableNamesFromMessagesJson } from "@/features/prompts/utils/collect-template-variables-from-messages-json";
 import { getFunctionalityById } from "@/lib/services/functionality-helpers";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 /**
  * Convert a prompt to a system prompt
@@ -50,7 +51,7 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
 
     // Fetch the original prompt
-    const { data: originalPrompt, error: fetchError } = await supabase
+    const { data: originalPrompt, error: fetchError } = await graveyardDb(supabase)
       .from("prompts")
       .select("*")
       .eq("id", id)

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   selectPrimaryResponseTextByTaskId,
   selectPrimaryResponseEndedByTaskId,
@@ -169,7 +170,7 @@ export function GeneratePromptForBuiltinModal({
 
     try {
       // Fetch prompt template
-      const { data: prompt, error: promptError } = await supabase
+      const { data: prompt, error: promptError } = await graveyardDb(supabase)
         .from("prompts")
         .select("*")
         .eq("id", PROMPT_GENERATOR_PROMPT_ID)

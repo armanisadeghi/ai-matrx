@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { PromptAppPreview } from '@/features/prompt-apps/components/PromptAppPreview';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 interface PreviewPageProps {
   params: Promise<{ id: string }>;
@@ -18,8 +19,8 @@ export default async function PromptAppPreviewPage({ params }: PreviewPageProps)
   }
 
   // Fetch app (by ID or slug)
-  const { data: app, error } = await supabase
-    .from('prompt_apps')
+  const { data: app, error } = await graveyardDb(supabase)
+    .from("prompt_apps")
     .select('*')
     .or(`id.eq.${id},slug.eq.${id}`)
     .single();

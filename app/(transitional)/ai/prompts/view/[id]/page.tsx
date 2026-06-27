@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { fetchAIModels } from "@/features/ai-models/server/ai-models-server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export async function generateMetadata({
   params,
@@ -15,7 +16,7 @@ export async function generateMetadata({
   const supabase = await createClient();
 
   // Fetch prompt for metadata
-  const { data: prompt } = await supabase
+  const { data: prompt } = await graveyardDb(supabase)
     .from("prompts")
     .select("name, description")
     .eq("id", id)
@@ -51,7 +52,7 @@ export default async function ViewPromptPage({
 
   // Fetch prompt by ID (RLS handles access control) and AI models in parallel
   const [promptResult, aiModels] = await Promise.all([
-    supabase.from("prompts").select("*").eq("id", id).single(),
+    graveyardDb(supabase).from("prompts").select("*").eq("id", id).single(),
     fetchAIModels(),
   ]);
 

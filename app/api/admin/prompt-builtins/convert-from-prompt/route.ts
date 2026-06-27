@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 /**
  * POST /api/admin/prompt-builtins/convert-from-prompt
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
         promptOutputSchema = prompt_data.outputSchema ?? null;
       } else {
         // Fallback: fetch from DB (used when called without live data)
-        const { data: prompt, error: promptError } = await supabase
+        const { data: prompt, error: promptError } = await graveyardDb(supabase)
           .from("prompts")
           .select("*")
           .eq("id", prompt_id)
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
       }
 
       // Update the builtin using the admin client (bypasses RLS on prompt_builtins)
-      const { error: updateError } = await adminClient
+      const { error: updateError } = await graveyardDb(adminClient)
         .from("prompt_builtins")
         .update({
           name: promptName,
@@ -163,7 +164,7 @@ export async function POST(request: Request) {
 
     // If shortcut_id provided, link the builtin to the shortcut
     if (shortcut_id) {
-      const { error: linkError } = await adminClient
+      const { error: linkError } = await graveyardDb(adminClient)
         .from("prompt_shortcuts")
         .update({
           prompt_builtin_id: finalBuiltinId,

@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '../../store';
 import { createClient } from '@/utils/supabase/client';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
     createInstance,
     addMessage,
@@ -40,8 +41,8 @@ export const loadRun = createAsyncThunk<
             const supabase = createClient();
 
             // Fetch run from database
-            const { data: run, error } = await supabase
-                .from('ai_runs')
+            const { data: run, error } = await graveyardDb(supabase)
+                .from("ai_runs")
                 .select('*')
                 .eq('id', runId)
                 .single();

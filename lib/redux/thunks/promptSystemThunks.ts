@@ -19,6 +19,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "../store";
 import { supabase } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   cachePrompt,
   setFetchStatus,
@@ -149,7 +150,7 @@ export const fetchPromptFromTable = createAsyncThunk<
       dispatch(setFetchStatus({ promptId, status: "loading" }));
 
       // Fetch from appropriate table
-      const { data: prompt, error } = await supabase
+      const { data: prompt, error } = await graveyardDb(supabase)
         .from(source)
         .select("*")
         .eq("id", promptId)

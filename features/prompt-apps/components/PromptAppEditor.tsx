@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   ExternalLink,
   Eye,
@@ -186,7 +187,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
     if (!app.prompt_id) return;
 
     const fetchPromptInfo = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await graveyardDb(supabase)
         .from("prompts")
         .select("name, updated_at")
         .eq("id", app.prompt_id)
@@ -216,7 +217,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      const { error } = await supabase
+      const { error } = await graveyardDb(supabase)
         .from("prompt_apps")
         .update({
           name: editName,
@@ -271,7 +272,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
   };
 
   const handlePublish = async () => {
-    const { error } = await supabase
+    const { error } = await graveyardDb(supabase)
       .from("prompt_apps")
       .update({ status: "published", published_at: new Date().toISOString() })
       .eq("id", app.id);
@@ -287,7 +288,7 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
   };
 
   const handleUnpublish = async () => {
-    const { error } = await supabase
+    const { error } = await graveyardDb(supabase)
       .from("prompt_apps")
       .update({ status: "draft" })
       .eq("id", app.id);

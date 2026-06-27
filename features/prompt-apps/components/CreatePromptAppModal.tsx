@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";
@@ -57,7 +58,7 @@ export function CreatePromptAppModal({
     try {
       const userId = requireUserId();
 
-      const { data: promptsData, error: promptsError } = await supabase
+      const { data: promptsData, error: promptsError } = await graveyardDb(supabase)
         .from("prompts")
         .select("*")
         .eq("user_id", userId)
@@ -65,7 +66,7 @@ export function CreatePromptAppModal({
 
       if (promptsError) throw promptsError;
 
-      const { data: categoriesData } = await supabase
+      const { data: categoriesData } = await graveyardDb(supabase)
         .from("prompt_app_categories")
         .select("*")
         .order("sort_order");

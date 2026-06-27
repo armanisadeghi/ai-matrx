@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   selectPrimaryResponseTextByTaskId,
   selectPrimaryResponseEndedByTaskId,
@@ -127,7 +128,7 @@ export function FullPromptOptimizer({
 
     try {
       // 1. Fetch prompt
-      const { data: prompt, error: promptError } = await supabase
+      const { data: prompt, error: promptError } = await graveyardDb(supabase)
         .from("prompts")
         .select("*")
         .eq("id", FULL_OPTIMIZER_PROMPT_ID)

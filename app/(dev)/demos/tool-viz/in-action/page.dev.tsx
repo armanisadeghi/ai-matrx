@@ -46,9 +46,13 @@ import {
   Database,
   Gauge,
   Sparkles,
+  Search,
+  ArrowDownAZ,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import MarkdownStream from "@/components/MarkdownStream";
 import ThinkingTrace from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingTrace";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
@@ -290,14 +294,16 @@ function recordingFor(
   if (toolName === "web") {
     const kind = resolveWebActionKind(args.action);
     if (kind === "read" && result && typeof result === "object") {
-      return buildScrapeRecording(
-        result as Record<string, unknown>,
-        args,
-        { toolName, displayName: label },
-      );
+      return buildScrapeRecording(result as Record<string, unknown>, args, {
+        toolName,
+        displayName: label,
+      });
     }
     if (kind === "search" && typeof result === "string") {
-      return buildSearchRecording(result, args, { toolName, displayName: label });
+      return buildSearchRecording(result, args, {
+        toolName,
+        displayName: label,
+      });
     }
   }
   if (toolName === "web_search" && typeof result === "string") {
@@ -464,6 +470,33 @@ interface ToolItem {
   hasCuratedScript: boolean;
 }
 
+type ToolSort = "usage" | "name";
+
+function toolMatchesSearch(tool: ToolItem, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    tool.label.toLowerCase().includes(q) ||
+    tool.toolName.toLowerCase().includes(q)
+  );
+}
+
+function sortToolItems(items: ToolItem[], sort: ToolSort): ToolItem[] {
+  if (sort === "name") {
+    return [...items].sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+    );
+  }
+  // usage: data tools by count desc, then no-data tools alphabetically
+  const withData = items
+    .filter((t) => t.count > 0)
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  const withoutData = items
+    .filter((t) => t.count === 0)
+    .sort((a, b) => a.label.localeCompare(b.label));
+  return [...withData, ...withoutData];
+}
+
 /**
  * Resolve the current user id WITHOUT a network round-trip. Prefer the Redux
  * id (hydrated at session boot in the core shell), but the `(dev)/demos` layout
@@ -514,7 +547,8 @@ async function fetchToolSummary(
 
   const { data, error } = await withTimeout(
     supabase
-      .schema("chat").from("tool_call")
+      .schema("chat")
+      .from("tool_call")
       .select("tool_name")
       .eq("user_id", userId)
       .eq("success", true)
@@ -557,7 +591,8 @@ async function fetchRunsForTool(
 
   const { data, error } = await withTimeout(
     supabase
-      .schema("chat").from("tool_call")
+      .schema("chat")
+      .from("tool_call")
       .select(
         "call_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
       )
@@ -1020,6 +1055,8 @@ function RealRunsPanel({
   const [hasMore, setHasMore] = useState(false);
   const [runsLoading, setRunsLoading] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+  const [toolSearch, setToolSearch] = useState("");
+  const [toolSort, setToolSort] = useState<ToolSort>("usage");
 
   // Keep the parent callbacks in refs so they never re-trigger the data
   // effects. The parent recreates these on every render; if they sat in the
@@ -1102,15 +1139,17 @@ function RealRunsPanel({
         hasCuratedScript: scriptedNames.has(toolName),
       });
     };
-    // Group 1: tools with real data, most-used first.
-    [...dbCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .forEach(([name]) => add(name));
-    // Group 2: known tools with no data yet, alphabetically.
-    [...registeredNames].sort().forEach(add);
-    [...scriptedNames].sort().forEach(add);
-    return items;
+    // Catalogue: every tool the user has run, plus registry + script tools.
+    [...dbCounts.keys()].forEach(add);
+    [...registeredNames].forEach(add);
+    [...scriptedNames].forEach(add);
+    return sortToolItems(items, "usage");
   }, [dbCounts, registeredNames, scriptedNames]);
+
+  const visibleTools = useMemo(() => {
+    const filtered = allTools.filter((t) => toolMatchesSearch(t, toolSearch));
+    return sortToolItems(filtered, toolSort);
+  }, [allTools, toolSearch, toolSort]);
 
   const handleToolSelect = (toolName: string) => {
     if (toolName === selectedTool) return;
@@ -1140,44 +1179,83 @@ function RealRunsPanel({
   return (
     <div className="flex gap-3">
       {/* Left panel — full tool catalogue */}
-      <div className="flex w-52 shrink-0 flex-col gap-0.5 rounded-md border border-border bg-card p-1.5">
+      <div className="flex w-52 shrink-0 flex-col gap-1 rounded-md border border-border bg-card p-1.5">
         <p className="px-1.5 pb-0.5 pt-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           Tools{toolsWithData > 0 ? ` · ${toolsWithData} with data` : ""}
         </p>
+        <div className="relative px-0.5">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={toolSearch}
+            onChange={(e) => setToolSearch(e.target.value)}
+            placeholder="Search tools…"
+            className="h-7 pl-7 text-xs"
+            style={{ fontSize: 16 }}
+          />
+        </div>
+        <div className="flex items-center gap-0.5 px-0.5">
+          {(
+            [
+              ["usage", "Usage", BarChart3],
+              ["name", "Name", ArrowDownAZ],
+            ] as const
+          ).map(([value, label, Icon]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setToolSort(value)}
+              className={
+                "flex flex-1 items-center justify-center gap-1 rounded px-1 py-0.5 text-[10px] transition-colors " +
+                (toolSort === value
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground")
+              }
+            >
+              <Icon className="h-3 w-3 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="max-h-72 overflow-y-auto">
-          {allTools.map((tool) => {
-            const active = selectedTool === tool.toolName;
-            const hasData = tool.count > 0;
-            return (
-              <button
-                key={tool.toolName}
-                type="button"
-                onClick={() => handleToolSelect(tool.toolName)}
-                className={
-                  "flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-xs transition-colors " +
-                  (active
-                    ? "bg-primary text-primary-foreground"
-                    : hasData
-                      ? "text-foreground hover:bg-muted"
-                      : "text-muted-foreground/50 hover:bg-muted/50")
-                }
-              >
-                <span className="flex-1 truncate">{tool.label}</span>
-                {hasData && (
-                  <span
-                    className={
-                      "shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium " +
-                      (active
-                        ? "bg-white/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground")
-                    }
-                  >
-                    {tool.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+          {visibleTools.length === 0 ? (
+            <p className="px-1.5 py-2 text-xs text-muted-foreground">
+              No tools match &ldquo;{toolSearch.trim()}&rdquo;
+            </p>
+          ) : (
+            visibleTools.map((tool) => {
+              const active = selectedTool === tool.toolName;
+              const hasData = tool.count > 0;
+              return (
+                <button
+                  key={tool.toolName}
+                  type="button"
+                  onClick={() => handleToolSelect(tool.toolName)}
+                  className={
+                    "flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-xs transition-colors " +
+                    (active
+                      ? "bg-primary text-primary-foreground"
+                      : hasData
+                        ? "text-foreground hover:bg-muted"
+                        : "text-muted-foreground/50 hover:bg-muted/50")
+                  }
+                >
+                  <span className="flex-1 truncate">{tool.label}</span>
+                  {hasData && (
+                    <span
+                      className={
+                        "shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium " +
+                        (active
+                          ? "bg-white/20 text-primary-foreground"
+                          : "bg-muted text-muted-foreground")
+                      }
+                    >
+                      {tool.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 

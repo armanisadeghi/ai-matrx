@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { PromptAppPublicRendererDirect } from '@/features/prompt-apps/components/PromptAppPublicRendererDirect';
 import { getPromptAppIconsMetadata } from '@/features/prompt-apps/utils/favicon-metadata';
 import type { Metadata } from 'next';
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -24,8 +25,8 @@ export async function generateMetadata({
     const isId = isUUID(slug);
     const column = isId ? 'id' : 'slug';
 
-    const { data: app } = await supabase
-        .from('prompt_apps')
+    const { data: app } = await graveyardDb(supabase)
+        .from("prompt_apps")
         .select('name, tagline, description, preview_image_url, favicon_url')
         .eq(column, slug)
         .eq('status', 'published')

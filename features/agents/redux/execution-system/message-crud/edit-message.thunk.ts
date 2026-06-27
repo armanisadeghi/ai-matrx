@@ -161,7 +161,7 @@ export const editMessage = createAsyncThunk<
     // The RPC returns the full cx_message row after the edit (including the
     // updated `content_history` with the prior content archived).
     if (data) {
-      const row = data as {
+      const row = data as unknown as {
         content: Json;
         content_history: Json | null;
         status: string;

@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { toast } from "sonner";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 export interface PromptBuilderConfig {
   name: string;
@@ -106,7 +107,7 @@ export async function createPromptFromBuilder(
     };
 
     // Insert into database
-    const { error: insertError } = await supabase
+    const { error: insertError } = await graveyardDb(supabase)
       .from("prompts")
       .insert([dbPromptData]);
 

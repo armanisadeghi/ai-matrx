@@ -8,6 +8,7 @@ import { fetchAIModels } from "@/features/ai-models/server/ai-models-server";
 import { PromptBuilder } from "@/features/prompts/components/builder/PromptBuilder";
 import { serverToolsService } from "@/utils/supabase/server-tools-service";
 import type { PromptAccessInfo } from "@/features/prompts/types/shared";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 
 // Cache AI models data for 12 hours
 export const revalidate = 43200;
@@ -21,7 +22,7 @@ export async function generateMetadata({
   const supabase = await createClient();
 
   // Fetch prompt for metadata
-  const { data: prompt } = await supabase
+  const { data: prompt } = await graveyardDb(supabase)
     .from("prompts")
     .select("name, description")
     .eq("id", id)
@@ -58,7 +59,7 @@ export default async function EditPromptPage({
   // Fetch prompt by ID (RLS handles access control), AI models, tools, and access level in parallel
   const [promptResult, aiModels, availableTools, accessLevelResult] =
     await Promise.all([
-      supabase.from("prompts").select("*").eq("id", id).single(),
+      graveyardDb(supabase).from("prompts").select("*").eq("id", id).single(),
       fetchAIModels(),
       serverToolsService.fetchTools(),
       supabase.rpc("get_prompt_access_level", { prompt_id: id }),
