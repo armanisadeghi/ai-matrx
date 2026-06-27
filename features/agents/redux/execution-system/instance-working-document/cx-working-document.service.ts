@@ -109,7 +109,7 @@ export async function getCxWorkingDocumentById(
   documentId: string,
 ): Promise<CxWorkingDocument | null> {
   const { data, error } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .select("*")
     .eq("id", documentId)
     .maybeSingle();
@@ -127,7 +127,7 @@ export async function updateCxWorkingDocumentTitle(
   title: string,
 ): Promise<CxWorkingDocument> {
   const { data, error } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .update({ title })
     .eq("id", id)
     .select("*")
@@ -150,7 +150,7 @@ export async function updateCxWorkingDocumentContent(
   content: string,
 ): Promise<CxWorkingDocument> {
   const { data, error } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .update({ content })
     .eq("id", id)
     .select("*")
@@ -172,7 +172,7 @@ export async function listUserDocuments(
   limit = 50,
 ): Promise<CxWorkingDocument[]> {
   const { data, error } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .select("*")
     .eq("kind", kind)
     .order("updated_at", { ascending: false })
@@ -204,7 +204,7 @@ export async function listRecentUserDocuments(
   limit = 100,
 ): Promise<CxWorkingDocumentSummary[]> {
   const { data, error } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .select("id, conversation_id, kind, title, content, updated_at")
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -242,7 +242,7 @@ export async function getConversationDocumentLink(
   kind: WorkingDocumentKind,
 ): Promise<CxConversationDocumentLink | null> {
   const { data, error } = await supabase
-    .from("cx_conversation_documents")
+    .schema("chat").from("conversation_documents")
     .select("*")
     .eq("conversation_id", conversationId)
     .eq("kind", kind)
@@ -297,7 +297,7 @@ export async function getOrCreateConversationDocument(
   // could create two docs — so we claim the junction (which DOES carry
   // UNIQUE(conversation_id, kind)) as the race arbiter and clean up the loser.
   const { data: docData, error: docError } = await supabase
-    .from("cx_working_documents")
+    .schema("chat").from("working_documents")
     .insert({ conversation_id: conversationId, kind, title: "" })
     .select("*")
     .single();
@@ -311,7 +311,7 @@ export async function getOrCreateConversationDocument(
   // Claim the junction. A unique violation here means a concurrent claim won;
   // that is expected and non-fatal — we resolve it via the authoritative
   // re-read below.
-  await supabase.from("cx_conversation_documents").insert({
+  await supabase.schema("chat").from("conversation_documents").insert({
     conversation_id: conversationId,
     kind,
     document_id: candidate.id,
@@ -333,7 +333,7 @@ export async function getOrCreateConversationDocument(
 
   if (winner.documentId !== candidate.id) {
     // We lost the race — delete the orphan candidate and adopt the winner.
-    await supabase.from("cx_working_documents").delete().eq("id", candidate.id);
+    await supabase.schema("chat").from("working_documents").delete().eq("id", candidate.id);
     const doc = await getCxWorkingDocumentById(winner.documentId);
     return { document: doc ?? candidate, link: winner };
   }
@@ -356,7 +356,7 @@ async function upsertConversationDocumentLink(
   enabled: boolean,
 ): Promise<CxConversationDocumentLink> {
   const { data, error } = await supabase
-    .from("cx_conversation_documents")
+    .schema("chat").from("conversation_documents")
     .upsert(
       {
         conversation_id: conversationId,
@@ -388,7 +388,7 @@ export async function setConversationDocumentEnabled(
   enabled: boolean,
 ): Promise<void> {
   const { error } = await supabase
-    .from("cx_conversation_documents")
+    .schema("chat").from("conversation_documents")
     .update({ enabled })
     .eq("conversation_id", conversationId)
     .eq("kind", kind);

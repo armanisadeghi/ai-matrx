@@ -20,22 +20,22 @@ import type {
   SkillType,
 } from "../types";
 
-/** Supabase-generated Row shape for skl_categories — used when reads
+/** Supabase-generated Row shape for skill.category — used when reads
  * go direct via the Supabase client (vs. the Python `/api/skills/
  * categories` GET which strips `user_id`). */
-type SklCategoryRow = Database["public"]["Tables"]["skl_categories"]["Row"];
+type SklCategoryRow = Database["skill"]["Tables"]["category"]["Row"];
 
-/** Supabase-generated Row shape for skl_resources — reads + writes go
+/** Supabase-generated Row shape for skill.resource — reads + writes go
  * direct (no backend endpoint today). */
-type SklResourceRow = Database["public"]["Tables"]["skl_resources"]["Row"];
+type SklResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
 
-/** Supabase-generated Row shape for skl_definitions — reads go direct via
+/** Supabase-generated Row shape for skill.definition — reads go direct via
  * the Supabase client (RLS gates visibility to public + system + own +
- * org/project/task membership). The optional embedded `skl_skill_projects`
- * comes from the `*, skl_skill_projects(project_id)` select. */
-type SklDefinitionRow = Database["public"]["Tables"]["skl_definitions"]["Row"];
+ * org/project/task membership). The optional embedded `project`
+ * comes from the `*, project(project_id)` select. */
+type SklDefinitionRow = Database["skill"]["Tables"]["definition"]["Row"];
 export type SklDefinitionRowWithProjects = SklDefinitionRow & {
-  skl_skill_projects?: { project_id: string }[] | null;
+  project?: { project_id: string }[] | null;
 };
 
 /** Coerce a `Json` column known to hold a string[] into a real string[]. */
@@ -85,8 +85,8 @@ export function wireToSkillRow(wire: SkillRowWire): SkillRow {
   };
 }
 
-/** Adapter for rows read straight off `skl_definitions` via Supabase
- * (`.from('skl_definitions').select('*, skl_skill_projects(project_id)')`).
+/** Adapter for rows read straight off `skill.definition` via Supabase
+ * (`.schema('skill').from('definition').select('*, project(project_id)')`).
  * The canonical read path — replaces the legacy Python `/api/skills` GET. */
 export function supabaseRowToSkillRow(
   row: SklDefinitionRowWithProjects,
@@ -115,7 +115,7 @@ export function supabaseRowToSkillRow(
     userId: row.user_id ?? null,
     organizationId: row.organization_id ?? null,
     projectId: row.project_id ?? null,
-    projectIds: (row.skl_skill_projects ?? []).map((p) => p.project_id),
+    projectIds: (row.project ?? []).map((p) => p.project_id),
   };
 }
 
@@ -135,7 +135,7 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
   };
 }
 
-/** Adapter for rows read straight off `skl_resources` via Supabase. */
+/** Adapter for rows read straight off `skill.resource` via Supabase. */
 export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
   return {
     id: row.id,
@@ -150,8 +150,8 @@ export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
   };
 }
 
-/** Adapter for rows read straight off `skl_categories` via Supabase
- * (`.from('skl_categories').select(...)`). Accepts the Supabase-
+/** Adapter for rows read straight off `skill.category` via Supabase
+ * (`.schema('skill').from('category').select(...)`). Accepts the Supabase-
  * generated Row type — no double-cast. */
 export function supabaseRowToCategoryRow(row: SklCategoryRow): CategoryRow {
   return {

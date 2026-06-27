@@ -20,7 +20,7 @@ async function resolveConversationSeed(
 ): Promise<{ agentId: string; agentName: string | null } | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .select("initial_agent_id, agx_agent:initial_agent_id (name)")
     .eq("id", conversationId)
     .is("deleted_at", null)

@@ -1190,6 +1190,1667 @@ export type Database = {
       [_ in never]: never
     }
   }
+  chat: {
+    Tables: {
+      agent_memory: {
+        Row: {
+          access_count: number | null
+          content: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          importance: number | null
+          key: string
+          last_accessed_at: string | null
+          memory_type: string
+          metadata: Json
+          organization_id: string | null
+          scope: string
+          scope_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          access_count?: number | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          importance?: number | null
+          key: string
+          last_accessed_at?: string | null
+          memory_type: string
+          metadata?: Json
+          organization_id?: string | null
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          access_count?: number | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          importance?: number | null
+          key?: string
+          last_accessed_at?: string | null
+          memory_type?: string
+          metadata?: Json
+          organization_id?: string | null
+          scope?: string
+          scope_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      agent_plan: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          domains: string[] | null
+          estimated_minutes: number | null
+          id: string
+          organization_id: string | null
+          project_id: string | null
+          reasoning: string | null
+          status: Database["public"]["Enums"]["cx_plan_status"]
+          steps: Json
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          domains?: string[] | null
+          estimated_minutes?: number | null
+          id?: string
+          organization_id?: string | null
+          project_id?: string | null
+          reasoning?: string | null
+          status?: Database["public"]["Enums"]["cx_plan_status"]
+          steps?: Json
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          domains?: string[] | null
+          estimated_minutes?: number | null
+          id?: string
+          organization_id?: string | null
+          project_id?: string | null
+          reasoning?: string | null
+          status?: Database["public"]["Enums"]["cx_plan_status"]
+          steps?: Json
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_task: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id: string
+          note: string | null
+          plan_id: string | null
+          position: number
+          status: Database["public"]["Enums"]["cx_agent_task_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id?: string
+          note?: string | null
+          plan_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["cx_agent_task_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
+          id?: string
+          note?: string | null
+          plan_id?: string | null
+          position?: number
+          status?: Database["public"]["Enums"]["cx_agent_task_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "agent_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artifact: {
+        Row: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          external_id: string | null
+          external_system: string | null
+          external_url: string | null
+          id: string
+          message_id: string
+          metadata: Json
+          organization_id: string | null
+          project_id: string | null
+          status: Database["public"]["Enums"]["artifact_status"]
+          task_id: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          external_id?: string | null
+          external_system?: string | null
+          external_url?: string | null
+          id?: string
+          message_id: string
+          metadata?: Json
+          organization_id?: string | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["artifact_status"]
+          task_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          artifact_type?: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          external_id?: string | null
+          external_system?: string | null
+          external_url?: string | null
+          id?: string
+          message_id?: string
+          metadata?: Json
+          organization_id?: string | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["artifact_status"]
+          task_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_artifact_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_artifact_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_edit: {
+        Row: {
+          applied_at: string | null
+          block_index: number
+          conversation_id: string
+          created_at: string
+          id: string
+          message_file_id: string
+          message_id: string
+          reject_reason: string | null
+          rejected_at: string | null
+          replace_text: string
+          reverted_at: string | null
+          search_text: string
+          status: Database["public"]["Enums"]["code_edit_status"]
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          block_index: number
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_file_id: string
+          message_id: string
+          reject_reason?: string | null
+          rejected_at?: string | null
+          replace_text: string
+          reverted_at?: string | null
+          search_text: string
+          status: Database["public"]["Enums"]["code_edit_status"]
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          block_index?: number
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_file_id?: string
+          message_id?: string
+          reject_reason?: string | null
+          rejected_at?: string | null
+          replace_text?: string
+          reverted_at?: string | null
+          search_text?: string
+          status?: Database["public"]["Enums"]["code_edit_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_code_edit_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_message_file_id_fkey"
+            columns: ["message_file_id"]
+            isOneToOne: false
+            referencedRelation: "code_message_file"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_message_file: {
+        Row: {
+          after_content: string
+          before_content: string
+          conversation_id: string
+          created_at: string
+          edits_applied_count: number
+          edits_pending_count: number
+          edits_rejected_count: number
+          file_adapter: string
+          file_path: string
+          git_branch: string | null
+          git_commit_sha: string | null
+          id: string
+          library_file_id: string | null
+          message_id: string
+          organization_id: string | null
+          reverted_at: string | null
+          status: Database["public"]["Enums"]["code_message_file_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          after_content: string
+          before_content: string
+          conversation_id: string
+          created_at?: string
+          edits_applied_count?: number
+          edits_pending_count?: number
+          edits_rejected_count?: number
+          file_adapter: string
+          file_path: string
+          git_branch?: string | null
+          git_commit_sha?: string | null
+          id?: string
+          library_file_id?: string | null
+          message_id: string
+          organization_id?: string | null
+          reverted_at?: string | null
+          status?: Database["public"]["Enums"]["code_message_file_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          after_content?: string
+          before_content?: string
+          conversation_id?: string
+          created_at?: string
+          edits_applied_count?: number
+          edits_pending_count?: number
+          edits_rejected_count?: number
+          file_adapter?: string
+          file_path?: string
+          git_branch?: string | null
+          git_commit_sha?: string | null
+          id?: string
+          library_file_id?: string | null
+          message_id?: string
+          organization_id?: string | null
+          reverted_at?: string | null
+          status?: Database["public"]["Enums"]["code_message_file_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_code_message_file_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_message_file_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation: {
+        Row: {
+          app_instance_id: string | null
+          cache_state: Json
+          config: Json
+          conversation_type: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          exclude_from_kg: boolean
+          forked_at_position: number | null
+          forked_from_id: string | null
+          id: string
+          initial_agent_id: string | null
+          initial_agent_version_id: string | null
+          is_ephemeral: boolean
+          is_favorite: boolean
+          keywords: string[] | null
+          last_context_breakdown: Json | null
+          last_model_id: string | null
+          last_request_id: string | null
+          last_request_status: string | null
+          message_count: number
+          metadata: Json
+          organization_id: string | null
+          overrides: Json
+          parent_conversation_id: string | null
+          project_id: string | null
+          sandbox_instance_id: string | null
+          source_app: string
+          source_feature: string
+          status: string
+          system_instruction: string | null
+          task_id: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          variables: Json
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          app_instance_id?: string | null
+          cache_state?: Json
+          config?: Json
+          conversation_type?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          exclude_from_kg?: boolean
+          forked_at_position?: number | null
+          forked_from_id?: string | null
+          id?: string
+          initial_agent_id?: string | null
+          initial_agent_version_id?: string | null
+          is_ephemeral?: boolean
+          is_favorite?: boolean
+          keywords?: string[] | null
+          last_context_breakdown?: Json | null
+          last_model_id?: string | null
+          last_request_id?: string | null
+          last_request_status?: string | null
+          message_count?: number
+          metadata?: Json
+          organization_id?: string | null
+          overrides?: Json
+          parent_conversation_id?: string | null
+          project_id?: string | null
+          sandbox_instance_id?: string | null
+          source_app?: string
+          source_feature?: string
+          status?: string
+          system_instruction?: string | null
+          task_id?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variables?: Json
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          app_instance_id?: string | null
+          cache_state?: Json
+          config?: Json
+          conversation_type?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          exclude_from_kg?: boolean
+          forked_at_position?: number | null
+          forked_from_id?: string | null
+          id?: string
+          initial_agent_id?: string | null
+          initial_agent_version_id?: string | null
+          is_ephemeral?: boolean
+          is_favorite?: boolean
+          keywords?: string[] | null
+          last_context_breakdown?: Json | null
+          last_model_id?: string | null
+          last_request_id?: string | null
+          last_request_status?: string | null
+          message_count?: number
+          metadata?: Json
+          organization_id?: string | null
+          overrides?: Json
+          parent_conversation_id?: string | null
+          project_id?: string | null
+          sandbox_instance_id?: string | null
+          source_app?: string
+          source_feature?: string
+          status?: string
+          system_instruction?: string | null
+          task_id?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          variables?: Json
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
+            columns: ["parent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_documents: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          document_id: string
+          enabled: boolean
+          id: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          document_id: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          document_id?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "working_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          file_size_bytes: number | null
+          file_uri: string | null
+          id: string
+          kind: string
+          metadata: Json
+          mime_type: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          file_size_bytes?: number | null
+          file_uri?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          mime_type?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          file_size_bytes?: number | null
+          file_uri?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          mime_type?: string | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message: {
+        Row: {
+          agent_id: string | null
+          content: Json
+          content_chars: number
+          content_history: Json | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          id: string
+          is_visible_to_model: boolean
+          is_visible_to_user: boolean
+          metadata: Json
+          model_context: Json | null
+          organization_id: string | null
+          position: number
+          role: string
+          source: string
+          status: string
+          tool_results_chars: number
+          tools_on_call: Json | null
+          updated_at: string
+          updated_by: string | null
+          user_content: Json | null
+          version: number
+          voice: Json | null
+        }
+        Insert: {
+          agent_id?: string | null
+          content?: Json
+          content_chars?: number
+          content_history?: Json | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          metadata?: Json
+          model_context?: Json | null
+          organization_id?: string | null
+          position: number
+          role: string
+          source?: string
+          status?: string
+          tool_results_chars?: number
+          tools_on_call?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          user_content?: Json | null
+          version?: number
+          voice?: Json | null
+        }
+        Update: {
+          agent_id?: string | null
+          content?: Json
+          content_chars?: number
+          content_history?: Json | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          metadata?: Json
+          model_context?: Json | null
+          organization_id?: string | null
+          position?: number
+          role?: string
+          source?: string
+          status?: string
+          tool_results_chars?: number
+          tools_on_call?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          user_content?: Json | null
+          version?: number
+          voice?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_message_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observational_memory: {
+        Row: {
+          active_observations: string | null
+          buffered_observations: Json
+          buffered_reflection: string | null
+          buffered_reflection_input_tokens: number
+          buffered_reflection_tokens: number
+          config: Json | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          current_task: string | null
+          deleted_at: string | null
+          generation_count: number
+          id: string
+          is_buffering_observation: boolean
+          is_buffering_reflection: boolean
+          last_buffered_at_time: string | null
+          last_buffered_at_tokens: number
+          last_observed_at: string | null
+          metadata: Json
+          observation_token_count: number
+          observed_message_ids: Json
+          observed_timezone: string | null
+          organization_id: string | null
+          pending_message_tokens: number
+          reflected_observation_line_count: number
+          scope: string
+          suggested_response: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          active_observations?: string | null
+          buffered_observations?: Json
+          buffered_reflection?: string | null
+          buffered_reflection_input_tokens?: number
+          buffered_reflection_tokens?: number
+          config?: Json | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          current_task?: string | null
+          deleted_at?: string | null
+          generation_count?: number
+          id?: string
+          is_buffering_observation?: boolean
+          is_buffering_reflection?: boolean
+          last_buffered_at_time?: string | null
+          last_buffered_at_tokens?: number
+          last_observed_at?: string | null
+          metadata?: Json
+          observation_token_count?: number
+          observed_message_ids?: Json
+          observed_timezone?: string | null
+          organization_id?: string | null
+          pending_message_tokens?: number
+          reflected_observation_line_count?: number
+          scope?: string
+          suggested_response?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          active_observations?: string | null
+          buffered_observations?: Json
+          buffered_reflection?: string | null
+          buffered_reflection_input_tokens?: number
+          buffered_reflection_tokens?: number
+          config?: Json | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_task?: string | null
+          deleted_at?: string | null
+          generation_count?: number
+          id?: string
+          is_buffering_observation?: boolean
+          is_buffering_reflection?: boolean
+          last_buffered_at_time?: string | null
+          last_buffered_at_tokens?: number
+          last_observed_at?: string | null
+          metadata?: Json
+          observation_token_count?: number
+          observed_message_ids?: Json
+          observed_timezone?: string | null
+          organization_id?: string | null
+          pending_message_tokens?: number
+          reflected_observation_line_count?: number
+          scope?: string
+          suggested_response?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_observational_memory_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observational_memory_event: {
+        Row: {
+          completed_at: string | null
+          conversation_id: string
+          cost: number
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          event_type: string
+          id: string
+          input_tokens: number
+          memory_record_id: string | null
+          metadata: Json
+          model: string | null
+          output_tokens: number
+          success: boolean
+          trigger_reason: string | null
+          triggered_at: string
+          user_id: string
+          user_request_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          conversation_id: string
+          cost?: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event_type: string
+          id?: string
+          input_tokens?: number
+          memory_record_id?: string | null
+          metadata?: Json
+          model?: string | null
+          output_tokens?: number
+          success?: boolean
+          trigger_reason?: string | null
+          triggered_at?: string
+          user_id: string
+          user_request_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          conversation_id?: string
+          cost?: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          input_tokens?: number
+          memory_record_id?: string | null
+          metadata?: Json
+          model?: string | null
+          output_tokens?: number
+          success?: boolean
+          trigger_reason?: string | null
+          triggered_at?: string
+          user_id?: string
+          user_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_observational_memory_event_memory_record_id_fkey"
+            columns: ["memory_record_id"]
+            isOneToOne: false
+            referencedRelation: "observational_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_injection: {
+        Row: {
+          consumed_at: string | null
+          consumed_by_request_id: string | null
+          consumed_message_id: string | null
+          content: Json
+          conversation_id: string
+          created_at: string
+          enqueued_seq: number
+          id: string
+          is_visible_to_model: boolean
+          is_visible_to_user: boolean
+          kind: string
+          metadata: Json
+          source: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by_request_id?: string | null
+          consumed_message_id?: string | null
+          content?: Json
+          conversation_id: string
+          created_at?: string
+          enqueued_seq?: never
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          kind: string
+          metadata?: Json
+          source?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by_request_id?: string | null
+          consumed_message_id?: string | null
+          content?: Json
+          conversation_id?: string
+          created_at?: string
+          enqueued_seq?: never
+          id?: string
+          is_visible_to_model?: boolean
+          is_visible_to_user?: boolean
+          kind?: string
+          metadata?: Json
+          source?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request: {
+        Row: {
+          ai_model_id: string
+          api_class: string | null
+          api_duration_ms: number | null
+          cached_tokens: number | null
+          conversation_id: string
+          cost: number | null
+          created_at: string
+          deleted_at: string | null
+          error: Json | null
+          finish_reason: string | null
+          id: string
+          input_tokens: number | null
+          iteration: number
+          metadata: Json
+          output_tokens: number | null
+          raw_usage: Json | null
+          response_id: string | null
+          status: string
+          tool_calls_count: number | null
+          tool_calls_details: Json | null
+          tool_duration_ms: number | null
+          total_duration_ms: number | null
+          total_tokens: number | null
+          trim_summary: Json | null
+          user_request_id: string
+        }
+        Insert: {
+          ai_model_id: string
+          api_class?: string | null
+          api_duration_ms?: number | null
+          cached_tokens?: number | null
+          conversation_id: string
+          cost?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          error?: Json | null
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number | null
+          iteration?: number
+          metadata?: Json
+          output_tokens?: number | null
+          raw_usage?: Json | null
+          response_id?: string | null
+          status?: string
+          tool_calls_count?: number | null
+          tool_calls_details?: Json | null
+          tool_duration_ms?: number | null
+          total_duration_ms?: number | null
+          total_tokens?: number | null
+          trim_summary?: Json | null
+          user_request_id: string
+        }
+        Update: {
+          ai_model_id?: string
+          api_class?: string | null
+          api_duration_ms?: number | null
+          cached_tokens?: number | null
+          conversation_id?: string
+          cost?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          error?: Json | null
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number | null
+          iteration?: number
+          metadata?: Json
+          output_tokens?: number | null
+          raw_usage?: Json | null
+          response_id?: string | null
+          status?: string
+          tool_calls_count?: number | null
+          tool_calls_details?: Json | null
+          tool_duration_ms?: number | null
+          total_duration_ms?: number | null
+          total_tokens?: number | null
+          trim_summary?: Json | null
+          user_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_snapshot: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          cx_request_id: string | null
+          id: string
+          iteration: number
+          model: string | null
+          provider: string
+          request_payload: Json
+          response_message_id: string | null
+          response_payload: Json | null
+          trigger_message_id: string | null
+          unified_payload: Json | null
+          user_request_id: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          cx_request_id?: string | null
+          id?: string
+          iteration?: number
+          model?: string | null
+          provider: string
+          request_payload: Json
+          response_message_id?: string | null
+          response_payload?: Json | null
+          trigger_message_id?: string | null
+          unified_payload?: Json | null
+          user_request_id?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          cx_request_id?: string | null
+          id?: string
+          iteration?: number
+          model?: string | null
+          provider?: string
+          request_payload?: Json
+          response_message_id?: string | null
+          response_payload?: Json | null
+          trigger_message_id?: string | null
+          unified_payload?: Json | null
+          user_request_id?: string | null
+        }
+        Relationships: []
+      }
+      tool_call: {
+        Row: {
+          arguments: Json
+          call_id: string
+          completed_at: string
+          conversation_id: string
+          cost_usd: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duration_ms: number
+          error_message: string | null
+          error_type: string | null
+          execution_events: Json | null
+          expires_at: string | null
+          fault_domain: string | null
+          file_path: string | null
+          id: string
+          input_tokens: number | null
+          is_client_delegated: boolean
+          is_error: boolean | null
+          iteration: number
+          message_id: string | null
+          metadata: Json
+          organization_id: string | null
+          output: string | null
+          output_chars: number
+          output_preview: Json | null
+          output_tokens: number | null
+          output_type: string | null
+          parent_call_id: string | null
+          persist_key: string | null
+          resolution_source: string | null
+          resolved_at: string | null
+          retry_count: number | null
+          started_at: string
+          status: string
+          success: boolean
+          tool_name: string
+          tool_name_as_called: string | null
+          tool_type: string
+          total_tokens: number | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          user_request_id: string | null
+          version: number
+        }
+        Insert: {
+          arguments?: Json
+          call_id: string
+          completed_at?: string
+          conversation_id: string
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number
+          error_message?: string | null
+          error_type?: string | null
+          execution_events?: Json | null
+          expires_at?: string | null
+          fault_domain?: string | null
+          file_path?: string | null
+          id?: string
+          input_tokens?: number | null
+          is_client_delegated?: boolean
+          is_error?: boolean | null
+          iteration?: number
+          message_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          output?: string | null
+          output_chars?: number
+          output_preview?: Json | null
+          output_tokens?: number | null
+          output_type?: string | null
+          parent_call_id?: string | null
+          persist_key?: string | null
+          resolution_source?: string | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          started_at?: string
+          status?: string
+          success?: boolean
+          tool_name: string
+          tool_name_as_called?: string | null
+          tool_type?: string
+          total_tokens?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          user_request_id?: string | null
+          version?: number
+        }
+        Update: {
+          arguments?: Json
+          call_id?: string
+          completed_at?: string
+          conversation_id?: string
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number
+          error_message?: string | null
+          error_type?: string | null
+          execution_events?: Json | null
+          expires_at?: string | null
+          fault_domain?: string | null
+          file_path?: string | null
+          id?: string
+          input_tokens?: number | null
+          is_client_delegated?: boolean
+          is_error?: boolean | null
+          iteration?: number
+          message_id?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          output?: string | null
+          output_chars?: number
+          output_preview?: Json | null
+          output_tokens?: number | null
+          output_type?: string | null
+          parent_call_id?: string | null
+          persist_key?: string | null
+          resolution_source?: string | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          started_at?: string
+          status?: string
+          success?: boolean
+          tool_name?: string
+          tool_name_as_called?: string | null
+          tool_type?: string
+          total_tokens?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          user_request_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
+            referencedRelation: "tool_call"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tool_trace: {
+        Row: {
+          args: Json | null
+          call_id: string | null
+          conversation_id: string
+          created_at: string
+          duration_ms: number | null
+          err_msg: string | null
+          err_type: string | null
+          event: string
+          fault_domain: string | null
+          id: string
+          kind: string | null
+          metadata: Json
+          process_pid: number | null
+          process_started_at: string | null
+          result_preview: string | null
+          tool_name: string
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id: string
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event: string
+          fault_domain?: string | null
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name: string
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          args?: Json | null
+          call_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          duration_ms?: number | null
+          err_msg?: string | null
+          err_type?: string | null
+          event?: string
+          fault_domain?: string | null
+          id?: string
+          kind?: string | null
+          metadata?: Json
+          process_pid?: number | null
+          process_started_at?: string | null
+          result_preview?: string | null
+          tool_name?: string
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_request: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          api_duration_ms: number | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          finish_reason: string | null
+          id: string
+          iterations: number
+          last_activity_at: string | null
+          metadata: Json
+          organization_id: string | null
+          source_app: string
+          source_feature: string
+          status: string
+          tool_duration_ms: number | null
+          total_cached_tokens: number
+          total_cost: number | null
+          total_duration_ms: number | null
+          total_input_tokens: number
+          total_output_tokens: number
+          total_tokens: number
+          total_tool_calls: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          api_duration_ms?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          finish_reason?: string | null
+          id?: string
+          iterations?: number
+          last_activity_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          source_app?: string
+          source_feature?: string
+          status?: string
+          tool_duration_ms?: number | null
+          total_cached_tokens?: number
+          total_cost?: number | null
+          total_duration_ms?: number | null
+          total_input_tokens?: number
+          total_output_tokens?: number
+          total_tokens?: number
+          total_tool_calls?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          api_duration_ms?: number | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          finish_reason?: string | null
+          id?: string
+          iterations?: number
+          last_activity_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          source_app?: string
+          source_feature?: string
+          status?: string
+          tool_duration_ms?: number | null
+          total_cached_tokens?: number
+          total_cost?: number | null
+          total_duration_ms?: number | null
+          total_input_tokens?: number
+          total_output_tokens?: number
+          total_tokens?: number
+          total_tool_calls?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      user_todo: {
+        Row: {
+          context: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          ctx_task_id: string | null
+          done: boolean
+          done_at: string | null
+          due: string | null
+          id: string
+          organization_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          context?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          ctx_task_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due?: string | null
+          id?: string
+          organization_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          context?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          ctx_task_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due?: string | null
+          id?: string
+          organization_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_usage_summary: {
+        Row: {
+          auth_type: string
+          blocked_reason: string | null
+          cost_24h_mcents: number
+          cost_6h_mcents: number
+          daily_blocked: boolean
+          last_request_at: string | null
+          requests_24h: number
+          requests_6h: number
+          tokens_24h: number
+          tokens_6h: number
+          updated_at: string
+          user_id: string
+          window_24h_starts_at: string | null
+          window_6h_starts_at: string | null
+          window_blocked: boolean
+        }
+        Insert: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Update: {
+          auth_type?: string
+          blocked_reason?: string | null
+          cost_24h_mcents?: number
+          cost_6h_mcents?: number
+          daily_blocked?: boolean
+          last_request_at?: string | null
+          requests_24h?: number
+          requests_6h?: number
+          tokens_24h?: number
+          tokens_6h?: number
+          updated_at?: string
+          user_id?: string
+          window_24h_starts_at?: string | null
+          window_6h_starts_at?: string | null
+          window_blocked?: boolean
+        }
+        Relationships: []
+      }
+      working_documents: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          organization_id: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   files: {
     Tables: {
       account_tiers: {
@@ -19191,7 +20852,22 @@ export type Database = {
           user_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_plan_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_agent_task: {
         Row: {
@@ -19239,7 +20915,29 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_agent_task_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cx_agent_plan"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_artifact: {
         Row: {
@@ -19317,7 +21015,36 @@ export type Database = {
           user_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_artifact_canvas_item_id_fkey"
+            columns: ["canvas_item_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_artifact_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_artifact_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_artifact_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "cx_message"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_code_edit: {
         Row: {
@@ -19368,7 +21095,36 @@ export type Database = {
           status?: Database["public"]["Enums"]["code_edit_status"] | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_code_edit_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_message_file_id_fkey"
+            columns: ["message_file_id"]
+            isOneToOne: false
+            referencedRelation: "cx_code_message_file"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_edit_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "cx_message"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_code_message_file: {
         Row: {
@@ -19438,7 +21194,29 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_code_message_file_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_message_file_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_code_message_file_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "cx_message"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_conversation: {
         Row: {
@@ -19564,7 +21342,78 @@ export type Database = {
           version?: number | null
           visibility?: "private" | "internal" | "link" | "public" | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_app_instance_id_fkey"
+            columns: ["app_instance_id"]
+            isOneToOne: false
+            referencedRelation: "app_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_forked_from_id_fkey"
+            columns: ["forked_from_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_initial_agent_fk"
+            columns: ["initial_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_initial_agent_version_fk"
+            columns: ["initial_agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_last_model_id_fkey"
+            columns: ["last_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
+            columns: ["parent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
+            columns: ["parent_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_sandbox_instance_id_fkey"
+            columns: ["sandbox_instance_id"]
+            isOneToOne: false
+            referencedRelation: "sandbox_instances"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_conversation_documents: {
         Row: {
@@ -19597,7 +21446,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "cx_working_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_conversation_summary: {
         Row: {
@@ -19632,7 +21489,36 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_conversation_initial_agent_fk"
+            columns: ["initial_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_initial_agent_version_fk"
+            columns: ["initial_agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_last_model_id_fkey"
+            columns: ["last_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_media: {
         Row: {
@@ -19674,7 +21560,22 @@ export type Database = {
           url?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_media_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_message: {
         Row: {
@@ -19761,7 +21662,29 @@ export type Database = {
           version?: number | null
           voice?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_message_agx_agent_fk"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_message_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_message_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_observational_memory: {
         Row: {
@@ -19863,7 +21786,22 @@ export type Database = {
           user_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_observational_memory_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_observational_memory_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_observational_memory_event: {
         Row: {
@@ -19926,7 +21864,15 @@ export type Database = {
           user_id?: string | null
           user_request_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_observational_memory_event_memory_record_id_fkey"
+            columns: ["memory_record_id"]
+            isOneToOne: false
+            referencedRelation: "cx_observational_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_pending_injection: {
         Row: {
@@ -19980,7 +21926,22 @@ export type Database = {
           status?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_pending_injection_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_request: {
         Row: {
@@ -20064,7 +22025,43 @@ export type Database = {
           trim_summary?: Json | null
           user_request_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_request_ai_model_id_fkey"
+            columns: ["ai_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_model"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_request_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_request_snapshot: {
         Row: {
@@ -20256,7 +22253,50 @@ export type Database = {
           user_request_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "cx_message"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_tool_call_user_request_id_fkey"
+            columns: ["user_request_id"]
+            isOneToOne: false
+            referencedRelation: "cx_user_request_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cx_tool_call_parent"
+            columns: ["parent_call_id"]
+            isOneToOne: false
+            referencedRelation: "cx_tool_call"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_tool_trace: {
         Row: {
@@ -20415,7 +22455,22 @@ export type Database = {
           user_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_request_agent_fk"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_request_agent_version_fk"
+            columns: ["agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_user_request_summary: {
         Row: {
@@ -20446,7 +22501,22 @@ export type Database = {
           total_tool_calls: number | null
           user_id: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_request_agent_fk"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_request_agent_version_fk"
+            columns: ["agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_user_todo: {
         Row: {
@@ -20500,7 +22570,22 @@ export type Database = {
           user_id?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_user_todo_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cx_user_usage_summary: {
         Row: {
@@ -25434,7 +27519,7 @@ export type Database = {
       }
       cx_message_edit: {
         Args: { p_message_id: string; p_new_content: Json }
-        Returns: unknown
+        Returns: Database["chat"]["Tables"]["message"]["Row"]
         SetofOptions: {
           from: "*"
           to: "message"
@@ -25444,7 +27529,7 @@ export type Database = {
       }
       cx_message_set_content: {
         Args: { p_message_id: string; p_new_content: Json }
-        Returns: unknown
+        Returns: Database["chat"]["Tables"]["message"]["Row"]
         SetofOptions: {
           from: "*"
           to: "message"
@@ -32631,6 +34716,9 @@ export const Constants = {
     Enums: {},
   },
   app: {
+    Enums: {},
+  },
+  chat: {
     Enums: {},
   },
   files: {

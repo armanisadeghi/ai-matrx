@@ -146,8 +146,8 @@ export function useWorkingDocumentContextSync(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
-          table: "cx_working_documents",
+          schema: "chat",
+          table: "working_documents",
           filter: `id=eq.${documentId}`,
         },
         (payload) => {

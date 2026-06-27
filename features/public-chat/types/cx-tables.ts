@@ -7,17 +7,17 @@
 
 import type { Database } from "@/types/database.types";
 
-type PublicSchema = Database["public"];
+type ChatSchema = Database["chat"];
 
 // ============================================================================
 // cx_conversation - A chat session
 // ============================================================================
 
-export type CxConversation = PublicSchema["Tables"]["cx_conversation"]["Row"];
+export type CxConversation = ChatSchema["Tables"]["conversation"]["Row"];
 export type CxConversationInsert =
-  PublicSchema["Tables"]["cx_conversation"]["Insert"];
+  ChatSchema["Tables"]["conversation"]["Insert"];
 export type CxConversationUpdate =
-  PublicSchema["Tables"]["cx_conversation"]["Update"];
+  ChatSchema["Tables"]["conversation"]["Update"];
 
 /** Common status values (DB column is unconstrained string) */
 export type CxConversationStatus = "active" | "completed" | "archived";
@@ -27,9 +27,9 @@ export type CxConversationStatus = "active" | "completed" | "archived";
 // ============================================================================
 
 /** Canonical row shape — 1:1 with `public.cx_message` (see types/database.types.ts). */
-export type CxMessage = PublicSchema["Tables"]["cx_message"]["Row"];
-export type CxMessageInsert = PublicSchema["Tables"]["cx_message"]["Insert"];
-export type CxMessageUpdate = PublicSchema["Tables"]["cx_message"]["Update"];
+export type CxMessage = ChatSchema["Tables"]["message"]["Row"];
+export type CxMessageInsert = ChatSchema["Tables"]["message"]["Insert"];
+export type CxMessageUpdate = ChatSchema["Tables"]["message"]["Update"];
 
 /**
  * One entry in cx_message.content_history JSON — snapshot before an edit.
@@ -232,7 +232,7 @@ export interface CxToolExecutionEvent {
 export type CxToolCallStatus = "pending" | "running" | "completed" | "error";
 export type CxToolType = "local" | "external_mcp" | "agent";
 
-export type CxToolCall = PublicSchema["Tables"]["cx_tool_call"]["Row"];
+export type CxToolCall = ChatSchema["Tables"]["tool_call"]["Row"];
 
 // ============================================================================
 // Composite / View Types (for UI convenience)

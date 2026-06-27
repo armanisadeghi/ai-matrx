@@ -25,7 +25,7 @@ interface SkillProjectAssociationsProps {
 
 /** Multi-project membership for a single skill. Reads project metadata from
  * the agent-context projects slice (canonical source) and writes through the
- * `useSkillProjects` hook, which posts to `skl_skill_projects` via the
+ * `useSkillProjects` hook, which posts to `skill.project` via the
  * Python backend. */
 export function SkillProjectAssociations({
   skillId,

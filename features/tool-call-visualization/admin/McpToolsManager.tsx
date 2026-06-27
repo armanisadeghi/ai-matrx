@@ -916,7 +916,7 @@ export function McpToolsManager() {
       .filter((t) => targetIds.includes(t.id))
       .map((t) => t.name);
     const { count: refCount } = await supabase
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select("id", { count: "exact", head: true })
       .in("tool_name", targetNames);
     const ok = await confirm({

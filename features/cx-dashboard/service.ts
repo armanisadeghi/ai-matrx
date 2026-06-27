@@ -55,7 +55,7 @@ async function resolveUserRequestConversations(
   // user_request_id → conversation_id. Any cx_request row is an accurate ref;
   // take the first one we encounter per user_request_id.
   const { data: links } = await supabase
-    .from("cx_request")
+    .schema("chat").from("request")
     .select("user_request_id, conversation_id")
     .in("user_request_id", userRequestIds)
     .is("deleted_at", null);
@@ -78,7 +78,7 @@ async function resolveUserRequestConversations(
   const convMap = new Map<string, any>();
   if (conversationIds.length > 0) {
     const { data: convs } = (await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .select("id, title, ai_model:last_model_id(common_name, provider)")
       .in("id", conversationIds)) as any;
     for (const c of convs || []) convMap.set(c.id, c);
@@ -112,41 +112,41 @@ export async function fetchOverviewKpis(
   // `cx_dashboard_kpis` RPC was removed in the post-0023 schema and its
   // result was never consumed by the rest of this function.
   const { data: urStats } = await supabase
-    .from("cx_user_request")
+    .schema("chat").from("user_request")
     .select(
       "id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at, iterations, total_tool_calls",
     )
     .is("deleted_at", null);
 
   const { data: convStats } = await supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .select("id")
     .is("deleted_at", null);
 
   const { data: msgStats } = await supabase
-    .from("cx_message")
+    .schema("chat").from("message")
     .select("id")
     .is("deleted_at", null);
 
   const { data: toolStats } = await supabase
-    .from("cx_tool_call")
+    .schema("chat").from("tool_call")
     .select("id, is_error")
     .is("deleted_at", null);
 
   const { data: reqStats } = await supabase
-    .from("cx_request")
+    .schema("chat").from("request")
     .select("id")
     .is("deleted_at", null);
 
   // Model usage
   const { data: modelUsage } = (await supabase
-    .from("cx_request")
+    .schema("chat").from("request")
     .select("ai_model_id, cost, ai_model(common_name, provider)")
     .is("deleted_at", null)) as any;
 
   // Tool usage
   const { data: toolUsage } = await supabase
-    .from("cx_tool_call")
+    .schema("chat").from("tool_call")
     .select("tool_name, duration_ms, is_error, cost_usd")
     .is("deleted_at", null);
 
@@ -315,7 +315,7 @@ export async function fetchConversations(
   const offset = (page - 1) * perPage;
 
   let query = supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .select("*, ai_model:last_model_id(common_name, provider)", {
       count: "exact",
     })
@@ -372,12 +372,12 @@ export async function fetchConversationDetail(id: string) {
   const [convResult, messagesResult, reqLinksResult, childConvsResult] =
     await Promise.all([
       supabase
-        .from("cx_conversation")
+        .schema("chat").from("conversation")
         .select("*, ai_model:last_model_id(common_name, provider)")
         .eq("id", id)
         .single(),
       supabase
-        .from("cx_message")
+        .schema("chat").from("message")
         .select("*")
         .eq("conversation_id", id)
         .is("deleted_at", null)
@@ -386,12 +386,12 @@ export async function fetchConversationDetail(id: string) {
       // m2m: every cx_request for this conversation_id points back at a
       // user_request_id.
       supabase
-        .from("cx_request")
+        .schema("chat").from("request")
         .select("user_request_id")
         .eq("conversation_id", id)
         .is("deleted_at", null),
       supabase
-        .from("cx_conversation")
+        .schema("chat").from("conversation")
         .select("*, ai_model:last_model_id(common_name, provider)")
         .eq("parent_conversation_id", id)
         .is("deleted_at", null)
@@ -409,7 +409,7 @@ export async function fetchConversationDetail(id: string) {
   let userRequests: CxUserRequest[] = [];
   if (userRequestIds.length > 0) {
     const { data: urData } = await supabase
-      .from("cx_user_request")
+      .schema("chat").from("user_request")
       .select("*")
       .in("id", userRequestIds)
       .is("deleted_at", null)
@@ -451,7 +451,7 @@ export async function fetchUserRequests(
   const offset = (page - 1) * perPage;
 
   let query = supabase
-    .from("cx_user_request")
+    .schema("chat").from("user_request")
     .select("*", { count: "exact" })
     .is("deleted_at", null)
     .order(filters.sort_by || "created_at", {
@@ -519,15 +519,15 @@ export async function fetchUserRequestDetail(id: string) {
   const supabase = await createClient();
 
   const [urResult, requestsResult, toolCallsResult] = await Promise.all([
-    supabase.from("cx_user_request").select("*").eq("id", id).single(),
+    supabase.schema("chat").from("user_request").select("*").eq("id", id).single(),
     supabase
-      .from("cx_request")
+      .schema("chat").from("request")
       .select("*, ai_model:ai_model_id(common_name, provider, name)")
       .eq("user_request_id", id)
       .is("deleted_at", null)
       .order("iteration", { ascending: true }),
     supabase
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select("*")
       .eq("user_request_id", id)
       .is("deleted_at", null)
@@ -595,7 +595,7 @@ export async function fetchMessages(
 ): Promise<CxMessage[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("cx_message")
+    .schema("chat").from("message")
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
@@ -611,7 +611,7 @@ export async function fetchErrors(filters: CxFilters) {
 
   // User requests with errors
   const { data: errorRequests } = await supabase
-    .from("cx_user_request")
+    .schema("chat").from("user_request")
     .select("*")
     .is("deleted_at", null)
     .or("error.neq.null,status.eq.error,finish_reason.eq.max_tokens")
@@ -620,7 +620,7 @@ export async function fetchErrors(filters: CxFilters) {
 
   // Tool calls with errors
   const { data: errorToolCalls } = await supabase
-    .from("cx_tool_call")
+    .schema("chat").from("tool_call")
     .select("*")
     .is("deleted_at", null)
     .or("is_error.eq.true,success.eq.false")
@@ -652,7 +652,7 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
 
   // All requests with model info for usage analytics
   let query = supabase
-    .from("cx_request")
+    .schema("chat").from("request")
     .select("*, ai_model:ai_model_id(common_name, provider, name)")
     .is("deleted_at", null)
     .order("created_at", { ascending: true });

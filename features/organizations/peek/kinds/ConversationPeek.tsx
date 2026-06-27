@@ -27,7 +27,7 @@ export default function ConversationPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("cx_conversation")
+        .schema("chat").from("conversation")
         .select("title, description, created_at")
         .eq("id", id)
         .maybeSingle();

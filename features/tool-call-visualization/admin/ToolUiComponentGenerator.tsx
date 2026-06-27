@@ -682,7 +682,7 @@ export function ToolUiComponentGenerator({
             .order("created_at", { ascending: false })
             .limit(10),
           supabase
-            .from("cx_tool_call")
+            .schema("chat").from("tool_call")
             .select(
               "id, tool_name, call_id, status, arguments, output, output_type, duration_ms, started_at, completed_at",
             )

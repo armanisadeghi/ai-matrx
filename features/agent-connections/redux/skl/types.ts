@@ -10,7 +10,7 @@ import type { Database } from "@/types/database.types";
 // new skill / category code here.
 
 type Json =
-  Database["public"]["Tables"]["skl_render_components"]["Row"]["parser_config"];
+  Database["skill"]["Tables"]["render_component"]["Row"]["parser_config"];
 
 export interface SklRenderDefinition {
   id: string;

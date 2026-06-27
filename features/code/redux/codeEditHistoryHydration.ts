@@ -147,12 +147,12 @@ export function loadCodeEditHistoryThunk(
           const supabase = createClient();
           const [filesRes, editsRes] = await Promise.all([
             supabase
-              .from("cx_code_message_file")
+              .schema("chat").from("code_message_file")
               .select("*")
               .eq("conversation_id", conversationId)
               .order("created_at", { ascending: true }),
             supabase
-              .from("cx_code_edit")
+              .schema("chat").from("code_edit")
               .select("*")
               .eq("conversation_id", conversationId)
               .order("created_at", { ascending: true }),

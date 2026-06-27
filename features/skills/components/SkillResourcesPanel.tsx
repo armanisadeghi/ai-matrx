@@ -3,7 +3,7 @@
 /**
  * SkillResourcesPanel — lists, creates, edits, deletes, and reorders
  * resources for a given skill. Writes go Supabase direct via the
- * `skl_resources` thunks; RLS gates everything by parent-skill ownership.
+ * `skill.resource` thunks; RLS gates everything by parent-skill ownership.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";

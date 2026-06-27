@@ -107,7 +107,7 @@ export const renameConversation = createAsyncThunk<
     );
 
     const { error } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .update({ title: nextTitle, updated_at: new Date().toISOString() })
       .eq("id", conversationId);
 
@@ -237,7 +237,7 @@ export const setConversationArchived = createAsyncThunk<
     );
 
     const { error } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .update({ status: nextStatus, updated_at: new Date().toISOString() })
       .eq("id", conversationId);
 
@@ -304,7 +304,7 @@ export const setConversationExcludeFromKg = createAsyncThunk<
     );
 
     const { error } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .update({
         exclude_from_kg: excludeFromKg,
         updated_at: new Date().toISOString(),
@@ -430,7 +430,7 @@ export const setConversationSandboxOverride = createAsyncThunk<
     // Read-modify-write metadata so we never clobber the server-managed
     // observational_memory block that also lives on cx_conversation.metadata.
     const { data: row, error: readError } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .select("metadata")
       .eq("id", conversationId)
       .single();
@@ -459,7 +459,7 @@ export const setConversationSandboxOverride = createAsyncThunk<
     }
 
     const { error } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .update({
         sandbox_instance_id: ref?.rowId ?? null,
         metadata,

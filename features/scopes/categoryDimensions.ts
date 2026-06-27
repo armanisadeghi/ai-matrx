@@ -12,7 +12,7 @@
 export const CATEGORY_DIMENSIONS = {
   /** Agent shortcut groupings (was `shortcut_categories`). */
   agentShortcut: "agent-shortcut",
-  /** Agent skill taxonomy (was `skl_categories`). */
+  /** Agent skill taxonomy (was `skill.category`). */
   skill: "skill",
   /** Industry verticals for context templates (was hardcoded INDUSTRY_CATEGORIES). */
   industry: "industry",

@@ -49,7 +49,7 @@ AS $$
       FROM (
         SELECT
           *
-        FROM public.ai_model
+        FROM ai.model
         WHERE is_deprecated = false
         ORDER BY common_name ASC
       ) m

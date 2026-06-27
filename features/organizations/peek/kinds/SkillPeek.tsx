@@ -3,7 +3,7 @@
 /**
  * SkillPeek — quick read-only preview of a skill definition.
  *
- * Same pattern as FilePeek / NotePeek: fetch one row from skl_definitions,
+ * Same pattern as FilePeek / NotePeek: fetch one row from skill.definition,
  * drop fields into <PeekDialog> + <PeekField>.
  */
 
@@ -28,7 +28,8 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("skl_definitions")
+        .schema("skill")
+        .from("definition")
         .select("label, description, created_at")
         .eq("id", id)
         .maybeSingle();

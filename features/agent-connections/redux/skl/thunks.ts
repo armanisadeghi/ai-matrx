@@ -103,7 +103,7 @@ export const fetchRenderDefinitions = createAsyncThunk(
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
       let query = supabase
-        .from("skl_render_definitions")
+        .schema("skill").from("render_definition")
         .select("*")
         .order("sort_order", { ascending: true })
         .order("label", { ascending: true });
@@ -141,7 +141,7 @@ export const createRenderDefinition = createAsyncThunk(
       scopeId: args.scopeId,
     });
     const { data, error } = await supabase
-      .from("skl_render_definitions")
+      .schema("skill").from("render_definition")
       .insert(stamped)
       .select()
       .single();
@@ -160,7 +160,7 @@ export const updateRenderDefinition = createAsyncThunk(
   ) => {
     const payload = sklRenderDefinitionToUpdate(args.patch);
     const { data, error } = await supabase
-      .from("skl_render_definitions")
+      .schema("skill").from("render_definition")
       .update(payload)
       .eq("id", args.id)
       .select()
@@ -176,7 +176,7 @@ export const deleteRenderDefinition = createAsyncThunk(
   "skl/deleteRenderDefinition",
   async (args: { id: string }, { dispatch }) => {
     const { error } = await supabase
-      .from("skl_render_definitions")
+      .schema("skill").from("render_definition")
       .delete()
       .eq("id", args.id);
     if (error) throw error;
@@ -191,7 +191,7 @@ export const fetchRenderComponents = createAsyncThunk(
   "skl/fetchRenderComponents",
   async (_args: void, { dispatch }) => {
     const { data, error } = await supabase
-      .from("skl_render_components")
+      .schema("skill").from("render_component")
       .select("*");
     if (error) throw error;
     const rows = (data ?? []).map(rowToSklRenderComponent);
@@ -235,7 +235,7 @@ export const fetchResources = createAsyncThunk(
   async (args: { skillId?: string }, { dispatch }) => {
     dispatch(sklActions.resourcesLoading());
     try {
-      let query = supabase.from("skl_resources").select("*");
+      let query = supabase.schema("skill").from("resource").select("*");
       if (args.skillId) query = query.eq("skill_id", args.skillId);
       const { data, error } = await query;
       if (error) throw error;
@@ -254,7 +254,7 @@ export const deleteResource = createAsyncThunk(
   "skl/deleteResource",
   async (args: { id: string }, { dispatch }) => {
     const { error } = await supabase
-      .from("skl_resources")
+      .schema("skill").from("resource")
       .delete()
       .eq("id", args.id);
     if (error) throw error;

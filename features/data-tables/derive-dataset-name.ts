@@ -67,7 +67,7 @@ async function fetchMessageDisplayText(
 ): Promise<string | null> {
   if (!messageId) return null;
   const { data, error } = await supabase
-    .from("cx_message")
+    .schema("chat").from("message")
     .select("content")
     .eq("id", messageId)
     .maybeSingle();

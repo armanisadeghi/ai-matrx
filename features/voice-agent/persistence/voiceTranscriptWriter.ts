@@ -40,8 +40,8 @@ function toolNames(tools: RealtimeToolSet): string[] {
 }
 
 type CxConversationInsert =
-  Database["public"]["Tables"]["cx_conversation"]["Insert"];
-type CxMessageInsert = Database["public"]["Tables"]["cx_message"]["Insert"];
+  Database["chat"]["Tables"]["conversation"]["Insert"];
+type CxMessageInsert = Database["chat"]["Tables"]["message"]["Insert"];
 
 export interface EnsureConversationOpts {
   voiceId: VoiceId;
@@ -123,7 +123,7 @@ export async function ensureConversation(
 
   // Use upsert so accidental double-init (e.g. React strict mode) is a no-op.
   const { error } = await supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .upsert(insert, { onConflict: "id", ignoreDuplicates: true });
 
   if (error) {
@@ -204,7 +204,7 @@ export async function persistTurns(
     } satisfies CxMessageInsert;
   });
 
-  const { error } = await supabase.from("cx_message").insert(rows);
+  const { error } = await supabase.schema("chat").from("message").insert(rows);
   if (error) {
     console.error("[voiceTranscriptWriter] persistTurns error:", error.message);
     return { ok: false, error: error.message };
@@ -232,7 +232,7 @@ export async function finalizeConversation(
   };
 
   const { error } = await supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .update({
       message_count: opts.totalTurns,
       metadata: { voice: voiceMeta } as Json,

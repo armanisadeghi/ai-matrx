@@ -148,7 +148,7 @@ export const fetchConversationHistory = createAsyncThunk<
     );
 
     let query = supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .select(HISTORY_COLUMNS)
       .is("deleted_at", null)
       .eq("is_ephemeral", false)

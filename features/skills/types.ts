@@ -72,7 +72,7 @@ export interface CategoryListWire {
   categories: CategoryRowWire[];
 }
 
-/** `skl_resources` row as it comes off Supabase. The Python backend
+/** `skill.resource` row as it comes off Supabase. The Python backend
  * doesn't yet expose a CRUD surface for resources; reads + writes go
  * direct via the Supabase client (RLS gates on parent-skill ownership). */
 export interface ResourceRowWire {

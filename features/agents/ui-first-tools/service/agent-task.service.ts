@@ -24,7 +24,7 @@ export async function listTasks(
   conversationId: string,
 ): Promise<CxAgentTaskRow[]> {
   const { data, error } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .select("*")
     .eq("conversation_id", conversationId)
     .order("position", { ascending: true });
@@ -41,7 +41,7 @@ export async function addTasks(
   // clobbering existing positions.
   const first = inputs[0];
   const { data: existing } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .select("position")
     .eq("conversation_id", first.conversation_id)
     .order("position", { ascending: false })
@@ -60,7 +60,7 @@ export async function addTasks(
   }));
 
   const { data, error } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .insert(rows)
     .select("*");
   if (error) throw error;
@@ -77,7 +77,7 @@ export async function updateTask(
   }>,
 ): Promise<CxAgentTaskRow | null> {
   const { data, error } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .update(patch)
     .eq("id", id)
     .select("*")
@@ -87,7 +87,7 @@ export async function updateTask(
 }
 
 export async function removeTask(id: string): Promise<void> {
-  const { error } = await db.from("cx_agent_task").delete().eq("id", id);
+  const { error } = await db.schema("chat").from("agent_task").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -99,7 +99,7 @@ export async function reorderTasks(
   // Run sequentially to keep individual errors actionable.
   for (let i = 0; i < orderedIds.length; i++) {
     const { error } = await db
-      .from("cx_agent_task")
+      .schema("chat").from("agent_task")
       .update({ position: i })
       .eq("id", orderedIds[i])
       .eq("conversation_id", conversationId);
@@ -112,7 +112,7 @@ export async function clearCompletedTasks(
   conversationId: string,
 ): Promise<string[]> {
   const { data, error } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .delete()
     .eq("conversation_id", conversationId)
     .eq("status", "done")
@@ -123,7 +123,7 @@ export async function clearCompletedTasks(
 
 export async function clearAllTasks(conversationId: string): Promise<void> {
   const { error } = await db
-    .from("cx_agent_task")
+    .schema("chat").from("agent_task")
     .delete()
     .eq("conversation_id", conversationId);
   if (error) throw error;

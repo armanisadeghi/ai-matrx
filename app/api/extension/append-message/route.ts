@@ -82,7 +82,7 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
 async function nextPosition(conversationId: string): Promise<number> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("cx_message")
+    .schema("chat").from("message")
     .select("position")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)

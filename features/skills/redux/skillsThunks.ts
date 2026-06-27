@@ -14,7 +14,7 @@
  *      surface a toast or inline message.
  *
  * Supabase-direct path: simple table CRUD on user-owned rows
- * (`skl_categories`, `skl_resources`) goes through the Supabase client
+ * (`skill.category`, `skill.resource`) goes through the Supabase client
  * per CLAUDE.md doctrine. RLS gates everything. System rows (where
  * RLS would block) route through the Python admin endpoints instead.
  */
@@ -51,7 +51,7 @@ import {
 
 /** Columns selected for every skill read, plus the project-membership join.
  * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
-const SKILL_SELECT = "*, skl_skill_projects(project_id)";
+const SKILL_SELECT = "*, project(project_id)";
 
 /** True when the value looks like a UUID (vs. a `skill_id` business key). */
 function isUuid(value: string): boolean {
@@ -96,7 +96,8 @@ export const fetchSkills = createAsyncThunk<
   // server round-trip: the Python `/api/skills` GET was a needless hop
   // (and 404'd once `callApi` stripped the `/api` prefix).
   let query = supabase
-    .from("skl_definitions")
+    .schema("skill")
+    .from("definition")
     .select(SKILL_SELECT)
     .eq("is_active", true);
 
@@ -105,10 +106,11 @@ export const fetchSkills = createAsyncThunk<
 
   // Project filter: resolve the skill ids associated with the project via
   // the join table first, then restrict the main query. Keeps the embedded
-  // `skl_skill_projects` list complete (full membership, not just this one).
+  // `project` list complete (full membership, not just this one).
   if (args?.projectId) {
     const { data: assoc, error: assocError } = await supabase
-      .from("skl_skill_projects")
+      .schema("skill")
+      .from("project")
       .select("skill_id")
       .eq("project_id", args.projectId);
     if (assocError) {
@@ -145,7 +147,8 @@ export const fetchSkillById = createAsyncThunk<
   // Supabase direct — `skill_ref` is either the row UUID or the `skill_id`
   // business key. RLS gates visibility, so no server hop is needed.
   const { data, error } = await supabase
-    .from("skl_definitions")
+    .schema("skill")
+    .from("definition")
     .select(SKILL_SELECT)
     .eq(isUuid(skillRef) ? "id" : "skill_id", skillRef)
     .eq("is_active", true)
@@ -174,7 +177,8 @@ export const fetchSkillCategories = createAsyncThunk<
   // writes (Supabase direct for owned rows, Python admin for system
   // rows). Matches CLAUDE.md doctrine for simple reads.
   const { data, error } = await supabase
-    .from("skl_categories")
+    .schema("skill")
+    .from("category")
     .select(
       "id, category_key, label, description, icon_name, color, parent_category_id, sort_order, is_active, user_id",
     )
@@ -250,7 +254,8 @@ export const createSkill = createAsyncThunk<
     user_id: userId,
   };
   const { data, error } = await supabase
-    .from("skl_definitions")
+    .schema("skill")
+    .from("definition")
     .insert(insertPayload)
     .select(SKILL_SELECT)
     .single();
@@ -289,10 +294,11 @@ export const patchSkill = createAsyncThunk<
   }
 
   // Supabase direct — `patch` is already snake_case (SkillPatchWire), which
-  // matches the column names on skl_definitions one-for-one.
+  // matches the column names on skill.definition one-for-one.
   const { data, error } = await supabase
-    .from("skl_definitions")
-    .update(patch as Database["public"]["Tables"]["skl_definitions"]["Update"])
+    .schema("skill")
+    .from("definition")
+    .update(patch as Database["skill"]["Tables"]["definition"]["Update"])
     .eq("id", skillId)
     .select(SKILL_SELECT)
     .single();
@@ -345,7 +351,8 @@ export const deleteSkill = createAsyncThunk<
     // Supabase direct soft-deactivate — mirrors the Python endpoint's
     // semantics (is_active=false, reversible via patch).
     const { error } = await supabase
-      .from("skl_definitions")
+      .schema("skill")
+      .from("definition")
       .update({ is_active: false })
       .eq("id", skillId);
     if (error) throw new Error(error.message);
@@ -401,7 +408,8 @@ export const addSkillProject = createAsyncThunk<
     // Supabase direct — RLS gates the join by skill or project ownership.
     const userId = selectUserId(getState());
     const { error } = await supabase
-      .from("skl_skill_projects")
+      .schema("skill")
+      .from("project")
       .upsert(
         { skill_id: skillId, project_id: projectId, created_by: userId },
         { onConflict: "skill_id,project_id", ignoreDuplicates: true },
@@ -432,7 +440,8 @@ export const removeSkillProject = createAsyncThunk<
   async ({ skillId, projectId }, { dispatch, getState }) => {
     // Supabase direct — RLS gates the join by skill or project ownership.
     const { error } = await supabase
-      .from("skl_skill_projects")
+      .schema("skill")
+      .from("project")
       .delete()
       .eq("skill_id", skillId)
       .eq("project_id", projectId);
@@ -528,7 +537,8 @@ export const createCategoryThunk = createAsyncThunk<
     user_id: userId,
   };
   const { data, error } = await supabase
-    .from("skl_categories")
+    .schema("skill")
+    .from("category")
     .insert(insertPayload)
     .select()
     .single();
@@ -618,7 +628,8 @@ export const updateCategoryThunk = createAsyncThunk<
   }
 
   const { data, error } = await supabase
-    .from("skl_categories")
+    .schema("skill")
+    .from("category")
     .update(updateBody)
     .eq("id", id)
     .select()
@@ -658,7 +669,8 @@ export const deleteCategoryThunk = createAsyncThunk<
     // Supabase direct soft-delete (is_active=false) — matches the
     // semantics of the Python endpoint.
     const { error } = await supabase
-      .from("skl_categories")
+      .schema("skill")
+      .from("category")
       .update({ is_active: false })
       .eq("id", id);
     if (error) throw new Error(error.message);
@@ -745,8 +757,8 @@ export const reparentCategoryThunk = createAsyncThunk<
 // Resources (Supabase direct — RLS gates by parent-skill ownership)
 // ---------------------------------------------------------------------------
 //
-// Doctrine: `skl_resources` has no user_id; RLS subqueries on
-// `skl_definitions` to determine if the caller owns the parent skill.
+// Doctrine: `skill.resource` has no user_id; RLS subqueries on
+// `skill.definition` to determine if the caller owns the parent skill.
 // All writes go Supabase direct — the Python backend has no resource
 // endpoint today. For admin curation of system-skill resources we'd
 // need a server admin endpoint; deferred per the plan (Phase I §I4).
@@ -760,7 +772,8 @@ export const fetchSkillResourcesThunk = createAsyncThunk<
   dispatch(skillsActions.resourcesLoading({ skillId }));
 
   const { data, error } = await supabase
-    .from("skl_resources")
+    .schema("skill")
+    .from("resource")
     .select(
       "id, skill_id, resource_type, filename, content, storage_path, mime_type, sort_order, is_active",
     )
@@ -801,7 +814,8 @@ export const createSkillResourceThunk = createAsyncThunk<
   };
 
   const { data, error } = await supabase
-    .from("skl_resources")
+    .schema("skill")
+    .from("resource")
     .insert(insertPayload)
     .select()
     .single();
@@ -840,7 +854,8 @@ export const updateSkillResourceThunk = createAsyncThunk<
   }
 
   const { data, error } = await supabase
-    .from("skl_resources")
+    .schema("skill")
+    .from("resource")
     .update(updateBody)
     .eq("id", resourceId)
     .select()
@@ -860,7 +875,8 @@ export const deleteSkillResourceThunk = createAsyncThunk<
   // Soft-delete (mirrors skill delete semantics — admins can re-activate
   // by setting is_active=true via patch).
   const { error } = await supabase
-    .from("skl_resources")
+    .schema("skill")
+    .from("resource")
     .update({ is_active: false })
     .eq("id", resourceId);
   if (error) throw new Error(error.message);

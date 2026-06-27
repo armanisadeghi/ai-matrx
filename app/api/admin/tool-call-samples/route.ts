@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     // ── Discovery: which tools have recent real usage ──────────────────────
     if (mode === "tools") {
       const { data, error } = await admin
-        .from("cx_tool_call")
+        .schema("chat").from("tool_call")
         .select("tool_name, is_error, created_at")
         .not("output", "is", null)
         .order("created_at", { ascending: false })
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     );
 
     const { data, error } = await admin
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select(ROW_COLUMNS)
       .eq("tool_name", tool)
       .not("output", "is", null)

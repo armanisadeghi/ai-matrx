@@ -292,7 +292,7 @@ export async function setToolGating(toolId: string, gates: ToolGateEntry[]): Pro
 
 export async function cxToolCallReferenceCount(toolName: string): Promise<number> {
   const { count, error } = await sb()
-    .from("cx_tool_call")
+    .schema("chat").from("tool_call")
     .select("id", { count: "exact", head: true })
     .eq("tool_name", toolName);
   if (error) throw error;

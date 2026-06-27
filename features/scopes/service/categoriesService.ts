@@ -3,7 +3,7 @@
 // THE SOLE CHOKEPOINT for the canonical faceted taxonomy — `platform.categories`.
 //
 // One table, partitioned by `dimension` (the facet), replacing the fragmented
-// per-feature category systems (`shortcut_categories`, `skl_categories`, the
+// per-feature category systems (`shortcut_categories`, `skill.category`, the
 // hardcoded INDUSTRY/DEFAULT arrays). The client has NO direct grant on
 // `platform.categories`; every read/write goes through the two PUBLIC
 // SECURITY-DEFINER RPCs (`cat_list` / `cat_create`) — and every call to those

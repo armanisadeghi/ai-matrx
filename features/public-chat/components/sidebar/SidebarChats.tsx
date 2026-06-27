@@ -581,8 +581,8 @@ export function SidebarChats({
         "postgres_changes",
         {
           event: "*", // Listen to INSERT, UPDATE, DELETE
-          schema: "public",
-          table: "cx_conversation",
+          schema: "chat",
+          table: "conversation",
         },
         (payload) => {
           // Only refresh if it's a change to the current user's conversations

@@ -4,21 +4,21 @@ import type { Database } from "@/types/database.types";
 // Raw DB types — source of truth, never hand-edit
 // =============================================================================
 
-export type AiModelRow = Database["public"]["Tables"]["ai_model"]["Row"];
-export type AiModelInsert = Database["public"]["Tables"]["ai_model"]["Insert"];
-export type AiModelUpdate = Database["public"]["Tables"]["ai_model"]["Update"];
+export type AiModelRow = Database["public"]["Views"]["ai_model"]["Row"];
+export type AiModelInsert = Database["public"]["Views"]["ai_model"]["Insert"];
+export type AiModelUpdate = Database["public"]["Views"]["ai_model"]["Update"];
 
-export type AiProviderRow = Database["public"]["Tables"]["ai_provider"]["Row"];
+export type AiProviderRow = Database["public"]["Views"]["ai_provider"]["Row"];
 export type AiProviderInsert =
-  Database["public"]["Tables"]["ai_provider"]["Insert"];
+  Database["public"]["Views"]["ai_provider"]["Insert"];
 export type AiProviderUpdate =
-  Database["public"]["Tables"]["ai_provider"]["Update"];
+  Database["public"]["Views"]["ai_provider"]["Update"];
 
-export type AiEndpointRow = Database["public"]["Tables"]["ai_endpoint"]["Row"];
+export type AiEndpointRow = Database["public"]["Views"]["ai_endpoint"]["Row"];
 export type AiEndpointInsert =
-  Database["public"]["Tables"]["ai_endpoint"]["Insert"];
+  Database["public"]["Views"]["ai_endpoint"]["Insert"];
 export type AiEndpointUpdate =
-  Database["public"]["Tables"]["ai_endpoint"]["Update"];
+  Database["public"]["Views"]["ai_endpoint"]["Update"];
 
 // =============================================================================
 // Json-field shape definitions — what we actually store in JSONB columns

@@ -17,7 +17,7 @@ export async function listUserTodos(
   conversationId: string,
 ): Promise<CxUserTodoRow[]> {
   const { data, error } = await db
-    .from("cx_user_todo")
+    .schema("chat").from("user_todo")
     .select("*")
     .eq("conversation_id", conversationId)
     .order("done", { ascending: true })
@@ -30,7 +30,7 @@ export async function addUserTodo(
   input: CreateUserTodoInput,
 ): Promise<CxUserTodoRow> {
   const { data, error } = await db
-    .from("cx_user_todo")
+    .schema("chat").from("user_todo")
     .insert({
       conversation_id: input.conversation_id,
       user_id: input.user_id,
@@ -55,7 +55,7 @@ export async function updateUserTodo(
   }>,
 ): Promise<CxUserTodoRow | null> {
   const { data, error } = await db
-    .from("cx_user_todo")
+    .schema("chat").from("user_todo")
     .update(patch)
     .eq("id", id)
     .select("*")
@@ -65,7 +65,7 @@ export async function updateUserTodo(
 }
 
 export async function removeUserTodo(id: string): Promise<void> {
-  const { error } = await db.from("cx_user_todo").delete().eq("id", id);
+  const { error } = await db.schema("chat").from("user_todo").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -73,7 +73,7 @@ export async function clearDoneUserTodos(
   conversationId: string,
 ): Promise<string[]> {
   const { data, error } = await db
-    .from("cx_user_todo")
+    .schema("chat").from("user_todo")
     .delete()
     .eq("conversation_id", conversationId)
     .eq("done", true)

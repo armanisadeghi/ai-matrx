@@ -28,7 +28,7 @@ export async function getCurrentPlan(
   conversationId: string,
 ): Promise<CxAgentPlanRow | null> {
   const { data, error } = await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .select("*")
     .eq("conversation_id", conversationId)
     .neq("status", "superseded")
@@ -43,7 +43,7 @@ export async function listPlansForConversation(
   conversationId: string,
 ): Promise<CxAgentPlanRow[]> {
   const { data, error } = await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .select("*")
     .eq("conversation_id", conversationId)
     .order("updated_at", { ascending: false });
@@ -58,13 +58,13 @@ export async function createPlan(
   // per conversation at a time. Same-tick race is fine: both rows just become
   // candidates for "the current plan" and the more-recently-updated one wins.
   await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .update({ status: "superseded" })
     .eq("conversation_id", input.conversation_id)
     .neq("status", "superseded");
 
   const { data, error } = await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .insert({
       conversation_id: input.conversation_id,
       user_id: input.user_id,
@@ -87,7 +87,7 @@ export async function setPlanStatus(
   status: CxPlanStatus,
 ): Promise<CxAgentPlanRow> {
   const { data, error } = await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .update({ status })
     .eq("id", planId)
     .select("*")
@@ -98,7 +98,7 @@ export async function setPlanStatus(
 
 export async function clearPlan(conversationId: string): Promise<void> {
   const { error } = await db
-    .from("cx_agent_plan")
+    .schema("chat").from("agent_plan")
     .delete()
     .eq("conversation_id", conversationId);
   if (error) throw error;

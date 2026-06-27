@@ -253,7 +253,7 @@ export const fetchGlobalConversations = createAsyncThunk<
     dispatch(setGlobalListLoading());
 
     const { data, error } = await supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .select(
         "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg",
       )

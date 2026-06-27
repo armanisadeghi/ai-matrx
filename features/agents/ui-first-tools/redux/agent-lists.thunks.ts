@@ -84,8 +84,8 @@ export function subscribeAgentLists(
         "postgres_changes" as any,
         {
           event: "*",
-          schema: "public",
-          table: "cx_agent_plan",
+          schema: "chat",
+          table: "agent_plan",
           filter: `conversation_id=eq.${conversationId}`,
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -104,8 +104,8 @@ export function subscribeAgentLists(
         "postgres_changes" as any,
         {
           event: "*",
-          schema: "public",
-          table: "cx_agent_task",
+          schema: "chat",
+          table: "agent_task",
           filter: `conversation_id=eq.${conversationId}`,
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,8 +127,8 @@ export function subscribeAgentLists(
         "postgres_changes" as any,
         {
           event: "*",
-          schema: "public",
-          table: "cx_user_todo",
+          schema: "chat",
+          table: "user_todo",
           filter: `conversation_id=eq.${conversationId}`,
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

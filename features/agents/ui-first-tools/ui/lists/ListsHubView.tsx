@@ -54,20 +54,20 @@ export function ListsHubView() {
     void (async () => {
       const [plansR, tasksR, todosR] = await Promise.all([
         db
-          .from("cx_agent_plan")
+          .schema("chat").from("agent_plan")
           .select("*")
           .eq("user_id", userId)
           .neq("status", "superseded")
           .order("updated_at", { ascending: false })
           .limit(500),
         db
-          .from("cx_agent_task")
+          .schema("chat").from("agent_task")
           .select("*")
           .eq("user_id", userId)
           .order("updated_at", { ascending: false })
           .limit(2000),
         db
-          .from("cx_user_todo")
+          .schema("chat").from("user_todo")
           .select("*")
           .eq("user_id", userId)
           .order("updated_at", { ascending: false })
@@ -91,7 +91,7 @@ export function ListsHubView() {
 
       if (convoIds.size > 0) {
         const { data: convos } = await supabase
-          .from("cx_conversation")
+          .schema("chat").from("conversation")
           .select("id, title")
           .in("id", Array.from(convoIds));
         if (cancelled) return;

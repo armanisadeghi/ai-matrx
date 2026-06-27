@@ -3,7 +3,7 @@
 /**
  * SkillCategoryTreeEditor
  *
- * Full CRUD editor for the `skl_categories` tree.
+ * Full CRUD editor for the `skill.category` tree.
  *
  *   - Drag-to-reparent via `@dnd-kit/sortable` over a flattened list of
  *     visible rows. On drop, computes (parent_category_id, sort_order)

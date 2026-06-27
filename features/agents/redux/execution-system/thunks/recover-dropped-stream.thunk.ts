@@ -82,7 +82,7 @@ export const recoverDroppedStream = createAsyncThunk<
       // `cx_request` m2m (the latest cx_request row for the conversation), then
       // read its parent user_request's status via the FK join.
       const { data, error } = await supabase
-        .from("cx_request")
+        .schema("chat").from("request")
         .select("created_at, cx_user_request:user_request_id(id, status)")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)

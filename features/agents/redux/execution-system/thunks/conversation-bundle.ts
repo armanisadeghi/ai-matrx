@@ -150,7 +150,7 @@ export interface CxToolCallRow {
 
 /** Mirrors `public.cx_user_request.Row` plus optional legacy join fields. */
 export type CxUserRequestRow =
-  Database["public"]["Tables"]["cx_user_request"]["Row"] & {
+  Database["chat"]["Tables"]["user_request"]["Row"] & {
     /**
      * No longer a column on `cx_user_request` — a user request maps to one
      * conversation but spawns many `cx_request` rows, so the conversation is
@@ -267,7 +267,7 @@ export async function fetchConversationBundle(
   // hidden rows (e.g. condensation summaries, secret agent_template scaffolding
   // flagged is_visible_to_user=false) that the RPC correctly excludes.
   const messageQuery = supabase
-    .from("cx_message")
+    .schema("chat").from("message")
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
@@ -285,7 +285,7 @@ export async function fetchConversationBundle(
   const requestsQuery = skipObservabilityFallback
     ? Promise.resolve({ data: [] as CxRequestRow[] })
     : supabase
-        .from("cx_request")
+        .schema("chat").from("request")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
@@ -293,7 +293,7 @@ export async function fetchConversationBundle(
 
   const [conversationRes, messagesRes, requestsRes] = await Promise.all([
     supabase
-      .from("cx_conversation")
+      .schema("chat").from("conversation")
       .select("*")
       .eq("id", conversationId)
       .single(),
@@ -309,7 +309,7 @@ export async function fetchConversationBundle(
     );
     if (userRequestIds.length > 0) {
       userRequestsRes = await supabase
-        .from("cx_user_request")
+        .schema("chat").from("user_request")
         .select("*")
         .in("id", userRequestIds)
         .is("deleted_at", null)
@@ -344,7 +344,7 @@ export async function fetchConversationBundle(
   let toolCalls: CxToolCallRow[] = [];
   if (messageIds.length > 0) {
     const toolsRes = await supabase
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select("*")
       .in("message_id", messageIds)
       .is("deleted_at", null)
@@ -356,7 +356,7 @@ export async function fetchConversationBundle(
   let hasMore = false;
   if (oldestPosition != null) {
     const olderCheck = await supabase
-      .from("cx_message")
+      .schema("chat").from("message")
       .select("id", { count: "exact", head: true })
       .eq("conversation_id", conversationId)
       .is("deleted_at", null)

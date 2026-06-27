@@ -268,7 +268,7 @@ export interface AgentDefinition {
 
   /**
    * Per-agent skill visibility tiering. Persisted in `agx_agent.skill_config`
-   * JSONB. UUIDs reference `skl_definitions.id`. See migration 0095 for the
+   * JSONB. UUIDs reference `skill.definition.id`. See migration 0095 for the
    * structural CHECK constraint.
    *
    * - `included`: full skill body baked into the system preamble.

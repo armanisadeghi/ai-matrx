@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         // external_system) tuple. `external_system` is nullable so we
         // normalize NULL via .is() when not provided.
         let existingQuery = supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .select("*")
           .eq("user_id", user.id)
           .eq("message_id", messageId)
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           }
 
           const { data: updated, error: updateError } = await supabase
-            .from("cx_artifact")
+            .schema("chat").from("artifact")
             .update(updates)
             .eq("id", existing[0].id)
             .eq("user_id", user.id)
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .insert({
             message_id: messageId,
             conversation_id: conversationId,
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
         if (metadata !== undefined) updates.metadata = metadata;
 
         const { data, error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .update(updates)
           .eq("id", id)
           .eq("user_id", user.id)
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
           .eq("id", id)
           .eq("user_id", user.id);
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .delete()
           .eq("id", id)
           .eq("user_id", user.id);
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .select("*")
           .eq("id", id)
           .eq("user_id", user.id)
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
         const { filters = {} } = params;
 
         let query = supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .select("*")
           .eq("user_id", user.id)
           .is("deleted_at", null)
@@ -328,7 +328,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .from("cx_artifact")
+          .schema("chat").from("artifact")
           .select("*")
           .eq("message_id", messageId)
           .eq("user_id", user.id)

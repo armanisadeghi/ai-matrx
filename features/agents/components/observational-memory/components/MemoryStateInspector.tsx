@@ -33,7 +33,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Tables } from "@/types/database.types";
 import { formatDateTime, formatRelativeTime, formatTokens } from "./format";
 
-type MemoryRow = Tables<"cx_observational_memory">;
+type MemoryRow = Tables<{ schema: "chat" }, "observational_memory">;
 
 interface BufferedObservationCycle {
   cycle_id?: string;
@@ -80,7 +80,7 @@ export function MemoryStateInspector({
     setState({ status: "loading" });
     try {
       const { data, error } = await supabase
-        .from("cx_observational_memory")
+        .schema("chat").from("observational_memory")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)

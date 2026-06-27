@@ -10,10 +10,10 @@ import type {
 // `features/skills/redux/skillsConverters.ts`. Render-blocks +
 // resources continue here.
 
-type RenderDefRow = Database["public"]["Tables"]["skl_render_definitions"]["Row"];
+type RenderDefRow = Database["skill"]["Tables"]["render_definition"]["Row"];
 type RenderComponentRow =
-  Database["public"]["Tables"]["skl_render_components"]["Row"];
-type ResourceRow = Database["public"]["Tables"]["skl_resources"]["Row"];
+  Database["skill"]["Tables"]["render_component"]["Row"];
+type ResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
 type ShortcutCategoryDbRow =
   Database["public"]["Tables"]["shortcut_categories"]["Row"];
 
@@ -43,8 +43,8 @@ export function rowToSklRenderDefinition(
 
 export function sklRenderDefinitionToUpdate(
   patch: Partial<SklRenderDefinition>,
-): Database["public"]["Tables"]["skl_render_definitions"]["Update"] {
-  const u: Database["public"]["Tables"]["skl_render_definitions"]["Update"] = {};
+): Database["skill"]["Tables"]["render_definition"]["Update"] {
+  const u: Database["skill"]["Tables"]["render_definition"]["Update"] = {};
   if (patch.blockId !== undefined) u.block_id = patch.blockId;
   if (patch.label !== undefined) u.label = patch.label;
   if (patch.description !== undefined) u.description = patch.description;
@@ -61,7 +61,7 @@ export function sklRenderDefinitionToUpdate(
 export function sklRenderDefinitionToInsert(
   def: Partial<SklRenderDefinition> &
     Pick<SklRenderDefinition, "blockId" | "label" | "iconName" | "template">,
-): Database["public"]["Tables"]["skl_render_definitions"]["Insert"] {
+): Database["skill"]["Tables"]["render_definition"]["Insert"] {
   return {
     block_id: def.blockId,
     label: def.label,

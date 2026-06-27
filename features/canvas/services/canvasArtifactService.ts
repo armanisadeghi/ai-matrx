@@ -379,7 +379,7 @@ export const canvasArtifactService = {
 
             // Check for an existing row tied to this canvas_item_id first.
             const { data: existing, error: lookupErr } = await supabase
-                .from("cx_artifact")
+                .schema("chat").from("artifact")
                 .select("id")
                 .eq("canvas_item_id", input.canvasId)
                 .maybeSingle();
@@ -392,7 +392,7 @@ export const canvasArtifactService = {
 
             // Insert a new discovery-index row.
             const { data, error } = await supabase
-                .from("cx_artifact")
+                .schema("chat").from("artifact")
                 .insert({
                     canvas_item_id: input.canvasId,
                     message_id: input.messageId,

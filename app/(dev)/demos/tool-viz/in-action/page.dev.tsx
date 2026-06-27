@@ -514,7 +514,7 @@ async function fetchToolSummary(
 
   const { data, error } = await withTimeout(
     supabase
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select("tool_name")
       .eq("user_id", userId)
       .eq("success", true)
@@ -557,7 +557,7 @@ async function fetchRunsForTool(
 
   const { data, error } = await withTimeout(
     supabase
-      .from("cx_tool_call")
+      .schema("chat").from("tool_call")
       .select(
         "call_id, tool_name, tool_name_as_called, arguments, output, output_preview, is_error, error_type, error_message, started_at, completed_at, execution_events, status, created_at",
       )

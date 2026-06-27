@@ -180,7 +180,7 @@ export async function resolveSourceTitle(
       }
       case "conversation": {
         const { data } = await supabase
-          .from("cx_conversation")
+          .schema("chat").from("conversation")
           .select("title")
           .eq("id", id)
           .maybeSingle();
@@ -372,7 +372,7 @@ async function resolveTitlesForKind(
     case "conversation":
     case "cx_message": {
       const { data } = await supabase
-        .from("cx_conversation")
+        .schema("chat").from("conversation")
         .select("id, title")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
@@ -541,7 +541,7 @@ async function loadTranscript(id: string): Promise<SourcePreviewDoc> {
 async function loadConversation(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("conversation", id);
   const { data } = await supabase
-    .from("cx_conversation")
+    .schema("chat").from("conversation")
     .select("title, description, created_at")
     .eq("id", id)
     .maybeSingle();

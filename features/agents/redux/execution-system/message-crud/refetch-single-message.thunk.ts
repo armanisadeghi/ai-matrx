@@ -32,7 +32,7 @@ import type { Database } from "@/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { messageRowToRecord } from "../thunks/conversation-bundle";
 
-type CxMessageRow = Database["public"]["Tables"]["cx_message"]["Row"];
+type CxMessageRow = Database["chat"]["Tables"]["message"]["Row"];
 
 interface RefetchSingleMessageArgs {
   conversationId: string;
@@ -60,7 +60,7 @@ export const refetchSingleMessage = createAsyncThunk<
   "messages/refetchSingleMessage",
   async ({ conversationId, messageId }, { dispatch, rejectWithValue }) => {
     const { data, error } = await supabase
-      .from("cx_message")
+      .schema("chat").from("message")
       .select("*")
       .eq("id", messageId)
       .is("deleted_at", null)
