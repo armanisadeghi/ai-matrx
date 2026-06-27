@@ -20,30 +20,54 @@ const DatabaseAdminDashboard = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
+
   const { loading, error, fetchFunctions, fetchPermissions, executeQuery } =
     useDatabaseAdmin();
 
+  // Functions is the default tab — load it on mount. Permissions is loaded
+  // lazily the first time its tab is opened (below), not eagerly on mount:
+  // the old Promise.all fetched the full permissions catalog every visit even
+  // for users who only ever look at Functions or the SQL editor.
   useEffect(() => {
-    loadData();
+    void loadFunctions();
   }, []);
 
-  const loadData = async () => {
+  // Lazy-load permissions on first open of that tab.
+  useEffect(() => {
+    if (activeTab === "permissions" && !permissionsLoaded) {
+      void loadPermissions();
+    }
+  }, [activeTab, permissionsLoaded]);
+
+  const loadFunctions = async () => {
     try {
-      const [functionsData, permissionsData] = await Promise.all([
-        fetchFunctions(),
-        fetchPermissions(),
-      ]);
+      const functionsData = await fetchFunctions();
       setFunctions(functionsData || []);
-      setPermissions(permissionsData || []);
     } catch (err) {
-      console.error("Failed to load initial data:", err);
+      console.error("Failed to load functions:", err);
+    }
+  };
+
+  const loadPermissions = async () => {
+    try {
+      const permissionsData = await fetchPermissions();
+      setPermissions(permissionsData || []);
+      setPermissionsLoaded(true);
+    } catch (err) {
+      console.error("Failed to load permissions:", err);
     }
   };
 
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await loadData();
+      // Refresh only what's been loaded — never trigger the permissions fetch
+      // from a refresh on the Functions tab.
+      await Promise.all([
+        loadFunctions(),
+        permissionsLoaded ? loadPermissions() : Promise.resolve(),
+      ]);
     } catch (err) {
       console.error("Failed to refresh data:", err);
     } finally {
