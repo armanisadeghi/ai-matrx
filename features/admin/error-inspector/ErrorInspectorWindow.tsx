@@ -205,6 +205,7 @@ export default function ErrorInspectorWindow({
       height={640}
       minWidth={680}
       minHeight={420}
+      overlayId="errorInspectorWindow"
       onClose={onClose}
       sidebar={sidebar}
       sidebarDefaultSize={300}
