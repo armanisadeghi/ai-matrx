@@ -76,7 +76,8 @@ import { DictionaryOverlay } from "../renderers/dictionary/DictionaryOverlay";
 import { ResearchInline } from "../renderers/research/ResearchInline";
 import { researchOverlayTabs } from "../renderers/research/ResearchOverlay";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
-import { RagSearchInline } from "../renderers/rag-search";
+import { RagSearchInline } from "../renderers/rag-search/RagSearchInline";
+import { RagSearchOverlay } from "../renderers/rag-search/RagSearchOverlay";
 import { RandomWheelInline } from "../renderers/random-wheel";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
@@ -783,7 +784,8 @@ export const toolRendererRegistry: ToolRegistry = {
     },
     resultsLabel: "RAG Hits",
     InlineComponent: RagSearchInline,
-    OverlayComponent: RagSearchInline,
+    OverlayComponent: RagSearchOverlay,
+    chrome: "card",
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const query = getArg<string>(entry, "query");
