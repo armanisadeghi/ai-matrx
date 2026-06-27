@@ -22,7 +22,7 @@
 -- now as <entity> -> 'task', keyed on the legacy row id so re-runs are safe.
 insert into platform.associations (id, source_type, source_id, target_type, target_id, organization_id, label, metadata, created_by, created_at)
 select ta.id, ta.entity_type, ta.entity_id, 'task', ta.task_id,
-       (select t.organization_id from ctx_tasks t where t.id = ta.task_id),
+       (select t.organization_id from workspace.tasks t where t.id = ta.task_id),
        ta.label, coalesce(ta.metadata, '{}'::jsonb), ta.created_by, ta.created_at
   from public.ctx_task_associations ta
  where not exists (select 1 from platform.associations a
@@ -44,12 +44,12 @@ declare
   v_id uuid; v_created_at timestamptz; v_label text; v_metadata jsonb;
 begin
   if v_uid is null then raise exception 'not authenticated'; end if;
-  select exists(select 1 from ctx_tasks t where t.id = p_task_id
+  select exists(select 1 from workspace.tasks t where t.id = p_task_id
       and (t.user_id = v_uid or (t.organization_id is not null and t.organization_id in (
             select om.organization_id from organization_members om where om.user_id = v_uid))))
     into v_task_visible;
   if not v_task_visible then raise exception 'task not found or access denied'; end if;
-  select organization_id into v_org from ctx_tasks where id = p_task_id;
+  select organization_id into v_org from workspace.tasks where id = p_task_id;
 
   insert into platform.associations (source_type, source_id, target_type, target_id, organization_id, label, metadata, created_by)
   values (p_entity_type, p_entity_id, 'task', p_task_id, v_org, p_label, coalesce(p_metadata, '{}'::jsonb), v_uid)
@@ -86,7 +86,7 @@ begin
       'due_date', t.due_date, 'organization_id', t.organization_id, 'project_id', t.project_id,
       'association_id', a.id, 'associated_at', a.created_at) order by a.created_at desc), '[]'::jsonb)
     from platform.associations a
-    join ctx_tasks t on t.id = a.target_id
+    join workspace.tasks t on t.id = a.target_id
    where a.target_type = 'task' and a.source_type = p_entity_type and a.source_id = p_entity_id
      and (t.user_id = v_uid or (t.organization_id is not null and t.organization_id in (
            select om.organization_id from organization_members om where om.user_id = v_uid)))
@@ -104,7 +104,7 @@ create or replace function public.create_task_with_association(
 language plpgsql security definer set search_path to 'public' as $fn$
 declare
   v_uid uuid := auth.uid();
-  v_task ctx_tasks;
+  v_task workspace.tasks;
   v_assoc_json jsonb := null;
   v_scope_id uuid; v_priority task_priority;
   v_id uuid; v_created_at timestamptz;
@@ -112,7 +112,7 @@ begin
   if v_uid is null then raise exception 'not authenticated'; end if;
   v_priority := case when p_priority in ('low','medium','high') then p_priority::task_priority else null end;
 
-  insert into ctx_tasks (title, description, project_id, organization_id, priority, due_date, status, user_id)
+  insert into workspace.tasks (title, description, project_id, organization_id, priority, due_date, status, user_id)
   values (coalesce(nullif(trim(p_title), ''), 'Untitled task'), p_description, p_project_id, p_organization_id,
           v_priority, p_due_date, 'incomplete', v_uid)
   returning * into v_task;
@@ -147,7 +147,7 @@ create or replace function public.create_tasks_bulk(
 language plpgsql security definer set search_path to 'public' as $fn$
 declare
   v_uid uuid := auth.uid();
-  v_item jsonb; v_task ctx_tasks; v_tasks jsonb := '[]'::jsonb;
+  v_item jsonb; v_task workspace.tasks; v_tasks jsonb := '[]'::jsonb;
   v_scope_id uuid; v_priority task_priority;
 begin
   if v_uid is null then raise exception 'not authenticated'; end if;
@@ -156,7 +156,7 @@ begin
   for v_item in select * from jsonb_array_elements(p_items) loop
     v_priority := case when v_item->>'priority' in ('low','medium','high') then (v_item->>'priority')::task_priority else null end;
 
-    insert into ctx_tasks (title, description, project_id, organization_id, priority, due_date, status, user_id)
+    insert into workspace.tasks (title, description, project_id, organization_id, priority, due_date, status, user_id)
     values (coalesce(nullif(trim(v_item->>'title'), ''), 'Untitled task'), v_item->>'description', p_project_id, p_organization_id,
             v_priority, case when v_item->>'due_date' is not null then (v_item->>'due_date')::date else null end,
             coalesce(v_item->>'status', 'incomplete'), v_uid)
@@ -191,7 +191,7 @@ declare
   v_conversations jsonb; v_cx_conversations jsonb; v_blocks jsonb; v_other jsonb; v_raw jsonb;
 begin
   if v_uid is null then raise exception 'not authenticated'; end if;
-  select exists(select 1 from ctx_tasks t where t.id = p_task_id
+  select exists(select 1 from workspace.tasks t where t.id = p_task_id
       and (t.user_id = v_uid or (t.organization_id is not null and t.organization_id in (
              select om.organization_id from organization_members om where om.user_id = v_uid)))) into v_task_visible;
   if not v_task_visible then raise exception 'task not found or access denied'; end if;

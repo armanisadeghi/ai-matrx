@@ -11903,6 +11903,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -46519,6 +46579,9 @@
                 "type": "string"
               },
               {
+                "$ref": "#/components/schemas/SystemInstructionInput"
+              },
+              {
                 "type": "null"
               }
             ],
@@ -52324,6 +52387,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -79436,6 +79554,133 @@
           "resolved_at"
         ],
         "title": "SystemErrorSummary"
+      },
+      "SystemInstructionInput": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "base_instruction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Instruction"
+          },
+          "intro": {
+            "type": "string",
+            "title": "Intro",
+            "default": ""
+          },
+          "outro": {
+            "type": "string",
+            "title": "Outro",
+            "default": ""
+          },
+          "append_sections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Append Sections",
+            "default": []
+          },
+          "prepend_sections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Prepend Sections",
+            "default": []
+          },
+          "content_blocks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Content Blocks",
+            "default": []
+          },
+          "tools_list": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tools List",
+            "default": []
+          },
+          "action_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Action Types",
+            "default": []
+          },
+          "include_date": {
+            "type": "boolean",
+            "title": "Include Date",
+            "default": true
+          },
+          "include_code_guidelines": {
+            "type": "boolean",
+            "title": "Include Code Guidelines",
+            "default": false
+          },
+          "include_safety_guidelines": {
+            "type": "boolean",
+            "title": "Include Safety Guidelines",
+            "default": false
+          },
+          "include_actions_guidance": {
+            "type": "boolean",
+            "title": "Include Actions Guidance",
+            "default": false
+          },
+          "include_context_block": {
+            "type": "boolean",
+            "title": "Include Context Block",
+            "default": true
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "SystemInstructionInput",
+        "description": "Structured system prompt on the chat/manual wire.\n\nMirrors ``SystemInstruction.from_value`` dict parsing — callers may send\neither a plain string or this object (agent-builder uses ``content`` +\n``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``\nnormalizes both shapes to ``SystemInstruction``."
       },
       "TagCreate": {
         "properties": {

@@ -65,7 +65,7 @@ language plpgsql security definer set search_path to 'public' as $fn$
 declare v_org uuid := p_org_id; v_row iam.invitations;
 begin
   if v_org is null then
-    if p_target_type = 'project' then select organization_id into v_org from ctx_projects where id = p_target_id; end if;
+    if p_target_type = 'project' then select organization_id into v_org from workspace.projects where id = p_target_id; end if;
   end if;
   if v_org is null or not iam.has_org_access(v_org) then
     raise exception 'inv_create: no org access (org=%, %/%)', v_org, p_target_type, p_target_id

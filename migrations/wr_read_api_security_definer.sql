@@ -34,7 +34,7 @@ AS $function$
     AND iam.has_access('thread', thread_contents.thread_id, 'viewer')
   UNION ALL
   SELECT a.source_type, a.source_id, 'anchor'::text, t.anchor_type, t.anchor_id
-  FROM wr_threads t
+  FROM workspace.threads t
   JOIN platform.associations a
     ON a.target_type = t.anchor_type AND a.target_id = t.anchor_id
   WHERE t.id = thread_contents.thread_id

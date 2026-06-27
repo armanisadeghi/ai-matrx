@@ -90,7 +90,7 @@ language sql stable security definer set search_path to 'public' as $fn$
   from iam.memberships m join auth.users u on m.user_id = u.id
   where m.container_type='project' and m.container_id = p_project_id and m.deleted_at is null and (
     exists (select 1 from iam.memberships caller where caller.container_type='project' and caller.container_id = p_project_id and caller.user_id = auth.uid() and caller.deleted_at is null)
-    or exists (select 1 from ctx_projects p join organization_members om on om.organization_id = p.organization_id
+    or exists (select 1 from workspace.projects p join organization_members om on om.organization_id = p.organization_id
       where p.id = p_project_id and om.user_id = auth.uid() and om.role in ('owner', 'admin'))
   )
   order by case m.role when 'owner' then 1 when 'admin' then 2 else 3 end, m.created_at asc;
@@ -114,8 +114,8 @@ begin
       else 'system'
     end)::text,
     (case
-      when s.task_id is not null then (select t.name from ctx_tasks t where t.id = s.task_id)
-      when s.project_id is not null then (select p.name from ctx_projects p where p.id = s.project_id)
+      when s.task_id is not null then (select t.name from workspace.tasks t where t.id = s.task_id)
+      when s.project_id is not null then (select p.name from workspace.projects p where p.id = s.project_id)
       when s.organization_id is not null then (select o.name from organizations o where o.id = s.organization_id)
       when s.user_id is not null then 'Personal'
       else 'System'

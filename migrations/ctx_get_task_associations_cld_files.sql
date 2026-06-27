@@ -27,7 +27,7 @@ begin
   end if;
 
   select exists(
-    select 1 from ctx_tasks t
+    select 1 from workspace.tasks t
     where t.id = p_task_id
       and (t.user_id = v_uid
            or (t.organization_id is not null and t.organization_id in (

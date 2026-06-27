@@ -37,7 +37,7 @@ begin
     'knowledge_files',  (select count(*) from public.cld_files       where owner_id = uid and deleted_at is null),
     'published_apps',   (select count(*) from public.aga_apps        where user_id = uid and status = 'published'),
     'notes',            (select count(*) from public.notes          where user_id = uid and coalesce(is_deleted, false) = false),
-    'tasks',            (select count(*) from public.ctx_tasks      where user_id = uid),
+    'tasks',            (select count(*) from workspace.tasks      where user_id = uid),
     'transcripts',      (select count(*) from public.transcripts    where user_id = uid and coalesce(is_deleted, false) = false),
     'scopes',           (select count(*) from public.ctx_scopes     where created_by = uid),
     'shortcuts',        (select count(*) from public.agx_shortcut   where user_id = uid and coalesce(is_active, false) = true),

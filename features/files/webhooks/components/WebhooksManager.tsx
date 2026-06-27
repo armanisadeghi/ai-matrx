@@ -34,15 +34,23 @@ import {
   rotateWebhookSecret,
   updateWebhook,
 } from "../service";
-import { WEBHOOK_EVENT_CATALOGUE, type Webhook, type WebhookDelivery } from "../types";
+import {
+  WEBHOOK_EVENT_CATALOGUE,
+  type Webhook,
+  type WebhookDelivery,
+} from "../types";
 
 function SecretReveal({ secret }: { secret: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-foreground">Signing secret — copy it now, it won't be shown again</p>
-        <code className="block truncate text-xs text-muted-foreground">{secret}</code>
+        <p className="font-medium text-foreground">
+          Signing secret — copy it now, it won't be shown again
+        </p>
+        <code className="block truncate text-xs text-muted-foreground">
+          {secret}
+        </code>
       </div>
       <Button
         size="sm"
@@ -132,7 +140,7 @@ function WebhookCard({
     const ok = await confirm({
       title: "Delete this webhook?",
       description: webhook.target_url,
-      confirmText: "Delete",
+      confirmLabel: "Delete",
       variant: "destructive",
     });
     if (!ok) return;
@@ -145,18 +153,23 @@ function WebhookCard({
     }
   };
 
-  const disabled = webhook.consecutive_failures >= webhook.max_consecutive_failures;
+  const disabled =
+    webhook.consecutive_failures >= webhook.max_consecutive_failures;
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <code className="truncate text-sm font-medium text-foreground">{webhook.target_url}</code>
+            <code className="truncate text-sm font-medium text-foreground">
+              {webhook.target_url}
+            </code>
             {disabled && <Badge variant="destructive">auto-disabled</Badge>}
           </div>
           {webhook.description && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{webhook.description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {webhook.description}
+            </p>
           )}
           <div className="mt-2 flex flex-wrap gap-1">
             {webhook.event_types === null ? (
@@ -176,16 +189,32 @@ function WebhookCard({
                 : "No successful delivery yet"}
             </span>
             {webhook.consecutive_failures > 0 && (
-              <span className="text-red-500">{webhook.consecutive_failures} consecutive failures</span>
+              <span className="text-red-500">
+                {webhook.consecutive_failures} consecutive failures
+              </span>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Switch checked={webhook.is_active} onCheckedChange={toggleActive} aria-label="Active" />
-          <Button size="icon" variant="ghost" onClick={handleRotate} title="Rotate signing secret">
+          <Switch
+            checked={webhook.is_active}
+            onCheckedChange={toggleActive}
+            aria-label="Active"
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleRotate}
+            title="Rotate signing secret"
+          >
             <RotateCw className="size-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={handleDelete} title="Delete webhook">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleDelete}
+            title="Delete webhook"
+          >
             <Trash2 className="size-4 text-red-500" />
           </Button>
         </div>
@@ -201,7 +230,11 @@ function WebhookCard({
         onClick={toggleExpand}
         className="mt-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
       >
-        {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+        {expanded ? (
+          <ChevronDown className="size-3.5" />
+        ) : (
+          <ChevronRight className="size-3.5" />
+        )}
         Recent deliveries
       </button>
       {expanded && (
@@ -227,7 +260,9 @@ export function WebhooksManager() {
   const [allEvents, setAllEvents] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
-  const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(null);
+  const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(
+    null,
+  );
 
   const reload = useCallback(async () => {
     try {
@@ -283,8 +318,8 @@ export function WebhooksManager() {
       <p className="mb-4 text-sm text-muted-foreground">
         Get a signed HTTPS callback when your events fire — a file is shared, a
         long-running job finishes, and more. Each delivery is signed with{" "}
-        <code className="text-xs">X-Matrx-Signature: sha256=…</code> (HMAC of the
-        body using your secret).
+        <code className="text-xs">X-Matrx-Signature: sha256=…</code> (HMAC of
+        the body using your secret).
       </p>
 
       {justCreatedSecret && (
@@ -325,7 +360,10 @@ export function WebhooksManager() {
             {!allEvents && (
               <div className="grid grid-cols-2 gap-1.5 rounded-md border border-border p-2">
                 {WEBHOOK_EVENT_CATALOGUE.map((ev) => (
-                  <label key={ev.value} className="flex items-center gap-2 text-sm">
+                  <label
+                    key={ev.value}
+                    className="flex items-center gap-2 text-sm"
+                  >
                     <Checkbox
                       checked={selected.has(ev.value)}
                       onCheckedChange={(v) =>
@@ -344,7 +382,11 @@ export function WebhooksManager() {
             )}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreating(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -361,7 +403,10 @@ export function WebhooksManager() {
       {webhooks === null ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg border border-border bg-muted/40" />
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-lg border border-border bg-muted/40"
+            />
           ))}
         </div>
       ) : webhooks.length === 0 ? (
@@ -379,9 +424,13 @@ export function WebhooksManager() {
               key={w.id}
               webhook={w}
               onChange={(updated) =>
-                setWebhooks((prev) => (prev ?? []).map((x) => (x.id === updated.id ? updated : x)))
+                setWebhooks((prev) =>
+                  (prev ?? []).map((x) => (x.id === updated.id ? updated : x)),
+                )
               }
-              onDelete={(id) => setWebhooks((prev) => (prev ?? []).filter((x) => x.id !== id))}
+              onDelete={(id) =>
+                setWebhooks((prev) => (prev ?? []).filter((x) => x.id !== id))
+              }
             />
           ))}
         </div>

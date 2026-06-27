@@ -37,7 +37,7 @@ begin
   select jsonb_build_object(
     'organizations', coalesce((
       select jsonb_agg(jsonb_build_object('id', o.id, 'name', o.name, 'slug', o.slug, 'is_personal', o.is_personal, 'role', om.role::text,
-        'project_count', (select count(*) from ctx_projects p where p.organization_id = o.id
+        'project_count', (select count(*) from workspace.projects p where p.organization_id = o.id
           and exists (select 1 from iam.memberships pm where pm.container_type='project' and pm.container_id = p.id and pm.user_id = uid and pm.deleted_at is null))
       ) order by o.is_personal desc, o.name asc) from organizations o join organization_members om on om.organization_id = o.id and om.user_id = uid
     ), '[]'::jsonb),
@@ -45,7 +45,7 @@ begin
       select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'slug', p.slug, 'organization_id', p.organization_id,
         'is_personal', coalesce(po.is_personal, false), 'role', pm.role::text,
         'topic_count', (select count(*) from rs_topic rt where rt.project_id = p.id))
-      order by p.name asc) from ctx_projects p join iam.memberships pm on pm.container_type='project' and pm.container_id = p.id and pm.user_id = uid and pm.deleted_at is null
+      order by p.name asc) from workspace.projects p join iam.memberships pm on pm.container_type='project' and pm.container_id = p.id and pm.user_id = uid and pm.deleted_at is null
         left join organizations po on po.id = p.organization_id
     ), '[]'::jsonb)
   ) into result;
@@ -135,9 +135,9 @@ begin
                 join ctx_scope_types st on sc.scope_type_id = st.id
                 where sa.entity_type = 'project' and sa.entity_id = p.id
             ), '[]'::jsonb) as scope_tags,
-            (select count(*) from ctx_tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
-            (select count(*) from ctx_tasks t where t.project_id = p.id) as total_task_count
-        from ctx_projects p
+            (select count(*) from workspace.tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
+            (select count(*) from workspace.tasks t where t.project_id = p.id) as total_task_count
+        from workspace.projects p
         where p.organization_id in (select id from user_orgs)
     ),
 
@@ -145,9 +145,9 @@ begin
         select
             p.id, p.name, p.slug, true::boolean as is_personal,
             '[]'::jsonb as scope_tags,
-            (select count(*) from ctx_tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
-            (select count(*) from ctx_tasks t where t.project_id = p.id) as total_task_count
-        from ctx_projects p
+            (select count(*) from workspace.tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
+            (select count(*) from workspace.tasks t where t.project_id = p.id) as total_task_count
+        from workspace.projects p
         join iam.memberships m on m.container_type = 'project' and m.container_id = p.id and m.user_id = v_uid and m.deleted_at is null
         where p.organization_id is null
     ),
@@ -169,8 +169,8 @@ begin
                     v_personal_org_id
                 )
             end as organization_id
-        from ctx_tasks t
-        left join ctx_projects p on t.project_id = p.id
+        from workspace.tasks t
+        left join workspace.projects p on t.project_id = p.id
         where t.status != 'completed'
           and (
               t.user_id = v_uid
@@ -238,9 +238,9 @@ begin
     personal_projects_v as (
         select
             p.id, p.name, p.slug,
-            (select count(*) from ctx_tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
-            (select count(*) from ctx_tasks t where t.project_id = p.id) as total_task_count
-        from ctx_projects p
+            (select count(*) from workspace.tasks t where t.project_id = p.id and t.status != 'completed') as open_task_count,
+            (select count(*) from workspace.tasks t where t.project_id = p.id) as total_task_count
+        from workspace.projects p
         join iam.memberships m on m.container_type = 'project' and m.container_id = p.id and m.user_id = v_uid and m.deleted_at is null
         where p.organization_id is null
     ),
@@ -248,8 +248,8 @@ begin
         select
             t.id, t.title, t.status, t.priority::text as priority,
             t.project_id, t.parent_task_id, t.due_date, t.assignee_id
-        from ctx_tasks t
-        left join ctx_projects p on t.project_id = p.id
+        from workspace.tasks t
+        left join workspace.projects p on t.project_id = p.id
         where t.status != 'completed'
           and (
               (p.id is not null and p.organization_id is null

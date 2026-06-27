@@ -177,6 +177,7 @@ function renderTrigger({
   return (
     <button
       ref={buttonRef}
+      type="button"
       onClick={onClick}
       aria-label={ariaLabel}
       disabled={disabled}

@@ -54,10 +54,10 @@ BEGIN
     -- ── 1) Entity FK resolution (unchanged) ────────────────────────────
     IF p_entity_type = 'task' THEN
         SELECT t.project_id, p.organization_id, t.id INTO v_project_id, v_org_id, v_task_id
-        FROM public.ctx_tasks t LEFT JOIN public.ctx_projects p ON t.project_id = p.id WHERE t.id = p_entity_id;
+        FROM workspace.tasks t LEFT JOIN workspace.projects p ON t.project_id = p.id WHERE t.id = p_entity_id;
     ELSIF p_entity_type = 'project' THEN
         SELECT p.organization_id, p.id INTO v_org_id, v_project_id
-        FROM public.ctx_projects p WHERE p.id = p_entity_id;
+        FROM workspace.projects p WHERE p.id = p_entity_id;
     ELSIF p_entity_type = 'conversation' THEN
         SELECT c.organization_id, c.project_id, c.task_id INTO v_org_id, v_project_id, v_task_id
         FROM public.cx_conversation c WHERE c.id = p_entity_id;

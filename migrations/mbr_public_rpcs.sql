@@ -81,8 +81,8 @@ language plpgsql security definer set search_path to 'public' as $fn$
 declare v_org uuid := p_org_id; v_id uuid;
 begin
   if v_org is null then
-    if    p_container_type = 'project' then select organization_id into v_org from ctx_projects where id = p_container_id;
-    elsif p_container_type = 'task'    then select organization_id into v_org from ctx_tasks    where id = p_container_id;
+    if    p_container_type = 'project' then select organization_id into v_org from workspace.projects where id = p_container_id;
+    elsif p_container_type = 'task'    then select organization_id into v_org from workspace.tasks    where id = p_container_id;
     end if;
   end if;
   if v_org is null or not iam.has_org_access(v_org) then

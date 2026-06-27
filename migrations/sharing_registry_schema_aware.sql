@@ -1,0 +1,34 @@
+-- migrate: sharing_registry_schema_aware
+-- Makes shareable_resource_registry and all sharing RPCs schema-aware after the
+-- 2026 schema reorg moved agent/app/chat/files/skill/workflow/workspace tables
+-- out of public. Applied in 3 sequential migrations:
+--   1. sharing_registry_add_schema_name_fix_unique
+--   2. sharing_registry_drop_resolve_for_rebuild
+--   3. sharing_registry_backfill_and_rebuild_functions
+--   4. sharing_registry_fix_stragglers
+--
+-- Changes:
+--   shareable_resource_registry:
+--     - ADD COLUMN schema_name text NOT NULL DEFAULT 'public'
+--     - DROP CONSTRAINT shareable_resource_registry_table_name_unique
+--     - ADD CONSTRAINT srr_schema_table_unique UNIQUE(schema_name, table_name)
+--     - Backfill from platform.entity_types (authoritative)
+--     - Manual fix: agent_card → agent.card (view, not in entity_types)
+--     - Manual fix: scraper_* rows (schema was baked into table_name)
+--     - Manual fix: wf_run/wf_trigger → workflow.run/trigger + owner_column=created_by
+--     - Deactivate wf_definition (duplicate of workflow token)
+--
+--   Functions rebuilt (all SECURITY DEFINER, search_path='public' preserved):
+--     - resolve_shareable_resource: now exposes schema_name in RETURNS TABLE
+--     - is_resource_owner: format('SELECT %I FROM %I.%I WHERE %I=$1', ...)
+--     - make_resource_public: schema-qualified UPDATE + card_visibility-first logic
+--     - make_resource_private: schema-qualified UPDATE + card_visibility-first + entity_types default
+--     - share_resource_with_user: schema-qualified owner lookup; permissions keyed by resource_type
+--     - share_resource_with_org: schema-qualified owner lookup; permissions keyed by resource_type
+--     - revoke_resource_access: permissions keyed by resource_type (not table_name)
+--     - revoke_resource_org_access: permissions keyed by resource_type
+--     - update_permission_level: permissions keyed by resource_type
+--     - get_resource_permissions: permissions keyed by resource_type
+--
+-- APPLIED DIRECTLY via Supabase MCP (not idempotent file — already live).
+-- migrate: skip: already applied via Supabase MCP on 2026-06-26

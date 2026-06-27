@@ -35,7 +35,7 @@ language plpgsql security definer set search_path to 'public' as $fn$
 declare v_org uuid := p_org_id; v_id uuid;
 begin
   if v_org is null then
-    if p_entity_type = 'task' then select organization_id into v_org from ctx_tasks where id = p_entity_id; end if;
+    if p_entity_type = 'task' then select organization_id into v_org from workspace.tasks where id = p_entity_id; end if;
   end if;
   if v_org is null then v_org := public.ensure_personal_organization(auth.uid()); end if;
   if not iam.has_org_access(v_org) then
@@ -70,7 +70,7 @@ end $fn$;
 -- (entity_type='task'). Idempotent — keyed on the legacy row id.
 insert into platform.comments (id, organization_id, entity_type, entity_id, body, created_by, created_at, updated_at)
 select tc.id,
-       coalesce((select t.organization_id from ctx_tasks t where t.id = tc.task_id),
+       coalesce((select t.organization_id from workspace.tasks t where t.id = tc.task_id),
                 public.ensure_personal_organization(tc.user_id)),
        'task', tc.task_id, tc.content, tc.user_id, tc.created_at, tc.updated_at
   from public.ctx_task_comments tc

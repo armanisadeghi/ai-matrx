@@ -1125,15 +1125,6 @@ export function callWarmConversation(conversationId: string) {
   });
 }
 
-export function callWarmApp(appId: string) {
-  return callApi({
-    path: "/ai/apps/{app_id}/warm",
-    method: "POST",
-    pathParams: { app_id: appId },
-    stream: false,
-  });
-}
-
 // ─── Prompt: Start new conversation ──────────────────────────────────────────
 
 export interface CallPromptStartOptions {

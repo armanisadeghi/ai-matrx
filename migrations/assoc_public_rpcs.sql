@@ -30,8 +30,8 @@ declare v_org uuid := p_org_id; v_id uuid;
 begin
   if v_org is null then
     if    p_target_type='scope'    then select organization_id into v_org from ctx_scopes   where id=p_target_id;
-    elsif p_target_type='task'     then select organization_id into v_org from ctx_tasks    where id=p_target_id;
-    elsif p_target_type='project'  then select organization_id into v_org from ctx_projects where id=p_target_id;
+    elsif p_target_type='task'     then select organization_id into v_org from workspace.tasks    where id=p_target_id;
+    elsif p_target_type='project'  then select organization_id into v_org from workspace.projects where id=p_target_id;
     elsif p_target_type='category' then select org_id          into v_org from platform.categories where id=p_target_id;
     end if;
   end if;

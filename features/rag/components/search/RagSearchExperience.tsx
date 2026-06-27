@@ -805,6 +805,8 @@ function SearchTab({ scope }: { scope: Scope }) {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search indexed content (PDFs, notes, code)…"
               className="h-10"
+              enableVoice={false}
+              showCopyButton={false}
               clearable
               onClear={() => {
                 setQuery("");
@@ -1006,8 +1008,7 @@ function AgentToolResultBlock({
         </div>
       )}
 
-      {(result.matched_entities.length > 0 ||
-        result.entity_map.length > 0) && (
+      {(result.matched_entities.length > 0 || result.entity_map.length > 0) && (
         <div className="px-3 py-2 border-b flex flex-wrap items-center gap-1">
           <Layers className="h-3 w-3 text-muted-foreground mr-1" />
           {result.matched_entities.map((e) => (
@@ -1108,8 +1109,7 @@ function AgentToolResultBlock({
                   )}
                   {out.data && out.data.status !== "ok" && (
                     <span className="text-amber-600 dark:text-amber-400">
-                      {out.data.note ??
-                        `rag_get_chunk → ${out.data.status}`}
+                      {out.data.note ?? `rag_get_chunk → ${out.data.status}`}
                     </span>
                   )}
                   {out.data && out.data.status === "ok" && chunk && (

@@ -4569,6 +4569,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -16608,7 +16632,7 @@ export interface components {
              */
             debug: boolean;
             /** System Instruction */
-            system_instruction?: string | null;
+            system_instruction?: string | components["schemas"]["SystemInstructionInput"] | null;
             /**
              * Tools
              * @default []
@@ -18653,6 +18677,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -28636,6 +28687,87 @@ export interface components {
             age_secs: number;
             /** Resolved At */
             resolved_at: string | null;
+        };
+        /**
+         * SystemInstructionInput
+         * @description Structured system prompt on the chat/manual wire.
+         *
+         *     Mirrors ``SystemInstruction.from_value`` dict parsing — callers may send
+         *     either a plain string or this object (agent-builder uses ``content`` +
+         *     ``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``
+         *     normalizes both shapes to ``SystemInstruction``.
+         */
+        SystemInstructionInput: {
+            /** Content */
+            content?: string | null;
+            /** Base Instruction */
+            base_instruction?: string | null;
+            /**
+             * Intro
+             * @default
+             */
+            intro: string;
+            /**
+             * Outro
+             * @default
+             */
+            outro: string;
+            /**
+             * Append Sections
+             * @default []
+             */
+            append_sections: string[];
+            /**
+             * Prepend Sections
+             * @default []
+             */
+            prepend_sections: string[];
+            /**
+             * Content Blocks
+             * @default []
+             */
+            content_blocks: string[];
+            /**
+             * Tools List
+             * @default []
+             */
+            tools_list: string[];
+            /**
+             * Action Types
+             * @default []
+             */
+            action_types: string[];
+            /**
+             * Include Date
+             * @default true
+             */
+            include_date: boolean;
+            /**
+             * Include Code Guidelines
+             * @default false
+             */
+            include_code_guidelines: boolean;
+            /**
+             * Include Safety Guidelines
+             * @default false
+             */
+            include_safety_guidelines: boolean;
+            /**
+             * Include Actions Guidance
+             * @default false
+             */
+            include_actions_guidance: boolean;
+            /**
+             * Include Context Block
+             * @default true
+             */
+            include_context_block: boolean;
+            /** Version */
+            version?: string | null;
+            /** Category */
+            category?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** TagCreate */
         TagCreate: {
@@ -39064,6 +39196,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

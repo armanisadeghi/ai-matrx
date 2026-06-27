@@ -116,6 +116,12 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   protectTranscription?: boolean;
   /** Show the Copy action inside the "…" menu. Default: true. */
   showCopyButton?: boolean;
+  /**
+   * Voice input + mic device picker. Default true. Set false for search bars,
+   * filters, and any field where Enter must submit a form — mic controls inside
+   * a `<form>` must never act as implicit submit buttons.
+   */
+  enableVoice?: boolean;
   /** When provided, renders a prominent submit button at the right edge. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -180,6 +186,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       onRequestClose,
       protectTranscription = true,
       showCopyButton = true,
+      enableVoice = true,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -209,6 +216,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
 
     useEffect(() => {
+      if (!enableVoice) return;
       const checkAudioAvailability = async () => {
         try {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -223,7 +231,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         }
       };
       checkAudioAvailability();
-    }, []);
+    }, [enableVoice]);
 
     const pushToInput = useCallback((newValue: string) => {
       if (!inputRef.current) return;
@@ -352,7 +360,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       (isHovered || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
-    const showMic = isAudioAvailable;
+    const showMic = enableVoice && isAudioAvailable;
     const showClear = clearable && hasContent;
     // The "…" menu has at least one item when copy is enabled (extensible).
     const showMenu = !disabled && showCopyButton;
