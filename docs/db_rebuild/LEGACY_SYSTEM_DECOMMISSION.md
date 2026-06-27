@@ -38,7 +38,10 @@
 
 ## Easy UUID-swap items (prompt ID / shortcut → agent / agent-shortcut)
 _(populate from discovery — these are quick wins)_
-- ⬜ TBD
+- ✅ **DONE (2026-06-27, autonomous canon-sweep)** — repointed all LIVE/KEEP `.from("prompt_builtins"|"prompts"|"prompt_apps"|…)` consumers onto `agent.definition` (same UUID; `agent_type='builtin'|'user'`). FE: research/admin/service, ai-models/service, code-editor compact, agent-settings (builtin+user branches), prompt-builtin edit page, system-prompts compatible/link routes, GeneratePromptForSystemModal, unified-chat demo. aidream: database.py read-only guard, context_objects/research docstrings, test_agent_wiring.
+- ✅ Fail-soft (not swappable; decommissioned admin/CRUD) — prompt-apps API routes → 410; prompt-apps source adapters + prompt-actions service + prompt-apps admin service → graceful empty; System/FullPromptOptimizer "save as copy" → toast.
+- ⚠️ **CRITICAL CORRECTION:** `public.prompts` + `prompt_apps/prompt_templates/prompt_versions/prompt_actions` are **NOT live — all in `graveyard`.** Every `.from("prompts")` 404s. Earlier docs assumed `prompts` was still public — it is gone.
+- ⬜ **P0 STILL OPEN — code-editor prompt→agent rewrite** (multi-step, NOT a swap): `features/code-editor/hooks/useAICodeEditor.ts:213` + `features/code-editor/components/ContextAwareCodeEditorModal.tsx:391` pass `promptSource:"prompt_builtins"` into the prompt-execution thunk chain. Live CORE; AI panel fails. Files carry a `TODO(prompt-to-agent-sweep)` recipe → needs `launchAgent`/`trigger` wiring.
 
 ## Preserve-then-transition (best prompt/UI components → agent system) — NEEDS USER LIST
 - ⏸️ TBD (compile list, confirm with user before moving/deleting)
@@ -107,3 +110,4 @@ Build-safe relocations DONE: Resource cluster, DesktopFilterPanel/SystemPromptOp
 
 ## Change log
 - 2026-06-27: tracker created; discovery agents dispatched.
+- 2026-06-27 (autonomous canon-sweep): closed acute runtime breakage from canonicalization + graveyard moves across FE/aidream/extend (committed). prompt_builtins/prompt_shortcuts/ai_runs + whole prompts* family repointed→agent.definition or fail-softed in LIVE code; aidream P0s fixed (matrx-graph checkpoint/event raw SQL `wf_*`→`workflow.*`, tool adapters `tool_ui`→`tool.ui`, background msg + notes inserts now stamp `created_by`). Canonicalized-name (`cx_/agx_/aga_/ai_model/ctx_/wr_/file_`) live `.from()` sweep = 0. STILL OPEN: code-editor prompt→agent rewrite (P0, above); aidream `common/cloud_files_events.py` silently drops events into graveyard `cld_events` (best-effort try/except — repoint to `platform.activity_log`); `code_files`/`code_file_folders` inserts can't stamp `created_by` until that table's retrofit lands.
