@@ -4628,41 +4628,47 @@ export type Database = {
       }
       webhook_deliveries: {
         Row: {
+          activity_log_id: number | null
           attempt: number
           completed_at: string | null
           created_at: string
           error_message: string | null
-          event_id: string
           http_status: number | null
           id: string
           latency_ms: number | null
+          net_request_id: number | null
           next_attempt_at: string | null
+          signature: string | null
           status: string
           webhook_id: string
         }
         Insert: {
+          activity_log_id?: number | null
           attempt?: number
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
-          event_id: string
           http_status?: number | null
           id?: string
           latency_ms?: number | null
+          net_request_id?: number | null
           next_attempt_at?: string | null
+          signature?: string | null
           status?: string
           webhook_id: string
         }
         Update: {
+          activity_log_id?: number | null
           attempt?: number
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
-          event_id?: string
           http_status?: number | null
           id?: string
           latency_ms?: number | null
+          net_request_id?: number | null
           next_attempt_at?: string | null
+          signature?: string | null
           status?: string
           webhook_id?: string
         }
@@ -4675,6 +4681,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_dispatch_state: {
+        Row: {
+          id: boolean
+          last_activity_log_id: number
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          last_activity_log_id?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          last_activity_log_id?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       webhooks: {
         Row: {
@@ -4732,7 +4756,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      webhook_dispatch: { Args: { p_limit?: number }; Returns: number }
+      webhook_reconcile: { Args: never; Returns: number }
+      webhook_sign: {
+        Args: { p_payload: string; p_secret: string }
+        Returns: string
+      }
+      webhook_tick: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
