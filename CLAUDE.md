@@ -1,5 +1,7 @@
 # CLAUDE.md — AI Matrx Admin
 
+> 🔴 **TEMPORARY — DB TRANSITION IN PROGRESS (read before touching DB/data code).** The 2026 schema-reorg + canonical-RLS changeover is mid-flight on a shared `main` with many concurrent agents; compat shim views are about to be dropped. Live "what's pending / about to break" tracker: **[docs/db_rebuild/DB_TRANSITION_PENDING.md](./docs/db_rebuild/DB_TRANSITION_PENDING.md)**. Delete this callout when the teardown is done.
+
 Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, mobile-responsive.
 
 > **Official Next.js / React / TypeScript best practices:** `~/.arman/rules/nextjs-best-practices/nextjs-guide.md` — single source of truth for rendering, caching, performance, mobile, Tailwind, component contracts, API patterns. This file covers project-specific conventions only.
