@@ -77,16 +77,20 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
     }
   }, [sandboxId, source, tail]);
 
-  // Initial load + interval poll. Pause halts the poll but leaves the
-  // current buffer on screen.
+  // Initial load + interval poll. Pause halts the poll but leaves the current
+  // buffer on screen. The poll also stops while the panel is hidden — this
+  // component stays mounted (CSS-hidden) when the user switches to another
+  // bottom-panel tab, and a 3s log poll against the orchestrator has no reason
+  // to run for a panel nobody is looking at. Becoming visible re-runs this
+  // effect and refetches immediately, so the buffer is current on return.
   useEffect(() => {
-    if (paused) return;
+    if (paused || !visible) return;
     void fetchOnce();
     const handle = window.setInterval(() => {
       void fetchOnce();
     }, POLL_INTERVAL_MS);
     return () => window.clearInterval(handle);
-  }, [fetchOnce, paused]);
+  }, [fetchOnce, paused, visible]);
 
   // Sticky scroll-to-bottom when new content arrives, unless the user
   // scrolled up.
