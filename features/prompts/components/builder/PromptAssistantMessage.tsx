@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { Volume2, Download, Loader2, Link, Copy, Check } from "lucide-react";
-import { useDomCapturePrint } from "@/features/chat/hooks/useDomCapturePrint";
+import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import MarkdownStream from "@/components/MarkdownStream";
 import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { AssistantActionBar } from "@/features/agents/components/messages-display/assistant/AssistantActionBar";

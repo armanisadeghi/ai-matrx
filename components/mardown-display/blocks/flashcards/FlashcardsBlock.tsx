@@ -23,7 +23,7 @@ import { flashcardsPrinter } from "./flashcards-printer";
 import {
   PrintOptionsDialog,
   usePrintOptions,
-} from "@/features/chat/components/print/PrintOptionsDialog";
+} from "@/lib/block-print/PrintOptionsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSearchParams } from "next/navigation";
 

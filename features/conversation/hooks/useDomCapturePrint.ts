@@ -45,7 +45,7 @@ export function useDomCapturePrint(): UseDomCapturePrintReturn {
 
         try {
             // Lazy import the heavy capture utility
-            const { captureToPDF } = await import('@/features/chat/utils/dom-capture-print-utils');
+            const { captureToPDF } = await import('@/lib/block-print/dom-capture-print-utils');
             await captureToPDF(el, {
                 filename: 'ai-response',
                 scale: 2,

@@ -18,7 +18,7 @@ import {
   escapeHtml,
   type BlockPrinter,
   type PrintSettings,
-} from "@/features/chat/utils/block-print-utils";
+} from "@/lib/block-print/block-print-utils";
 import type { Flashcard } from "./flashcard-parser";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 

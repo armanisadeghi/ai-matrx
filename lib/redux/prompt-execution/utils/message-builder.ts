@@ -12,7 +12,7 @@ import type { Resource } from '@/features/agents/resources/types';
 import type { ConversationMessage } from '../types';
 import type { DynamicContextsMap } from '../types/dynamic-context';
 import { replaceVariablesInText } from '@/features/prompts/utils/variable-resolver';
-import { fetchResourcesData } from '@/features/prompts/utils/resource-data-fetcher';
+import { fetchResourcesData } from '@/features/agents/resources/data-fetcher';
 import { formatResourcesToXml, appendResourcesToMessage } from '@/features/agents/resources/utils';
 import {
   buildContextSection,

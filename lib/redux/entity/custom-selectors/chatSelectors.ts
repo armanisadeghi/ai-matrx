@@ -29,7 +29,7 @@ import {
   MessageRecordWithKey,
 } from "@/types/AutomationSchemaTypes";
 import { MarkdownAnalysisData } from "@/components/mardown-display/chat-markdown/analyzer/types";
-import { InputControlsSettings } from "@/features/chat/components/response/chat-loading/ControlledLoadingIndicator";
+import { InputControlsSettings } from "@/lib/types/input-controls";
 import { ClassifiedMetadata } from "@/components/mardown-display/chat-markdown/analyzer/types";
 
 const trace = "ENTITY SELECTORS";

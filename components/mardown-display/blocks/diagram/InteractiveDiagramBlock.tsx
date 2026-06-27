@@ -71,7 +71,7 @@ import type { DiagramData, DiagramNode } from "./parseDiagramJSON";
 import {
   PrintOptionsDialog,
   usePrintOptions,
-} from "@/features/chat/components/print/PrintOptionsDialog";
+} from "@/lib/block-print/PrintOptionsDialog";
 import { createDiagramPrinter } from "./diagram-printer";
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ import {
   openPrintWindow,
   type BlockPrinter,
   type PrintSettings,
-} from "@/features/chat/utils/block-print-utils";
+} from "@/lib/block-print/block-print-utils";
 import { formatCurrency, formatNumber } from "../lib/formulas";
 import type {
   StatelessRatingResponse,

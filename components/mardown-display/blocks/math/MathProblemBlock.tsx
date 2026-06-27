@@ -8,7 +8,7 @@ import { normalizeMathProblemLatex } from "@/features/math/utils/latex-normalize
 import { downloadMathProblem, uploadMathProblem } from "@/features/math/utils/math-problem-persistence";
 import ContentBlockWrapper from "../common/ContentBlockWrapper";
 import { mathPrinter } from "./math-printer";
-import { PrintOptionsDialog, usePrintOptions } from "@/features/chat/components/print/PrintOptionsDialog";
+import { PrintOptionsDialog, usePrintOptions } from "@/lib/block-print/PrintOptionsDialog";
 
 interface MathProblemBlockProps {
     problemData: {

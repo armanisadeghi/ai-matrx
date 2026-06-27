@@ -4,7 +4,7 @@
  * Self-contained print logic for quiz blocks.
  */
 
-import { buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter } from "@/features/chat/utils/block-print-utils";
+import { buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter } from "@/lib/block-print/block-print-utils";
 import type { RawQuizJSON } from "./quiz-parser";
 
 export type QuizVariant = "with-answers" | "blank" | "answer-key";

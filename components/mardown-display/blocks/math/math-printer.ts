@@ -4,7 +4,7 @@
  * Self-contained print logic for math problem blocks.
  */
 
-import { buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter } from "@/features/chat/utils/block-print-utils";
+import { buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter } from "@/lib/block-print/block-print-utils";
 import type { MathProblem } from "@/features/math/types";
 
 export type MathVariant = "problem-only" | "with-solution";

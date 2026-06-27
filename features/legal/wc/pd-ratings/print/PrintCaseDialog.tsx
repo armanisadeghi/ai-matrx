@@ -1,6 +1,6 @@
 "use client";
 
-import { PrintOptionsDialog } from "@/features/chat/components/print/PrintOptionsDialog";
+import { PrintOptionsDialog } from "@/lib/block-print/PrintOptionsDialog";
 import { pdReportPrinter, type PdReportData } from "./pd-report-printer";
 
 interface PrintCaseDialogProps {

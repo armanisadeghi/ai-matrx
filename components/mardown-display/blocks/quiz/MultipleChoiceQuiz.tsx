@@ -30,7 +30,7 @@ import { quizPrinter } from "./quiz-printer";
 import {
   PrintOptionsDialog,
   usePrintOptions,
-} from "@/features/chat/components/print/PrintOptionsDialog";
+} from "@/lib/block-print/PrintOptionsDialog";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";

@@ -83,7 +83,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
     setIsPrinting(true);
     try {
       const { captureBlockElement } =
-        await import("@/features/chat/utils/dom-capture-block-printer");
+        await import("@/lib/block-print/dom-capture-block-printer");
       await captureBlockElement(
         blockContentRef.current,
         comparison.title.replace(/\s+/g, "-").toLowerCase() || "comparison",

@@ -95,7 +95,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
     setIsPrinting(true);
     try {
       const { captureBlockElement } =
-        await import("@/features/chat/utils/dom-capture-block-printer");
+        await import("@/lib/block-print/dom-capture-block-printer");
       await captureBlockElement(
         blockContentRef.current,
         tracker.title.replace(/\s+/g, "-").toLowerCase() || "progress",

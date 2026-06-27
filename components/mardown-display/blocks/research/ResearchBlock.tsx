@@ -124,7 +124,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-      const { captureBlockElement } = await import('@/features/chat/utils/dom-capture-block-printer');
+      const { captureBlockElement } = await import('@/lib/block-print/dom-capture-block-printer');
       await captureBlockElement(blockContentRef.current, research.title.replace(/\s+/g, '-').toLowerCase() || 'research', 'portrait');
     } catch (err) {
       console.error('[ResearchBlock] Print failed:', err);
