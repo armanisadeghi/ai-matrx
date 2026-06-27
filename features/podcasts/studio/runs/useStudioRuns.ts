@@ -2,24 +2,23 @@
 
 // features/podcasts/studio/runs/useStudioRuns.ts
 //
-// Loads the caller's podcast runs from the durable agent_run-backed endpoint
-// (GET /podcast/runs) and polls while any run is still non-terminal (alive /
-// stalled), so the manage page reflects progress without a websocket. Replaces
-// the old useMyStudioRuns (which read the fragile pc_studio_runs table).
+// Loads the caller's podcast runs from the durable agent_run-backed read and
+// stays fresh via Supabase Realtime on agent_run (Transport 1) — the manage
+// page reflects progress live while runs are active and goes silent when idle,
+// with no polling. Replaces the old useMyStudioRuns (which read the fragile
+// pc_studio_runs table).
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApiAuth } from "@/hooks/useApiAuth";
+import { useRunListRealtime } from "@/hooks/useRunListRealtime";
 import { fetchPodcastRuns } from "./runsRepository";
-import { isNonTerminal, type RunSummary } from "./run-types";
-
-const POLL_MS = 15_000;
+import type { RunSummary } from "./run-types";
 
 export function useStudioRuns() {
   const { isAuthenticated } = useApiAuth();
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -48,17 +47,17 @@ export function useStudioRuns() {
     return () => ctrl.abort();
   }, [isAuthenticated, load]);
 
-  // Poll while any run is still moving (alive/stalled). Re-evaluated whenever
-  // the run set changes, so polling stops once everything is terminal.
-  const hasLiveRun = runs.some((r) => isNonTerminal(r.liveness));
-  useEffect(() => {
-    if (!isAuthenticated || !hasLiveRun) return;
-    pollRef.current = setInterval(() => void load(), POLL_MS);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      pollRef.current = null;
-    };
-  }, [isAuthenticated, hasLiveRun, load]);
+  // Live updates via Realtime on agent_run (owner-scoped). Fires whenever any
+  // of the user's runs changes — a debounced refetch keeps the computed list
+  // (liveness etc.) current. Always-on while authed so a brand-new run also
+  // appears, which an interval gated on "has live run" would have missed. The
+  // wider debounce coalesces heartbeat bursts during an active generation.
+  useRunListRealtime({
+    table: "agent_run",
+    enabled: isAuthenticated,
+    onChange: () => void load(),
+    debounceMs: 1_000,
+  });
 
   const refresh = useCallback(() => load(), [load]);
 
