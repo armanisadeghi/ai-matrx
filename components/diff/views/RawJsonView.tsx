@@ -1,11 +1,19 @@
 "use client";
 
-import { lazy, Suspense, useMemo } from "react";
+import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppSelector } from "@/lib/redux/hooks";
 
-const MonacoDiffEditor = lazy(() =>
-  import("@monaco-editor/react").then((mod) => ({ default: mod.DiffEditor })),
+// Monaco is browser-only and ~2MB — one `next/dynamic({ssr:false})` boundary
+// (never React.lazy) keeps it off the server render and out of the bundle
+// until this raw-JSON diff view actually renders.
+const MonacoDiffEditor = dynamic(
+  () => import("@monaco-editor/react").then((mod) => mod.DiffEditor),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[400px] w-full" />,
+  },
 );
 
 interface RawJsonViewProps {
@@ -33,26 +41,24 @@ export function RawJsonView({
         <span>{newLabel}</span>
       </div>
       <div className="flex-1 min-h-0">
-        <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-          <MonacoDiffEditor
-            original={oldJson}
-            modified={newJson}
-            language="json"
-            theme={mode === "dark" ? "vs-dark" : "vs"}
-            options={{
-              readOnly: true,
-              renderSideBySide: true,
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              fontSize: 12,
-              lineNumbers: "on",
-              folding: true,
-              wordWrap: "on",
-              automaticLayout: true,
-            }}
-            height="100%"
-          />
-        </Suspense>
+        <MonacoDiffEditor
+          original={oldJson}
+          modified={newJson}
+          language="json"
+          theme={mode === "dark" ? "vs-dark" : "vs"}
+          options={{
+            readOnly: true,
+            renderSideBySide: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            fontSize: 12,
+            lineNumbers: "on",
+            folding: true,
+            wordWrap: "on",
+            automaticLayout: true,
+          }}
+          height="100%"
+        />
       </div>
     </div>
   );
