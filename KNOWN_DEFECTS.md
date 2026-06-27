@@ -17,6 +17,23 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D20 — Guest→user in-place promotion is email/password only; OAuth signup still orphans guest work
+**Severity: medium — a guest who signs up via Google/GitHub/Apple loses every file/conversation they created as a guest. Email/password signup is fully handled (2026-06-26).**
+
+**What.** `lib/services/guest-promotion.ts` `promoteGuestToUser()` runs inside the email/password `signUpAction` and promotes the anonymous `auth.users` row in place (same UUID → all guest work kept). The OAuth signup actions (`signUpWithGoogleAction` / `…Github` / `…Apple` in `actions/auth.actions.ts`) do a fresh `signInWithOAuth` → **new UUID**, orphaning the guest's anon UUID and its data.
+
+**Why.** In-place promotion needs to set credentials on the existing anon user; OAuth mints a separate identity. The correct path is `linkIdentity` on the anon session, but the browser never holds the anon session (Python mints it server-side from the fingerprint).
+
+**What's open.** Either (a) link the OAuth identity to the fingerprint's anon UUID server-side after callback, or (b) a one-time data-transfer (anon UUID → new UUID) fallback for OAuth only. Until then, OAuth guest conversion is lossy. The fingerprint reaches the email/password server action via the `GuestFingerprintField` hidden input — OAuth forms don't carry it.
+
+### D19 — Event spine: only Transport 2 is built; run-lifecycle producers + Transport 1 (Realtime polling kill) pending
+**Severity: medium — outbound webhooks work, but the "stop polling long jobs" win and "notify on job finished" are not wired yet. See [features/files/webhooks/FEATURE.md](features/files/webhooks/FEATURE.md).**
+
+**What's open.**
+- **Phase 1 — run-lifecycle producers.** Run tables (`agent_run`, `ai_runs`, `pc_studio_runs`, `page_extraction_runs`, `wf_run`, `kg_sweep_run`, `scrape_cycle_run`, `derive_runs`, `studio_runs`, `legal.ingest_runs`, `scraper.crawl_runs`, `files.file_rag_jobs`) must write `<domain>.run.{started,progress,completed,failed}` to `platform.activity_log` on status change. **Blocker:** these tables lack a clean `organization_id` (`agent_run` has only `user_id`), so the trigger needs org resolution through the in-flux `iam` model — coordinate with the DB changeover. The event MUST set `actor_id` = the run owner or webhook matching can't deliver it.
+- **Transport 1 — Realtime kills in-app polling.** Convert `useStudioRuns`/`useStudioRun` (podcast, 15s/12s/4s), `useAiRunsList`/`useAiTasks` (10s always-on), RAG safety-net, `useResolveCreatedProject` to Supabase Realtime on the run tables (pattern: `features/scheduling/hooks/useRunStream.ts`), deleting every `setInterval`/`refetchInterval`. Needs run tables in the `supabase_realtime` publication + owner-read RLS + a generic `useRunRealtime` hook.
+- **Webhook depth:** org-wide fan-out (needs iam membership for arbitrary (user,org)); the Python file-audit events (`audit_bridge.py`) write `actor_id = null`, so they don't match owner webhooks yet — populate the actor; manual redeliver button + RPC; `latency_ms` capture; per-feature admin-map entry; **browser-UI verification of `/files/webhooks` still pending** (blocked at build time by a concurrent dev server; backend pipeline verified live).
+
 ### D18 — `files.share_links` + `files.file_versions` deny SELECT to the owner (RLS gap) → full-page file detail shows "File not found"
 **Severity: medium — owner cannot open the full-page file viewer route `/files/f/[fileId]`; side-panel viewer (from `/files` Recents) still works. Found during the files-schema cutover QA, 2026-06-26.**
 
