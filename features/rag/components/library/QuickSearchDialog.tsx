@@ -138,8 +138,10 @@ export function QuickSearchDialog({
             )}
             {!loading && hits === null && !error && (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Type a query above and hit Search to see what an agent would
-                retrieve from this document.
+                Type a query above and hit Search to keyword-search this
+                document's text. This is a literal keyword (lexical) match — not
+                the semantic AI retrieval an agent performs; use AI search for
+                that.
               </p>
             )}
             {hits && hits.length === 0 && (

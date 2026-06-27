@@ -800,6 +800,67 @@ function SearchScopeSummary({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Query-term coverage — "did each word I typed actually land in any result?"
+// Computed from the returned hits (NOT a corpus count), honestly labeled, so
+// the user can see at a glance that e.g. "indemnification" appeared in zero
+// results even though 5 hits came back. Answers the user's "am I getting what
+// I put in?" directly.
+// ---------------------------------------------------------------------------
+
+function QueryTermCoverage({
+  query,
+  hits,
+}: {
+  query: string;
+  hits: { snippet: string }[];
+}) {
+  const terms = Array.from(
+    new Set(
+      query
+        .toLowerCase()
+        .split(/[\s,.;:()[\]{}"'`]+/)
+        .filter((t) => t.length >= 3),
+    ),
+  );
+  if (terms.length < 2 || hits.length === 0) return null;
+
+  const haystacks = hits.map((h) => (h.snippet ?? "").toLowerCase());
+  const coverage = terms.map((t) => ({
+    term: t,
+    count: haystacks.filter((s) => s.includes(t)).length,
+  }));
+  const missing = coverage.filter((c) => c.count === 0);
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+      <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
+        Terms in results
+      </span>
+      {coverage.map((c) => (
+        <Badge
+          key={c.term}
+          variant={c.count === 0 ? "warning" : "secondary"}
+          className="text-[10px] px-1.5 py-0 font-normal"
+          title={
+            c.count === 0
+              ? `"${c.term}" did not appear in any returned result — these hits matched on the other terms or on meaning, not this word.`
+              : `"${c.term}" appears in ${c.count} of ${hits.length} results.`
+          }
+        >
+          {c.term} {c.count === 0 ? "✕ 0" : c.count}
+        </Badge>
+      ))}
+      {missing.length > 0 && (
+        <span className="text-muted-foreground/80">
+          · {missing.length} term{missing.length === 1 ? "" : "s"} matched
+          nothing here
+        </span>
+      )}
+    </div>
+  );
+}
+
 function SearchTab({ scope }: { scope: Scope }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -1038,6 +1099,7 @@ function SearchTab({ scope }: { scope: Scope }) {
                 {response.reranker_model &&
                   ` · reranked by ${response.reranker_model}`}
               </div>
+              <QueryTermCoverage query={response.query} hits={response.hits} />
               {response.hits.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
                   No hits for{" "}
