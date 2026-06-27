@@ -40,10 +40,37 @@ export default function ScannerHealthPage() {
     }
   };
 
+  // Live status poll — but only while this admin tab is actually visible.
+  // The old version polled the (agent-saturated) Python backend's
+  // /scheduler/status every 10s forever, including on a backgrounded or
+  // forgotten tab. Gate on document visibility: poll at 10s while watched,
+  // stop entirely when hidden, and do one immediate refresh on re-focus so
+  // the page is current the instant the admin looks back. (No Realtime path
+  // exists — the scanner status is ephemeral aidream runtime state, not a
+  // DB row — so a visibility-bounded poll is the right primitive here.)
   useEffect(() => {
-    void load();
-    const id = setInterval(() => void load(), 10000);
-    return () => clearInterval(id);
+    let id: ReturnType<typeof setInterval> | null = null;
+    const stop = () => {
+      if (id) {
+        clearInterval(id);
+        id = null;
+      }
+    };
+    const start = () => {
+      if (id) return;
+      void load();
+      id = setInterval(() => void load(), 10000);
+    };
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else start();
+    };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   return (
