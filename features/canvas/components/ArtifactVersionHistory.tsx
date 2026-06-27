@@ -13,9 +13,16 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { History, RotateCcw, Loader2, FileClock } from "lucide-react";
+import {
+  History,
+  RotateCcw,
+  Loader2,
+  FileClock,
+  GitCompareArrows,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   Popover,
   PopoverContent,
@@ -100,6 +107,8 @@ export function ArtifactVersionHistory({
   );
 
   const selected = rows?.find((r) => r.id === selectedId) ?? null;
+  const current = rows?.[0] ?? null;
+  const openDiff = useOpenDiffViewerWindow();
 
   return (
     <Popover
@@ -194,11 +203,35 @@ export function ArtifactVersionHistory({
 
             {selected && (
               <div className="border-t border-border">
-                <div className="px-3 pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {selected.version === 1 ||
-                  selected.parent_canvas_id === null
-                    ? "Originally streamed"
-                    : `Version ${selected.version}`}
+                <div className="flex items-center justify-between px-3 pt-2">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {selected.version === 1 ||
+                    selected.parent_canvas_id === null
+                      ? "Originally streamed"
+                      : `Version ${selected.version}`}
+                  </span>
+                  {current && selected.id !== current.id && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openDiff({
+                          original: versionText(selected),
+                          modified: versionText(current),
+                          originalLabel: `v${selected.version}`,
+                          modifiedLabel: `Current (v${current.version})`,
+                          title: `${selected.title ?? "Artifact"} — compare`,
+                          engine: "auto",
+                          language: selected.type,
+                          defaultView: "split",
+                        })
+                      }
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-background hover:text-foreground"
+                      title="Compare this version with the current one"
+                    >
+                      <GitCompareArrows className="h-3 w-3" />
+                      Compare with current
+                    </button>
+                  )}
                 </div>
                 <pre className="max-h-40 overflow-auto whitespace-pre-wrap px-3 pb-3 pt-1 text-[11px] leading-relaxed text-foreground/80">
                   {versionText(selected).slice(0, 4000)}

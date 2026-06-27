@@ -9,8 +9,9 @@ import { ContextValuePreview } from './ContextValuePreview';
 import { useContextItem, useContextVersionHistory, useCreateContextValue } from '../hooks/useContextItems';
 import type { ContextItemValue, ContextValueFormData } from '../types';
 import type { ScopeState } from '../hooks/useContextScope';
-import { AlertTriangle, RotateCcw, User, Component } from 'lucide-react';
+import { AlertTriangle, RotateCcw, User, Component, GitCompareArrows } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOpenDiffViewerWindow } from '@/features/overlays/openers/diffViewerWindow';
 
 type Props = {
   itemId: string;
@@ -56,6 +57,20 @@ export function ContextVersionHistory({ itemId, scope }: Props) {
 
   const active = selectedVersion ?? versions[0];
   const isCurrent = active.is_current;
+  const currentVersion = versions.find((v) => v.is_current) ?? versions[0];
+
+  const openDiff = useOpenDiffViewerWindow();
+  const handleCompareWithCurrent = () => {
+    openDiff({
+      original: active.value_text ?? '',
+      modified: currentVersion.value_text ?? '',
+      originalLabel: `v${active.version}`,
+      modifiedLabel: `Current (v${currentVersion.version})`,
+      title: `${item.display_name} — compare`,
+      engine: 'light',
+      defaultView: 'split',
+    });
+  };
 
   const handleRestore = () => {
     createValue.mutate({
@@ -142,6 +157,14 @@ export function ContextVersionHistory({ itemId, scope }: Props) {
                     <AlertTriangle className="h-3 w-3" />
                     <span className="text-[10px] font-medium">Historical version — not current</span>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs gap-1 h-7"
+                    onClick={handleCompareWithCurrent}
+                  >
+                    <GitCompareArrows className="h-3 w-3" /> Compare with current
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
