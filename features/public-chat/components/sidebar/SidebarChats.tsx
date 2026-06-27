@@ -588,8 +588,33 @@ export function SidebarChats({
           // Only refresh if it's a change to the current user's conversations
           // The RLS policy ensures they only see their own, but we still check
           if (payload.eventType === "INSERT") {
-            // New conversation created — reload to get it
-            fetchHistory();
+            // New conversation — prepend the row we just received instead of
+            // re-pulling the entire 100-item history over the network. The
+            // realtime payload already carries every column we render, and the
+            // local `conversation-created` event usually beat us here, so we
+            // dedup by id (matching the sidebarEvents listener below).
+            const row = payload.new as {
+              id: string;
+              title?: string | null;
+              status?: string | null;
+              message_count?: number | null;
+              created_at?: string | null;
+              updated_at?: string | null;
+            };
+            setHistory((prev) => {
+              if (prev.some((h) => h.id === row.id)) return prev;
+              return [
+                {
+                  id: row.id,
+                  title: row.title || "New chat",
+                  status: (row.status || "active") as ConversationItem["status"],
+                  message_count: row.message_count ?? 0,
+                  created_at: row.created_at || new Date().toISOString(),
+                  updated_at: row.updated_at || new Date().toISOString(),
+                },
+                ...prev,
+              ];
+            });
           } else if (payload.eventType === "UPDATE") {
             // Title or status changed — update the item in the list
             setHistory((prev) =>
