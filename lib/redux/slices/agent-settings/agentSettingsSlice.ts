@@ -107,7 +107,9 @@ export const fetchAvailableTools = createAsyncThunk(
 
 /**
  * Fetch an agent's settings from Supabase and initialize the entry.
- * Determines the table from `source` ('prompt' → prompts, 'builtin' → prompt_builtins).
+ * Determines the table from `source`:
+ *   'builtin' → agent.definition (agent schema; prompt_builtins migrated 1:1, same UUIDs)
+ *   'prompt'  → prompts (public schema)
  */
 export const loadAgentSettings = createAsyncThunk(
   "agentSettings/loadAgentSettings",
@@ -121,16 +123,37 @@ export const loadAgentSettings = createAsyncThunk(
   ) => {
     try {
       const supabase = createClient();
-      const table = source === "builtin" ? "prompt_builtins" : "prompts";
 
-      const { data, error } = await supabase
-        .from(table)
-        .select("id, settings, variable_defaults")
-        .eq("id", agentId)
-        .single();
+      let data: { id: string; settings: unknown; variable_defaults: unknown } | null = null;
+      let error: { message: string } | null = null;
+
+      if (source === "builtin") {
+        // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs.
+        // agent.definition uses `variable_definitions` instead of `variable_defaults`.
+        const result = await supabase
+          .schema("agent")
+          .from("definition")
+          .select("id, settings, variable_definitions")
+          .eq("id", agentId)
+          .single();
+        error = result.error;
+        data = result.data ? {
+          id: result.data.id,
+          settings: result.data.settings,
+          variable_defaults: result.data.variable_definitions,
+        } : null;
+      } else {
+        const result = await supabase
+          .from("prompts")
+          .select("id, settings, variable_defaults")
+          .eq("id", agentId)
+          .single();
+        error = result.error;
+        data = result.data;
+      }
 
       if (error) throw error;
-      if (!data) throw new Error(`Agent ${agentId} not found in ${table}`);
+      if (!data) throw new Error(`Agent ${agentId} not found (source: ${source})`);
 
       const rawSettings = data.settings as AgentSettings;
       // `variable_defaults` is a JSONB column (typed `Json | null` by Supabase).
@@ -297,20 +320,37 @@ export const saveAgentSettings = createAsyncThunk(
 
     try {
       const supabase = createClient();
-      const table = entry.source === "builtin" ? "prompt_builtins" : "prompts";
 
       // In builder: effective settings = defaults (overrides are always empty in builder)
       const settingsToSave = entry.defaults;
       const now = new Date().toISOString();
 
-      const { error } = await supabase
-        .from(table)
-        .update({
-          settings: settingsToSave as unknown as Json,
-          variable_defaults: entry.variable_defaults as unknown as Json[],
-          updated_at: now,
-        })
-        .eq("id", agentId);
+      let error: { message: string } | null = null;
+
+      if (entry.source === "builtin") {
+        // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs.
+        // agent.definition uses `variable_definitions` instead of `variable_defaults`.
+        const result = await supabase
+          .schema("agent")
+          .from("definition")
+          .update({
+            settings: settingsToSave as unknown as Json,
+            variable_definitions: entry.variable_defaults as unknown as Json,
+            updated_at: now,
+          })
+          .eq("id", agentId);
+        error = result.error;
+      } else {
+        const result = await supabase
+          .from("prompts")
+          .update({
+            settings: settingsToSave as unknown as Json,
+            variable_defaults: entry.variable_defaults as unknown as Json[],
+            updated_at: now,
+          })
+          .eq("id", agentId);
+        error = result.error;
+      }
 
       if (error) throw error;
 

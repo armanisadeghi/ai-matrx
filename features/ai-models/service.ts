@@ -94,9 +94,12 @@ export const aiModelService = {
           .from("prompts")
           .select("id, name, model_id")
           .or(`model_id.eq.${modelId},settings->>model_id.eq.${modelId}`),
+        // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
         supabase
-          .from("prompt_builtins")
-          .select("id, name, source_prompt_id, settings")
+          .schema("agent")
+          .from("definition")
+          .select("id, name, source_agent_id, settings")
+          .eq("agent_type", "builtin")
           .or(`model_id.eq.${modelId},settings->>model_id.eq.${modelId}`),
         supabase
           .schema("agent")
@@ -128,8 +131,8 @@ export const aiModelService = {
     const promptBuiltins = (builtinsResult.data ?? []).map((b) => ({
       id: b.id,
       name: (b as { name?: string }).name ?? b.id,
-      table: "prompt_builtins" as const,
-      source_prompt_id: b.source_prompt_id,
+      table: "agent.definition" as const,
+      source_prompt_id: (b as { source_agent_id?: string | null }).source_agent_id ?? null,
     }));
 
     const agents = (agentsResult.data ?? []).map((a) => ({
@@ -186,10 +189,12 @@ export const aiModelService = {
     newId: string,
     newSettings?: PromptSettings,
   ): Promise<number> {
-    // Fetch all rows where either the column or settings->model_id matches
+    // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
     const { data: rows, error: fetchErr } = await supabase
-      .from("prompt_builtins")
+      .schema("agent")
+      .from("definition")
       .select("id, model_id, settings")
+      .eq("agent_type", "builtin")
       .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`);
     if (fetchErr) throw fetchErr;
     if (!rows || rows.length === 0) return 0;
@@ -205,7 +210,7 @@ export const aiModelService = {
           : { model_id: newId };
       const payload: Record<string, unknown> = { settings };
       if (hasColumn) payload.model_id = newId;
-      return supabase.from("prompt_builtins").update(payload).eq("id", row.id);
+      return supabase.schema("agent").from("definition").update(payload).eq("id", row.id);
     });
 
     const results = await Promise.all(updates);

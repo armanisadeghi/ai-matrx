@@ -106,9 +106,12 @@ export async function updateTemplateAgentConfig(
 }
 
 export async function fetchPromptBuiltins(): Promise<PromptBuiltinRef[]> {
+    // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
     const { data, error } = await supabase
-        .from('prompt_builtins')
+        .schema('agent')
+        .from('definition')
         .select('id, name, is_active')
+        .eq('agent_type', 'builtin')
         .eq('is_active', true)
         .order('name', { ascending: true });
 
@@ -117,8 +120,10 @@ export async function fetchPromptBuiltins(): Promise<PromptBuiltinRef[]> {
 }
 
 export async function fetchPromptBuiltinById(id: string): Promise<PromptBuiltinRef | null> {
+    // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
     const { data, error } = await supabase
-        .from('prompt_builtins')
+        .schema('agent')
+        .from('definition')
         .select('id, name, is_active')
         .eq('id', id)
         .single();
@@ -133,8 +138,10 @@ export async function fetchPromptBuiltinById(id: string): Promise<PromptBuiltinR
 export async function resolveBuiltinNames(ids: string[]): Promise<Record<string, string>> {
     if (ids.length === 0) return {};
 
+    // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
     const { data, error } = await supabase
-        .from('prompt_builtins')
+        .schema('agent')
+        .from('definition')
         .select('id, name')
         .in('id', ids);
 

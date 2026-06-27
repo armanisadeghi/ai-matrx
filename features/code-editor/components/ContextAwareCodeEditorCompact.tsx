@@ -141,7 +141,9 @@ export function ContextAwareCodeEditorCompact({
     currentCodeRef.current = code;
   }, [code]);
 
-  // Fetch builtin prompt when modal opens
+  // Fetch agent definition when modal opens.
+  // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs.
+  // agent.definition uses `variable_definitions` instead of `variable_defaults`.
   useEffect(() => {
     if (open && !promptData) {
       setIsLoadingPrompt(true);
@@ -149,40 +151,42 @@ export function ContextAwareCodeEditorCompact({
       (async () => {
         try {
           const { data: prompt, error } = await supabase
-            .from("prompt_builtins")
+            .schema("agent")
+            .from("definition")
             .select("*")
             .eq("id", defaultBuiltinId)
             .single();
 
           if (error || !prompt) {
-            console.error("Failed to fetch builtin prompt:", error?.message);
+            console.error("Failed to fetch agent definition:", error?.message);
             return;
           }
 
           const normalizedData: PromptData = {
             id: prompt.id,
             name: prompt.name,
-            description: prompt.description,
+            description: prompt.description ?? undefined,
             messages: asPromptMessages(prompt.messages),
-            variableDefaults: asPromptVariables(prompt.variable_defaults),
-            settings: prompt.settings || {},
+            // agent.definition uses `variable_definitions` (same shape as old `variable_defaults`)
+            variableDefaults: asPromptVariables(prompt.variable_definitions),
+            settings: (prompt.settings as Record<string, unknown>) || {},
           };
 
-          // Validate that prompt has dynamic_context variable
+          // Validate that agent has dynamic_context variable
           const hasDynamicContext = normalizedData.variableDefaults?.some(
             (v) => v.name === DYNAMIC_CONTEXT_VARIABLE,
           );
 
           if (!hasDynamicContext) {
             console.warn(
-              `⚠️  Prompt "${normalizedData.name}" doesn't have "${DYNAMIC_CONTEXT_VARIABLE}" variable.`,
-              `Context versioning will not work. Please add this variable to the prompt.`,
+              `⚠️  Agent "${normalizedData.name}" doesn't have "${DYNAMIC_CONTEXT_VARIABLE}" variable.`,
+              `Context versioning will not work. Please add this variable to the agent definition.`,
             );
           }
 
           setPromptData(normalizedData);
         } catch (err) {
-          console.error("Error loading builtin prompt:", err);
+          console.error("Error loading agent definition:", err);
         } finally {
           setIsLoadingPrompt(false);
         }

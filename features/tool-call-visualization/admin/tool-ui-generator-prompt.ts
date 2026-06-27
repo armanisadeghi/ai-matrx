@@ -10,7 +10,8 @@
  */
 
 // ---------------------------------------------------------------------------
-// The prompt_builtins row ID for the "Tools Result Component Generator" entry
+// The agent.definition id for the "Tools Result Component Generator" agent
+// (migrated 1:1 from prompt_builtins — same UUID)
 // ---------------------------------------------------------------------------
 export const COMPONENT_GENERATOR_PROMPT_ID =
   "51b0c1d5-84b7-46d8-aec6-2b08f9f49fff";

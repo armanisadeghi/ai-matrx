@@ -267,7 +267,8 @@ export interface AgentSettingsState {
 
 // ── Raw DB Row Shape (for thunk input) ────────────────────────────────────────
 
-/** Shape of a raw Supabase row from `prompts` or `prompt_builtins` */
+/** Shape of a raw Supabase row from `prompts` or `agent.definition` (was `prompt_builtins`).
+ * Note: agent.definition uses `variable_definitions` (mapped to `variable_defaults` at load time). */
 export interface RawAgentDbRow {
   id: string;
   settings: AgentSettings | null;

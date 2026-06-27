@@ -130,12 +130,6 @@ const TABLE_META: Record<string, TableMeta> = {
     category: "AI",
     categoryColor: CATEGORY_COLORS.AI,
   },
-  ai_runs: {
-    label: "AI Runs",
-    icon: Activity,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
   ai_tasks: {
     label: "AI Tasks",
     icon: Activity,

@@ -1095,7 +1095,7 @@ export function callCancelRequest(requestId: string) {
  * Valid `source` values for warm endpoints.
  * Tells the backend exactly which table to query:
  * - `"prompt"` → `prompts` table
- * - `"builtin"` → `prompt_builtins` table
+ * - `"builtin"` → `agent.definition` table (migrated from `prompt_builtins`; same UUIDs)
  * - `"prompt_version"` → `prompt_versions` table
  * - `"builtin_version"` → `prompt_builtin_versions` table
  * - `undefined` → fallback chain (prompts → builtins)

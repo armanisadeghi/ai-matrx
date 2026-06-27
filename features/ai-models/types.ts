@@ -189,6 +189,7 @@ export type AiModelFormData = {
 export type ModelUsageItem = {
   id: string;
   name: string;
+  // "prompt_builtins" migrated to "agent.definition" (agent_type='builtin'); kept in union only for old serialized data
   table: "prompts" | "prompt_builtins" | "agent.definition" | "agent.template";
   source_prompt_id?: string | null;
 };

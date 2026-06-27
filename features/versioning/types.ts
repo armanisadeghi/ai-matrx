@@ -2,7 +2,7 @@
 // VERSIONING SYSTEM — TypeScript Type Definitions
 // ============================================================================
 // Shared types for the snapshot versioning system across prompts,
-// prompt_builtins, and prompt_apps.
+// agent definitions (migrated from prompt_builtins), and prompt_apps.
 // ============================================================================
 
 import type { DbRpcRow } from "@/types/supabase-rpc";

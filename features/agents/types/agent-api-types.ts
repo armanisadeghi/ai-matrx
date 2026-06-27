@@ -485,7 +485,7 @@ export interface ToolResultsResponse {
 /**
  * Agent-defined context slot.
  *
- * Stored in prompts.context_slots / prompt_builtins.context_slots JSONB column.
+ * Stored in prompts.context_slots / agent.definition.context_slots JSONB column.
  * Loaded as part of the agent definition and carried on Agent.context_slots,
  * so sub-agents and tools have access without a second DB lookup.
  *

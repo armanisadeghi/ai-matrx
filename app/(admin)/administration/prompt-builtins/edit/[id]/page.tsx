@@ -18,8 +18,10 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
 
+  // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
   const { data: builtin } = await supabase
-    .from("prompt_builtins")
+    .schema("agent")
+    .from("definition")
     .select("name, description")
     .eq("id", id)
     .single();
@@ -47,9 +49,10 @@ export default async function EditBuiltinPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch builtin, AI models, and tools in parallel
+  // Fetch agent definition, AI models, and tools in parallel.
+  // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs.
   const [builtinResult, aiModels, availableTools] = await Promise.all([
-    supabase.from("prompt_builtins").select("*").eq("id", id).single(),
+    supabase.schema("agent").from("definition").select("*").eq("id", id).single(),
     fetchAIModels(),
     serverToolsService.fetchTools(),
   ]);
@@ -82,7 +85,9 @@ export default async function EditBuiltinPage({
     );
   }
 
-  // Transform builtin data to match PromptBuilder's initialData format
+  // Transform agent definition data to match PromptBuilder's initialData format.
+  // agent.definition uses `variable_definitions` (was `variable_defaults` on prompt_builtins).
+  // `output_format` did not migrate to agent.definition; omit it.
   const initialData = {
     id: data.id,
     name: data.name,
@@ -90,14 +95,13 @@ export default async function EditBuiltinPage({
     updatedAt: data.updated_at ?? undefined,
     description: data.description ?? undefined,
     messages: data.messages,
-    variableDefaults: data.variable_defaults,
+    variableDefaults: data.variable_definitions,
     settings: data.settings,
     tags: data.tags ?? undefined,
     category: data.category ?? undefined,
     isFavorite: data.is_favorite ?? false,
     isArchived: data.is_archived ?? false,
     modelId: data.model_id ?? undefined,
-    outputFormat: data.output_format ?? undefined,
     outputSchema: data.output_schema ?? undefined,
   };
 
