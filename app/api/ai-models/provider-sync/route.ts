@@ -126,7 +126,8 @@ export async function POST(request: NextRequest) {
 
         const supabase = getAdminSupabaseClient();
         const { error: updateErr } = await supabase
-            .from('ai_provider')
+            .schema('ai')
+            .from('provider')
             .update({ provider_models_cache: cache })
             .eq('id', provider_id);
 
@@ -154,7 +155,8 @@ export async function GET(request: NextRequest) {
 
         if (providerId) {
             const { data, error } = await supabase
-                .from('ai_provider')
+                .schema('ai')
+                .from('provider')
                 .select('id, name, provider_models_cache')
                 .eq('id', providerId)
                 .single();
@@ -164,7 +166,8 @@ export async function GET(request: NextRequest) {
 
         // Return all providers with their cache metadata (not full model arrays for performance)
         const { data, error } = await supabase
-            .from('ai_provider')
+            .schema('ai')
+            .from('provider')
             .select('id, name, provider_models_cache')
             .order('name');
         if (error) throw error;

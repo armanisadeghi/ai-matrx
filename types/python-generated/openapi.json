@@ -625,66 +625,6 @@
         }
       }
     },
-    "/ai/apps/{app_id}/warm": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Warm Prompt App",
-        "description": "Pre-load the prompt app's pinned version into the agent cache.\n\nLooks up the app's prompt_version_id and prompt_source_type, then\nwarms the corresponding version row so execution is a cache hit.",
-        "operationId": "warm_prompt_app_ai_apps__app_id__warm_post",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "App Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prompts/builtins": {
-      "get": {
-        "tags": [
-          "Prompts"
-        ],
-        "summary": "Get All Prompt Builtins",
-        "operationId": "get_all_prompt_builtins_prompts_builtins_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
     "/ai-models": {
       "get": {
         "tags": [
@@ -1584,57 +1524,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/CategorizeResponse"
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/apps/{app_id}": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Execute Prompt App",
-        "description": "Execute a prompt app using its pinned prompt version.\n\nResolves the pinned prompt_version_id from the app row, loads the\nversioned agent config, applies variables/overrides, and streams\nthe LLM response.",
-        "operationId": "execute_prompt_app_ai_apps__app_id__post",
-        "parameters": [
-          {
-            "name": "app_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "App Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppExecuteRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           },
@@ -5657,7 +5546,7 @@
           "skills"
         ],
         "summary": "List Skills",
-        "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills associated with that ctx_project via\n    skl_skill_projects (the many-to-many join)",
+        "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills associated with that ctx_project via\n    skill.project (the many-to-many join)",
         "operationId": "list_skills_skills_get",
         "parameters": [
           {
@@ -5900,7 +5789,7 @@
           "skills"
         ],
         "summary": "Delete Category",
-        "description": "Soft-deactivate the category. Skills pointing at it are NOT\ncascaded — they stay with the dangling FK reference (`category_id`\non `skl_definitions` is a SET NULL FK so they become uncategorized\non the DB side when the row is actually deleted; deactivation just\nhides them from the picker).",
+        "description": "Soft-deactivate the category. Skills pointing at it are NOT\ncascaded — they stay with the dangling FK reference (`category_id`\non `skill.definition` is a SET NULL FK so they become uncategorized\non the DB side when the row is actually deleted; deactivation just\nhides them from the picker).",
         "operationId": "delete_category_skills_categories__category_id__delete",
         "parameters": [
           {
@@ -6071,7 +5960,7 @@
           "skills"
         ],
         "summary": "Admin Ingest Filesystem",
-        "description": "Admin-only: walk one or more directories of SKILL.md files and upsert\ninto ``skl_definitions`` with ``is_system=true``. The body hash is\nrecorded so repeat calls leave unchanged skills alone. When the same\n``skill_id`` appears in multiple roots, the last one wins.",
+        "description": "Admin-only: walk one or more directories of SKILL.md files and upsert\ninto ``skill.definition`` with ``is_system=true``. The body hash is\nrecorded so repeat calls leave unchanged skills alone. When the same\n``skill_id`` appears in multiple roots, the last one wins.",
         "operationId": "admin_ingest_filesystem_skills_ingest_post",
         "requestBody": {
           "content": {
@@ -12007,6 +11896,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -25159,52 +25108,14 @@
         }
       }
     },
-    "/prompts": {
-      "get": {
-        "tags": [
-          "Prompts"
-        ],
-        "summary": "Get User Prompts",
-        "operationId": "get_user_prompts_prompts_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prompts/all": {
-      "get": {
-        "tags": [
-          "Prompts"
-        ],
-        "summary": "Get User Prompts And Builtins",
-        "operationId": "get_user_prompts_and_builtins_prompts_all_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
     "/agents": {
       "get": {
         "tags": [
           "Agents"
         ],
-        "summary": "List Agents",
-        "description": "Return all agents available to the authenticated user.\n\nIncludes both user-owned prompts and system builtins. Results are merged\ninto a single flat list sorted by name for easy consumption by IDE clients.",
-        "operationId": "list_agents_agents_get",
+        "summary": "List Agents For User",
+        "description": "Return all agents available to the authenticated user.",
+        "operationId": "list_agents_for_user_agents_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -41587,84 +41498,6 @@
         "type": "object",
         "title": "AnnotationUpdateBody"
       },
-      "AppExecuteRequest": {
-        "properties": {
-          "user_input": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Input"
-          },
-          "variables": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Variables"
-          },
-          "config_overrides": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LLMParams"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "stream": {
-            "type": "boolean",
-            "title": "Stream",
-            "default": true
-          },
-          "debug": {
-            "type": "boolean",
-            "title": "Debug",
-            "default": false
-          },
-          "conversation_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Conversation Id"
-          },
-          "is_new": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is New"
-          }
-        },
-        "type": "object",
-        "title": "AppExecuteRequest"
-      },
       "AppLogEntry": {
         "properties": {
           "id": {
@@ -49787,6 +49620,17 @@
             ],
             "title": "User Id"
           },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
           "title": {
             "anyOf": [
               {
@@ -49802,7 +49646,7 @@
         "additionalProperties": true,
         "type": "object",
         "title": "ConversationRecord",
-        "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible."
+        "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible.\n``user_id`` mirrors ``created_by`` for clients not yet on the cutover."
       },
       "CopyFileRequest": {
         "properties": {
@@ -52540,6 +52384,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -77038,7 +76937,7 @@
             },
             "type": "array",
             "title": "Project Ids",
-            "description": "ctx_projects that this skill is associated with via skl_skill_projects (many-to-many)."
+            "description": "ctx_projects that this skill is associated with via skill.project (many-to-many)."
           }
         },
         "type": "object",
@@ -77050,7 +76949,7 @@
           "skill_type"
         ],
         "title": "SkillRow",
-        "description": "Wire shape for skill responses. Mirrors the active fields on\nskl_definitions that the agent / FE consumes."
+        "description": "Wire shape for skill responses. Mirrors the active fields on\nskill.definition rows that the agent / FE consumes."
       },
       "SkillsList": {
         "properties": {
@@ -80815,7 +80714,7 @@
         "additionalProperties": true,
         "type": "object",
         "title": "ToolRecord",
-        "description": "Tool definition row as returned by ``ToolDef.to_dict()``.\n\nTool rows carry provider-specific JSON-Schema fragments\n(``input_schema``, ``output_schema``) and free-form metadata, so most\nfields are typed as ``JsonValue``. Extra keys are tolerated because\nthe generated manager's ``to_dict`` can evolve independently.\n\n``source_kind`` discriminates row origin: ``native`` /\n``mcp_discovered`` / ``admin_authored`` / ``agent_authored``."
+        "description": "Tool definition row as returned by ``ToolDefinition.to_dict()``.\n\nTool rows carry provider-specific JSON-Schema fragments\n(``input_schema``, ``output_schema``) and free-form metadata, so most\nfields are typed as ``JsonValue``. Extra keys are tolerated because\nthe generated manager's ``to_dict`` can evolve independently.\n\n``source_kind`` discriminates row origin: ``native`` /\n``mcp_discovered`` / ``admin_authored`` / ``agent_authored``."
       },
       "ToolResultsRequest": {
         "properties": {

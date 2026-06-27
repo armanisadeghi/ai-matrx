@@ -62,7 +62,7 @@ export type ContextScope = {
 
 // DB Row is canonical — ContextItem = full ctx_context_items row + optional join fields
 export type ContextItem =
-  Database["public"]["Tables"]["ctx_context_items"]["Row"] & {
+  Database["context"]["Tables"]["context_items"]["Row"] & {
     // From current ctx_context_item_values row (when manifest merge runs)
     current_text_value?: string | null;
     value_last_updated?: string | null;
@@ -76,17 +76,16 @@ export type ContextItem =
 export type ContextItemManifest = ContextItem;
 
 export type ContextItemValue =
-  Database["public"]["Tables"]["ctx_context_item_values"]["Row"];
+  Database["context"]["Tables"]["context_item_values"]["Row"];
 
-export type ContextTemplate =
-  Database["public"]["Tables"]["ctx_templates"]["Row"];
+export type ContextTemplate = Database["context"]["Tables"]["templates"]["Row"];
 
 // Template context item (items defined within a template)
 export type ContextTemplateItem =
-  Database["public"]["Tables"]["ctx_template_context_items"]["Row"];
+  Database["context"]["Tables"]["template_context_items"]["Row"];
 
 export type ContextAccessLogEntry =
-  Database["public"]["Tables"]["ctx_context_access_log"]["Row"];
+  Database["context"]["Tables"]["context_access_log"]["Row"];
 
 export type ContextAccessSummary = {
   context_item_id: string;

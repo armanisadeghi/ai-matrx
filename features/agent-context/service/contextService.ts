@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { contextDb } from "@/utils/supabase/contextDb";
 import type { Database } from "@/types/database.types";
 import type {
   ContextItem,
@@ -18,24 +19,24 @@ import type {
 import { ATTENTION_STATUSES } from "../constants";
 
 type CtxContextItemsInsert =
-  Database["public"]["Tables"]["ctx_context_items"]["Insert"];
+  Database["context"]["Tables"]["context_items"]["Insert"];
 type CtxScopeTypesInsert =
-  Database["public"]["Tables"]["ctx_scope_types"]["Insert"];
+  Database["context"]["Tables"]["scope_types"]["Insert"];
 
 export const contextService = {
   // ─── Manifest: items for a scope instance (with current values) ────
   // Gets all context items defined for this scope's type, with current
   // values for the given scope instance merged in.
   async fetchManifest(scopeId: string): Promise<ContextItemManifest[]> {
-    const { data: scope, error: scopeErr } = await supabase
-      .from("ctx_scopes")
+    const { data: scope, error: scopeErr } = await contextDb(supabase)
+      .from("scopes")
       .select("scope_type_id")
       .eq("id", scopeId)
       .single();
     if (scopeErr) throw scopeErr;
 
-    const { data: items, error: itemsErr } = await supabase
-      .from("ctx_context_items")
+    const { data: items, error: itemsErr } = await contextDb(supabase)
+      .from("context_items")
       .select("*")
       .eq("scope_type_id", scope.scope_type_id)
       .eq("is_active", true)
@@ -46,8 +47,8 @@ export const contextService = {
     if (!items || items.length === 0) return [];
 
     const itemIds = items.map((i) => i.id);
-    const { data: values, error: valuesErr } = await supabase
-      .from("ctx_context_item_values")
+    const { data: values, error: valuesErr } = await contextDb(supabase)
+      .from("context_item_values")
       .select("context_item_id, value_text, created_at")
       .eq("scope_id", scopeId)
       .eq("is_current", true)
@@ -67,8 +68,8 @@ export const contextService = {
   async fetchManifestByScopeType(
     scopeTypeId: string,
   ): Promise<ContextItemManifest[]> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .select("*")
       .eq("scope_type_id", scopeTypeId)
       .eq("is_active", true)
@@ -84,8 +85,8 @@ export const contextService = {
 
   // ─── Full item detail ─────────────────────────────────────────────
   async fetchItem(itemId: string): Promise<ContextItem> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .select("*")
       .eq("id", itemId)
       .single();
@@ -98,8 +99,8 @@ export const contextService = {
     itemId: string,
     scopeId: string,
   ): Promise<ContextItemValue | null> {
-    const { data, error } = await supabase
-      .from("ctx_context_item_values")
+    const { data, error } = await contextDb(supabase)
+      .from("context_item_values")
       .select("*")
       .eq("context_item_id", itemId)
       .eq("scope_id", scopeId)
@@ -114,8 +115,8 @@ export const contextService = {
     itemId: string,
     scopeId: string,
   ): Promise<ContextItemValue[]> {
-    const { data, error } = await supabase
-      .from("ctx_context_item_values")
+    const { data, error } = await contextDb(supabase)
+      .from("context_item_values")
       .select("*")
       .eq("context_item_id", itemId)
       .eq("scope_id", scopeId)
@@ -133,8 +134,8 @@ export const contextService = {
       ...formData,
       scope_type_id: scopeTypeId,
     };
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .insert(insertPayload)
       .select()
       .single();
@@ -147,8 +148,8 @@ export const contextService = {
     itemId: string,
     updates: Partial<ContextItemFormData>,
   ): Promise<ContextItem> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .update(updates)
       .eq("id", itemId)
       .select()
@@ -163,8 +164,8 @@ export const contextService = {
     status: ContextItemStatus,
     statusNote?: string,
   ): Promise<ContextItem> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .update({
         status,
         status_note: statusNote ?? null,
@@ -184,8 +185,8 @@ export const contextService = {
     valueData: ContextValueFormData,
     sourceType: Database["public"]["Enums"]["context_source_type"] = "manual",
   ): Promise<ContextItemValue> {
-    const { data, error } = await supabase
-      .from("ctx_context_item_values")
+    const { data, error } = await contextDb(supabase)
+      .from("context_item_values")
       .insert({
         context_item_id: itemId,
         scope_id: scopeId,
@@ -200,8 +201,8 @@ export const contextService = {
 
   // ─── Archive / soft delete ────────────────────────────────────────
   async archiveItem(itemId: string): Promise<void> {
-    const { error } = await supabase
-      .from("ctx_context_items")
+    const { error } = await contextDb(supabase)
+      .from("context_items")
       .update({ status: "archived", is_active: false })
       .eq("id", itemId);
     if (error) throw error;
@@ -225,8 +226,8 @@ export const contextService = {
   async fetchCategoryHealth(
     scopeTypeId: string,
   ): Promise<ContextCategoryHealth[]> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .select("category, status")
       .eq("scope_type_id", scopeTypeId)
       .eq("is_active", true);
@@ -287,8 +288,8 @@ export const contextService = {
 
   // ─── Recent access log ────────────────────────────────────────────
   async fetchRecentAccessLog(limit = 10): Promise<ContextAccessLogEntry[]> {
-    const { data, error } = await supabase
-      .from("ctx_context_access_log")
+    const { data, error } = await contextDb(supabase)
+      .from("context_access_log")
       .select("*")
       .order("accessed_at", { ascending: false })
       .limit(limit);
@@ -300,8 +301,8 @@ export const contextService = {
   async fetchAccessSummary(
     itemId: string,
   ): Promise<ContextAccessSummary | null> {
-    const { data, error } = await supabase
-      .from("ctx_context_access_log")
+    const { data, error } = await contextDb(supabase)
+      .from("context_access_log")
       .select("id, was_useful, accessed_at")
       .eq("context_item_id", itemId);
     if (error) throw error;
@@ -319,8 +320,8 @@ export const contextService = {
 
   // ─── Templates ────────────────────────────────────────────────────
   async fetchTemplates(): Promise<ContextTemplate[]> {
-    const { data, error } = await supabase
-      .from("ctx_templates")
+    const { data, error } = await contextDb(supabase)
+      .from("templates")
       .select("*")
       .eq("is_active", true)
       .order("category", { ascending: true })
@@ -330,8 +331,8 @@ export const contextService = {
   },
 
   async fetchTemplatesByCategory(category: string): Promise<ContextTemplate[]> {
-    const { data, error } = await supabase
-      .from("ctx_templates")
+    const { data, error } = await contextDb(supabase)
+      .from("templates")
       .select("*")
       .eq("category", category)
       .eq("is_active", true)
@@ -350,8 +351,8 @@ export const contextService = {
     orgId: string,
   ): Promise<{ createdScopeTypes: number; createdItems: number }> {
     // Step 1: get template scope types
-    const { data: templateScopeTypes, error: tErr } = await supabase
-      .from("ctx_template_scope_types")
+    const { data: templateScopeTypes, error: tErr } = await contextDb(supabase)
+      .from("template_scope_types")
       .select("*")
       .eq("template_id", templateId)
       .order("sort_order", { ascending: true });
@@ -373,16 +374,16 @@ export const contextService = {
         sort_order: tst.sort_order,
         parent_type_id: null, // hierarchy wiring done separately if needed
       };
-      const { data: newScopeType, error: stErr } = await supabase
-        .from("ctx_scope_types")
+      const { data: newScopeType, error: stErr } = await contextDb(supabase)
+        .from("scope_types")
         .insert(scopeTypePayload)
         .select("id")
         .single();
       if (stErr) throw stErr;
 
       // Step 3: get template context items for this scope type
-      const { data: templateItems, error: tiErr } = await supabase
-        .from("ctx_template_context_items")
+      const { data: templateItems, error: tiErr } = await contextDb(supabase)
+        .from("template_context_items")
         .select("*")
         .eq("template_scope_type_id", tst.id)
         .order("sort_order", { ascending: true });
@@ -400,8 +401,8 @@ export const contextService = {
         status: "stub" as const,
       }));
 
-      const { error: itemsErr } = await supabase
-        .from("ctx_context_items")
+      const { error: itemsErr } = await contextDb(supabase)
+        .from("context_items")
         .insert(itemRows);
       if (itemsErr) throw itemsErr;
 
@@ -416,8 +417,8 @@ export const contextService = {
 
   // ─── Existing keys for a scope type (dedup before create) ─────────
   async fetchExistingKeys(scopeTypeId: string): Promise<Set<string>> {
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .select("key")
       .eq("scope_type_id", scopeTypeId);
     if (error) throw error;
@@ -437,8 +438,8 @@ export const contextService = {
       ...rest
     } = original;
 
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .insert({
         ...rest,
         key: `${rest.key}_copy`,
@@ -456,8 +457,8 @@ export const contextService = {
     days = 30,
   ): Promise<{ date: string; count: number }[]> {
     const since = new Date(Date.now() - days * 86400000).toISOString();
-    const { data, error } = await supabase
-      .from("ctx_context_access_log")
+    const { data, error } = await contextDb(supabase)
+      .from("context_access_log")
       .select("accessed_at")
       .gte("accessed_at", since)
       .order("accessed_at", { ascending: true });
@@ -480,8 +481,8 @@ export const contextService = {
   ): Promise<(ContextItemManifest & ContextAccessSummary)[]> {
     const [items, logs] = await Promise.all([
       this.fetchManifest(scopeId),
-      supabase
-        .from("ctx_context_access_log")
+      contextDb(supabase)
+        .from("context_access_log")
         .select("context_item_id, was_useful, accessed_at")
         .then(({ data, error }) => {
           if (error) throw error;

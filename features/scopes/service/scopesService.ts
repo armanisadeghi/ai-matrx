@@ -35,6 +35,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
+import { contextDb } from "@/utils/supabase/contextDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
@@ -144,8 +145,8 @@ export const scopesService = {
           }>
         >();
 
-      const scopeTypesP = supabase
-        .from("ctx_scope_types")
+      const scopeTypesP = contextDb(supabase)
+        .from("scope_types")
         .select(
           `id, organization_id, label_singular, label_plural, icon, color,
            max_assignments_per_entity, sort_order, parent_type_id,
@@ -153,8 +154,8 @@ export const scopesService = {
         )
         .order("sort_order", { ascending: true });
 
-      const scopesP = supabase
-        .from("ctx_scopes")
+      const scopesP = contextDb(supabase)
+        .from("scopes")
         .select(
           `id, scope_type_id, organization_id, name, description,
            parent_scope_id, settings`,
@@ -368,8 +369,8 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ items: ContextItemRow[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase
-        .from("ctx_context_items")
+      const { data, error } = await contextDb(supabase)
+        .from("context_items")
         .select("*")
         .eq("scope_type_id", scopeTypeId)
         .eq("is_active", true);
@@ -385,8 +386,8 @@ export const scopesService = {
   ): Promise<ScopesRpcResult<{ values: ContextItemValue[] }>> {
     try {
       requireUserId();
-      const { data, error } = await supabase
-        .from("ctx_context_item_values")
+      const { data, error } = await contextDb(supabase)
+        .from("context_item_values")
         .select(
           `context_item_id, id, version, is_current,
            value_text, value_number, value_boolean, value_date, value_json,
@@ -421,16 +422,16 @@ export const scopesService = {
     try {
       requireUserId();
 
-      const { data: scope, error: scopeErr } = await supabase
-        .from("ctx_scopes")
+      const { data: scope, error: scopeErr } = await contextDb(supabase)
+        .from("scopes")
         .select("id, slug, name, description, scope_type_id, organization_id")
         .eq("id", args.scopeId)
         .single();
       if (scopeErr) return err(...mapPgErrorPair(scopeErr));
       if (!scope) return err("not_found", "Scope not found");
 
-      const scopeTypeP = supabase
-        .from("ctx_scope_types")
+      const scopeTypeP = contextDb(supabase)
+        .from("scope_types")
         .select("id, slug, label_singular, label_plural, icon, color")
         .eq("id", scope.scope_type_id)
         .single();
@@ -441,15 +442,15 @@ export const scopesService = {
         .eq("id", scope.organization_id)
         .single();
 
-      const itemsP = supabase
-        .from("ctx_context_items")
+      const itemsP = contextDb(supabase)
+        .from("context_items")
         .select("id, slug, key, display_name, value_type, sort_order")
         .eq("scope_type_id", scope.scope_type_id)
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
-      const valuesP = supabase
-        .from("ctx_context_item_values")
+      const valuesP = contextDb(supabase)
+        .from("context_item_values")
         .select(
           "context_item_id, value_text, value_number, value_boolean, value_json, source_type, version, created_at",
         )
@@ -615,11 +616,11 @@ export const scopesService = {
     activeOnly = true,
   ): Promise<ScopesRpcResult<{ templates: ContextTemplate[] }>> {
     try {
-      const query = supabase
-        .from("ctx_templates")
+      const query = contextDb(supabase)
+        .from("templates")
         .select(
           `id, key, name, description, category, icon, is_active, sort_order,
-           ctx_template_scope_types ( id, ctx_template_context_items ( id ) )`,
+           template_scope_types ( id, template_context_items ( id ) )`,
         )
         .order("sort_order", { ascending: true });
 
@@ -629,13 +630,13 @@ export const scopesService = {
       if (error) return err(...mapPgErrorPair(error));
 
       const templates: ContextTemplate[] = (data ?? []).map((row) => {
-        const scopeTypes = (row.ctx_template_scope_types ?? []) as Array<{
+        const scopeTypes = (row.template_scope_types ?? []) as Array<{
           id: string;
-          ctx_template_context_items: Array<{ id: string }>;
+          template_context_items: Array<{ id: string }>;
         }>;
         const scope_type_count = scopeTypes.length;
         const context_item_count = scopeTypes.reduce(
-          (acc, st) => acc + (st.ctx_template_context_items?.length ?? 0),
+          (acc, st) => acc + (st.template_context_items?.length ?? 0),
           0,
         );
         return {
@@ -845,8 +846,8 @@ export const scopesService = {
       if (!table || scopeIds.length === 0) return ok({ organization_id: null });
 
       // The org of the first assigned scope (scopes carry organization_id).
-      const { data: scopeRow, error: sErr } = await supabase
-        .from("ctx_scopes")
+      const { data: scopeRow, error: sErr } = await contextDb(supabase)
+        .from("scopes")
         .select("organization_id")
         .eq("id", scopeIds[0])
         .maybeSingle();
@@ -990,10 +991,10 @@ async function fetchScopeDisplays(
   scopeIds: string[] | null,
 ): Promise<ScopesRpcResult<ScopeWithType[]>> {
   if (scopeIds && scopeIds.length === 0) return ok([]);
-  const base = supabase
-    .from("ctx_scopes")
+  const base = contextDb(supabase)
+    .from("scopes")
     .select(
-      "id, name, scope_type:ctx_scope_types(id, label_singular, label_plural, icon, color)",
+      "id, name, scope_type:scope_types(id, label_singular, label_plural, icon, color)",
     );
   const { data, error } = scopeIds ? await base.in("id", scopeIds) : await base;
   if (error) return err(...mapPgErrorPair(error));

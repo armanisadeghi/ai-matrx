@@ -22,13 +22,14 @@ import { Button } from "@/components/ui/button";
 import type { Database } from "@/types/database.types";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 
-type AiModelRow = Database["public"]["Tables"]["ai_model"]["Row"];
+type AiModelRow = Database["ai"]["Tables"]["model"]["Row"];
 
 async function fetchActiveAiModels(
   supabase: ReturnType<typeof createClient>,
 ): Promise<AiModelRow[]> {
   const { data, error } = await supabase
-    .from("ai_model")
+    .schema("ai")
+    .from("model")
     .select("*")
     .or("is_deprecated.is.null,is_deprecated.eq.false")
     .order("name");

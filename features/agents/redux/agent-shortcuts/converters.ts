@@ -44,15 +44,9 @@ import {
 // Supabase row types
 // ---------------------------------------------------------------------------
 
-type ShortcutRow = Database["public"]["Tables"]["agx_shortcut"]["Row"];
-type ShortcutInsert = Omit<
-  Database["public"]["Tables"]["agx_shortcut"]["Insert"],
-  "id" | "created_at" | "updated_at"
->;
-type ShortcutUpdate = Omit<
-  Database["public"]["Tables"]["agx_shortcut"]["Update"],
-  "id" | "created_at" | "updated_at"
->;
+type ShortcutRow = Database["agent"]["Tables"]["shortcut"]["Row"];
+type ShortcutInsert = Database["agent"]["Tables"]["shortcut"]["Insert"];
+type ShortcutUpdate = Database["agent"]["Tables"]["shortcut"]["Update"];
 
 export type { ShortcutInsert, ShortcutUpdate };
 
@@ -194,7 +188,9 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
       DEFAULT_AGENT_EXECUTION_CONFIG.hideToolResults,
     ),
     responseDensity: (rString(loose, "response_density") ??
-      DEFAULT_AGENT_EXECUTION_CONFIG.responseDensity) as "comfortable" | "compact",
+      DEFAULT_AGENT_EXECUTION_CONFIG.responseDensity) as
+      | "comfortable"
+      | "compact",
 
     preExecutionMessage: rString(loose, "pre_execution_message"),
     bypassGateSeconds: rNumber(

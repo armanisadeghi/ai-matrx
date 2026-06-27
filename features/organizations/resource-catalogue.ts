@@ -229,9 +229,13 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     role: "utility",
     icon: Sparkles,
     description: "Reusable capabilities agents can call.",
-    table: "skl_definitions",
+    // Physical table moved to `skill.definition` in the 2026 schema reorg;
+    // queried via `.schema("skill")`. `shareKey` is the canonical permissions
+    // key (resourceType `'skill'`) the share registry is keyed by.
+    table: "definition",
+    schemaName: "skill",
     hasOrgColumn: true,
-    shareKey: "skl_definitions",
+    shareKey: "skill",
     titleColumn: "label",
     orgRoute: null,
     scopeable: true,

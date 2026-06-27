@@ -289,8 +289,8 @@ export async function getSurfaceUsage(
       .eq("surface_name", surfaceName)
       .maybeSingle(),
     c
-      .from("agx_agent_surface")
-      .select("agent:agx_agent(id, name)")
+      .schema("agent").from("agent_surface")
+      .select("agent:definition(id, name)")
       .eq("surface_name", surfaceName),
     c
       .schema("tool").from("ui")

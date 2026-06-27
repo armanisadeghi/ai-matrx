@@ -234,7 +234,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-emerald-500/20",
     },
     open: { kind: "task" },
-    detailSource: { table: "tasks", schemaName: "workspace", titleField: "title" },
+    detailSource: {
+      table: "tasks",
+      schemaName: "workspace",
+      titleField: "title",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -264,7 +268,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-blue-500/20",
     },
     open: { kind: "project" },
-    detailSource: { table: "projects", schemaName: "workspace", titleField: "name" },
+    detailSource: {
+      table: "projects",
+      schemaName: "workspace",
+      titleField: "name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -291,17 +299,22 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-fuchsia-500/20",
     },
     open: { kind: "scope_type" },
-    detailSource: { table: "ctx_scope_types", titleField: "label_singular" },
+    detailSource: {
+      table: "scope_types",
+      schemaName: "context",
+      titleField: "label_singular",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
-        "ctx_scope_types",
+        "scope_types",
         id,
         "label_singular, label_plural, description",
         (r) => ({
           name: clip(r.label_singular, 80) ?? clip(r.label_plural, 80),
           about: clip(r.description),
         }),
+        "context",
       ),
   },
   scope: {
@@ -314,12 +327,23 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-pink-500/20",
     },
     open: { kind: "scope" },
-    detailSource: { table: "ctx_scopes", titleField: "name" },
+    detailSource: {
+      table: "scopes",
+      schemaName: "context",
+      titleField: "name",
+    },
     enrich: (s, id) =>
-      fetchRow(s, "ctx_scopes", id, "name, description", (r) => ({
-        name: clip(r.name, 80),
-        about: clip(r.description),
-      })),
+      fetchRow(
+        s,
+        "scopes",
+        id,
+        "name, description",
+        (r) => ({
+          name: clip(r.name, 80),
+          about: clip(r.description),
+        }),
+        "context",
+      ),
   },
   context_item: {
     type: "context_item",
@@ -331,11 +355,15 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-indigo-500/20",
     },
     open: { kind: "context_item" },
-    detailSource: { table: "ctx_context_items", titleField: "display_name" },
+    detailSource: {
+      table: "context_items",
+      schemaName: "context",
+      titleField: "display_name",
+    },
     enrich: (s, id) =>
       fetchRow(
         s,
-        "ctx_context_items",
+        "context_items",
         id,
         "display_name, description, value_type",
         (r) => ({
@@ -347,6 +375,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
               : null,
           ].filter(Boolean) as EnrichedItem["details"],
         }),
+        "context",
       ),
   },
   image: {

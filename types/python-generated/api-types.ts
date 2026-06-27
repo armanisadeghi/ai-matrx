@@ -342,46 +342,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/apps/{app_id}/warm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Warm Prompt App
-         * @description Pre-load the prompt app's pinned version into the agent cache.
-         *
-         *     Looks up the app's prompt_version_id and prompt_source_type, then
-         *     warms the corresponding version row so execution is a cache hit.
-         */
-        post: operations["warm_prompt_app_ai_apps__app_id__warm_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/prompts/builtins": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get All Prompt Builtins */
-        get: operations["get_all_prompt_builtins_prompts_builtins_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/ai-models": {
         parameters: {
             query?: never;
@@ -830,30 +790,6 @@ export interface paths {
          *     Best for programmatic callers that don't need real-time progress.
          */
         post: operations["categorize_prompt_sync_ai_builtin_agents_categorize_sync_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/apps/{app_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Execute Prompt App
-         * @description Execute a prompt app using its pinned prompt version.
-         *
-         *     Resolves the pinned prompt_version_id from the app row, loads the
-         *     versioned agent config, applies variables/overrides, and streams
-         *     the LLM response.
-         */
-        post: operations["execute_prompt_app_ai_apps__app_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2482,7 +2418,7 @@ export interface paths {
          *       - category_id: only skills in that category
          *       - is_public_only: skip system + own; only is_public=true
          *       - project_id: only skills associated with that ctx_project via
-         *         skl_skill_projects (the many-to-many join)
+         *         skill.project (the many-to-many join)
          */
         get: operations["list_skills_skills_get"];
         put?: never;
@@ -2526,7 +2462,7 @@ export interface paths {
          * Delete Category
          * @description Soft-deactivate the category. Skills pointing at it are NOT
          *     cascaded — they stay with the dangling FK reference (`category_id`
-         *     on `skl_definitions` is a SET NULL FK so they become uncategorized
+         *     on `skill.definition` is a SET NULL FK so they become uncategorized
          *     on the DB side when the row is actually deleted; deactivation just
          *     hides them from the picker).
          */
@@ -2587,7 +2523,7 @@ export interface paths {
         /**
          * Admin Ingest Filesystem
          * @description Admin-only: walk one or more directories of SKILL.md files and upsert
-         *     into ``skl_definitions`` with ``is_system=true``. The body hash is
+         *     into ``skill.definition`` with ``is_system=true``. The body hash is
          *     recorded so repeat calls leave unchanged skills alone. When the same
          *     ``skill_id`` appears in multiple roots, the last one wins.
          */
@@ -4627,6 +4563,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9363,40 +9323,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/prompts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get User Prompts */
-        get: operations["get_user_prompts_prompts_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/prompts/all": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get User Prompts And Builtins */
-        get: operations["get_user_prompts_and_builtins_prompts_all_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/agents": {
         parameters: {
             query?: never;
@@ -9405,13 +9331,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Agents
+         * List Agents For User
          * @description Return all agents available to the authenticated user.
-         *
-         *     Includes both user-owned prompts and system builtins. Results are merged
-         *     into a single flat list sorted by name for easy consumption by IDE clients.
          */
-        get: operations["list_agents_agents_get"];
+        get: operations["list_agents_for_user_agents_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14892,32 +14815,6 @@ export interface components {
             /** Status */
             status?: string | null;
         };
-        /** AppExecuteRequest */
-        AppExecuteRequest: {
-            /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
-            /** Variables */
-            variables?: {
-                [key: string]: unknown;
-            } | null;
-            config_overrides?: components["schemas"]["LLMParams"] | null;
-            /**
-             * Stream
-             * @default true
-             */
-            stream: boolean;
-            /**
-             * Debug
-             * @default false
-             */
-            debug: boolean;
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /** Is New */
-            is_new?: boolean | null;
-        };
         /**
          * AppLogEntry
          * @description One row from public.app_log (the durable general-log store).
@@ -17755,12 +17652,15 @@ export interface components {
          *
          *     ORM ``to_dict`` projections evolve with the schema (status / metadata /
          *     flags), so ``extra="allow"`` keeps the wire shape backward-compatible.
+         *     ``user_id`` mirrors ``created_by`` for clients not yet on the cutover.
          */
         ConversationRecord: {
             /** Id */
             id?: string | null;
             /** User Id */
             user_id?: string | null;
+            /** Created By */
+            created_by?: string | null;
             /** Title */
             title?: string | null;
         } & {
@@ -18777,6 +18677,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -27786,7 +27713,7 @@ export interface components {
         /**
          * SkillRow
          * @description Wire shape for skill responses. Mirrors the active fields on
-         *     skl_definitions that the agent / FE consumes.
+         *     skill.definition rows that the agent / FE consumes.
          */
         SkillRow: {
             /**
@@ -27854,7 +27781,7 @@ export interface components {
             project_id?: string | null;
             /**
              * Project Ids
-             * @description ctx_projects that this skill is associated with via skl_skill_projects (many-to-many).
+             * @description ctx_projects that this skill is associated with via skill.project (many-to-many).
              */
             project_ids?: string[];
         };
@@ -29141,7 +29068,7 @@ export interface components {
         };
         /**
          * ToolRecord
-         * @description Tool definition row as returned by ``ToolDef.to_dict()``.
+         * @description Tool definition row as returned by ``ToolDefinition.to_dict()``.
          *
          *     Tool rows carry provider-specific JSON-Schema fragments
          *     (``input_schema``, ``output_schema``) and free-form metadata, so most
@@ -31654,57 +31581,6 @@ export interface operations {
             };
         };
     };
-    warm_prompt_app_ai_apps__app_id__warm_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                app_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_all_prompt_builtins_prompts_builtins_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
     get_all_ai_models_ai_models_get: {
         parameters: {
             query?: never;
@@ -32365,41 +32241,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategorizeResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    execute_prompt_app_ai_apps__app_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                app_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AppExecuteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -39274,6 +39115,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -47847,47 +47723,7 @@ export interface operations {
             };
         };
     };
-    get_user_prompts_prompts_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_user_prompts_and_builtins_prompts_all_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    list_agents_agents_get: {
+    list_agents_for_user_agents_get: {
         parameters: {
             query?: never;
             header?: never;

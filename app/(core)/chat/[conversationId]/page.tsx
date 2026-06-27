@@ -21,22 +21,23 @@ async function resolveConversationSeed(
   const supabase = await createClient();
   const { data, error } = await supabase
     .schema("chat").from("conversation")
-    .select("initial_agent_id, agx_agent:initial_agent_id (name)")
+    .select("initial_agent_id")
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
   if (error || !data) return null;
   const agentId = (data.initial_agent_id as string | null) ?? null;
   if (!agentId) return null;
-  // Supabase typing for embedded selects can be array-of-one or object
-  // depending on relationship cardinality. Both shapes are handled below.
-  const embedded = (data as { agx_agent?: unknown }).agx_agent;
-  const agentName =
-    embedded && typeof embedded === "object"
-      ? ((Array.isArray(embedded)
-          ? (embedded[0] as { name?: string | null })?.name
-          : (embedded as { name?: string | null }).name) ?? null)
-      : null;
+  // `chat.conversation` has no FK on `initial_agent_id`, so the agent name
+  // cannot be a PostgREST embed — resolve it with a separate lookup against
+  // the canonical `agent.definition` table.
+  const { data: agentRow } = await supabase
+    .schema("agent")
+    .from("definition")
+    .select("name")
+    .eq("id", agentId)
+    .maybeSingle();
+  const agentName = (agentRow?.name as string | null) ?? null;
   return { agentId, agentName };
 }
 

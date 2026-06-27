@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { contextDb } from "@/utils/supabase/contextDb";
 import { createClient } from "@/utils/supabase/server";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -23,7 +24,7 @@ const SYSTEM_ORG_SLUG = "matrx-system";
 // Authoring + value writes for platform-wide System Context (see header).
 type AdminClient = SupabaseClient<Database>;
 type ValueInsert =
-  Database["public"]["Tables"]["ctx_context_item_values"]["Insert"];
+  Database["context"]["Tables"]["context_item_values"]["Insert"];
 
 // Class-1 ambient/computed items: the server computes the real value per
 // request, so the stored value is just a placeholder and these are read-only.
@@ -148,7 +149,8 @@ async function resolveSystemOrgId(admin: AdminClient): Promise<string> {
     .eq("slug", SYSTEM_ORG_SLUG)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!org) throw new Error(`Matrx System org (slug '${SYSTEM_ORG_SLUG}') not found`);
+  if (!org)
+    throw new Error(`Matrx System org (slug '${SYSTEM_ORG_SLUG}') not found`);
   return org.id;
 }
 
@@ -162,8 +164,8 @@ async function ensureScopeForType(
   scopeTypeId: string,
   fallbackName: string,
 ): Promise<string> {
-  const { data: existing, error: selErr } = await admin
-    .from("ctx_scopes")
+  const { data: existing, error: selErr } = await contextDb(admin)
+    .from("scopes")
     .select("id")
     .eq("organization_id", organizationId)
     .eq("scope_type_id", scopeTypeId)
@@ -172,8 +174,8 @@ async function ensureScopeForType(
   if (selErr) throw new Error(selErr.message);
   if (existing) return existing.id;
 
-  const { data: created, error: insErr } = await admin
-    .from("ctx_scopes")
+  const { data: created, error: insErr } = await contextDb(admin)
+    .from("scopes")
     .insert({
       organization_id: organizationId,
       scope_type_id: scopeTypeId,
@@ -218,7 +220,8 @@ function applyValueToRow(
   switch (valueType) {
     case "number": {
       const n = Number(raw);
-      if (raw.trim() === "" || Number.isNaN(n)) return "Value must be a valid number";
+      if (raw.trim() === "" || Number.isNaN(n))
+        return "Value must be a valid number";
       row.value_number = n;
       return null;
     }
@@ -274,11 +277,15 @@ async function buildPreview(
     p_entity_id: "00000000-0000-0000-0000-000000000000",
     p_scope_ids: undefined,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   const variables =
     data && typeof data === "object" && !Array.isArray(data)
-      ? ((data as Record<string, unknown>).variables as Record<string, unknown>) ?? {}
+      ? (((data as Record<string, unknown>).variables as Record<
+          string,
+          unknown
+        >) ?? {})
       : {};
   const entries: ResolvedPreviewEntry[] = Object.entries(variables)
     .map(([key, v]) => {
@@ -333,8 +340,8 @@ export async function GET(request: NextRequest) {
   const organization_id = org.id;
 
   // is_system scope types in this org = the System categories.
-  const { data: scopeTypes, error: stError } = await admin
-    .from("ctx_scope_types")
+  const { data: scopeTypes, error: stError } = await contextDb(admin)
+    .from("scope_types")
     .select(
       "id, label_singular, label_plural, icon, color, description, sort_order",
     )
@@ -357,8 +364,8 @@ export async function GET(request: NextRequest) {
   }
 
   // Each scope type has one scope (in this org) holding its values.
-  const { data: scopes, error: scopeError } = await admin
-    .from("ctx_scopes")
+  const { data: scopes, error: scopeError } = await contextDb(admin)
+    .from("scopes")
     .select("id, scope_type_id")
     .eq("organization_id", organization_id)
     .in("scope_type_id", scopeTypeIds);
@@ -373,8 +380,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const { data: items, error: itemError } = await admin
-    .from("ctx_context_items")
+  const { data: items, error: itemError } = await contextDb(admin)
+    .from("context_items")
     .select(
       "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id, feed_type, feed_config, feed_status, last_fed_at",
     )
@@ -391,8 +398,8 @@ export async function GET(request: NextRequest) {
   // Current value (is_current=true) for each item.
   const valueByItem = new Map<string, ItemValueRow>();
   if (itemIds.length > 0) {
-    const { data: values, error: valError } = await admin
-      .from("ctx_context_item_values")
+    const { data: values, error: valError } = await contextDb(admin)
+      .from("context_item_values")
       .select(
         "context_item_id, scope_id, value_text, value_number, value_boolean, value_json, value_date, value_document_url",
       )
@@ -431,9 +438,7 @@ export async function GET(request: NextRequest) {
       scope_type_id: it.scope_type_id,
       scope_type_label: typeLabel.get(it.scope_type_id) ?? "—",
       scope_id,
-      current_value: is_computed
-        ? null
-        : coerceValue(it.value_type, valueRow),
+      current_value: is_computed ? null : coerceValue(it.value_type, valueRow),
       is_computed,
       feed_type: it.feed_type,
       feed_config: it.feed_config,
@@ -553,8 +558,8 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
 
   const organizationId = await resolveSystemOrgId(admin);
 
-  const { data: st, error: stErr } = await admin
-    .from("ctx_scope_types")
+  const { data: st, error: stErr } = await contextDb(admin)
+    .from("scope_types")
     .insert({
       organization_id: organizationId,
       label_singular: labelSingular,
@@ -568,7 +573,11 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
   if (stErr) {
     const dup = stErr.message.includes("unique_type_per_org");
     return NextResponse.json(
-      { error: dup ? `A System category named "${labelSingular}" already exists` : stErr.message },
+      {
+        error: dup
+          ? `A System category named "${labelSingular}" already exists`
+          : stErr.message,
+      },
       { status: dup ? 409 : 500 },
     );
   }
@@ -576,13 +585,16 @@ async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
   // Flip is_system with the caller's super-admin JWT (the trigger re-checks
   // is_super_admin() live; the service client's auth.uid() is null and fails).
   const userClient = await createClient();
-  const { error: sysErr } = await userClient.rpc("admin_set_scope_type_system", {
-    p_scope_type_id: st.id,
-    p_is_system: true,
-  });
+  const { error: sysErr } = await userClient.rpc(
+    "admin_set_scope_type_system",
+    {
+      p_scope_type_id: st.id,
+      p_is_system: true,
+    },
+  );
   if (sysErr) {
     // Roll back the half-created type so it never shows in a non-system grid.
-    await admin.from("ctx_scope_types").delete().eq("id", st.id);
+    await contextDb(admin).from("scope_types").delete().eq("id", st.id);
     return NextResponse.json(
       { error: `Could not mark category as system: ${sysErr.message}` },
       { status: 500 },
@@ -608,7 +620,10 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
   }
   if (!/^[a-z0-9_]+$/.test(key)) {
     return NextResponse.json(
-      { error: "key may only contain lowercase letters, numbers, and underscores" },
+      {
+        error:
+          "key may only contain lowercase letters, numbers, and underscores",
+      },
       { status: 400 },
     );
   }
@@ -622,8 +637,8 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
   const organizationId = await resolveSystemOrgId(admin);
   const feedType: FeedType = body.feed_type ?? "manual";
 
-  const { data: item, error: itemErr } = await admin
-    .from("ctx_context_items")
+  const { data: item, error: itemErr } = await contextDb(admin)
+    .from("context_items")
     .insert({
       scope_type_id: body.scopeTypeId,
       key,
@@ -645,7 +660,11 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
   if (itemErr) {
     const dup = itemErr.message.includes("context_items_key_per_type");
     return NextResponse.json(
-      { error: dup ? `An item with key "${key}" already exists in this category` : itemErr.message },
+      {
+        error: dup
+          ? `An item with key "${key}" already exists in this category`
+          : itemErr.message,
+      },
       { status: dup ? 409 : 500 },
     );
   }
@@ -654,7 +673,10 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
   // feeds produce their value through their executor, not a typed seed).
   const hasColumns =
     body.valueColumns != null && Object.keys(body.valueColumns).length > 0;
-  if (feedType === "manual" && (hasColumns || (body.value != null && body.value !== ""))) {
+  if (
+    feedType === "manual" &&
+    (hasColumns || (body.value != null && body.value !== ""))
+  ) {
     const scopeId = await ensureScopeForType(
       admin,
       organizationId,
@@ -671,14 +693,20 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     } else {
       const valErr = applyValueToRow(row, body.value_type, body.value!);
       if (valErr) {
-        return NextResponse.json({ error: valErr, item_id: item.id }, { status: 400 });
+        return NextResponse.json(
+          { error: valErr, item_id: item.id },
+          { status: 400 },
+        );
       }
     }
-    const { error: insErr } = await admin
-      .from("ctx_context_item_values")
+    const { error: insErr } = await contextDb(admin)
+      .from("context_item_values")
       .insert(row);
     if (insErr) {
-      return NextResponse.json({ error: insErr.message, item_id: item.id }, { status: 500 });
+      return NextResponse.json(
+        { error: insErr.message, item_id: item.id },
+        { status: 500 },
+      );
     }
   }
 
@@ -694,13 +722,18 @@ async function setValue(admin: AdminClient, body: SetValueBody) {
     );
   }
 
-  const { data: item, error: itemErr } = await admin
-    .from("ctx_context_items")
+  const { data: item, error: itemErr } = await contextDb(admin)
+    .from("context_items")
     .select("id, key")
     .eq("id", body.itemId)
     .maybeSingle();
-  if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 });
-  if (!item) return NextResponse.json({ error: "Context item not found" }, { status: 404 });
+  if (itemErr)
+    return NextResponse.json({ error: itemErr.message }, { status: 500 });
+  if (!item)
+    return NextResponse.json(
+      { error: "Context item not found" },
+      { status: 404 },
+    );
   if (COMPUTED_KEYS.has(item.key)) {
     return NextResponse.json(
       { error: `'${item.key}' is computed at runtime and has no stored value` },
@@ -720,10 +753,11 @@ async function setValue(admin: AdminClient, body: SetValueBody) {
     if (valErr) return NextResponse.json({ error: valErr }, { status: 400 });
   }
 
-  const { error: insErr } = await admin
-    .from("ctx_context_item_values")
+  const { error: insErr } = await contextDb(admin)
+    .from("context_item_values")
     .insert(row);
-  if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+  if (insErr)
+    return NextResponse.json({ error: insErr.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }
@@ -753,11 +787,14 @@ export async function PATCH(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const patch: Database["public"]["Tables"]["ctx_context_items"]["Update"] = {};
-  if (body.display_name !== undefined) patch.display_name = body.display_name.trim();
-  if (body.description !== undefined) patch.description = body.description.trim();
+  const patch: Database["context"]["Tables"]["context_items"]["Update"] = {};
+  if (body.display_name !== undefined)
+    patch.display_name = body.display_name.trim();
+  if (body.description !== undefined)
+    patch.description = body.description.trim();
   if (body.sensitivity !== undefined) patch.sensitivity = body.sensitivity;
-  if (body.custom_component !== undefined) patch.custom_component = body.custom_component;
+  if (body.custom_component !== undefined)
+    patch.custom_component = body.custom_component;
   if (body.is_active !== undefined) patch.is_active = body.is_active;
   if (body.feed_type !== undefined) {
     patch.feed_type = body.feed_type;
@@ -770,11 +807,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const { error } = await admin
-    .from("ctx_context_items")
+  const { error } = await contextDb(admin)
+    .from("context_items")
     .update(patch)
     .eq("id", body.itemId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }
@@ -801,34 +839,47 @@ export async function DELETE(request: NextRequest) {
   const admin = createAdminClient();
 
   if (type === "item") {
-    const { data: item } = await admin
-      .from("ctx_context_items")
+    const { data: item } = await contextDb(admin)
+      .from("context_items")
       .select("key")
       .eq("id", id)
       .maybeSingle();
     if (item && COMPUTED_KEYS.has(item.key)) {
       return NextResponse.json(
-        { error: `'${item.key}' is a built-in ambient item and cannot be deleted` },
+        {
+          error: `'${item.key}' is a built-in ambient item and cannot be deleted`,
+        },
         { status: 422 },
       );
     }
-    const { error } = await admin.from("ctx_context_items").delete().eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error } = await contextDb(admin)
+      .from("context_items")
+      .delete()
+      .eq("id", id);
+    if (error)
+      return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 
   // scope_type — guard the built-in Environment category (holds ambient items).
-  const { data: items } = await admin
-    .from("ctx_context_items")
+  const { data: items } = await contextDb(admin)
+    .from("context_items")
     .select("key")
     .eq("scope_type_id", id);
   if ((items ?? []).some((i) => COMPUTED_KEYS.has(i.key))) {
     return NextResponse.json(
-      { error: "This category holds built-in ambient items and cannot be deleted" },
+      {
+        error:
+          "This category holds built-in ambient items and cannot be deleted",
+      },
       { status: 422 },
     );
   }
-  const { error } = await admin.from("ctx_scope_types").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { error } = await contextDb(admin)
+    .from("scope_types")
+    .delete()
+    .eq("id", id);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

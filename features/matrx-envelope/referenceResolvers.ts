@@ -18,6 +18,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { contextDb } from "@/utils/supabase/contextDb";
+
 import type { KnownItemType } from "@/features/item-presentation/types";
 import type { ReferenceItem } from "@/features/matrx-envelope/envelope";
 
@@ -387,21 +389,24 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   },
   scope_type: createRecordResolver({
     openItemType: "scope_type",
-    table: "ctx_scope_types",
+    schema: "context",
+    table: "scope_types",
     select: "label_singular, label_plural, description",
     titleFields: ["label_singular", "label_plural"],
     bodyFields: ["description"],
   }),
   scope: createRecordResolver({
     openItemType: "scope",
-    table: "ctx_scopes",
+    schema: "context",
+    table: "scopes",
     select: "name, description",
     titleFields: ["name"],
     bodyFields: ["description"],
   }),
   context_item: createRecordResolver({
     openItemType: "context_item",
-    table: "ctx_context_items",
+    schema: "context",
+    table: "context_items",
     select: "display_name, description, value_type",
     titleFields: ["display_name"],
     bodyFields: ["description"],
@@ -413,13 +418,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.scope_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.scope_id || !ref.context_item_id) return stringify(ref.label);
+      const ctx = contextDb(supabase);
       const [
         { data: value, error: valueErr },
         { data: scope },
         { data: item },
       ] = await Promise.all([
-        supabase
-          .from("ctx_context_item_values")
+        ctx
+          .from("context_item_values")
           .select(
             "value_text, value_number, value_boolean, value_date, value_json",
           )
@@ -427,13 +433,9 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
           .eq("context_item_id", ref.context_item_id)
           .eq("is_current", true)
           .maybeSingle(),
-        supabase
-          .from("ctx_scopes")
-          .select("name")
-          .eq("id", ref.scope_id)
-          .maybeSingle(),
-        supabase
-          .from("ctx_context_items")
+        ctx.from("scopes").select("name").eq("id", ref.scope_id).maybeSingle(),
+        ctx
+          .from("context_items")
           .select("display_name")
           .eq("id", ref.context_item_id)
           .maybeSingle(),

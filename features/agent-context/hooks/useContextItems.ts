@@ -4,6 +4,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/utils/supabase/client";
+import { contextDb } from "@/utils/supabase/contextDb";
 import { contextService } from "../service/contextService";
 import type { Database } from "@/types/database.types";
 import type {
@@ -302,8 +303,8 @@ export function useCreateContextValue(
       valueData: ContextValueFormData;
       sourceType?: ContextSourceType;
     }) => {
-      const { data: current } = await supabase
-        .from("ctx_context_item_values")
+      const { data: current } = await contextDb(supabase)
+        .from("context_item_values")
         .select("scope_id")
         .eq("context_item_id", itemId)
         .eq("is_current", true)

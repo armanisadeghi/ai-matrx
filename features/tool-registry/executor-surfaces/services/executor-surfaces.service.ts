@@ -112,7 +112,7 @@ export async function listBindingsForExecutor(
   const { data, error } = await sb()
     .schema("tool").from("binding")
     .select(
-      "tool_id, executor_name, is_active, updated_at, tool:tool_def(name, category, description, is_active, source_kind)",
+      "tool_id, executor_name, is_active, updated_at, tool:definition(name, category, description, is_active, source_kind)",
     )
     .eq("executor_name", executorName)
     .order("updated_at", { ascending: false });

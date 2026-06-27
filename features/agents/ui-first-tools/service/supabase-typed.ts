@@ -11,7 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   CxAgentPlanRow,
@@ -75,7 +75,7 @@ export interface CxAgentMemoryInsert {
   conversation_id: string;
   user_id: string;
   key: string;
-  value: unknown;
+  value: Json;
   updated_at?: string;
 }
 
@@ -88,3 +88,11 @@ export interface AgentUserKvInsert {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db = supabase as unknown as SupabaseClient<Database, "chat", any>;
+
+/**
+ * Untyped access to `public.cx_agent_memory` (KV scratchpad: conversation_id +
+ * key + value). Generated types currently describe semantic memory instead —
+ * see agent-memory.service.ts.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const scratchpadDb = supabase as any;

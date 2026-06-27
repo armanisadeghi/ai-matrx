@@ -463,7 +463,13 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   skill: {
     resourceType: "skill",
+    // `tableName` is the canonical permissions/RLS key (matches the DB
+    // `shareable_resource_registry` value the parity test checks). The physical
+    // table moved to `skill.definition` in the 2026 schema reorg, reached via
+    // `.schema('skill')` — mirror of the file/folder pattern above.
     tableName: "skl_definitions",
+    schemaName: "skill",
+    physicalTable: "definition",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",

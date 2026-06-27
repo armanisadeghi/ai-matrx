@@ -116,7 +116,7 @@ export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {
       .order("name", { ascending: true }),
     client
       .schema("tool").from("bundle_member")
-      .select("bundle_id, tool_id, sort_order, tool:tool_def(id, name, is_active)")
+      .select("bundle_id, tool_id, sort_order, tool:definition(id, name, is_active)")
       .order("sort_order", { ascending: true }),
   ]);
   if (bundlesRes.error) throw bundlesRes.error;
@@ -197,7 +197,7 @@ export async function listBundleMembers(
 ): Promise<BundleMemberWithTool[]> {
   const { data, error } = await sb()
     .schema("tool").from("bundle_member")
-    .select("*, tool:tool_def(id, name, description, is_active)")
+    .select("*, tool:definition(id, name, description, is_active)")
     .eq("bundle_id", bundleId)
     .order("sort_order", { ascending: true })
     .order("local_alias", { ascending: true });

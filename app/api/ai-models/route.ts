@@ -11,7 +11,8 @@ export async function GET() {
 
         // Fetch all non-deprecated AI models
         const { data: models, error } = await supabase
-            .from("ai_model")
+            .schema("ai")
+            .from("model")
             .select("*")
             .eq("is_deprecated", false)
             .order("common_name", { ascending: true });

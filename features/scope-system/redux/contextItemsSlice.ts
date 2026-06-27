@@ -7,6 +7,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { contextDb } from "@/utils/supabase/contextDb";
 import { isUuid } from "@/features/scope-system/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type {
@@ -123,8 +124,8 @@ export const updateContextItem = createAsyncThunk(
       patch.status_note = params.status_note;
     if (params.review_interval_days !== undefined)
       patch.review_interval_days = params.review_interval_days;
-    const { data, error } = await supabase
-      .from("ctx_context_items")
+    const { data, error } = await contextDb(supabase)
+      .from("context_items")
       .update(patch)
       .eq("id", params.id)
       .select()
@@ -139,8 +140,8 @@ export const deleteContextItem = createAsyncThunk(
   async (id: string) => {
     // Soft delete to preserve historical values; matches the is_active column
     // pattern used elsewhere in ctx_context_items.
-    const { error } = await supabase
-      .from("ctx_context_items")
+    const { error } = await contextDb(supabase)
+      .from("context_items")
       .update({ is_active: false })
       .eq("id", id);
     if (error) throw error;

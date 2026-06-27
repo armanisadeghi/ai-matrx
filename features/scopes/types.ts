@@ -13,13 +13,12 @@ import type { Database, Json } from "@/types/database.types";
 // We never re-declare table shapes. The Supabase-generated types are
 // the source of truth. Aliases here are for ergonomic imports.
 
-export type ScopeTypeRow =
-  Database["public"]["Tables"]["ctx_scope_types"]["Row"];
-export type ScopeRow = Database["public"]["Tables"]["ctx_scopes"]["Row"];
+export type ScopeTypeRow = Database["context"]["Tables"]["scope_types"]["Row"];
+export type ScopeRow = Database["context"]["Tables"]["scopes"]["Row"];
 export type ContextItemRow =
-  Database["public"]["Tables"]["ctx_context_items"]["Row"];
+  Database["context"]["Tables"]["context_items"]["Row"];
 export type ContextItemValueRow =
-  Database["public"]["Tables"]["ctx_context_item_values"]["Row"];
+  Database["context"]["Tables"]["context_item_values"]["Row"];
 // `ctx_scope_assignments` is GRAVEYARDED — scope tags now live in
 // `platform.associations` (reached via scopesService / associationsService).
 // The table is slated for drop, so its row vanishes from the generated types
@@ -33,9 +32,9 @@ export interface ScopeAssignmentRow {
   created_by: string | null;
   created_at: string;
 }
-export type TemplateRow = Database["public"]["Tables"]["ctx_templates"]["Row"];
+export type TemplateRow = Database["context"]["Tables"]["templates"]["Row"];
 export type ContextAccessLogRow =
-  Database["public"]["Tables"]["ctx_context_access_log"]["Row"];
+  Database["context"]["Tables"]["context_access_log"]["Row"];
 
 // ─── Canonical entity vocabulary — `EntityType` ─────────────────────
 //

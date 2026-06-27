@@ -127,7 +127,7 @@ export async function listSurfacesIncludingTool(
     // Bundle inclusion: find bundles that contain this tool, then surfaces that include those bundles.
     sb()
       .schema("tool").from("bundle_member")
-      .select("bundle:tool_bundle(name)")
+      .select("bundle:bundle(name)")
       .eq("tool_id", toolId),
   ]);
   if (directRes.error) throw directRes.error;
@@ -244,7 +244,7 @@ export async function removeToolFromSurface(args: {
 export async function listToolBundleMemberships(toolId: string): Promise<BundleMembership[]> {
   const { data, error } = await sb()
     .schema("tool").from("bundle_member")
-    .select("*, bundle:tool_bundle(*)")
+    .select("*, bundle:bundle(*)")
     .eq("tool_id", toolId)
     .order("created_at", { ascending: false });
   if (error) throw error;

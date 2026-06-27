@@ -134,7 +134,7 @@ export const getAppsForAgent = cache(async (agentId: string) => {
 export const getSurfacesForAgent = cache(async (agentId: string) => {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("agx_agent_surface")
+    .schema("agent").from("agent_surface")
     .select(
       `
       id,

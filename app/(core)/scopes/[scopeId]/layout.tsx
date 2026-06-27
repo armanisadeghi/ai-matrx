@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { contextDb } from "@/utils/supabase/contextDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
 const UUID_RE =
@@ -15,7 +16,9 @@ export async function generateMetadata({
 
   try {
     const supabase = await createClient();
-    const query = supabase.from("ctx_scopes").select("name, description");
+    const query = contextDb(supabase)
+      .from("scopes")
+      .select("name, description");
 
     const { data } = UUID_RE.test(scopeId)
       ? await query.eq("id", scopeId).maybeSingle()

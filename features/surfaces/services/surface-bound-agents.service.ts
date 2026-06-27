@@ -183,7 +183,7 @@ async function fetchMenuAgentsFromDb(
   if (allNames.length === 0) return [];
 
   const { data, error } = await supabase
-    .from("agx_agent_surface")
+    .schema("agent").from("agent_surface")
     .select(
       `
       id,
@@ -191,7 +191,7 @@ async function fetchMenuAgentsFromDb(
       surface_name,
       organization_id,
       user_id,
-      agent:agx_agent!inner (
+      agent:definition!inner (
         id,
         name,
         agent_type,
