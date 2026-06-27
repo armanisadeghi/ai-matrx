@@ -57,12 +57,8 @@ The `agent.*` rebuild added a body/card split (`agent.definition` body capped **
 - **Body/card publish:** `make_resource_public`/`private` drive `card_visibility` when the table has it (the body's `visibility` is CHECK-capped non-public), else `visibility`. **Verified live:** publishing an agent sets `card_visibility='public'`, body `visibility` stays `internal`, no CHECK error.
 - Remaining (minor): outsider/anon agent pages, if any, should read `agent.card` (FE doesn't use it yet — shared display goes through the safe RPCs). DB function changes were applied via MCP and need repo migration files for the ledger.
 
-## ✅ SHIMS DROPPED (2026-06-26): cx (21), agx (7), aga (6), tool (14), skl (6) = **54 views gone**
-Verified before drop: FE old-name `.from()`=0, aidream ORM on new schemas + raw refs fixed (`dictionary.py`), ~80 DB functions + 3 skill policies repointed, not in the legacy entity fixtures. `agent.definition` etc. read live. **Kept (not shims):** `agx_context_menu_view`, `cx_conversation_summary`, `cx_user_request_summary` (real views/tables). `.rpc()` function names unchanged (still work).
-
-### Still to drop
-- **`ai_*` (4 views)** — held: the **live** legacy entity system (`utils/schema/*`) still pins `ai_model/provider/endpoint` via schema-less `.from()`. **Drop the moment the entity system is taken offline** (it has no other consumer — aidream/DB/FE are clear).
-- **`ctx_*` / `wr_*` (13 views)** — the separate workspace/context domain. Its DB functions are repointed (ctx_ → `workspace.*`/`context.*`); verify the War Room FE + aidream are off `ctx_*`/`wr_*`, then drop.
+## ✅ ALL REORG COMPAT SHIMS DROPPED (2026-06-26) — transition shim-teardown COMPLETE
+Dropped across every domain: cx (21), agx (7), aga (6), tool (14), skl (6), **ai (3)**, **ctx_/wr_ (13)**. Before each drop: FE old-name `.from()`=0, aidream ORM on new schemas + raw refs fixed (`dictionary.py`, `sources.py`, `_seed_ambient_context.py`), all DB functions repointed (cx/agx/aga/tool/skl/ctx/ai + the 13 broken agx_ fns + the 9 token-unify fns + the schema-aware sharing RPCs), 3 skill policies on `created_by`, agent permission token unified on `agent` (+30 grants), sharing registry schema-aware. `ai_*` last consumer was the legacy entity system (being taken offline). **Kept (real aggregation views, validated OK live):** `agx_context_menu_view`, `ai_runs_summary`, `cx_conversation_summary`, `cx_user_request_summary`. `.rpc()` function names unchanged (still work).
 
 ## ⛔ (historical) SHIM DROP — gates (kept for reference)
 1. **aidream backend** must be off the old names — matrx-orm models + raw SQL for `cx_/agx_/aga_/tool_/ai_/skl_` regenerated to the new schemas and **deployed**. Dropping a public shim breaks aidream (PostgREST/ORM) if it still reads it. **This is the gate — confirm with the backend agents per domain before dropping.**
