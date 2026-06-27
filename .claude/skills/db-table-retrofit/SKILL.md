@@ -11,12 +11,12 @@ You are retrofitting one (or a small batch of) `public.*` table(s) to the change
 - `platform._touch_row()` — BEFORE INS/UPD: sets `updated_at=now()`, `version=OLD.version+1` on UPDATE. Requires the table to have `updated_at` + `version`.
 - `platform._stamp_actor()` — BEFORE INS/UPD: `created_by`/`updated_by` from `current_setting('app.user_id')`.
 - `platform._version_capture('<token>')` — AFTER INS/UPD/DEL: snapshots into `history.row_versions`. Org-agnostic (reads `org_id` OR `organization_id`).
-- `iam.apply_rls(schema, table, token, variant)` — `variant ∈ entity|join|ledger`. Auto-detects `is_public`/`assignee_id`/`deleted_at`. Org-gated on `org_id` OR `organization_id`.
+- `iam.apply_rls(schema, table, token, variant)` — `variant ∈ entity|component|ledger` (**there is NO `join` variant** — see `.claude/skills/db-change/TOOLKIT.md`). DROPS all existing policies, then rebuilds the canonical set; emits `pub_read` from a `visibility` column. Org-gated on `organization_id`.
 - `iam.has_org_access(org)` — true for **every** org the user belongs to (so org-first RLS = "see all my orgs", no active-org needed).
 
 ## Step 0 — classify (from the tracker)
 - **Base-1** entity (org-owned business object) → full retrofit.
-- **Base-2** join (`a_id`+`b_id`, no lifecycle) → `apply_rls(...,'join')`, carry `org_id` + `created_by` + `created_at` only.
+- **Base-2** join (`a_id`+`b_id`, no lifecycle) → **no `join` variant exists**; treat as `component` (needs a `composition` edge) or hand-write org-gated policies (`has_org_access(organization_id)`) like `platform.associations`. Carry `organization_id` + `created_by` + `created_at` only.
 - **Base-3** log/event/append-only → `apply_rls(...,'ledger')`, **no** `version`/`deleted_at`/history.
 - **child** (hangs off a parent that has org) → **denormalize** org from the parent.
 - **lookup/system** → may have no org; leave RLS per its real access model.
@@ -35,7 +35,7 @@ You are retrofitting one (or a small batch of) `public.*` table(s) to the change
 Attach `_version_capture('<entity_types token>')` **unless** the table is extreme-churn (defer — note it in the tracker).
 
 ## Step 3 — RLS flip (GATED — only after Step 1 + 0-null org)
-`iam.apply_rls('public','<table>','<token>','entity'|'join'|'ledger')`, **then DROP any pre-existing non-`std_` policies** (Postgres OR-combines permissive policies — leaving the old ones over-permits). Verify a normal authenticated user still reads their rows (impersonate via `set_config('request.jwt.claims', json_build_object('sub', <uid>)::text, true)`).
+`iam.apply_rls('public','<table>','<token>','entity'|'component'|'ledger')` — it drops ALL existing policies on the table itself and rebuilds the canonical `std_*`/`svc_all`/`pub_read` set, so don't re-add legacy policies afterward (Postgres OR-combines permissive policies → the old ones would over-permit). Verify a normal authenticated user still reads their rows (impersonate via `set_config('request.jwt.claims', json_build_object('sub', <uid>)::text, true)`).
 
 ## Step 4 — `org_id NOT NULL` (after a fresh 0-null verify)
 

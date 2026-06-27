@@ -7,7 +7,10 @@ description: Entry point and shared SOP for the 2026 Matrx DB transition — any
 
 Structural changes to **Matrx Main** (`txzxabzwovsujtloxrus`) during scheduled downtime. Apply DDL directly via the Supabase MCP — migration files are a convenience for the ledger, **not** a canonical system (a file changes nothing until applied + verified live). Execute end-to-end without stalling; over-chunking prolongs the outage.
 
-**Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas). It is the source of truth; the design doc `docs/db_rebuild/db-core-standards-and-automation.md` is aspirational and has drifted in places.
+**Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas) and [`docs/db_rebuild/SCHEMA_MAP.md`](../../../docs/db_rebuild/SCHEMA_MAP.md) (what each schema is FOR — where a table belongs). TOOLKIT is the source of truth; the design doc `docs/db_rebuild/db-core-standards-and-automation.md` is aspirational and has drifted in places.
+
+## Propose first — for multi-table, data-migrating, or consumer-facing changes
+A change is rarely one table. Before executing anything risky (a cluster, a data migration, a schema move, a retire/drop), **do the homework and fill [`PROPOSAL_TEMPLATE.md`](./PROPOSAL_TEMPLATE.md)** — scope the whole cluster, quantify the repoint cost across both repos (+ extend/local) with the `db-table-refs` helpers, list the decisions with recommendations — save it to `docs/db_rebuild/proposals/<slug>.md`, and get a **`go`** before mutating. A single-column tweak or an obviously-safe additive step doesn't need one; anything that could lose data or break a production consumer does.
 
 ## THE LAW: zero data loss, always
 
