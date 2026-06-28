@@ -148,9 +148,9 @@ export const aiModelService = {
 
     const promptBuiltins = (builtinsResult.data ?? []).map((b) => ({
       id: b.id,
-      name: (b as { name?: string }).name ?? b.id,
+      name: b.name ?? b.id,
       table: "agent.definition" as const,
-      source_prompt_id: (b as { source_agent_id?: string | null }).source_agent_id ?? null,
+      source_prompt_id: b.source_agent_id ?? null,
     }));
 
     const agents = (agentsResult.data ?? []).map((a) => ({

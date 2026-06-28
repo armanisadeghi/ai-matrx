@@ -1,6 +1,6 @@
 /**
- * cx-working-document.service — Supabase CRUD for `public.cx_working_documents`
- * (the document entity) and `public.cx_conversation_documents` (the junction).
+ * cx-working-document.service — Supabase CRUD for `chat.working_documents`
+ * (the document entity) and `chat.conversation_documents` (the junction).
  *
  * The chat-conversation analog of Scribe's `studio_documents`. Gives each
  * per-conversation document a DURABLE backing row so the agent's server-side

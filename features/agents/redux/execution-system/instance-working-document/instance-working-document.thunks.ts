@@ -41,6 +41,7 @@ import {
   selectWorkingDocBinding,
   selectWorkingDocContent,
 } from "./instance-working-document.selectors";
+import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   getConversationDocumentLink,
   getCxWorkingDocumentById,
@@ -206,6 +207,18 @@ export const ensureConversationDocumentThunk = createAsyncThunk<
     { conversationId, kind = DEFAULT_DOC_KIND },
     { dispatch, getState },
   ) => {
+    // Chokepoint guard: defer ALL durable provisioning until the conversation is
+    // server-confirmed (`!cacheOnly`). Until then chat.conversation has no row for
+    // this id, so inserting the working_documents / conversation_documents rows
+    // violates the conversation_id FK (23503) and historically leaked orphans.
+    // Every provisioning caller funnels through here (the reactive context-sync
+    // effect, the user enable/disable toggle, note bind/unbind), so guarding here
+    // covers them all. The enabled flag + content stay in Redux; the context-sync
+    // effect re-dispatches this thunk once `cacheOnly` flips false.
+    if (selectIsCacheOnly(conversationId)(getState())) {
+      return;
+    }
+
     const binding = selectWorkingDocBinding(conversationId, kind)(getState());
 
     // Already bound to the durable cx document — just make sure the persisted
