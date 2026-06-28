@@ -7044,6 +7044,48 @@ export type Database = {
         }
         Relationships: []
       }
+      html_extractions: {
+        Row: {
+          content_length: number | null
+          created_at: string | null
+          extracted_at: string | null
+          html_content: string
+          id: number
+          meta_description: string | null
+          meta_keywords: string | null
+          title: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content_length?: number | null
+          created_at?: string | null
+          extracted_at?: string | null
+          html_content: string
+          id?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          title?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content_length?: number | null
+          created_at?: string | null
+          extracted_at?: string | null
+          html_content?: string
+          id?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          title?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       message: {
         Row: {
           content: string | null
@@ -11305,20 +11347,38 @@ export type Database = {
       }
       agent_user_kv: {
         Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           key: string
+          metadata: Json
+          organization_id: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
           value: Json
         }
         Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           key: string
+          metadata?: Json
+          organization_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
           value: Json
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           key?: string
+          metadata?: Json
+          organization_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
           value?: Json
         }
@@ -11710,27 +11770,45 @@ export type Database = {
       app_settings: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           instance_id: string
+          metadata: Json
+          organization_id: string | null
           settings_json: Json
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           instance_id: string
+          metadata?: Json
+          organization_id?: string | null
           settings_json?: Json
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           instance_id?: string
+          metadata?: Json
+          organization_id?: string | null
           settings_json?: Json
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -12103,20 +12181,41 @@ export type Database = {
         Row: {
           comment_id: string
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           id: string
+          metadata: Json
+          organization_id: string | null
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           comment_id: string
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           comment_id?: string
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -12401,20 +12500,41 @@ export type Database = {
         Row: {
           canvas_id: string
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           id: string
+          metadata: Json
+          organization_id: string | null
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           canvas_id: string
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           canvas_id?: string
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -12432,45 +12552,66 @@ export type Database = {
           canvas_id: string
           completed: boolean | null
           created_at: string | null
+          created_by: string | null
           data: Json | null
+          deleted_at: string | null
           display_name: string | null
           id: string
           max_score: number
+          metadata: Json
+          organization_id: string | null
           percentage: number | null
           score: number
           time_taken: number | null
+          updated_at: string
+          updated_by: string | null
           user_id: string | null
           username: string | null
+          version: number
         }
         Insert: {
           attempt_number?: number | null
           canvas_id: string
           completed?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           data?: Json | null
+          deleted_at?: string | null
           display_name?: string | null
           id?: string
           max_score: number
+          metadata?: Json
+          organization_id?: string | null
           percentage?: number | null
           score: number
           time_taken?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
           username?: string | null
+          version?: number
         }
         Update: {
           attempt_number?: number | null
           canvas_id?: string
           completed?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           data?: Json | null
+          deleted_at?: string | null
           display_name?: string | null
           id?: string
           max_score?: number
+          metadata?: Json
+          organization_id?: string | null
           percentage?: number | null
           score?: number
           time_taken?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
           username?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -12486,37 +12627,58 @@ export type Database = {
         Row: {
           canvas_id: string
           completed: boolean | null
+          created_by: string | null
+          deleted_at: string | null
           id: string
           interacted: boolean | null
+          metadata: Json
+          organization_id: string | null
           referrer: string | null
           session_id: string | null
           time_spent: number | null
+          updated_at: string
+          updated_by: string | null
           user_agent: string | null
           user_id: string | null
+          version: number
           viewed_at: string | null
         }
         Insert: {
           canvas_id: string
           completed?: boolean | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           interacted?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           referrer?: string | null
           session_id?: string | null
           time_spent?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
           user_id?: string | null
+          version?: number
           viewed_at?: string | null
         }
         Update: {
           canvas_id?: string
           completed?: boolean | null
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           interacted?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           referrer?: string | null
           session_id?: string | null
           time_spent?: number | null
+          updated_at?: string
+          updated_by?: string | null
           user_agent?: string | null
           user_id?: string | null
+          version?: number
           viewed_at?: string | null
         }
         Relationships: [
@@ -14097,33 +14259,57 @@ export type Database = {
       dm_conversation_participants: {
         Row: {
           conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           is_archived: boolean | null
           is_muted: boolean | null
           joined_at: string | null
           last_read_at: string | null
+          metadata: Json
+          organization_id: string | null
           role: string | null
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_archived?: boolean | null
           is_muted?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           role?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_archived?: boolean | null
           is_muted?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           role?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -14992,78 +15178,57 @@ export type Database = {
       heatmap_saves: {
         Row: {
           created_at: string | null
+          created_by: string | null
           data: Json
+          deleted_at: string | null
           description: string | null
           id: string
           is_public: boolean | null
+          metadata: Json
+          organization_id: string | null
           title: string
           updated_at: string | null
+          updated_by: string | null
           user_id: string | null
+          version: number
           view_settings: Json | null
+          visibility: string
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           data: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           title?: string
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
           view_settings?: Json | null
+          visibility?: string
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           data?: Json
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           title?: string
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
           view_settings?: Json | null
-        }
-        Relationships: []
-      }
-      html_extractions: {
-        Row: {
-          content_length: number | null
-          created_at: string | null
-          extracted_at: string | null
-          html_content: string
-          id: number
-          meta_description: string | null
-          meta_keywords: string | null
-          title: string | null
-          url: string
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          content_length?: number | null
-          created_at?: string | null
-          extracted_at?: string | null
-          html_content: string
-          id?: number
-          meta_description?: string | null
-          meta_keywords?: string | null
-          title?: string | null
-          url: string
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          content_length?: number | null
-          created_at?: string | null
-          extracted_at?: string | null
-          html_content?: string
-          id?: number
-          meta_description?: string | null
-          meta_keywords?: string | null
-          title?: string | null
-          url?: string
-          user_agent?: string | null
-          user_id?: string | null
+          visibility?: string
         }
         Relationships: []
       }
@@ -15123,21 +15288,42 @@ export type Database = {
       industry_curators: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           granted_by: string | null
           industry_id: string
+          metadata: Json
+          organization_id: string | null
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           granted_by?: string | null
           industry_id: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           granted_by?: string | null
           industry_id?: string
+          metadata?: Json
+          organization_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -15363,18 +15549,39 @@ export type Database = {
       kg_suggestion_ack: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          metadata: Json
+          organization_id: string | null
           suggestion_id: string
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           suggestion_id: string
+          updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           suggestion_id?: string
+          updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -15871,8 +16078,12 @@ export type Database = {
       microservice_project: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           is_system: boolean
+          metadata: Json
+          organization_id: string | null
           project_code: string
           project_description: string
           project_name: string
@@ -15882,12 +16093,18 @@ export type Database = {
           repo_org_name: string
           repo_url: string
           updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_system?: boolean
+          metadata?: Json
+          organization_id?: string | null
           project_code: string
           project_description: string
           project_name: string
@@ -15897,12 +16114,18 @@ export type Database = {
           repo_org_name: string
           repo_url: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           is_system?: boolean
+          metadata?: Json
+          organization_id?: string | null
           project_code?: string
           project_description?: string
           project_name?: string
@@ -15912,7 +16135,9 @@ export type Database = {
           repo_org_name?: string
           repo_url?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -20022,53 +20247,68 @@ export type Database = {
         Row: {
           consent_type: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           id: string
           ip_address: string | null
-          metadata: Json | null
+          metadata: Json
           opt_in_keyword: string | null
           opt_in_method: string | null
           opt_out_keyword: string | null
           opt_out_method: string | null
           opted_in_at: string | null
           opted_out_at: string | null
+          organization_id: string | null
           phone_number: string
           status: string
           updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           consent_type: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           ip_address?: string | null
-          metadata?: Json | null
+          metadata?: Json
           opt_in_keyword?: string | null
           opt_in_method?: string | null
           opt_out_keyword?: string | null
           opt_out_method?: string | null
           opted_in_at?: string | null
           opted_out_at?: string | null
+          organization_id?: string | null
           phone_number: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           consent_type?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           id?: string
           ip_address?: string | null
-          metadata?: Json | null
+          metadata?: Json
           opt_in_keyword?: string | null
           opt_in_method?: string | null
           opt_out_keyword?: string | null
           opt_out_method?: string | null
           opted_in_at?: string | null
           opted_out_at?: string | null
+          organization_id?: string | null
           phone_number?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -20077,52 +20317,67 @@ export type Database = {
           ai_agent_id: string | null
           conversation_type: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           external_phone_number: string
           id: string
           last_message_at: string | null
           last_message_direction: string | null
           last_message_preview: string | null
           message_count: number
-          metadata: Json | null
+          metadata: Json
+          organization_id: string | null
           our_phone_number: string
           status: string
           unread_count: number
           updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           ai_agent_id?: string | null
           conversation_type?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           external_phone_number: string
           id?: string
           last_message_at?: string | null
           last_message_direction?: string | null
           last_message_preview?: string | null
           message_count?: number
-          metadata?: Json | null
+          metadata?: Json
+          organization_id?: string | null
           our_phone_number: string
           status?: string
           unread_count?: number
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           ai_agent_id?: string | null
           conversation_type?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           external_phone_number?: string
           id?: string
           last_message_at?: string | null
           last_message_direction?: string | null
           last_message_preview?: string | null
           message_count?: number
-          metadata?: Json | null
+          metadata?: Json
+          organization_id?: string | null
           our_phone_number?: string
           status?: string
           unread_count?: number
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -20269,13 +20524,16 @@ export type Database = {
         Row: {
           ai_agent_messages: boolean
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           dm_notifications: boolean
           id: string
           job_completion_notifications: boolean
           marketing_messages: boolean
           max_messages_per_day: number
           max_messages_per_hour: number
-          metadata: Json | null
+          metadata: Json
+          organization_id: string | null
           phone_number: string | null
           quiet_hours_enabled: boolean
           quiet_hours_end: string
@@ -20285,18 +20543,23 @@ export type Database = {
           task_notifications: boolean
           timezone: string
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           ai_agent_messages?: boolean
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           dm_notifications?: boolean
           id?: string
           job_completion_notifications?: boolean
           marketing_messages?: boolean
           max_messages_per_day?: number
           max_messages_per_hour?: number
-          metadata?: Json | null
+          metadata?: Json
+          organization_id?: string | null
           phone_number?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
@@ -20306,18 +20569,23 @@ export type Database = {
           task_notifications?: boolean
           timezone?: string
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           ai_agent_messages?: boolean
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           dm_notifications?: boolean
           id?: string
           job_completion_notifications?: boolean
           marketing_messages?: boolean
           max_messages_per_day?: number
           max_messages_per_hour?: number
-          metadata?: Json | null
+          metadata?: Json
+          organization_id?: string | null
           phone_number?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
@@ -20327,7 +20595,9 @@ export type Database = {
           task_notifications?: boolean
           timezone?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -20335,46 +20605,58 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           failure_reason: string | null
           id: string
           message_id: string | null
-          metadata: Json | null
+          metadata: Json
           notification_type: string
+          organization_id: string | null
           reference_id: string | null
           reference_type: string | null
           scheduled_for: string | null
           sent_at: string | null
           status: string
+          updated_by: string | null
           user_id: string | null
         }
         Insert: {
           category?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           failure_reason?: string | null
           id?: string
           message_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           notification_type: string
+          organization_id?: string | null
           reference_id?: string | null
           reference_type?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
           status?: string
+          updated_by?: string | null
           user_id?: string | null
         }
         Update: {
           category?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           failure_reason?: string | null
           id?: string
           message_id?: string | null
-          metadata?: Json | null
+          metadata?: Json
           notification_type?: string
+          organization_id?: string | null
           reference_id?: string | null
           reference_type?: string | null
           scheduled_for?: string | null
           sent_at?: string | null
           status?: string
+          updated_by?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -20392,46 +20674,61 @@ export type Database = {
           assigned_at: string | null
           capabilities: Json | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           friendly_name: string | null
           id: string
           is_active: boolean
-          metadata: Json | null
+          metadata: Json
           number_type: string
+          organization_id: string | null
           phone_number: string
           released_at: string | null
           twilio_sid: string
           updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           assigned_at?: string | null
           capabilities?: Json | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           friendly_name?: string | null
           id?: string
           is_active?: boolean
-          metadata?: Json | null
+          metadata?: Json
           number_type?: string
+          organization_id?: string | null
           phone_number: string
           released_at?: string | null
           twilio_sid: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           assigned_at?: string | null
           capabilities?: Json | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           friendly_name?: string | null
           id?: string
           is_active?: boolean
-          metadata?: Json | null
+          metadata?: Json
           number_type?: string
+          organization_id?: string | null
           phone_number?: string
           released_at?: string | null
           twilio_sid?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -22845,49 +23142,67 @@ export type Database = {
         Row: {
           comment_notifications: boolean | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           feedback_notifications: boolean
           id: string
           marketing_emails: boolean | null
           message_digest: boolean | null
           message_notifications: boolean | null
+          metadata: Json
+          organization_id: string | null
           organization_invitations: boolean | null
           resource_updates: boolean | null
           sharing_notifications: boolean | null
           task_notifications: boolean | null
           updated_at: string | null
+          updated_by: string | null
           user_id: string
+          version: number
           weekly_digest: boolean | null
         }
         Insert: {
           comment_notifications?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           feedback_notifications?: boolean
           id?: string
           marketing_emails?: boolean | null
           message_digest?: boolean | null
           message_notifications?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           organization_invitations?: boolean | null
           resource_updates?: boolean | null
           sharing_notifications?: boolean | null
           task_notifications?: boolean | null
           updated_at?: string | null
+          updated_by?: string | null
           user_id: string
+          version?: number
           weekly_digest?: boolean | null
         }
         Update: {
           comment_notifications?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           feedback_notifications?: boolean
           id?: string
           marketing_emails?: boolean | null
           message_digest?: boolean | null
           message_notifications?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
           organization_invitations?: boolean | null
           resource_updates?: boolean | null
           sharing_notifications?: boolean | null
           task_notifications?: boolean | null
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string
+          version?: number
           weekly_digest?: boolean | null
         }
         Relationships: []
@@ -22906,11 +23221,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -22922,9 +23241,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         Insert: {
@@ -22940,11 +23261,15 @@ export type Database = {
           autonomy_score?: number | null
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description: string
           feedback_type: string
           has_open_issues?: boolean
           id?: string
           image_urls?: string[] | null
+          metadata?: Json
+          organization_id?: string | null
           parent_id?: string | null
           priority?: string
           resolution_notes?: string | null
@@ -22956,9 +23281,11 @@ export type Database = {
           testing_result?: string | null
           testing_url?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_confirmed_at?: string | null
           user_id: string
           username?: string | null
+          version?: number
           work_priority?: number | null
         }
         Update: {
@@ -22974,11 +23301,15 @@ export type Database = {
           autonomy_score?: number | null
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string
           feedback_type?: string
           has_open_issues?: boolean
           id?: string
           image_urls?: string[] | null
+          metadata?: Json
+          organization_id?: string | null
           parent_id?: string | null
           priority?: string
           resolution_notes?: string | null
@@ -22990,9 +23321,11 @@ export type Database = {
           testing_result?: string | null
           testing_url?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_confirmed_at?: string | null
           user_id?: string
           username?: string | null
+          version?: number
           work_priority?: number | null
         }
         Relationships: [
@@ -23422,24 +23755,39 @@ export type Database = {
           auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          metadata: Json
+          organization_id: string | null
           preferences: Json
           updated_at: string
+          updated_by: string | null
           user_id: string
         }
         Insert: {
           auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           preferences: Json
           updated_at?: string
+          updated_by?: string | null
           user_id: string
         }
         Update: {
           auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          metadata?: Json
+          organization_id?: string | null
           preferences?: Json
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []
@@ -24348,32 +24696,50 @@ export type Database = {
       window_sessions: {
         Row: {
           created_at: string | null
+          created_by: string | null
           data: Json
+          deleted_at: string | null
           id: string
           label: string | null
+          metadata: Json
+          organization_id: string | null
           panel_state: Json
           updated_at: string | null
+          updated_by: string | null
           user_id: string
+          version: number
           window_type: string
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           data?: Json
+          deleted_at?: string | null
           id?: string
           label?: string | null
+          metadata?: Json
+          organization_id?: string | null
           panel_state?: Json
           updated_at?: string | null
+          updated_by?: string | null
           user_id: string
+          version?: number
           window_type: string
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           data?: Json
+          deleted_at?: string | null
           id?: string
           label?: string | null
+          metadata?: Json
+          organization_id?: string | null
           panel_state?: Json
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string
+          version?: number
           window_type?: string
         }
         Relationships: []
@@ -26723,11 +27089,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -26739,9 +27109,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         SetofOptions: {
@@ -26775,11 +27147,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -26791,9 +27167,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         SetofOptions: {
@@ -28745,11 +29123,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -28761,9 +29143,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -29104,11 +29488,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -29120,9 +29508,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -29299,11 +29689,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -29315,9 +29709,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -29576,11 +29972,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -29592,9 +29992,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -29630,17 +30032,23 @@ export type Database = {
         Returns: {
           comment_notifications: boolean | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           feedback_notifications: boolean
           id: string
           marketing_emails: boolean | null
           message_digest: boolean | null
           message_notifications: boolean | null
+          metadata: Json
+          organization_id: string | null
           organization_invitations: boolean | null
           resource_updates: boolean | null
           sharing_notifications: boolean | null
           task_notifications: boolean | null
           updated_at: string | null
+          updated_by: string | null
           user_id: string
+          version: number
           weekly_digest: boolean | null
         }
         SetofOptions: {
@@ -29735,11 +30143,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -29751,9 +30163,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -29874,9 +30288,16 @@ export type Database = {
         Args: { p_actor?: string; p_industry: string; p_user: string }
         Returns: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           granted_by: string | null
           industry_id: string
+          metadata: Json
+          organization_id: string | null
+          updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         SetofOptions: {
           from: "*"
@@ -30759,11 +31180,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -30775,9 +31200,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         SetofOptions: {
@@ -30829,11 +31256,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -30845,9 +31276,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         SetofOptions: {
@@ -30985,11 +31418,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -31001,9 +31438,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }
         SetofOptions: {
@@ -31097,11 +31536,15 @@ export type Database = {
           autonomy_score: number | null
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string
           feedback_type: string
           has_open_issues: boolean
           id: string
           image_urls: string[] | null
+          metadata: Json
+          organization_id: string | null
           parent_id: string | null
           priority: string
           resolution_notes: string | null
@@ -31113,9 +31556,11 @@ export type Database = {
           testing_result: string | null
           testing_url: string | null
           updated_at: string
+          updated_by: string | null
           user_confirmed_at: string | null
           user_id: string
           username: string | null
+          version: number
           work_priority: number | null
         }[]
         SetofOptions: {
@@ -31251,11 +31696,15 @@ export type Database = {
               autonomy_score: number | null
               category_id: string | null
               created_at: string
+              created_by: string | null
+              deleted_at: string | null
               description: string
               feedback_type: string
               has_open_issues: boolean
               id: string
               image_urls: string[] | null
+              metadata: Json
+              organization_id: string | null
               parent_id: string | null
               priority: string
               resolution_notes: string | null
@@ -31267,9 +31716,11 @@ export type Database = {
               testing_result: string | null
               testing_url: string | null
               updated_at: string
+              updated_by: string | null
               user_confirmed_at: string | null
               user_id: string
               username: string | null
+              version: number
               work_priority: number | null
             }
             SetofOptions: {
@@ -31303,11 +31754,15 @@ export type Database = {
               autonomy_score: number | null
               category_id: string | null
               created_at: string
+              created_by: string | null
+              deleted_at: string | null
               description: string
               feedback_type: string
               has_open_issues: boolean
               id: string
               image_urls: string[] | null
+              metadata: Json
+              organization_id: string | null
               parent_id: string | null
               priority: string
               resolution_notes: string | null
@@ -31319,9 +31774,11 @@ export type Database = {
               testing_result: string | null
               testing_url: string | null
               updated_at: string
+              updated_by: string | null
               user_confirmed_at: string | null
               user_id: string
               username: string | null
+              version: number
               work_priority: number | null
             }
             SetofOptions: {
