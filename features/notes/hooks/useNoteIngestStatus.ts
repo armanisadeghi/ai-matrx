@@ -43,7 +43,8 @@ export function useNoteIngestStatus(noteId: string | null): {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
+        .schema("docproc")
         .from("processed_documents")
         .select("id")
         .eq("source_kind", "note")

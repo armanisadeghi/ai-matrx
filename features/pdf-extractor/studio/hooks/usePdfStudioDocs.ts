@@ -63,7 +63,8 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
         prev = cur;
         return cur.filter((d) => d.id !== id);
       });
-      const { error: err } = await supabase
+      const { error: err } = await (supabase as any)
+        .schema("docproc")
         .from("processed_documents")
         .update({ archived_at: new Date().toISOString() })
         .eq("id", id)
@@ -83,7 +84,8 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     setError(null);
     (async () => {
       try {
-        const { data, error: err } = await supabase
+        const { data, error: err } = await (supabase as any)
+          .schema("docproc")
           .from("processed_documents")
           .select(
             "id, name, storage_uri, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",

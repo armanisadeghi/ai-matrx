@@ -61,7 +61,8 @@ export function usePageBundle({
 
     (async () => {
       try {
-        const { data, error: dbError } = await supabase
+        const { data, error: dbError } = await (supabase as any)
+          .schema("docproc")
           .from("processed_document_pages")
           .select(
             "page_number, raw_text, raw_char_count, cleaned_text, cleaned_char_count, section_kind, section_title, used_ocr, image_cld_file_id",

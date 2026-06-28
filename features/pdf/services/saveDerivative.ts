@@ -65,7 +65,8 @@ export async function saveDerivative({
   }
 
   // 2. Create the derivative processed_documents row with lineage.
-  const { data: newDoc, error: insertError } = await supabase
+  const { data: newDoc, error: insertError } = await (supabase as any)
+    .schema("docproc")
     .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),

@@ -478,7 +478,8 @@ async function saveAsCropDerivative(params: {
       error: err instanceof Error ? err.message : String(err),
     };
   }
-  const { data: newDoc, error: insertError } = await supabase
+  const { data: newDoc, error: insertError } = await (supabase as any)
+    .schema("docproc")
     .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
@@ -532,7 +533,8 @@ async function saveAsReorderDerivative(params: {
       error: err instanceof Error ? err.message : String(err),
     };
   }
-  const { data: newDoc, error: insertError } = await supabase
+  const { data: newDoc, error: insertError } = await (supabase as any)
+    .schema("docproc")
     .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
@@ -1497,7 +1499,8 @@ function PageBlock({
     const col = field === "cleaned" ? "cleaned_text" : "raw_text";
     const charCol =
       field === "cleaned" ? "cleaned_char_count" : "raw_char_count";
-    const { error } = await supabase
+    const { error } = await (supabase as any)
+      .schema("docproc")
       .from("processed_document_pages")
       .update({ [col]: editText, [charCol]: editText.length })
       .eq("id", page.id);

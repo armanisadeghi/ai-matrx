@@ -313,7 +313,8 @@ async function resolveTitlesForKind(
     case "cld_file": {
       // Prefer each source's ROOT ingested doc (clean filename). One query for
       // the whole page; pick the best row per source_id client-side.
-      const { data } = await supabase
+      const { data } = await (supabase as any)
+        .schema("docproc")
         .from("processed_documents")
         .select("source_id, name, parent_processed_id, updated_at")
         .eq("source_kind", "cld_file")
@@ -418,7 +419,8 @@ async function fetchProcessedDocument(
   kind: string,
   id: string,
 ): Promise<ProcessedDocLite | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
+    .schema("docproc")
     .from("processed_documents")
     .select(
       "name, mime_type, clean_content, content, total_pages, updated_at, parent_processed_id",

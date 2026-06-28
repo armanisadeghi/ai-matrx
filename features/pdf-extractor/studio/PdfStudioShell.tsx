@@ -236,7 +236,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       try {
         // `processed_documents.name` is the studio's source of truth for the
         // title — persist it authoritatively.
-        const { error } = await supabase
+        const { error } = await (supabase as any)
+          .schema("docproc")
           .from("processed_documents")
           .update({ name: trimmed })
           .eq("id", activeDoc.id);

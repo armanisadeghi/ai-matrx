@@ -24,6 +24,8 @@ import type {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const docproc = (supabase as any).schema("docproc");
 
 /** One dataset row in the cross-document catalog. */
 export interface ExtractionCatalogEntry {
@@ -58,7 +60,7 @@ export interface ExtractionCatalogEntry {
 export async function listExtractionCatalog(opts?: {
   includeArchived?: boolean;
 }): Promise<ExtractionCatalogEntry[]> {
-  let jobsQuery = db
+  let jobsQuery = docproc
     .from("page_extraction_jobs")
     .select(
       "id, name, kind, file_id, processed_document_id, latest_run_id, organization_id, project_id, created_at, updated_at",
@@ -102,18 +104,18 @@ export async function listExtractionCatalog(opts?: {
 
   const [docsRes, runsRes, resultsRes] = await Promise.all([
     docIds.length
-      ? db
+      ? docproc
           .from("processed_documents")
           .select("id, name, total_pages")
           .in("id", docIds)
       : Promise.resolve({ data: [], error: null }),
     runIds.length
-      ? db
+      ? docproc
           .from("page_extraction_runs")
           .select("id, status, finished_at")
           .in("id", runIds)
       : Promise.resolve({ data: [], error: null }),
-    db.from("page_extraction_results").select("job_id").in("job_id", jobIds),
+    docproc.from("page_extraction_results").select("job_id").in("job_id", jobIds),
   ]);
 
   if (docsRes.error) throw docsRes.error;
@@ -180,7 +182,7 @@ export async function listExtractionCatalog(opts?: {
 /** Bulk delete result rows by id (per-row / bulk delete in the grid). */
 export async function deleteResultRows(resultIds: string[]): Promise<void> {
   if (resultIds.length === 0) return;
-  const { error } = await db
+  const { error } = await docproc
     .from("page_extraction_results")
     .delete()
     .in("id", resultIds);
@@ -189,7 +191,7 @@ export async function deleteResultRows(resultIds: string[]): Promise<void> {
 
 /** Duplicate a template (job) WITHOUT its results — a fresh dataset shell. */
 export async function duplicateJob(jobId: string): Promise<string> {
-  const { data: src, error: getErr } = await db
+  const { data: src, error: getErr } = await docproc
     .from("page_extraction_jobs")
     .select("*")
     .eq("id", jobId)
@@ -204,7 +206,7 @@ export async function duplicateJob(jobId: string): Promise<string> {
   clone.name = `${(src as { name: string }).name} (copy)`;
   clone.archived_at = null;
 
-  const { data: created, error: insErr } = await db
+  const { data: created, error: insErr } = await docproc
     .from("page_extraction_jobs")
     .insert(clone)
     .select("id")

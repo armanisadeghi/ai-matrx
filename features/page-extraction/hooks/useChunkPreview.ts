@@ -85,8 +85,8 @@ export function useChunkPreview(opts: {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     void (supabase as any)
+      .schema("docproc")
       .from("processed_document_pages")
       .select("page_number, raw_text, cleaned_text")
       .eq("processed_document_id", processedDocumentId)

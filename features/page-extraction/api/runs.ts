@@ -18,6 +18,8 @@ import type {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const docproc = (supabase as any).schema("docproc");
 
 /**
  * Manual cell write — merge a single key into a result row's payload.
@@ -34,7 +36,7 @@ export async function updateResultPayloadField(opts: {
   value: unknown;
 }): Promise<void> {
   const nextPayload = { ...opts.currentPayload, [opts.key]: opts.value };
-  const { error } = await db
+  const { error } = await docproc
     .from("page_extraction_results")
     .update({ payload: nextPayload })
     .eq("id", opts.resultId);
@@ -54,7 +56,7 @@ export async function updateResultPayloadField(opts: {
  * data queryable).
  */
 export async function deleteRun(runId: string): Promise<void> {
-  const { error } = await db
+  const { error } = await docproc
     .from("page_extraction_runs")
     .delete()
     .eq("id", runId);
@@ -62,7 +64,7 @@ export async function deleteRun(runId: string): Promise<void> {
 }
 
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {
-  const { data, error } = await db
+  const { data, error } = await docproc
     .from("page_extraction_runs")
     .select("*")
     .eq("id", runId)
@@ -74,7 +76,7 @@ export async function getRun(runId: string): Promise<PageExtractionRun | null> {
 export async function listRunsForJob(
   jobId: string,
 ): Promise<PageExtractionRun[]> {
-  const { data, error } = await db
+  const { data, error } = await docproc
     .from("page_extraction_runs")
     .select("*")
     .eq("job_id", jobId)
@@ -86,7 +88,7 @@ export async function listRunsForJob(
 export async function listPageRunsForRun(
   runId: string,
 ): Promise<PageExtractionPageRun[]> {
-  const { data, error } = await db
+  const { data, error } = await docproc
     .from("page_extraction_page_runs")
     .select("*")
     .eq("run_id", runId)
@@ -99,7 +101,7 @@ export async function listResults(opts: {
   jobId: string;
   runId?: string | null;
 }): Promise<PageExtractionResult[]> {
-  let query = db
+  let query = docproc
     .from("page_extraction_results")
     .select("*")
     .eq("job_id", opts.jobId)
@@ -120,7 +122,7 @@ export async function listResults(opts: {
 export async function listResultsForFile(
   fileId: string,
 ): Promise<PageExtractionResult[]> {
-  const { data, error } = await db
+  const { data, error } = await docproc
     .from("page_extraction_results")
     .select("*")
     .eq("file_id", fileId)
@@ -131,7 +133,7 @@ export async function listResultsForFile(
 }
 
 export async function getLatestRunId(jobId: string): Promise<string | null> {
-  const { data: jobRow, error: jobErr } = await db
+  const { data: jobRow, error: jobErr } = await docproc
     .from("page_extraction_jobs")
     .select("latest_run_id")
     .eq("id", jobId)
@@ -139,7 +141,7 @@ export async function getLatestRunId(jobId: string): Promise<string | null> {
   if (jobErr) throw jobErr;
   if (jobRow?.latest_run_id) return jobRow.latest_run_id as string;
 
-  const { data, error } = await db
+  const { data, error } = await docproc
     .from("page_extraction_runs")
     .select("id")
     .eq("job_id", jobId)

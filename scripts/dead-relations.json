@@ -848,6 +848,62 @@
       "new": "user.profiles",
       "since": "2026-06-27",
       "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('profiles')."
+    },
+    {
+      "relation": "processed_documents",
+      "old": "public.processed_documents",
+      "newSchema": "docproc",
+      "new": "docproc.processed_documents",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('processed_documents')."
+    },
+    {
+      "relation": "processed_document_pages",
+      "old": "public.processed_document_pages",
+      "newSchema": "docproc",
+      "new": "docproc.processed_document_pages",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('processed_document_pages')."
+    },
+    {
+      "relation": "derive_runs",
+      "old": "public.derive_runs",
+      "newSchema": "docproc",
+      "new": "docproc.derive_runs",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('derive_runs')."
+    },
+    {
+      "relation": "page_extraction_jobs",
+      "old": "public.page_extraction_jobs",
+      "newSchema": "docproc",
+      "new": "docproc.page_extraction_jobs",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('page_extraction_jobs')."
+    },
+    {
+      "relation": "page_extraction_runs",
+      "old": "public.page_extraction_runs",
+      "newSchema": "docproc",
+      "new": "docproc.page_extraction_runs",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('page_extraction_runs')."
+    },
+    {
+      "relation": "page_extraction_page_runs",
+      "old": "public.page_extraction_page_runs",
+      "newSchema": "docproc",
+      "new": "docproc.page_extraction_page_runs",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('page_extraction_page_runs')."
+    },
+    {
+      "relation": "page_extraction_results",
+      "old": "public.page_extraction_results",
+      "newSchema": "docproc",
+      "new": "docproc.page_extraction_results",
+      "since": "2026-06-28",
+      "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('page_extraction_results')."
     }
   ]
 }

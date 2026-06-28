@@ -80,7 +80,8 @@ export function usePageVerificationSummary(
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    void supabase
+    void (supabase as any)
+      .schema("docproc")
       .from("processed_document_pages")
       .select("verified_at, verification_flags")
       .eq("processed_document_id", processedDocumentId)
