@@ -407,7 +407,7 @@ export const loadPermissions = createAsyncThunk<
   // NOT the legacy cld_ file-permission duplicate. RLS returns the rows the
   // caller is allowed to see (own grants / grants to them / org / public).
   const { data, error } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select("*")
     .eq("resource_type", "file")
     .eq("resource_id", resourceId);

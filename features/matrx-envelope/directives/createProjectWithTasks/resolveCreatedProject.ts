@@ -26,7 +26,7 @@ async function fetchOrgSlug(
 ): Promise<string | null> {
   if (!organizationId) return null;
   const { data, error } = await supabase
-    .from("organizations")
+    .schema("iam").from("organizations")
     .select("slug")
     .eq("id", organizationId)
     .maybeSingle();

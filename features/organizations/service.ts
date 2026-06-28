@@ -74,7 +74,7 @@ export async function createOrganization(
 
     // Create organization
     const { data: org, error: orgError } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .insert({
         name,
         slug,
@@ -181,7 +181,7 @@ export async function updateOrganization(
     if (updates.settings !== undefined) updateData.settings = updates.settings;
 
     const { data, error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .update(updateData)
       .eq("id", orgId)
       .select()
@@ -214,7 +214,7 @@ export async function deleteOrganization(
   try {
     // Check if personal org
     const { data: org } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("is_personal")
       .eq("id", orgId)
       .single();
@@ -224,7 +224,7 @@ export async function deleteOrganization(
     }
 
     const { error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .delete()
       .eq("id", orgId);
 
@@ -253,7 +253,7 @@ export async function getOrganization(
 ): Promise<Organization | null> {
   try {
     const { data, error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("*")
       .eq("id", orgId)
       .single();
@@ -275,7 +275,7 @@ export async function getOrganizationBySlug(
   slug: string,
 ): Promise<Organization | null> {
   const { data, error } = await supabase
-    .from("organizations")
+    .schema("iam").from("organizations")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
@@ -336,7 +336,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
 
     // Resolve the org rows (public table — direct read, RLS-scoped).
     const { data: orgRows, error: orgsError } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("*")
       .in("id", orgIds);
     if (orgsError) {
@@ -814,7 +814,7 @@ export async function acceptInvitation(
     // Fetch the joined org for the success payload (membership now exists,
     // so RLS allows the read).
     const { data: org, error: orgError } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("*")
       .eq("id", orgId as string)
       .single();

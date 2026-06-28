@@ -15,7 +15,7 @@ export async function generateMetadata({
   let name = "Organization";
 
   try {
-    const query = supabase.from("organizations").select("name, description");
+    const query = supabase.schema("iam").from("organizations").select("name, description");
     const { data } = UUID_RE.test(orgId)
       ? await query.eq("id", orgId).maybeSingle()
       : await query.eq("slug", orgId).maybeSingle();

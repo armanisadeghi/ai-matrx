@@ -7,7 +7,7 @@ export async function fetchOrganizationNamesByIds(
   if (unique.length === 0) return {};
 
   const { data, error } = await supabase
-    .from("organizations")
+    .schema("iam").from("organizations")
     .select("id, name")
     .in("id", unique);
 

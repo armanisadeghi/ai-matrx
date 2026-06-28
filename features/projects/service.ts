@@ -338,7 +338,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   const personalByOrg = new Map<string, boolean>();
   if (orgIds.length > 0) {
     const { data: orgs } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("id, is_personal")
       .in("id", orgIds);
     for (const o of orgs ?? []) {

@@ -73,7 +73,7 @@ export function useOrgAutoRagPreference(
     void (async () => {
       try {
         const { data, error: qErr } = await supabase
-          .from("organization_preferences")
+          .schema("iam").from("organization_preferences")
           .select(
             "auto_rag_enabled, auto_index_non_pdf, suggestion_sweeps_enabled, daily_auto_rag_budget_usd, daily_auto_rag_cost_used_usd, daily_auto_rag_window_start",
           )
@@ -113,7 +113,7 @@ export function useOrgAutoRagPreference(
       setEnabledState(next); // optimistic
       try {
         const { error: uErr } = await supabase
-          .from("organization_preferences")
+          .schema("iam").from("organization_preferences")
           .upsert(
             {
               organization_id: organizationId,
@@ -142,7 +142,7 @@ export function useOrgAutoRagPreference(
       setIndexNonPdfState(next); // optimistic
       try {
         const { error: uErr } = await supabase
-          .from("organization_preferences")
+          .schema("iam").from("organization_preferences")
           .upsert(
             {
               organization_id: organizationId,
@@ -171,7 +171,7 @@ export function useOrgAutoRagPreference(
       setSuggestionSweepsState(next); // optimistic
       try {
         const { error: uErr } = await supabase
-          .from("organization_preferences")
+          .schema("iam").from("organization_preferences")
           .upsert(
             {
               organization_id: organizationId,
@@ -203,7 +203,7 @@ export function useOrgAutoRagPreference(
       setBudgetState(next); // optimistic
       try {
         const { error: uErr } = await supabase
-          .from("organization_preferences")
+          .schema("iam").from("organization_preferences")
           .upsert(
             {
               organization_id: organizationId,

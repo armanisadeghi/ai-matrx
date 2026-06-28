@@ -36,7 +36,7 @@ export async function countOrgSharedResources(
   if (!orgId) return 0;
   const canonicalType = resolveTableName(resourceType);
   const { count, error } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select("resource_id", { count: "exact", head: true })
     .eq("granted_to_organization_id", orgId)
     .eq("resource_type", canonicalType);
@@ -62,7 +62,7 @@ export async function listOrgSharedResources(
   if (!orgId) return [];
   const canonicalType = resolveTableName(resourceType);
   const { data, error } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select("id, resource_id, permission_level, created_at")
     .eq("granted_to_organization_id", orgId)
     .eq("resource_type", canonicalType)

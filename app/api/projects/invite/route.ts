@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     let orgName = 'your organization';
     if (projectData.organization_id) {
       const { data: orgData } = await supabase
-        .from('organizations')
+        .schema("iam").from('organizations')
         .select('name')
         .eq('id', projectData.organization_id)
         .maybeSingle();

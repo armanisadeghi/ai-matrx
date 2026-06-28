@@ -78,7 +78,7 @@ export const fetchOrg = createAsyncThunk(
     }
 
     const { data, error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select(
         "id, name, slug, description, logo_url, is_personal, settings, created_at",
       )
@@ -108,7 +108,7 @@ export const updateOrg = createAsyncThunk(
     patch: { name?: string; description?: string };
   }) => {
     const { error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .update(params.patch)
       .eq("id", params.id);
     if (error) throw error;
@@ -127,7 +127,7 @@ export const deleteOrg = createAsyncThunk(
       .delete()
       .eq("organization_id", orgId);
     const { error } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .delete()
       .eq("id", orgId);
     if (error) throw error;

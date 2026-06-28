@@ -70,7 +70,7 @@ export function useContainerInventory({
       if (column === "organization_id") {
         try {
           const { data } = await supabase
-            .from("permissions")
+            .schema("iam").from("permissions")
             .select("resource_type")
             .eq("granted_to_organization_id", value)
             .neq("status", "rejected");

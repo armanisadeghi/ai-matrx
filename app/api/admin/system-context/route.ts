@@ -144,7 +144,7 @@ function readComponentType(custom_component: Json | null): string | null {
 // Resolve the member-less Matrx System org id (service client; RLS-bypassing).
 async function resolveSystemOrgId(admin: AdminClient): Promise<string> {
   const { data: org, error } = await admin
-    .from("organizations")
+    .schema("iam").from("organizations")
     .select("id")
     .eq("slug", SYSTEM_ORG_SLUG)
     .maybeSingle();
@@ -323,7 +323,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { data: org, error: orgError } = await admin
-    .from("organizations")
+    .schema("iam").from("organizations")
     .select("id")
     .eq("slug", SYSTEM_ORG_SLUG)
     .maybeSingle();

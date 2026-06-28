@@ -40,7 +40,7 @@ export async function listOrgShareGrants(
 ): Promise<OrgShareGrant[]> {
   if (!orgId) return [];
   const { data, error } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select(
       "id, resource_type, resource_id, permission_level, status, created_by, created_at, reviewed_by, reviewed_at, review_note",
     )
@@ -81,7 +81,7 @@ export async function listOrgSharedIdsForTable(
 ): Promise<Set<string>> {
   if (!orgId || !tableName) return new Set();
   const { data, error } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select("resource_id")
     .eq("granted_to_organization_id", orgId)
     .eq("resource_type", tableName)

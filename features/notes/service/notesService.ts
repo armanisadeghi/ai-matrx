@@ -346,7 +346,7 @@ export async function acceptSharedNote(
  */
 export async function fetchSharedNotes(userId: string): Promise<Note[]> {
   const { data: grants, error: grantsError } = await supabase
-    .from("permissions")
+    .schema("iam").from("permissions")
     .select("resource_id")
     .eq("resource_type", "notes")
     .eq("granted_to_user_id", userId);

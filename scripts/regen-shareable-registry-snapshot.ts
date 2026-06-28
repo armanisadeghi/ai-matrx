@@ -62,7 +62,7 @@ async function main() {
   const supabase = createClient(url, key);
 
   const { data, error } = await supabase
-    .from("shareable_resource_registry")
+    .schema("platform").from("shareable_resource_registry")
     .select(
       "resource_type, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission, is_active",
     )

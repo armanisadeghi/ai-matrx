@@ -694,7 +694,7 @@ export async function getSharedWithMe(
     if (userError || !user) return [];
 
     let query = supabase
-      .from("permissions")
+      .schema("iam").from("permissions")
       .select("*")
       .eq("granted_to_user_id", user.id);
 

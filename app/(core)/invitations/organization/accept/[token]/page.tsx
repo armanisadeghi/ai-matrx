@@ -134,7 +134,7 @@ export default function AcceptInvitationPage() {
         invitationOnly.organization_id,
       );
       const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
+        .schema("iam").from("organizations")
         .select("*")
         .eq("id", invitationOnly.organization_id)
         .single();

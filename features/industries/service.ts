@@ -44,7 +44,7 @@ export async function fetchIndustries(includeInactive = false): Promise<Industry
 
 export async function fetchOrgIndustries(orgId: string): Promise<OrgIndustry[]> {
   const { data, error } = await supabase
-    .from("org_industries")
+    .schema("iam").from("org_industries")
     .select("organization_id, industry_id, is_primary")
     .eq("organization_id", orgId);
   if (error) throw new Error(error.message);

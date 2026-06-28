@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch organization details for the email
     const { data: orgData } = await supabase
-      .from("organizations")
+      .schema("iam").from("organizations")
       .select("name")
       .eq("id", organizationId)
       .single();

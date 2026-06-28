@@ -136,7 +136,7 @@ export const scopesService = {
       const orgsP =
         orgIds.length > 0
           ? supabase
-              .from("organizations")
+              .schema("iam").from("organizations")
               .select("id, name, slug, is_personal")
               .in("id", orgIds)
           : Promise.resolve({
@@ -440,7 +440,7 @@ export const scopesService = {
         .single();
 
       const orgP = supabase
-        .from("organizations")
+        .schema("iam").from("organizations")
         .select("id, name, slug, is_personal")
         .eq("id", scope.organization_id)
         .single();
