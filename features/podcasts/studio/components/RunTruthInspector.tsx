@@ -211,11 +211,11 @@ export function RunTruthInspector({
     try {
       const [agentRunRes, stagesRes, studioRunRes, episodeRes] = await Promise.all([
         agentRunId
-          ? supabase.from("agent_run").select("*").eq("id", agentRunId).maybeSingle()
+          ? supabase.schema("chat").from("agent_run").select("*").eq("id", agentRunId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         agentRunId
           ? supabase
-              .from("agent_run_stage")
+              .schema("chat").from("agent_run_stage")
               .select("*")
               .eq("run_id", agentRunId)
               .order("started_at", { ascending: true, nullsFirst: true })

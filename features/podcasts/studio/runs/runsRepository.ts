@@ -307,7 +307,7 @@ export async function fetchPodcastRuns({
 }: ListRunsParams = {}): Promise<RunSummary[]> {
   const now = Date.now();
   let query = supabase
-    .from("agent_run")
+    .schema("chat").from("agent_run")
     .select(RUN_SELECT)
     .eq("kind", "podcast")
     .order("created_at", { ascending: false })
@@ -326,7 +326,7 @@ export async function fetchPodcastRunDetail(
 ): Promise<RunDetail | null> {
   const now = Date.now();
   const { data, error } = await supabase
-    .from("agent_run")
+    .schema("chat").from("agent_run")
     .select(RUN_DETAIL_SELECT)
     .eq("id", runId)
     .eq("kind", "podcast")
@@ -391,7 +391,7 @@ export async function fetchPodcastRunStatus(
 ): Promise<RunStatusDto | null> {
   const now = Date.now();
   const { data, error } = await supabase
-    .from("agent_run")
+    .schema("chat").from("agent_run")
     .select(
       "id,status,episode_id,last_heartbeat_at,updated_at,created_at,agent_run_stage(status,started_at,finished_at)",
     )
