@@ -4,7 +4,7 @@
 >
 > **Process + per-table recipe:** the **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/`). **Standard:** `db-core-standards-and-automation.md`. **RLS:** `db-canonical-rls.md` (+ sweep `db-canonical-rls-sweep-todo.md`). **Cutover safety:** `db-staging-and-cutover-plan.md`. **Live docs index:** `README.md` → `official/` + `CUTOVER_HANDOFF.md`.
 
-**Last updated:** 2026-06-24 · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
+**Last updated:** 2026-06-27 · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
 
 ---
 
@@ -12,11 +12,11 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_stamp_actor`) | **57** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×2, flashcard ×2, aga ×1, ctx-wr ×2) — 56 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
+| **Retrofitted** (standard base cols + `_stamp_actor`) | **66** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×2, flashcard ×2, aga ×1, ctx-wr ×2, app/content/ui-components ×9) — 65 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
-| Registered in `platform.entity_types` | 18 |
+| Registered in `platform.entity_types` | 27 |
 
 **Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — 57 tables done, PAUSED** pending user OK (after prod-error review confirmed the changeover is clean — see [compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md)) · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
 
@@ -74,9 +74,9 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 
 | Group | Tables | R | O | L | | Group | Tables | R | O | L |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **cx** | 21 | **10** | 4 | 3 | | ui | 6 | 0 | 2 | 0 |
+| **cx** | 21 | **10** | 4 | 3 | | ui | 6 | **3** | 2 | 0 |
 | ctx | 24 | **2** | 7 | 10 | | kg | 6 | 0 | 5 | 0 |
-| scrape | 25 | 0 | 0 | 0 | | app | 6 | 0 | 1 | 1 |
+| scrape | 25 | 0 | 0 | 0 | | app | 6 | **3** | 1 | 1 |
 | cld | 18 | 0 | 7 | 0 | | ai | 6 | 0 | 1 | 1 |
 | user | 16 | 0 | 0 | 0 | | **aga** | 6 | **1** | 1 | 2 |
 | tool | 14 | 0 | 0 | 0 | | pc | 5 | 0 | 0 | 0 |
@@ -182,4 +182,5 @@ Admin dashboards (both Next.js) audited: **do not read** these columns. Python a
   - **Files to reconcile (lead bookkeeping):** routine file → final v3; `platform_system_org_tenant.sql`; `agx_entities_retrofit.sql` (uncomment the 3 now-applied calls); ledger each.
 - **2026-06-24 (cont.2)** — **`prompt` group delegated + done** (5 Base-1: `prompt_actions`/`apps`/`builtins`/`shortcuts`/`templates`; 6 logs + 1 lookup skipped) via a subagent + the routine. **19 tables retrofitted.** Delegation-brief lesson: point subagents at the `SKILL.md` **file**, not "invoke the skill" (the latter no-op'd once). The bespoke version-snapshot double-bump (`_touch_row` + a feature trigger) now spans `agx_agent`/`templates` + `prompt_apps`/`builtins` — reconcile in the Base-3 `*_versions` pass.
 - **2026-06-24 (cont.)** — Routine + system-org files reconciled + ledgered. **cx batch 2** retrofitted via the routine (`cx_agent_plan` / `cx_observational_memory` / `cx_tool_call` / `cx_user_request` / `cx_user_todo` / `cx_working_documents`). **14 tables retrofitted.** Remaining cx: Base-3 logs (`cx_request`/`_snapshot`/`cx_tool_trace`/`_observational_memory_event`/`cx_pending_injection` → ledger pass), `cx_conversation_documents` (join), `cx_user_usage_summary` (special), `cx_agent_task` (**deferred** — `created_by` enum needs a consumer audit before rename), + 3 planned-empty (keep). Remaining file debt: agx system-row uncomment + `cx_agent_memory` file.
+- **2026-06-27** — **App/UI/content group retrofit (9 tables)**: `app_instances`, `content_blocks`, `content_template`, `custom_app_configs`, `custom_applet_configs`, `component_groups`, `field_components`, `applet`, `sandbox_instances` — additive base cols + org/actor backfill (all 0 null_org, 0 null_creator) + `_touch_row`/`_stamp_actor`/`_version_capture` + entity_types registered (9 new tokens). Notes: `content_blocks` all 101 rows system-owned (null user → system org); `applet` had 4/6 orphaned user_ids (auth.users deleted, FK `NOT VALID` + `ON DELETE SET NULL`) — nulled before retrofit; `sandbox_instances` already had `deleted_at`; all `is_public` tables got `visibility` col synced. `app` group: 3/6 retrofitted; `ui` group: 3+4=7 but those are in separate entries above. **66 tables now retrofitted total.** 9 migration files written + ledgered.
 - **2026-06-25** — **`ctx` group opened: War Room retrofitted** (first `ctx` table) via `platform.retrofit_entity`. `ctx_war_room_sessions` (token `war_room`, `personal` org) + `ctx_war_room_tiles` (token `thread`, org denormalized from the parent session via `session_id`) — additive base cols + actor/org backfill (7 sessions, 53 tiles; **0 null-org, 0 null-creator** verified live), legacy `*_updated_at` → `_touch_row`/`_stamp_actor`, ledgered (`ctx_war_room_base_retrofit.sql`, `matrx-frontend`). **16 tables retrofitted.** DEFERRED (gated, post-deploy): `_version_capture`, org-first RLS flip, `organization_id NOT NULL`, `is_deleted`→`deleted_at` + `metadata`, and ALL litter drops (`task_id`/`note_id`/`project_id`/`context_organization_id`/`context_scope_ids`/`session_id` + the legacy `ctx_war_room_assignments` / `_tile_notes` / `_tile_audio_sessions` / `_tile_attachments` tables) — pending the War Room frontend repoint onto the `assoc_*` RPCs + branch deploy. Work is on branch `claude/inspiring-ride-6ufddz` (NOT main).
