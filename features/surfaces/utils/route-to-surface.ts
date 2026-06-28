@@ -6,7 +6,7 @@
  * `aidream/api/utils/surface_resolver.py` knows about. The DB has 76
  * surfaces; this mapping covers the matrx-user routes the chat / agent
  * flows hit today. Add a row to `SURFACE_BY_ROUTE_PREFIX` when a new
- * route ships AND the corresponding surface exists in `public.ui_surface`.
+ * route ships AND the corresponding surface exists in `ui.ui_surface`.
  *
  * Mapping discipline: prefer specific over general. The longest matching
  * prefix wins — `/agents/{id}/run` should resolve to

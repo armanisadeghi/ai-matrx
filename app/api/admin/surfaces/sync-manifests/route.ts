@@ -1,13 +1,13 @@
 // POST /api/admin/surfaces/sync-manifests
 //
-// Applies the code-side SurfaceManifest registry into `public.ui_surface_value`.
+// Applies the code-side SurfaceManifest registry into `ui.ui_surface_value`.
 // Body shape (all optional):
 //   { deleteStale?: boolean; createMissingSurfaces?: boolean }
 //
 // - `deleteStale: false` (default) leaves `db_only` rows alone so admins can
 //   review the drift report and decide.
 // - `createMissingSurfaces: false` (default) refuses to register manifests
-//   whose `surfaceName` isn't present in `public.ui_surface`. Set true to
+//   whose `surfaceName` isn't present in `ui.ui_surface`. Set true to
 //   auto-create the surface row before upserting its values.
 //
 // Super-admin only.

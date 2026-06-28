@@ -2,7 +2,7 @@
  * Central registry of all `SurfaceManifest` declarations.
  *
  * This file is the **single source of truth** for what runtime values each
- * surface promises to supply. Mirrored into `public.ui_surface_value` via
+ * surface promises to supply. Mirrored into `ui.ui_surface_value` via
  * the manifest sync endpoint at `POST /api/admin/surfaces/sync-manifests`.
  *
  * Adding a new surface:

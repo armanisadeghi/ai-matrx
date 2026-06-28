@@ -16,7 +16,7 @@ export default async function SurfaceAdminDetailRoute({ params }: Props) {
 
   const supabase = await createClient();
   const { data: surface, error } = await supabase
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .select("*")
     .eq("name", surfaceName)
     .maybeSingle();

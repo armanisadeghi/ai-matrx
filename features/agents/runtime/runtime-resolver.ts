@@ -55,7 +55,7 @@ async function fetchSurfaceExecutionMode(
 
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .select("execution_mode")
     .eq("name", surfaceName)
     .maybeSingle();

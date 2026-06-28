@@ -160,8 +160,8 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
               API route: <Code>app/api/agent-context-menu/route.ts</Code>{" "}
               (queries{" "}
               <Code>
-                public.
-                <span className="font-semibold">agx_context_menu_view</span>
+                agent.
+                <span className="font-semibold">context_menu_view</span>
               </Code>
               )
             </li>

@@ -2,10 +2,10 @@
  * Manifest sync service.
  *
  * - Diffs the code-side `SurfaceManifest` registry against
- *   `public.ui_surface_value` (values) and `public.ui_surface_agent_role`
+ *   `ui.ui_surface_value` (values) and `ui.ui_surface_agent_role`
  *   (agent roles).
  * - Flags config namespaces (manifest `configNamespaces` declarations and
- *   `public.ui_surface_config` rows) with no handler in the namespace
+ *   `ui.ui_surface_config` rows) with no handler in the namespace
  *   registry.
  * - Scans `agx_agent_surface.value_mappings` for `surface_value` mappings
  *   whose target no longer exists in any manifest. These are the "broken
@@ -43,13 +43,13 @@ import { isValueMapping } from "@/features/surfaces/types";
 
 type Sb = SupabaseClient<Database>;
 type UiSurfaceValueRow =
-  Database["public"]["Tables"]["ui_surface_value"]["Row"];
+  Database["ui"]["Tables"]["ui_surface_value"]["Row"];
 type UiSurfaceValueInsert =
-  Database["public"]["Tables"]["ui_surface_value"]["Insert"];
+  Database["ui"]["Tables"]["ui_surface_value"]["Insert"];
 type UiSurfaceAgentRoleRow =
-  Database["public"]["Tables"]["ui_surface_agent_role"]["Row"];
+  Database["ui"]["Tables"]["ui_surface_agent_role"]["Row"];
 type UiSurfaceAgentRoleInsert =
-  Database["public"]["Tables"]["ui_surface_agent_role"]["Insert"];
+  Database["ui"]["Tables"]["ui_surface_agent_role"]["Insert"];
 
 const VALUE_TYPES = ["string", "number", "boolean", "object", "array"] as const;
 type DbValueType = (typeof VALUE_TYPES)[number];
@@ -199,7 +199,7 @@ export async function listSurfaceValues(
   surfaceName: string,
 ): Promise<SurfaceValue[]> {
   const { data, error } = await sb
-    .from("ui_surface_value")
+    .schema("ui").from("ui_surface_value")
     .select("*")
     .eq("surface_name", surfaceName)
     .order("sort_order", { ascending: true })
@@ -216,9 +216,9 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 1. Pull all DB rows we care about.
   const [allDbRowsRes, allDbRoleRowsRes, configNamespaceRowsRes, agentBindingsRes] =
     await Promise.all([
-      sb.from("ui_surface_value").select("*"),
-      sb.from("ui_surface_agent_role").select("*"),
-      sb.from("ui_surface_config").select("namespace"),
+      sb.schema("ui").from("ui_surface_value").select("*"),
+      sb.schema("ui").from("ui_surface_agent_role").select("*"),
+      sb.schema("ui").from("ui_surface_config").select("namespace"),
       sb
         .schema("agent")
         .from("agent_surface")
@@ -558,7 +558,7 @@ export async function applyManifestSync(
   const { deleteStale = false, createMissingSurfaces = false } = opts;
 
   // 1. Make sure surfaces referenced by manifests exist in ui_surface.
-  const surfacesRes = await sb.from("ui_surface").select("name");
+  const surfacesRes = await sb.schema("ui").from("ui_surface").select("name");
   if (surfacesRes.error) throw surfacesRes.error;
   const existingSurfaces = new Set((surfacesRes.data ?? []).map((r) => r.name));
 
@@ -584,7 +584,7 @@ export async function applyManifestSync(
         };
       });
     if (missing.length > 0) {
-      const ins = await sb.from("ui_surface").insert(missing);
+      const ins = await sb.schema("ui").from("ui_surface").insert(missing);
       if (ins.error) throw ins.error;
     }
   }
@@ -599,7 +599,7 @@ export async function applyManifestSync(
   const upserted: ApplyManifestSyncResult["upserted"] = [];
   if (upsertRows.length > 0) {
     const upsertRes = await sb
-      .from("ui_surface_value")
+      .schema("ui").from("ui_surface_value")
       .upsert(upsertRows, { onConflict: "surface_name,name" })
       .select("surface_name, name");
     if (upsertRes.error) throw upsertRes.error;
@@ -618,7 +618,7 @@ export async function applyManifestSync(
   const roleUpserted: ApplyManifestSyncResult["roleUpserted"] = [];
   if (roleUpsertRows.length > 0) {
     const roleUpsertRes = await sb
-      .from("ui_surface_agent_role")
+      .schema("ui").from("ui_surface_agent_role")
       .upsert(roleUpsertRows, { onConflict: "surface_name,name" })
       .select("surface_name, name");
     if (roleUpsertRes.error) throw roleUpsertRes.error;
@@ -631,7 +631,7 @@ export async function applyManifestSync(
   const deleted: ApplyManifestSyncResult["deleted"] = [];
   if (deleteStale) {
     const allDb = await sb
-      .from("ui_surface_value")
+      .schema("ui").from("ui_surface_value")
       .select("surface_name, name");
     if (allDb.error) throw allDb.error;
 
@@ -649,7 +649,7 @@ export async function applyManifestSync(
     );
     for (const row of toDelete) {
       const del = await sb
-        .from("ui_surface_value")
+        .schema("ui").from("ui_surface_value")
         .delete()
         .eq("surface_name", row.surface_name)
         .eq("name", row.name);
@@ -665,7 +665,7 @@ export async function applyManifestSync(
   let sweptPrefCount = 0;
   if (deleteStale) {
     const allDbRoles = await sb
-      .from("ui_surface_agent_role")
+      .schema("ui").from("ui_surface_agent_role")
       .select("surface_name, name");
     if (allDbRoles.error) throw allDbRoles.error;
 
@@ -683,7 +683,7 @@ export async function applyManifestSync(
     );
     for (const row of rolesToDelete) {
       const prefCount = await sb
-        .from("ui_surface_agent_pref")
+        .schema("ui").from("ui_surface_agent_pref")
         .select("*", { count: "exact", head: true })
         .eq("surface_name", row.surface_name)
         .eq("role_name", row.name);
@@ -691,7 +691,7 @@ export async function applyManifestSync(
       sweptPrefCount += prefCount.count ?? 0;
 
       const del = await sb
-        .from("ui_surface_agent_role")
+        .schema("ui").from("ui_surface_agent_role")
         .delete()
         .eq("surface_name", row.surface_name)
         .eq("name", row.name);

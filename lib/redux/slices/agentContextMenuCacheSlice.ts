@@ -14,7 +14,7 @@ const initialState: AgentContextMenuCacheState = {
 };
 
 /**
- * Stores raw agx_context_menu_view rows fetched server-side via
+ * Stores raw agent.context_menu_view rows fetched server-side via
  * get_ssr_agent_shell_data() RPC (additive companion to the legacy
  * get_ssr_shell_data() RPC). Populated once at hydration time from
  * the SSR shell data call — DeferredShellData writes here in parallel

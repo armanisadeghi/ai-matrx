@@ -11,7 +11,7 @@ import type {
 
 /**
  * Surface name for this feature in the Surface Values system. Matches the
- * `matrx-user/content-extractor` row in `public.ui_surface` and the
+ * `matrx-user/content-extractor` row in `ui.ui_surface` and the
  * `contentExtractorManifest` in
  * `features/surfaces/manifests/content-extractor.manifest.ts`.
  *

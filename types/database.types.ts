@@ -4699,6 +4699,373 @@ export type Database = {
       [_ in never]: never
     }
   }
+  code: {
+    Tables: {
+      code_file_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          icon_name: string
+          id: string
+          is_active: boolean
+          is_public: boolean
+          metadata: Json
+          name: string
+          organization_id: string | null
+          parent_folder_id: string | null
+          project_id: string | null
+          sort_order: number | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+          workspace_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          parent_folder_id?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          parent_folder_id?: string | null
+          project_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_file_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "code_file_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_file_versions: {
+        Row: {
+          change_note: string | null
+          change_source: string
+          change_type: string | null
+          changed_at: string
+          code_file_id: string
+          content: string | null
+          created_at: string
+          created_by: string | null
+          diff_metadata: Json
+          id: string
+          language: string | null
+          metadata: Json
+          name: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          changed_at?: string
+          code_file_id: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          diff_metadata?: Json
+          id?: string
+          language?: string | null
+          metadata?: Json
+          name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          changed_at?: string
+          code_file_id?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          diff_metadata?: Json
+          id?: string
+          language?: string | null
+          metadata?: Json
+          name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_file_versions_code_file_id_fkey"
+            columns: ["code_file_id"]
+            isOneToOne: false
+            referencedRelation: "code_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_files: {
+        Row: {
+          content: string
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          folder_id: string | null
+          id: string
+          is_deleted: boolean
+          is_public: boolean
+          is_readonly: boolean
+          language: string
+          metadata: Json
+          name: string
+          organization_id: string | null
+          path: string
+          project_id: string | null
+          repository_id: string | null
+          s3_bucket: string | null
+          s3_key: string | null
+          tags: string[]
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+          workspace_id: string | null
+        }
+        Insert: {
+          content?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          folder_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_public?: boolean
+          is_readonly?: boolean
+          language?: string
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          path?: string
+          project_id?: string | null
+          repository_id?: string | null
+          s3_bucket?: string | null
+          s3_key?: string | null
+          tags?: string[]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Update: {
+          content?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          folder_id?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_public?: boolean
+          is_readonly?: boolean
+          language?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          path?: string
+          project_id?: string | null
+          repository_id?: string | null
+          s3_bucket?: string | null
+          s3_key?: string | null
+          tags?: string[]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_files_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "code_file_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_files_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "code_repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_repositories: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          git_branch: string | null
+          git_commit_sha: string | null
+          git_provider: string | null
+          git_url: string | null
+          id: string
+          is_active: boolean
+          is_public: boolean
+          last_synced_at: string | null
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          root_folder_id: string | null
+          s3_bucket: string | null
+          s3_prefix: string | null
+          sync_error: string | null
+          sync_status: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          git_branch?: string | null
+          git_commit_sha?: string | null
+          git_provider?: string | null
+          git_url?: string | null
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          last_synced_at?: string | null
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          project_id?: string | null
+          root_folder_id?: string | null
+          s3_bucket?: string | null
+          s3_prefix?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          git_branch?: string | null
+          git_commit_sha?: string | null
+          git_provider?: string | null
+          git_url?: string | null
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          last_synced_at?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          root_folder_id?: string | null
+          s3_bucket?: string | null
+          s3_prefix?: string | null
+          sync_error?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_repositories_root_folder_id_fkey"
+            columns: ["root_folder_id"]
+            isOneToOne: false
+            referencedRelation: "code_file_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   communication: {
     Tables: {
       dm_conversation_participants: {
@@ -12799,57 +13166,6 @@ export type Database = {
           },
         ]
       }
-      scrape_domain: {
-        Row: {
-          category: string | null
-          category_reason: string | null
-          common_name: string | null
-          content_selector: string | null
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          min_content_chars: number | null
-          min_real_content_chars: number | null
-          policy_action: string | null
-          policy_notes: string | null
-          scrape_allowed: boolean | null
-          updated_at: string | null
-          url: string | null
-        }
-        Insert: {
-          category?: string | null
-          category_reason?: string | null
-          common_name?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_allowed?: boolean | null
-          updated_at?: string | null
-          url?: string | null
-        }
-        Update: {
-          category?: string | null
-          category_reason?: string | null
-          common_name?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_allowed?: boolean | null
-          updated_at?: string | null
-          url?: string | null
-        }
-        Relationships: []
-      }
       scrape_domain_disallowed_notes: {
         Row: {
           created_at: string | null
@@ -12875,15 +13191,7 @@ export type Database = {
           scrape_domain_id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_disallowed_notes_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_domain_notes: {
         Row: {
@@ -12910,15 +13218,7 @@ export type Database = {
           scrape_domain_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_notes_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_domain_quick_scrape_settings: {
         Row: {
@@ -12948,15 +13248,7 @@ export type Database = {
           scrape_domain_id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_quick_scrape_settings_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_domain_robots_txt: {
         Row: {
@@ -12983,15 +13275,7 @@ export type Database = {
           scrape_domain_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_robots_txt_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_domain_settings: {
         Row: {
@@ -13018,15 +13302,7 @@ export type Database = {
           proxy_type?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_settings_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: true
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_domain_sitemap: {
         Row: {
@@ -13053,15 +13329,7 @@ export type Database = {
           sitemap?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_sitemap_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_failure_log: {
         Row: {
@@ -13154,15 +13422,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_job_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_override: {
         Row: {
@@ -13459,15 +13719,7 @@ export type Database = {
           scrape_domain_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_path_pattern_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_path_pattern_cache_policy: {
         Row: {
@@ -13602,15 +13854,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_quick_failure_log_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       scrape_retry_queue: {
         Row: {
@@ -13753,13 +13997,6 @@ export type Database = {
             columns: ["scrape_cycle_run_id"]
             isOneToOne: false
             referencedRelation: "scrape_cycle_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_task_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
             referencedColumns: ["id"]
           },
           {
@@ -16624,321 +16861,6 @@ export type Database = {
         }
         Relationships: []
       }
-      code_file_folders: {
-        Row: {
-          color: string | null
-          created_at: string
-          description: string | null
-          icon_name: string
-          id: string
-          is_active: boolean
-          is_public: boolean
-          metadata: Json
-          name: string
-          organization_id: string | null
-          parent_folder_id: string | null
-          project_id: string | null
-          sort_order: number | null
-          updated_at: string
-          user_id: string
-          workspace_id: string | null
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          icon_name?: string
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          parent_folder_id?: string | null
-          project_id?: string | null
-          sort_order?: number | null
-          updated_at?: string
-          user_id: string
-          workspace_id?: string | null
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          icon_name?: string
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          parent_folder_id?: string | null
-          project_id?: string | null
-          sort_order?: number | null
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "code_file_folders_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "code_file_folders_parent_folder_id_fkey"
-            columns: ["parent_folder_id"]
-            isOneToOne: false
-            referencedRelation: "code_file_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      code_file_versions: {
-        Row: {
-          change_note: string | null
-          change_source: string
-          change_type: string | null
-          changed_at: string
-          code_file_id: string
-          content: string | null
-          diff_metadata: Json
-          id: string
-          language: string | null
-          name: string | null
-          user_id: string
-          version_number: number
-        }
-        Insert: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          changed_at?: string
-          code_file_id: string
-          content?: string | null
-          diff_metadata?: Json
-          id?: string
-          language?: string | null
-          name?: string | null
-          user_id: string
-          version_number: number
-        }
-        Update: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          changed_at?: string
-          code_file_id?: string
-          content?: string | null
-          diff_metadata?: Json
-          id?: string
-          language?: string | null
-          name?: string | null
-          user_id?: string
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "code_file_versions_code_file_id_fkey"
-            columns: ["code_file_id"]
-            isOneToOne: false
-            referencedRelation: "code_files"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      code_files: {
-        Row: {
-          content: string
-          content_hash: string | null
-          created_at: string
-          folder_id: string | null
-          id: string
-          is_deleted: boolean
-          is_public: boolean
-          is_readonly: boolean
-          language: string
-          metadata: Json
-          name: string
-          organization_id: string | null
-          path: string
-          project_id: string | null
-          repository_id: string | null
-          s3_bucket: string | null
-          s3_key: string | null
-          tags: string[]
-          task_id: string | null
-          updated_at: string
-          user_id: string
-          version: number
-          workspace_id: string | null
-        }
-        Insert: {
-          content?: string
-          content_hash?: string | null
-          created_at?: string
-          folder_id?: string | null
-          id?: string
-          is_deleted?: boolean
-          is_public?: boolean
-          is_readonly?: boolean
-          language?: string
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          path?: string
-          project_id?: string | null
-          repository_id?: string | null
-          s3_bucket?: string | null
-          s3_key?: string | null
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id: string
-          version?: number
-          workspace_id?: string | null
-        }
-        Update: {
-          content?: string
-          content_hash?: string | null
-          created_at?: string
-          folder_id?: string | null
-          id?: string
-          is_deleted?: boolean
-          is_public?: boolean
-          is_readonly?: boolean
-          language?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          path?: string
-          project_id?: string | null
-          repository_id?: string | null
-          s3_bucket?: string | null
-          s3_key?: string | null
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id?: string
-          version?: number
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "code_files_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "code_file_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "code_files_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "code_files_repository_id_fkey"
-            columns: ["repository_id"]
-            isOneToOne: false
-            referencedRelation: "code_repositories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      code_repositories: {
-        Row: {
-          created_at: string
-          description: string | null
-          git_branch: string | null
-          git_commit_sha: string | null
-          git_provider: string | null
-          git_url: string | null
-          id: string
-          is_active: boolean
-          is_public: boolean
-          last_synced_at: string | null
-          metadata: Json
-          name: string
-          organization_id: string | null
-          project_id: string | null
-          root_folder_id: string | null
-          s3_bucket: string | null
-          s3_prefix: string | null
-          sync_error: string | null
-          sync_status: string
-          updated_at: string
-          user_id: string
-          workspace_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          git_branch?: string | null
-          git_commit_sha?: string | null
-          git_provider?: string | null
-          git_url?: string | null
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          last_synced_at?: string | null
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          project_id?: string | null
-          root_folder_id?: string | null
-          s3_bucket?: string | null
-          s3_prefix?: string | null
-          sync_error?: string | null
-          sync_status?: string
-          updated_at?: string
-          user_id: string
-          workspace_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          git_branch?: string | null
-          git_commit_sha?: string | null
-          git_provider?: string | null
-          git_url?: string | null
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          last_synced_at?: string | null
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          root_folder_id?: string | null
-          s3_bucket?: string | null
-          s3_prefix?: string | null
-          sync_error?: string | null
-          sync_status?: string
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "code_repositories_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "code_repositories_root_folder_id_fkey"
-            columns: ["root_folder_id"]
-            isOneToOne: false
-            referencedRelation: "code_file_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       contact_submissions: {
         Row: {
           admin_notes: string | null
@@ -17757,30 +17679,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      extractor: {
-        Row: {
-          default_identifier: string | null
-          default_index: number | null
-          id: string
-          name: string
-          output_type: Database["public"]["Enums"]["data_type"] | null
-        }
-        Insert: {
-          default_identifier?: string | null
-          default_index?: number | null
-          id?: string
-          name: string
-          output_type?: Database["public"]["Enums"]["data_type"] | null
-        }
-        Update: {
-          default_identifier?: string | null
-          default_index?: number | null
-          id?: string
-          name?: string
-          output_type?: Database["public"]["Enums"]["data_type"] | null
-        }
-        Relationships: []
       }
       feedback_categories: {
         Row: {
@@ -36534,6 +36432,9 @@ export const Constants = {
     Enums: {},
   },
   chat: {
+    Enums: {},
+  },
+  code: {
     Enums: {},
   },
   communication: {

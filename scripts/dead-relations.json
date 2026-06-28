@@ -1,6 +1,38 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
+    {
+      "relation": "code_repositories",
+      "old": "public.code_repositories",
+      "newSchema": "code",
+      "new": "code.code_repositories",
+      "since": "2026-06-27",
+      "reason": "moved to code schema (clean cut). Use .schema('code').from('code_repositories')."
+    },
+    {
+      "relation": "code_file_folders",
+      "old": "public.code_file_folders",
+      "newSchema": "code",
+      "new": "code.code_file_folders",
+      "since": "2026-06-27",
+      "reason": "moved to code schema (clean cut). Use .schema('code').from('code_file_folders')."
+    },
+    {
+      "relation": "code_files",
+      "old": "public.code_files",
+      "newSchema": "code",
+      "new": "code.code_files",
+      "since": "2026-06-27",
+      "reason": "moved to code schema (clean cut). Use .schema('code').from('code_files')."
+    },
+    {
+      "relation": "code_file_versions",
+      "old": "public.code_file_versions",
+      "newSchema": "code",
+      "new": "code.code_file_versions",
+      "since": "2026-06-27",
+      "reason": "moved to code schema (clean cut). Use .schema('code').from('code_file_versions')."
+    },
     {
       "relation": "agent_run",
       "old": "public.agent_run",
@@ -143,7 +175,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -151,7 +183,7 @@
       "newSchema": "permissions",
       "new": "public.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) \u2014 note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -159,7 +191,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -735,7 +767,7 @@
       "newSchema": "agent",
       "new": "agent.context_menu_view",
       "since": "2026-06-28",
-      "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
+      "reason": "context-menu shim dropped \u2014 read agent.context_menu_view via .schema('agent').from('context_menu_view')."
     },
     {
       "relation": "ui_surface",

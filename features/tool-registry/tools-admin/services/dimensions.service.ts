@@ -303,7 +303,7 @@ export async function cxToolCallReferenceCount(toolName: string): Promise<number
 
 export async function listAllUiSurfaceNames(): Promise<string[]> {
   const { data, error } = await sb()
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .select("name")
     .eq("is_active", true)
     .order("name", { ascending: true });

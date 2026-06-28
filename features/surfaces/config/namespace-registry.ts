@@ -1,6 +1,6 @@
 /**
  * Surface config namespace registry — the code-first contract for
- * `public.ui_surface_config` rows.
+ * `ui.ui_surface_config` rows.
  *
  * A namespace is a typed bucket of per-surface configuration (dictionary,
  * session_defaults, tools, …) stored as scoped JSONB rows and resolved by

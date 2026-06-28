@@ -156,7 +156,7 @@ export interface UnifiedAgentContextMenuProps {
    * auto-name-match. When omitted, the launch thunk falls back to the
    * shortcut's persisted `scopeMappings` and `contextMappings` only.
    *
-   * Surface names must match a row in `public.ui_surface` (synced from the
+   * Surface names must match a row in `ui.ui_surface` (synced from the
    * code-first SurfaceManifest registry). See `features/tool-registry/
    * surfaces/SKILL.md` for the full contract.
    */

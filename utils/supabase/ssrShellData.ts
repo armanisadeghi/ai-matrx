@@ -78,7 +78,7 @@ export async function getSSRShellData(
 
 /**
  * Fetches the Phase 3 agent-aware SSR shell payload. Mirrors `getSSRShellData`
- * but reads from `agx_context_menu_view` for the context menu. Both RPCs
+ * but reads from `agent.context_menu_view` for the context menu. Both RPCs
  * coexist during the prompts→agents migration — consumers can call either or
  * both (e.g. `DeferredShellData` calls both in parallel so the legacy prompt
  * menu and the new agent menu are each pre-populated).

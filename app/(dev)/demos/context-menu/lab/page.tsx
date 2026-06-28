@@ -57,7 +57,7 @@
  *     code, with its full `SurfaceValue` schema. Source of truth for
  *     what each surface promises to emit.
  *
- *   • Raw DB view query — runs the same view (`agx_context_menu_view`)
+ *   • Raw DB view query — runs the same view (`agent.context_menu_view`)
  *     directly through the supabase browser client, bypassing the API
  *     route. Compare against the API response to confirm RLS / scope
  *     filtering is consistent.
@@ -697,12 +697,13 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
     setDbBusy(true);
     try {
       // Cast through `any` — the generated Database type doesn't expose
-      // `agx_context_menu_view` as a queryable surface. The view is real
+      // `agent.context_menu_view` as a queryable surface. The view is real
       // and RLS-enforced; we just need a tolerant type here.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client = supabase as any;
       const { data, error } = await client
-        .from("agx_context_menu_view")
+        .schema("agent")
+        .from("context_menu_view")
         .select("*");
       setDbResponse({
         fetchedAt: new Date().toISOString(),
@@ -1192,7 +1193,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
 
             <JsonPanel
               title="Raw DB view"
-              subtitle="agx_context_menu_view via supabase-js (RLS still applies)"
+              subtitle="agent.context_menu_view via supabase-js (RLS still applies)"
               badge={
                 dbResponse ? (
                   <span className="text-[10px] font-mono text-muted-foreground">
@@ -1206,7 +1207,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
               }
               data={
                 dbResponse ?? {
-                  hint: "Click 'Query view' to run a raw select on agx_context_menu_view",
+                  hint: "Click 'Query view' to run a raw select on agent.context_menu_view",
                 }
               }
             />

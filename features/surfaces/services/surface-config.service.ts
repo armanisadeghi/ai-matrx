@@ -145,20 +145,20 @@ export async function fetchSurfaceConfigBundle(
   const client = sb();
   const [rolesRes, prefsRes, configRes] = await Promise.all([
     client
-      .from("ui_surface_agent_role")
+      .schema("ui").from("ui_surface_agent_role")
       .select(
         "name, label, description, kind, default_agent_id, max_agents, allow_custom, auto_run, sort_order",
       )
       .eq("surface_name", surfaceName)
       .order("sort_order"),
     client
-      .from("ui_surface_agent_pref")
+      .schema("ui").from("ui_surface_agent_pref")
       .select(
         "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at",
       )
       .eq("surface_name", surfaceName),
     client
-      .from("ui_surface_config")
+      .schema("ui").from("ui_surface_config")
       .select(
         "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at",
       )
@@ -388,7 +388,7 @@ export async function setRoleSelection(args: {
   } = args;
   const client = sb();
   let q = client
-    .from("ui_surface_agent_pref")
+    .schema("ui").from("ui_surface_agent_pref")
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("role_name", roleName)
@@ -404,13 +404,13 @@ export async function setRoleSelection(args: {
 
   if (existing) {
     const { error } = await client
-      .from("ui_surface_agent_pref")
+      .schema("ui").from("ui_surface_agent_pref")
       .update({ agent_id: agentId, ...(settings ? { settings } : {}) })
       .eq("id", existing.id);
     if (error) throw error;
     return;
   }
-  const { error } = await client.from("ui_surface_agent_pref").insert({
+  const { error } = await client.schema("ui").from("ui_surface_agent_pref").insert({
     surface_name: surfaceName,
     role_name: roleName,
     agent_id: agentId,
@@ -424,7 +424,7 @@ export async function setRoleSelection(args: {
 
 export async function deleteRolePref(prefId: string): Promise<void> {
   const { error } = await sb()
-    .from("ui_surface_agent_pref")
+    .schema("ui").from("ui_surface_agent_pref")
     .delete()
     .eq("id", prefId);
   if (error) throw error;
@@ -438,7 +438,7 @@ export async function addRosterItem(args: {
   scope: PrefScopeInput;
 }): Promise<void> {
   const { error } = await sb()
-    .from("ui_surface_agent_pref")
+    .schema("ui").from("ui_surface_agent_pref")
     .insert({
       surface_name: args.surfaceName,
       role_name: args.roleName,
@@ -467,7 +467,7 @@ export async function setNamespaceConfig(args: {
   }
   const client = sb();
   let q = client
-    .from("ui_surface_config")
+    .schema("ui").from("ui_surface_config")
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("namespace", namespace);
@@ -481,13 +481,13 @@ export async function setNamespaceConfig(args: {
 
   if (existing) {
     const { error } = await client
-      .from("ui_surface_config")
+      .schema("ui").from("ui_surface_config")
       .update({ config })
       .eq("id", existing.id);
     if (error) throw error;
     return;
   }
-  const { error } = await client.from("ui_surface_config").insert({
+  const { error } = await client.schema("ui").from("ui_surface_config").insert({
     surface_name: surfaceName,
     namespace,
     config,

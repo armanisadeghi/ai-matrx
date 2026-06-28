@@ -3,7 +3,7 @@
  *
  * A `SurfaceValue` is a named runtime value a UI surface declares it can
  * supply at execution time. Surfaces register a `SurfaceManifest` in code;
- * the registry is mirrored into `public.ui_surface_value` so binding UIs
+ * the registry is mirrored into `ui.ui_surface_value` so binding UIs
  * (agent mapping editors, tool mapping editors, audit views) can pick from
  * the same list the runtime actually emits.
  *
@@ -69,7 +69,7 @@ export interface SurfaceValue {
 // ---------------------------------------------------------------------------
 
 /**
- * Declared in manifests, mirrored to `public.ui_surface_agent_role` by
+ * Declared in manifests, mirrored to `ui.ui_surface_agent_role` by
  * manifest sync (same lifecycle as SurfaceValue). A role is somewhere the
  * surface PLUGS IN an agent: cleanup's `clean` + `custom_slot`, scribe's
  * `assistant`. The manifest's `defaultAgentId` is the platform default;
@@ -95,7 +95,7 @@ export interface SurfaceAgentRole {
 }
 
 /**
- * A config namespace the surface consumes from `public.ui_surface_config`
+ * A config namespace the surface consumes from `ui.ui_surface_config`
  * (dictionary, session_defaults, …). Code-only declaration — the handler
  * (validate/merge/empty) is registered in
  * `features/surfaces/config/namespace-registry.ts`.

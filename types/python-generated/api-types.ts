@@ -3651,6 +3651,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scraper/admin/crawl/{run_id}/force-fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crawl Force Fail
+         * @description Force a stranded run to ``failed`` — no worker cooperation required.
+         */
+        post: operations["crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scraper/admin/crawl/{run_id}/resume": {
         parameters: {
             query?: never;
@@ -4201,8 +4221,8 @@ export interface paths {
         };
         /**
          * Conversation Executions
-         * @description Every runtime execution tree linked to a cx_conversation — one per request that
-         *     ran on the spine (multi-turn conversations accrue several).
+         * @description Every runtime execution tree linked to a conversation (chat.conversation) — one
+         *     per request that ran on the spine (multi-turn conversations accrue several).
          */
         get: operations["conversation_executions_admin_runtime_conversations__conversation_id__get"];
         put?: never;
@@ -4569,30 +4589,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -4672,12 +4668,12 @@ export interface paths {
          * Get Db Surface Manifest
          * @description DB-driven surface manifest. The canonical path — used by frontends
          *     that declare a ``client.surface`` from the 60+ rows in
-         *     ``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
+         *     ``ui.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
          *
          *     Includes tools inherited from every ancestor surface walked via
          *     ``ui_surface.parent_surface_name`` so the response reflects exactly
          *     what ``apply_unified_tools`` would inject. Returns 404 when the name
-         *     isn't in ``public.ui_surface``.
+         *     isn't in ``ui.ui_surface``.
          */
         get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
         put?: never;
@@ -17030,7 +17026,7 @@ export interface components {
          *
          *     - ``surface`` — single string naming the UI context the request originated
          *       from (e.g. ``matrx-user/chat``, ``chrome-extension/pilot``). The host
-         *       resolves this against its surface registry (``public.ui_surface`` in
+         *       resolves this against its surface registry (``ui.ui_surface`` in
          *       aidream) to derive the default tool set + value bindings, with
          *       inheritance from ``matrx-default/default``.
          *
@@ -18688,33 +18684,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -21775,7 +21744,7 @@ export interface components {
             by_source_kind: components["schemas"]["InventoryBucket"][];
             /**
              * By Visibility Route
-             * @description How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_share, cld_perm_user, cld_perm_group, cld_perm_folder.
+             * @description How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_perm, note_public, cld_perm_user, cld_perm_group, cld_perm_folder.
              */
             by_visibility_route?: {
                 [key: string]: number;
@@ -28485,7 +28454,7 @@ export interface components {
          *     and needs reconciliation per TOOL_ROUTING_RULES.md §11.
          *
          *     Sources can be one of:
-         *       - ``db_surface`` — resolved from ``public.ui_surface`` +
+         *       - ``db_surface`` — resolved from ``ui.ui_surface`` +
          *         ``public.tool_surface_defaults`` (the common path; 60+ matrx-user
          *         surfaces).
          *       - ``capability`` — resolved from a Python-registered ``Capability``
@@ -37575,6 +37544,39 @@ export interface operations {
             };
         };
     };
+    crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     crawl_resume_scraper_admin_crawl__run_id__resume_post: {
         parameters: {
             query?: never;
@@ -39207,41 +39209,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

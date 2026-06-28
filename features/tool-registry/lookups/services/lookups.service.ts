@@ -3,21 +3,21 @@
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 
-type Tables = Database["public"]["Tables"];
+type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
-export type UiClientRow = Tables["ui_client"]["Row"];
-export type UiSurfaceRow = Tables["ui_surface"]["Row"];
+export type UiClientRow = UiTables["ui_client"]["Row"];
+export type UiSurfaceRow = UiTables["ui_surface"]["Row"];
 export type ToolExecutorRow = ToolTables["executor"]["Row"];
 
-export type UiClientUpsert = Tables["ui_client"]["Insert"];
-export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
+export type UiClientUpsert = UiTables["ui_client"]["Insert"];
+export type UiSurfaceUpsert = UiTables["ui_surface"]["Insert"];
 export type ToolExecutorUpsert = ToolTables["executor"]["Insert"];
 
 const sb = () => createClient();
 
 export async function listUiClients(): Promise<UiClientRow[]> {
   const { data, error } = await sb()
-    .from("ui_client")
+    .schema("ui").from("ui_client")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -27,7 +27,7 @@ export async function listUiClients(): Promise<UiClientRow[]> {
 
 export async function listUiSurfaces(): Promise<UiSurfaceRow[]> {
   const { data, error } = await sb()
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .select("*")
     .order("client_name", { ascending: true })
     .order("sort_order", { ascending: true })
@@ -47,7 +47,7 @@ export async function listToolExecutors(): Promise<ToolExecutorRow[]> {
 
 export async function dependentSurfaceCount(clientName: string): Promise<number> {
   const { count, error } = await sb()
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .select("name", { count: "exact", head: true })
     .eq("client_name", clientName);
   if (error) throw error;
@@ -56,7 +56,7 @@ export async function dependentSurfaceCount(clientName: string): Promise<number>
 
 export async function upsertUiClient(row: UiClientUpsert): Promise<UiClientRow> {
   const { data, error } = await sb()
-    .from("ui_client")
+    .schema("ui").from("ui_client")
     .upsert(row, { onConflict: "name" })
     .select()
     .single();
@@ -66,7 +66,7 @@ export async function upsertUiClient(row: UiClientUpsert): Promise<UiClientRow> 
 
 export async function upsertUiSurface(row: UiSurfaceUpsert): Promise<UiSurfaceRow> {
   const { data, error } = await sb()
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .upsert(row, { onConflict: "name" })
     .select()
     .single();
@@ -96,7 +96,7 @@ export async function setUiClientActive(
   isActive: boolean,
 ): Promise<void> {
   const { error } = await sb()
-    .from("ui_client")
+    .schema("ui").from("ui_client")
     .update({ is_active: isActive })
     .eq("name", name);
   if (error) throw error;
@@ -107,7 +107,7 @@ export async function setUiSurfaceActive(
   isActive: boolean,
 ): Promise<void> {
   const { error } = await sb()
-    .from("ui_surface")
+    .schema("ui").from("ui_surface")
     .update({ is_active: isActive })
     .eq("name", name);
   if (error) throw error;

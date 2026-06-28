@@ -4,7 +4,7 @@
  * SurfaceSimulatorSelect — creator-panel control (Run tab) that overrides the
  * surface a conversation reports to the server.
  *
- * Picks ANY row from `public.ui_surface` (every client: matrx-user,
+ * Picks ANY row from `ui.ui_surface` (every client: matrx-user,
  * matrx-admin, matrx-public, chrome-extension, …) and stores it as
  * `builderAdvancedSettings.surfaceOverride`. `buildToolInjection` then sends it
  * verbatim as `client.surface` instead of the route-detected one, so the

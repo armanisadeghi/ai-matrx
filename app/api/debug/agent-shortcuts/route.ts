@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 // Dev-only diagnostic for the agent-shortcuts stack.
 // Returns row counts + samples from every table the context menu depends on,
-// plus the agx_context_menu_view output for the caller's visibility.
+// plus the agent.context_menu_view output for the caller's visibility.
 
 export async function GET() {
   try {
@@ -60,7 +60,7 @@ export async function GET() {
           "id,label,block_id,category_id,is_active,user_id,organization_id",
         )
         .limit(10),
-      client.from("agx_context_menu_view").select("*"),
+      client.schema("agent").from("context_menu_view").select("*"),
     ]);
 
     const result = {
@@ -109,7 +109,7 @@ export async function GET() {
         }
         if (viewRows.error) {
           notes.push(
-            `agx_context_menu_view query errored: ${viewRows.error.message}. The view may not exist or RLS is blocking.`,
+            `agent.context_menu_view query errored: ${viewRows.error.message}. The view may not exist or RLS is blocking.`,
           );
         }
         if (

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const placementType = searchParams.get("placement_type");
 
-    const untyped = supabase as unknown as {
+    type ContextMenuViewQuery = {
       from: (tableOrView: string) => {
         select: (cols: string) => {
           eq: (col: string, val: string) => Promise<{
@@ -35,7 +35,14 @@ export async function GET(request: NextRequest) {
       };
     };
 
-    const builder = untyped.from("agx_context_menu_view").select("*");
+    const untyped = supabase as unknown as ContextMenuViewQuery & {
+      schema: (name: string) => ContextMenuViewQuery;
+    };
+
+    const builder = untyped
+      .schema("agent")
+      .from("context_menu_view")
+      .select("*");
     const { data, error } = placementType
       ? await builder.eq("placement_type", placementType)
       : await builder;

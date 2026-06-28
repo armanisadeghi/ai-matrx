@@ -1,5 +1,5 @@
 /**
- * One-off: emit the SQL to mirror ALL_MANIFESTS into public.ui_surface_value.
+ * One-off: emit the SQL to mirror ALL_MANIFESTS into ui.ui_surface_value.
  *
  * Prints, to stdout:
  *   1. A guard SELECT listing any manifest surfaces missing a ui_surface row.
@@ -37,12 +37,12 @@ function main() {
   console.log(
     `SELECT s.name FROM (VALUES ${surfaceNames
       .map((n) => `(${sqlString(n)})`)
-      .join(", ")}) AS s(name) LEFT JOIN public.ui_surface u ON u.name = s.name WHERE u.name IS NULL;`,
+      .join(", ")}) AS s(name) LEFT JOIN ui.ui_surface u ON u.name = s.name WHERE u.name IS NULL;`,
   );
   console.log("");
   console.log("-- Upsert all manifest values");
   console.log(
-    `INSERT INTO public.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order) VALUES`,
+    `INSERT INTO ui.ui_surface_value (surface_name, name, label, description, value_type, always_available, typical_char_count, sort_order) VALUES`,
   );
   console.log(rows.join(",\n"));
   console.log(
