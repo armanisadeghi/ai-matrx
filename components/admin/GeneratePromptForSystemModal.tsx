@@ -33,11 +33,29 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
-import { extractJsonFromText } from "@/features/prompts/utils/json-extraction";
-import {
-  normalizePromptMessagesFromDb,
-  normalizePromptSettingsFromDb,
-} from "@/features/prompts/utils/normalize-prompt-db-json";
+import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
+import type { Json } from "@/types/database.types";
+
+// Inline normalize helpers (migrated from features/prompts/utils/normalize-prompt-db-json).
+// Canonical DB-JSON normalizers live in features/prompts which is being deleted.
+type SimpleMessage = { role: string; content: string };
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function normalizePromptMessagesFromDb(value: Json | null | undefined): SimpleMessage[] {
+  if (!Array.isArray(value)) return [];
+  const out: SimpleMessage[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    if (typeof item.role !== "string" || typeof item.content !== "string") continue;
+    out.push({ role: item.role, content: item.content });
+  }
+  return out;
+}
+function normalizePromptSettingsFromDb(value: Json | null | undefined): Record<string, unknown> {
+  if (!isRecord(value)) return {};
+  return value as Record<string, unknown>;
+}
 import { VoiceInputButton } from "@/components/official/VoiceInputButton";
 import type { SystemPromptDB } from "@/types/system-prompts-db";
 import { Badge } from "@/components/ui/badge";

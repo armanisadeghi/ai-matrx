@@ -31,7 +31,8 @@ import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
-import { PromptEditorContextMenu } from "@/features/prompts/components/PromptEditorContextMenu.lazy";
+// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
+// Re-implement with features/context-menu-v3/EditableContextMenu.
 
 // Dynamic import for TUI editor
 const TuiEditorContent = dynamic(

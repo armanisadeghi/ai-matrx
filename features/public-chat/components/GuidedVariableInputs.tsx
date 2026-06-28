@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@/utils/text/text-case-converter";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 
 // ============================================================================
 // TYPES

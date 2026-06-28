@@ -11,7 +11,8 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCardPrompts } from "@/hooks/useSystemPrompts";
-import { PromptExecutionCard } from "@/features/prompts/components/dynamic/PromptExecutionCard";
+// TODO(prompts-deletion): PromptExecutionCard removed with features/prompts.
+// Migrate to agent shortcut execution (useShortcutTrigger) — see DynamicButtons TODO.
 import { Loader2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -99,18 +100,22 @@ export function DynamicCards({
           );
         }
 
-        // Real card with actual prompt
-        // Use source_prompt_id if available, otherwise use the prompt_snapshot itself
+        // TODO(prompts-deletion): PromptExecutionCard removed. Show a stub until
+        // this is migrated to agent shortcut execution (useShortcutTrigger).
         return (
-          <PromptExecutionCard
+          <Card
             key={systemPrompt.id}
-            systemPromptId={systemPrompt.source_prompt_id || systemPrompt.id}
-            systemPrompt={systemPrompt}
-            title={systemPrompt.display_config?.label || systemPrompt.name}
-            description={systemPrompt.description || ""}
-            context={context}
-            allow_chat={allowChat}
-          />
+            className="relative flex flex-col h-full p-6 opacity-70"
+          >
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              {systemPrompt.display_config?.label || systemPrompt.name}
+            </h3>
+            {systemPrompt.description && (
+              <p className="text-sm text-muted-foreground mb-3">
+                {systemPrompt.description}
+              </p>
+            )}
+          </Card>
         );
       })}
     </div>

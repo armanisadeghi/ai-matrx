@@ -24,7 +24,7 @@ import {
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { formatText } from "@/utils/text/text-case-converter";
 import type { PublicResource } from "../types/content";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 import { MessageCircle, Share2, List, Layers } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";

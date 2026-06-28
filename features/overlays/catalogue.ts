@@ -595,11 +595,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
-  socketAccordion: {
-    label: "Socket Accordion",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   surfaceContextInspector: {
     label: "Surface Context Values",
     instanceMode: "singleton",

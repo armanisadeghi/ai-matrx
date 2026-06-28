@@ -1,5 +1,5 @@
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
-import type { AgentRecord } from "@/features/prompts/hooks/useAgentConsumer";
+import type { AgentRecord } from "@/lib/redux/slices/agentCacheSlice";
 import { DEFAULT_AGENTS } from "../components/AgentSelector";
 
 export const DEFAULT_AGENT_CONFIG: AgentConfig = {

@@ -9,7 +9,6 @@ import { MultiDropdownHeader } from "./MultiDropdownHeader";
 import { SingleDropdownWithSearchHeader } from "./SingleDropdownWithSearchHeader";
 import { IconsHeader } from "./IconsHeader";
 
-
 export interface DesktopAppHeaderProps {
   appId?: string;
   headerClassName?: string;
@@ -19,11 +18,14 @@ export interface DesktopAppHeaderProps {
   isCreator?: boolean;
   isAdmin?: boolean;
   isPreview?: boolean;
+  /** When true, render shell user menu in the applet header (e.g. fullscreen preview overlay). */
+  showUserMenu?: boolean;
 }
 
-
 export const DesktopAppHeader: React.FC<DesktopAppHeaderProps> = (props) => {
-  const layoutType = useAppSelector(selectAppRuntimeLayoutType) as AppLayoutOptions;
+  const layoutType = useAppSelector(
+    selectAppRuntimeLayoutType,
+  ) as AppLayoutOptions;
 
   switch (layoutType) {
     case "tabbedApplets":

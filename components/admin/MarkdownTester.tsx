@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PromptEditorContextMenu } from "@/features/prompts/components/PromptEditorContextMenu";
+// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
+// Re-implement with features/context-menu-v3/EditableContextMenu.
 import MarkdownStream from "@/components/MarkdownStream";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { AudioTestModal } from "@/components/admin/AudioTestModal";
@@ -1360,22 +1361,14 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
             </div>
 
             <div className="flex-1 min-h-0 border rounded-lg bg-textured border-gray-200 dark:border-gray-700 overflow-hidden">
-              <PromptEditorContextMenu
-                getTextarea={getTextarea}
-                onContentInserted={handleContentInserted}
-                className="h-full"
-              >
-                <textarea
-                  ref={textareaRef}
-                  value={inputContent}
-                  onChange={(e) => setInputContent(e.target.value)}
-                  className="w-full h-full p-3 font-mono text-sm resize-none focus:outline-none bg-transparent text-gray-900 dark:text-gray-100 border-0 overflow-y-auto"
-                  placeholder="Enter your markdown, JSON, or mixed content here...
-                  
-Right-click for content block templates!"
-                  spellCheck={false}
-                />
-              </PromptEditorContextMenu>
+              <textarea
+                ref={textareaRef}
+                value={inputContent}
+                onChange={(e) => setInputContent(e.target.value)}
+                className="w-full h-full p-3 font-mono text-sm resize-none focus:outline-none bg-transparent text-gray-900 dark:text-gray-100 border-0 overflow-y-auto"
+                placeholder="Enter your markdown, JSON, or mixed content here..."
+                spellCheck={false}
+              />
             </div>
           </div>
 

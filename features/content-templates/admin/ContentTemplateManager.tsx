@@ -51,7 +51,8 @@ import {
   Check,
   Copy,
 } from "lucide-react";
-import { PromptEditorContextMenu } from "@/features/prompts/components/PromptEditorContextMenu";
+// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
+// Re-implement with features/context-menu-v3/EditableContextMenu or a new content-block picker.
 import {
   ContentTemplateDB,
   CreateContentTemplateInput,
@@ -964,42 +965,32 @@ export function ContentTemplateManager({
                   <CardContent>
                     {/* Editor-only */}
                     {previewMode === "editor" && (
-                      <PromptEditorContextMenu
-                        getTextarea={() => editTextareaRef.current}
-                        onContentInserted={() => {}}
-                      >
-                        <AutoResizeTextarea
-                          ref={editTextareaRef}
-                          value={editData.content || ""}
-                          onChange={(e) =>
-                            handleEditChange("content", e.target.value)
-                          }
-                          placeholder="Enter the template content..."
-                          className="font-mono text-sm"
-                          minHeight={300}
-                        />
-                      </PromptEditorContextMenu>
+                      <AutoResizeTextarea
+                        ref={editTextareaRef}
+                        value={editData.content || ""}
+                        onChange={(e) =>
+                          handleEditChange("content", e.target.value)
+                        }
+                        placeholder="Enter the template content..."
+                        className="font-mono text-sm"
+                        minHeight={300}
+                      />
                     )}
 
                     {/* Editor + client-side preview */}
                     {previewMode === "preview" && (
                       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
                         <div className="flex-1 min-w-0">
-                          <PromptEditorContextMenu
-                            getTextarea={() => editTextareaRef.current}
-                            onContentInserted={() => {}}
-                          >
-                            <AutoResizeTextarea
-                              ref={editTextareaRef}
-                              value={editData.content || ""}
-                              onChange={(e) =>
-                                handleEditChange("content", e.target.value)
-                              }
-                              placeholder="Enter the template content..."
-                              className="font-mono text-sm h-full"
-                              minHeight={300}
-                            />
-                          </PromptEditorContextMenu>
+                          <AutoResizeTextarea
+                            ref={editTextareaRef}
+                            value={editData.content || ""}
+                            onChange={(e) =>
+                              handleEditChange("content", e.target.value)
+                            }
+                            placeholder="Enter the template content..."
+                            className="font-mono text-sm h-full"
+                            minHeight={300}
+                          />
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg p-4 bg-textured overflow-auto">
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 pb-2 border-b border-border">
@@ -1016,21 +1007,16 @@ export function ContentTemplateManager({
                     {(previewMode === "json" || previewMode === "stream") && (
                       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
                         <div className="flex-1 min-w-0">
-                          <PromptEditorContextMenu
-                            getTextarea={() => editTextareaRef.current}
-                            onContentInserted={() => {}}
-                          >
-                            <AutoResizeTextarea
-                              ref={editTextareaRef}
-                              value={editData.content || ""}
-                              onChange={(e) =>
-                                handleEditChange("content", e.target.value)
-                              }
-                              placeholder="Enter the template content..."
-                              className="font-mono text-sm h-full"
-                              minHeight={300}
-                            />
-                          </PromptEditorContextMenu>
+                          <AutoResizeTextarea
+                            ref={editTextareaRef}
+                            value={editData.content || ""}
+                            onChange={(e) =>
+                              handleEditChange("content", e.target.value)
+                            }
+                            placeholder="Enter the template content..."
+                            className="font-mono text-sm h-full"
+                            minHeight={300}
+                          />
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg bg-textured overflow-auto relative">
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-0 px-4 pt-3 pb-2 border-b border-border flex items-center justify-between">
@@ -1222,25 +1208,20 @@ export function ContentTemplateManager({
 
             <div>
               <Label htmlFor="create-content">Content</Label>
-              <PromptEditorContextMenu
-                getTextarea={() => createTextareaRef.current}
-                onContentInserted={() => {}}
-              >
-                <AutoResizeTextarea
-                  ref={createTextareaRef}
-                  id="create-content"
-                  value={createFormData.content || ""}
-                  onChange={(e) =>
-                    setCreateFormData({
-                      ...createFormData,
-                      content: e.target.value,
-                    })
-                  }
-                  placeholder="Enter the template content..."
-                  className="font-mono"
-                  minHeight={200}
-                />
-              </PromptEditorContextMenu>
+              <AutoResizeTextarea
+                ref={createTextareaRef}
+                id="create-content"
+                value={createFormData.content || ""}
+                onChange={(e) =>
+                  setCreateFormData({
+                    ...createFormData,
+                    content: e.target.value,
+                  })
+                }
+                placeholder="Enter the template content..."
+                className="font-mono"
+                minHeight={200}
+              />
             </div>
 
             <div className="flex items-center justify-between">

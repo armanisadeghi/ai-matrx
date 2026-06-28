@@ -130,7 +130,6 @@ export const OVERLAY_IDS = [
   "shareModalWindow",
   "singleMessageWindow",
   "smartCodeEditorWindow",
-  "socketAccordion",
   "sourceInspectorWindow",
   "systemInstructionWindow",
   "surfaceContextInspector",

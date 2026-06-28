@@ -29,7 +29,8 @@ import {
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import MarkdownStream from "@/components/MarkdownStream";
 import { DiffView } from "./DiffView";
-import { SmartPromptInput } from "@/features/prompts/components/smart/SmartPromptInput";
+import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { cn } from "@/lib/utils";
 import {
   useAICodeEditor,
@@ -83,7 +84,7 @@ export function AICodeEditor({
     handleSubmitOnEnterChange,
     handleCopyResponse,
     handleApplyChanges,
-    runId,
+    conversationId,
   } = useAICodeEditor({
     open,
     onOpenChange,
@@ -412,9 +413,9 @@ export function AICodeEditor({
               </span>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-2">
-              {messages.map((msg, idx) => (
+              {messages.map((msg) => (
                 <div
-                  key={idx}
+                  key={msg.id}
                   className={cn(
                     "p-2 rounded text-xs",
                     msg.role === "user"
@@ -431,14 +432,10 @@ export function AICodeEditor({
                           ? "System"
                           : msg.role === "tool"
                             ? "Tool"
-                            : msg.role === "function"
-                              ? "Function"
-                              : "Unknown"}
+                            : "Unknown"}
                   </div>
                   <div className="whitespace-pre-wrap break-words">
-                    {typeof msg.content === "string"
-                      ? msg.content
-                      : JSON.stringify(msg.content)}
+                    {extractFlatText(msg) || JSON.stringify(msg.content)}
                   </div>
                 </div>
               ))}
@@ -501,15 +498,11 @@ export function AICodeEditor({
                 <div className="h-[50px] flex items-center justify-center text-muted-foreground text-sm">
                   Initializing editor...
                 </div>
-              ) : runId ? (
+              ) : conversationId ? (
                 <div className="w-full">
-                  <SmartPromptInput
-                    runId={runId}
-                    placeholder="Describe the changes you want to make..."
-                    sendButtonVariant="default"
-                    uploadBucket="userContent"
-                    uploadPath="code-editor-attachments"
-                    enablePasteImages={true}
+                  <SmartAgentInput
+                    conversationId={conversationId}
+                    compact={false}
                   />
                 </div>
               ) : null}

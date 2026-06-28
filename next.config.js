@@ -309,7 +309,6 @@ const nextConfig = {
                 { source: '/lists-junk/:path*', destination: '/demos/lists-junk/:path*', permanent: false },
                 { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
                 { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
-                { source: '/preview', destination: '/demos/preview', permanent: false },
             ] : []),
             // Former public-demos lived at /demos/public/*; consolidated under (dev)/demos/*.
             { source: '/demos/public/:path*', destination: '/demos/:path*', permanent: false },

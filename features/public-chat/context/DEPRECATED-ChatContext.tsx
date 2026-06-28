@@ -8,7 +8,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 import type { PublicResource, ContentItem } from "../types/content";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 

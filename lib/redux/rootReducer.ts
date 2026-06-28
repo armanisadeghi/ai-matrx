@@ -107,7 +107,6 @@ import scopeAssignmentsReducer from "@/features/agent-context/redux/scope/scopeA
 import contextItemsReducer from "@/features/scope-system/redux/contextItemsSlice";
 import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
 import templatesReducer from "@/features/scope-system/redux/templatesSlice";
-import promptEditorReducer from "./slices/promptEditorSlice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
 import agentSettingsReducer from "./slices/agent-settings/agentSettingsSlice";
 
@@ -269,12 +268,9 @@ export const slimReducerMap = {
   customAppRuntime: customAppRuntimeSlice,
   customAppletRuntime: customAppletRuntimeSlice,
 
-  // OLD PROMPT SYSTEM (DEPRECATED)
   contextMenuCache: contextMenuCacheReducer,
   agentContextMenuCache: agentContextMenuCacheReducer,
   agentCache: agentCacheReducer,
-
-  promptEditor: promptEditorReducer,
 
   messaging: messagingReducer,
 

@@ -21,7 +21,7 @@ import type {
   ApiMode,
   ChatModeConfig,
 } from "../_legacy-stubs";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
 export interface AuthenticatedChatPropsConfig {
   /** Agent/prompt ID */
@@ -35,7 +35,7 @@ export interface AuthenticatedChatPropsConfig {
   /** Agent display name */
   agentName?: string;
   /** Variable definitions */
-  variableDefaults?: PromptVariable[];
+  variableDefaults?: VariableDefinition[];
   /** Pre-filled variable values */
   variables?: Record<string, string>;
   /** Whether variables must be completed */

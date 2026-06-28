@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { useAgentConsumer } from "@/features/prompts/hooks/useAgentConsumer";
+import { useAgentCacheConsumer } from "@/features/agents/hooks/useAgentCacheConsumer";
 import { DEFAULT_AGENTS } from "./AgentSelector";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
@@ -69,7 +69,7 @@ export function PromptPickerMenu({
     selectAgent,
     searchTerm: searchQuery,
     setSearchTerm: setSearchQuery,
-  } = useAgentConsumer("prompt-picker", {
+  } = useAgentCacheConsumer("prompt-picker", {
     ephemeral: true,
   });
 

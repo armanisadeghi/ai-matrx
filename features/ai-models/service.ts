@@ -9,7 +9,7 @@ import type {
   ModelUsageResult,
   ProviderModelsCache,
 } from "./types";
-import type { PromptSettings } from "@/features/prompts/types/core";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 // Minimal row shapes for the agent.definition / agent.template usage queries.
 // Pinned via `.returns<>()` because the large cross-schema FK graph (added in the
@@ -171,7 +171,7 @@ export const aiModelService = {
   async replaceModelInPrompts(
     _oldId: string,
     _newId: string,
-    _newSettings?: PromptSettings,
+    _newSettings?: LLMParams,
   ): Promise<number> {
     // public.prompts was moved to graveyard.prompts — no live rows to update.
     // All prompt model references are now on agent.definition and handled by replaceModelInBuiltins.
@@ -182,7 +182,7 @@ export const aiModelService = {
   async replaceModelInBuiltins(
     oldId: string,
     newId: string,
-    newSettings?: PromptSettings,
+    newSettings?: LLMParams,
   ): Promise<number> {
     // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
     const { data: rows, error: fetchErr } = await supabase
@@ -219,7 +219,7 @@ export const aiModelService = {
   async replaceModelInAgents(
     oldId: string,
     newId: string,
-    newSettings?: PromptSettings,
+    newSettings?: LLMParams,
   ): Promise<number> {
     const { data: rows, error: fetchErr } = await supabase
       .schema("agent")
@@ -255,7 +255,7 @@ export const aiModelService = {
   async replaceModelInAgentTemplates(
     oldId: string,
     newId: string,
-    newSettings?: PromptSettings,
+    newSettings?: LLMParams,
   ): Promise<number> {
     const { data: rows, error: fetchErr } = await supabase
       .schema("agent")

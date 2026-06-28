@@ -8,7 +8,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { usePromptsBasePath } from "../hooks/usePromptsBasePath";
-import { useAgentConsumer } from "@/features/prompts/hooks/useAgentConsumer";
+import { useAgentCacheConsumer } from "@/features/agents/hooks/useAgentCacheConsumer";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 // ============================================================================
@@ -33,10 +33,13 @@ interface PromptSwitcherSheetProps {
 // ============================================================================
 
 function useUserPrompts(open: boolean) {
-  const { owned, isLoading: loading } = useAgentConsumer("prompt-switcher", {
-    ephemeral: true,
-    mode: "slim",
-  });
+  const { owned, isLoading: loading } = useAgentCacheConsumer(
+    "prompt-switcher",
+    {
+      ephemeral: true,
+      mode: "slim",
+    },
+  );
 
   const prompts: MinimalPrompt[] = owned.map((a) => ({
     id: a.id,

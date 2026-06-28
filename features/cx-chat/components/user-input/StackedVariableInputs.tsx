@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatText } from "@/utils/text/text-case-converter";
-import { VariableInputComponent } from "@/features/prompts/components/variable-inputs/VariableInputComponent";
+import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
@@ -142,7 +142,7 @@ export function StackedVariableInputs({
                   <VariableInputComponent
                     value={value}
                     onChange={(newValue) =>
-                      handleVariableChange(variable.name, newValue)
+                      handleVariableChange(variable.name, newValue as string)
                     }
                     variableName={variable.name}
                     customComponent={

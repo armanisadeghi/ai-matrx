@@ -43,7 +43,6 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";
 import OverlayController from "@/features/overlays/OverlayController";
-import LegacyPromptOverlaysController from "@/features/prompts/components/results-display/LegacyPromptOverlaysController";
 import { AudioRecoveryToast } from "@/features/audio/components/AudioRecoveryToast";
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";

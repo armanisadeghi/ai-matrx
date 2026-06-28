@@ -8,7 +8,7 @@
  *   - Test (multiple agents simultaneously, all in memory)
  */
 
-import type { VariableCustomComponent } from "@/features/prompts/types/core";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 // ── Core Settings Shape ────────────────────────────────────────────────────────
 

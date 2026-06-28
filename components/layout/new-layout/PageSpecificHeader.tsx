@@ -325,36 +325,6 @@ export function MessagesHeader(props: MessagesHeaderProps) {
   );
 }
 
-interface PromptAppHeaderProps {
-  mode: "view" | "edit" | "run";
-  onModeChange: (mode: "view" | "edit" | "run") => void;
-  isSaving?: boolean;
-  onAIEdit?: () => void;
-}
-
-export function PromptAppHeader(props: PromptAppHeaderProps) {
-  const [PromptAppHeaderCompact, setPromptAppHeaderCompact] =
-    useState<any>(null);
-
-  useEffect(() => {
-    import("@/features/prompt-apps/components/PromptAppHeaderCompact").then(
-      (module) => {
-        setPromptAppHeaderCompact(() => module.PromptAppHeaderCompact);
-      },
-    );
-  }, []);
-
-  if (!PromptAppHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <PromptAppHeaderCompact {...props} />
-    </PageSpecificHeader>
-  );
-}
-
 interface ModuleHeaderProps {
   pages: ModulePage[];
   currentPath: string;

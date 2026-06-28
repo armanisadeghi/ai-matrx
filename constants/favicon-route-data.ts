@@ -21,7 +21,6 @@ export interface FaviconRouteEntry {
 export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/dashboard", favicon: { color: "#0ea5e9", letter: "H" } },
   { href: "/agents", favicon: { color: "#f43f5e", letter: "G" } },
-  { href: "/prompt-apps", favicon: { color: "#059669", letter: "Pa" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "R" } },
   { href: "/chat", favicon: { color: "#2563eb", letter: "C" } },
   { href: "/organizations", favicon: { color: "#b91c1c", letter: "O" } },

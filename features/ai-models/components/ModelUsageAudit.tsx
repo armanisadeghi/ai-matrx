@@ -21,8 +21,10 @@ import {
 import Link from "next/link";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
-import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
-import type { PromptSettings } from "@/features/prompts/types/core";
+// TODO(prompts-deletion): ModelSettingsDialog was removed with features/prompts.
+// The "Review Settings" step is temporarily disabled. Re-implement using
+// features/agents/components/settings-management/AgentSettingsModal (needs agentId wiring).
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 interface ModelUsageAuditProps {
   model: AiModel;
@@ -41,7 +43,7 @@ export default function ModelUsageAudit({
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<ReplaceStep>("idle");
   const [replacementId, setReplacementId] = useState("");
-  const [pendingSettings, setPendingSettings] = useState<PromptSettings>({});
+  const [pendingSettings, setPendingSettings] = useState<LLMParams>({});
   const [replacing, setReplacing] = useState(false);
   const [replaceError, setReplaceError] = useState<string | null>(null);
 
@@ -330,51 +332,26 @@ export default function ModelUsageAudit({
         </div>
       )}
 
-      {/* Step 2: Settings review dialog */}
+      {/* Step 2: Settings review — TODO(prompts-deletion): ModelSettingsDialog removed.
+          Re-implement via AgentSettingsModal. Currently falls back to quick replace. */}
       {step === "review-settings" && replacementId && (
-        <ModelSettingsDialog
-          isOpen
-          onClose={handleCancel}
-          modelId={replacementId}
-          models={allModels}
-          settings={pendingSettings}
-          onSettingsChange={setPendingSettings}
-          showModelSelector={false}
-          requireConfirmation={false}
-          confirmationMessage=""
-          footer={
-            <div className="flex items-center justify-between gap-2 w-full">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium">
-                  Replacing {totalUsage} reference{totalUsage !== 1 ? "s" : ""}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {model.common_name || model.name} →{" "}
-                  {selectedReplacement?.common_name ||
-                    selectedReplacement?.name}
-                </span>
-                {replaceError && (
-                  <span className="text-xs text-destructive">
-                    {replaceError}
-                  </span>
-                )}
-              </div>
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1 shrink-0"
-                disabled={replacing}
-                onClick={handleApplyWithSettings}
-              >
-                {replacing ? (
-                  <RefreshCcw className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ArrowRightLeft className="h-3 w-3" />
-                )}
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
+            <p className="text-sm font-medium">Apply replacement without settings review?</p>
+            <p className="text-xs text-muted-foreground">
+              {model.common_name || model.name} → {selectedReplacement?.common_name || selectedReplacement?.name}
+              <br />Settings editor is temporarily unavailable. Click Apply to replace model IDs only.
+            </p>
+            {replaceError && <p className="text-xs text-destructive">{replaceError}</p>}
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleCancel}>Cancel</Button>
+              <Button size="sm" className="h-7 text-xs gap-1" disabled={replacing} onClick={handleApplyWithSettings}>
+                {replacing ? <RefreshCcw className="h-3 w-3 animate-spin" /> : <ArrowRightLeft className="h-3 w-3" />}
                 Apply Replacement
               </Button>
             </div>
-          }
-        />
+          </div>
+        </div>
       )}
     </div>
   );

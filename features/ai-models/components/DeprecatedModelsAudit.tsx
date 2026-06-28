@@ -37,8 +37,10 @@ import {
 } from "lucide-react";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
-import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
-import type { PromptSettings } from "@/features/prompts/types/core";
+// TODO(prompts-deletion): ModelSettingsDialog was removed with features/prompts.
+// The "Review Settings" step is temporarily disabled. Re-implement using
+// features/agents/components/settings-management/AgentSettingsModal (needs agentId wiring).
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -58,7 +60,7 @@ interface DeprecatedEntry {
 
 interface SettingsReviewTarget {
   entry: DeprecatedEntry;
-  settings: PromptSettings;
+  settings: LLMParams;
 }
 
 type SortField =
@@ -900,50 +902,25 @@ export default function DeprecatedModelsAudit({
       </AlertDialog>
 
       {/* ── Settings review dialog ──────────────────────────────────────── */}
+      {/* TODO(prompts-deletion): ModelSettingsDialog removed. Re-implement via AgentSettingsModal. */}
       {settingsTarget && (
-        <ModelSettingsDialog
-          isOpen
-          onClose={() => setSettingsTarget(null)}
-          modelId={settingsTarget.entry.replacementId}
-          models={allModels}
-          settings={settingsTarget.settings}
-          onSettingsChange={(s) =>
-            setSettingsTarget((prev) =>
-              prev ? { ...prev, settings: s } : null,
-            )
-          }
-          showModelSelector={false}
-          requireConfirmation={false}
-          footer={
-            <div className="flex items-center justify-between gap-2 w-full">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium">
-                  {totalUsage(settingsTarget.entry)} reference
-                  {totalUsage(settingsTarget.entry) !== 1 ? "s" : ""} to update
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {settingsTarget.entry.model.common_name ||
-                    settingsTarget.entry.model.name}
-                  {" → "}
-                  {allModels.find(
-                    (m) => m.id === settingsTarget.entry.replacementId,
-                  )?.common_name ||
-                    allModels.find(
-                      (m) => m.id === settingsTarget.entry.replacementId,
-                    )?.name}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1 shrink-0"
-                onClick={handleApplyWithSettings}
-              >
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
+            <p className="text-sm font-medium">Apply replacement without settings review?</p>
+            <p className="text-xs text-muted-foreground">
+              Settings editor is temporarily unavailable. Click Apply to replace model IDs only.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSettingsTarget(null)}>
+                Cancel
+              </Button>
+              <Button size="sm" className="h-7 text-xs gap-1" onClick={handleApplyWithSettings}>
                 <ArrowRightLeft className="h-3 w-3" />
                 Apply Replacement
               </Button>
             </div>
-          }
-        />
+          </div>
+        </div>
       )}
     </div>
   );

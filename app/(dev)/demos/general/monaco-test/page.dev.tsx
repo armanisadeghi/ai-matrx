@@ -4,9 +4,6 @@ import SmallCodeEditor from '@/features/code-editor/components/code-block/SmallC
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import getSamplePromptAppCode from '@/features/prompt-apps/sample-app-code';
-
-
 const SAMPLE_JS = `// JavaScript with IntelliSense
 function calculateFactorial(n) {
   if (n <= 1) return 1;
@@ -138,8 +135,30 @@ class Calculator:
     def multiply(a, b):
         return a * b`;
 
-const samplePromptAppCode = getSamplePromptAppCode('simple');
+// Inline sample — replaces the deleted prompt-apps util
+const samplePromptAppCode = `// Sample TSX component for Monaco IntelliSense testing
+import React, { useState } from 'react';
 
+interface AppProps {
+  title?: string;
+}
+
+export default function SampleApp({ title = 'Hello' }: AppProps) {
+  const [value, setValue] = useState('');
+
+  return (
+    <div className="p-4">
+      <h1>{title}</h1>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Type something..."
+        className="border rounded px-2 py-1"
+      />
+      <p>You typed: {value}</p>
+    </div>
+  );
+}`;
 
 export default function MonacoTestPage() {
   const [jsCode, setJsCode] = useState(SAMPLE_JS);

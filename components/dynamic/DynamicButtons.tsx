@@ -39,7 +39,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useButtonPrompts } from '@/hooks/useSystemPrompts';
 import { PromptContextResolver, type UIContext } from '@/lib/services/prompt-context-resolver';
-import { PromptRunnerModal } from '@/features/prompts/components/results-display/PromptRunnerModal';
+// TODO(prompts-deletion): PromptRunnerModal removed with features/prompts.
+// This component uses the legacy prompt-execution system. Migrate to useShortcutTrigger()
+// per the TODO comment at the top of this file.
 import { Loader2, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -192,18 +194,8 @@ export function DynamicButtons({
         })}
       </div>
 
-      {/* Modal for execution - runId must be initialized in Redux */}
-      {modalOpen && modalRunId && (
-        <PromptRunnerModal
-          isOpen={modalOpen}
-          onClose={() => {
-            setModalOpen(false);
-            setModalRunId(null);
-          }}
-          runId={modalRunId}
-          title={modalTitle}
-        />
-      )}
+      {/* TODO(prompts-deletion): PromptRunnerModal removed — execution modal is temporarily
+          disabled. Migrate this component to useShortcutTrigger() (see file-level TODO). */}
     </>
   );
 }

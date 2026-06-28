@@ -17,22 +17,28 @@ export interface CustomAppHeaderProps {
   isDebug?: boolean;
   initialActiveAppletSlug?: string;
   isPreview?: boolean;
+  showUserMenu?: boolean;
 }
 
-export const CustomAppHeader = ({ 
-  appId, 
-  isDemo = false, 
-  isDebug = false, 
+export const CustomAppHeader = ({
+  appId,
+  isDemo = false,
+  isDebug = false,
   initialActiveAppletSlug,
   isPreview = false,
   headerClassName,
+  showUserMenu = false,
 }: CustomAppHeaderProps) => {
   const isMobile = useIsMobile();
   const isAppInitialized = useAppSelector(selectAppRuntimeIsInitialized);
-  const activeAppletSlug = initialActiveAppletSlug || useAppSelector(selectActiveAppletSlug);
-  const userIsCreator = useAppSelector((state) => brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"));
-  const isAdmin = useAppSelector((state) => brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"));
-
+  const activeAppletSlug =
+    initialActiveAppletSlug || useAppSelector(selectActiveAppletSlug);
+  const userIsCreator = useAppSelector((state) =>
+    brokerSelectors.selectValue(state, "APPLET_USER_IS_ADMIN"),
+  );
+  const isAdmin = useAppSelector((state) =>
+    brokerSelectors.selectValue(state, "GLOBAL_USER_IS_ADMIN"),
+  );
 
   if (isDebug) {
     console.log("isDebug", isDebug);
@@ -48,29 +54,30 @@ export const CustomAppHeader = ({
 
   // Use reduced height styling for preview mode
   const headerClasses = `sticky top-0 w-full z-40 ${
-    isPreview ? 'h-10' : 'h-14'
-  } ${headerClassName || ''} bg-textured transition-colors shadow-sm`;
+    isPreview ? "h-10" : "h-14"
+  } ${headerClassName || ""} bg-textured transition-colors shadow-sm`;
 
   return isMobile ? (
     <div className={headerClasses}>
-      <MobileAppHeader 
-        appId={appId} 
-        activeAppletSlug={activeAppletSlug} 
-        isDemo={isDemo} 
-        isCreator={userIsCreator} 
+      <MobileAppHeader
+        appId={appId}
+        activeAppletSlug={activeAppletSlug}
+        isDemo={isDemo}
+        isCreator={userIsCreator}
         isAdmin={isAdmin}
-        isPreview={isPreview} 
+        isPreview={isPreview}
       />
     </div>
   ) : (
     <div className={headerClasses}>
-      <DesktopAppHeader 
-        appId={appId} 
-        activeAppletSlug={activeAppletSlug} 
-        isDemo={isDemo} 
-        isCreator={userIsCreator} 
+      <DesktopAppHeader
+        appId={appId}
+        activeAppletSlug={activeAppletSlug}
+        isDemo={isDemo}
+        isCreator={userIsCreator}
         isAdmin={isAdmin}
-        isPreview={isPreview} 
+        isPreview={isPreview}
+        showUserMenu={showUserMenu}
       />
     </div>
   );

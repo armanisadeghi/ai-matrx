@@ -1231,14 +1231,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
   {
-    slug: "socket-accordion-fullscreen",
-    overlayId: "socketAccordion",
-    kind: "widget",
-    label: "Socket Accordion",
-    defaultData: { taskId: undefined },
-    ephemeral: true,
-  },
-  {
     slug: "broker-state-fullscreen",
     overlayId: "brokerState",
     kind: "widget",

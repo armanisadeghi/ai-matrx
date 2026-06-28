@@ -9,8 +9,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { formatText } from "@/utils/text/text-case-converter";
-import { VariableInputComponent } from "@/features/prompts/components/variable-inputs/VariableInputComponent";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
 
 // ============================================================================
 // TYPES
@@ -156,7 +156,7 @@ export function PublicVariableInputs({
                   <VariableInputComponent
                     value={value}
                     onChange={(newValue) =>
-                      handleVariableChange(variable.name, newValue)
+                      handleVariableChange(variable.name, newValue as string)
                     }
                     variableName={variable.name}
                     customComponent={variable.customComponent}

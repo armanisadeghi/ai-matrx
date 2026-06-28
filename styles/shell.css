@@ -1719,6 +1719,24 @@ details[open] > summary .shell-mobile-admin-caret {
     visibility 0s linear 0s;
 }
 
+/* Portable host — ResponsiveLayout / fullscreen preview outside `.shell-root` */
+.shell-user-menu-portable-root:has(#shell-user-menu:checked)
+  .shell-user-menu-backdrop {
+  display: block;
+}
+
+.shell-user-menu-portable-root:has(#shell-user-menu:checked)
+  .shell-user-menu-panel {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear 0s;
+}
+
 /* ---------------------------------------------------------------------------
    16. Dashboard Specific Styles
    --------------------------------------------------------------------------- */

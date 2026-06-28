@@ -1,26 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { shallowEqual } from "react-redux";
-import { startPromptInstance } from "@/lib/redux/prompt-execution/thunks/startInstanceThunk";
-import { executeMessage } from "@/lib/redux/prompt-execution/thunks/executeMessageThunk";
+import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
-  updateVariable,
-  removeInstance,
-  selectInstance,
-  selectMessages,
-  selectResources,
-  EMPTY_MESSAGES,
-  EMPTY_OBJECT,
-  EMPTY_ARRAY,
-} from "@/lib/redux/prompt-execution/slice";
-import {
-  selectStreamingTextForInstance,
-  selectIsResponseEndedForInstance,
-  selectMergedVariables,
-} from "@/lib/redux/prompt-execution/selectors";
-import { completeExecutionThunk } from "@/lib/redux/prompt-execution/thunks/completeExecutionThunk";
+  selectLatestAccumulatedText,
+  selectStreamPhase,
+  selectIsExecuting,
+} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { selectCachedPrompt } from "@/lib/redux/slices/promptCacheSlice";
 import {
   parseCodeEdits,
   validateEdits,
@@ -36,6 +27,19 @@ import {
 } from "@/features/code-editor/utils/specialVariables";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
+
+// Shortcut IDs that map to code-editor agents (from the TODO comment spec)
+const SHORTCUT_FOR_AGENT: Record<string, string> = {
+  // generic-code-editor agent → "Master Code Editor" shortcut
+  "87efa869-9c11-43cf-b3a8-5b7c775ee415":
+    "00836ba6-10af-4a95-8c7e-6b5a03c0b3e4",
+  // code-editor-dynamic-context agent → "Dynamic Context Code Editor" shortcut
+  "970856c5-3b9d-4034-ac9d-8d8a11fb3dba":
+    "2c301ba1-e870-4a3f-abe6-8148c72a7425",
+  // prompt-app-ui-editor agent → "Update Prompt App Code" shortcut
+  "c1c1f092-ba0d-4d6c-b352-b22fe6c48272":
+    "6231578b-a52d-47c5-a41d-831000ddfa9e",
+};
 
 export type EditorState =
   | "input"
@@ -61,14 +65,22 @@ export interface UseAICodeEditorProps {
 }
 
 /**
- * Hook for AI Code Editor logic
+ * Hook for AI Code Editor logic — agent-execution system version.
+ *
+ * Rewired from the legacy prompt-execution slice onto the agent execution system:
+ *  - startPromptInstance → useShortcutTrigger (displayMode: "direct")
+ *  - selectStreamingTextForInstance → selectLatestAccumulatedText
+ *  - selectIsResponseEndedForInstance → selectStreamPhase === "complete"
+ *  - selectMessages → selectConversationMessages (MessageRecord[])
+ *  - selectMergedVariables → selectResolvedVariables
+ *  - updateVariable → setUserVariableValues
+ *  - removeInstance → destroyInstanceIfAllowed
+ *  - completeExecutionThunk → dropped (agent stream handles completion natively)
+ *  - cachedPrompt path → dropped (variable defaults live on the agent record)
  *
  * NOTE: This hook does NOT manage currentInput state.
- * Input handling should be done directly in the component using:
- * - selectCurrentInput selector
- * - setCurrentInput action
- *
- * The handleSubmit function accepts userInput as a parameter.
+ * Input handling is done directly in the component via SmartAgentInput,
+ * keyed on conversationId.
  */
 export function useAICodeEditor({
   open,
@@ -82,6 +94,7 @@ export function useAICodeEditor({
   context,
 }: UseAICodeEditorProps) {
   const dispatch = useAppDispatch();
+  const trigger = useShortcutTrigger();
 
   // Get user preferences
   const promptsPreferences = useAppSelector(selectPromptsPreferences);
@@ -90,10 +103,10 @@ export function useAICodeEditor({
   // Normalize the language for consistent syntax highlighting
   const language = normalizeLanguage(rawLanguage);
 
-  // Use explicit builtinId if provided, otherwise use context
+  // Use explicit builtinId if provided, otherwise derive from promptKey
   const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
 
-  // State for prompt selection
+  // State for agent selection (replaces selectedBuiltinId)
   const [selectedBuiltinId, setSelectedBuiltinId] = useState(defaultBuiltinId);
 
   // State for submit on enter (defaults to user preference)
@@ -101,35 +114,59 @@ export function useAICodeEditor({
     promptsPreferences.submitOnEnter,
   );
 
-  // Redux instance management
-  const [runId, setRunId] = useState<string | null>(null);
+  // conversationId replaces the old runId — client-generated UUID, honored end-to-end
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
-  const instance = useAppSelector((state) =>
-    runId ? selectInstance(state, runId) : null,
-  );
-  const streamingText = useAppSelector((state) =>
-    runId ? selectStreamingTextForInstance(state, runId) : "",
-  );
-  const isResponseEnded = useAppSelector((state) =>
-    runId ? selectIsResponseEndedForInstance(state, runId) : false,
-  );
-  // Use shallowEqual to prevent unnecessary re-renders from object reference changes
-  const variables = useAppSelector(
-    (state) => (runId ? selectMergedVariables(state, runId) : EMPTY_OBJECT),
-    shallowEqual,
-  );
-  const cachedPrompt = useAppSelector((state) =>
-    selectedBuiltinId ? selectCachedPrompt(state, selectedBuiltinId) : null,
-  );
+  // Track whether we launched for this open session
+  const hasLaunchedRef = useRef(false);
 
-  // Messages - stable reference when not found
-  const messages = useAppSelector((state) =>
-    runId ? selectMessages(state, runId) : EMPTY_MESSAGES,
+  // ─── Agent execution selectors (all keyed on conversationId) ────────────────
+
+  const streamingTextSelector = useMemo(
+    () =>
+      conversationId
+        ? selectLatestAccumulatedText(conversationId)
+        : () => "",
+    [conversationId],
+  );
+  const streamingText = useAppSelector(streamingTextSelector);
+
+  const streamPhase = useAppSelector((state) =>
+    conversationId ? selectStreamPhase(conversationId)(state) : "idle",
   );
 
-  // NOTE: currentInput and resources are NOT managed here - they're managed by Redux
-  // accessed directly via selectors. expandedVariable also managed by Redux.
-  // This eliminates local state management entirely.
+  const isExecuting = useAppSelector((state) =>
+    conversationId ? selectIsExecuting(conversationId)(state) : false,
+  );
+
+  // Resolved variables (replaces selectMergedVariables)
+  const resolvedVariablesSelector = useMemo(
+    () =>
+      conversationId
+        ? selectResolvedVariables(conversationId)
+        : () => ({} as Record<string, unknown>),
+    [conversationId],
+  );
+  const variables = useAppSelector(resolvedVariablesSelector, shallowEqual);
+
+  // Conversation history (replaces selectMessages)
+  const messagesSelector = useMemo(
+    () =>
+      conversationId
+        ? selectConversationMessages(conversationId)
+        : () => [] as ReturnType<typeof selectConversationMessages>,
+    [conversationId],
+  );
+  const messages = useAppSelector(messagesSelector);
+
+  // Derived from streamPhase: "complete" replaces selectIsResponseEndedForInstance
+  const isResponseEnded = streamPhase === "complete" || streamPhase === "error";
+
+  // isLoadingPrompt — true while we're launching (before conversationId lands)
+  const [isLaunching, setIsLaunching] = useState(false);
+  const isLoadingPrompt = isLaunching;
+
+  // ─── Local editor state ──────────────────────────────────────────────────────
 
   const [state, setState] = useState<EditorState>("input");
   const [parsedEdits, setParsedEdits] = useState<ReturnType<
@@ -140,199 +177,117 @@ export function useAICodeEditor({
   const [rawAIResponse, setRawAIResponse] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
-  const isExecuting =
-    instance?.status === "executing" || instance?.status === "streaming";
-  const isLoadingPrompt = instance?.status === "initializing";
+  // ─── Launch agent when modal opens ──────────────────────────────────────────
 
-  // Initialize prompt instance when modal opens or builtin changes
   useEffect(() => {
-    if (open && selectedBuiltinId) {
-      const initInstance = async () => {
-        try {
-          const id = await dispatch(
-            startPromptInstance({
-              promptId: selectedBuiltinId,
-              // TODO(prompt-to-agent-sweep): Full agent-system rewrite required.
-              //
-              // This hook is structurally tied to the legacy prompt-execution
-              // Redux slice — `selectInstance`, `selectMessages`,
-              // `selectMergedVariables`, `selectStreamingTextForInstance`,
-              // `selectIsResponseEndedForInstance`, `updateVariable`,
-              // `removeInstance`, `completeExecutionThunk`, `executeMessage`
-              // all live on the prompt slice and have no automatic agent
-              // equivalent. The unrelated swap of `startPromptInstance` →
-              // `launchAgent` is a one-line change; the surrounding hook is
-              // not.
-              //
-              // Recipe for the proper swap:
-              //   1. Replace `startPromptInstance` with
-              //      `useShortcutTrigger()` and trigger one of the existing
-              //      shortcuts that target this agent:
-              //        - generic-code-editor agent
-              //          (87efa869-9c11-43cf-b3a8-5b7c775ee415) →
-              //          shortcut 00836ba6-10af-4a95-8c7e-6b5a03c0b3e4
-              //          ("Master Code Editor")
-              //        - code-editor-dynamic-context agent
-              //          (970856c5-3b9d-4034-ac9d-8d8a11fb3dba) →
-              //          shortcut 2c301ba1-e870-4a3f-abe6-8148c72a7425
-              //          ("Dynamic Context Code Editor")
-              //        - prompt-app-ui-editor agent
-              //          (c1c1f092-ba0d-4d6c-b352-b22fe6c48272) →
-              //          shortcut 6231578b-a52d-47c5-a41d-831000ddfa9e
-              //          ("Update Prompt App Code")
-              //      Pass `config: { displayMode: "direct" }` so no overlay
-              //      renders — this hook's consumer renders the chrome.
-              //   2. Capture conversationId via `onConversationCreated`.
-              //   3. Replace prompt-slice selectors with their agent
-              //      counterparts:
-              //        selectStreamingTextForInstance →
-              //          `selectLatestAccumulatedText(cid)` (aggregate)
-              //        selectIsResponseEndedForInstance →
-              //          `selectStreamPhase(cid)` === "complete"
-              //        selectMessages → `selectInstanceConversationHistory`
-              //        selectMergedVariables →
-              //          `selectInstanceVariableValues(cid)`
-              //   4. Replace `executeMessage` (multi-turn send) with
-              //      `dispatch(executeInstance({ conversationId }))`.
-              //   5. Drop `completeExecutionThunk` — the agent stream
-              //      machinery handles completion natively; the existing
-              //      `useEffect` that watches `isResponseEnded` should
-              //      simply branch on stream phase = "complete".
-              //   6. Drop the cachedPrompt path entirely — variable defaults
-              //      live on the agent record (queried by the launcher).
-              //      Special-variable injection (`buildSpecialVariables`)
-              //      moves into the `runtime.userInput` / variable seeding
-              //      layer of `trigger`/`launchAgent`.
-              //   7. Cleanup-on-close uses
-              //      `dispatch(destroyInstanceIfAllowed(cid))` instead of
-              //      `removeInstance({ runId })`.
-              //
-              // This is a ~150-line change inside this file plus the
-              // consuming `AICodeEditor.tsx`. Until done, this hook keeps
-              // `features/prompts/**` and the prompt-execution slice alive.
-              promptSource: "prompt_builtins",
-              variables: {},
-              executionConfig: {
-                auto_run: false,
-                allow_chat: false,
-                show_variables: true,
-                apply_variables: true,
-                track_in_runs: false,
-                use_pre_execution_input: false,
-              },
-            }),
-          ).unwrap();
+    if (!open || hasLaunchedRef.current) return;
+    if (!selectedBuiltinId) return;
 
-          setRunId(id);
-        } catch (err) {
-          console.error("Error initializing prompt instance:", err);
-          setState("error");
-          setErrorMessage(
-            err instanceof Error ? err.message : "Failed to initialize",
-          );
-        }
+    const shortcutId = SHORTCUT_FOR_AGENT[selectedBuiltinId];
+    if (!shortcutId) {
+      console.error(
+        `[useAICodeEditor] No shortcut registered for agent id "${selectedBuiltinId}". ` +
+          `Add it to SHORTCUT_FOR_AGENT in useAICodeEditor.ts.`,
+      );
+      setState("error");
+      setErrorMessage(
+        `No shortcut registered for agent id "${selectedBuiltinId}".`,
+      );
+      return;
+    }
+
+    hasLaunchedRef.current = true;
+    setIsLaunching(true);
+
+    // Build special variables to seed the agent at launch time
+    const codeContext: CodeEditorContext = {
+      currentCode,
+      selection,
+      context,
+      language,
+    };
+    const initialVariables: Record<string, string> = {
+      current_code: currentCode,
+      content: currentCode,
+      ...(selection ? { selection } : {}),
+      ...(context ? { context } : {}),
+    };
+
+    trigger(shortcutId, {
+      sourceFeature: "code-editor",
+      surfaceKey: `code-editor:${shortcutId}`,
+      config: {
+        displayMode: "direct",
+        autoRun: false,
+        allowChat: true,
+        showPreExecutionGate: false,
+        showVariablePanel: false,
+      },
+      runtime: {
+        variables: initialVariables,
+        applicationScope: {
+          current_code: currentCode,
+          content: currentCode,
+          ...(selection ? { selection } : {}),
+          ...(context ? { context } : {}),
+          language,
+        },
+      },
+      onConversationCreated: (cid) => {
+        setConversationId(cid);
+        setIsLaunching(false);
+      },
+    }).catch((err) => {
+      console.error("[useAICodeEditor] Error launching agent:", err);
+      setState("error");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Failed to initialize agent",
+      );
+      setIsLaunching(false);
+      hasLaunchedRef.current = false;
+    });
+  }, [open, selectedBuiltinId, currentCode, selection, context, language, trigger]);
+
+  // ─── Update special variables when code context changes ─────────────────────
+  // Mirrors what the old hook did with updateVariable + buildSpecialVariables.
+  // We push updates into the instance's userValues so the agent sees current code.
+
+  useEffect(() => {
+    if (!conversationId) return;
+    if (!isExecuting && state !== "processing") {
+      // Only refresh variables when idle so we don't disturb an in-flight request
+      const updates: Record<string, unknown> = {
+        current_code: currentCode,
+        content: currentCode,
+        language,
       };
-
-      initInstance();
-    }
-  }, [open, selectedBuiltinId, dispatch]);
-
-  // Populate special variables when prompt is loaded
-  useEffect(() => {
-    if (runId && cachedPrompt) {
-      const promptVariables = cachedPrompt.variableDefaults || [];
-      const requiredSpecialVars = getRequiredSpecialVariables(promptVariables);
-
-      if (requiredSpecialVars.length > 0) {
-        const codeContext: CodeEditorContext = {
-          currentCode,
-          selection,
-          context,
-          language,
-        };
-
-        const specialVars = buildSpecialVariables(
-          codeContext,
-          requiredSpecialVars,
-          language,
-        );
-        logSpecialVariablesUsage(cachedPrompt.name, specialVars);
-
-        Object.entries(specialVars).forEach(([name, value]) => {
-          dispatch(
-            updateVariable({
-              runId,
-              variableName: name,
-              value,
-            }),
-          );
-        });
-      }
-    }
-  }, [
-    runId,
-    cachedPrompt,
-    currentCode,
-    selection,
-    context,
-    language,
-    dispatch,
-  ]);
-
-  // Reset state and cleanup when modal closes
-  useEffect(() => {
-    if (!open) {
-      if (runId) {
-        dispatch(removeInstance({ runId }));
-      }
-
-      setRunId(null);
-      // Resources and expandedVariable are managed by Redux, automatically cleaned up with removeInstance
-      setState("input");
-      setParsedEdits(null);
-      setModifiedCode("");
-      setErrorMessage("");
-      setRawAIResponse("");
-      setIsCopied(false);
-      setSelectedBuiltinId(defaultBuiltinId);
-      setSubmitOnEnter(submitOnEnterPreference);
-    }
-  }, [open, defaultBuiltinId, submitOnEnterPreference, runId, dispatch]);
-
-  // Update selected builtin when default changes
-  useEffect(() => {
-    if (open) {
-      setSelectedBuiltinId(defaultBuiltinId);
-    }
-  }, [open, defaultBuiltinId]);
-
-  // Complete execution when streaming ends
-  useEffect(() => {
-    if (
-      runId &&
-      instance &&
-      isResponseEnded &&
-      streamingText &&
-      (instance.status === "streaming" || instance.status === "executing") &&
-      instance.execution.messageStartTime
-    ) {
-      setRawAIResponse(streamingText);
-
-      const totalTime = Date.now() - instance.execution.messageStartTime;
-      const timeToFirstToken = instance.execution.timeToFirstToken;
+      if (selection) updates.selection = selection;
+      if (context) updates.context = context;
 
       dispatch(
-        completeExecutionThunk({
-          runId,
-          responseText: streamingText,
-          timeToFirstToken,
-          totalTime,
+        setUserVariableValues({
+          conversationId,
+          values: updates,
         }),
       );
     }
-  }, [runId, instance, isResponseEnded, streamingText, dispatch]);
+  }, [conversationId, currentCode, selection, context, language, isExecuting, state, dispatch]);
 
-  // Parse response when streaming completes
+  // ─── Watch for stream completion → parse code edits ─────────────────────────
+
+  useEffect(() => {
+    if (
+      conversationId &&
+      isResponseEnded &&
+      streamingText &&
+      state === "processing"
+    ) {
+      setRawAIResponse(streamingText);
+    }
+  }, [conversationId, isResponseEnded, streamingText, state]);
+
+  // ─── Parse response when streaming completes ─────────────────────────────────
+
   useEffect(() => {
     if (rawAIResponse && !isExecuting && state === "processing") {
       const parsed = parseCodeEdits(rawAIResponse);
@@ -397,76 +352,57 @@ export function useAICodeEditor({
     }
   }, [rawAIResponse, isExecuting, state, currentCode]);
 
-  // Update special variables whenever they change or before execution
-  // This ensures code context is always up-to-date
+  // ─── Watch for execution start → set processing state ───────────────────────
+
   useEffect(() => {
-    if (runId && cachedPrompt && instance?.status === "ready") {
-      const promptVariables = cachedPrompt.variableDefaults || [];
-      const requiredSpecialVars = getRequiredSpecialVariables(promptVariables);
-
-      if (requiredSpecialVars.length > 0) {
-        const codeContext: CodeEditorContext = {
-          currentCode,
-          selection,
-          context,
-          language,
-        };
-
-        const specialVars = buildSpecialVariables(
-          codeContext,
-          requiredSpecialVars,
-          language,
-        );
-
-        Object.entries(specialVars).forEach(([name, value]) => {
-          const currentValue = variables[name];
-          // Only update if value changed
-          if (currentValue !== value) {
-            dispatch(
-              updateVariable({
-                runId,
-                variableName: name,
-                value,
-              }),
-            );
-          }
-        });
-      }
-    }
-  }, [
-    runId,
-    cachedPrompt,
-    instance?.status,
-    currentCode,
-    selection,
-    context,
-    language,
-    variables,
-    dispatch,
-  ]);
-
-  // Watch for execution start and update local state
-  useEffect(() => {
-    if (instance?.status === "executing" || instance?.status === "streaming") {
+    if (isExecuting) {
       if (state !== "processing") {
         setState("processing");
       }
     }
-  }, [instance?.status, state]);
+  }, [isExecuting, state]);
 
-  // Handlers for PromptInput
+  // ─── Cleanup on modal close ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!open) {
+      if (conversationId) {
+        dispatch(destroyInstanceIfAllowed(conversationId));
+      }
+      setConversationId(null);
+      hasLaunchedRef.current = false;
+      setState("input");
+      setParsedEdits(null);
+      setModifiedCode("");
+      setErrorMessage("");
+      setRawAIResponse("");
+      setIsCopied(false);
+      setSelectedBuiltinId(defaultBuiltinId);
+      setSubmitOnEnter(submitOnEnterPreference);
+    }
+  }, [open, defaultBuiltinId, submitOnEnterPreference, conversationId, dispatch]);
+
+  // ─── Update selected agent when default changes ──────────────────────────────
+
+  useEffect(() => {
+    if (open) {
+      setSelectedBuiltinId(defaultBuiltinId);
+    }
+  }, [open, defaultBuiltinId]);
+
+  // ─── Handlers ────────────────────────────────────────────────────────────────
+
   const handleVariableValueChange = useCallback(
     (variableName: string, value: string) => {
-      if (!runId) return;
+      if (!conversationId) return;
       dispatch(
-        updateVariable({
-          runId,
-          variableName,
-          value,
+        setUserVariableValues({
+          conversationId,
+          values: { [variableName]: value },
         }),
       );
     },
-    [runId, dispatch],
+    [conversationId, dispatch],
   );
 
   const handleSubmitOnEnterChange = useCallback((value: boolean) => {
@@ -504,20 +440,22 @@ export function useAICodeEditor({
     ? getDiffStats(currentCode, modifiedCode)
     : null;
 
-  // Memoize displayVariables to prevent re-creating array on every render
-  const displayVariables = useMemo(
-    () => filterOutSpecialVariables(cachedPrompt?.variableDefaults || []),
-    [cachedPrompt?.variableDefaults],
-  );
+  // displayVariables: no longer driven by cachedPrompt.variableDefaults.
+  // The agent's variable definitions live on the instance after launch.
+  // We return an empty array — the SmartAgentInput handles variable display
+  // natively for agent instances. If callers need variable display outside
+  // SmartAgentInput, extend this by reading selectInstanceVariableDefinitions.
+  const displayVariables = useMemo(() => [], []);
 
   return {
     // State
     state,
     setState,
-    instance,
-    cachedPrompt,
+    // instance is gone — status is now streamPhase
+    instance: null,
+    // cachedPrompt is gone — agent definitions live in agentDefinition slice
+    cachedPrompt: null,
     variables,
-    // resources and expandedVariable removed - managed by Redux
     parsedEdits,
     modifiedCode,
     errorMessage,
@@ -534,16 +472,15 @@ export function useAICodeEditor({
     streamingText,
     messages,
 
-    // runId exposed so SmartPromptInput can use it
-    runId,
+    // conversationId replaces runId (SmartAgentInput keyed to conversationId)
+    conversationId,
+    // Keep runId as alias for any consumer that still uses it
+    runId: conversationId,
 
     // Handlers
     handleVariableValueChange,
     handleSubmitOnEnterChange,
     handleCopyResponse,
     handleApplyChanges,
-
-    // NOTE: handleSubmit, handleChatInputChange, resources, expandedVariable removed
-    // SmartPromptInput handles all input/resource/execution management
   };
 }

@@ -41,8 +41,7 @@ import {
 } from "@/components/ui/tooltip";
 import { MenuTapButton } from "@/components/icons/tap-buttons";
 import { useVoicePadAdvanced } from "@/components/official-candidate/voice-pad/hooks/useVoicePad";
-import { BACKGROUND_PATTERN } from "@/constants/chat";
-import { NavigationMenu } from "@/features/applet/runner/header/navigation-menu/NavigationMenu";
+import ShellUserMenu from "@/features/shell/components/header/header-right-menu/ShellUserMenu";
 import NotificationDropdown from "@/components/ui/notifications/NotificationDropdown";
 import { MessageIcon } from "@/features/messaging/components/MessageIcon";
 import { QuickActionsMenu } from "@/features/quick-actions/components/QuickActionsMenu";
@@ -177,15 +176,14 @@ export default function DesktopLayout({
                 }
               }}
             />
-            <NavigationMenu />
+            <ShellUserMenu />
           </div>
         </div>
       </header>
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-10 bottom-0 ${isSidebarCollapsed ? "w-11" : "w-56"} bg-zinc-100 dark:bg-zinc-850 transition-all duration-300 z-40 overflow-hidden`}
-        style={{ backgroundImage: BACKGROUND_PATTERN }}
+        className={`fixed left-0 top-10 bottom-0 ${isSidebarCollapsed ? "w-11" : "w-56"} bg-background transition-all duration-300 z-40 overflow-hidden`}
       >
         <nav className="px-1 h-full flex flex-col">
           {/* Primary Links */}

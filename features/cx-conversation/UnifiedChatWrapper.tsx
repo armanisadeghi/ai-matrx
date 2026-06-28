@@ -51,7 +51,7 @@ import type {
   ApiMode,
   ChatModeConfig,
 } from "./_legacy-stubs";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
 // ============================================================================
 // PROPS
@@ -74,7 +74,7 @@ export interface UnifiedChatWrapperProps {
 
   // ── Agent Configuration ──────────────────────────────────────────────────
   /** Variable definitions for agent templates */
-  variableDefaults?: PromptVariable[];
+  variableDefaults?: VariableDefinition[];
   /** Pre-filled variable values */
   variables?: Record<string, string>;
   /** Whether variables must be completed before sending */

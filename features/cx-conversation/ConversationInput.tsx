@@ -83,10 +83,12 @@ import { ModelSettingsDialog } from "@/features/prompts/components/configuration
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
 import type { Resource } from "@/features/agents/resources/types";
-import type {
-  PromptSettings,
-  PromptVariable,
-} from "@/features/prompts/types/core";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+// PromptSettings / PromptVariable replaced with agents equivalents.
+// PromptSettings was @/features/prompts/types/core — model_id added as it isn't in LLMParams.
+type PromptSettings = LLMParams & { model_id?: string };
+type PromptVariable = VariableDefinition;
 
 // ============================================================================
 // PROPS

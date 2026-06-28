@@ -14,7 +14,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MarkdownStream from "@/components/MarkdownStream";
 import { createTemplate, clearTemplateCache } from "@/features/content-templates/services/content-templates-service";
 import { useToast } from "@/components/ui/use-toast";
-import { PromptEditorContextMenu } from "@/features/prompts/components/PromptEditorContextMenu";
+// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
+// Re-implement with features/context-menu-v3/EditableContextMenu or a new content-block picker.
 
 interface SaveTemplateModalProps {
     isOpen: boolean;
@@ -262,19 +263,14 @@ export function SaveTemplateModal({
                 <div className="flex h-full">
                     {/* Editor */}
                     <div className="flex-1 border-r border-border/50 p-3">
-                        <PromptEditorContextMenu
-                            getTextarea={() => textareaRef.current}
-                            onContentInserted={() => {}}
-                        >
-                            <AutoResizeTextarea
-                                ref={textareaRef}
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Enter template content..."
-                                className="font-mono text-sm"
-                                minHeight={200}
-                            />
-                        </PromptEditorContextMenu>
+                        <AutoResizeTextarea
+                            ref={textareaRef}
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="Enter template content..."
+                            className="font-mono text-sm"
+                            minHeight={200}
+                        />
                     </div>
                     {/* Preview */}
                     <div className="flex-1 p-3 bg-muted/30 overflow-y-auto">
@@ -287,19 +283,14 @@ export function SaveTemplateModal({
                 </div>
             ) : (
                 <div className="p-3 h-full">
-                    <PromptEditorContextMenu
-                        getTextarea={() => textareaRef.current}
-                        onContentInserted={() => {}}
-                    >
-                        <AutoResizeTextarea
-                            ref={textareaRef}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Enter template content..."
-                            className="font-mono text-sm"
-                            minHeight={200}
-                        />
-                    </PromptEditorContextMenu>
+                    <AutoResizeTextarea
+                        ref={textareaRef}
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Enter template content..."
+                        className="font-mono text-sm"
+                        minHeight={200}
+                    />
                 </div>
             )}
         </div>

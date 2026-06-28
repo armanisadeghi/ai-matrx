@@ -1014,9 +1014,6 @@ export default function OverlayController() {
     shareModalWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareModalWindow"),
     ),
-    socketAccordion: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "socketAccordion"),
-    ),
     streamDebug: useAppSelector((s) => selectIsOverlayOpen(s, "streamDebug")),
     streamDebugHistoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "streamDebugHistoryWindow"),
@@ -1274,9 +1271,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     shareModalWindow: useAppSelector((s) =>
       selectOverlayData(s, "shareModalWindow"),
-    ) as Record<string, unknown> | null,
-    socketAccordion: useAppSelector((s) =>
-      selectOverlayData(s, "socketAccordion"),
     ) as Record<string, unknown> | null,
     streamDebug: useAppSelector((s) =>
       selectOverlayData(s, "streamDebug"),

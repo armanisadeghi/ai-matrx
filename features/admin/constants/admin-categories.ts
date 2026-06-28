@@ -416,41 +416,6 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Prompt Shortcuts",
-    iconName: "Bot",
-    iconColor: "text-indigo-600",
-    features: [
-      {
-        title: "Categories & Shortcuts",
-        description:
-          "Manage AI prompt shortcuts with keyboard bindings, scope mappings, and prompt connections for context menus, buttons, and cards.",
-        iconName: "Bot",
-        link: "/administration/prompt-builtins",
-      },
-      {
-        title: "Shortcuts Table",
-        description:
-          "Tabular view of all prompt shortcuts for bulk inspection and editing.",
-        iconName: "Zap",
-        link: "/administration/prompt-builtins/shortcuts",
-      },
-      {
-        title: "Prompt Builtins",
-        description:
-          "Builtin prompt definitions wired into shortcuts and context menus.",
-        iconName: "File",
-        link: "/administration/prompt-builtins/builtins",
-      },
-      {
-        title: "Shortcut Categories",
-        description:
-          "Manage prompt shortcut categories with placement types, hierarchy, icons, and colors for organizing AI actions.",
-        iconName: "SlidersHorizontal",
-        link: "/administration/shortcut-categories",
-      },
-    ],
-  },
-  {
     name: "Podcasts",
     iconName: "Mic",
     iconColor: "text-sky-600",
@@ -462,20 +427,6 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Mic",
         link: "/administration/podcasts/shows",
         isNew: true,
-      },
-    ],
-  },
-  {
-    name: "Prompt Apps",
-    iconName: "Bot",
-    iconColor: "text-red-600",
-    features: [
-      {
-        title: "Apps Manager",
-        description:
-          "Manage prompt app categories, view errors, monitor analytics, moderate apps, and manage rate limits.",
-        iconName: "Bot",
-        link: "/administration/prompt-apps",
       },
     ],
   },

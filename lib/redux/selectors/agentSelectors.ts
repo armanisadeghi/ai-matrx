@@ -25,13 +25,13 @@ import {
   AgentSource,
 } from "../slices/agentCacheSlice";
 import {
-  selectConsumer,
-  DEFAULT_CONSUMER_STATE,
-} from "../slices/promptConsumersSlice";
+  selectAgentConsumer,
+  DEFAULT_AGENT_CONSUMER_STATE,
+} from "@/features/agents/redux/agent-consumers/slice";
 import type {
-  PromptConsumerState,
-  PromptSortOption,
-} from "../slices/promptConsumersSlice";
+  AgentConsumerState,
+  AgentSortOption,
+} from "@/features/agents/redux/agent-consumers/slice";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export function agentMatchesSearch(agent: AgentRecord, query: string): boolean {
 export function applyAgentSort(
   a: AgentRecord,
   b: AgentRecord,
-  sortBy: PromptSortOption,
+  sortBy: AgentSortOption,
 ): number {
   switch (sortBy) {
     case "name-asc":
@@ -96,7 +96,7 @@ export function applyAgentSort(
 /** Returns true if an agent passes the category/tag/archive/fav filters from consumer state. */
 export function agentPassesFilters(
   agent: AgentRecord,
-  consumer: PromptConsumerState,
+  consumer: AgentConsumerState,
 ): boolean {
   const { searchTerm, includedCats, includedTags, favFilter, archFilter } =
     consumer;
@@ -178,22 +178,22 @@ export const selectAllAgentTags = createSelector(
 // consumerId). Each call returns a brand-new memoized selector so multiple
 // consumers never share or invalidate each other's cache.
 
-/** Make a selector for the consumer's filter state from promptConsumersSlice. */
+/** Make a selector for the consumer's filter state from agentConsumers slice. */
 export const makeSelectAgentConsumerState =
   (consumerId: string) =>
-  (state: RootState): PromptConsumerState =>
-    selectConsumer(state, consumerId);
+  (state: RootState): AgentConsumerState =>
+    selectAgentConsumer(state, consumerId);
 
 /**
  * Factory: filtered + sorted list of owned agents for a given consumer.
- * Applies all filter/sort state from promptConsumersSlice.
+ * Applies all filter/sort state from agentConsumers slice.
  * Requires agents at core depth for category/tag/archive filtering.
  * Falls back gracefully for slim records (no category/tag filtering applied).
  */
 export const makeSelectFilteredOwnedAgents = (consumerId: string) =>
   createSelector(
     selectOwnedAgents,
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (agents, consumer): AgentRecord[] => {
       const { searchTerm, sortBy, favoritesFirst } = consumer;
 
@@ -227,7 +227,7 @@ export const makeSelectFilteredOwnedAgents = (consumerId: string) =>
 export const makeSelectFilteredBuiltinAgents = (consumerId: string) =>
   createSelector(
     selectBuiltinAgents,
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (agents, consumer): AgentRecord[] => {
       const { searchTerm, sortBy } = consumer;
 
@@ -259,7 +259,7 @@ export const makeSelectFilteredBuiltinAgents = (consumerId: string) =>
 export const makeSelectFilteredSharedAgents = (consumerId: string) =>
   createSelector(
     selectSharedAgents,
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (agents, consumer): AgentRecord[] => {
       const { searchTerm, sortBy } = consumer;
 
@@ -300,7 +300,7 @@ export const makeSelectAgentSlimList = (
     selectOwnedAgents,
     selectBuiltinAgents,
     selectSharedAgents,
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (
       owned,
       builtins,
@@ -351,7 +351,7 @@ export const makeSelectFilteredAgents = (consumerId: string) =>
     makeSelectFilteredOwnedAgents(consumerId),
     makeSelectFilteredBuiltinAgents(consumerId),
     makeSelectFilteredSharedAgents(consumerId),
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (
       owned,
       builtins,
@@ -381,9 +381,9 @@ export const makeSelectFilteredAgents = (consumerId: string) =>
  */
 export const makeSelectAgentHasActiveFilters = (consumerId: string) =>
   createSelector(
-    (state: RootState) => selectConsumer(state, consumerId),
+    (state: RootState) => selectAgentConsumer(state, consumerId),
     (consumer): boolean => {
-      const def = DEFAULT_CONSUMER_STATE;
+      const def = DEFAULT_AGENT_CONSUMER_STATE;
       return (
         consumer.searchTerm !== def.searchTerm ||
         consumer.sortBy !== def.sortBy ||

@@ -6,7 +6,7 @@
  * Generate a run name from variable values (no keys, just values)
  * Example: "John Doe, Product Launch" instead of "Name: John Doe, Project: Product Launch"
  */
-import { PromptVariable } from '@/features/prompts/types/core';
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
 /**
  * Generate a run name from variable values (no keys, just values)
@@ -18,7 +18,7 @@ import { PromptVariable } from '@/features/prompts/types/core';
  */
 export function generateRunNameFromVariables(
   variableValues: Record<string, string>,
-  variableDefaults?: PromptVariable[]
+  variableDefaults?: VariableDefinition[]
 ): string | null {
   if (!variableValues || Object.keys(variableValues).length === 0) {
     return null;
@@ -28,7 +28,7 @@ export function generateRunNameFromVariables(
   const defaultsMap = variableDefaults?.reduce((acc, v) => {
     acc[v.name] = v;
     return acc;
-  }, {} as Record<string, PromptVariable>) || {};
+  }, {} as Record<string, VariableDefinition>) || {};
 
   const entries = Object.entries(variableValues);
 

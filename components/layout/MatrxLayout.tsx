@@ -26,7 +26,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { BACKGROUND_PATTERN } from "@/constants/chat";
 // Phase 4 PR 4.C: getGlobalIsAdmin import was unused; deleted alongside
 // the rest of lib/globalState.ts. Use selectIsSuperAdmin if needed.
 import {
@@ -112,17 +111,13 @@ export function LayoutWithSidebar({
           setOpen={setOpen}
         >
           <div className="flex flex-1 overflow-hidden relative">
-            <div
-              className="flex h-full w-full flex-1 flex-col gap-2 rounded-2xl border border-neutral-200 bg-white p-1 dark:border-neutral-700 dark:bg-background/80 md:p-1 overflow-y-auto scrollbar-none"
-              style={{ backgroundImage: BACKGROUND_PATTERN }}
-            >
+            <div className="flex h-full w-full flex-1 flex-col gap-2 rounded-2xl border border-neutral-200 bg-background p-1 dark:border-neutral-700 md:p-1 overflow-y-auto scrollbar-none">
               {children}
             </div>
             <button
               onClick={() => setShowSidebar(false)}
-              className="absolute bottom-4 right-4 p-2 rounded-full bg-white text-neutral-800 hover:bg-neutral-100 shadow-md dark:bg-zinc-850 dark:text-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-all duration-200 hidden md:flex"
+              className="absolute bottom-4 right-4 p-2 rounded-full bg-background text-neutral-800 hover:bg-neutral-100 shadow-md dark:text-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-all duration-200 hidden md:flex"
               title="Expand to full width"
-              style={{ backgroundImage: BACKGROUND_PATTERN }}
             >
               <IconMaximize className="h-5 w-5" />
             </button>
@@ -134,9 +129,8 @@ export function LayoutWithSidebar({
             {children}
             <button
               onClick={() => setShowSidebar(true)}
-              className="fixed bottom-4 right-4 p-2 rounded-full bg-white text-neutral-800 hover:bg-neutral-100 shadow-md dark:bg-zinc-850 dark:text-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-all duration-200 hidden md:flex"
+              className="fixed bottom-4 right-4 p-2 rounded-full bg-background text-neutral-800 hover:bg-neutral-100 shadow-md dark:text-neutral-200 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 transition-all duration-200 hidden md:flex"
               title="Return to sidebar layout"
-              style={{ backgroundImage: BACKGROUND_PATTERN }}
             >
               <IconMinimize className="h-5 w-5" />
             </button>

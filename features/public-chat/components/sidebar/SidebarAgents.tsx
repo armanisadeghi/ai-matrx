@@ -10,11 +10,11 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { useAgentConsumer } from "@/features/prompts/hooks/useAgentConsumer";
+import { useAgentCacheConsumer } from "@/features/agents/hooks/useAgentCacheConsumer";
 import type {
   AgentRecord,
   AgentSource,
-} from "@/features/prompts/hooks/useAgentConsumer";
+} from "@/features/agents/hooks/useAgentCacheConsumer";
 import { DEFAULT_AGENTS } from "../AgentSelector";
 import type { AgentConfig } from "../../context/DEPRECATED-ChatContext";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
@@ -209,13 +209,11 @@ export function SidebarAgents({
   const user = useSelector(selectUser);
   const isAuthenticated = !!user?.id;
 
-  const { owned, builtins, shared, isLoading, selectAgent } = useAgentConsumer(
-    "public-chat-sidebar",
-    {
+  const { owned, builtins, shared, isLoading, selectAgent } =
+    useAgentCacheConsumer("public-chat-sidebar", {
       mode: "slim",
       slimLimits: { ownedLimit: 10, builtinLimit: 10, sharedLimit: 5 },
-    },
-  );
+    });
 
   const handleSelect = async (agent: AgentRecord) => {
     await selectAgent(agent.id, agent.source, (fullAgent) => {

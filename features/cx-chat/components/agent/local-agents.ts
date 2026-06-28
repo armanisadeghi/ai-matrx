@@ -8,7 +8,7 @@ import {
   Newspaper,
   Lightbulb,
 } from "lucide-react";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 
 export interface AgentOption {
   id: string;
@@ -16,7 +16,7 @@ export interface AgentOption {
   description?: string;
   icon?: React.ReactNode;
   promptId: string;
-  variableDefaults?: PromptVariable[];
+  variableDefaults?: VariableDefinition[];
 }
 
 export const DEFAULT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";

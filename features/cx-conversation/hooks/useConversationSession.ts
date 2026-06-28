@@ -39,7 +39,7 @@ import type {
   ChatModeConfig,
   ConversationResource,
 } from "../_legacy-stubs";
-import type { PromptVariable } from "@/features/prompts/types/core";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Resource } from "@/features/agents/resources/types";
 
 // ============================================================================
@@ -63,7 +63,7 @@ export interface ConversationSessionConfig {
   loadHistory?: boolean;
 
   /** Variable definitions for the agent's template variables */
-  variableDefaults?: PromptVariable[];
+  variableDefaults?: VariableDefinition[];
 
   /** Pre-filled variable values */
   variables?: Record<string, string>;
@@ -114,7 +114,7 @@ export interface ConversationSessionReturn {
   resources: Resource[];
 
   /** Variable definitions */
-  variableDefaults: PromptVariable[];
+  variableDefaults: VariableDefinition[];
 
   /** UI state (model override, block mode, etc.) */
   uiState: ReturnType<typeof selectUIState>;
@@ -322,7 +322,7 @@ export function useConversationSession(
       error,
       currentInput,
       resources: resources as unknown as Resource[],
-      variableDefaults: variableDefaults as unknown as PromptVariable[],
+      variableDefaults: variableDefaults as unknown as VariableDefinition[],
       uiState,
       send,
       cancel,

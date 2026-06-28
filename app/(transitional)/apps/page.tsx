@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,12 +39,10 @@ export default async function AppsListPage() {
                 Manage your public shareable AI apps
               </p>
             </div>
-            <Link href="/prompt-apps/new">
-              <Button size="lg">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New App
-              </Button>
-            </Link>
+            <Button size="lg" disabled>
+              <Plus className="w-4 h-4 mr-2" />
+              Create New App
+            </Button>
           </div>
 
           {/* Apps Grid */}
@@ -62,12 +59,10 @@ export default async function AppsListPage() {
                       Create your first prompt app to get started
                     </p>
                   </div>
-                  <Link href="/prompt-apps/new">
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Your First App
-                    </Button>
-                  </Link>
+                  <Button disabled>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Your First App
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -136,12 +131,10 @@ export default async function AppsListPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
-                      <Link href={`/prompt-apps/${app.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                      </Link>
+                      <Button variant="outline" className="w-full flex-1" disabled>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
                       <Link
                         href={
                           app.status === "published"

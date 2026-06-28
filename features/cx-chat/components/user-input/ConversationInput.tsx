@@ -78,7 +78,10 @@ import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { toast } from "sonner";
-import type { PromptSettings } from "@/features/prompts/types/core";
+import type { LLMParams } from "@/features/agents/types/agent-api-types";
+// PromptSettings was @/features/prompts/types/core — replaced with an inline alias
+// that adds model_id (not in LLMParams) so this file stays off features/prompts.
+type PromptSettings = LLMParams & { model_id?: string };
 import type {
   ManagedResource,
   ResourceBlockType,

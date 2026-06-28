@@ -12,8 +12,8 @@ import {
   Globe,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAgentConsumer } from "@/features/prompts/hooks/useAgentConsumer";
-import type { AgentRecord } from "@/features/prompts/hooks/useAgentConsumer";
+import { useAgentCacheConsumer } from "@/features/agents/hooks/useAgentCacheConsumer";
+import type { AgentRecord } from "@/features/agents/hooks/useAgentCacheConsumer";
 import { DEFAULT_AGENTS } from "./AgentSelector";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
@@ -241,10 +241,10 @@ function MobileAgentPicker({
   const [showSearch, setShowSearch] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  // searchTerm is owned by Redux via useAgentConsumer so all agents are
+  // searchTerm is owned by Redux via useAgentCacheConsumer so all agents are
   // searched (not just the first page). The hook returns already-filtered lists.
   const { owned, builtins, isLoading, selectAgent, searchTerm, setSearchTerm } =
-    useAgentConsumer("agent-picker-mobile", {
+    useAgentCacheConsumer("agent-picker-mobile", {
       ephemeral: true,
       autoUpgradeToCore: open,
     });
@@ -437,7 +437,7 @@ function DesktopAgentPicker({
   // searchTerm lives in Redux so the selector filters across ALL fetched agents,
   // not just the current page. No local useState for search.
   const { owned, builtins, isLoading, selectAgent, searchTerm, setSearchTerm } =
-    useAgentConsumer("agent-picker-desktop", {
+    useAgentCacheConsumer("agent-picker-desktop", {
       ephemeral: true,
       autoUpgradeToCore: open,
     });
