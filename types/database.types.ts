@@ -15026,288 +15026,6 @@ export type Database = {
           },
         ]
       }
-      flashcard_data: {
-        Row: {
-          audio_explanation: string | null
-          back: string
-          created_at: string | null
-          created_by: string | null
-          detailed_explanation: string | null
-          difficulty: string | null
-          example: string | null
-          front: string
-          id: string
-          is_deleted: boolean | null
-          lesson: string | null
-          organization_id: string | null
-          personal_notes: string | null
-          project_id: string | null
-          public: boolean | null
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_explanation?: string | null
-          back: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_explanation?: string | null
-          back?: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front?: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_data_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_history: {
-        Row: {
-          correct_count: number | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          flashcard_id: string | null
-          id: string
-          incorrect_count: number | null
-          metadata: Json
-          organization_id: string | null
-          review_count: number | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id?: string | null
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id?: string | null
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_history_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flashcard_history_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_images: {
-        Row: {
-          created_at: string | null
-          file_name: string
-          file_path: string
-          flashcard_id: string | null
-          id: string
-          mime_type: string
-          size: number
-        }
-        Insert: {
-          created_at?: string | null
-          file_name: string
-          file_path: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type: string
-          size: number
-        }
-        Update: {
-          created_at?: string | null
-          file_name?: string
-          file_path?: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type?: string
-          size?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_images_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_set_relations: {
-        Row: {
-          flashcard_id: string
-          order: number | null
-          set_id: string
-        }
-        Insert: {
-          flashcard_id: string
-          order?: number | null
-          set_id: string
-        }
-        Update: {
-          flashcard_id?: string
-          order?: number | null
-          set_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_set_relations_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flashcard_set_relations_set_id_fkey"
-            columns: ["set_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_sets"
-            referencedColumns: ["set_id"]
-          },
-        ]
-      }
-      flashcard_sets: {
-        Row: {
-          audio_overview: string | null
-          created_at: string | null
-          created_by: string | null
-          difficulty: string | null
-          lesson: string | null
-          name: string
-          organization_id: string | null
-          project_id: string | null
-          public: boolean | null
-          set_id: string
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          name: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_sets_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       forbidden_urls: {
         Row: {
           created_at: string
@@ -16263,114 +15981,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      math_course_structure: {
-        Row: {
-          course_name: string
-          created_at: string | null
-          id: string
-          lesson_content: Json | null
-          lesson_name: string | null
-          lesson_objectives: string | null
-          module_description: string | null
-          module_name: string
-          sort_order: number | null
-          topic_name: string
-          updated_at: string | null
-        }
-        Insert: {
-          course_name: string
-          created_at?: string | null
-          id?: string
-          lesson_content?: Json | null
-          lesson_name?: string | null
-          lesson_objectives?: string | null
-          module_description?: string | null
-          module_name: string
-          sort_order?: number | null
-          topic_name: string
-          updated_at?: string | null
-        }
-        Update: {
-          course_name?: string
-          created_at?: string | null
-          id?: string
-          lesson_content?: Json | null
-          lesson_name?: string | null
-          lesson_objectives?: string | null
-          module_description?: string | null
-          module_name?: string
-          sort_order?: number | null
-          topic_name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      math_problems: {
-        Row: {
-          course_name: string
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          difficulty_level: string | null
-          final_statement: string | null
-          hint: string | null
-          id: string
-          intro_text: string | null
-          is_published: boolean | null
-          module_name: string
-          problem_statement: Json
-          related_content: Json | null
-          resources: Json | null
-          solutions: Json
-          sort_order: number | null
-          title: string
-          topic_name: string
-          updated_at: string | null
-        }
-        Insert: {
-          course_name: string
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          difficulty_level?: string | null
-          final_statement?: string | null
-          hint?: string | null
-          id?: string
-          intro_text?: string | null
-          is_published?: boolean | null
-          module_name: string
-          problem_statement: Json
-          related_content?: Json | null
-          resources?: Json | null
-          solutions: Json
-          sort_order?: number | null
-          title: string
-          topic_name: string
-          updated_at?: string | null
-        }
-        Update: {
-          course_name?: string
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          difficulty_level?: string | null
-          final_statement?: string | null
-          hint?: string | null
-          id?: string
-          intro_text?: string | null
-          is_published?: boolean | null
-          module_name?: string
-          problem_statement?: Json
-          related_content?: Json | null
-          resources?: Json | null
-          solutions?: Json
-          sort_order?: number | null
-          title?: string
-          topic_name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       microservice_project: {
         Row: {
@@ -18215,83 +17825,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      quiz_sessions: {
-        Row: {
-          category: string | null
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_completed: boolean | null
-          is_public: boolean
-          metadata: Json
-          organization_id: string | null
-          project_id: string | null
-          quiz_content_hash: string | null
-          quiz_metadata: Json | null
-          state: Json
-          title: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-          visibility: string
-        }
-        Insert: {
-          category?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_completed?: boolean | null
-          is_public?: boolean
-          metadata?: Json
-          organization_id?: string | null
-          project_id?: string | null
-          quiz_content_hash?: string | null
-          quiz_metadata?: Json | null
-          state: Json
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-          visibility?: string
-        }
-        Update: {
-          category?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_completed?: boolean | null
-          is_public?: boolean
-          metadata?: Json
-          organization_id?: string | null
-          project_id?: string | null
-          quiz_content_hash?: string | null
-          quiz_metadata?: Json | null
-          state?: Json
-          title?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quiz_sessions_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       redaction_mapping: {
         Row: {
@@ -22166,591 +21699,6 @@ export type Database = {
         }
         Relationships: []
       }
-      udt_dataset_fields: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          data_type: Database["public"]["Enums"]["field_data_type"]
-          default_value: Json | null
-          display_name: string
-          field_name: string
-          field_order: number
-          id: string
-          is_public: boolean
-          is_required: boolean
-          organization_id: string | null
-          table_id: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          validation_rules: Json | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          display_name: string
-          field_name: string
-          field_order?: number
-          id?: string
-          is_public?: boolean
-          is_required?: boolean
-          organization_id?: string | null
-          table_id: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          validation_rules?: Json | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          data_type?: Database["public"]["Enums"]["field_data_type"]
-          default_value?: Json | null
-          display_name?: string
-          field_name?: string
-          field_order?: number
-          id?: string
-          is_public?: boolean
-          is_required?: boolean
-          organization_id?: string | null
-          table_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          validation_rules?: Json | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_dataset_fields_dataset_id_fkey"
-            columns: ["table_id"]
-            isOneToOne: false
-            referencedRelation: "udt_datasets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_dataset_fields_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_dataset_row_versions: {
-        Row: {
-          change_kind: Database["public"]["Enums"]["row_change_kind"]
-          changed_at: string
-          changed_by: string | null
-          data: Json | null
-          id: number
-          prior_data: Json | null
-          row_id: string
-          table_id: string
-        }
-        Insert: {
-          change_kind: Database["public"]["Enums"]["row_change_kind"]
-          changed_at?: string
-          changed_by?: string | null
-          data?: Json | null
-          id?: number
-          prior_data?: Json | null
-          row_id: string
-          table_id: string
-        }
-        Update: {
-          change_kind?: Database["public"]["Enums"]["row_change_kind"]
-          changed_at?: string
-          changed_by?: string | null
-          data?: Json | null
-          id?: number
-          prior_data?: Json | null
-          row_id?: string
-          table_id?: string
-        }
-        Relationships: []
-      }
-      udt_dataset_rows: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          data: Json
-          id: string
-          is_public: boolean
-          organization_id: string | null
-          table_id: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          data: Json
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          table_id: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          data?: Json
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          table_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_dataset_rows_dataset_id_fkey"
-            columns: ["table_id"]
-            isOneToOne: false
-            referencedRelation: "udt_datasets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_dataset_rows_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_datasets: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_public: boolean
-          organization_id: string | null
-          project_id: string | null
-          row_ordering_config: Json | null
-          sheet_index: number | null
-          table_name: string
-          task_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          validation_mode: string
-          version: number
-          workbook_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          project_id?: string | null
-          row_ordering_config?: Json | null
-          sheet_index?: number | null
-          table_name: string
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          validation_mode?: string
-          version?: number
-          workbook_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          organization_id?: string | null
-          project_id?: string | null
-          row_ordering_config?: Json | null
-          sheet_index?: number | null
-          table_name?: string
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          validation_mode?: string
-          version?: number
-          workbook_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_datasets_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_datasets_workbook_id_fkey"
-            columns: ["workbook_id"]
-            isOneToOne: false
-            referencedRelation: "udt_workbooks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_document_snapshots: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          document_id: string
-          id: string
-          label: string | null
-          origin: string
-          snapshot: Json
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          document_id: string
-          id?: string
-          label?: string | null
-          origin?: string
-          snapshot: Json
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          document_id?: string
-          id?: string
-          label?: string | null
-          origin?: string
-          snapshot?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_document_snapshots_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "udt_documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_documents: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          document_name: string
-          id: string
-          is_public: boolean
-          metadata: Json | null
-          organization_id: string | null
-          original_file_id: string | null
-          project_id: string | null
-          source: Database["public"]["Enums"]["document_source"]
-          task_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          document_name: string
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          organization_id?: string | null
-          original_file_id?: string | null
-          project_id?: string | null
-          source?: Database["public"]["Enums"]["document_source"]
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          document_name?: string
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          organization_id?: string | null
-          original_file_id?: string | null
-          project_id?: string | null
-          source?: Database["public"]["Enums"]["document_source"]
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_documents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_documents_original_file_id_fkey"
-            columns: ["original_file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
-      }
-      udt_picklist_items: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          group_name: string | null
-          help_text: string | null
-          icon_name: string | null
-          id: string
-          is_public: boolean | null
-          label: string | null
-          list_id: string | null
-          organization_id: string | null
-          public_read: boolean | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          group_name?: string | null
-          help_text?: string | null
-          icon_name?: string | null
-          id?: string
-          is_public?: boolean | null
-          label?: string | null
-          list_id?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_picklist_items_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_picklist_items_picklist_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "udt_picklists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_picklists: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          list_name: string | null
-          organization_id: string | null
-          public_read: boolean | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          list_name?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          list_name?: string | null
-          organization_id?: string | null
-          public_read?: boolean | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_picklists_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_workbook_snapshots: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          label: string | null
-          origin: string
-          snapshot: Json
-          workbook_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          origin?: string
-          snapshot: Json
-          workbook_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          label?: string | null
-          origin?: string
-          snapshot?: Json
-          workbook_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_workbook_snapshots_workbook_id_fkey"
-            columns: ["workbook_id"]
-            isOneToOne: false
-            referencedRelation: "udt_workbooks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      udt_workbooks: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_public: boolean
-          metadata: Json | null
-          organization_id: string | null
-          original_file_id: string | null
-          project_id: string | null
-          source: Database["public"]["Enums"]["workbook_source"]
-          task_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-          workbook_name: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          organization_id?: string | null
-          original_file_id?: string | null
-          project_id?: string | null
-          source?: Database["public"]["Enums"]["workbook_source"]
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-          workbook_name: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean
-          metadata?: Json | null
-          organization_id?: string | null
-          original_file_id?: string | null
-          project_id?: string | null
-          source?: Database["public"]["Enums"]["workbook_source"]
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-          workbook_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "udt_workbooks_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "udt_workbooks_original_file_id_fkey"
-            columns: ["original_file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
-      }
       ui_client: {
         Row: {
           created_at: string
@@ -24510,15 +23458,7 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "wbx_pattern_target_user_table_id_fkey"
-            columns: ["target_user_table_id"]
-            isOneToOne: false
-            referencedRelation: "udt_datasets"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       wbx_recipe: {
         Row: {
@@ -34834,6 +33774,525 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      udt_dataset_fields: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_type: Database["public"]["Enums"]["field_data_type"]
+          default_value: Json | null
+          display_name: string
+          field_name: string
+          field_order: number
+          id: string
+          is_public: boolean
+          is_required: boolean
+          organization_id: string | null
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          validation_rules: Json | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name: string
+          field_name: string
+          field_order?: number
+          id?: string
+          is_public?: boolean
+          is_required?: boolean
+          organization_id?: string | null
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          validation_rules?: Json | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_type?: Database["public"]["Enums"]["field_data_type"]
+          default_value?: Json | null
+          display_name?: string
+          field_name?: string
+          field_order?: number
+          id?: string
+          is_public?: boolean
+          is_required?: boolean
+          organization_id?: string | null
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          validation_rules?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_fields_dataset_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_dataset_row_versions: {
+        Row: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at: string
+          changed_by: string | null
+          data: Json | null
+          id: number
+          prior_data: Json | null
+          row_id: string
+          table_id: string
+        }
+        Insert: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          row_id: string
+          table_id: string
+        }
+        Update: {
+          change_kind?: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          row_id?: string
+          table_id?: string
+        }
+        Relationships: []
+      }
+      udt_dataset_rows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          is_public: boolean
+          organization_id: string | null
+          table_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          table_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          table_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_dataset_rows_dataset_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "udt_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_datasets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          organization_id: string | null
+          project_id: string | null
+          row_ordering_config: Json | null
+          sheet_index: number | null
+          table_name: string
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          validation_mode: string
+          version: number
+          workbook_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          project_id?: string | null
+          row_ordering_config?: Json | null
+          sheet_index?: number | null
+          table_name: string
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          validation_mode?: string
+          version?: number
+          workbook_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          organization_id?: string | null
+          project_id?: string | null
+          row_ordering_config?: Json | null
+          sheet_index?: number | null
+          table_name?: string
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          validation_mode?: string
+          version?: number
+          workbook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_datasets_workbook_id_fkey"
+            columns: ["workbook_id"]
+            isOneToOne: false
+            referencedRelation: "udt_workbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_document_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string
+          id: string
+          label: string | null
+          origin: string
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_document_snapshots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "udt_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          document_name: string
+          id: string
+          is_public: boolean
+          metadata: Json | null
+          organization_id: string | null
+          original_file_id: string | null
+          project_id: string | null
+          source: Database["public"]["Enums"]["document_source"]
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_name: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["document_source"]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_name?: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["document_source"]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      udt_picklist_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          group_name: string | null
+          help_text: string | null
+          icon_name: string | null
+          id: string
+          is_public: boolean | null
+          label: string | null
+          list_id: string | null
+          organization_id: string | null
+          public_read: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          group_name?: string | null
+          help_text?: string | null
+          icon_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          list_id?: string | null
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          group_name?: string | null
+          help_text?: string | null
+          icon_name?: string | null
+          id?: string
+          is_public?: boolean | null
+          label?: string | null
+          list_id?: string | null
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_picklist_items_picklist_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "udt_picklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_picklists: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          list_name: string | null
+          organization_id: string | null
+          public_read: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          list_name?: string | null
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          list_name?: string | null
+          organization_id?: string | null
+          public_read?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      udt_workbook_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          origin: string
+          snapshot: Json
+          workbook_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot: Json
+          workbook_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot?: Json
+          workbook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_workbook_snapshots_workbook_id_fkey"
+            columns: ["workbook_id"]
+            isOneToOne: false
+            referencedRelation: "udt_workbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_workbooks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean
+          metadata: Json | null
+          organization_id: string | null
+          original_file_id: string | null
+          project_id: string | null
+          source: Database["public"]["Enums"]["workbook_source"]
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          workbook_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["workbook_source"]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          workbook_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["workbook_source"]
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          workbook_name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
