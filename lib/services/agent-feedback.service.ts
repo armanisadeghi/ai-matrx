@@ -57,7 +57,7 @@ export async function submitFeedback(
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .insert({
         user_id: agentId,
         username: agentName,
@@ -91,7 +91,7 @@ export async function getFeedbackItem(
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("*")
       .eq("id", feedbackId)
       .single();
@@ -179,7 +179,7 @@ export async function getReworkItems(): Promise<ServiceResult<UserFeedback[]>> {
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("*")
       .eq("admin_decision", "approved")
       .eq("status", "in_progress")

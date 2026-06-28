@@ -118,7 +118,7 @@ async function checkEmailPreferences(userId: string): Promise<boolean> {
 
   try {
     const { data } = await supabase
-      .from("user_email_preferences")
+      .schema("users").from("user_email_preferences")
       .select("sharing_notifications")
       .eq("user_id", userId)
       .single();

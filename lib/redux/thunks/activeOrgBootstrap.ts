@@ -60,7 +60,7 @@ async function readDefaultOrgIdFromDb(): Promise<string | null> {
     const userId = getUserId();
     if (!userId) return null;
     const { data, error } = await supabase
-      .from("user_preferences")
+      .schema("users").from("user_preferences")
       .select("preferences")
       .eq("user_id", userId)
       .maybeSingle();

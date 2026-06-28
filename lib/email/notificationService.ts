@@ -54,7 +54,7 @@ async function getUserEmailPreferences(
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .from("user_email_preferences")
+      .schema("users").from("user_email_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();

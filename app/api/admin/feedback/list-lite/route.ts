@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     const { data, error } = await supabase
-        .from('user_feedback')
+        .schema('users').from('user_feedback')
         .select('id, description, feedback_type, status')
         .order('created_at', { ascending: false })
         .limit(500);

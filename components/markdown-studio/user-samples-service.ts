@@ -23,7 +23,7 @@ export type UserSampleUpdateInput = Pick<
 
 export async function listUserSamples(): Promise<UserMarkdownSample[]> {
   const { data, error } = await supabase
-    .from("user_markdown_samples")
+    .schema("users").from("user_markdown_samples")
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -35,7 +35,7 @@ export async function createUserSample(
 ): Promise<UserMarkdownSample> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("user_markdown_samples")
+    .schema("users").from("user_markdown_samples")
     .insert({
       name: input.name.trim(),
       description: input.description ?? "",
@@ -54,7 +54,7 @@ export async function updateUserSample(
   patch: UserSampleUpdateInput,
 ): Promise<UserMarkdownSample> {
   const { data, error } = await supabase
-    .from("user_markdown_samples")
+    .schema("users").from("user_markdown_samples")
     .update(patch)
     .eq("id", id)
     .select()
@@ -65,7 +65,7 @@ export async function updateUserSample(
 
 export async function deleteUserSample(id: string): Promise<void> {
   const { error } = await supabase
-    .from("user_markdown_samples")
+    .schema("users").from("user_markdown_samples")
     .delete()
     .eq("id", id);
   if (error) throw error;

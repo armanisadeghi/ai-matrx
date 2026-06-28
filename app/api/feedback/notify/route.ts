@@ -22,7 +22,7 @@ async function checkFeedbackEmailPreferences(
 ): Promise<boolean> {
     try {
         const { data } = await supabase
-            .from('user_email_preferences')
+            .schema('users').from('user_email_preferences')
             .select('feedback_notifications')
             .eq('user_id', userId)
             .single();
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         // Fetch the feedback item
         const { data: feedback, error: fetchError } = await supabase
-            .from('user_feedback')
+            .schema('users').from('user_feedback')
             .select('*')
             .eq('id', feedback_id)
             .single();

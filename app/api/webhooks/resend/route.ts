@@ -164,7 +164,7 @@ async function handleEmailComplained(data: any) {
     
     // Mark user as unsubscribed from emails
     const { error } = await adminSupabase
-      .from("user_email_preferences")
+      .schema("users").from("user_email_preferences")
       .update({
         sharing_notifications: false,
         organization_invitations: false,

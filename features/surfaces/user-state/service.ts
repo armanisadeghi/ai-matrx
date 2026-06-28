@@ -18,7 +18,7 @@ export const surfaceUserStateService = {
   /** Load every row for one feature (small N) so the caller can resolve locally. */
   async loadFeature(feature: string): Promise<SurfaceStateRows> {
     const { data, error } = await supabase
-      .from("user_surface_state")
+      .schema("users").from("user_surface_state")
       .select("surface_key, state")
       .eq("feature", feature);
     if (error) throw new Error(`surfaceUserState.loadFeature(${feature}): ${error.message}`);
@@ -37,7 +37,7 @@ export const surfaceUserStateService = {
     state: Record<string, unknown>,
   ): Promise<void> {
     const { error } = await supabase
-      .from("user_surface_state")
+      .schema("users").from("user_surface_state")
       .upsert(
         { user_id: userId, feature, surface_key: surfaceKey, state: state as never },
         { onConflict: "user_id,feature,surface_key" },

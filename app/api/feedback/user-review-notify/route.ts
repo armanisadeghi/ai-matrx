@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         // Fetch the feedback item
         const { data: feedback, error: fetchError } = await supabase
-            .from('user_feedback')
+            .schema('users').from('user_feedback')
             .select('*')
             .eq('id', feedback_id)
             .single();
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
             // Admin sent a message → email the user
             // Check if user wants feedback notifications
             const { data: prefs } = await supabase
-                .from('user_email_preferences')
+                .schema('users').from('user_email_preferences')
                 .select('feedback_notifications')
                 .eq('user_id', feedback.user_id)
                 .single();

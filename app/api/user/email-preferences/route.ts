@@ -119,7 +119,7 @@ export async function PATCH(request: Request) {
 
     // Check if preferences exist
     const { data: existing } = await supabase
-      .from("user_email_preferences")
+      .schema("users").from("user_email_preferences")
       .select("id")
       .eq("user_id", user.id)
       .single();
@@ -127,7 +127,7 @@ export async function PATCH(request: Request) {
     if (existing) {
       // Update existing preferences
       const { error } = await supabase
-        .from("user_email_preferences")
+        .schema("users").from("user_email_preferences")
         .update(preferences)
         .eq("user_id", user.id);
 
@@ -141,7 +141,7 @@ export async function PATCH(request: Request) {
     } else {
       // Create new preferences
       const { error } = await supabase
-        .from("user_email_preferences")
+        .schema("users").from("user_email_preferences")
         .insert({
           user_id: user.id,
           ...preferences,

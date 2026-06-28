@@ -119,7 +119,7 @@ export async function GET() {
     }
 
     const { data: row, error } = await supabase
-      .from("user_form_profile")
+      .schema("users").from("user_form_profile")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -237,7 +237,7 @@ export async function PATCH(request: NextRequest) {
     // created on first save. RLS still enforces auth.uid() == user_id on
     // both INSERT (with_check) and UPDATE (qual).
     const { data: row, error: upsertError } = await supabase
-      .from("user_form_profile")
+      .schema("users").from("user_form_profile")
       .upsert(patch as FormProfileInsert, { onConflict: "user_id" })
       .select("*")
       .single();

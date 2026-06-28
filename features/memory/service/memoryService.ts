@@ -16,7 +16,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database } from "@/types/database.types";
 
-export type UserMemoryRow = Database["public"]["Tables"]["user_memory"]["Row"];
+export type UserMemoryRow = Database["users"]["Tables"]["user_memory"]["Row"];
 
 /** A memory entry as the UI consumes it (the columns the editor needs). */
 export interface MemoryEntry {
@@ -28,7 +28,7 @@ export interface MemoryEntry {
 /** List the current user's memory entries, ordered by path. */
 export async function listMemory(): Promise<MemoryEntry[]> {
   const { data, error } = await supabase
-    .from("user_memory")
+    .schema("users").from("user_memory")
     .select("path, content, updated_at")
     .order("path");
   if (error) throw error;
@@ -45,7 +45,7 @@ export async function upsertMemory(
 ): Promise<void> {
   const userId = requireUserId();
   const { error } = await supabase
-    .from("user_memory")
+    .schema("users").from("user_memory")
     .upsert(
       { user_id: userId, path, content },
       { onConflict: "user_id,path" },
@@ -56,7 +56,7 @@ export async function upsertMemory(
 /** Delete one entry by path. */
 export async function deleteMemory(path: string): Promise<void> {
   const { error } = await supabase
-    .from("user_memory")
+    .schema("users").from("user_memory")
     .delete()
     .eq("path", path);
   if (error) throw error;

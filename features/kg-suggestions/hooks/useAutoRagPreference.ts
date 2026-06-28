@@ -49,7 +49,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
     void (async () => {
       try {
         const { data, error: qErr } = await supabase
-          .from("user_preferences")
+          .schema("users").from("user_preferences")
           .select("auto_rag_enabled")
           .eq("user_id", userId)
           .maybeSingle();
@@ -79,7 +79,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
         // 1) Try UPDATE first — the common path for users who already have
         //    a preferences row. Leaves `preferences` jsonb untouched.
         const { data: updated, error: updateErr } = await supabase
-          .from("user_preferences")
+          .schema("users").from("user_preferences")
           .update({ auto_rag_enabled: next })
           .eq("user_id", userId)
           .select("user_id");
@@ -89,7 +89,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
         //    NOT NULL with no DB default, so we seed with `{}` on create.
         if (!updated || updated.length === 0) {
           const { error: insertErr } = await supabase
-            .from("user_preferences")
+            .schema("users").from("user_preferences")
             .insert({
               user_id: userId,
               auto_rag_enabled: next,

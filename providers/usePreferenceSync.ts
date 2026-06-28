@@ -13,7 +13,7 @@ export function usePreferenceSync() {
         if (!userId) return;
 
         return () => {
-            supabase.from('user_preferences').upsert({
+            supabase.schema('users').from('user_preferences').upsert({
                 user_id: userId,
                 preferences,
             });

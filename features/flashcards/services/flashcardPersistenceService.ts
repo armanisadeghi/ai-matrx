@@ -40,7 +40,7 @@ export const flashcardPersistenceService = {
       // Deduplicate by message_id if provided
       if (input.message_id) {
         const { data: existing } = await supabase
-          .from("user_flashcard_sets")
+          .schema("users").from("user_flashcard_sets")
           .select("*")
           .eq("user_id", userId)
           .eq("message_id", input.message_id)
@@ -53,7 +53,7 @@ export const flashcardPersistenceService = {
 
       const cardsJson = input.cards as unknown as Json;
       const { data, error } = await supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .insert({
           user_id: userId,
           conversation_id: input.conversation_id ?? null,
@@ -83,7 +83,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       let query = supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .select("*")
         .eq("user_id", userId);
 
@@ -115,7 +115,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .select("*")
         .eq("id", setId)
         .eq("user_id", userId)
@@ -136,7 +136,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .select("*")
         .eq("user_id", userId)
         .eq("message_id", messageId)
@@ -158,7 +158,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .update(updates)
         .eq("id", setId)
         .eq("user_id", userId)
@@ -178,7 +178,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("user_flashcard_sets")
+        .schema("users").from("user_flashcard_sets")
         .delete()
         .eq("id", setId)
         .eq("user_id", userId);
@@ -204,7 +204,7 @@ export const flashcardPersistenceService = {
 
       // Insert review
       const { data, error } = await supabase
-        .from("user_flashcard_reviews")
+        .schema("users").from("user_flashcard_reviews")
         .insert({
           user_id: userId,
           set_id: input.set_id,
@@ -217,7 +217,7 @@ export const flashcardPersistenceService = {
       // Also touch last_studied_at on the set
       if (!error) {
         await supabase
-          .from("user_flashcard_sets")
+          .schema("users").from("user_flashcard_sets")
           .update({ last_studied_at: new Date().toISOString() })
           .eq("id", input.set_id)
           .eq("user_id", userId);
@@ -238,7 +238,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("user_flashcard_reviews")
+        .schema("users").from("user_flashcard_reviews")
         .select("*")
         .eq("user_id", userId)
         .eq("set_id", setId)
@@ -310,7 +310,7 @@ export const flashcardPersistenceService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("user_flashcard_reviews")
+        .schema("users").from("user_flashcard_reviews")
         .delete()
         .eq("set_id", setId)
         .eq("user_id", userId);

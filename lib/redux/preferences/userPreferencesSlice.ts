@@ -1144,7 +1144,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       if (identity.type !== "auth") return null; // guests have no server state
       const { supabase } = await import("@/utils/supabase/client");
       const { data, error } = await supabase
-        .from("user_preferences")
+        .schema("users").from("user_preferences")
         .select("preferences")
         .eq("user_id", identity.userId)
         .abortSignal(signal)
@@ -1156,7 +1156,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       if (identity.type !== "auth") return; // guests only live in client storage
       const { supabase } = await import("@/utils/supabase/client");
       await supabase
-        .from("user_preferences")
+        .schema("users").from("user_preferences")
         .upsert({ user_id: identity.userId, preferences: body })
         .abortSignal(signal);
       void signal; // AbortSignal forwarded via query builder above

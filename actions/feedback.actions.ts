@@ -66,7 +66,7 @@ export async function submitFeedback(
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .insert({
         user_id: user.id,
         username,
@@ -136,7 +136,7 @@ export async function getUserFeedback(): Promise<{
     }
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
@@ -179,7 +179,7 @@ export async function updateUserOwnFeedback(
 
     // First verify ownership and status
     const { data: existing, error: fetchError } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("id, user_id, status")
       .eq("id", feedbackId)
       .single();
@@ -200,7 +200,7 @@ export async function updateUserOwnFeedback(
     }
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .update({
         ...updates,
       })
@@ -635,7 +635,7 @@ export async function getAllFeedback(): Promise<{
     }
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -685,7 +685,7 @@ export async function updateFeedback(
     let previousAssignedTo: string | null = null;
     if (Object.prototype.hasOwnProperty.call(updates, "assigned_to")) {
       const { data: priorRow } = await supabase
-        .from("user_feedback")
+        .schema("users").from("user_feedback")
         .select("assigned_to")
         .eq("id", feedbackId)
         .single();
@@ -706,7 +706,7 @@ export async function updateFeedback(
     }
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .update(updateData)
       .eq("id", feedbackId)
       .select()
@@ -771,7 +771,7 @@ export async function getFeedbackById(
     if (!user) return { success: false, error: "User not authenticated" };
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("*")
       .eq("id", feedbackId)
       .single();
@@ -899,7 +899,7 @@ export async function forceCloseFeedback(
     };
 
     const { data, error } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .update(updateData)
       .eq("id", feedbackId)
       .select()

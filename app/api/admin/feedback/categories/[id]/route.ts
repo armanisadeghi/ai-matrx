@@ -126,7 +126,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     // Check if any feedback items are assigned to this category
     const { count, error: countError } = await supabase
-      .from("user_feedback")
+      .schema("users").from("user_feedback")
       .select("id", { count: "exact", head: true })
       .eq("category_id", id);
 

@@ -32,6 +32,206 @@
       "new": "public.permissions",
       "since": "2026-06-27",
       "reason": "retired (graveyard) — note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+    },
+    {
+      "relation": "org_module_settings",
+      "old": "public.org_module_settings",
+      "newSchema": "platform",
+      "new": "platform.org_module_config",
+      "since": "2026-06-27",
+      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+    },
+    {
+      "relation": "user_achievements",
+      "old": "public.user_achievements",
+      "newSchema": "users",
+      "new": "users.user_achievements",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_achievements')."
+    },
+    {
+      "relation": "user_analysis_preferences",
+      "old": "public.user_analysis_preferences",
+      "newSchema": "users",
+      "new": "users.user_analysis_preferences",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_analysis_preferences')."
+    },
+    {
+      "relation": "user_bookmarks",
+      "old": "public.user_bookmarks",
+      "newSchema": "users",
+      "new": "users.user_bookmarks",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_bookmarks')."
+    },
+    {
+      "relation": "user_email_preferences",
+      "old": "public.user_email_preferences",
+      "newSchema": "users",
+      "new": "users.user_email_preferences",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_email_preferences')."
+    },
+    {
+      "relation": "user_feedback",
+      "old": "public.user_feedback",
+      "newSchema": "users",
+      "new": "users.user_feedback",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_feedback')."
+    },
+    {
+      "relation": "user_flashcard_reviews",
+      "old": "public.user_flashcard_reviews",
+      "newSchema": "users",
+      "new": "users.user_flashcard_reviews",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_flashcard_reviews')."
+    },
+    {
+      "relation": "user_flashcard_sets",
+      "old": "public.user_flashcard_sets",
+      "newSchema": "users",
+      "new": "users.user_flashcard_sets",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_flashcard_sets')."
+    },
+    {
+      "relation": "user_follows",
+      "old": "public.user_follows",
+      "newSchema": "users",
+      "new": "users.user_follows",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_follows')."
+    },
+    {
+      "relation": "user_form_profile",
+      "old": "public.user_form_profile",
+      "newSchema": "users",
+      "new": "users.user_form_profile",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_form_profile')."
+    },
+    {
+      "relation": "user_markdown_samples",
+      "old": "public.user_markdown_samples",
+      "newSchema": "users",
+      "new": "users.user_markdown_samples",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_markdown_samples')."
+    },
+    {
+      "relation": "user_memory",
+      "old": "public.user_memory",
+      "newSchema": "users",
+      "new": "users.user_memory",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_memory')."
+    },
+    {
+      "relation": "user_preferences",
+      "old": "public.user_preferences",
+      "newSchema": "users",
+      "new": "users.user_preferences",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_preferences')."
+    },
+    {
+      "relation": "user_secrets",
+      "old": "public.user_secrets",
+      "newSchema": "users",
+      "new": "users.user_secrets",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_secrets')."
+    },
+    {
+      "relation": "user_sensitive_items",
+      "old": "public.user_sensitive_items",
+      "newSchema": "users",
+      "new": "users.user_sensitive_items",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_sensitive_items')."
+    },
+    {
+      "relation": "user_stats",
+      "old": "public.user_stats",
+      "newSchema": "users",
+      "new": "users.user_stats",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_stats')."
+    },
+    {
+      "relation": "user_surface_state",
+      "old": "public.user_surface_state",
+      "newSchema": "users",
+      "new": "users.user_surface_state",
+      "since": "2026-06-27",
+      "reason": "moved to users schema (clean cut). Use .schema('users').from('user_surface_state')."
+    },
+    {
+      "relation": "wbx_capture",
+      "old": "public.wbx_capture",
+      "newSchema": "extend",
+      "new": "extend.wbx_capture",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_capture')."
+    },
+    {
+      "relation": "wbx_seo_audit",
+      "old": "public.wbx_seo_audit",
+      "newSchema": "extend",
+      "new": "extend.wbx_seo_audit",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_seo_audit')."
+    },
+    {
+      "relation": "wbx_screenshot",
+      "old": "public.wbx_screenshot",
+      "newSchema": "extend",
+      "new": "extend.wbx_screenshot",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_screenshot')."
+    },
+    {
+      "relation": "wbx_pattern",
+      "old": "public.wbx_pattern",
+      "newSchema": "extend",
+      "new": "extend.wbx_pattern",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_pattern')."
+    },
+    {
+      "relation": "wbx_highlight",
+      "old": "public.wbx_highlight",
+      "newSchema": "extend",
+      "new": "extend.wbx_highlight",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_highlight')."
+    },
+    {
+      "relation": "wbx_guidance",
+      "old": "public.wbx_guidance",
+      "newSchema": "extend",
+      "new": "extend.wbx_guidance",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_guidance')."
+    },
+    {
+      "relation": "wbx_recipe",
+      "old": "public.wbx_recipe",
+      "newSchema": "extend",
+      "new": "extend.wbx_recipe",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension domain, clean cut). Use .schema('extend').from('wbx_recipe')."
+    },
+    {
+      "relation": "extension_auth_codes",
+      "old": "public.extension_auth_codes",
+      "newSchema": "extend",
+      "new": "extend.extension_auth_codes",
+      "since": "2026-06-27",
+      "reason": "moved to extend schema (Chrome extension auth handshake, clean cut). Use .schema('extend').from('extension_auth_codes')."
     }
   ]
 }

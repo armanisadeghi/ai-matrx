@@ -100,7 +100,7 @@ async function getResourceDetails(
 async function checkEmailPreferences(supabase: any, userId: string): Promise<boolean> {
   try {
     const { data } = await supabase
-      .from('user_email_preferences')
+      .schema('users').from('user_email_preferences')
       .select('sharing_notifications')
       .eq('user_id', userId)
       .single();
