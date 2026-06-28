@@ -281,7 +281,7 @@ export class MessagingService {
       "postgres_changes",
       {
         event: "INSERT",
-        schema: "public",
+        schema: "communication",
         table: "dm_messages",
         filter: `conversation_id=eq.${conversationId}`,
       },
@@ -296,7 +296,7 @@ export class MessagingService {
       "postgres_changes",
       {
         event: "UPDATE",
-        schema: "public",
+        schema: "communication",
         table: "dm_messages",
         filter: `conversation_id=eq.${conversationId}`,
       },
@@ -350,7 +350,7 @@ export class MessagingService {
     // 1. INSERT to database
     const supabase = this.getSupabase();
     const { data, error } = await supabase
-      .from("dm_messages")
+      .schema("communication").from("dm_messages")
       .insert(messageData)
       .select()
       .single();
@@ -823,7 +823,7 @@ export class MessagingService {
   ): Promise<void> {
     const supabase = this.getSupabase();
     const { error } = await supabase
-      .from("dm_conversation_participants")
+      .schema("communication").from("dm_conversation_participants")
       .update({ last_read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId)
       .eq("user_id", userId);

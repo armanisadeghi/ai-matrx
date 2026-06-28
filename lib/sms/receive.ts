@@ -37,7 +37,7 @@ export async function findOrCreateConversation(
 
   // Look for existing active conversation
   const { data: existing } = await supabase
-    .from('sms_conversations')
+    .schema('communication').from('sms_conversations')
     .select('id, user_id')
     .eq('external_phone_number', fromNumber)
     .eq('our_phone_number', toNumber)
@@ -53,7 +53,7 @@ export async function findOrCreateConversation(
   // Look up user by assigned phone number (our number -> user mapping)
   // or by the external number matching a user's registered phone
   const { data: phoneOwner } = await supabase
-    .from('sms_phone_numbers')
+    .schema('communication').from('sms_phone_numbers')
     .select('user_id')
     .eq('phone_number', toNumber)
     .eq('is_active', true)
@@ -62,7 +62,7 @@ export async function findOrCreateConversation(
 
   // Also check if the sender's number matches any user's notification preferences
   const { data: senderUser } = await supabase
-    .from('sms_notification_preferences')
+    .schema('communication').from('sms_notification_preferences')
     .select('user_id')
     .eq('phone_number', fromNumber)
     .limit(1)
@@ -72,7 +72,7 @@ export async function findOrCreateConversation(
 
   // Create new conversation
   const { data: newConv, error } = await supabase
-    .from('sms_conversations')
+    .schema('communication').from('sms_conversations')
     .insert({
       user_id: userId,
       external_phone_number: fromNumber,
@@ -103,7 +103,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
   const supabase = createAdminClient();
 
   // Log raw webhook data
-  await supabase.from('sms_webhook_logs').insert({
+  await supabase.schema('communication').from('sms_webhook_logs').insert({
     webhook_type: 'inbound_sms',
     twilio_sid: payload.MessageSid,
     raw_payload: payload as unknown as Record<string, unknown>,
@@ -120,7 +120,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
 
   // Insert message
   const { data: message, error: msgError } = await supabase
-    .from('sms_messages')
+    .schema('communication').from('sms_messages')
     .insert({
       conversation_id: conversation.id,
       twilio_sid: payload.MessageSid,
@@ -152,7 +152,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
     }));
 
     const { error: mediaError } = await supabase
-      .from('sms_media')
+      .schema('communication').from('sms_media')
       .insert(mediaRecords);
 
     if (mediaError) {
@@ -162,7 +162,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
 
   // Mark webhook as processed
   await supabase
-    .from('sms_webhook_logs')
+    .schema('communication').from('sms_webhook_logs')
     .update({ processed: true })
     .eq('twilio_sid', payload.MessageSid)
     .eq('webhook_type', 'inbound_sms');
@@ -183,7 +183,7 @@ export async function isPhoneNumberOptedOut(phoneNumber: string): Promise<boolea
   const supabase = createAdminClient();
 
   const { data } = await supabase
-    .from('sms_consent')
+    .schema('communication').from('sms_consent')
     .select('status')
     .eq('phone_number', phoneNumber)
     .eq('status', 'opted_out')

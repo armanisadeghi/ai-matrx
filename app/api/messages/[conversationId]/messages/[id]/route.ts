@@ -47,7 +47,7 @@ export async function GET(
 
     // Check if user is participant
     const { data: participation } = await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .select('id')
       .eq('conversation_id', conversationId)
       .eq('user_id', userId)
@@ -62,7 +62,7 @@ export async function GET(
 
     // Get message
     const { data: message, error: fetchError } = await supabase
-      .from('dm_messages')
+      .schema('communication').from('dm_messages')
       .select('*')
       .eq('id', messageId)
       .eq('conversation_id', conversationId)
@@ -142,7 +142,7 @@ export async function PATCH(
 
     // Get message and verify ownership
     const { data: message, error: fetchError } = await supabase
-      .from('dm_messages')
+      .schema('communication').from('dm_messages')
       .select('*')
       .eq('id', messageId)
       .eq('conversation_id', conversationId)
@@ -181,7 +181,7 @@ export async function PATCH(
 
     // Update message
     const { data: updatedMessage, error: updateError } = await supabase
-      .from('dm_messages')
+      .schema('communication').from('dm_messages')
       .update(updateData)
       .eq('id', messageId)
       .select()
@@ -241,7 +241,7 @@ export async function DELETE(
 
     // Get message and verify ownership
     const { data: message } = await supabase
-      .from('dm_messages')
+      .schema('communication').from('dm_messages')
       .select('sender_id')
       .eq('id', messageId)
       .eq('conversation_id', conversationId)
@@ -264,7 +264,7 @@ export async function DELETE(
 
     // Soft delete: set deleted_at and replace content
     const { error: deleteError } = await supabase
-      .from('dm_messages')
+      .schema('communication').from('dm_messages')
       .update({
         deleted_at: new Date().toISOString(),
         deleted_for_everyone: true,

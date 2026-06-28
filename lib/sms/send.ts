@@ -72,7 +72,7 @@ export async function sendAndLogSms(options: SendSmsOptions & {
   const result = await sendSms(sendOptions);
 
   // Log to database regardless of success/failure
-  const { error: dbError } = await supabase.from('sms_messages').insert({
+  const { error: dbError } = await supabase.schema('communication').from('sms_messages').insert({
     conversation_id: conversationId,
     twilio_sid: result.sid || null,
     direction: 'outbound',
@@ -112,7 +112,7 @@ export async function sendNotificationSms(options: {
 
   // Get user's SMS notification preferences
   const { data: prefs } = await supabase
-    .from('sms_notification_preferences')
+    .schema('communication').from('sms_notification_preferences')
     .select('*')
     .eq('user_id', userId)
     .single();
@@ -123,7 +123,7 @@ export async function sendNotificationSms(options: {
 
   // Check consent
   const { data: consent } = await supabase
-    .from('sms_consent')
+    .schema('communication').from('sms_consent')
     .select('status')
     .eq('phone_number', prefs.phone_number)
     .in('consent_type', [category === 'marketing' ? 'marketing' : 'transactional', 'all'])
@@ -133,7 +133,7 @@ export async function sendNotificationSms(options: {
 
   if (!consent && category !== 'system') {
     // Log as blocked
-    await supabase.from('sms_notifications').insert({
+    await supabase.schema('communication').from('sms_notifications').insert({
       user_id: userId,
       notification_type: notificationType,
       category,
@@ -157,7 +157,7 @@ export async function sendNotificationSms(options: {
       : currentTime >= start && currentTime < end;  // Same-day range
 
     if (inQuietHours && category !== 'system') {
-      await supabase.from('sms_notifications').insert({
+      await supabase.schema('communication').from('sms_notifications').insert({
         user_id: userId,
         notification_type: notificationType,
         category,
@@ -172,14 +172,14 @@ export async function sendNotificationSms(options: {
   // Check rate limits
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count: hourlyCount } = await supabase
-    .from('sms_messages')
+    .schema('communication').from('sms_messages')
     .select('id', { count: 'exact', head: true })
     .eq('to_number', prefs.phone_number)
     .eq('direction', 'outbound')
     .gte('created_at', oneHourAgo);
 
   if ((hourlyCount || 0) >= prefs.max_messages_per_hour) {
-    await supabase.from('sms_notifications').insert({
+    await supabase.schema('communication').from('sms_notifications').insert({
       user_id: userId,
       notification_type: notificationType,
       category,
@@ -192,7 +192,7 @@ export async function sendNotificationSms(options: {
 
   // Find or create a notification conversation
   let { data: conversation } = await supabase
-    .from('sms_conversations')
+    .schema('communication').from('sms_conversations')
     .select('id, our_phone_number')
     .eq('user_id', userId)
     .eq('conversation_type', 'notification')
@@ -203,7 +203,7 @@ export async function sendNotificationSms(options: {
   if (!conversation) {
     // Get the default outbound number
     const { data: defaultNumber } = await supabase
-      .from('sms_phone_numbers')
+      .schema('communication').from('sms_phone_numbers')
       .select('phone_number')
       .eq('is_active', true)
       .is('user_id', null)
@@ -213,7 +213,7 @@ export async function sendNotificationSms(options: {
     const ourNumber = defaultNumber?.phone_number || '';
 
     const { data: newConv, error: convError } = await supabase
-      .from('sms_conversations')
+      .schema('communication').from('sms_conversations')
       .insert({
         user_id: userId,
         external_phone_number: prefs.phone_number,
@@ -241,7 +241,7 @@ export async function sendNotificationSms(options: {
   });
 
   // Log the notification
-  const { data: notification } = await supabase.from('sms_notifications').insert({
+  const { data: notification } = await supabase.schema('communication').from('sms_notifications').insert({
     user_id: userId,
     message_id: null,
     notification_type: notificationType,

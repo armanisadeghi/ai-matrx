@@ -75,7 +75,7 @@ export async function purchasePhoneNumber(
     };
 
     // Store in database
-    const { error: dbError } = await supabase.from('sms_phone_numbers').insert({
+    const { error: dbError } = await supabase.schema('communication').from('sms_phone_numbers').insert({
       user_id: userId || null,
       phone_number: numberInfo.phoneNumber,
       twilio_sid: numberInfo.sid,
@@ -108,7 +108,7 @@ export async function assignPhoneNumberToUser(
   const supabase = createAdminClient();
 
   const { error } = await supabase
-    .from('sms_phone_numbers')
+    .schema('communication').from('sms_phone_numbers')
     .update({
       user_id: userId,
       assigned_at: new Date().toISOString(),
@@ -132,7 +132,7 @@ export async function releasePhoneNumber(
   const supabase = createAdminClient();
 
   const { error } = await supabase
-    .from('sms_phone_numbers')
+    .schema('communication').from('sms_phone_numbers')
     .update({
       user_id: null,
       released_at: new Date().toISOString(),
@@ -156,7 +156,7 @@ export async function listPhoneNumbers(options?: {
   const supabase = createAdminClient();
 
   let query = supabase
-    .from('sms_phone_numbers')
+    .schema('communication').from('sms_phone_numbers')
     .select('*')
     .order('created_at', { ascending: false });
 
@@ -192,7 +192,7 @@ export async function updateAllWebhookUrls(): Promise<{ updated: number; errors:
   const baseUrl = getAppBaseUrl();
 
   const { data: numbers } = await supabase
-    .from('sms_phone_numbers')
+    .schema('communication').from('sms_phone_numbers')
     .select('twilio_sid')
     .eq('is_active', true);
 

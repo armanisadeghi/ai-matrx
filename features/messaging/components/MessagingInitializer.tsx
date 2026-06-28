@@ -114,7 +114,7 @@ export function MessagingInitializer() {
       try {
         // Get conversation basic info
         const { data: convData, error: convError } = await supabase
-          .from("dm_conversations")
+          .schema("communication").from("dm_conversations")
           .select("*")
           .eq("id", conversationId)
           .single();
@@ -123,7 +123,7 @@ export function MessagingInitializer() {
 
         // Get participants with user info
         const { data: participants } = await supabase
-          .from("dm_conversation_participants")
+          .schema("communication").from("dm_conversation_participants")
           .select("*")
           .eq("conversation_id", conversationId);
 
@@ -141,7 +141,7 @@ export function MessagingInitializer() {
 
         // Get last message
         const { data: lastMsgData } = await supabase
-          .from("dm_messages")
+          .schema("communication").from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -187,7 +187,7 @@ export function MessagingInitializer() {
             convData.type === "direct" && otherParticipant
               ? otherParticipant.user?.avatar_url
               : convData.group_image_url,
-        } as ConversationWithDetails;
+        } as unknown as ConversationWithDetails;
       } catch (error) {
         console.error(
           "[Messaging] Failed to fetch conversation details:",
@@ -232,7 +232,7 @@ export function MessagingInitializer() {
       const conversationsWithParticipants = await Promise.all(
         (data || []).map(async (conv: Record<string, unknown>) => {
           const { data: participants } = await supabase
-            .from("dm_conversation_participants")
+            .schema("communication").from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", String(conv.conversation_id));
 
@@ -294,7 +294,7 @@ export function MessagingInitializer() {
               conv.conversation_type === "direct" && otherParticipant
                 ? otherParticipant.user?.avatar_url
                 : conv.group_image_url,
-          } as ConversationWithDetails;
+          } as unknown as ConversationWithDetails;
         }),
       );
 
@@ -333,7 +333,7 @@ export function MessagingInitializer() {
       "postgres_changes",
       {
         event: "INSERT",
-        schema: "public",
+        schema: "communication",
         table: "dm_messages",
       },
       async (payload) => {
@@ -411,7 +411,7 @@ export function MessagingInitializer() {
       "postgres_changes",
       {
         event: "INSERT",
-        schema: "public",
+        schema: "communication",
         table: "dm_conversation_participants",
         filter: `user_id=eq.${userId}`,
       },
@@ -436,7 +436,7 @@ export function MessagingInitializer() {
       "postgres_changes",
       {
         event: "UPDATE",
-        schema: "public",
+        schema: "communication",
         table: "dm_conversation_participants",
       },
       async (payload) => {

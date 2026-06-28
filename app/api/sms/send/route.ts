@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Get user's assigned phone number for the 'from' field
     const { data: userNumber } = await adminSupabase
-      .from('sms_phone_numbers')
+      .schema('communication').from('sms_phone_numbers')
       .select('phone_number')
       .eq('user_id', user.id)
       .eq('is_active', true)
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     let fromNumber = userNumber?.phone_number;
     if (!fromNumber) {
       const { data: defaultNumber } = await adminSupabase
-        .from('sms_phone_numbers')
+        .schema('communication').from('sms_phone_numbers')
         .select('phone_number')
         .eq('is_active', true)
         .is('user_id', null)
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       // If the conversation was created with no user, assign this user
       if (!conv.userId) {
         await adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .update({ user_id: user.id, conversation_type: 'user_initiated' })
           .eq('id', convId);
       }

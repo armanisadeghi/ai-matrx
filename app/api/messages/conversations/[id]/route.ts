@@ -59,7 +59,7 @@ export async function GET(
 
     // Check if user is participant
     const { data: participation, error: participationError } = await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .select('*')
       .eq('conversation_id', conversationId)
       .eq('user_id', userId)
@@ -74,7 +74,7 @@ export async function GET(
 
     // Get conversation
     const { data: conversation, error: convError } = await supabase
-      .from('dm_conversations')
+      .schema('communication').from('dm_conversations')
       .select('*')
       .eq('id', conversationId)
       .single();
@@ -88,7 +88,7 @@ export async function GET(
 
     // Get all participants with user info
     const { data: participants } = await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .select('*')
       .eq('conversation_id', conversationId);
 
@@ -105,7 +105,7 @@ export async function GET(
 
     // Update last_read_at for current user
     await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .update({ last_read_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);
@@ -179,7 +179,7 @@ export async function PUT(
 
     // Check if user is participant
     const { data: participation, error: participationError } = await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .select('role')
       .eq('conversation_id', conversationId)
       .eq('user_id', userId)
@@ -199,7 +199,7 @@ export async function PUT(
       if (is_archived !== undefined) participantUpdate.is_archived = is_archived;
 
       await supabase
-        .from('dm_conversation_participants')
+        .schema('communication').from('dm_conversation_participants')
         .update(participantUpdate)
         .eq('conversation_id', conversationId)
         .eq('user_id', userId);
@@ -209,7 +209,7 @@ export async function PUT(
     if (group_name !== undefined || group_image_url !== undefined) {
       // Check if conversation is a group
       const { data: conversation } = await supabase
-        .from('dm_conversations')
+        .schema('communication').from('dm_conversations')
         .select('type, created_by')
         .eq('id', conversationId)
         .single();
@@ -234,7 +234,7 @@ export async function PUT(
       if (group_image_url !== undefined) convUpdate.group_image_url = group_image_url;
 
       await supabase
-        .from('dm_conversations')
+        .schema('communication').from('dm_conversations')
         .update(convUpdate)
         .eq('id', conversationId);
     }
@@ -278,7 +278,7 @@ export async function DELETE(
 
     // Get conversation and participation info
     const { data: conversation } = await supabase
-      .from('dm_conversations')
+      .schema('communication').from('dm_conversations')
       .select('type, created_by')
       .eq('id', conversationId)
       .single();
@@ -292,7 +292,7 @@ export async function DELETE(
 
     // For group chats where user is owner, delete the entire conversation
     if (conversation.type === 'group' && conversation.created_by === userId) {
-      await supabase.from('dm_conversations').delete().eq('id', conversationId);
+      await supabase.schema('communication').from('dm_conversations').delete().eq('id', conversationId);
       return NextResponse.json({
         success: true,
         msg: 'Conversation deleted successfully',
@@ -301,7 +301,7 @@ export async function DELETE(
 
     // Otherwise, just leave the conversation (archive it)
     await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .update({ is_archived: true })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);

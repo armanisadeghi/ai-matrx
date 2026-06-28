@@ -59,7 +59,7 @@ export async function GET(
 
     // Check if user is participant
     const { data: participation, error: participationError } = await supabase
-      .from("dm_conversation_participants")
+      .schema("communication").from("dm_conversation_participants")
       .select("id")
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
@@ -80,7 +80,7 @@ export async function GET(
 
     // Build query
     let query = supabase
-      .from("dm_messages")
+      .schema("communication").from("dm_messages")
       .select("*")
       .eq("conversation_id", conversationId)
       .is("deleted_at", null);
@@ -174,7 +174,7 @@ export async function POST(
 
     // Check if user is participant
     const { data: participation, error: participationError } = await supabase
-      .from("dm_conversation_participants")
+      .schema("communication").from("dm_conversation_participants")
       .select("id")
       .eq("conversation_id", conversationId)
       .eq("user_id", userId)
@@ -211,7 +211,7 @@ export async function POST(
     // Check for duplicate message (idempotency)
     if (client_message_id) {
       const { data: existingMessage } = await supabase
-        .from("dm_messages")
+        .schema("communication").from("dm_messages")
         .select("*")
         .eq("client_message_id", client_message_id)
         .single();
@@ -229,7 +229,7 @@ export async function POST(
     // Verify reply_to message exists and is in this conversation
     if (reply_to_id) {
       const { data: replyToMessage } = await supabase
-        .from("dm_messages")
+        .schema("communication").from("dm_messages")
         .select("id")
         .eq("id", reply_to_id)
         .eq("conversation_id", conversationId)
@@ -245,7 +245,7 @@ export async function POST(
 
     // Insert message
     const { data: newMessage, error: insertError } = await supabase
-      .from("dm_messages")
+      .schema("communication").from("dm_messages")
       .insert({
         conversation_id: conversationId,
         sender_id: userId,

@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
         // Get a from number
         const { data: fromNum } = await adminSupabase
-          .from('sms_phone_numbers')
+          .schema('communication').from('sms_phone_numbers')
           .select('phone_number')
           .eq('is_active', true)
           .limit(1)
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         if (!convId) {
           // Find or create an admin conversation
           const { data: existingConv } = await adminSupabase
-            .from('sms_conversations')
+            .schema('communication').from('sms_conversations')
             .select('id')
             .eq('external_phone_number', phoneNumber)
             .eq('conversation_type', 'admin')
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
             convId = existingConv.id;
           } else {
             const { data: newConv } = await adminSupabase
-              .from('sms_conversations')
+              .schema('communication').from('sms_conversations')
               .insert({
                 external_phone_number: phoneNumber,
                 our_phone_number: fromNum?.phone_number || '',
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         const { limit = 50, offset = 0, status: convStatus, conversationType } = body;
 
         let query = adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .select('*', { count: 'exact' })
           .order('last_message_at', { ascending: false, nullsFirst: false })
           .range(offset, offset + Math.min(limit, 100) - 1);
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, count, error } = await adminSupabase
-          .from('sms_messages')
+          .schema('communication').from('sms_messages')
           .select('*', { count: 'exact' })
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: false })
@@ -218,13 +218,13 @@ export async function POST(request: NextRequest) {
           { count: failedCount },
           { count: activeConversations },
         ] = await Promise.all([
-          adminSupabase.from('sms_messages').select('id', { count: 'exact', head: true }).gte('created_at', since),
-          adminSupabase.from('sms_conversations').select('id', { count: 'exact', head: true }),
-          adminSupabase.from('sms_messages').select('id', { count: 'exact', head: true }).eq('direction', 'inbound').gte('created_at', since),
-          adminSupabase.from('sms_messages').select('id', { count: 'exact', head: true }).eq('direction', 'outbound').gte('created_at', since),
-          adminSupabase.from('sms_messages').select('id', { count: 'exact', head: true }).eq('status', 'delivered').gte('created_at', since),
-          adminSupabase.from('sms_messages').select('id', { count: 'exact', head: true }).in('status', ['failed', 'undelivered']).gte('created_at', since),
-          adminSupabase.from('sms_conversations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+          adminSupabase.schema('communication').from('sms_messages').select('id', { count: 'exact', head: true }).gte('created_at', since),
+          adminSupabase.schema('communication').from('sms_conversations').select('id', { count: 'exact', head: true }),
+          adminSupabase.schema('communication').from('sms_messages').select('id', { count: 'exact', head: true }).eq('direction', 'inbound').gte('created_at', since),
+          adminSupabase.schema('communication').from('sms_messages').select('id', { count: 'exact', head: true }).eq('direction', 'outbound').gte('created_at', since),
+          adminSupabase.schema('communication').from('sms_messages').select('id', { count: 'exact', head: true }).eq('status', 'delivered').gte('created_at', since),
+          adminSupabase.schema('communication').from('sms_messages').select('id', { count: 'exact', head: true }).in('status', ['failed', 'undelivered']).gte('created_at', since),
+          adminSupabase.schema('communication').from('sms_conversations').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         ]);
 
         return NextResponse.json({
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
         const { limit = 50, offset = 0 } = body;
 
         const { data, count, error } = await adminSupabase
-          .from('sms_webhook_logs')
+          .schema('communication').from('sms_webhook_logs')
           .select('*', { count: 'exact' })
           .order('created_at', { ascending: false })
           .range(offset, offset + Math.min(limit, 100) - 1);

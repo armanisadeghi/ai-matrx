@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Log webhook
-    await supabase.from('sms_webhook_logs').insert({
+    await supabase.schema('communication').from('sms_webhook_logs').insert({
       webhook_type: 'status_callback',
       twilio_sid: payload.MessageSid,
       raw_payload: payload as unknown as Record<string, unknown>,
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Find the message by Twilio SID
     const { data: existingMessage } = await supabase
-      .from('sms_messages')
+      .schema('communication').from('sms_messages')
       .select('id, status')
       .eq('twilio_sid', payload.MessageSid)
       .single();
@@ -76,14 +76,14 @@ export async function POST(request: NextRequest) {
       }
 
       await supabase
-        .from('sms_messages')
+        .schema('communication').from('sms_messages')
         .update(updateData)
         .eq('id', existingMessage.id);
     }
 
     // Mark webhook as processed
     await supabase
-      .from('sms_webhook_logs')
+      .schema('communication').from('sms_webhook_logs')
       .update({ processed: true })
       .eq('twilio_sid', payload.MessageSid)
       .eq('webhook_type', 'status_callback');

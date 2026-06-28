@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     let query = adminSupabase
-      .from('sms_conversations')
+      .schema('communication').from('sms_conversations')
       .select('*', { count: 'exact' })
       .eq('user_id', user.id)
       .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Verify ownership
     const { data: conv } = await adminSupabase
-      .from('sms_conversations')
+      .schema('communication').from('sms_conversations')
       .select('user_id')
       .eq('id', conversationId)
       .single();
@@ -117,28 +117,28 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'close':
         await adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .update({ status: 'closed' })
           .eq('id', conversationId);
         break;
 
       case 'block':
         await adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .update({ status: 'blocked' })
           .eq('id', conversationId);
         break;
 
       case 'reopen':
         await adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .update({ status: 'active' })
           .eq('id', conversationId);
         break;
 
       case 'mark_read':
         await adminSupabase
-          .from('sms_conversations')
+          .schema('communication').from('sms_conversations')
           .update({ unread_count: 0 })
           .eq('id', conversationId);
         break;

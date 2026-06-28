@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const { data, error } = await adminSupabase
-      .from('sms_notification_preferences')
+      .schema('communication').from('sms_notification_preferences')
       .select('*')
       .eq('user_id', user.id)
       .single();
@@ -123,7 +123,7 @@ export async function PUT(request: NextRequest) {
 
     // Upsert preferences
     const { data, error } = await adminSupabase
-      .from('sms_notification_preferences')
+      .schema('communication').from('sms_notification_preferences')
       .upsert(
         { user_id: user.id, ...updateData },
         { onConflict: 'user_id' }
@@ -140,7 +140,7 @@ export async function PUT(request: NextRequest) {
 
     // If they enabled SMS and provided a phone number, ensure consent record exists
     if (updateData.sms_enabled && updateData.phone_number) {
-      await adminSupabase.from('sms_consent').upsert(
+      await adminSupabase.schema('communication').from('sms_consent').upsert(
         {
           phone_number: updateData.phone_number as string,
           user_id: user.id,

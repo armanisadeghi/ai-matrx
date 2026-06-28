@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Verify user owns this conversation
     const { data: conv } = await adminSupabase
-      .from('sms_conversations')
+      .schema('communication').from('sms_conversations')
       .select('user_id')
       .eq('id', conversationId)
       .single();
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch messages
     const { data, count, error } = await adminSupabase
-      .from('sms_messages')
+      .schema('communication').from('sms_messages')
       .select('*', { count: 'exact' })
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })

@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         const adminSupabase = createAdminClient();
 
         await adminSupabase
-          .from('sms_notification_preferences')
+          .schema('communication').from('sms_notification_preferences')
           .upsert(
             {
               user_id: user.id,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           );
 
         // Create consent record
-        await adminSupabase.from('sms_consent').upsert(
+        await adminSupabase.schema('communication').from('sms_consent').upsert(
           {
             phone_number: phoneNumber,
             user_id: user.id,

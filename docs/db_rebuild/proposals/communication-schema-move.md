@@ -1,5 +1,9 @@
 # Communication-schema move — Phase 2 runbook
 
+> ✅ **DONE (2026-06-28).** `communication` was exposed, the move applied
+> (`migrations/communication_move_phase2.sql`), FE/aidream repointed, verified live. This doc is
+> retained as the record + reusable recipe. Below was the plan.
+
 Phase 1 (canonicalize sms_*/dm_*/emails in place) is **done + committed** (`83f560b2c`). This is the
 turnkey runbook for **Phase 2**: relocate all 13 tables `public.* → communication.*`. Execute as one
 pass once the blocker clears.
