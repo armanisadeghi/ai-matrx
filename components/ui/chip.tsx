@@ -1,9 +1,7 @@
 import React, {useState} from 'react';
 import {X, Star, Heart, Flame, Gem, Zap, Award, Crown, Diamond, Shield} from 'lucide-react';
-import {MatrxVariant} from "@/components/matrx/ArmaniForm/field-components/types";
+import { MatrxVariant } from "./types";
 import { cn } from '@/utils/cn';
-
-// type MatrxVariant = "default" | "destructive" | "success" | "outline" | "secondary" | "ghost" | "link" | "primary"
 
 type ChipVariants = MatrxVariant | 'warning' | 'danger' | 'purple' | 'pink' | 'indigo' | 'teal' | 'orange'  | string;
 
