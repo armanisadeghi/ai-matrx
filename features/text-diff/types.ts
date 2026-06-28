@@ -3,7 +3,6 @@
  */
 
 import { TextDiff } from "./lib/parseDiff";
-import type { Database } from "@/types/database.types";
 
 // ============================================================================
 // Diff State Types
@@ -53,7 +52,24 @@ export interface RejectedDiff {
 // Version History Types
 // ============================================================================
 
-export type NoteVersion = Database["public"]["Tables"]["note_versions"]["Row"];
+/**
+ * A note version row, as returned by the `get_note_versions` / `get_note_version`
+ * RPCs (backed by the central `history.row_versions` table). Typed locally
+ * because the legacy note_versions table was retired (now in history.row_versions).
+ *
+ * NOTE: `id` is a numeric string (the history row id), not a uuid.
+ */
+export interface NoteVersion {
+  id: string;
+  note_id: string;
+  version_number: number;
+  content: string;
+  label: string;
+  change_source: string;
+  change_type: string | null;
+  diff_metadata: Record<string, any>;
+  created_at: string;
+}
 
 export interface VersionHistoryState {
   versions: Record<string, NoteVersion[]>; // Keyed by note_id

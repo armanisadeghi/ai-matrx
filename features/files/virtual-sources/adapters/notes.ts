@@ -332,17 +332,19 @@ const notesAdapter: VirtualSourceAdapter = {
   },
 
   async listVersions(supabase, id) {
-    const { data } = await supabase
-      .from("note_versions")
-      .select("id, version_number, created_at, created_by, change_summary")
-      .eq("note_id", id)
-      .order("version_number", { ascending: false });
+    // Backed by `history.row_versions` via RPC; the legacy `note_versions`
+    // table is graveyarded. The RPC returns rows ordered by version DESC and
+    // exposes neither `created_by` nor a `change_summary` — use `label` as the
+    // human-facing summary.
+    const { data } = await supabase.rpc("get_note_versions", {
+      p_note_id: id,
+    });
     return (data ?? []).map((row) => ({
       id: row.id,
       versionNumber: row.version_number ?? 0,
       createdAt: row.created_at ?? "",
-      createdBy: row.created_by ?? null,
-      changeSummary: row.change_summary ?? null,
+      createdBy: null,
+      changeSummary: row.label ?? null,
     }));
   },
 };

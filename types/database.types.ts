@@ -7348,6 +7348,57 @@ export type Database = {
         }
         Relationships: []
       }
+      note_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          folder_id: string | null
+          id: string
+          is_public: boolean
+          note_id: string | null
+          organization_id: string | null
+          owner_id: string
+          permission: string
+          public_token: string | null
+          shared_with_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string | null
+          id?: string
+          is_public?: boolean
+          note_id?: string | null
+          organization_id?: string | null
+          owner_id: string
+          permission?: string
+          public_token?: string | null
+          shared_with_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string | null
+          id?: string
+          is_public?: boolean
+          note_id?: string | null
+          organization_id?: string | null
+          owner_id?: string
+          permission?: string
+          public_token?: string | null
+          shared_with_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       note_sync_log: {
         Row: {
           action: string
@@ -7384,6 +7435,48 @@ export type Database = {
           note_id?: string | null
           sync_version?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      note_versions: {
+        Row: {
+          change_note: string | null
+          change_source: string
+          change_type: string | null
+          content: string
+          created_at: string
+          diff_metadata: Json | null
+          id: string
+          label: string
+          note_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          content: string
+          created_at?: string
+          diff_metadata?: Json | null
+          id?: string
+          label: string
+          note_id: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          content?: string
+          created_at?: string
+          diff_metadata?: Json | null
+          id?: string
+          label?: string
+          note_id?: string
+          user_id?: string
+          version_number?: number
         }
         Relationships: []
       }
@@ -8840,6 +8933,1257 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      scrape_base_config: {
+        Row: {
+          created_at: string
+          exact: Json | null
+          id: string
+          is_public: boolean | null
+          partial: Json | null
+          regex: Json | null
+          selector_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exact?: Json | null
+          id?: string
+          is_public?: boolean | null
+          partial?: Json | null
+          regex?: Json | null
+          selector_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exact?: Json | null
+          id?: string
+          is_public?: boolean | null
+          partial?: Json | null
+          regex?: Json | null
+          selector_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scrape_cache_policy: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean | null
+          rescrape_after: number
+          stale_after: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          rescrape_after?: number
+          stale_after?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          rescrape_after?: number
+          stale_after?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      scrape_configuration: {
+        Row: {
+          created_at: string | null
+          id: string
+          interaction_settings_id: string | null
+          is_active: boolean | null
+          is_public: boolean | null
+          scrape_mode: string
+          scrape_path_pattern_id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interaction_settings_id?: string | null
+          is_active?: boolean | null
+          is_public?: boolean | null
+          scrape_mode?: string
+          scrape_path_pattern_id: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interaction_settings_id?: string | null
+          is_active?: boolean | null
+          is_public?: boolean | null
+          scrape_mode?: string
+          scrape_path_pattern_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_configuration_scrape_path_pattern_id_fkey"
+            columns: ["scrape_path_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_cycle_run: {
+        Row: {
+          allow_pattern: string | null
+          completed_at: string | null
+          created_at: string
+          disallow_patterns: Json | null
+          id: string
+          is_public: boolean | null
+          organization_id: string
+          run_number: number
+          scrape_cycle_tracker_id: string
+          status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          allow_pattern?: string | null
+          completed_at?: string | null
+          created_at?: string
+          disallow_patterns?: Json | null
+          id?: string
+          is_public?: boolean | null
+          organization_id: string
+          run_number: number
+          scrape_cycle_tracker_id: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          allow_pattern?: string | null
+          completed_at?: string | null
+          created_at?: string
+          disallow_patterns?: Json | null
+          id?: string
+          is_public?: boolean | null
+          organization_id?: string
+          run_number?: number
+          scrape_cycle_tracker_id?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_cycle_run_scrape_cycle_tracker_id_fkey"
+            columns: ["scrape_cycle_tracker_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_cycle_tracker"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_cycle_tracker: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          is_public: boolean | null
+          last_run_at: string | null
+          next_run_at: string | null
+          page_name: string | null
+          scrape_job_id: string | null
+          scrape_path_pattern_cache_policy_id: string | null
+          target_url: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_public?: boolean | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          page_name?: string | null
+          scrape_job_id?: string | null
+          scrape_path_pattern_cache_policy_id?: string | null
+          target_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          is_public?: boolean | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          page_name?: string | null
+          scrape_job_id?: string | null
+          scrape_path_pattern_cache_policy_id?: string | null
+          target_url?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_cycle_tracker_scrape_job_id_fkey"
+            columns: ["scrape_job_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_cycle_tracker_scrape_path_pattern_cache_policy_id_fkey"
+            columns: ["scrape_path_pattern_cache_policy_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern_cache_policy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain: {
+        Row: {
+          category: string | null
+          category_reason: string | null
+          common_name: string | null
+          content_selector: string | null
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          min_content_chars: number | null
+          min_real_content_chars: number | null
+          policy_action: string | null
+          policy_notes: string | null
+          scrape_allowed: boolean | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          category?: string | null
+          category_reason?: string | null
+          common_name?: string | null
+          content_selector?: string | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          policy_action?: string | null
+          policy_notes?: string | null
+          scrape_allowed?: boolean | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          category?: string | null
+          category_reason?: string | null
+          common_name?: string | null
+          content_selector?: string | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          policy_action?: string | null
+          policy_notes?: string | null
+          scrape_allowed?: boolean | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
+      scrape_domain_disallowed_notes: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          notes: string | null
+          scrape_domain_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          scrape_domain_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          scrape_domain_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_disallowed_notes_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain_notes: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          notes: string | null
+          scrape_domain_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          notes?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_notes_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain_quick_scrape_settings: {
+        Row: {
+          created_at: string | null
+          enabled: boolean
+          id: string
+          is_public: boolean | null
+          proxy_type: string | null
+          scrape_domain_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean
+          id?: string
+          is_public?: boolean | null
+          proxy_type?: string | null
+          scrape_domain_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean
+          id?: string
+          is_public?: boolean | null
+          proxy_type?: string | null
+          scrape_domain_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_quick_scrape_settings_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain_robots_txt: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          robots_txt: string | null
+          scrape_domain_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          robots_txt?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          robots_txt?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_robots_txt_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain_settings: {
+        Row: {
+          created_at: string
+          domain_id: string
+          enabled: boolean
+          id: string
+          proxy_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain_id: string
+          enabled?: boolean
+          id?: string
+          proxy_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain_id?: string
+          enabled?: boolean
+          id?: string
+          proxy_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_settings_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: true
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_domain_sitemap: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          scrape_domain_id: string | null
+          sitemap: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_domain_id?: string | null
+          sitemap?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_domain_id?: string | null
+          sitemap?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_domain_sitemap_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_failure_log: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          domain_name: string
+          error_log: string | null
+          failure_category: string | null
+          failure_reason: string
+          id: string
+          proxy_type: string | null
+          proxy_used: boolean
+          status_code: number | null
+          target_url: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          domain_name: string
+          error_log?: string | null
+          failure_category?: string | null
+          failure_reason: string
+          id?: string
+          proxy_type?: string | null
+          proxy_used?: boolean
+          status_code?: number | null
+          target_url: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          domain_name?: string
+          error_log?: string | null
+          failure_category?: string | null
+          failure_reason?: string
+          id?: string
+          proxy_type?: string | null
+          proxy_used?: boolean
+          status_code?: number | null
+          target_url?: string
+        }
+        Relationships: []
+      }
+      scrape_job: {
+        Row: {
+          attempt_limit: number
+          created_at: string
+          description: string | null
+          finished_at: string | null
+          id: string
+          is_public: boolean | null
+          name: string | null
+          parse_status: string
+          scrape_domain_id: string
+          scrape_status: string
+          start_urls: string[]
+          started_at: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempt_limit?: number
+          created_at?: string
+          description?: string | null
+          finished_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string | null
+          parse_status: string
+          scrape_domain_id: string
+          scrape_status: string
+          start_urls: string[]
+          started_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempt_limit?: number
+          created_at?: string
+          description?: string | null
+          finished_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string | null
+          parse_status?: string
+          scrape_domain_id?: string
+          scrape_status?: string
+          start_urls?: string[]
+          started_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_job_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_override: {
+        Row: {
+          action: string
+          config_type: string
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          match_type: string | null
+          name: string
+          selector_type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          config_type: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          match_type?: string | null
+          name: string
+          selector_type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          config_type?: string
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          match_type?: string | null
+          name?: string
+          selector_type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      scrape_override_value: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          scrape_override_id: string
+          updated_at: string | null
+          user_id: string | null
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_override_id: string
+          updated_at?: string | null
+          user_id?: string | null
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_override_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_override_value_scrape_override_id_fkey"
+            columns: ["scrape_override_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_override"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_parsed_page: {
+        Row: {
+          char_count: number | null
+          content: Json | null
+          content_type: string | null
+          created_at: string | null
+          domain: string | null
+          expires_at: string | null
+          id: string
+          is_public: boolean | null
+          local_path: string | null
+          page_name: string
+          remote_path: string | null
+          scrape_configuration_id: string | null
+          scrape_cycle_run_id: string | null
+          scrape_cycle_tracker_id: string | null
+          scrape_path_pattern_cache_policy_id: string | null
+          scrape_path_pattern_override_id: string | null
+          scrape_task_id: string | null
+          scrape_task_response_id: string | null
+          scraped_at: string | null
+          updated_at: string | null
+          url: string | null
+          user_id: string | null
+          validity: string
+        }
+        Insert: {
+          char_count?: number | null
+          content?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          domain?: string | null
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          local_path?: string | null
+          page_name: string
+          remote_path?: string | null
+          scrape_configuration_id?: string | null
+          scrape_cycle_run_id?: string | null
+          scrape_cycle_tracker_id?: string | null
+          scrape_path_pattern_cache_policy_id?: string | null
+          scrape_path_pattern_override_id?: string | null
+          scrape_task_id?: string | null
+          scrape_task_response_id?: string | null
+          scraped_at?: string | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
+          validity: string
+        }
+        Update: {
+          char_count?: number | null
+          content?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          domain?: string | null
+          expires_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          local_path?: string | null
+          page_name?: string
+          remote_path?: string | null
+          scrape_configuration_id?: string | null
+          scrape_cycle_run_id?: string | null
+          scrape_cycle_tracker_id?: string | null
+          scrape_path_pattern_cache_policy_id?: string | null
+          scrape_path_pattern_override_id?: string | null
+          scrape_task_id?: string | null
+          scrape_task_response_id?: string | null
+          scraped_at?: string | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string | null
+          validity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_configuration_id_fkey"
+            columns: ["scrape_configuration_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_configuration"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_cycle_run_id_fkey"
+            columns: ["scrape_cycle_run_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_cycle_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_cycle_tracker_id_fkey"
+            columns: ["scrape_cycle_tracker_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_cycle_tracker"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_path_pattern_cache_policy_id_fkey"
+            columns: ["scrape_path_pattern_cache_policy_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern_cache_policy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_path_pattern_override_id_fkey"
+            columns: ["scrape_path_pattern_override_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern_override"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_task_id_fkey"
+            columns: ["scrape_task_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_task"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_parsed_page_scrape_task_response_id_fkey"
+            columns: ["scrape_task_response_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_task_response"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_path_override: {
+        Row: {
+          action: string
+          config_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          match_type: string
+          path_pattern_id: string
+          selector_type: string
+          values: Json
+        }
+        Insert: {
+          action: string
+          config_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type: string
+          path_pattern_id: string
+          selector_type: string
+          values?: Json
+        }
+        Update: {
+          action?: string
+          config_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          match_type?: string
+          path_pattern_id?: string
+          selector_type?: string
+          values?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_path_override_path_pattern_id_fkey"
+            columns: ["path_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_path_pattern: {
+        Row: {
+          category: string | null
+          category_reason: string | null
+          content_selector: string | null
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          min_content_chars: number | null
+          min_real_content_chars: number | null
+          path_pattern: string | null
+          policy_action: string | null
+          policy_notes: string | null
+          scrape_domain_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          category_reason?: string | null
+          content_selector?: string | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          path_pattern?: string | null
+          policy_action?: string | null
+          policy_notes?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          category_reason?: string | null
+          content_selector?: string | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          min_content_chars?: number | null
+          min_real_content_chars?: number | null
+          path_pattern?: string | null
+          policy_action?: string | null
+          policy_notes?: string | null
+          scrape_domain_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_path_pattern_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_path_pattern_cache_policy: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean | null
+          scrape_cache_policy_id: string
+          scrape_path_pattern_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          scrape_cache_policy_id: string
+          scrape_path_pattern_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          scrape_cache_policy_id?: string
+          scrape_path_pattern_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_path_pattern_cache_policy_scrape_cache_policy_id_fkey"
+            columns: ["scrape_cache_policy_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_cache_policy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_path_pattern_cache_policy_scrape_path_pattern_id_fkey"
+            columns: ["scrape_path_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_path_pattern_override: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_public: boolean
+          name: string
+          scrape_override_id: string
+          scrape_path_pattern_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name: string
+          scrape_override_id: string
+          scrape_path_pattern_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_public?: boolean
+          name?: string
+          scrape_override_id?: string
+          scrape_path_pattern_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_path_pattern_override_scrape_override_id_fkey"
+            columns: ["scrape_override_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_override"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_path_pattern_override_scrape_path_pattern_id_fkey"
+            columns: ["scrape_path_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_path_pattern"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_quick_failure_log: {
+        Row: {
+          created_at: string | null
+          domain_name: string | null
+          error_log: string | null
+          failure_reason: string | null
+          id: string
+          is_public: boolean | null
+          scrape_domain_id: string | null
+          target_url: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain_name?: string | null
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_domain_id?: string | null
+          target_url: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain_name?: string | null
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_public?: boolean | null
+          scrape_domain_id?: string | null
+          target_url?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_quick_failure_log_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_retry_queue: {
+        Row: {
+          attempt_count: number
+          claim_expires_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          completed_at: string | null
+          created_at: string
+          domain_name: string
+          failure_log_id: string | null
+          failure_reason: string
+          id: string
+          last_error: string | null
+          original_failure_at: string
+          request_context: Json
+          status: string
+          target_url: string
+          tier: string
+        }
+        Insert: {
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          domain_name: string
+          failure_log_id?: string | null
+          failure_reason: string
+          id?: string
+          last_error?: string | null
+          original_failure_at?: string
+          request_context?: Json
+          status?: string
+          target_url: string
+          tier?: string
+        }
+        Update: {
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          domain_name?: string
+          failure_log_id?: string | null
+          failure_reason?: string
+          id?: string
+          last_error?: string | null
+          original_failure_at?: string
+          request_context?: Json
+          status?: string
+          target_url?: string
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_retry_queue_failure_log_id_fkey"
+            columns: ["failure_log_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_failure_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_task: {
+        Row: {
+          attempts_left: number
+          cancel_message: string | null
+          created_at: string
+          discovered_links: Json | null
+          failure_reason: string | null
+          id: string
+          interaction_config: Json | null
+          is_public: boolean | null
+          page_name: string
+          parent_task: string | null
+          parse_status: string | null
+          priority: number | null
+          scrape_cycle_run_id: string | null
+          scrape_domain_id: string | null
+          scrape_job_id: string | null
+          scrape_mode: string
+          scrape_status: string | null
+          spawned_concurrent_tasks: boolean | null
+          target_url: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts_left: number
+          cancel_message?: string | null
+          created_at?: string
+          discovered_links?: Json | null
+          failure_reason?: string | null
+          id?: string
+          interaction_config?: Json | null
+          is_public?: boolean | null
+          page_name: string
+          parent_task?: string | null
+          parse_status?: string | null
+          priority?: number | null
+          scrape_cycle_run_id?: string | null
+          scrape_domain_id?: string | null
+          scrape_job_id?: string | null
+          scrape_mode?: string
+          scrape_status?: string | null
+          spawned_concurrent_tasks?: boolean | null
+          target_url: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts_left?: number
+          cancel_message?: string | null
+          created_at?: string
+          discovered_links?: Json | null
+          failure_reason?: string | null
+          id?: string
+          interaction_config?: Json | null
+          is_public?: boolean | null
+          page_name?: string
+          parent_task?: string | null
+          parse_status?: string | null
+          priority?: number | null
+          scrape_cycle_run_id?: string | null
+          scrape_domain_id?: string | null
+          scrape_job_id?: string | null
+          scrape_mode?: string
+          scrape_status?: string | null
+          spawned_concurrent_tasks?: boolean | null
+          target_url?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_task_scrape_cycle_run_id_fkey"
+            columns: ["scrape_cycle_run_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_cycle_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_task_scrape_domain_id_fkey"
+            columns: ["scrape_domain_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_domain"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scrape_task_scrape_job_id_fkey"
+            columns: ["scrape_job_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_job"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scrape_task_response: {
+        Row: {
+          content_path: string
+          content_size: number | null
+          content_type: string | null
+          created_at: string
+          error_log: string | null
+          failure_reason: string | null
+          id: string
+          is_public: boolean | null
+          response_headers: Json
+          response_url: string
+          scrape_task_id: string
+          status_code: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content_path: string
+          content_size?: number | null
+          content_type?: string | null
+          created_at?: string
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_public?: boolean | null
+          response_headers: Json
+          response_url: string
+          scrape_task_id: string
+          status_code?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content_path?: string
+          content_size?: number | null
+          content_type?: string | null
+          created_at?: string
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_public?: boolean | null
+          response_headers?: Json
+          response_url?: string
+          scrape_task_id?: string
+          status_code?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scrape_task_response_scrape_task_id_fkey"
+            columns: ["scrape_task_id"]
+            isOneToOne: false
+            referencedRelation: "scrape_task"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_prompts_new: {
         Row: {
@@ -10514,6 +11858,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "applet_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "applet_subcategory_id_fkey"
             columns: ["subcategory_id"]
             isOneToOne: false
@@ -10917,6 +12268,13 @@ export type Database = {
             columns: ["canvas_id"]
             isOneToOne: false
             referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_item_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -11364,6 +12722,13 @@ export type Database = {
             referencedRelation: "cmp_comparison_sets"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cmp_response_feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       code_file_folders: {
@@ -11786,7 +13151,15 @@ export type Database = {
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "component_groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_submissions: {
         Row: {
@@ -12208,7 +13581,15 @@ export type Database = {
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "custom_app_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_applet_configs: {
         Row: {
@@ -12335,6 +13716,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "custom_applet_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "custom_applet_configs_subcategory_id_fkey"
             columns: ["subcategory_id"]
             isOneToOne: false
@@ -12392,7 +13780,15 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_saved_views_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       derive_runs: {
         Row: {
@@ -13113,7 +14509,15 @@ export type Database = {
           version?: number
           visibility?: "private" | "internal" | "link" | "public"
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "field_components_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flashcard_data: {
         Row: {
@@ -13250,6 +14654,13 @@ export type Database = {
             columns: ["flashcard_id"]
             isOneToOne: false
             referencedRelation: "flashcard_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -14666,107 +16077,6 @@ export type Database = {
           },
         ]
       }
-      note_shares: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          folder_id: string | null
-          id: string
-          is_public: boolean
-          note_id: string | null
-          organization_id: string | null
-          owner_id: string
-          permission: string
-          public_token: string | null
-          shared_with_id: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          folder_id?: string | null
-          id?: string
-          is_public?: boolean
-          note_id?: string | null
-          organization_id?: string | null
-          owner_id: string
-          permission?: string
-          public_token?: string | null
-          shared_with_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          folder_id?: string | null
-          id?: string
-          is_public?: boolean
-          note_id?: string | null
-          organization_id?: string | null
-          owner_id?: string
-          permission?: string
-          public_token?: string | null
-          shared_with_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_shares_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      note_versions: {
-        Row: {
-          change_note: string | null
-          change_source: string
-          change_type: string | null
-          content: string
-          created_at: string
-          diff_metadata: Json | null
-          id: string
-          label: string
-          note_id: string
-          user_id: string
-          version_number: number
-        }
-        Insert: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          content: string
-          created_at?: string
-          diff_metadata?: Json | null
-          id?: string
-          label: string
-          note_id: string
-          user_id: string
-          version_number: number
-        }
-        Update: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          content?: string
-          created_at?: string
-          diff_metadata?: Json | null
-          id?: string
-          label?: string
-          note_id?: string
-          user_id?: string
-          version_number?: number
-        }
-        Relationships: []
-      }
       ops_issue_class: {
         Row: {
           alert_threshold: number | null
@@ -15572,6 +16882,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pc_articles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pc_articles_show_id_fkey"
             columns: ["show_id"]
             isOneToOne: false
@@ -15666,6 +16983,13 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pc_episodes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pc_episodes_show_id_fkey"
             columns: ["show_id"]
@@ -18330,1264 +19654,6 @@ export type Database = {
           },
         ]
       }
-      scrape_base_config: {
-        Row: {
-          created_at: string
-          exact: Json | null
-          id: string
-          is_public: boolean | null
-          partial: Json | null
-          regex: Json | null
-          selector_type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          exact?: Json | null
-          id?: string
-          is_public?: boolean | null
-          partial?: Json | null
-          regex?: Json | null
-          selector_type: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          exact?: Json | null
-          id?: string
-          is_public?: boolean | null
-          partial?: Json | null
-          regex?: Json | null
-          selector_type?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      scrape_cache_policy: {
-        Row: {
-          created_at: string
-          id: string
-          is_public: boolean | null
-          rescrape_after: number
-          stale_after: number
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          rescrape_after?: number
-          stale_after?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          rescrape_after?: number
-          stale_after?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      scrape_configuration: {
-        Row: {
-          created_at: string | null
-          id: string
-          interaction_settings_id: string | null
-          is_active: boolean | null
-          is_public: boolean | null
-          scrape_mode: string
-          scrape_path_pattern_id: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          interaction_settings_id?: string | null
-          is_active?: boolean | null
-          is_public?: boolean | null
-          scrape_mode?: string
-          scrape_path_pattern_id: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          interaction_settings_id?: string | null
-          is_active?: boolean | null
-          is_public?: boolean | null
-          scrape_mode?: string
-          scrape_path_pattern_id?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_configuration_scrape_path_pattern_id_fkey"
-            columns: ["scrape_path_pattern_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_cycle_run: {
-        Row: {
-          allow_pattern: string | null
-          completed_at: string | null
-          created_at: string
-          disallow_patterns: Json | null
-          id: string
-          is_public: boolean | null
-          organization_id: string
-          run_number: number
-          scrape_cycle_tracker_id: string
-          status: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          allow_pattern?: string | null
-          completed_at?: string | null
-          created_at?: string
-          disallow_patterns?: Json | null
-          id?: string
-          is_public?: boolean | null
-          organization_id: string
-          run_number: number
-          scrape_cycle_tracker_id: string
-          status?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          allow_pattern?: string | null
-          completed_at?: string | null
-          created_at?: string
-          disallow_patterns?: Json | null
-          id?: string
-          is_public?: boolean | null
-          organization_id?: string
-          run_number?: number
-          scrape_cycle_tracker_id?: string
-          status?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_cycle_run_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_cycle_run_scrape_cycle_tracker_id_fkey"
-            columns: ["scrape_cycle_tracker_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_cycle_tracker"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_cycle_tracker: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean | null
-          is_public: boolean | null
-          last_run_at: string | null
-          next_run_at: string | null
-          page_name: string | null
-          scrape_job_id: string | null
-          scrape_path_pattern_cache_policy_id: string | null
-          target_url: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          is_public?: boolean | null
-          last_run_at?: string | null
-          next_run_at?: string | null
-          page_name?: string | null
-          scrape_job_id?: string | null
-          scrape_path_pattern_cache_policy_id?: string | null
-          target_url?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          is_public?: boolean | null
-          last_run_at?: string | null
-          next_run_at?: string | null
-          page_name?: string | null
-          scrape_job_id?: string | null
-          scrape_path_pattern_cache_policy_id?: string | null
-          target_url?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_cycle_tracker_scrape_job_id_fkey"
-            columns: ["scrape_job_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_job"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_cycle_tracker_scrape_path_pattern_cache_policy_id_fkey"
-            columns: ["scrape_path_pattern_cache_policy_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern_cache_policy"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain: {
-        Row: {
-          category: string | null
-          category_reason: string | null
-          common_name: string | null
-          content_selector: string | null
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          min_content_chars: number | null
-          min_real_content_chars: number | null
-          policy_action: string | null
-          policy_notes: string | null
-          scrape_allowed: boolean | null
-          updated_at: string | null
-          url: string | null
-        }
-        Insert: {
-          category?: string | null
-          category_reason?: string | null
-          common_name?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_allowed?: boolean | null
-          updated_at?: string | null
-          url?: string | null
-        }
-        Update: {
-          category?: string | null
-          category_reason?: string | null
-          common_name?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_allowed?: boolean | null
-          updated_at?: string | null
-          url?: string | null
-        }
-        Relationships: []
-      }
-      scrape_domain_disallowed_notes: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          notes: string | null
-          scrape_domain_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          notes?: string | null
-          scrape_domain_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          notes?: string | null
-          scrape_domain_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_disallowed_notes_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain_notes: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          notes: string | null
-          scrape_domain_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          notes?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          notes?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_notes_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain_quick_scrape_settings: {
-        Row: {
-          created_at: string | null
-          enabled: boolean
-          id: string
-          is_public: boolean | null
-          proxy_type: string | null
-          scrape_domain_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          enabled?: boolean
-          id?: string
-          is_public?: boolean | null
-          proxy_type?: string | null
-          scrape_domain_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          enabled?: boolean
-          id?: string
-          is_public?: boolean | null
-          proxy_type?: string | null
-          scrape_domain_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_quick_scrape_settings_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain_robots_txt: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          robots_txt: string | null
-          scrape_domain_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          robots_txt?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          robots_txt?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_robots_txt_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain_settings: {
-        Row: {
-          created_at: string
-          domain_id: string
-          enabled: boolean
-          id: string
-          proxy_type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          domain_id: string
-          enabled?: boolean
-          id?: string
-          proxy_type?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          domain_id?: string
-          enabled?: boolean
-          id?: string
-          proxy_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_settings_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: true
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_domain_sitemap: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          scrape_domain_id: string | null
-          sitemap: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_domain_id?: string | null
-          sitemap?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_domain_id?: string | null
-          sitemap?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_domain_sitemap_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_failure_log: {
-        Row: {
-          attempt_count: number
-          created_at: string
-          domain_name: string
-          error_log: string | null
-          failure_category: string | null
-          failure_reason: string
-          id: string
-          proxy_type: string | null
-          proxy_used: boolean
-          status_code: number | null
-          target_url: string
-        }
-        Insert: {
-          attempt_count?: number
-          created_at?: string
-          domain_name: string
-          error_log?: string | null
-          failure_category?: string | null
-          failure_reason: string
-          id?: string
-          proxy_type?: string | null
-          proxy_used?: boolean
-          status_code?: number | null
-          target_url: string
-        }
-        Update: {
-          attempt_count?: number
-          created_at?: string
-          domain_name?: string
-          error_log?: string | null
-          failure_category?: string | null
-          failure_reason?: string
-          id?: string
-          proxy_type?: string | null
-          proxy_used?: boolean
-          status_code?: number | null
-          target_url?: string
-        }
-        Relationships: []
-      }
-      scrape_job: {
-        Row: {
-          attempt_limit: number
-          created_at: string
-          description: string | null
-          finished_at: string | null
-          id: string
-          is_public: boolean | null
-          name: string | null
-          parse_status: string
-          scrape_domain_id: string
-          scrape_status: string
-          start_urls: string[]
-          started_at: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          attempt_limit?: number
-          created_at?: string
-          description?: string | null
-          finished_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          name?: string | null
-          parse_status: string
-          scrape_domain_id: string
-          scrape_status: string
-          start_urls: string[]
-          started_at?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          attempt_limit?: number
-          created_at?: string
-          description?: string | null
-          finished_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          name?: string | null
-          parse_status?: string
-          scrape_domain_id?: string
-          scrape_status?: string
-          start_urls?: string[]
-          started_at?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_job_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_override: {
-        Row: {
-          action: string
-          config_type: string
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          match_type: string | null
-          name: string
-          selector_type: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          config_type: string
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          match_type?: string | null
-          name: string
-          selector_type?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          config_type?: string
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          match_type?: string | null
-          name?: string
-          selector_type?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      scrape_override_value: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          scrape_override_id: string
-          updated_at: string | null
-          user_id: string | null
-          value: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_override_id: string
-          updated_at?: string | null
-          user_id?: string | null
-          value: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_override_id?: string
-          updated_at?: string | null
-          user_id?: string | null
-          value?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_override_value_scrape_override_id_fkey"
-            columns: ["scrape_override_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_override"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_parsed_page: {
-        Row: {
-          char_count: number | null
-          content: Json | null
-          content_type: string | null
-          created_at: string | null
-          domain: string | null
-          expires_at: string | null
-          id: string
-          is_public: boolean | null
-          local_path: string | null
-          page_name: string
-          remote_path: string | null
-          scrape_configuration_id: string | null
-          scrape_cycle_run_id: string | null
-          scrape_cycle_tracker_id: string | null
-          scrape_path_pattern_cache_policy_id: string | null
-          scrape_path_pattern_override_id: string | null
-          scrape_task_id: string | null
-          scrape_task_response_id: string | null
-          scraped_at: string | null
-          updated_at: string | null
-          url: string | null
-          user_id: string | null
-          validity: string
-        }
-        Insert: {
-          char_count?: number | null
-          content?: Json | null
-          content_type?: string | null
-          created_at?: string | null
-          domain?: string | null
-          expires_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          local_path?: string | null
-          page_name: string
-          remote_path?: string | null
-          scrape_configuration_id?: string | null
-          scrape_cycle_run_id?: string | null
-          scrape_cycle_tracker_id?: string | null
-          scrape_path_pattern_cache_policy_id?: string | null
-          scrape_path_pattern_override_id?: string | null
-          scrape_task_id?: string | null
-          scrape_task_response_id?: string | null
-          scraped_at?: string | null
-          updated_at?: string | null
-          url?: string | null
-          user_id?: string | null
-          validity: string
-        }
-        Update: {
-          char_count?: number | null
-          content?: Json | null
-          content_type?: string | null
-          created_at?: string | null
-          domain?: string | null
-          expires_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          local_path?: string | null
-          page_name?: string
-          remote_path?: string | null
-          scrape_configuration_id?: string | null
-          scrape_cycle_run_id?: string | null
-          scrape_cycle_tracker_id?: string | null
-          scrape_path_pattern_cache_policy_id?: string | null
-          scrape_path_pattern_override_id?: string | null
-          scrape_task_id?: string | null
-          scrape_task_response_id?: string | null
-          scraped_at?: string | null
-          updated_at?: string | null
-          url?: string | null
-          user_id?: string | null
-          validity?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_configuration_id_fkey"
-            columns: ["scrape_configuration_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_configuration"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_cycle_run_id_fkey"
-            columns: ["scrape_cycle_run_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_cycle_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_cycle_tracker_id_fkey"
-            columns: ["scrape_cycle_tracker_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_cycle_tracker"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_path_pattern_cache_policy_id_fkey"
-            columns: ["scrape_path_pattern_cache_policy_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern_cache_policy"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_path_pattern_override_id_fkey"
-            columns: ["scrape_path_pattern_override_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern_override"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_task_id_fkey"
-            columns: ["scrape_task_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_task"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_parsed_page_scrape_task_response_id_fkey"
-            columns: ["scrape_task_response_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_task_response"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_path_override: {
-        Row: {
-          action: string
-          config_type: string
-          created_at: string
-          id: string
-          is_active: boolean
-          match_type: string
-          path_pattern_id: string
-          selector_type: string
-          values: Json
-        }
-        Insert: {
-          action: string
-          config_type: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          match_type: string
-          path_pattern_id: string
-          selector_type: string
-          values?: Json
-        }
-        Update: {
-          action?: string
-          config_type?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          match_type?: string
-          path_pattern_id?: string
-          selector_type?: string
-          values?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_path_override_path_pattern_id_fkey"
-            columns: ["path_pattern_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_path_pattern: {
-        Row: {
-          category: string | null
-          category_reason: string | null
-          content_selector: string | null
-          created_at: string | null
-          id: string
-          is_public: boolean | null
-          min_content_chars: number | null
-          min_real_content_chars: number | null
-          path_pattern: string | null
-          policy_action: string | null
-          policy_notes: string | null
-          scrape_domain_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category?: string | null
-          category_reason?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          path_pattern?: string | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string | null
-          category_reason?: string | null
-          content_selector?: string | null
-          created_at?: string | null
-          id?: string
-          is_public?: boolean | null
-          min_content_chars?: number | null
-          min_real_content_chars?: number | null
-          path_pattern?: string | null
-          policy_action?: string | null
-          policy_notes?: string | null
-          scrape_domain_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_path_pattern_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_path_pattern_cache_policy: {
-        Row: {
-          created_at: string
-          id: string
-          is_public: boolean | null
-          scrape_cache_policy_id: string
-          scrape_path_pattern_id: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          scrape_cache_policy_id: string
-          scrape_path_pattern_id: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          scrape_cache_policy_id?: string
-          scrape_path_pattern_id?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_path_pattern_cache_policy_scrape_cache_policy_id_fkey"
-            columns: ["scrape_cache_policy_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_cache_policy"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_path_pattern_cache_policy_scrape_path_pattern_id_fkey"
-            columns: ["scrape_path_pattern_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_path_pattern_override: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          is_public: boolean
-          name: string
-          scrape_override_id: string
-          scrape_path_pattern_id: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          name: string
-          scrape_override_id: string
-          scrape_path_pattern_id: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_public?: boolean
-          name?: string
-          scrape_override_id?: string
-          scrape_path_pattern_id?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_path_pattern_override_scrape_override_id_fkey"
-            columns: ["scrape_override_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_override"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_path_pattern_override_scrape_path_pattern_id_fkey"
-            columns: ["scrape_path_pattern_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_path_pattern"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_quick_failure_log: {
-        Row: {
-          created_at: string | null
-          domain_name: string | null
-          error_log: string | null
-          failure_reason: string | null
-          id: string
-          is_public: boolean | null
-          scrape_domain_id: string | null
-          target_url: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          domain_name?: string | null
-          error_log?: string | null
-          failure_reason?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_domain_id?: string | null
-          target_url: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          domain_name?: string | null
-          error_log?: string | null
-          failure_reason?: string | null
-          id?: string
-          is_public?: boolean | null
-          scrape_domain_id?: string | null
-          target_url?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_quick_failure_log_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_retry_queue: {
-        Row: {
-          attempt_count: number
-          claim_expires_at: string | null
-          claimed_at: string | null
-          claimed_by: string | null
-          completed_at: string | null
-          created_at: string
-          domain_name: string
-          failure_log_id: string | null
-          failure_reason: string
-          id: string
-          last_error: string | null
-          original_failure_at: string
-          request_context: Json
-          status: string
-          target_url: string
-          tier: string
-        }
-        Insert: {
-          attempt_count?: number
-          claim_expires_at?: string | null
-          claimed_at?: string | null
-          claimed_by?: string | null
-          completed_at?: string | null
-          created_at?: string
-          domain_name: string
-          failure_log_id?: string | null
-          failure_reason: string
-          id?: string
-          last_error?: string | null
-          original_failure_at?: string
-          request_context?: Json
-          status?: string
-          target_url: string
-          tier?: string
-        }
-        Update: {
-          attempt_count?: number
-          claim_expires_at?: string | null
-          claimed_at?: string | null
-          claimed_by?: string | null
-          completed_at?: string | null
-          created_at?: string
-          domain_name?: string
-          failure_log_id?: string | null
-          failure_reason?: string
-          id?: string
-          last_error?: string | null
-          original_failure_at?: string
-          request_context?: Json
-          status?: string
-          target_url?: string
-          tier?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_retry_queue_failure_log_id_fkey"
-            columns: ["failure_log_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_failure_log"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_task: {
-        Row: {
-          attempts_left: number
-          cancel_message: string | null
-          created_at: string
-          discovered_links: Json | null
-          failure_reason: string | null
-          id: string
-          interaction_config: Json | null
-          is_public: boolean | null
-          page_name: string
-          parent_task: string | null
-          parse_status: string | null
-          priority: number | null
-          scrape_cycle_run_id: string | null
-          scrape_domain_id: string | null
-          scrape_job_id: string | null
-          scrape_mode: string
-          scrape_status: string | null
-          spawned_concurrent_tasks: boolean | null
-          target_url: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          attempts_left: number
-          cancel_message?: string | null
-          created_at?: string
-          discovered_links?: Json | null
-          failure_reason?: string | null
-          id?: string
-          interaction_config?: Json | null
-          is_public?: boolean | null
-          page_name: string
-          parent_task?: string | null
-          parse_status?: string | null
-          priority?: number | null
-          scrape_cycle_run_id?: string | null
-          scrape_domain_id?: string | null
-          scrape_job_id?: string | null
-          scrape_mode?: string
-          scrape_status?: string | null
-          spawned_concurrent_tasks?: boolean | null
-          target_url: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          attempts_left?: number
-          cancel_message?: string | null
-          created_at?: string
-          discovered_links?: Json | null
-          failure_reason?: string | null
-          id?: string
-          interaction_config?: Json | null
-          is_public?: boolean | null
-          page_name?: string
-          parent_task?: string | null
-          parse_status?: string | null
-          priority?: number | null
-          scrape_cycle_run_id?: string | null
-          scrape_domain_id?: string | null
-          scrape_job_id?: string | null
-          scrape_mode?: string
-          scrape_status?: string | null
-          spawned_concurrent_tasks?: boolean | null
-          target_url?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_task_scrape_cycle_run_id_fkey"
-            columns: ["scrape_cycle_run_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_cycle_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_task_scrape_domain_id_fkey"
-            columns: ["scrape_domain_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_domain"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scrape_task_scrape_job_id_fkey"
-            columns: ["scrape_job_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_job"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scrape_task_response: {
-        Row: {
-          content_path: string
-          content_size: number | null
-          content_type: string | null
-          created_at: string
-          error_log: string | null
-          failure_reason: string | null
-          id: string
-          is_public: boolean | null
-          response_headers: Json
-          response_url: string
-          scrape_task_id: string
-          status_code: number | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          content_path: string
-          content_size?: number | null
-          content_type?: string | null
-          created_at?: string
-          error_log?: string | null
-          failure_reason?: string | null
-          id?: string
-          is_public?: boolean | null
-          response_headers: Json
-          response_url: string
-          scrape_task_id: string
-          status_code?: number | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          content_path?: string
-          content_size?: number | null
-          content_type?: string | null
-          created_at?: string
-          error_log?: string | null
-          failure_reason?: string | null
-          id?: string
-          is_public?: boolean | null
-          response_headers?: Json
-          response_url?: string
-          scrape_task_id?: string
-          status_code?: number | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scrape_task_response_scrape_task_id_fkey"
-            columns: ["scrape_task_id"]
-            isOneToOne: false
-            referencedRelation: "scrape_task"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       shareable_resource_registry: {
         Row: {
           content_role: string | null
@@ -21328,18 +21394,21 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          global_readable: boolean
           key: string
           organization_id: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          global_readable?: boolean
           key: string
           organization_id: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          global_readable?: boolean
           key?: string
           organization_id?: string
         }
@@ -22649,7 +22718,15 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_analysis_preferences: {
         Row: {
@@ -22983,6 +23060,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "user_flashcard_reviews_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_flashcard_reviews_set_id_fkey"
             columns: ["set_id"]
             isOneToOne: false
@@ -23058,6 +23142,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "cx_conversation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_flashcard_sets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -23528,7 +23619,15 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_stats_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_surface_state: {
         Row: {
@@ -26941,6 +27040,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_note_version_manual: {
+        Args: {
+          p_change_source?: string
+          p_change_type?: string
+          p_content: string
+          p_label: string
+          p_note_id: string
+        }
+        Returns: string
+      }
       create_project_from_json: {
         Args: { p_organization_id?: string; p_payload: Json }
         Returns: Json
@@ -27526,6 +27635,7 @@ export type Database = {
         Args: { p_row_id: string }
         Returns: Json
       }
+      delete_note_version: { Args: { p_id: string }; Returns: boolean }
       delete_registered_function: {
         Args: { p_function_id: string }
         Returns: undefined
@@ -29118,6 +29228,20 @@ export type Database = {
             }
             Returns: string[]
           }
+      get_note_version: {
+        Args: { p_id: string }
+        Returns: {
+          change_source: string
+          change_type: string
+          content: string
+          created_at: string
+          diff_metadata: Json
+          id: string
+          label: string
+          note_id: string
+          version_number: number
+        }[]
+      }
       get_note_versions: {
         Args: { p_note_id: string }
         Returns: {

@@ -16,6 +16,22 @@
       "new": "workbench.note_folders",
       "since": "2026-06-27",
       "reason": "moved to workbench schema (clean cut, no shim). Use .schema('workbench').from('note_folders')."
+    },
+    {
+      "relation": "note_versions",
+      "old": "public.note_versions",
+      "newSchema": "history",
+      "new": "history.row_versions",
+      "since": "2026-06-27",
+      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+    },
+    {
+      "relation": "note_shares",
+      "old": "public.note_shares",
+      "newSchema": "permissions",
+      "new": "public.permissions",
+      "since": "2026-06-27",
+      "reason": "retired (graveyard) — note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     }
   ]
 }

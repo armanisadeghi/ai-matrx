@@ -8,8 +8,8 @@ export type NoteInsert = Database["workbench"]["Tables"]["notes"]["Insert"];
 export type NoteUpdate = Database["workbench"]["Tables"]["notes"]["Update"];
 
 export type NoteFolderRow = Database["workbench"]["Tables"]["note_folders"]["Row"];
-export type NoteVersionRow = Database["public"]["Tables"]["note_versions"]["Row"];
-export type NoteShareRow = Database["public"]["Tables"]["note_shares"]["Row"];
+// note_versions retired -> history.row_versions (use the get_note_versions RPCs).
+// note_shares retired -> canonical permissions table. Neither has a public type row anymore.
 
 // ── Note type — direct alias of the DB Row ─────────────────────────────────
 // The DB schema is the single source of truth. If the schema changes and we

@@ -24,15 +24,19 @@ const initialState: VersionHistoryState = {
 export const fetchNoteVersions = createAsyncThunk(
   'noteVersions/fetchNoteVersions',
   async (noteId: string) => {
-    const { data, error } = await supabase
-      .from('note_versions')
-      .select('*')
-      .eq('note_id', noteId)
-      .order('version_number', { ascending: false });
+    const { data, error } = await supabase.rpc('get_note_versions', {
+      p_note_id: noteId,
+    });
 
     if (error) throw error;
 
-    return { noteId, versions: data as NoteVersion[] };
+    // The RPC does not return `note_id`; stamp it back on for the local type.
+    const versions: NoteVersion[] = (data ?? []).map((row) => ({
+      ...row,
+      note_id: noteId,
+    }));
+
+    return { noteId, versions };
   }
 );
 
@@ -60,10 +64,9 @@ export const restoreNoteVersion = createAsyncThunk(
 export const deleteNoteVersion = createAsyncThunk(
   'noteVersions/deleteNoteVersion',
   async ({ noteId, versionId }: { noteId: string; versionId: string }) => {
-    const { error } = await supabase
-      .from('note_versions')
-      .delete()
-      .eq('id', versionId);
+    const { error } = await supabase.rpc('delete_note_version', {
+      p_id: versionId,
+    });
 
     if (error) throw error;
 
