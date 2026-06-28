@@ -110,29 +110,5 @@
   {
     "path": "/demos/tests/workflow-source-config",
     "name": "workflow-source-config"
-  },
-  {
-    "path": "/legacy/tests/advanced-data-table",
-    "name": "advanced-data-table"
-  },
-  {
-    "path": "/legacy/tests/dynamic-entity-test",
-    "name": "dynamic-entity-test"
-  },
-  {
-    "path": "/legacy/tests/dynamic-layouts",
-    "name": "dynamic-layouts"
-  },
-  {
-    "path": "/legacy/tests/fetch-test",
-    "name": "fetch-test"
-  },
-  {
-    "path": "/legacy/tests/forms",
-    "name": "forms"
-  },
-  {
-    "path": "/legacy/tests/relationship-management",
-    "name": "relationship-management"
   }
 ]

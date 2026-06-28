@@ -9,10 +9,12 @@ import { createSlimRootSaga } from "@/lib/redux/sagas/rootSaga";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { loggerMiddleware } from "@/utils/logger";
 import { enableMapSet } from "immer";
-import { socketMiddleware } from "./socket-io/connection/socketMiddleware";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
-import { cloudFilesRealtimeMiddleware, cloudFilesMutationToastMiddleware } from "@/features/files";
+import {
+  cloudFilesRealtimeMiddleware,
+  cloudFilesMutationToastMiddleware,
+} from "@/features/files";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
@@ -195,7 +197,6 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
       }).concat(
         sagaMiddleware,
         loggerMiddleware,
-        socketMiddleware,
         syncMiddleware,
         autoSaveMiddleware,
         codeFilesAutoSaveMiddleware,

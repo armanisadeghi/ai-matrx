@@ -46,9 +46,6 @@ const TasksBlock = lazy(() => import("../../blocks/tasks/TasksBlock"));
 const StructuredPlanBlock = lazy(
   () => import("../../blocks/plan/StructuredPlanBlock"),
 );
-const MatrxBrokerBlock = lazy(
-  () => import("../../blocks/brokers/MatrxBrokerBlock"),
-);
 const FlashcardsBlock = lazy(
   () => import("../../blocks/flashcards/FlashcardsBlock"),
 );
@@ -333,13 +330,6 @@ export const BlockComponents = {
     <LazyBlockWrapper>
       <StructuredPlanBlock {...props} />
     </LazyBlockWrapper>
-  ),
-  MatrxBrokerBlock: (props: any) => (
-    <LazyEntityGate label="MatrxBrokerBlock">
-      <LazyBlockWrapper>
-        <MatrxBrokerBlock {...props} />
-      </LazyBlockWrapper>
-    </LazyEntityGate>
   ),
   FlashcardsBlock: (props: any) => (
     <LazyBlockWrapper>

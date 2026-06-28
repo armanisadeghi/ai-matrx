@@ -895,14 +895,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
     case "matrxBroker":
       return (
-        <BlockComponents.MatrxBrokerBlock
+        <p
           key={index}
-          content={block.content}
-          metadata={block.metadata}
-          onUpdate={(updatedContent, originalContent) =>
-            replaceBlockContent(originalContent, updatedContent)
-          }
-        />
+          className="my-1 text-sm text-yellow-600 dark:text-yellow-400"
+        >
+          This block type is deprecated.
+        </p>
       );
 
     // `questionnaire` is a materializable artifact type — handled by the unified

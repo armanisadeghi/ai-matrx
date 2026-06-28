@@ -41,10 +41,6 @@ import {
   type ServerEnvironment,
 } from "@/lib/redux/slices/apiConfigSlice";
 
-const EnhancedEntityAnalyzer = lazy(
-  () => import("@/components/admin/redux/EnhancedEntityAnalyzer"),
-);
-
 interface LargeIndicatorProps {
   onSizeDown: () => void;
   onSizeSmall: () => void;
@@ -470,12 +466,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
                       Loading entity analyzer...
                     </div>
                   }
-                >
-                  <EnhancedEntityAnalyzer
-                    defaultExpanded={false}
-                    selectedEntityKey="message"
-                  />
-                </Suspense>
+                ></Suspense>
               </LazyEntityGate>
             )}
           </div>

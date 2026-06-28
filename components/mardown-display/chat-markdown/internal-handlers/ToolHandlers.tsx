@@ -14,7 +14,7 @@
  * into the deprecated `ToolCallObject` format.
  */
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectHideToolResults } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -53,6 +53,32 @@ export const InlineToolCard: React.FC<InlineToolCardProps> = ({
 }) => {
   const hidden = useAppSelector(selectHideToolResults(conversationId));
   const lifecycle = useAppSelector(selectToolLifecycle(requestId, callId));
+
+  // TEMP DIAGNOSTIC (stream-result loss) — remove once pinpointed. Logs on the
+  // transition: if `hasResult` flips true→false (or `lifecycle` goes undefined)
+  // when a stream ends, the live entry is being cleared in Redux; if it stays
+  // true while the card empties, the loss is in the renderer/overlay path; if
+  // this card STOPS logging at stream-end (and DbToolCard starts), the render
+  // flipped to the persisted DB path.
+  useEffect(() => {
+    console.log("[STREAM-RESULT-DEBUG] InlineToolCard", {
+      requestId,
+      callId,
+      toolName: lifecycle?.toolName,
+      status: lifecycle?.status,
+      hasLifecycle: !!lifecycle,
+      hasResult: lifecycle?.result != null,
+      eventCount: lifecycle?.events?.length ?? 0,
+    });
+  }, [
+    requestId,
+    callId,
+    lifecycle?.toolName,
+    lifecycle?.status,
+    lifecycle,
+    lifecycle?.result,
+    lifecycle?.events?.length,
+  ]);
 
   if (hidden) return null;
   if (!lifecycle) return null;
@@ -137,6 +163,23 @@ export const DbToolCard: React.FC<DbToolCardProps> = ({
     () => persistedToolEntry(segment),
     [segment.callId, segment.record, segment.stubName, segment.stubArguments],
   );
+
+  // TEMP DIAGNOSTIC (stream-result loss) — remove once pinpointed. If this
+  // starts firing the instant a stream ends (while InlineToolCard stops), the
+  // renderer flipped to the persisted DB path mid-session; `hasResult` then
+  // tells us whether that path has the result (observability row populated) or
+  // is empty (the real gap).
+  useEffect(() => {
+    const e = persistedToolEntry(segment);
+    console.log("[STREAM-RESULT-DEBUG] DbToolCard", {
+      callId: segment.callId,
+      toolName: e.toolName,
+      status: e.status,
+      hasRecord: !!segment.record,
+      recordHasOutput: !!segment.record?.output,
+      hasResult: e.result != null,
+    });
+  }, [segment.callId, segment.record, segment.stubName, segment.stubArguments]);
 
   if (hidden) return null;
 

@@ -13,11 +13,9 @@
 // used at runtime. `Database` is the entrypoint to the 24k-line
 // `database.types.ts`; `GlobalCacheState` reaches `globalCacheSlice.ts`
 // which pulls `@reduxjs/toolkit` + the 115k-line `initialSchemas.ts` via
-// `entityTypes`. Both are pure type usage in this file — keeping them
 // type-only deletes them from the slim path's static graph entirely.
 import type { Database } from "@/types/database.types";
 import type { UserData } from "@/utils/userDataMapper";
-import type { GlobalCacheState } from "@/lib/redux/schema/globalCacheSlice";
 import type { ContextMenuRow } from "@/utils/supabase/ssrShellData";
 
 /**
@@ -41,30 +39,11 @@ export interface BaseReduxState {
 }
 
 /**
- * Bootstrap state for the entity store (`makeEntityStore`). Used by routes
- * under `app/(legacy)/legacy/*` that need the entity system. Adds the
- * `globalCache` schema cache on top of `BaseReduxState`.
- *
- * `entitySystem` is optional preload — when the entity layout preloads the
- * schema server-side via `initializeSchemaSystem`, it should set this to
- * `{ initialized: true, loading: false, error: null }` so that
- * `EntitySystemProvider` skips its on-demand fetch path.
- */
-export interface EntityReduxState extends BaseReduxState {
-  globalCache: GlobalCacheState;
-  entitySystem?: {
-    initialized: boolean;
-    loading: boolean;
-    error: string | null;
-  };
-}
-
-/**
  * @deprecated Migration alias — use `EntityReduxState` for entity routes or
  * `BaseReduxState` for slim routes. Removed in Phase 5 of the entity-isolation
  * migration (see `~/.claude/plans/the-entity-system-which-bubbly-wind.md`).
  */
-export interface InitialReduxState extends EntityReduxState {}
+export interface InitialReduxState extends BaseReduxState {}
 
 export type Id = string;
 export type Page = number;
