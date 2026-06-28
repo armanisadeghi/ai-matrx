@@ -5,7 +5,14 @@
 ## Scope
 Move the Chrome-extension (matrx-extend) tables out of `public` into the pre-planned **`extend`** schema
 (already in aidream `db/matrx_orm.yaml` as the "matrx-extend Chrome product tables" domain) and bring them
-onto the platform standard. **All 8 tables are empty (0 rows) → zero data-loss risk.**
+onto the platform standard.
+
+> **Data note (corrected post-migration):** these tables are **not** empty — live counts at move time were
+> wbx_capture 28 · wbx_seo_audit 20 · wbx_highlight 14 · wbx_recipe 12 · wbx_screenshot 11 · wbx_pattern 8
+> (wbx_guidance + extension_auth_codes 0). The initial read trusted stale `pg_stat_user_tables` stats. **No
+> data was lost:** `SET SCHEMA` preserves all rows, and the `user_id` drop was safe because `created_by` was
+> already backfilled (verified live: **0 null `created_by`** across all five rows-bearing tables — owner
+> preserved). All counts unchanged across the move.
 
 | Table | Action | Canonical end state |
 |---|---|---|

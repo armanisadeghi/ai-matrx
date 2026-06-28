@@ -73,7 +73,10 @@ New domain schema **`communication`** created for messaging tables (sms_*, dm_*,
 ## `extend` schema — Chrome-extension tables (2026-06-27) ✅ MOVED
 
 Moved the 8 matrx-extend (Chrome extension) tables out of `public` into the pre-planned **`extend`**
-schema and canonicalized them. **All 8 tables EMPTY (0 rows) → zero data-loss risk; a single clean cut, no shim.**
+schema and canonicalized them. **A single clean cut, no shim. Zero data loss — verified live:** counts
+(capture 28 · seo 20 · highlight 14 · recipe 12 · screenshot 11 · pattern 8 · guidance/auth_codes 0)
+unchanged across the move, and **0 null `created_by`** after the `user_id` drop (owner preserved — `created_by`
+was already backfilled). (The initial "empty" read trusted stale `pg_stat_user_tables` stats.)
 Migrations: `migrations/canonicalize_wbx_entities_pre_move.sql` + `migrations/move_extension_tables_to_extend_schema.sql` (applied + verified live, ledgered). Proposal: [proposals/extend-schema-cutover.md](./proposals/extend-schema-cutover.md).
 
 | Table | Token | Variant | Notes |
