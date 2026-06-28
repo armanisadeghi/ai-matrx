@@ -7,7 +7,7 @@ const supabase = createClient();
 
 export async function fetchTemplates(): Promise<ResearchTemplate[]> {
     const { data, error } = await supabase
-        .from('rs_template')
+        .schema('research').from('rs_template')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -17,7 +17,7 @@ export async function fetchTemplates(): Promise<ResearchTemplate[]> {
 
 export async function fetchTemplateById(id: string): Promise<ResearchTemplate | null> {
     const { data, error } = await supabase
-        .from('rs_template')
+        .schema('research').from('rs_template')
         .select('*')
         .eq('id', id)
         .single();
@@ -31,7 +31,7 @@ export async function fetchTemplateById(id: string): Promise<ResearchTemplate | 
 
 export async function createTemplate(input: TemplateFormData): Promise<ResearchTemplate> {
     const { data, error } = await supabase
-        .from('rs_template')
+        .schema('research').from('rs_template')
         .insert({
             name: input.name,
             description: input.description || null,
@@ -64,7 +64,7 @@ export async function updateTemplate(id: string, input: Partial<TemplateFormData
         updates.metadata = Object.keys(input.metadata).length > 0 ? input.metadata : null;
 
     const { data, error } = await supabase
-        .from('rs_template')
+        .schema('research').from('rs_template')
         .update(updates)
         .eq('id', id)
         .select()
@@ -76,7 +76,7 @@ export async function updateTemplate(id: string, input: Partial<TemplateFormData
 
 export async function deleteTemplate(id: string): Promise<void> {
     const { error } = await supabase
-        .from('rs_template')
+        .schema('research').from('rs_template')
         .delete()
         .eq('id', id);
 
@@ -165,7 +165,7 @@ export async function fetchResearchTopics(): Promise<Array<{
     created_at: string;
 }>> {
     const { data, error } = await supabase
-        .from('rs_topic')
+        .schema('research').from('rs_topic')
         .select('id, project_id, name, status, template_id, agent_config, autonomy_level, created_at')
         .order('created_at', { ascending: false })
         .limit(50);

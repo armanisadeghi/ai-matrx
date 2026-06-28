@@ -4,7 +4,7 @@ import type { ResearchTopic, ResearchProgress } from '../types';
 export async function getTopicServer(topicId: string): Promise<ResearchTopic | null> {
     const supabase = await createClient();
     const { data, error } = await supabase
-        .from('rs_topic')
+        .schema('research').from('rs_topic')
         .select('*')
         .eq('id', topicId)
         .single();

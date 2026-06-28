@@ -444,7 +444,7 @@ export default function TopicList() {
     setDeleting(true);
     try {
       const { error } = await supabase
-        .from("rs_topic")
+        .schema("research").from("rs_topic")
         .delete()
         .eq("id", deleteTarget.id);
       if (error) throw error;

@@ -184,7 +184,7 @@ export type TopicStatus =
 // ============================================================================
 
 /** Database row — canonical shape for `rs_topic` */
-export type ResearchTopicRow = Database["public"]["Tables"]["rs_topic"]["Row"];
+export type ResearchTopicRow = Database["research"]["Tables"]["rs_topic"]["Row"];
 
 /**
  * Quota ladder fields added in migration 0013_rs_topic_quota_ladder.sql.
