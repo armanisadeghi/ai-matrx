@@ -15,7 +15,7 @@ import type {
 
 /** Table or RPC rows that share `user_feedback` column shapes (strings from DB). */
 export type UserFeedbackRowLike =
-  Database["public"]["Tables"]["user_feedback"]["Row"];
+  Database["users"]["Tables"]["user_feedback"]["Row"];
 
 export type FeedbackCommentRowLike =
   | Database["public"]["Functions"]["get_feedback_comments"]["Returns"][number]

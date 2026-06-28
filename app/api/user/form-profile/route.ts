@@ -27,9 +27,9 @@ import {
   type UserFormProfilePatch,
 } from "@/features/user-profile/types";
 
-type FormProfileRow = Database["public"]["Tables"]["user_form_profile"]["Row"];
+type FormProfileRow = Database["users"]["Tables"]["user_form_profile"]["Row"];
 type FormProfileInsert =
-  Database["public"]["Tables"]["user_form_profile"]["Insert"];
+  Database["users"]["Tables"]["user_form_profile"]["Insert"];
 
 const SCALAR_TEXT_FIELDS = [
   "legal_first_name",

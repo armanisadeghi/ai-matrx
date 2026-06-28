@@ -23,9 +23,9 @@ export type ReviewResult = "correct" | "partial" | "incorrect";
 // ============================================================================
 
 export type FlashcardSetRow =
-  Database["public"]["Tables"]["user_flashcard_sets"]["Row"];
+  Database["users"]["Tables"]["user_flashcard_sets"]["Row"];
 export type FlashcardReviewRow =
-  Database["public"]["Tables"]["user_flashcard_reviews"]["Row"];
+  Database["users"]["Tables"]["user_flashcard_reviews"]["Row"];
 
 // ============================================================================
 // Insert types

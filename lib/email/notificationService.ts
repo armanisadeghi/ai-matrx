@@ -12,7 +12,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { Database } from "@/types/database.types";
 
 type UserEmailPreferencesRow =
-  Database["public"]["Tables"]["user_email_preferences"]["Row"];
+  Database["users"]["Tables"]["user_email_preferences"]["Row"];
 
 /**
  * Email Notification Service

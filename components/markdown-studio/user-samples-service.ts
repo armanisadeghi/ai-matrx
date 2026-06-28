@@ -5,9 +5,9 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import type { Tables, TablesUpdate } from "@/types/database.types";
+import type { Database } from "@/types/database.types";
 
-export type UserMarkdownSample = Tables<"user_markdown_samples">;
+export type UserMarkdownSample = Database["users"]["Tables"]["user_markdown_samples"]["Row"];
 
 export interface UserSampleCreateInput {
   name: string;
@@ -17,7 +17,7 @@ export interface UserSampleCreateInput {
 }
 
 export type UserSampleUpdateInput = Pick<
-  TablesUpdate<"user_markdown_samples">,
+  Database["users"]["Tables"]["user_markdown_samples"]["Update"],
   "name" | "description" | "content" | "detected_blocks"
 >;
 

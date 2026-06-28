@@ -32,7 +32,7 @@ import {
 } from "@/types/feedback-row-mapper";
 
 type UserFeedbackUpdate =
-  Database["public"]["Tables"]["user_feedback"]["Update"];
+  Database["users"]["Tables"]["user_feedback"]["Update"];
 
 // ============= USER FEEDBACK ACTIONS =============
 
