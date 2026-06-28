@@ -30,7 +30,7 @@ import type {
  *   user_id:metadata->>user_id          (text | null)
  *   metadata                            (Json — full blob for merge-patch writes)
  * `skill.category` no longer exists — this type replaces the deleted table's Row. */
-type SklCategoryRow = {
+export type SklCategoryRow = {
   id: string;
   category_key: string | null;
   label: string;
@@ -170,6 +170,47 @@ export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
     mimeType: row.mime_type ?? null,
     sortOrder: row.sort_order ?? 0,
     isActive: Boolean(row.is_active),
+  };
+}
+
+type PlatformCategoryRow = Database["platform"]["Tables"]["categories"]["Row"];
+
+export const PLATFORM_SKILL_CATEGORY_SELECT =
+  "id, slug, name, icon, color, parent_id, position, metadata" as const;
+
+function metaStringFromJson(meta: Json | null, key: string): string | null {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  const value = (meta as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : null;
+}
+
+function metaIsActiveStringFromJson(meta: Json | null): string | null {
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
+  const value = (meta as Record<string, unknown>).is_active;
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string") return value;
+  return null;
+}
+
+type PlatformCategorySelectRow = Pick<
+  PlatformCategoryRow,
+  "id" | "slug" | "name" | "icon" | "color" | "parent_id" | "position" | "metadata"
+>;
+
+/** Maps a `platform.categories` row (dimension='skill') to the aliased select shape. */
+export function platformCategoryToSklRow(row: PlatformCategorySelectRow): SklCategoryRow {
+  return {
+    id: row.id,
+    category_key: row.slug,
+    label: row.name,
+    description: metaStringFromJson(row.metadata, "description"),
+    icon_name: row.icon,
+    color: row.color,
+    parent_category_id: row.parent_id,
+    sort_order: row.position,
+    is_active: metaIsActiveStringFromJson(row.metadata),
+    user_id: metaStringFromJson(row.metadata, "user_id"),
+    metadata: row.metadata,
   };
 }
 

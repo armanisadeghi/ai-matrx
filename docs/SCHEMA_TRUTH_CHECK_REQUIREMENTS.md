@@ -1,0 +1,122 @@
+# Schema Truth-Check — Requirements (for the Next.js / matrx-frontend team)
+
+**Goal:** an offline guard that pulls the **actual** database schema (truth) and
+diffs it against everything the frontend code *assumes* about that schema —
+catching an entire class of runtime bug instantly, before it ships.
+
+The Python backend (aidream) just built this and it immediately surfaced ~280
+real drift errors after the 2026 schema reorg. This doc tells you how to
+replicate it here — or do it better. You already have the seed
+(`scripts/check-dead-relations.ts`); the upgrade is to stop trusting a
+hand-maintained manifest and start comparing against **live truth**.
+
+> Doctrine: a moved/retired table has **no shim**. `supabase.from("notes")`
+> silently resolves to `public.notes`; if `notes` now lives in `workbench`, that
+> call 404s at runtime with nothing to catch it at build time. Truth-vs-code
+> guards are the only thing that catch this.
+
+---
+
+## 1. Get the actual schema (the "truth" snapshot)
+
+Write a small script (`scripts/get-current-schema.ts`) that connects to the DB
+with a **service-role / direct Postgres** connection (NOT the anon client — you
+need to see every schema) and dumps schema → tables to
+`scripts/current-schema.json`. Use this exact query (regular + partitioned-parent
+tables, partition children excluded), which mirrors the backend:
+
+```sql
+SELECT jsonb_object_agg(schema_name, tables ORDER BY schema_name)
+FROM (
+  SELECT n.nspname AS schema_name,
+         jsonb_agg(c.relname ORDER BY c.relname) AS tables
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  WHERE c.relkind IN ('r','p')        -- regular + partitioned PARENT tables
+    AND c.relispartition = false       -- drop partition children
+    AND n.nspname NOT IN ('pg_catalog','information_schema','storage',
+                          'supabase_migrations','cron','graveyard','net',
+                          'pgsodium','auth','vault','realtime')
+  GROUP BY n.nspname
+) t;
+```
+
+Connection: use `DATABASE_URL` / the Supabase direct connection string with
+`postgres` + `pg` (or `postgres.js`). Treat the JSON snapshot as a cached
+artifact — refresh it in CI and/or on demand, fall back to the last snapshot if
+the DB is unreachable so the check never hard-fails on a network blip.
+
+> If you can't get a direct connection in some environments, expose a tiny
+> read-only RPC on the backend that returns this JSON, and fetch it. But direct
+> Postgres is simplest and is what the backend does.
+
+---
+
+## 2. The orchestrator (pluggable checks, tiered + loud + non-blocking)
+
+Structure it so **adding a new check is one function**. Each check takes the
+shared context (live snapshot + parsed code) and returns findings. Mirror the
+backend's `db/schema_analysis/` layout:
+
+- `get-current-schema.ts` — pulls truth → `current-schema.json`.
+- `check-schema.ts` — orchestrator: loads truth, walks the repo once, runs every
+  registered check, prints a **tiered** report, exits 0 by default (`--strict`
+  for a CI gate).
+- `checks/*.ts` — one file per check, self-registering.
+
+Default run = loud report, **exit 0** (non-blocking, like `check:migrations`).
+`--strict` = exit 1 if any error (use in a dedicated CI job). Severity tiers,
+loudest first:
+
+1. **MISSING SCHEMAS** — a live schema your generated types don't cover at all.
+2. **MISSING / MOVED / ORPHAN TABLES** — a live table with no generated type, or
+   a generated type for a table that no longer exists.
+3. **DEAD REFERENCES** — stale `.from()`/`.schema()`/raw-SQL/typed references.
+
+---
+
+## 3. Checks to ship (frontend-specific)
+
+| check | catches |
+|-------|---------|
+| **types-freshness** | `Database` type (`types/database.types.ts`) is stale vs live — every live table appears under the right schema in the generated types; a type for a non-live table is an orphan (table moved/dropped). This is the single biggest one — your generated types ARE your code's schema assumption. |
+| **bare `.from()` / `.schema()`** | `supabase.from("X")` (or `.table("X")`) where `X` is no longer in `public` — it now lives in another schema and needs `.schema("<new>").from("X")`. Walk multiline method chains (the `.schema(...)` may be on a preceding line). This is what `check-dead-relations.ts` already does — keep it, but drive it from the **live snapshot** instead of `dead-relations.json`. |
+| **qualified `schema.table` in strings** | raw SQL / RPC params / string literals like `public.organizations` where the pair isn't live but the table lives elsewhere (`iam.organizations`). Only flag when the table genuinely exists in another schema — avoids flagging functions/views. |
+| **typed refs** | `Database["public"]["Tables"]["X"]` where `X` moved schemas → `Database["<new>"]["Tables"]["X"]`. |
+| **PGRST schema exposure** | every schema you read from the client is in `PGRST_DB_SCHEMAS` (the 2026 reorg requires `public, iam, platform, scraper` exposed). A `.schema("iam")` call against an unexposed schema 404s. Cross-check the schemas your code references against the exposed list. |
+| **RPC drift** (optional) | RPC names your code calls exist in the live DB (`pg_proc`). |
+
+Precision rules that keep noise near zero (copy from the backend):
+- A `public.`/`graveyard.` prefix is always treated as SQL (no JS module is named
+  that); other prefixes only count inside SQL-ish context.
+- Only flag a qualified ref when the table **actually lives in another schema** —
+  so functions and views don't produce false positives.
+- Downgrade matches inside comments to warnings.
+
+---
+
+## 4. Output & wiring
+
+- Print a tiered, colored summary (counts + worst offending files), with a
+  pointer to a `--verbose` full dump.
+- Add `pnpm check:schema` to `package.json`; run it **non-blocking + loud** in
+  the pre-deploy/CI pipeline (alongside `check:migrations`), and as a separate
+  `--strict` job if you want a hard gate.
+- Snapshot `current-schema.json` is the shared input for all checks — generate
+  once per run.
+
+---
+
+## 5. Reference implementation (backend)
+
+The Python version to copy the architecture from:
+- `db/schema_analysis/FEATURE.md` — how it works + how to add a check.
+- `db/schema_analysis/check_schema.py` — orchestrator + `--summary` tiered report.
+- `db/schema_analysis/_context.py` — the shared truth snapshot + `@register_check` registry.
+- `db/schema_analysis/get_current_schema.py` — the live-schema puller (same SQL as above).
+- `db/schema_analysis/checks/` — one file per check.
+
+**The principle to carry over:** fetch the real state, diff against the code's
+assumption, scream in tiers, never block, be trivial to extend. Every drift
+pattern that ever bites you becomes a new one-function check so it never bites
+again.

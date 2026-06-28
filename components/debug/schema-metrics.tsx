@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,7 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import {getGlobalCache} from "@/utils/schema/schema-processing/processSchema";
+
+const EMPTY_METRICS: SchemaMetrics = {
+    tableCount: 0,
+    totalFields: 0,
+    totalVariants: 0,
+    tableMetrics: [],
+    cacheSize: 0,
+    resolutionStats: { successful: 0, failed: 0, total: 0 },
+};
 
 interface SchemaMetrics {
     tableCount: number;
@@ -29,52 +37,7 @@ interface SchemaMetrics {
 }
 
 export function SchemaMetrics() {
-    const [metrics, setMetrics] = useState<SchemaMetrics | null>(null);
-    const [expandedTable, setExpandedTable] = useState<string | null>(null);
-
-    useEffect(() => {
-        const calculateMetrics = () => {
-            const cache = getGlobalCache();
-            if (!cache) return null;
-
-            const tableMetrics = Object.entries(cache.schema).map(([tableName, table]) => {
-                const fieldCount = Object.keys((table as any).entityFields || {}).length;
-                const variantCount = (cache as any).fieldNameMap.get(tableName)?.size || 0;
-                const size = new TextEncoder().encode(JSON.stringify(table)).length;
-
-                return {
-                    name: tableName,
-                    fieldCount,
-                    variantCount,
-                    size: Math.round(size / 1024) // Size in KB
-                };
-            });
-
-            return {
-                tableCount: Object.keys(cache.schema).length,
-                totalFields: tableMetrics.reduce((acc, t) => acc + t.fieldCount, 0),
-                totalVariants: tableMetrics.reduce((acc, t) => acc + t.variantCount, 0),
-                tableMetrics,
-                cacheSize: Math.round(new TextEncoder().encode(JSON.stringify(cache)).length / 1024),
-                resolutionStats: {
-                    successful: (cache as any).tableNameMap.size,
-                    failed: 0, // We'll need to track this in the schema logger
-                    total: (cache as any).tableNameMap.size
-                }
-            };
-        };
-
-        const updateMetrics = () => {
-            const newMetrics = calculateMetrics();
-            if (newMetrics) setMetrics(newMetrics);
-        };
-
-        updateMetrics();
-        const interval = setInterval(updateMetrics, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    if (!metrics) return null;
+    const [metrics] = useState<SchemaMetrics>(EMPTY_METRICS);
 
     return (
         <Card>

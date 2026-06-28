@@ -9,11 +9,9 @@ function noopSync<T = unknown>(type: string) {
 }
 
 function noopAsync(type: string) {
-  const thunk = (...args: unknown[]) => {
-    const action = legacyResolved(...args);
-    return action;
-  };
+  const thunk = () => legacyResolved();
   thunk.unwrap = () => Promise.resolve({});
+  void type;
   return thunk;
 }
 

@@ -41,6 +41,8 @@ import { skillsActions } from "./skillsSlice";
 import {
   draftToCreateBody,
   draftToPatchBody,
+  platformCategoryToSklRow,
+  PLATFORM_SKILL_CATEGORY_SELECT,
   supabaseRowToCategoryRow,
   supabaseRowToResourceRow,
   supabaseRowToSkillRow,
@@ -183,9 +185,7 @@ export const fetchSkillCategories = createAsyncThunk<
   const { data, error } = await supabase
     .schema("platform")
     .from("categories")
-    .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
-    )
+    .select(PLATFORM_SKILL_CATEGORY_SELECT)
     .eq("dimension", "skill")
     .eq("metadata->>is_active", "true");
 
@@ -194,7 +194,9 @@ export const fetchSkillCategories = createAsyncThunk<
     throw new Error(error.message);
   }
 
-  const rows = (data ?? []).map(supabaseRowToCategoryRow);
+  const rows = (data ?? []).map((row) =>
+    supabaseRowToCategoryRow(platformCategoryToSklRow(row)),
+  );
   rows.sort(
     (a, b) =>
       (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.label.localeCompare(b.label),
@@ -555,12 +557,10 @@ export const createCategoryThunk = createAsyncThunk<
     .schema("platform")
     .from("categories")
     .insert(insertPayload)
-    .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
-    )
+    .select(PLATFORM_SKILL_CATEGORY_SELECT)
     .single();
   if (error) throw new Error(error.message);
-  const row = supabaseRowToCategoryRow(data);
+  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
   dispatch(skillsActions.categoryUpserted(row));
   return row;
 });
@@ -669,12 +669,10 @@ export const updateCategoryThunk = createAsyncThunk<
     .update(updateBody)
     .eq("id", id)
     .eq("dimension", "skill")
-    .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
-    )
+    .select(PLATFORM_SKILL_CATEGORY_SELECT)
     .single();
   if (error) throw new Error(error.message);
-  const row = supabaseRowToCategoryRow(data);
+  const row = supabaseRowToCategoryRow(platformCategoryToSklRow(data));
   dispatch(skillsActions.categoryUpserted(row));
   // Silence unused-var lint for userId — it's documented as the
   // ownership hint even when not interpolated.

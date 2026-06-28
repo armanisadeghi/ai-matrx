@@ -146,7 +146,7 @@ export async function listKgSuggestions(
   if ("scopeItemId" in filter) {
     let q = supabase
       .schema("rag")
-      .schema("reg").from("scope_item_value_suggestions")
+      .from("scope_item_value_suggestions")
       .select("*")
       .eq("target_context_item_id", filter.scopeItemId)
       .order("confidence", { ascending: false });
@@ -162,12 +162,10 @@ export async function listKgSuggestions(
   const isSource = "sourceKind" in filter;
 
   let assocQ = supabase
-    .schema("rag")
-    .schema("reg").from("scope_association_suggestions")
+    .schema("rag").from("scope_association_suggestions")
     .select("*");
   let valueQ = supabase
-    .schema("rag")
-    .schema("reg").from("scope_item_value_suggestions")
+    .schema("rag").from("scope_item_value_suggestions")
     .select("*");
   if (status !== "all") {
     assocQ = assocQ.eq("status", status);
@@ -328,7 +326,7 @@ export async function markKgSuggestionsViewed(
     ops.push(
       supabase
         .schema("rag")
-        .schema("reg").from("scope_item_value_suggestions")
+        .from("scope_item_value_suggestions")
         .update({ viewed_at: now })
         .in("id", valueIds)
         .is("viewed_at", null),
@@ -338,7 +336,7 @@ export async function markKgSuggestionsViewed(
     ops.push(
       supabase
         .schema("rag")
-        .schema("reg").from("scope_association_suggestions")
+        .from("scope_association_suggestions")
         .update({ viewed_at: now })
         .in("id", assocIds)
         .is("viewed_at", null),

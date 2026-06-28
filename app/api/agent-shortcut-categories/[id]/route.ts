@@ -1,40 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-
-// Aliased select that restores the old column names for callers.
-// platform.categories renames: label→name, icon_name→icon, sort_order→position,
-// parent_category_id→parent_id. Metadata-backed fields surfaced via json path.
-const CATEGORY_SELECT = [
-  "id",
-  "label:name",
-  "icon_name:icon",
-  "color",
-  "placement_type",
-  "parent_category_id:parent_id",
-  "sort_order:position",
-  "organization_id",
-  "created_at",
-  "updated_at",
-  "metadata",
-  "description:metadata->>description",
-  "is_active:metadata->>is_active",
-  "enabled_features:metadata->enabled_features",
-  "user_id:metadata->>user_id",
-  "project_id:metadata->>project_id",
-  "task_id:metadata->>task_id",
-].join(",");
-
-/**
- * `metadata->>field` extracts JSONB values as text, so boolean fields come back
- * as the strings "true" / "false". Coerce them back to real booleans so
- * downstream consumers (categoryRowToDef) receive the correct type.
- */
-function coerceCategoryRow<T extends { is_active?: unknown }>(row: T): T {
-  if (typeof row.is_active === "string") {
-    return { ...row, is_active: row.is_active === "true" };
-  }
-  return row;
-}
+import {
+  coerceLegacyCategoryIsActive,
+  platformCategoryToLegacyRow,
+  PLATFORM_CATEGORY_SELECT,
+} from "../_lib/categoryRow";
 
 export async function GET(
   _request: NextRequest,
@@ -55,7 +25,7 @@ export async function GET(
     const { data, error } = await supabase
       .schema("platform")
       .from("categories")
-      .select(CATEGORY_SELECT)
+      .select(PLATFORM_CATEGORY_SELECT)
       .eq("dimension", "shortcut")
       .eq("id", id)
       .maybeSingle();
@@ -78,7 +48,9 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data: coerceCategoryRow(data) });
+    return NextResponse.json({
+      data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+    });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcut-categories/[id]:", error);
     return NextResponse.json(
@@ -115,7 +87,6 @@ export async function PATCH(
       );
     }
 
-    // Map old column names to new platform.categories schema.
     const topLevel: Record<string, unknown> = {};
     const metadataUpdates: Record<string, unknown> = {};
     let hasUpdates = false;
@@ -142,11 +113,7 @@ export async function PATCH(
       );
     }
 
-    // Merge metadata patch if needed (use jsonb concat via the update payload).
     if (Object.keys(metadataUpdates).length > 0) {
-      // PostgREST doesn't support partial jsonb merge via update directly;
-      // pass metadata as a plain object that replaces only the specified sub-keys
-      // by fetching existing metadata first and merging server-side.
       const { data: existing } = await supabase
         .schema("platform")
         .from("categories")
@@ -161,15 +128,13 @@ export async function PATCH(
       };
     }
 
-    const updatePayload = { ...topLevel };
-
     const { data, error } = await supabase
       .schema("platform")
       .from("categories")
-      .update(updatePayload as never)
+      .update(topLevel as never)
       .eq("dimension", "shortcut")
       .eq("id", id)
-      .select(CATEGORY_SELECT)
+      .select(PLATFORM_CATEGORY_SELECT)
       .maybeSingle();
 
     if (error) {
@@ -191,7 +156,9 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ data: coerceCategoryRow(data) });
+    return NextResponse.json({
+      data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)),
+    });
   } catch (error) {
     console.error("Error in PATCH /api/agent-shortcut-categories/[id]:", error);
     return NextResponse.json(

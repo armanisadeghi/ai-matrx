@@ -128,9 +128,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "globalCache",
   "ui",
   "conversationList",
-  "messageActions",
-  "socketResponse",
-  "socketTasks",
   "componentDefinitions",
   "appBuilder",
   "appletBuilder",
@@ -138,14 +135,8 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "fieldBuilder",
   "customAppRuntime",
   "customAppletRuntime",
-  "broker",
   "contextMenuCache",
   "agentCache",
-  "promptExecution",
-  "actionCache",
-  "dbFunctionNode",
-  "workflows",
-  "workflowNodes",
   "messaging",
   "adminPreferences",
   "entitySystem",
@@ -626,36 +617,6 @@ export function getStateViewerTabs(
       content: <GenericSliceViewer sliceKey="ui" state={completeState.ui} />,
     },
     {
-      id: "messageActions",
-      label: "Message Actions",
-      content: (
-        <GenericSliceViewer
-          sliceKey="messageActions"
-          state={completeState.messageActions}
-        />
-      ),
-    },
-    {
-      id: "socketResponse",
-      label: "Stream Response",
-      content: (
-        <GenericSliceViewer
-          sliceKey="socketResponse"
-          state={completeState.socketResponse}
-        />
-      ),
-    },
-    {
-      id: "socketTasks",
-      label: "Socket Tasks",
-      content: (
-        <GenericSliceViewer
-          sliceKey="socketTasks"
-          state={completeState.socketTasks}
-        />
-      ),
-    },
-    {
       id: "componentDefinitions",
       label: "Component Definitions",
       content: (
@@ -716,13 +677,6 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "broker",
-      label: "Broker",
-      content: (
-        <GenericSliceViewer sliceKey="broker" state={completeState.broker} />
-      ),
-    },
-    {
       id: "contextMenuCache",
       label: "Context Menu Cache",
       content: (
@@ -739,56 +693,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="agentCache"
           state={completeState.agentCache}
-        />
-      ),
-    },
-    {
-      id: "promptExecution",
-      label: "Prompt Execution",
-      content: (
-        <GenericSliceViewer
-          sliceKey="promptExecution"
-          state={completeState.promptExecution}
-        />
-      ),
-    },
-    {
-      id: "actionCache",
-      label: "Action Cache",
-      content: (
-        <GenericSliceViewer
-          sliceKey="actionCache"
-          state={completeState.actionCache}
-        />
-      ),
-    },
-    {
-      id: "dbFunctionNode",
-      label: "DB Function Node",
-      content: (
-        <GenericSliceViewer
-          sliceKey="dbFunctionNode"
-          state={completeState.dbFunctionNode}
-        />
-      ),
-    },
-    {
-      id: "workflows",
-      label: "Workflows",
-      content: (
-        <GenericSliceViewer
-          sliceKey="workflows"
-          state={completeState.workflows}
-        />
-      ),
-    },
-    {
-      id: "workflowNodes",
-      label: "Workflow Nodes",
-      content: (
-        <GenericSliceViewer
-          sliceKey="workflowNodes"
-          state={completeState.workflowNodes}
         />
       ),
     },

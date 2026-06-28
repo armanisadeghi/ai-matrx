@@ -1,41 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
-
-// Aliased select that restores the old column names for callers.
-// platform.categories renames: label→name, icon_name→icon, sort_order→position,
-// parent_category_id→parent_id. Metadata-backed fields surfaced via json path.
-const CATEGORY_SELECT = [
-  "id",
-  "label:name",
-  "icon_name:icon",
-  "color",
-  "placement_type",
-  "parent_category_id:parent_id",
-  "sort_order:position",
-  "organization_id",
-  "created_at",
-  "updated_at",
-  "metadata",
-  "description:metadata->>description",
-  "is_active:metadata->>is_active",
-  "enabled_features:metadata->enabled_features",
-  "user_id:metadata->>user_id",
-  "project_id:metadata->>project_id",
-  "task_id:metadata->>task_id",
-].join(",");
-
-/**
- * `metadata->>field` extracts JSONB values as text, so boolean fields come back
- * as the strings "true" / "false". Coerce them back to real booleans so
- * downstream consumers (categoryRowToDef) receive the correct type.
- */
-function coerceCategoryRow<T extends { is_active?: unknown }>(row: T): T {
-  if (typeof row.is_active === "string") {
-    return { ...row, is_active: row.is_active === "true" };
-  }
-  return row;
-}
+import {
+  coerceLegacyCategoryIsActive,
+  platformCategoryToLegacyRow,
+  PLATFORM_CATEGORY_SELECT,
+} from "../_lib/categoryRow";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +28,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .schema("platform")
       .from("categories")
-      .select(CATEGORY_SELECT)
+      .select(PLATFORM_CATEGORY_SELECT)
       .eq("dimension", "shortcut");
 
     if (scope === "global") {
@@ -119,7 +89,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: (data ?? []).map(coerceCategoryRow) });
+    return NextResponse.json({
+      data: (data ?? []).map((row) =>
+        coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(row)),
+      ),
+    });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcut-categories:", error);
     return NextResponse.json(
@@ -195,7 +169,7 @@ export async function POST(request: NextRequest) {
       .schema("platform")
       .from("categories")
       .insert(insertPayload as never)
-      .select(CATEGORY_SELECT)
+      .select(PLATFORM_CATEGORY_SELECT)
       .single();
 
     if (error) {
@@ -211,7 +185,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: coerceCategoryRow(data) }, { status: 201 });
+    return NextResponse.json(
+      { data: coerceLegacyCategoryIsActive(platformCategoryToLegacyRow(data)) },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Error in POST /api/agent-shortcut-categories:", error);
     return NextResponse.json(
