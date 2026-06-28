@@ -34,7 +34,7 @@ export function CanvasDiscovery() {
         queryKey: ['discover-canvases', sortBy, filterType, searchTerm],
         queryFn: async () => {
             let query = supabase
-                .from('shared_canvas_items')
+                .schema('canvas').from('shared_canvas_items')
                 .select('*')
                 .eq('visibility', 'public');
 

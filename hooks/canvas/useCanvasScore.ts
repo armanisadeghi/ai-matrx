@@ -84,7 +84,7 @@ export function useCanvasScore(canvasId: string) {
 
       // Check if high score
       const { data: canvas } = await supabase
-        .from("shared_canvas_items")
+        .schema("canvas").from("shared_canvas_items")
         .select("high_score")
         .eq("id", canvasId)
         .single();

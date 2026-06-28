@@ -616,6 +616,38 @@
       "new": "canvas.canvas_views",
       "since": "2026-06-27",
       "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_views')."
+    },
+    {
+      "relation": "shared_canvas_items",
+      "old": "public.shared_canvas_items",
+      "newSchema": "canvas",
+      "new": "canvas.shared_canvas_items",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('shared_canvas_items')."
+    },
+    {
+      "relation": "cmp_comparison_sets",
+      "old": "public.cmp_comparison_sets",
+      "newSchema": "agent",
+      "new": "agent.cmp_comparison_sets",
+      "since": "2026-06-27",
+      "reason": "moved to agent schema (clean cut). Use .schema('agent').from('cmp_comparison_sets')."
+    },
+    {
+      "relation": "cmp_comparison_entries",
+      "old": "public.cmp_comparison_entries",
+      "newSchema": "agent",
+      "new": "agent.cmp_comparison_entries",
+      "since": "2026-06-27",
+      "reason": "moved to agent schema (clean cut). Use .schema('agent').from('cmp_comparison_entries')."
+    },
+    {
+      "relation": "cmp_response_feedback",
+      "old": "public.cmp_response_feedback",
+      "newSchema": "agent",
+      "new": "agent.cmp_response_feedback",
+      "since": "2026-06-27",
+      "reason": "moved to agent schema (clean cut). Use .schema('agent').from('cmp_response_feedback')."
     }
   ]
 }

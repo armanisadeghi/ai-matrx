@@ -21,7 +21,7 @@ export async function generateMetadata({
   const supabase = await createClient();
 
   const { data: canvas } = await supabase
-    .from("shared_canvas_items")
+    .schema("canvas").from("shared_canvas_items")
     .select(
       "title, description, thumbnail_url, canvas_type, creator_username, creator_display_name, tags",
     )

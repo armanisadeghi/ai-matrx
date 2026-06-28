@@ -16,7 +16,7 @@ export default async function OgImage({ params }: Props) {
     const supabase = await createClient();
 
     const { data: canvas } = await supabase
-        .from('shared_canvas_items')
+        .schema('canvas').from('shared_canvas_items')
         .select('title, description, canvas_type, creator_display_name, creator_username')
         .eq('share_token', token)
         .single();

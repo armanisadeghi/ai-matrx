@@ -1709,6 +1709,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "canvas_comments_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "canvas_comments_parent_comment_id_fkey"
             columns: ["parent_comment_id"]
             isOneToOne: false
@@ -1923,7 +1930,15 @@ export type Database = {
           user_id?: string
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "canvas_likes_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       canvas_scores: {
         Row: {
@@ -1992,7 +2007,15 @@ export type Database = {
           username?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "canvas_scores_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       canvas_views: {
         Row: {
@@ -2052,7 +2075,165 @@ export type Database = {
           version?: number
           viewed_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "canvas_views_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_canvas_items: {
+        Row: {
+          allow_remixes: boolean | null
+          average_score: number | null
+          canvas_data: Json
+          canvas_type: string
+          categories: string[] | null
+          comment_count: number | null
+          completion_rate: number | null
+          created_at: string | null
+          created_by: string | null
+          creator_display_name: string | null
+          creator_username: string | null
+          deleted_at: string | null
+          description: string | null
+          featured: boolean | null
+          fork_count: number | null
+          forked_from: string | null
+          has_scoring: boolean | null
+          high_score: number | null
+          high_score_user: string | null
+          id: string
+          last_played_at: string | null
+          like_count: number | null
+          metadata: Json
+          organization_id: string | null
+          original_id: string | null
+          play_count: number | null
+          published_at: string | null
+          require_attribution: boolean | null
+          search_vector: unknown
+          share_count: number | null
+          share_token: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          total_attempts: number | null
+          trending_score: number | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number
+          version_number: number | null
+          view_count: number | null
+          visibility: "private" | "internal" | "link" | "public" | null
+        }
+        Insert: {
+          allow_remixes?: boolean | null
+          average_score?: number | null
+          canvas_data: Json
+          canvas_type: string
+          categories?: string[] | null
+          comment_count?: number | null
+          completion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          creator_display_name?: string | null
+          creator_username?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          fork_count?: number | null
+          forked_from?: string | null
+          has_scoring?: boolean | null
+          high_score?: number | null
+          high_score_user?: string | null
+          id?: string
+          last_played_at?: string | null
+          like_count?: number | null
+          metadata?: Json
+          organization_id?: string | null
+          original_id?: string | null
+          play_count?: number | null
+          published_at?: string | null
+          require_attribution?: boolean | null
+          search_vector?: unknown
+          share_count?: number | null
+          share_token: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          total_attempts?: number | null
+          trending_score?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+          version_number?: number | null
+          view_count?: number | null
+          visibility?: "private" | "internal" | "link" | "public" | null
+        }
+        Update: {
+          allow_remixes?: boolean | null
+          average_score?: number | null
+          canvas_data?: Json
+          canvas_type?: string
+          categories?: string[] | null
+          comment_count?: number | null
+          completion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          creator_display_name?: string | null
+          creator_username?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          fork_count?: number | null
+          forked_from?: string | null
+          has_scoring?: boolean | null
+          high_score?: number | null
+          high_score_user?: string | null
+          id?: string
+          last_played_at?: string | null
+          like_count?: number | null
+          metadata?: Json
+          organization_id?: string | null
+          original_id?: string | null
+          play_count?: number | null
+          published_at?: string | null
+          require_attribution?: boolean | null
+          search_vector?: unknown
+          share_count?: number | null
+          share_token?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          total_attempts?: number | null
+          trending_score?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+          version_number?: number | null
+          view_count?: number | null
+          visibility?: "private" | "internal" | "link" | "public" | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_canvas_items_forked_from_fkey"
+            columns: ["forked_from"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_canvas_items_original_id_fkey"
+            columns: ["original_id"]
+            isOneToOne: false
+            referencedRelation: "shared_canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -19114,141 +19295,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shared_canvas_items: {
-        Row: {
-          allow_remixes: boolean | null
-          average_score: number | null
-          canvas_data: Json
-          canvas_type: string
-          categories: string[] | null
-          comment_count: number | null
-          completion_rate: number | null
-          created_at: string | null
-          created_by: string | null
-          creator_display_name: string | null
-          creator_username: string | null
-          description: string | null
-          featured: boolean | null
-          fork_count: number | null
-          forked_from: string | null
-          has_scoring: boolean | null
-          high_score: number | null
-          high_score_user: string | null
-          id: string
-          last_played_at: string | null
-          like_count: number | null
-          original_id: string | null
-          play_count: number | null
-          published_at: string | null
-          require_attribution: boolean | null
-          search_vector: unknown
-          share_count: number | null
-          share_token: string
-          tags: string[] | null
-          thumbnail_url: string | null
-          title: string
-          total_attempts: number | null
-          trending_score: number | null
-          updated_at: string | null
-          version_number: number | null
-          view_count: number | null
-          visibility: string | null
-        }
-        Insert: {
-          allow_remixes?: boolean | null
-          average_score?: number | null
-          canvas_data: Json
-          canvas_type: string
-          categories?: string[] | null
-          comment_count?: number | null
-          completion_rate?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          creator_display_name?: string | null
-          creator_username?: string | null
-          description?: string | null
-          featured?: boolean | null
-          fork_count?: number | null
-          forked_from?: string | null
-          has_scoring?: boolean | null
-          high_score?: number | null
-          high_score_user?: string | null
-          id?: string
-          last_played_at?: string | null
-          like_count?: number | null
-          original_id?: string | null
-          play_count?: number | null
-          published_at?: string | null
-          require_attribution?: boolean | null
-          search_vector?: unknown
-          share_count?: number | null
-          share_token: string
-          tags?: string[] | null
-          thumbnail_url?: string | null
-          title: string
-          total_attempts?: number | null
-          trending_score?: number | null
-          updated_at?: string | null
-          version_number?: number | null
-          view_count?: number | null
-          visibility?: string | null
-        }
-        Update: {
-          allow_remixes?: boolean | null
-          average_score?: number | null
-          canvas_data?: Json
-          canvas_type?: string
-          categories?: string[] | null
-          comment_count?: number | null
-          completion_rate?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          creator_display_name?: string | null
-          creator_username?: string | null
-          description?: string | null
-          featured?: boolean | null
-          fork_count?: number | null
-          forked_from?: string | null
-          has_scoring?: boolean | null
-          high_score?: number | null
-          high_score_user?: string | null
-          id?: string
-          last_played_at?: string | null
-          like_count?: number | null
-          original_id?: string | null
-          play_count?: number | null
-          published_at?: string | null
-          require_attribution?: boolean | null
-          search_vector?: unknown
-          share_count?: number | null
-          share_token?: string
-          tags?: string[] | null
-          thumbnail_url?: string | null
-          title?: string
-          total_attempts?: number | null
-          trending_score?: number | null
-          updated_at?: string | null
-          version_number?: number | null
-          view_count?: number | null
-          visibility?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shared_canvas_items_forked_from_fkey"
-            columns: ["forked_from"]
-            isOneToOne: false
-            referencedRelation: "shared_canvas_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shared_canvas_items_original_id_fkey"
-            columns: ["original_id"]
-            isOneToOne: false
-            referencedRelation: "shared_canvas_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       shortcut_categories: {
         Row: {
           color: string | null
@@ -23116,45 +23162,7 @@ export type Database = {
       }
       cx_canvas_publish: {
         Args: { p_canvas_id: string; p_visibility?: string }
-        Returns: {
-          allow_remixes: boolean | null
-          average_score: number | null
-          canvas_data: Json
-          canvas_type: string
-          categories: string[] | null
-          comment_count: number | null
-          completion_rate: number | null
-          created_at: string | null
-          created_by: string | null
-          creator_display_name: string | null
-          creator_username: string | null
-          description: string | null
-          featured: boolean | null
-          fork_count: number | null
-          forked_from: string | null
-          has_scoring: boolean | null
-          high_score: number | null
-          high_score_user: string | null
-          id: string
-          last_played_at: string | null
-          like_count: number | null
-          original_id: string | null
-          play_count: number | null
-          published_at: string | null
-          require_attribution: boolean | null
-          search_vector: unknown
-          share_count: number | null
-          share_token: string
-          tags: string[] | null
-          thumbnail_url: string | null
-          title: string
-          total_attempts: number | null
-          trending_score: number | null
-          updated_at: string | null
-          version_number: number | null
-          view_count: number | null
-          visibility: string | null
-        }
+        Returns: Database["canvas"]["Tables"]["shared_canvas_items"]["Row"]
         SetofOptions: {
           from: "*"
           to: "shared_canvas_items"

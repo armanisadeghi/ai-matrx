@@ -15,7 +15,7 @@ export default async function Icon({ params }: Props) {
     const supabase = await createClient();
 
     const { data: canvas } = await supabase
-        .from('shared_canvas_items')
+        .schema('canvas').from('shared_canvas_items')
         .select('canvas_type')
         .eq('share_token', token)
         .single();

@@ -12,7 +12,7 @@ export function useSharedCanvas(shareToken: string | null) {
             if (!shareToken) throw new Error('No share token provided');
 
             const { data, error } = await supabase
-                .from('shared_canvas_items')
+                .schema('canvas').from('shared_canvas_items')
                 .select('*')
                 .eq('share_token', shareToken)
                 .single();
@@ -43,7 +43,7 @@ async function trackView(shareToken: string) {
 
         // Get canvas ID first
         const { data: canvas } = await supabase
-            .from('shared_canvas_items')
+            .schema('canvas').from('shared_canvas_items')
             .select('id')
             .eq('share_token', shareToken)
             .single();
