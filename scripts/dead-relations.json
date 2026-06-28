@@ -736,6 +736,62 @@
       "new": "agent.context_menu_view",
       "since": "2026-06-28",
       "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
+    },
+    {
+      "relation": "ui_surface",
+      "old": "public.ui_surface",
+      "newSchema": "ui",
+      "new": "ui.ui_surface",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_surface')."
+    },
+    {
+      "relation": "ui_client",
+      "old": "public.ui_client",
+      "newSchema": "ui",
+      "new": "ui.ui_client",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_client')."
+    },
+    {
+      "relation": "ui_surface_config",
+      "old": "public.ui_surface_config",
+      "newSchema": "ui",
+      "new": "ui.ui_surface_config",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_surface_config')."
+    },
+    {
+      "relation": "ui_surface_value",
+      "old": "public.ui_surface_value",
+      "newSchema": "ui",
+      "new": "ui.ui_surface_value",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_surface_value')."
+    },
+    {
+      "relation": "ui_surface_agent_pref",
+      "old": "public.ui_surface_agent_pref",
+      "newSchema": "ui",
+      "new": "ui.ui_surface_agent_pref",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_surface_agent_pref')."
+    },
+    {
+      "relation": "ui_surface_agent_role",
+      "old": "public.ui_surface_agent_role",
+      "newSchema": "ui",
+      "new": "ui.ui_surface_agent_role",
+      "since": "2026-06-28",
+      "reason": "moved to ui schema (clean cut). Use .schema('ui').from('ui_surface_agent_role')."
+    },
+    {
+      "relation": "voices",
+      "old": "public.voices",
+      "newSchema": "ai",
+      "new": "ai.voices",
+      "since": "2026-06-27",
+      "reason": "moved to ai schema (clean cut). Use .schema('ai').from('voices')."
     }
   ]
 }

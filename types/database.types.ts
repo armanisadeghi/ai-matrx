@@ -1383,6 +1383,105 @@ export type Database = {
         }
         Relationships: []
       }
+      voices: {
+        Row: {
+          accent: string | null
+          age: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          enabled: boolean
+          gender: string
+          id: string
+          is_verified: boolean
+          language: string | null
+          languages: string[]
+          metadata: Json
+          name: string
+          organization_id: string | null
+          owner_id: string | null
+          preview_url: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score: number | null
+          sample_file_id: string | null
+          sample_url: string | null
+          sort_order: number
+          style: string | null
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+          voice_type: string
+        }
+        Insert: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          voice_type?: string
+        }
+        Update: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider?: string
+          provider_voice_id?: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          voice_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -20655,436 +20754,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ui_client: {
-        Row: {
-          created_at: string
-          description: string
-          is_active: boolean
-          name: string
-          sort_order: number
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string
-          is_active?: boolean
-          name: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          is_active?: boolean
-          name?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      ui_surface: {
-        Row: {
-          client_name: string
-          created_at: string
-          description: string
-          execution_mode: string
-          executor_name: string | null
-          is_active: boolean
-          name: string
-          parent_surface_name: string | null
-          sort_order: number
-          supports_dictionary: boolean
-          updated_at: string
-          url_pattern: string | null
-        }
-        Insert: {
-          client_name: string
-          created_at?: string
-          description?: string
-          execution_mode?: string
-          executor_name?: string | null
-          is_active?: boolean
-          name: string
-          parent_surface_name?: string | null
-          sort_order?: number
-          supports_dictionary?: boolean
-          updated_at?: string
-          url_pattern?: string | null
-        }
-        Update: {
-          client_name?: string
-          created_at?: string
-          description?: string
-          execution_mode?: string
-          executor_name?: string | null
-          is_active?: boolean
-          name?: string
-          parent_surface_name?: string | null
-          sort_order?: number
-          supports_dictionary?: boolean
-          updated_at?: string
-          url_pattern?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ui_surface_client_name_fkey"
-            columns: ["client_name"]
-            isOneToOne: false
-            referencedRelation: "ui_client"
-            referencedColumns: ["name"]
-          },
-          {
-            foreignKeyName: "ui_surface_parent_surface_name_fkey"
-            columns: ["parent_surface_name"]
-            isOneToOne: false
-            referencedRelation: "ui_surface"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      ui_surface_agent_pref: {
-        Row: {
-          agent_id: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          kind: string
-          metadata: Json
-          organization_id: string | null
-          position: number
-          role_name: string
-          scope_id: string | null
-          settings: Json
-          surface_name: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          agent_id: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          organization_id?: string | null
-          position?: number
-          role_name: string
-          scope_id?: string | null
-          settings?: Json
-          surface_name: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          agent_id?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          organization_id?: string | null
-          position?: number
-          role_name?: string
-          scope_id?: string | null
-          settings?: Json
-          surface_name?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ui_surface_agent_pref_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ui_surface_agent_pref_role_fkey"
-            columns: ["surface_name", "role_name"]
-            isOneToOne: false
-            referencedRelation: "ui_surface_agent_role"
-            referencedColumns: ["surface_name", "name"]
-          },
-        ]
-      }
-      ui_surface_agent_role: {
-        Row: {
-          allow_custom: boolean
-          auto_run: string
-          created_at: string
-          default_agent_id: string | null
-          description: string
-          kind: string
-          label: string
-          max_agents: number
-          name: string
-          sort_order: number
-          surface_name: string
-          updated_at: string
-        }
-        Insert: {
-          allow_custom?: boolean
-          auto_run?: string
-          created_at?: string
-          default_agent_id?: string | null
-          description?: string
-          kind?: string
-          label?: string
-          max_agents?: number
-          name: string
-          sort_order?: number
-          surface_name: string
-          updated_at?: string
-        }
-        Update: {
-          allow_custom?: boolean
-          auto_run?: string
-          created_at?: string
-          default_agent_id?: string | null
-          description?: string
-          kind?: string
-          label?: string
-          max_agents?: number
-          name?: string
-          sort_order?: number
-          surface_name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ui_surface_agent_role_surface_name_fkey"
-            columns: ["surface_name"]
-            isOneToOne: false
-            referencedRelation: "ui_surface"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      ui_surface_config: {
-        Row: {
-          config: Json
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          namespace: string
-          organization_id: string | null
-          scope_id: string | null
-          surface_name: string
-          updated_at: string
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          config?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          namespace: string
-          organization_id?: string | null
-          scope_id?: string | null
-          surface_name: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          config?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          namespace?: string
-          organization_id?: string | null
-          scope_id?: string | null
-          surface_name?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ui_surface_config_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ui_surface_config_surface_name_fkey"
-            columns: ["surface_name"]
-            isOneToOne: false
-            referencedRelation: "ui_surface"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      ui_surface_value: {
-        Row: {
-          always_available: boolean
-          created_at: string
-          description: string
-          label: string
-          name: string
-          sort_order: number
-          surface_name: string
-          typical_char_count: number
-          updated_at: string
-          value_type: string
-        }
-        Insert: {
-          always_available?: boolean
-          created_at?: string
-          description?: string
-          label?: string
-          name: string
-          sort_order?: number
-          surface_name: string
-          typical_char_count?: number
-          updated_at?: string
-          value_type?: string
-        }
-        Update: {
-          always_available?: boolean
-          created_at?: string
-          description?: string
-          label?: string
-          name?: string
-          sort_order?: number
-          surface_name?: string
-          typical_char_count?: number
-          updated_at?: string
-          value_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ui_surface_value_surface_fkey"
-            columns: ["surface_name"]
-            isOneToOne: false
-            referencedRelation: "ui_surface"
-            referencedColumns: ["name"]
-          },
-        ]
-      }
-      voices: {
-        Row: {
-          accent: string | null
-          age: string | null
-          created_at: string
-          deleted_at: string | null
-          description: string | null
-          enabled: boolean
-          gender: string
-          id: string
-          is_verified: boolean
-          language: string | null
-          languages: string[]
-          metadata: Json
-          name: string
-          organization_id: string | null
-          owner_id: string | null
-          preview_url: string | null
-          provider: string
-          provider_voice_id: string
-          quality_score: number | null
-          sample_file_id: string | null
-          sample_url: string | null
-          sort_order: number
-          style: string | null
-          tags: string[]
-          updated_at: string
-          voice_type: string
-        }
-        Insert: {
-          accent?: string | null
-          age?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          description?: string | null
-          enabled?: boolean
-          gender?: string
-          id?: string
-          is_verified?: boolean
-          language?: string | null
-          languages?: string[]
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          owner_id?: string | null
-          preview_url?: string | null
-          provider: string
-          provider_voice_id: string
-          quality_score?: number | null
-          sample_file_id?: string | null
-          sample_url?: string | null
-          sort_order?: number
-          style?: string | null
-          tags?: string[]
-          updated_at?: string
-          voice_type?: string
-        }
-        Update: {
-          accent?: string | null
-          age?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          description?: string | null
-          enabled?: boolean
-          gender?: string
-          id?: string
-          is_verified?: boolean
-          language?: string | null
-          languages?: string[]
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          owner_id?: string | null
-          preview_url?: string | null
-          provider?: string
-          provider_voice_id?: string
-          quality_score?: number | null
-          sample_file_id?: string | null
-          sample_url?: string | null
-          sort_order?: number
-          style?: string | null
-          tags?: string[]
-          updated_at?: string
-          voice_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "voices_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "voices_sample_file_id_fkey"
-            columns: ["sample_file_id"]
-            isOneToOne: false
-            referencedRelation: "pdf_unified_pages"
-            referencedColumns: ["file_id"]
-          },
-        ]
-      }
       window_sessions: {
         Row: {
           created_at: string | null
@@ -21138,20 +20807,6 @@ export type Database = {
       }
     }
     Views: {
-      agent_context_menu_view: {
-        Row: {
-          categories_flat: Json | null
-          placement_type: string | null
-        }
-        Relationships: []
-      }
-      agx_context_menu_view: {
-        Row: {
-          categories_flat: Json | null
-          placement_type: string | null
-        }
-        Relationships: []
-      }
       ai_runs_summary: {
         Row: {
           created_at: string | null
@@ -27149,20 +26804,7 @@ export type Database = {
       }
       tool_surface_walk_parents: {
         Args: { p_surface_name: string }
-        Returns: {
-          client_name: string
-          created_at: string
-          description: string
-          execution_mode: string
-          executor_name: string | null
-          is_active: boolean
-          name: string
-          parent_surface_name: string | null
-          sort_order: number
-          supports_dictionary: boolean
-          updated_at: string
-          url_pattern: string | null
-        }[]
+        Returns: Database["ui"]["Tables"]["ui_surface"]["Row"][]
         SetofOptions: {
           from: "*"
           to: "ui_surface"
@@ -33633,6 +33275,336 @@ export type Database = {
       [_ in never]: never
     }
   }
+  ui: {
+    Tables: {
+      ui_client: {
+        Row: {
+          created_at: string
+          description: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ui_surface: {
+        Row: {
+          client_name: string
+          created_at: string
+          description: string
+          execution_mode: string
+          executor_name: string | null
+          is_active: boolean
+          name: string
+          parent_surface_name: string | null
+          sort_order: number
+          supports_dictionary: boolean
+          updated_at: string
+          url_pattern: string | null
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          description?: string
+          execution_mode?: string
+          executor_name?: string | null
+          is_active?: boolean
+          name: string
+          parent_surface_name?: string | null
+          sort_order?: number
+          supports_dictionary?: boolean
+          updated_at?: string
+          url_pattern?: string | null
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          description?: string
+          execution_mode?: string
+          executor_name?: string | null
+          is_active?: boolean
+          name?: string
+          parent_surface_name?: string | null
+          sort_order?: number
+          supports_dictionary?: boolean
+          updated_at?: string
+          url_pattern?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_client_name_fkey"
+            columns: ["client_name"]
+            isOneToOne: false
+            referencedRelation: "ui_client"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "ui_surface_parent_surface_name_fkey"
+            columns: ["parent_surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_agent_pref: {
+        Row: {
+          agent_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string | null
+          position: number
+          role_name: string
+          scope_id: string | null
+          settings: Json
+          surface_name: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string | null
+          position?: number
+          role_name: string
+          scope_id?: string | null
+          settings?: Json
+          surface_name: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string | null
+          position?: number
+          role_name?: string
+          scope_id?: string | null
+          settings?: Json
+          surface_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_agent_pref_role_fkey"
+            columns: ["surface_name", "role_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface_agent_role"
+            referencedColumns: ["surface_name", "name"]
+          },
+        ]
+      }
+      ui_surface_agent_role: {
+        Row: {
+          allow_custom: boolean
+          auto_run: string
+          created_at: string
+          default_agent_id: string | null
+          description: string
+          kind: string
+          label: string
+          max_agents: number
+          name: string
+          sort_order: number
+          surface_name: string
+          updated_at: string
+        }
+        Insert: {
+          allow_custom?: boolean
+          auto_run?: string
+          created_at?: string
+          default_agent_id?: string | null
+          description?: string
+          kind?: string
+          label?: string
+          max_agents?: number
+          name: string
+          sort_order?: number
+          surface_name: string
+          updated_at?: string
+        }
+        Update: {
+          allow_custom?: boolean
+          auto_run?: string
+          created_at?: string
+          default_agent_id?: string | null
+          description?: string
+          kind?: string
+          label?: string
+          max_agents?: number
+          name?: string
+          sort_order?: number
+          surface_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_agent_role_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_config: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          namespace: string
+          organization_id: string | null
+          scope_id: string | null
+          surface_name: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          namespace: string
+          organization_id?: string | null
+          scope_id?: string | null
+          surface_name: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          namespace?: string
+          organization_id?: string | null
+          scope_id?: string | null
+          surface_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_config_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_value: {
+        Row: {
+          always_available: boolean
+          created_at: string
+          description: string
+          label: string
+          name: string
+          sort_order: number
+          surface_name: string
+          typical_char_count: number
+          updated_at: string
+          value_type: string
+        }
+        Insert: {
+          always_available?: boolean
+          created_at?: string
+          description?: string
+          label?: string
+          name: string
+          sort_order?: number
+          surface_name: string
+          typical_char_count?: number
+          updated_at?: string
+          value_type?: string
+        }
+        Update: {
+          always_available?: boolean
+          created_at?: string
+          description?: string
+          label?: string
+          name?: string
+          sort_order?: number
+          surface_name?: string
+          typical_char_count?: number
+          updated_at?: string
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_value_surface_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   users: {
     Tables: {
       user_achievements: {
@@ -37258,6 +37230,9 @@ export const Constants = {
     Enums: {},
   },
   transcripts: {
+    Enums: {},
+  },
+  ui: {
     Enums: {},
   },
   users: {

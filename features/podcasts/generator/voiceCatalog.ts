@@ -54,7 +54,7 @@ export async function fetchVoices(): Promise<Voice[]> {
   // `pnpm db-types` is re-run and includes `voices`.
   const supabase = createClient() as unknown as SupabaseClient;
   const { data, error } = await supabase
-    .from("voices")
+    .schema("ai").from("voices")
     .select(SELECT_COLS)
     .eq("enabled", true)
     .order("quality_score", { ascending: false, nullsFirst: false })
