@@ -22,6 +22,23 @@
 
 ---
 
+## `scheduler` schema — scheduling tables (2026-06-27) ✅ MOVED + CANONICALIZED
+
+Schema `scheduler` already existed. Moved 4 `sch_*` tables and applied full canonicalization. Migrations: `scheduler_tables_prep.sql` + `scheduler_tables_schema_move.sql` + `scheduler_tables_rls_and_registry.sql` (applied + verified live, ledgered).
+
+**Hierarchy:** `sch_task` (root entity) → `sch_trigger` (component, task_id FK) + `sch_run` (component, task_id FK, 12k rows) + `sch_agent_task` (1:1 subtype, PK=FK). Business triggers kept intact (`sch_task_validate_tag_lengths`, `sch_task_wake_trigger`, `sch_trigger_cascade_next_due_at`, `stamp_run_org`, `emit_run_lifecycle`).
+
+| Table | Token | Variant | Notes |
+|---|---|---|---|
+| scheduler.sch_task | sch_task | entity | retrofit_entity; +visibility/metadata; legacy sch_task_updated_at→_touch_row |
+| scheduler.sch_trigger | sch_trigger | component→sch_task | +org/created_by/version/metadata/deleted_at; legacy sch_trigger_updated_at→_touch_row |
+| scheduler.sch_run | sch_run | component→sch_task | +created_by/updated_at/metadata; 12,345 rows preserved; stamp_run_org kept |
+| scheduler.sch_agent_task | sch_agent_task | component→sch_task | 1:1 subtype (PK=FK); no base cols needed for component RLS |
+
+**Status:** All 4 → zero FAIL. `legacy_owner_col` WARN on `sch_task` (permanent). `sharing_token SKIP` on all (correct — not user-shareable). `scheduler` schema not PostgREST-exposed; aidream accesses via service_role.
+
+---
+
 ## `reg` schema — KG/suggestion pipeline tables (2026-06-27) ✅ MOVED + CANONICALIZED
 
 New domain schema **`reg`** created for knowledge-graph sweep, NER, and scope/context suggestion pipeline tables. **11 tables moved, all verified zero-FAIL.** Migrations: `reg_tables_prep.sql` + `reg_tables_schema_move.sql` + `reg_tables_rls_and_registry.sql` + `reg_tables_fix_fails.sql` (applied + verified live, ledgered).

@@ -1,6 +1,110 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
+    {
+      "relation": "rs_topic",
+      "old": "public.rs_topic",
+      "newSchema": "research",
+      "new": "research.rs_topic",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_topic')."
+    },
+    {
+      "relation": "rs_template",
+      "old": "public.rs_template",
+      "newSchema": "research",
+      "new": "research.rs_template",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_template')."
+    },
+    {
+      "relation": "rs_keyword",
+      "old": "public.rs_keyword",
+      "newSchema": "research",
+      "new": "research.rs_keyword",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_keyword')."
+    },
+    {
+      "relation": "rs_source",
+      "old": "public.rs_source",
+      "newSchema": "research",
+      "new": "research.rs_source",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_source')."
+    },
+    {
+      "relation": "rs_tag",
+      "old": "public.rs_tag",
+      "newSchema": "research",
+      "new": "research.rs_tag",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_tag')."
+    },
+    {
+      "relation": "rs_synthesis",
+      "old": "public.rs_synthesis",
+      "newSchema": "research",
+      "new": "research.rs_synthesis",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_synthesis')."
+    },
+    {
+      "relation": "rs_document",
+      "old": "public.rs_document",
+      "newSchema": "research",
+      "new": "research.rs_document",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_document')."
+    },
+    {
+      "relation": "rs_content",
+      "old": "public.rs_content",
+      "newSchema": "research",
+      "new": "research.rs_content",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_content')."
+    },
+    {
+      "relation": "rs_analysis",
+      "old": "public.rs_analysis",
+      "newSchema": "research",
+      "new": "research.rs_analysis",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_analysis')."
+    },
+    {
+      "relation": "rs_media",
+      "old": "public.rs_media",
+      "newSchema": "research",
+      "new": "research.rs_media",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_media')."
+    },
+    {
+      "relation": "rs_source_tag",
+      "old": "public.rs_source_tag",
+      "newSchema": "research",
+      "new": "research.rs_source_tag",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_source_tag')."
+    },
+    {
+      "relation": "rs_keyword_source",
+      "old": "public.rs_keyword_source",
+      "newSchema": "research",
+      "new": "research.rs_keyword_source",
+      "since": "2026-06-28",
+      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_keyword_source')."
+    },
+    {
+      "relation": "rs_source_keywords",
+      "old": "public.rs_source_keywords",
+      "newSchema": "research",
+      "new": "research.rs_source_keywords",
+      "since": "2026-06-28",
+      "reason": "view moved to research schema (clean cut). Use .schema('research').from('rs_source_keywords')."
+    },
     {
       "relation": "notes",
       "old": "public.notes",
@@ -23,7 +127,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -31,7 +135,7 @@
       "newSchema": "permissions",
       "new": "public.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) \u2014 note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -39,7 +143,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -424,6 +528,38 @@
       "new": "reg.context_item_suggestions",
       "since": "2026-06-27",
       "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('context_item_suggestions')."
+    },
+    {
+      "relation": "sch_task",
+      "old": "public.sch_task",
+      "newSchema": "scheduler",
+      "new": "scheduler.sch_task",
+      "since": "2026-06-27",
+      "reason": "moved to scheduler schema (clean cut). Use .schema('scheduler').from('sch_task')."
+    },
+    {
+      "relation": "sch_trigger",
+      "old": "public.sch_trigger",
+      "newSchema": "scheduler",
+      "new": "scheduler.sch_trigger",
+      "since": "2026-06-27",
+      "reason": "moved to scheduler schema (clean cut). Use .schema('scheduler').from('sch_trigger')."
+    },
+    {
+      "relation": "sch_run",
+      "old": "public.sch_run",
+      "newSchema": "scheduler",
+      "new": "scheduler.sch_run",
+      "since": "2026-06-27",
+      "reason": "moved to scheduler schema (clean cut). Use .schema('scheduler').from('sch_run')."
+    },
+    {
+      "relation": "sch_agent_task",
+      "old": "public.sch_agent_task",
+      "newSchema": "scheduler",
+      "new": "scheduler.sch_agent_task",
+      "since": "2026-06-27",
+      "reason": "moved to scheduler schema (clean cut). Use .schema('scheduler').from('sch_agent_task')."
     }
   ]
 }
