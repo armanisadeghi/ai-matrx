@@ -11,7 +11,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
 
 export async function POST(request: NextRequest) {
@@ -44,8 +43,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the invitation to resend
-    const { data: invitation, error: fetchError } = await graveyardDb(supabase)
-      .from("organization_invitations")
+    const { data: invitation, error: fetchError } = await supabase
+      .schema("iam")
+      .from("invitations")
       .select("*")
       .eq("id", invitationId)
       .single();
@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const { error: updateError } = await graveyardDb(supabase)
-      .from("organization_invitations")
+    const { error: updateError } = await supabase
+      .schema("iam")
+      .from("invitations")
       .update({ expires_at: expiresAt.toISOString() })
       .eq("id", invitationId);
 
@@ -111,11 +112,15 @@ export async function POST(request: NextRequest) {
 
     // Update invitation record with email status
     if (emailResult.success) {
-      await graveyardDb(supabase)
-        .from("organization_invitations")
+      await supabase
+        .schema("iam")
+        .from("invitations")
         .update({
-          email_sent: true,
-          email_sent_at: new Date().toISOString(),
+          metadata: {
+            ...(invitation.metadata ?? {}),
+            email_sent: true,
+            email_sent_at: new Date().toISOString(),
+          },
         })
         .eq("id", invitationId);
     } else {

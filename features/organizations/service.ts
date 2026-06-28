@@ -11,7 +11,6 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -689,11 +688,13 @@ export async function getOrganizationInvitations(
   orgId: string,
 ): Promise<OrganizationInvitation[]> {
   try {
-    const { data, error } = await graveyardDb(supabase)
-      .from("organization_invitations")
+    const { data, error } = await supabase
+      .schema("iam").from("invitations")
       .select("*")
       .eq("organization_id", orgId)
-      .order("invited_at", { ascending: false });
+      .eq("target_type", "organization")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
 
     if (error) throw pgErrorToError(error);
 
@@ -713,8 +714,8 @@ export async function cancelInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
   try {
-    const { error } = await graveyardDb(supabase)
-      .from("organization_invitations")
+    const { error } = await supabase
+      .schema("iam").from("invitations")
       .delete()
       .eq("id", invitationId);
 
@@ -848,12 +849,15 @@ export async function getUserInvitations(): Promise<
   try {
     const currentUserId = requireUserId();
 
-    const { data, error } = await graveyardDb(supabase)
-      .from("organization_invitations")
+    const { data, error } = await supabase
+      .schema("iam").from("invitations")
       .select("*, organizations(*)")
-      .eq("email", getUserEmail())
+      .eq("invited_user_id", currentUserId)
+      .eq("target_type", "organization")
+      .eq("status", "pending")
+      .is("deleted_at", null)
       .gt("expires_at", new Date().toISOString())
-      .order("invited_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) throw pgErrorToError(error);
 
@@ -923,8 +927,8 @@ function transformInvitationFromDb(dbRecord: any): OrganizationInvitation {
     email: dbRecord.email,
     token: dbRecord.token,
     role: dbRecord.role,
-    invitedAt: dbRecord.invited_at,
-    invitedBy: dbRecord.invited_by,
+    invitedAt: dbRecord.invited_at ?? dbRecord.created_at,
+    invitedBy: dbRecord.invited_by ?? dbRecord.created_by,
     expiresAt: dbRecord.expires_at,
   };
 }

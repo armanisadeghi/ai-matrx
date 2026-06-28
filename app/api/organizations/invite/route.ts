@@ -11,9 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
-import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,41 +45,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate secure token
-    const token = crypto.randomUUID();
-
-    // Set expiry (7 days from now)
+    // Display expiry for the email (RPC sets the authoritative 7-day expiry).
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create invitation record
-    const { data: invitation, error: insertError } = await graveyardDb(supabase)
-      .from("organization_invitations")
-      .insert({
-        organization_id: organizationId,
-        email: email.toLowerCase().trim(),
-        token,
-        role,
-        invited_by: user.id,
-        expires_at: expiresAt.toISOString(),
-      })
-      .select()
+    // Create the invitation via the canonical SECURITY DEFINER RPC: validates
+    // admin permission + non-membership, dedups by (org,email), generates the
+    // token, resolves invited_user_id, and writes to iam.invitations.
+    const { data: invitationId, error: rpcError } = await supabase.rpc(
+      "invite_to_organization",
+      {
+        org_id: organizationId,
+        email_address: email.toLowerCase().trim(),
+        member_role: role,
+        invited_by_user_id: user.id,
+      },
+    );
+
+    if (rpcError || !invitationId) {
+      const msg = rpcError?.message || "Failed to create invitation";
+      const status = msg.includes("already a member")
+        ? 409
+        : msg.includes("permission")
+          ? 403
+          : 500;
+      console.error("Error creating invitation:", rpcError);
+      return NextResponse.json({ success: false, error: msg }, { status });
+    }
+
+    // Read back the row (inviter is an org admin → RLS std_select allows it) so we
+    // have the generated token for the email link.
+    const { data: invitation } = await supabase
+      .schema("iam")
+      .from("invitations")
+      .select("*")
+      .eq("id", invitationId)
       .single();
 
-    if (insertError) {
-      // Unique constraint violation
-      if (insertError.code === "23505") {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "User already invited to this organization",
-          },
-          { status: 409 },
-        );
-      }
-      console.error("Error creating invitation:", insertError);
+    if (!invitation) {
       return NextResponse.json(
-        { success: false, error: "Failed to create invitation" },
+        {
+          success: false,
+          error: "Invitation created but could not be loaded",
+        },
         { status: 500 },
       );
     }
@@ -110,7 +116,7 @@ export async function POST(request: NextRequest) {
     // Generate invitation URL
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${token}`;
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitation.token}`;
 
     // Prepare email template
     const emailTemplate = emailTemplates.organizationInvitation(
@@ -129,11 +135,15 @@ export async function POST(request: NextRequest) {
 
     // Update invitation record with email status
     if (emailResult.success) {
-      await graveyardDb(supabase)
-        .from("organization_invitations")
+      await supabase
+        .schema("iam")
+        .from("invitations")
         .update({
-          email_sent: true,
-          email_sent_at: new Date().toISOString(),
+          metadata: {
+            ...(invitation.metadata ?? {}),
+            email_sent: true,
+            email_sent_at: new Date().toISOString(),
+          },
         })
         .eq("id", invitation.id);
     } else {

@@ -24663,6 +24663,19 @@ export type Database = {
         Args: { p_other_user_id: string }
         Returns: string
       }
+      get_org_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          organization_name: string
+          role: string
+          status: string
+          token: string
+        }[]
+      }
       get_org_module_settings: {
         Args: { p_org_id: string }
         Returns: {

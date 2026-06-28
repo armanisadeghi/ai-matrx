@@ -19,7 +19,6 @@ import { acceptInvitation } from "@/features/organizations/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { OrganizationInvitationWithOrg } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { InlineMediaRef } from "@/features/files";
 
 /**
@@ -81,83 +80,41 @@ export default function AcceptInvitationPage() {
         return;
       }
 
-      // First, try to fetch just the invitation without join
-      console.log("[Invitation] Fetching invitation without join...");
-      const { data: invitationOnly, error: inviteOnlyError } =
-        await graveyardDb(supabase)
-          .from("organization_invitations")
-          .select("*")
-          .eq("token", token)
-          .single();
-
-      console.log("[Invitation] Invitation-only result:", {
-        found: !!invitationOnly,
-        error: inviteOnlyError?.message,
-        errorCode: inviteOnlyError?.code,
-        errorDetails: inviteOnlyError?.details,
-        invitationId: invitationOnly?.id,
-        invitationEmail: invitationOnly?.email,
-        expiresAt: invitationOnly?.expires_at,
-      });
+      // Read the invitation by token via the SECURITY DEFINER RPC — RLS on
+      // iam.invitations blocks a not-yet-member invitee from reading it (and the
+      // org) directly. The RPC returns the org name alongside the invitation.
+      const { data: inviteRows, error: inviteOnlyError } = await supabase.rpc(
+        "get_org_invitation_by_token",
+        { p_token: token },
+      );
+      const invitationOnly = Array.isArray(inviteRows)
+        ? inviteRows[0]
+        : inviteRows;
 
       if (inviteOnlyError) {
-        console.error(
-          "[Invitation] Failed to fetch invitation:",
-          inviteOnlyError,
-        );
+        console.error("[Invitation] Failed to fetch invitation:", inviteOnlyError);
         setError(`Failed to fetch invitation: ${inviteOnlyError.message}`);
         return;
       }
 
       if (!invitationOnly) {
-        console.log("[Invitation] No invitation found for token");
         setError("Invitation not found");
         return;
       }
 
-      // Check expiry manually
-      const isExpired = new Date(invitationOnly.expires_at) <= new Date();
-      console.log("[Invitation] Expiry check:", {
-        expiresAt: invitationOnly.expires_at,
-        now: new Date().toISOString(),
-        isExpired,
-      });
-
-      if (isExpired) {
+      // Check expiry
+      if (new Date(invitationOnly.expires_at) <= new Date()) {
         setError("This invitation has expired");
         return;
       }
 
-      // Now fetch the organization separately
-      console.log(
-        "[Invitation] Fetching organization:",
-        invitationOnly.organization_id,
-      );
-      const { data: orgData, error: orgError } = await supabase
-        .schema("iam").from("organizations")
-        .select("*")
-        .eq("id", invitationOnly.organization_id)
-        .single();
-
-      console.log("[Invitation] Organization result:", {
-        found: !!orgData,
-        error: orgError?.message,
-        errorCode: orgError?.code,
-        orgName: orgData?.name,
-      });
-
-      if (orgError || !orgData) {
-        console.error("[Invitation] Failed to fetch organization:", orgError);
-        // Continue anyway with partial data - we can show the invitation
-        // but maybe not all org details
-      }
-
-      const data = { ...invitationOnly, organizations: orgData };
-
-      if (!data) {
-        setError("Invitation not found or has expired");
-        return;
-      }
+      const data = {
+        ...invitationOnly,
+        organizations: {
+          id: invitationOnly.organization_id,
+          name: invitationOnly.organization_name,
+        },
+      };
 
       // Check if invitation is for current user's email
       if (data.email.toLowerCase() !== user.email?.toLowerCase()) {

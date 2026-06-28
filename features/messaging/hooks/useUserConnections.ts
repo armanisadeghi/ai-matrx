@@ -13,7 +13,6 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
@@ -157,12 +156,14 @@ export function useUserConnections(): UseUserConnectionsReturn {
 
         // Fetch pending invitations for this org
         // Note: Invitations are by email, we'll try to match to existing users
-        const { data: invitations, error: invError } = await graveyardDb(
-          supabase,
-        )
-          .from("organization_invitations")
-          .select("email, invited_by")
+        const { data: invitations, error: invError } = await supabase
+          .schema("iam")
+          .from("invitations")
+          .select("email, created_by")
           .eq("organization_id", org.id)
+          .eq("target_type", "organization")
+          .eq("status", "pending")
+          .is("deleted_at", null)
           .gt("expires_at", new Date().toISOString());
 
         if (invError) {
