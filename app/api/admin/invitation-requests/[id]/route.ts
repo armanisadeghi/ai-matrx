@@ -49,6 +49,7 @@ export async function PATCH(
 
     // Get the invitation request
     const { data: invitationRequest, error: fetchError } = await adminSupabase
+      .schema("user")
       .from("invitation_requests")
       .select("*")
       .eq("id", params.id)
@@ -82,6 +83,7 @@ export async function PATCH(
       expiresAt.setDate(expiresAt.getDate() + 30); // 30 days expiry
 
       const { error: insertError } = await adminSupabase
+        .schema("user")
         .from("invitation_codes")
         .insert({
           code: invitationCode,
@@ -102,6 +104,7 @@ export async function PATCH(
 
       // Update invitation request status
       const { error: updateError } = await adminSupabase
+        .schema("user")
         .from("invitation_requests")
         .update({
           status: "approved",
@@ -139,6 +142,7 @@ export async function PATCH(
     } else {
       // Reject
       const { error: updateError } = await adminSupabase
+        .schema("user")
         .from("invitation_requests")
         .update({
           status: "rejected",
@@ -218,6 +222,7 @@ export async function GET(
 
     // Get the invitation request
     const { data: invitationRequest, error } = await adminSupabase
+      .schema("user")
       .from("invitation_requests")
       .select("*")
       .eq("id", params.id)

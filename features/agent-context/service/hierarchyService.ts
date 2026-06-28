@@ -10,6 +10,7 @@ import type {
 } from "@/features/agent-context/redux/hierarchySlice";
 import { createProject as createProjectCanonical } from "@/features/projects/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { generateProjectSlug } from "@/features/projects/types";
 
 function toTaskPriority(
@@ -86,6 +87,7 @@ export const hierarchyService = {
     const userEmail = getUserEmail() ?? "";
 
     const { data: profile } = await supabase
+      .schema("user")
       .from("profiles")
       .select("display_name")
       .eq("id", userId)
@@ -104,7 +106,9 @@ export const hierarchyService = {
     // Canonical membership read (iam.memberships via mbr_* RPCs); org identity
     // resolved from the public organizations table (no cross-schema embed).
     const membersResult = await membershipsService.forUser("organization");
-    if (!membersResult.ok) throw new Error(membersResult.error.message);
+    if (isScopesRpcErr(membersResult)) {
+      throw new Error(membersResult.error.message);
+    }
     const roleByOrgId = new Map<string, string>();
     for (const m of membersResult.data.memberships) {
       roleByOrgId.set(m.containerId, m.role);
@@ -369,7 +373,9 @@ export const hierarchyService = {
       organizationId: org.id,
       role: "owner",
     });
-    if (!ownerResult.ok) throw new Error(ownerResult.error.message);
+    if (isScopesRpcErr(ownerResult)) {
+      throw new Error(ownerResult.error.message);
+    }
 
     return { ...org, role: "owner" } as HierarchyOrg;
   },
@@ -577,7 +583,8 @@ export const hierarchyService = {
         .eq("id", id)
         .single();
     } else {
-      const table = type === "project" ? ("projects" as const) : ("tasks" as const);
+      const table =
+        type === "project" ? ("projects" as const) : ("tasks" as const);
       row = await workspaceDb(supabase)
         .from(table)
         .select(nameCol)

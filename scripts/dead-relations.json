@@ -824,6 +824,30 @@
       "new": "ai.voices",
       "since": "2026-06-27",
       "reason": "moved to ai schema (clean cut). Use .schema('ai').from('voices')."
+    },
+    {
+      "relation": "invitation_codes",
+      "old": "public.invitation_codes",
+      "newSchema": "user",
+      "new": "user.invitation_codes",
+      "since": "2026-06-27",
+      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('invitation_codes')."
+    },
+    {
+      "relation": "invitation_requests",
+      "old": "public.invitation_requests",
+      "newSchema": "user",
+      "new": "user.invitation_requests",
+      "since": "2026-06-27",
+      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('invitation_requests')."
+    },
+    {
+      "relation": "profiles",
+      "old": "public.profiles",
+      "newSchema": "user",
+      "new": "user.profiles",
+      "since": "2026-06-27",
+      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('profiles')."
     }
   ]
 }

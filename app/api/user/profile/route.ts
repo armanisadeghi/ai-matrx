@@ -4,7 +4,7 @@
 //   • auth.users.user_metadata — full_name, name, preferred_username,
 //     avatar_url, picture. Updated via supabase.auth.updateUser({ data })
 //     so the JWT and the USER_UPDATED auth event fire correctly.
-//   • public.profiles — chat-visible display_name, avatar_url, status_text.
+//   • user.profiles — chat-visible display_name, avatar_url, status_text.
 //     Upserted so a missing row is created on first save.
 //
 // The richer `public.user_form_profile` (legal name, addresses, phones,
@@ -66,6 +66,7 @@ export async function GET() {
     // Pull the chat-visible row (may not exist yet — that's fine, we return
     // sensible defaults so the form has values to bind to).
     const { data: profileRow, error: profileError } = await supabase
+      .schema("user")
       .from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)
@@ -196,7 +197,8 @@ export async function PATCH(request: NextRequest) {
       }
 
       const { error: upsertError } = await supabase
-        .from("profiles")
+        .schema("user")
+      .from("profiles")
         .upsert(
           {
             id: user.id,
@@ -223,6 +225,7 @@ export async function PATCH(request: NextRequest) {
     const echoUser = (await supabase.auth.getUser()).data.user;
     const echoMeta = (echoUser?.user_metadata ?? {}) as Record<string, unknown>;
     const { data: echoProfile } = await supabase
+      .schema("user")
       .from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)

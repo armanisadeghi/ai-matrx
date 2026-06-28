@@ -40,8 +40,14 @@ function defaultEmailPreferences(userId: string): UserEmailPreferencesRow {
     comment_notifications: true,
     message_notifications: true,
     message_digest: false,
-    created_at: null,
-    updated_at: null,
+    metadata: {},
+    organization_id: null,
+    version: 0,
+    created_by: null,
+    deleted_at: null,
+    updated_by: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -54,7 +60,8 @@ async function getUserEmailPreferences(
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .schema("users").from("user_email_preferences")
+      .schema("users")
+      .from("user_email_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();
@@ -97,6 +104,7 @@ async function getUserDetails(
     }
 
     const { data: profile } = await supabase
+      .schema("user")
       .from("profiles")
       .select("display_name")
       .eq("id", userId)

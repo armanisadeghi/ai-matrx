@@ -44,6 +44,7 @@ export async function POST(request: Request) {
 
     // Get assigner's name
     const { data: assignerProfile } = await supabase
+      .schema("user")
       .from("profiles")
       .select("display_name")
       .eq("id", user.id)
