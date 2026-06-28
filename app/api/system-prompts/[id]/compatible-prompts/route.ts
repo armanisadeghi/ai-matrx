@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { collectMustacheVariableNamesFromMessagesJson } from "@/features/prompts/utils/collect-template-variables-from-messages-json";
@@ -44,7 +45,9 @@ export async function GET(
     const includeAll = searchParams.get("include_all") === "true";
 
     // Fetch the system prompt
-    const { data: systemPrompt, error: systemPromptError } = await supabase
+    const { data: systemPrompt, error: systemPromptError } = await graveyardDb(
+      supabase,
+    )
       .from("system_prompts")
       .select("*")
       .eq("id", id)
@@ -76,7 +79,9 @@ export async function GET(
       );
     }
 
-    const functionality = await getFunctionalityById(systemPrompt.functionality_id);
+    const functionality = await getFunctionalityById(
+      systemPrompt.functionality_id,
+    );
 
     if (!functionality) {
       return NextResponse.json(

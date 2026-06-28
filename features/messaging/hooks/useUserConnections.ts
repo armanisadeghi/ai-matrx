@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
@@ -36,7 +37,10 @@ interface OrgMemberRow {
   user_email: string;
   user_id: string;
 }
-type _CheckOrgMemberRow = OrgMemberRow extends DbRpcRow<"get_organization_members_with_users"> ? true : false;
+type _CheckOrgMemberRow =
+  OrgMemberRow extends DbRpcRow<"get_organization_members_with_users">
+    ? true
+    : false;
 declare const _orgMemberRow: _CheckOrgMemberRow;
 true satisfies typeof _orgMemberRow;
 
@@ -44,11 +48,13 @@ interface LookupUserByEmailRow {
   user_id: string;
   user_email: string;
 }
-type _CheckLookupRow = LookupUserByEmailRow extends DbRpcRow<"lookup_user_by_email"> ? true : false;
+type _CheckLookupRow =
+  LookupUserByEmailRow extends DbRpcRow<"lookup_user_by_email"> ? true : false;
 declare const _lookupRow: _CheckLookupRow;
 true satisfies typeof _lookupRow;
 
-type _CheckDmUserInfo = UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
+type _CheckDmUserInfo =
+  UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
 declare const _dmUserInfo: _CheckDmUserInfo;
 true satisfies typeof _dmUserInfo;
 
@@ -69,7 +75,7 @@ export function useUserConnections(): UseUserConnectionsReturn {
 
   // Get conversations for past message contacts
   const { conversations, isLoading: convoLoading } = useConversations(
-    currentUserId || null
+    currentUserId || null,
   );
 
   // Get user's organizations
@@ -105,7 +111,9 @@ export function useUserConnections(): UseUserConnectionsReturn {
   }, [conversations, currentUserId]);
 
   // Fetch organization members and invitations
-  const fetchOrgConnections = useCallback(async (): Promise<ConnectionUser[]> => {
+  const fetchOrgConnections = useCallback(async (): Promise<
+    ConnectionUser[]
+  > => {
     if (!currentUserId || !organizations || organizations.length === 0) {
       return [];
     }
@@ -118,19 +126,19 @@ export function useUserConnections(): UseUserConnectionsReturn {
         // Fetch members via RPC
         const { data: members, error: membersError } = await supabase.rpc(
           "get_organization_members_with_users",
-          { p_org_id: org.id }
+          { p_org_id: org.id },
         );
 
         if (membersError) {
           console.error(
             `Error fetching members for org ${org.id}:`,
-            membersError
+            membersError,
           );
           continue;
         }
 
         // Add members (excluding current user)
-        (members as unknown as OrgMemberRow[] || []).forEach((member) => {
+        ((members as unknown as OrgMemberRow[]) || []).forEach((member) => {
           if (member.user_id !== currentUserId) {
             const existingUser = usersMap.get(member.user_id);
             // Only add if not already in map, or update sourceDetails
@@ -149,7 +157,9 @@ export function useUserConnections(): UseUserConnectionsReturn {
 
         // Fetch pending invitations for this org
         // Note: Invitations are by email, we'll try to match to existing users
-        const { data: invitations, error: invError } = await supabase
+        const { data: invitations, error: invError } = await graveyardDb(
+          supabase,
+        )
           .from("organization_invitations")
           .select("email, invited_by")
           .eq("organization_id", org.id)
@@ -158,7 +168,7 @@ export function useUserConnections(): UseUserConnectionsReturn {
         if (invError) {
           console.error(
             `Error fetching invitations for org ${org.id}:`,
-            invError
+            invError,
           );
           continue;
         }
@@ -168,17 +178,24 @@ export function useUserConnections(): UseUserConnectionsReturn {
           // Try to find user by email using lookup
           const { data: lookupResult } = await supabase.rpc(
             "lookup_user_by_email",
-            { lookup_email: invite.email.toLowerCase() }
+            { lookup_email: invite.email.toLowerCase() },
           );
 
           if (lookupResult && lookupResult.length > 0) {
-            const lookupRows = lookupResult as unknown as LookupUserByEmailRow[];
+            const lookupRows =
+              lookupResult as unknown as LookupUserByEmailRow[];
             const invitedUserId = lookupRows[0].user_id;
-            if (invitedUserId !== currentUserId && !usersMap.has(invitedUserId)) {
+            if (
+              invitedUserId !== currentUserId &&
+              !usersMap.has(invitedUserId)
+            ) {
               // Get full user info
-              const { data: userInfo } = await supabase.rpc("get_dm_user_info", {
-                p_user_id: invitedUserId,
-              });
+              const { data: userInfo } = await supabase.rpc(
+                "get_dm_user_info",
+                {
+                  p_user_id: invitedUserId,
+                },
+              );
 
               const dmRows = userInfo as unknown as UserBasicInfo[];
               if (dmRows && dmRows[0]) {
@@ -249,7 +266,7 @@ export function useUserConnections(): UseUserConnectionsReturn {
             const nameA = (a.display_name || a.email || "").toLowerCase();
             const nameB = (b.display_name || b.email || "").toLowerCase();
             return nameA.localeCompare(nameB);
-          }
+          },
         );
 
         if (!mounted) return;
@@ -259,7 +276,7 @@ export function useUserConnections(): UseUserConnectionsReturn {
         if (!mounted) return;
         console.error("Error aggregating connections:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to load connections"
+          err instanceof Error ? err.message : "Failed to load connections",
         );
       } finally {
         if (mounted) {

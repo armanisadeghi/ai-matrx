@@ -171,7 +171,7 @@ export default function QuickScrapePage() {
   return (
     <div className="h-page flex flex-col overflow-hidden bg-textured">
       {/* Header bar */}
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-white/50 dark:bg-gray-900/50">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto flex gap-2 items-center">
           <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <Input
@@ -282,8 +282,8 @@ export default function QuickScrapePage() {
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
                   <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-gray-400" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
                       {statusMessage ?? "Scraping content..."}
                     </p>
                   </div>
@@ -297,14 +297,14 @@ export default function QuickScrapePage() {
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                        <h2 className="text-xl font-semibold text-foreground mb-2">
                           {data.overview.page_title || "Untitled Page"}
                         </h2>
                         <a
                           href={data.overview.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 truncate"
+                          className="text-sm text-primary hover:underline flex items-center gap-1 truncate"
                         >
                           <span className="truncate">{data.overview.url}</span>
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -329,7 +329,7 @@ export default function QuickScrapePage() {
                         )}
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <div>
                         <span className="font-medium">Characters:</span>{" "}
                         {data.overview.char_count?.toLocaleString() || 0}
@@ -385,8 +385,8 @@ export default function QuickScrapePage() {
                         </div>
                       </TabsContent>
                       <TabsContent value="text" className="mt-0">
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border-border">
-                          <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200 font-mono leading-relaxed">
+                        <div className="bg-muted rounded-lg p-4 border border-border">
+                          <pre className="whitespace-pre-wrap text-sm text-foreground font-mono leading-relaxed">
                             {data.plainTextContent}
                           </pre>
                         </div>

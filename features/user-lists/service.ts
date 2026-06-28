@@ -40,6 +40,7 @@ export async function getOwnedListsSummary(
  */
 export async function getAccessibleLists(): Promise<UserList[]> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_picklists")
     .select("*")
     .order("created_at", { ascending: false });
@@ -111,6 +112,7 @@ export async function updateList(input: UpdateListInput) {
 
 export async function deleteList(listId: string): Promise<void> {
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_picklists")
     .delete()
     .eq("id", listId);
@@ -131,6 +133,7 @@ export async function addItemToList(params: {
   publicRead?: boolean;
 }) {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .insert({
       list_id: params.listId,
@@ -160,6 +163,7 @@ export async function updateItem(
   },
 ) {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", itemId)
@@ -171,6 +175,7 @@ export async function updateItem(
 
 export async function deleteItem(itemId: string): Promise<void> {
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .delete()
     .eq("id", itemId);

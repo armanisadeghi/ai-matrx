@@ -27,6 +27,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("workbench")
         .from("udt_picklists")
         .select("description, created_at")
         .eq("id", id)

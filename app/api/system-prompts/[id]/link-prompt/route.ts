@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import {
@@ -57,7 +58,9 @@ export async function POST(
     }
 
     // Fetch the system prompt
-    const { data: systemPrompt, error: systemPromptError } = await supabase
+    const { data: systemPrompt, error: systemPromptError } = await graveyardDb(
+      supabase,
+    )
       .from("system_prompts")
       .select("*")
       .eq("id", id)
@@ -184,7 +187,9 @@ export async function POST(
     // Update the system prompt with the new link.
     // system_prompts is RLS-protected with no write policy — use the admin client.
     const admin = createAdminClient();
-    const { data: updatedSystemPrompt, error: updateError } = await admin
+    const { data: updatedSystemPrompt, error: updateError } = await graveyardDb(
+      admin,
+    )
       .from("system_prompts")
       .update({
         source_prompt_id: body.prompt_id,

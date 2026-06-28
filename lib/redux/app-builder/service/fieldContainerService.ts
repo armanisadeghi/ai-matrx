@@ -1,47 +1,36 @@
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
-import type { Database } from "@/types/database.types";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
+import type { Database, Json } from "@/types/database.types";
 
-import { dbToFieldDefinition, FieldComponentDB } from "./fieldComponentService";
 import { ContainerBuilder } from "../types";
 import { FieldDefinition } from "@/types/customAppTypes";
 
 export type ComponentGroupRow =
-  Database["public"]["Tables"]["component_groups"]["Row"];
+  Database["graveyard"]["Tables"]["component_groups"]["Row"];
 
-/** Payload shape for creates/updates (includes UI field list before JSON serialization). */
-export type ComponentGroupDB = Omit<
-  ComponentGroupRow,
-  "fields" | "created_at" | "updated_at"
-> & {
-  id: string | null;
-  created_at?: string;
-  updated_at?: string;
-  fields?: FieldDefinition[];
-  authenticated_read?: boolean;
-};
+type ComponentGroupInsert =
+  Database["graveyard"]["Tables"]["component_groups"]["Insert"];
 
 /**
  * Converts a ContainerBuilder to the database format
  */
 export const componentGroupToDBFormat = async (
   group: ContainerBuilder,
-): Promise<Omit<ComponentGroupDB, "created_at" | "updated_at">> => {
+): Promise<ComponentGroupInsert> => {
   const userId = requireUserId();
 
   return {
-    id: group.id || null,
+    ...(group.id ? { id: group.id } : {}),
     label: group.label || "",
     short_label: group.shortLabel || "",
     description: group.description || "",
     hide_description:
       group.hideDescription !== undefined ? group.hideDescription : false,
     help_text: group.helpText || "",
-    fields: group.fields || [],
+    fields: (group.fields ?? []) as Json,
     user_id: userId,
     is_public: group.isPublic !== undefined ? group.isPublic : false,
-    authenticated_read:
-      group.authenticatedRead !== undefined ? group.authenticatedRead : true,
     public_read: group.publicRead !== undefined ? group.publicRead : false,
   };
 };
@@ -92,7 +81,7 @@ export const dbToComponentGroup = (
 export const getAllComponentGroups = async (): Promise<ContainerBuilder[]> => {
   const userId = requireUserId();
 
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("component_groups")
     .select("*")
     .eq("user_id", userId);
@@ -111,7 +100,7 @@ export const getAllComponentGroups = async (): Promise<ContainerBuilder[]> => {
 export const getComponentGroupById = async (
   id: string,
 ): Promise<ContainerBuilder | null> => {
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("component_groups")
     .select("*")
     .eq("id", id)
@@ -170,7 +159,7 @@ export const createComponentGroup = async (
     const dbData = await componentGroupToDBFormat(group);
     const { fields, ...restData } = dbData;
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("component_groups")
       .insert(restData)
       .select()
@@ -209,7 +198,7 @@ export const updateComponentGroup = async (
   console.log("updateComponentGroup dbData", JSON.stringify(dbData, null, 2));
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("component_groups")
       .update(dbData)
       .eq("id", id)
@@ -242,7 +231,7 @@ export const updateComponentGroup = async (
  * Deletes a component group
  */
 export const deleteComponentGroup = async (id: string): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await graveyardDb(supabase)
     .from("component_groups")
     .delete()
     .eq("id", id);
@@ -383,7 +372,7 @@ export const duplicateComponentGroup = async (
 export const getPublicComponentGroups = async (): Promise<
   ContainerBuilder[]
 > => {
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("component_groups")
     .select("*")
     .eq("is_public", true);
@@ -403,7 +392,7 @@ export const setComponentGroupPublic = async (
   id: string,
   isPublic: boolean,
 ): Promise<void> => {
-  const { error } = await supabase
+  const { error } = await graveyardDb(supabase)
     .from("component_groups")
     .update({ is_public: isPublic })
     .eq("id", id);

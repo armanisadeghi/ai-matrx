@@ -69,6 +69,7 @@ export function DocumentHistoryViewer({ documentId, editable = true }: Props) {
       // omits it to keep the listing payload small).
       const { supabase } = await import("@/utils/supabase/client");
       const { data: full, error: fetchErr } = await supabase
+        .schema("workbench")
         .from("udt_document_snapshots")
         .select("snapshot, label")
         .eq("id", snapshotId)

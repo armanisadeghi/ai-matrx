@@ -143,7 +143,7 @@ export default function Page() {
   if (result) {
     return (
       <div className="h-dvh flex flex-col overflow-hidden bg-textured">
-        <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-white/50 dark:bg-gray-900/50">
+        <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto flex gap-2 items-center">
             <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <Input

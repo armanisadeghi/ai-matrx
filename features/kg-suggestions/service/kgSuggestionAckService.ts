@@ -8,7 +8,7 @@
 // a brand-new suggestion id (never acknowledged) still pops.
 //
 // Reads/writes go React → Supabase directly (RLS scopes every row to
-// auth.uid()); there is no Next.js middle tier. Table: public.kg_suggestion_ack.
+// auth.uid()); there is no Next.js middle tier. Table: reg.kg_suggestion_ack.
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -17,6 +17,7 @@ export async function fetchAckedSuggestionIds(
   userId: string,
 ): Promise<Set<string>> {
   const { data, error } = await supabase
+    .schema("rag")
     .from("kg_suggestion_ack")
     .select("suggestion_id")
     .eq("user_id", userId);
@@ -35,6 +36,7 @@ export async function ackSuggestions(
     suggestion_id,
   }));
   const { error } = await supabase
+    .schema("rag")
     .from("kg_suggestion_ack")
     .upsert(rows, {
       onConflict: "user_id,suggestion_id",

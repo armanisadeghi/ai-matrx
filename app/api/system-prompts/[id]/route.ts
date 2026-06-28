@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
@@ -25,7 +26,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("system_prompts")
       .select("*")
       .eq("id", id)
@@ -115,7 +116,7 @@ export async function PATCH(
 
     // system_prompts is RLS-protected with no write policy — use the admin client.
     const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await graveyardDb(admin)
       .from("system_prompts")
       .update(updateData)
       .eq("id", id)
@@ -172,7 +173,10 @@ export async function DELETE(
     }
 
     const admin = createAdminClient();
-    const { error } = await admin.from("system_prompts").delete().eq("id", id);
+    const { error } = await graveyardDb(admin)
+      .from("system_prompts")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       console.error("Error deleting system prompt:", error);
@@ -244,7 +248,7 @@ export async function POST(
 
     // Update with new snapshot (version will auto-increment via trigger)
     const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await graveyardDb(admin)
       .from("system_prompts")
       .update({
         prompt_snapshot: body.prompt_snapshot,

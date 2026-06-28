@@ -11,7 +11,7 @@ import type {
   TranscriptSegment,
 } from "../types";
 
-type TranscriptRow = Database["public"]["Tables"]["transcripts"]["Row"];
+type TranscriptRow = Database["transcripts"]["Tables"]["transcripts"]["Row"];
 
 function isTranscriptSegmentArray(
   value: unknown,
@@ -68,6 +68,7 @@ export function mapTranscriptRow(row: TranscriptRow): Transcript {
  */
 export async function fetchTranscripts(): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
@@ -89,6 +90,7 @@ export async function fetchTranscriptsPaginated(
   offset: number = 0,
 ): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
@@ -110,6 +112,7 @@ export async function fetchTranscriptById(
   id: string,
 ): Promise<Transcript | null> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("id", id)
@@ -178,6 +181,7 @@ export async function createTranscript(
   };
 
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .insert({
       user_id: userId,
@@ -221,6 +225,7 @@ export async function updateTranscript(
   }
 
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .update(finalUpdates)
     .eq("id", id)
@@ -241,6 +246,7 @@ export async function updateTranscript(
 export async function deleteTranscript(id: string): Promise<void> {
   // First, fetch the transcript to get the audio file path
   const { data: transcript, error: fetchError } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("audio_file_path, video_file_path")
     .eq("id", id)
@@ -263,6 +269,7 @@ export async function deleteTranscript(id: string): Promise<void> {
 
   // Soft delete the transcript record
   const { error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .update({ is_deleted: true })
     .eq("id", id);
@@ -277,7 +284,7 @@ export async function deleteTranscript(id: string): Promise<void> {
  * Permanently delete a transcript
  */
 export async function permanentlyDeleteTranscript(id: string): Promise<void> {
-  const { error } = await supabase.from("transcripts").delete().eq("id", id);
+  const { error } = await supabase.schema("transcripts").from("transcripts").delete().eq("id", id);
 
   if (error) {
     console.error("Error permanently deleting transcript:", error);
@@ -301,6 +308,7 @@ export async function saveDraftTranscript(
   };
 
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .insert({
       user_id: userId,
@@ -363,6 +371,7 @@ export async function finalizeDraft(
   }
 
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .update(finalUpdates)
     .eq("id", id)
@@ -385,6 +394,7 @@ export async function getDraftTranscripts(
   offset: number = 0,
 ): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
@@ -405,6 +415,7 @@ export async function getDraftTranscripts(
  */
 export async function copyTranscript(id: string): Promise<Transcript> {
   const { data: original, error: fetchError } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("id", id)
@@ -417,6 +428,7 @@ export async function copyTranscript(id: string): Promise<Transcript> {
   const userId = requireUserId();
 
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .insert({
       user_id: userId,
@@ -446,6 +458,7 @@ export async function copyTranscript(id: string): Promise<Transcript> {
  */
 export async function searchTranscripts(query: string): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
@@ -467,6 +480,7 @@ export async function getTranscriptsByFolder(
   folderName: string,
 ): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
@@ -486,6 +500,7 @@ export async function getTranscriptsByFolder(
  */
 export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)

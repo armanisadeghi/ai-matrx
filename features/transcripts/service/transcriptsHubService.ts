@@ -11,11 +11,7 @@ import type {
 import type { SessionRow } from "@/features/transcript-studio/service/studioService";
 import { rowToSession } from "@/features/transcript-studio/service/studioService";
 
-type LooseSupabase = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  from: (table: string) => any;
-};
-const db = supabase as unknown as LooseSupabase;
+const transcriptsDb = () => supabase.schema("transcripts");
 
 function parseTranscriptMeta(metadata: unknown): {
   duration: number | null;
@@ -107,8 +103,7 @@ export async function fetchProcessorHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await supabase
-    .from("transcripts")
+  const { data, error, count } = await transcriptsDb().from("transcripts")
     .select(
       "id, title, description, source_type, folder_name, tags, metadata, created_at, updated_at, is_draft",
       { count: "exact" },
@@ -180,7 +175,7 @@ export async function fetchRecordingHubItemsForSessions(
   if (ids.length === 0) return [];
   const kindById = new Map(parents.map((p) => [p.id, p.kind]));
 
-  const { data, error } = await db
+  const { data, error } = await transcriptsDb()
     .from("studio_recording_segments")
     .select("id, session_id, segment_index, started_at, ended_at, updated_at")
     .in("session_id", ids)
@@ -224,7 +219,7 @@ function parentKindFromSessionSource(
 export async function fetchActiveRecordingHubItems(): Promise<
   RecordingHubItem[]
 > {
-  const { data, error } = await db
+  const { data, error } = await transcriptsDb()
     .from("studio_recording_segments")
     .select(
       "id, session_id, segment_index, started_at, ended_at, updated_at, studio_sessions!inner(source)",
@@ -269,7 +264,7 @@ export async function fetchHubSessionItemsByIds(
 ): Promise<Array<SessionHubItem | CleanupHubItem>> {
   if (ids.length === 0) return [];
 
-  const { data, error } = await db
+  const { data, error } = await transcriptsDb()
     .from("studio_sessions")
     .select("*")
     .in("id", ids)
@@ -298,7 +293,7 @@ export async function fetchSessionHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await db
+  const { data, error, count } = await transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
@@ -326,7 +321,7 @@ export async function fetchCleanupHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await db
+  const { data, error, count } = await transcriptsDb()
     .from("studio_sessions")
     .select("*", { count: "exact" })
     .eq("is_deleted", false)
@@ -355,7 +350,7 @@ export async function fetchUnsortedHubPage(
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await db
+  const { data, error, count } = await transcriptsDb()
     .from("studio_recording_segments")
     .select("*, studio_sessions!inner(source)", { count: "exact" })
     .eq("user_id", userId)

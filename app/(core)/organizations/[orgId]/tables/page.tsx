@@ -12,6 +12,7 @@ const SELECT_COLS = "id, table_name, description, version, updated_at";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
+    .schema("workbench")
     .from("udt_datasets")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
@@ -66,7 +67,9 @@ export default function OrgTablesPage() {
           getHref={getHref}
           emptyTitle="No shared tables yet"
           emptyDescription="Data tables owned by this organization will appear here, along with tables other members share."
-          emptyIcon={<Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />}
+          emptyIcon={
+            <Table className="h-8 w-8 text-cyan-600 dark:text-cyan-400" />
+          }
         />
       )}
     </OrgResourceLayout>

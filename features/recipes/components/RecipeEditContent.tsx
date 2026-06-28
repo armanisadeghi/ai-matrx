@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
+import type { Database, Json } from "@/types/database.types";
 import { toast } from "@/lib/toast-service";
 import { ContentEditorStack } from "@/components/official/content-editor/ContentEditorStack";
 import { RecipeEditHeader } from "@/components/layout/new-layout/PageSpecificHeader";
@@ -104,14 +106,18 @@ export function RecipeEditContent({
         settings: settings,
       };
 
-      const { error } = await supabase.from("compiled_recipe").insert({
-        recipe_id: recipeId,
-        version: newVersion,
-        compiled_recipe: updatedCompiledRecipe,
-        user_id: userId,
-        is_public: false,
-        authenticated_read: false,
-      });
+      const insertRow: Database["graveyard"]["Tables"]["compiled_recipe"]["Insert"] =
+        {
+          recipe_id: recipeId,
+          version: newVersion,
+          compiled_recipe: updatedCompiledRecipe as Json,
+          user_id: userId,
+          is_public: false,
+        };
+
+      const { error } = await graveyardDb(supabase)
+        .from("compiled_recipe")
+        .insert(insertRow);
 
       if (error) throw error;
 

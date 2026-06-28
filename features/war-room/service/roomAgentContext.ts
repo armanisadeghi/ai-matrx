@@ -217,6 +217,7 @@ export async function buildRoomAgentContext(
   const convoBySession = new Map<string, string | null>();
   if (activeStudioSessionIds.length > 0) {
     const { data, error } = await supabase
+      .schema("transcripts")
       .from("studio_sessions")
       .select("id,assistant_conversation_id")
       .in("id", activeStudioSessionIds);

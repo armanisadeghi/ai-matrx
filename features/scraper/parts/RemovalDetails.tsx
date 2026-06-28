@@ -1,6 +1,7 @@
 "use client";
 import { detailsMap, typeMap } from "@/features/scraper/constants";
 import { Checkbox } from "@/features/scraper/reusable/checkbox";
+import { Button } from "@/components/ui/button";
 import React, { useState, useMemo } from "react";
 
 const RemovalDetails = ({ allRemovals }) => {
@@ -294,14 +295,16 @@ const RemovalDetails = ({ allRemovals }) => {
               ))}
             </div>
             <div className="mt-4 flex justify-end space-x-2">
-              <button
-                className="px-4 py-2 bg-gray-300 text-black rounded-md"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setFilterModal(null)}
               >
                 Close
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   const newFilters = { ...filters, [filterModal]: new Set() };
                   setFilters(newFilters);
@@ -309,7 +312,7 @@ const RemovalDetails = ({ allRemovals }) => {
                 }}
               >
                 Clear
-              </button>
+              </Button>
             </div>
           </div>
         </div>

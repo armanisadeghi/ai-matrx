@@ -78,6 +78,7 @@ export async function deleteListAction(listId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_picklists")
     .delete()
     .eq("id", listId)
@@ -105,6 +106,7 @@ export async function addItemAction(params: {
   if (!user) throw new Error("Not authenticated");
 
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .insert({
       list_id: params.listId,
@@ -151,6 +153,7 @@ export async function updateItemAction(params: {
   if (params.iconName !== undefined) patch.icon_name = params.iconName;
 
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .update(patch)
     .eq("id", params.itemId)
@@ -171,6 +174,7 @@ export async function deleteItemAction(itemId: string, listId: string) {
   if (!user) throw new Error("Not authenticated");
 
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_picklist_items")
     .delete()
     .eq("id", itemId)

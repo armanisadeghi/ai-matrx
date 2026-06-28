@@ -1,11 +1,20 @@
 "use client";
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
-import { getValueByBookmark, importBookmarks } from "../utils/json-path-navigation-util";
+import {
+  getValueByBookmark,
+  importBookmarks,
+} from "../utils/json-path-navigation-util";
 
 /**
  * A component that displays values from a JSON object using saved bookmarks
@@ -16,7 +25,7 @@ const BookmarkViewer = ({ pageData }) => {
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState("");
   const [showDebug, setShowDebug] = useState(false);
-  
+
   // Handle importing bookmarks from JSON
   const handleImport = () => {
     try {
@@ -25,7 +34,7 @@ const BookmarkViewer = ({ pageData }) => {
         setError("No valid bookmarks found in the imported text");
         return;
       }
-      
+
       setBookmarks(imported);
       setShowImport(false);
       setError("");
@@ -33,20 +42,21 @@ const BookmarkViewer = ({ pageData }) => {
       setError("Failed to import bookmarks. Please check the format.");
     }
   };
-  
+
   // Extract and display a value using a bookmark
   const renderBookmarkValue = (bookmark) => {
-    if (!pageData) return <div className="text-gray-500">No data available</div>;
-    
+    if (!pageData)
+      return <div className="text-muted-foreground">No data available</div>;
+
     try {
       const value = getValueByBookmark(pageData, bookmark);
-      
+
       if (value === undefined || value === null) {
         return <div className="text-yellow-600">Path not found in data</div>;
       }
-      
+
       // Different display for different types of values
-      if (typeof value === 'object') {
+      if (typeof value === "object") {
         return (
           <pre className="text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded-md max-h-36 overflow-auto">
             {formatJson(value)}
@@ -63,17 +73,17 @@ const BookmarkViewer = ({ pageData }) => {
       return <div className="text-red-500">Error: {e.message}</div>;
     }
   };
-  
+
   // Toggle debug information
   const toggleDebug = () => {
     setShowDebug(!showDebug);
   };
-  
+
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Saved Path Values</h2>
-        
+
         <div className="flex gap-2">
           {showImport ? (
             <Button variant="outline" onClick={() => setShowImport(false)}>
@@ -84,7 +94,7 @@ const BookmarkViewer = ({ pageData }) => {
               Import Bookmarks
             </Button>
           )}
-          
+
           {bookmarks.length > 0 && (
             <Button variant="outline" onClick={toggleDebug}>
               {showDebug ? "Hide Debug" : "Show Debug"}
@@ -92,13 +102,13 @@ const BookmarkViewer = ({ pageData }) => {
           )}
         </div>
       </div>
-      
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {showImport && (
         <Card>
           <CardHeader>
@@ -113,16 +123,14 @@ const BookmarkViewer = ({ pageData }) => {
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 className="min-h-32"
-                placeholder='Paste your bookmark JSON here...'
+                placeholder="Paste your bookmark JSON here..."
               />
-              <Button onClick={handleImport}>
-                Import
-              </Button>
+              <Button onClick={handleImport}>Import</Button>
             </div>
           </CardContent>
         </Card>
       )}
-      
+
       {bookmarks.length === 0 ? (
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
           <p className="text-gray-500 dark:text-gray-400">
@@ -144,7 +152,7 @@ const BookmarkViewer = ({ pageData }) => {
                   <code className="text-xs block bg-gray-100 dark:bg-gray-800 p-1 rounded">
                     {bookmark.path}
                   </code>
-                  
+
                   {showDebug && (
                     <div className="text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded mt-2 mb-2">
                       <strong>Path Segments:</strong>
@@ -157,7 +165,7 @@ const BookmarkViewer = ({ pageData }) => {
                       </ul>
                     </div>
                   )}
-                  
+
                   <div className="mt-2">
                     <h4 className="text-sm font-medium mb-1">Value:</h4>
                     {renderBookmarkValue(bookmark)}

@@ -131,6 +131,7 @@ export default function TableSettingsModal({
       // udt_datasets (owner OR editor). Only sent when it actually changed.
       if (tableInfo && validationMode !== tableInfo.validation_mode) {
         const { error: modeError } = await supabase
+          .schema("workbench")
           .from("udt_datasets")
           .update({ validation_mode: validationMode })
           .eq("id", tableId);

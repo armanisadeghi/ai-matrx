@@ -27,6 +27,7 @@ export default function WorkbookPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("workbench")
         .from("udt_workbooks")
         .select("description, created_at")
         .eq("id", id)

@@ -181,7 +181,7 @@ const PageContent: React.FC<PageContentProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="h-full flex flex-col w-full bg-textured">
       <div className="flex-1 min-h-0 flex flex-col max-w-full px-2 sm:px-4 lg:px-6 py-4">
         <PageHeader
           title={overview?.page_title}

@@ -7,6 +7,11 @@ import type {
   PcEpisodeWithShow,
   PcSlugLookupResult,
 } from "./types";
+import {
+  mapPcEpisodeRow,
+  mapPcEpisodeWithShowRow,
+  mapPcShowRow,
+} from "./types";
 
 export const podcastService = {
   // ── Shows ──────────────────────────────────────────────────────────────
@@ -17,12 +22,15 @@ export const podcastService = {
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as PcShow[];
+    return (data ?? []).map(mapPcShowRow);
   },
 
   async createShow(
     // rss_settings is nullable + defaultable in the DB, so callers may omit it.
-    payload: Omit<PcShow, "id" | "created_at" | "updated_at" | "rss_settings"> & {
+    payload: Omit<
+      PcShow,
+      "id" | "created_at" | "updated_at" | "rss_settings"
+    > & {
       rss_settings?: PcShow["rss_settings"];
     },
   ): Promise<PcShow> {
@@ -32,7 +40,7 @@ export const podcastService = {
       .select()
       .single();
     if (error) throw error;
-    return data as PcShow;
+    return mapPcShowRow(data);
   },
 
   async updateShow(
@@ -46,7 +54,7 @@ export const podcastService = {
       .select()
       .single();
     if (error) throw error;
-    return data as PcShow;
+    return mapPcShowRow(data);
   },
 
   async removeShow(id: string): Promise<void> {
@@ -62,7 +70,7 @@ export const podcastService = {
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as PcEpisodeWithShow[];
+    return (data ?? []).map((row) => mapPcEpisodeWithShowRow(row));
   },
 
   async fetchEpisodesByShow(showId: string): Promise<PcEpisode[]> {
@@ -72,7 +80,7 @@ export const podcastService = {
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
     if (error) throw error;
-    return data as PcEpisode[];
+    return (data ?? []).map(mapPcEpisodeRow);
   },
 
   async fetchEpisodesForShow(showId: string): Promise<PcEpisodeWithShow[]> {
@@ -82,7 +90,7 @@ export const podcastService = {
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
     if (error) throw error;
-    return data as PcEpisodeWithShow[];
+    return (data ?? []).map((row) => mapPcEpisodeWithShowRow(row));
   },
 
   async fetchEpisodesByUser(userId: string): Promise<PcEpisodeWithShow[]> {
@@ -92,7 +100,7 @@ export const podcastService = {
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data as PcEpisodeWithShow[];
+    return (data ?? []).map((row) => mapPcEpisodeWithShowRow(row));
   },
 
   async fetchShowById(id: string): Promise<PcShow | null> {
@@ -102,7 +110,7 @@ export const podcastService = {
       .eq("id", id)
       .single();
     if (error) return null;
-    return data as PcShow;
+    return mapPcShowRow(data);
   },
 
   async fetchEpisodeById(id: string): Promise<PcEpisodeWithShow | null> {
@@ -112,7 +120,7 @@ export const podcastService = {
       .eq("id", id)
       .single();
     if (error) return null;
-    return data as PcEpisodeWithShow;
+    return mapPcEpisodeWithShowRow(data);
   },
 
   async createEpisode(
@@ -133,7 +141,7 @@ export const podcastService = {
       .select()
       .single();
     if (error) throw error;
-    return data as PcEpisode;
+    return mapPcEpisodeRow(data);
   },
 
   async updateEpisode(
@@ -147,7 +155,7 @@ export const podcastService = {
       .select()
       .single();
     if (error) throw error;
-    return data as PcEpisode;
+    return mapPcEpisodeRow(data);
   },
 
   async removeEpisode(id: string): Promise<void> {
@@ -168,7 +176,7 @@ export const podcastService = {
       .single();
 
     if (episode) {
-      return { type: "episode", data: episode as PcEpisodeWithShow };
+      return { type: "episode", data: mapPcEpisodeWithShowRow(episode) };
     }
 
     // Fall back to shows
@@ -179,7 +187,7 @@ export const podcastService = {
       .single();
 
     if (show) {
-      return { type: "show", data: show as PcShow };
+      return { type: "show", data: mapPcShowRow(show) };
     }
 
     return null;

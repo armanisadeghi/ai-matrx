@@ -22,6 +22,7 @@ async function isDatasetNameTaken(
   name: string,
 ): Promise<boolean> {
   const { data } = await supabase
+    .schema("workbench")
     .from("udt_datasets")
     .select("id")
     .eq("user_id", userId)

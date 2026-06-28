@@ -65,6 +65,7 @@ export default function CreateTableModal({
     setCheckingName(true);
     try {
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_datasets")
         .select("id")
         .eq("table_name", name)

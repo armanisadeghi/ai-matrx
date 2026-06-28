@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import type { Metadata } from "next";
 
@@ -11,7 +12,7 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: recipe } = await supabase
+  const { data: recipe } = await graveyardDb(supabase)
     .from("recipe")
     .select("name, description")
     .eq("id", id)

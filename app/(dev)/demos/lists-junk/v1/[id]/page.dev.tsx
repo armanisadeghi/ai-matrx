@@ -21,6 +21,7 @@ async function getListDetail(listId: string): Promise<{
     const [rpcResult, ownerResult] = await Promise.all([
       supabase.rpc("get_user_list_with_items", { p_list_id: listId }),
       supabase
+        .schema("workbench")
         .from("udt_picklists")
         .select("user_id")
         .eq("id", listId)

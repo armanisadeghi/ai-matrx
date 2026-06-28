@@ -55,6 +55,7 @@ export async function createDocument(
   }
 
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_documents")
     .insert({
       document_name: args.name,
@@ -78,6 +79,7 @@ export async function listAccessibleDocuments(): Promise<
 > {
   // RLS handles owner / public / shared visibility.
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_documents")
     .select("*")
     .order("updated_at", { ascending: false });
@@ -89,6 +91,7 @@ export async function getDocument(
   documentId: string,
 ): Promise<ServiceResult<DocumentRow>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_documents")
     .select("*")
     .eq("id", documentId)
@@ -102,6 +105,7 @@ export async function renameDocument(
   name: string,
 ): Promise<ServiceResult<DocumentRow>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_documents")
     .update({ document_name: name, updated_at: new Date().toISOString() })
     .eq("id", documentId)
@@ -115,6 +119,7 @@ export async function deleteDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_documents")
     .delete()
     .eq("id", documentId);
@@ -134,6 +139,7 @@ export async function getLatestDocumentSnapshot(
   documentId: string,
 ): Promise<ServiceResult<DocumentSnapshot | null>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_document_snapshots")
     .select("*")
     .eq("document_id", documentId)
@@ -156,6 +162,7 @@ export async function saveDocumentSnapshot(
 ): Promise<ServiceResult<DocumentSnapshot>> {
   const { data: userData } = await supabase.auth.getUser();
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_document_snapshots")
     .insert({
       document_id: args.documentId,
@@ -171,6 +178,7 @@ export async function saveDocumentSnapshot(
   // Touch the parent document's updated_at so list views can sort by recency
   // without scanning snapshots. Best-effort — failure here is harmless.
   await supabase
+    .schema("workbench")
     .from("udt_documents")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", args.documentId);
@@ -183,6 +191,7 @@ export async function listDocumentSnapshots(
   limit = 50,
 ): Promise<ServiceResult<DocumentSnapshot[]>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_document_snapshots")
     .select("id, document_id, label, origin, created_by, created_at")
     .eq("document_id", documentId)

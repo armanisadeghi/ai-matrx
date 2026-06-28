@@ -22,17 +22,17 @@ const ContentTabs = ({ activeTab, setActiveTab }) => {
   return (
     <div className="relative w-full rounded-t-none">
       {/* Scroll buttons visible on smaller screens */}
-      <button 
+      <button
         onClick={() => scrollTabs("left")}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-textured rounded-full p-1 shadow-md md:hidden"
         aria-label="Scroll left"
       >
         <ChevronLeft size={18} />
       </button>
-      
-      <TabsList 
+
+      <TabsList
         ref={tabsRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide py-1 px-6 md:px-0 rounded-t-none bg-slate-800 rounded-b-lg shadow-md border-b border-slate-700"
+        className="flex h-auto gap-1 overflow-x-auto scrollbar-hide py-1 px-6 md:px-0 rounded-t-none rounded-b-lg shadow-md border-b border-border bg-muted"
       >
         <TabsTrigger value="pretty">Pretty</TabsTrigger>
         <TabsTrigger value="reader">Reader</TabsTrigger>
@@ -52,8 +52,8 @@ const ContentTabs = ({ activeTab, setActiveTab }) => {
         <TabsTrigger value="bookmark-viewer">Bookmarks</TabsTrigger>
         <TabsTrigger value="fancy-json-explorer">Fancy Explorer</TabsTrigger>
       </TabsList>
-      
-      <button 
+
+      <button
         onClick={() => scrollTabs("right")}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-textured rounded-full p-1 shadow-md md:hidden"
         aria-label="Scroll right"

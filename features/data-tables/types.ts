@@ -7,7 +7,7 @@
  */
 import type { Database } from "@/types/database.types";
 
-type T = Database["public"]["Tables"];
+type T = Database["workbench"]["Tables"];
 type E = Database["public"]["Enums"];
 
 // ─── Row shapes (from Supabase) ──────────────────────────────────────────────

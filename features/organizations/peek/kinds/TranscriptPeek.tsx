@@ -28,6 +28,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("transcripts")
         .from("transcripts")
         .select("title, description, created_at")
         .eq("id", id)
@@ -59,7 +60,9 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
                 {row.description}
               </div>
             ) : (
-              <span className="text-muted-foreground italic">No description</span>
+              <span className="text-muted-foreground italic">
+                No description
+              </span>
             )}
           </PeekField>
           <PeekField label="Created">

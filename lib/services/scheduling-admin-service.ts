@@ -6,6 +6,7 @@
 // service.ts. NEVER call this from non-admin UI.
 
 import { supabase } from "@/utils/supabase/client";
+import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type {
@@ -42,7 +43,7 @@ export async function fetchAllTasksAdmin(
     limit?: number;
   } = {},
 ): Promise<AdminTaskRow[]> {
-  let q = supabase
+  let q = schedulerDb(supabase)
     .from("sch_task")
     .select(
       `
@@ -119,7 +120,7 @@ export async function fetchAllRunsAdmin(
     since?: string | null;
   } = {},
 ): Promise<SchRunRow[]> {
-  let q = supabase
+  let q = schedulerDb(supabase)
     .from("sch_run")
     .select("*")
     .order("created_at", { ascending: false })
@@ -138,7 +139,7 @@ export async function fetchAllRunsAdmin(
 
 export async function fetchOrphanLeases(): Promise<SchRunRow[]> {
   const nowIso = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await schedulerDb(supabase)
     .from("sch_run")
     .select("*")
     .in("status", ["claimed", "running"])
@@ -168,18 +169,18 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
   const [tasksTotal, tasksEnabled, upcoming, runs24h, failures24h, orphans] =
     await Promise.all([
       // total tasks
-      supabase
+      schedulerDb(supabase)
         .from("sch_task")
         .select("*", { head: true, count: "exact" })
         .then(unwrapCount),
       // enabled tasks
-      supabase
+      schedulerDb(supabase)
         .from("sch_task")
         .select("*", { head: true, count: "exact" })
         .eq("enabled", true)
         .then(unwrapCount),
       // due in next hour
-      supabase
+      schedulerDb(supabase)
         .from("sch_task")
         .select("*", { head: true, count: "exact" })
         .eq("enabled", true)
@@ -187,20 +188,20 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
         .gte("next_due_at", nowIso)
         .then(unwrapCount),
       // runs last 24h
-      supabase
+      schedulerDb(supabase)
         .from("sch_run")
         .select("*", { head: true, count: "exact" })
         .gte("created_at", dayAgoIso)
         .then(unwrapCount),
       // failures last 24h
-      supabase
+      schedulerDb(supabase)
         .from("sch_run")
         .select("*", { head: true, count: "exact" })
         .gte("created_at", dayAgoIso)
         .eq("status", "failed")
         .then(unwrapCount),
       // orphan leases
-      supabase
+      schedulerDb(supabase)
         .from("sch_run")
         .select("*", { head: true, count: "exact" })
         .in("status", ["claimed", "running"])
@@ -229,7 +230,7 @@ function unwrapCount(res: {
 // ── Admin mutations ────────────────────────────────────────────────────────
 
 export async function disableTaskAdmin(taskId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await schedulerDb(supabase)
     .from("sch_task")
     .update({ enabled: false })
     .eq("id", taskId);
@@ -240,7 +241,7 @@ export async function markRunFailedAdmin(
   runId: string,
   reason: string,
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await schedulerDb(supabase)
     .from("sch_run")
     .update({
       status: "failed",

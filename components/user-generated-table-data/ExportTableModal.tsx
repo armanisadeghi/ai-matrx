@@ -63,6 +63,7 @@ export default function ExportTableModal({
   const fetchFilteredData = async () => {
     // Fetch fields separately since the paginated endpoint doesn't include them
     const { data: fieldsData, error: fieldsError } = await supabase
+      .schema("workbench")
       .from("udt_dataset_fields")
       .select(
         "id, field_name, display_name, data_type, field_order, is_required, default_value, validation_rules",

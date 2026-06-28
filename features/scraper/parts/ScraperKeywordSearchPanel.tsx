@@ -39,7 +39,7 @@ export function ScraperKeywordSearchPageBody({
 
   return (
     <>
-      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-white/50 dark:bg-gray-900/50">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[200px]">
             <Label
@@ -170,7 +170,7 @@ function ScraperKeywordHitCard({
             href={result.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-blue-600 dark:text-blue-400 hover:underline line-clamp-1"
+            className="font-medium text-primary hover:underline line-clamp-1"
           >
             {result.title || result.url || `Result ${index + 1}`}
           </a>

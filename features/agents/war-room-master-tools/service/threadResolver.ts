@@ -70,6 +70,7 @@ export async function resolveThread(
   // for the active audio session.
   let conversationId: string | null = null;
   const { data, error } = await supabase
+    .schema("transcripts")
     .from("studio_sessions")
     .select("assistant_conversation_id")
     .eq("id", studioSessionId)

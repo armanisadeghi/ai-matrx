@@ -73,6 +73,7 @@ async function findSessionByArtifactId(
   // `quiz_metadata->>'artifact_id'` is not directly filterable via .eq, so we
   // use a raw filter. PostgREST supports `cs` (contains) on JSONB columns.
   const { data, error } = await supabase
+    .schema("education")
     .from("quiz_sessions")
     .select("id, state, is_completed, completed_at")
     .eq("user_id", userId)
@@ -176,6 +177,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
       if (existingSessionId) {
         // UPDATE existing session.
         const { error } = await supabase
+          .schema("education")
           .from("quiz_sessions")
           .update({
             state: quizState as unknown as import("@/types/database.types").Json,
@@ -191,7 +193,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
         }
       } else {
         // INSERT a new session. Embed artifactId in quiz_metadata for future lookup.
-        const { error } = await supabase.from("quiz_sessions").insert({
+        const { error } = await supabase.schema("education").from("quiz_sessions").insert({
           user_id: userId,
           state: quizState as unknown as import("@/types/database.types").Json,
           is_completed: isCompleted,

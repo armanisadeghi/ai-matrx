@@ -26,6 +26,7 @@ export default function QuizPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("education")
         .from("quiz_sessions")
         .select("title, created_at")
         .eq("id", id)

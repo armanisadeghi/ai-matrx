@@ -45,6 +45,7 @@ export function useRowVersions(
     setState((s) => ({ ...s, loading: true, error: null }));
 
     supabase
+      .schema("workbench")
       .from("udt_dataset_row_versions")
       .select("*")
       .eq("row_id", rowId)

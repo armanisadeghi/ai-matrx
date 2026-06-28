@@ -26,6 +26,7 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("education")
         .from("flashcard_data")
         .select("topic, created_at")
         .eq("id", id)

@@ -51,7 +51,9 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
 
     // Fetch the original prompt
-    const { data: originalPrompt, error: fetchError } = await graveyardDb(supabase)
+    const { data: originalPrompt, error: fetchError } = await graveyardDb(
+      supabase,
+    )
       .from("prompts")
       .select("*")
       .eq("id", id)
@@ -73,7 +75,7 @@ export async function POST(
       body.system_prompt_id || generateSystemPromptId(originalPrompt.name);
 
     // Check if a system prompt with this ID already exists
-    const { data: existingSystemPrompt } = await supabase
+    const { data: existingSystemPrompt } = await graveyardDb(supabase)
       .from("system_prompts")
       .select("id, system_prompt_id")
       .eq("system_prompt_id", systemPromptId)
@@ -171,7 +173,9 @@ export async function POST(
 
     // system_prompts is RLS-protected with no write policy — use the admin client.
     const admin = createAdminClient();
-    const { data: newSystemPrompt, error: insertError } = await admin
+    const { data: newSystemPrompt, error: insertError } = await graveyardDb(
+      admin,
+    )
       .from("system_prompts")
       .insert({
         system_prompt_id: systemPromptId,

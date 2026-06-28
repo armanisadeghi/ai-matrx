@@ -2,14 +2,21 @@
 
 import { createClient } from "@/utils/supabase/server";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
-import type { Database, Json } from "@/types/database.types";
+import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
 import { mapQuizSessionRow } from "@/utils/quiz-session-mapper";
 
 export type { QuizSession } from "@/types/quiz-session";
 
-type QuizSessionUpdate =
-  Database["public"]["Tables"]["quiz_sessions"]["Update"];
+// quiz_sessions is in the `education` schema. Type will resolve to
+// Database["education"]["Tables"]["quiz_sessions"]["Update"] once `education`
+// is added to PGRST_DB_SCHEMAS and types are regenerated.
+type QuizSessionUpdate = {
+  state?: unknown;
+  is_completed?: boolean | null;
+  completed_at?: string | null;
+  title?: string | null;
+};
 
 /**
  * Check if a quiz with the same content hash already exists
@@ -30,6 +37,7 @@ export async function findExistingQuizByHash(
     }
 
     const { data, error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .select("*")
       .eq("user_id", user.id)
@@ -86,6 +94,7 @@ export async function createQuizSession(
     }
 
     const { data, error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .insert({
         user_id: user.id,
@@ -150,6 +159,7 @@ export async function updateQuizSession(
     };
 
     const { data, error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .update(updateData)
       .eq("id", id)
@@ -196,6 +206,7 @@ export async function getQuizSession(
     }
 
     const { data, error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .select("*")
       .eq("id", id)
@@ -240,6 +251,7 @@ export async function getUserQuizSessions(options?: {
     }
 
     let query = supabase
+      .schema("education")
       .from("quiz_sessions")
       .select("*")
       .eq("user_id", user.id)
@@ -301,6 +313,7 @@ export async function deleteQuizSession(
     }
 
     const { error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .delete()
       .eq("id", id)
@@ -338,6 +351,7 @@ export async function updateQuizTitle(
     }
 
     const { error } = await supabase
+      .schema("education")
       .from("quiz_sessions")
       .update({ title })
       .eq("id", id)

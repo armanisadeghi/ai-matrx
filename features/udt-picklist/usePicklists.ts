@@ -55,6 +55,7 @@ export function usePicklists() {
       setLoadingLists(true);
       try {
         const { data, error: err } = await supabase
+          .schema("workbench")
           .from("udt_picklists")
           .select("*, udt_picklist_items(count)")
           .order("updated_at", { ascending: false, nullsFirst: false });
@@ -99,6 +100,7 @@ export function usePicklists() {
       setLoadingItems(true);
       try {
         const { data, error: err } = await supabase
+          .schema("workbench")
           .from("udt_picklist_items")
           .select("*")
           .eq("list_id", activeListId)

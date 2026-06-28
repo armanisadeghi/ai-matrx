@@ -17,33 +17,38 @@ const PageTabs = ({ responses, activePageIndex, setActivePageIndex }) => {
    */
   const getPageTitle = (processedData, index) => {
     const defaultTitle = `Page ${index + 1}`;
-    
+
     try {
       // Try to get title from the first result's overview
       const firstResult = processedData?.results?.[0];
       if (firstResult?.overview?.page_title) {
         return firstResult.overview.page_title;
       }
-      
+
       // Fallback to URL
       if (firstResult?.overview?.url) {
         return firstResult.overview.url;
       }
-      
+
       // Log any missing title data for debugging
-      console.log(`[PAGE TABS] No title found for page ${index}, data:`, processedData);
-      
+      console.log(
+        `[PAGE TABS] No title found for page ${index}, data:`,
+        processedData,
+      );
     } catch (error) {
-      console.error(`[PAGE TABS] Error extracting title for page ${index}:`, error);
+      console.error(
+        `[PAGE TABS] Error extracting title for page ${index}:`,
+        error,
+      );
     }
-    
+
     return defaultTitle;
   };
 
   return (
-    <div className=" bg-slate-200 dark:bg-slate-800 border-b border-slate-200 dark:border-gray-700 p-0">
-      <Tabs 
-        value={String(activePageIndex)} 
+    <div className="bg-muted/50 border-b border-border p-0">
+      <Tabs
+        value={String(activePageIndex)}
         onValueChange={(value) => setActivePageIndex(parseInt(value))}
       >
         <TabsList className="flex flex-wrap gap-1">

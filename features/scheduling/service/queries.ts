@@ -11,6 +11,7 @@
 // the data shape consistent across the FE.
 
 import { supabase } from "@/utils/supabase/client";
+import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
@@ -151,7 +152,7 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
   // reversible UI state, delete is gone-from-user-view. Matches the
   // aidream /scheduler/tasks router and the partial index
   // sch_task_user_id_active_idx.
-  const { data, error } = await supabase
+  const { data, error } = await schedulerDb(supabase)
     .from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
@@ -166,7 +167,7 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // Returns null on soft-deleted rows so the edit/detail pages render
   // their "not found" branch instead of letting users re-edit a row
   // they've already deleted.
-  const { data, error } = await supabase
+  const { data, error } = await schedulerDb(supabase)
     .from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
@@ -203,7 +204,7 @@ export async function updateAgentTaskFields(
   patch: AgentTaskFieldsPatch,
 ): Promise<void> {
   if (Object.keys(patch).length === 0) return;
-  const { error } = await supabase
+  const { error } = await schedulerDb(supabase)
     .from("sch_agent_task")
     .update(patch)
     .eq("id", id);
@@ -216,7 +217,7 @@ export async function listRunsForTask(
   taskId: string,
   limit = 20,
 ): Promise<SchRunRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await schedulerDb(supabase)
     .from("sch_run")
     .select("*")
     .eq("task_id", taskId)

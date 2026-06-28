@@ -9260,6 +9260,51 @@
         }
       }
     },
+    "/scraper/admin/crawl/{run_id}/force-fail": {
+      "post": {
+        "tags": [
+          "Scraper Admin"
+        ],
+        "summary": "Crawl Force Fail",
+        "description": "Force a stranded run to ``failed`` — no worker cooperation required.",
+        "operationId": "crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Crawl Force Fail Scraper Admin Crawl  Run Id  Force Fail Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scraper/admin/crawl/{run_id}/resume": {
       "post": {
         "tags": [
@@ -10707,7 +10752,7 @@
           "Admin / Runtime Spine"
         ],
         "summary": "Conversation Executions",
-        "description": "Every runtime execution tree linked to a cx_conversation — one per request that\nran on the spine (multi-turn conversations accrue several).",
+        "description": "Every runtime execution tree linked to a conversation (chat.conversation) — one\nper request that ran on the spine (multi-turn conversations accrue several).",
         "operationId": "conversation_executions_admin_runtime_conversations__conversation_id__get",
         "parameters": [
           {
@@ -11896,66 +11941,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -52398,61 +52383,6 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -60697,7 +60627,7 @@
             },
             "type": "object",
             "title": "By Visibility Route",
-            "description": "How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_share, cld_perm_user, cld_perm_group, cld_perm_folder."
+            "description": "How each visible chunk became visible to the caller: owned, org_member, library_doc, library_short_code, note_perm, note_public, cld_perm_user, cld_perm_group, cld_perm_folder."
           },
           "top_sources": {
             "items": {

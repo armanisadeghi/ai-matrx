@@ -75,7 +75,8 @@ export function useMessages(
       try {
         // Fetch the most recent messages (descending to get newest first, then reverse for display)
         const { data: rawData, error: fetchError } = await supabase
-          .schema("communication").from("dm_messages")
+          .schema("communication")
+          .from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -315,7 +316,8 @@ export function useMessages(
 
     try {
       const { data, error: fetchError } = await supabase
-        .schema("communication").from("dm_messages")
+        .schema("communication")
+        .from("dm_messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
@@ -582,7 +584,8 @@ export function useConversations(
           }
 
           const { data: participants } = await supabase
-            .schema("communication").from("dm_conversation_participants")
+            .schema("communication")
+            .from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", conversationId);
 
@@ -754,7 +757,8 @@ export function useConversations(
 
       // Create new conversation
       const { data: newConv, error: createError } = await supabase
-        .schema("communication").from("dm_conversations")
+        .schema("communication")
+        .from("dm_conversations")
         .insert({
           type: "direct",
           created_by: userId,
@@ -767,7 +771,8 @@ export function useConversations(
 
       // Add both participants
       const { error: participantError } = await supabase
-        .schema("communication").from("dm_conversation_participants")
+        .schema("communication")
+        .from("dm_conversation_participants")
         .insert([
           { conversation_id: newConv.id, user_id: userId, role: "owner" },
           {

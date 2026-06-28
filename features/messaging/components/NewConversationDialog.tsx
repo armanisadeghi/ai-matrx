@@ -26,8 +26,12 @@ import { createClient } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useDebounce } from "@/features/tasks/hooks/useDebounce";
-import { useUserConnections, type ConnectionUser } from "../hooks/useUserConnections";
+import {
+  useUserConnections,
+  type ConnectionUser,
+} from "../hooks/useUserConnections";
 import type { UserBasicInfo } from "../types";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
 interface NewConversationDialogProps {
@@ -39,7 +43,8 @@ interface NewConversationDialogProps {
 interface SearchResult extends UserBasicInfo {
   match_score?: number;
 }
-type _CheckSearchResult = DbRpcRow<"search_users_intelligent"> extends SearchResult ? true : false;
+type _CheckSearchResult =
+  DbRpcRow<"search_users_intelligent"> extends SearchResult ? true : false;
 declare const _searchResult: _CheckSearchResult;
 true satisfies typeof _searchResult;
 
@@ -47,11 +52,13 @@ interface LookupUserByEmailRow {
   user_id: string;
   user_email: string;
 }
-type _CheckLookupUserByEmailRow = LookupUserByEmailRow extends DbRpcRow<"lookup_user_by_email"> ? true : false;
+type _CheckLookupUserByEmailRow =
+  LookupUserByEmailRow extends DbRpcRow<"lookup_user_by_email"> ? true : false;
 declare const _lookupUserByEmailRow: _CheckLookupUserByEmailRow;
 true satisfies typeof _lookupUserByEmailRow;
 
-type _CheckUserBasicInfo = UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
+type _CheckUserBasicInfo =
+  UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
 declare const _dmUserInfo: _CheckUserBasicInfo;
 true satisfies typeof _dmUserInfo;
 
@@ -71,7 +78,7 @@ export function NewConversationDialog({
   const currentUserId = user?.id;
 
   const { connections, isLoading: connectionsLoading } = useUserConnections();
-  
+
   // Use ref to avoid recreating supabase client on every render
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -80,44 +87,61 @@ export function NewConversationDialog({
    * Create or find existing conversation
    * Realtime subscription in MessagingInitializer handles Redux updates
    */
-  const createConversation = useCallback(async (participantId: string): Promise<string> => {
-    if (!currentUserId) throw new Error('User not authenticated');
+  const createConversation = useCallback(
+    async (participantId: string): Promise<string> => {
+      if (!currentUserId) throw new Error("User not authenticated");
 
-    // First check if conversation already exists
-    const { data: existingConv } = await supabase
-      .rpc('find_dm_direct_conversation', {
-        p_user1_id: currentUserId,
-        p_user2_id: participantId,
-      });
+      // First check if conversation already exists
+      const { data: existingConv } = await supabase.rpc(
+        "find_dm_direct_conversation",
+        {
+          p_user1_id: currentUserId,
+          p_user2_id: participantId,
+        },
+      );
 
-    if (existingConv) {
-      return existingConv;
-    }
+      if (existingConv) {
+        return existingConv;
+      }
 
-    // Create new conversation
-    const { data: newConv, error: createError } = await supabase
-      .schema('communication').from('dm_conversations')
-      .insert({
-        type: 'direct',
-        created_by: currentUserId,
-      })
-      .select()
-      .single();
+      // Create new conversation
+      const organizationId = await resolvePersonalOrgId();
+      const { data: newConv, error: createError } = await supabase
+        .schema("communication")
+        .from("dm_conversations")
+        .insert({
+          type: "direct",
+          created_by: currentUserId,
+          organization_id: organizationId,
+        })
+        .select()
+        .single();
 
-    if (createError) throw createError;
+      if (createError) throw createError;
 
-    // Add both participants - this triggers realtime subscription in MessagingInitializer
-    const { error: participantError } = await supabase
-      .schema('communication').from('dm_conversation_participants')
-      .insert([
-        { conversation_id: newConv.id, user_id: currentUserId, role: 'owner' },
-        { conversation_id: newConv.id, user_id: participantId, role: 'member' },
-      ]);
+      // Add both participants - this triggers realtime subscription in MessagingInitializer
+      const { error: participantError } = await supabase
+        .schema("communication")
+        .from("dm_conversation_participants")
+        .insert([
+          {
+            conversation_id: newConv.id,
+            user_id: currentUserId,
+            role: "owner",
+          },
+          {
+            conversation_id: newConv.id,
+            user_id: participantId,
+            role: "member",
+          },
+        ]);
 
-    if (participantError) throw participantError;
+      if (participantError) throw participantError;
 
-    return newConv.id;
-  }, [currentUserId, supabase]);
+      return newConv.id;
+    },
+    [currentUserId, supabase],
+  );
 
   // Debounce search query (300ms)
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -145,7 +169,7 @@ export function NewConversationDialog({
             search_term: query,
             current_user_id: currentUserId,
             max_results: 10,
-          }
+          },
         );
 
         if (searchError) {
@@ -153,17 +177,18 @@ export function NewConversationDialog({
           // Fallback to basic email lookup
           const { data: fallbackData } = await supabase.rpc(
             "lookup_user_by_email",
-            { lookup_email: query.toLowerCase() }
+            { lookup_email: query.toLowerCase() },
           );
 
           if (fallbackData && fallbackData.length > 0) {
-            const fallbackRows = fallbackData as unknown as LookupUserByEmailRow[];
+            const fallbackRows =
+              fallbackData as unknown as LookupUserByEmailRow[];
             const results: SearchResult[] = [];
             for (const row of fallbackRows) {
               if (row.user_id !== currentUserId) {
                 const { data: userInfo } = await supabase.rpc(
                   "get_dm_user_info",
-                  { p_user_id: row.user_id }
+                  { p_user_id: row.user_id },
                 );
                 const userRows = userInfo as unknown as UserBasicInfo[];
                 if (userRows && userRows[0]) {
@@ -217,14 +242,20 @@ export function NewConversationDialog({
         setSearchResults([]);
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Failed to create conversation"
+          err instanceof Error ? err.message : "Failed to create conversation",
         );
       } finally {
         setIsCreating(false);
         setCreatingUserId(null);
       }
     },
-    [currentUserId, createConversation, onConversationCreated, onOpenChange, isCreating]
+    [
+      currentUserId,
+      createConversation,
+      onConversationCreated,
+      onOpenChange,
+      isCreating,
+    ],
   );
 
   // Get initials from name
@@ -263,8 +294,16 @@ export function NewConversationDialog({
   }, [open]);
 
   const isActiveSearch = searchQuery.trim().length >= 2;
-  const showSearchResults = isActiveSearch && (isSearching || searchResults.length > 0 || debouncedSearchQuery.length >= 2);
-  const showNoResults = isActiveSearch && !isSearching && searchResults.length === 0 && debouncedSearchQuery === searchQuery;
+  const showSearchResults =
+    isActiveSearch &&
+    (isSearching ||
+      searchResults.length > 0 ||
+      debouncedSearchQuery.length >= 2);
+  const showNoResults =
+    isActiveSearch &&
+    !isSearching &&
+    searchResults.length === 0 &&
+    debouncedSearchQuery === searchQuery;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -426,7 +465,7 @@ function UserListItem({
         "w-full flex items-center gap-3 p-3 text-left transition-colors",
         "hover:bg-muted/50 active:bg-muted",
         "min-h-[56px]", // Minimum tap target size
-        disabled && "opacity-50 cursor-not-allowed"
+        disabled && "opacity-50 cursor-not-allowed",
       )}
     >
       <Avatar className="h-10 w-10 flex-shrink-0">

@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
@@ -48,7 +49,8 @@ export async function createOrganization(
   options: CreateOrganizationOptions,
 ): Promise<OrganizationResult> {
   try {
-    const { name, slug, description, logoUrl, logoFileId, website, settings } = options;
+    const { name, slug, description, logoUrl, logoFileId, website, settings } =
+      options;
 
     // Validate
     const nameValidation = validateOrgName(name);
@@ -319,10 +321,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
     // `organizations` — we resolve those in a second public-table read.
     const membersResult = await membershipsService.forUser("organization");
     if (isScopesRpcErr(membersResult)) {
-      console.error(
-        "Error fetching user organizations:",
-        membersResult.error,
-      );
+      console.error("Error fetching user organizations:", membersResult.error);
       return [];
     }
 
@@ -346,7 +345,10 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
     }
 
     // Batch member counts — one round-trip instead of N.
-    const countsResult = await membershipsService.counts("organization", orgIds);
+    const countsResult = await membershipsService.counts(
+      "organization",
+      orgIds,
+    );
     const countByOrgId = new Map<string, number>();
     if (!isScopesRpcErr(countsResult)) {
       for (const c of countsResult.data.counts) {
@@ -687,7 +689,7 @@ export async function getOrganizationInvitations(
   orgId: string,
 ): Promise<OrganizationInvitation[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("organization_invitations")
       .select("*")
       .eq("organization_id", orgId)
@@ -711,7 +713,7 @@ export async function cancelInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
   try {
-    const { error } = await supabase
+    const { error } = await graveyardDb(supabase)
       .from("organization_invitations")
       .delete()
       .eq("id", invitationId);
@@ -846,7 +848,7 @@ export async function getUserInvitations(): Promise<
   try {
     const currentUserId = requireUserId();
 
-    const { data, error } = await supabase
+    const { data, error } = await graveyardDb(supabase)
       .from("organization_invitations")
       .select("*, organizations(*)")
       .eq("email", getUserEmail())

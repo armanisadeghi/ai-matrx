@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { buildSearchOr } from "@/utils/supabase-search";
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
 
     // Build query
-    let query = supabase.from("system_prompts").select("*");
+    let query = graveyardDb(supabase).from("system_prompts").select("*");
 
     // Apply filters
     if (category) {
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if system_prompt_id already exists
-    const { data: existing } = await supabase
+    const { data: existing } = await graveyardDb(supabase)
       .from("system_prompts")
       .select("id")
       .eq("system_prompt_id", body.system_prompt_id)
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     // system_prompts is RLS-protected with no write policy — use the admin
     // client for the write (super-admin already verified above).
     const admin = createAdminClient();
-    const { data, error } = await admin
+    const { data, error } = await graveyardDb(admin)
       .from("system_prompts")
       .insert({
         system_prompt_id: body.system_prompt_id,

@@ -220,6 +220,18 @@ export async function POST(request: NextRequest) {
     // Verify all participants exist in auth.users
     // We can use lookup_user_by_email or just try to create - RLS will handle invalid users
 
+    // Resolve the creator's personal org (org-scoped write; never-null fallback).
+    const { data: organizationId, error: orgError } = await supabase.rpc(
+      "current_personal_org_id",
+    );
+    if (orgError || !organizationId) {
+      console.error("[DM Conversations API] Failed to resolve org:", orgError);
+      return NextResponse.json(
+        { success: false, msg: "Could not resolve organization" },
+        { status: 500 },
+      );
+    }
+
     // Create conversation
     const { data: newConversation, error: createError } = await supabase
       .schema("communication").from("dm_conversations")
@@ -227,6 +239,7 @@ export async function POST(request: NextRequest) {
         type,
         group_name: type === "group" ? group_name : null,
         created_by: userId,
+        organization_id: organizationId,
       })
       .select()
       .single();

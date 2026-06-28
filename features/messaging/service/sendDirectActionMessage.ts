@@ -9,6 +9,7 @@
  * Direct Supabase — no Next.js API hop (the messaging system is client→Supabase).
  */
 
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import type { MessageActionData } from "@/features/messaging/types";
@@ -27,17 +28,26 @@ export async function findOrCreateDirectConversation(
   if (findError) throw findError;
   if (existing) return existing as string;
 
+  const organizationId = await resolvePersonalOrgId();
   const { data: conv, error: createError } = await supabase
-    .schema("communication").from("dm_conversations")
-    .insert({ type: "direct", created_by: currentUserId })
+    .schema("communication")
+    .from("dm_conversations")
+    .insert({
+      type: "direct",
+      created_by: currentUserId,
+      organization_id: organizationId,
+    })
     .select("id")
     .single();
   if (createError) throw createError;
 
-  const { error: partError } = await supabase.schema("communication").from("dm_conversation_participants").insert([
-    { conversation_id: conv.id, user_id: currentUserId, role: "owner" },
-    { conversation_id: conv.id, user_id: recipientId, role: "member" },
-  ]);
+  const { error: partError } = await supabase
+    .schema("communication")
+    .from("dm_conversation_participants")
+    .insert([
+      { conversation_id: conv.id, user_id: currentUserId, role: "owner" },
+      { conversation_id: conv.id, user_id: recipientId, role: "member" },
+    ]);
   if (partError) throw partError;
 
   return conv.id as string;
@@ -60,8 +70,14 @@ export async function sendDirectActionMessage({
   recipientId,
   content,
   actionData,
-}: SendDirectActionMessageArgs): Promise<{ conversationId: string; messageId: string }> {
-  const conversationId = await findOrCreateDirectConversation(currentUserId, recipientId);
+}: SendDirectActionMessageArgs): Promise<{
+  conversationId: string;
+  messageId: string;
+}> {
+  const conversationId = await findOrCreateDirectConversation(
+    currentUserId,
+    recipientId,
+  );
   const message = await getMessagingService().sendMessage(
     conversationId,
     currentUserId,

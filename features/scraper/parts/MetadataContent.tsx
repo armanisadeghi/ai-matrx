@@ -7,9 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
  */
 const MetadataContent = ({ overview }) => {
   if (!overview || Object.keys(overview).length === 0) {
-    return <div className="p-4 text-gray-500 dark:text-gray-400">No metadata available</div>;
+    return (
+      <div className="p-4 text-gray-500 dark:text-gray-400">
+        No metadata available
+      </div>
+    );
   }
-  
+
   return (
     <div className="p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -23,12 +27,14 @@ const MetadataContent = ({ overview }) => {
           } else {
             displayValue = String(value);
           }
-          
+
           return (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">{key}</h4>
-                <div className="text-gray-500 dark:text-gray-400 text-sm">{displayValue}</div>
+                <h4 className="font-medium text-foreground mb-1">{key}</h4>
+                <div className="text-muted-foreground text-sm">
+                  {displayValue}
+                </div>
               </CardContent>
             </Card>
           );

@@ -77,6 +77,7 @@ export function WorkbookHistoryViewer({ workbookId, editable = true }: Props) {
       // until a second consumer needs it.
       const { supabase } = await import("@/utils/supabase/client");
       const { data: full, error: fetchErr } = await supabase
+        .schema("workbench")
         .from("udt_workbook_snapshots")
         .select("snapshot, label")
         .eq("id", snapshotId)

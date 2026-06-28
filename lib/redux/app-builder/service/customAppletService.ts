@@ -8,6 +8,7 @@ import {
 } from "@/types/customAppTypes";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   RuntimeCompiledRecipe,
   RuntimeBrokerDefinition,
@@ -17,6 +18,9 @@ import type { Database, Json } from "@/types/database.types";
 
 export type CustomAppletConfigDB =
   Database["public"]["Tables"]["custom_applet_configs"]["Row"];
+
+type CustomAppletConfigInsert =
+  Database["public"]["Tables"]["custom_applet_configs"]["Insert"];
 
 const KNOWN_LAYOUT_TYPES = [
   "horizontal",
@@ -141,11 +145,11 @@ export const normalizeCustomAppletConfig = (
  */
 export const appletConfigToDBFormat = async (
   config: CustomAppletConfig,
-): Promise<Omit<CustomAppletConfigDB, "created_at" | "updated_at">> => {
+): Promise<CustomAppletConfigInsert> => {
   const userId = requireUserId();
 
   return {
-    id: config.id || null,
+    ...(config.id ? { id: config.id } : {}),
     name: config.name,
     description: config.description || null,
     slug: config.slug,
@@ -170,6 +174,9 @@ export const appletConfigToDBFormat = async (
     image_file_id: config.imageFileId || null,
     app_id: config.appId || null,
     broker_map: config.brokerMap || null,
+    metadata: {} as Json,
+    visibility: "private",
+    created_by: userId,
   };
 };
 
@@ -456,7 +463,7 @@ export const getCustomAppletConfigsByCompiledRecipe = async (
 export const getUserRecipes = async (): Promise<RecipeInfo[]> => {
   const userId = requireUserId();
 
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("recipe")
     .select("id, name, description, version, status, tags")
     .eq("user_id", userId)
@@ -477,7 +484,7 @@ export const getCompiledRecipeByVersion = async (
   recipeId: string,
   version?: number,
 ): Promise<string | null> => {
-  let query = supabase
+  let query = graveyardDb(supabase)
     .from("compiled_recipe")
     .select("id, recipe_id, version")
     .eq("recipe_id", recipeId);
@@ -505,7 +512,7 @@ export const checkCompiledRecipeVersionExists = async (
   recipeId: string,
   version: number,
 ): Promise<boolean> => {
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("compiled_recipe")
     .select("id")
     .eq("recipe_id", recipeId)
@@ -523,7 +530,7 @@ export const checkCompiledRecipeVersionExists = async (
 export const getCompiledRecipeById = async (
   id: string,
 ): Promise<RuntimeCompiledRecipe | null> => {
-  const { data, error } = await supabase
+  const { data, error } = await graveyardDb(supabase)
     .from("compiled_recipe")
     .select("*")
     .eq("id", id)
@@ -577,7 +584,7 @@ export const getCompiledRecipeByVersionWithNeededBrokers = async (
   recipeId: string,
   version?: number,
 ): Promise<AppletSourceConfig | null> => {
-  let query = supabase
+  let query = graveyardDb(supabase)
     .from("compiled_recipe")
     .select("*")
     .eq("recipe_id", recipeId);

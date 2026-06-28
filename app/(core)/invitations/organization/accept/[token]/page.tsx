@@ -19,6 +19,7 @@ import { acceptInvitation } from "@/features/organizations/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import type { OrganizationInvitationWithOrg } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { InlineMediaRef } from "@/features/files";
 
 /**
@@ -82,11 +83,12 @@ export default function AcceptInvitationPage() {
 
       // First, try to fetch just the invitation without join
       console.log("[Invitation] Fetching invitation without join...");
-      const { data: invitationOnly, error: inviteOnlyError } = await supabase
-        .from("organization_invitations")
-        .select("*")
-        .eq("token", token)
-        .single();
+      const { data: invitationOnly, error: inviteOnlyError } =
+        await graveyardDb(supabase)
+          .from("organization_invitations")
+          .select("*")
+          .eq("token", token)
+          .single();
 
       console.log("[Invitation] Invitation-only result:", {
         found: !!invitationOnly,
@@ -168,12 +170,11 @@ export default function AcceptInvitationPage() {
       // Check if user is already a member — canonical membership read
       // (iam.memberships via the mbr_* RPCs).
       const myOrgsResult = await membershipsService.forUser("organization");
-      const alreadyMember =
-        !myOrgsResult.ok
-          ? false
-          : myOrgsResult.data.memberships.some(
-              (m) => m.containerId === data.organization_id,
-            );
+      const alreadyMember = !myOrgsResult.ok
+        ? false
+        : myOrgsResult.data.memberships.some(
+            (m) => m.containerId === data.organization_id,
+          );
 
       if (alreadyMember) {
         setError("You are already a member of this organization");
@@ -321,7 +322,9 @@ export default function AcceptInvitationPage() {
                   fit="cover"
                   rounded="lg"
                   border="subtle"
-                  fallbackIcon={<Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />}
+                  fallbackIcon={
+                    <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />
+                  }
                   className="bg-blue-100 dark:bg-blue-900"
                   alt={invitation.organization.name}
                 />

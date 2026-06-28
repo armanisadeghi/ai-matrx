@@ -62,7 +62,7 @@ begin
     'shortcuts',        (select count(*) from agent.shortcut         where created_by = uid and coalesce(is_active, false) = true),
     'research_reports', (select count(*) from research.rs_topic      where created_by = uid),
     'podcasts',         (select count(*) from public.pc_episodes     where user_id = uid),
-    'messages',         (select count(*) from public.dm_messages     where sender_id = uid and deleted_at is null)
+    'messages',         (select count(*) from communication.dm_messages where sender_id = uid and deleted_at is null)
   );
 end;
 $function$;

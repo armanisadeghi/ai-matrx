@@ -58,6 +58,7 @@ export async function createWorkbook(
   }
 
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .insert({
       workbook_name: args.name,
@@ -81,6 +82,7 @@ export async function listAccessibleWorkbooks(): Promise<
 > {
   // RLS handles owner / public / shared visibility.
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .select("*")
     .order("updated_at", { ascending: false });
@@ -92,6 +94,7 @@ export async function getWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<Workbook>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .select("*")
     .eq("id", workbookId)
@@ -105,6 +108,7 @@ export async function renameWorkbook(
   name: string,
 ): Promise<ServiceResult<Workbook>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .update({ workbook_name: name, updated_at: new Date().toISOString() })
     .eq("id", workbookId)
@@ -118,6 +122,7 @@ export async function deleteWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {
   const { error } = await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .delete()
     .eq("id", workbookId);
@@ -137,6 +142,7 @@ export async function getLatestSnapshot(
   workbookId: string,
 ): Promise<ServiceResult<WorkbookSnapshot | null>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbook_snapshots")
     .select("*")
     .eq("workbook_id", workbookId)
@@ -159,6 +165,7 @@ export async function saveSnapshot(
 ): Promise<ServiceResult<WorkbookSnapshot>> {
   const { data: userData } = await supabase.auth.getUser();
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbook_snapshots")
     .insert({
       workbook_id: args.workbookId,
@@ -174,6 +181,7 @@ export async function saveSnapshot(
   // Touch the parent workbook's updated_at so list views can sort by recency
   // without scanning snapshots. Best-effort — failure here is harmless.
   await supabase
+    .schema("workbench")
     .from("udt_workbooks")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", args.workbookId);
@@ -186,6 +194,7 @@ export async function listSnapshots(
   limit = 50,
 ): Promise<ServiceResult<WorkbookSnapshot[]>> {
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_workbook_snapshots")
     .select("id, workbook_id, label, origin, created_by, created_at")
     .eq("workbook_id", workbookId)

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -14,7 +15,7 @@ export async function generateMetadata({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: recipe } = await supabase
+  const { data: recipe } = await graveyardDb(supabase)
     .from("recipe")
     .select("name, description")
     .eq("id", id)
@@ -46,13 +47,13 @@ export default async function ViewRecipePage({
 
   // Fetch recipe and compiled versions
   const [recipeResult, versionsResult] = await Promise.all([
-    supabase
+    graveyardDb(supabase)
       .from("recipe")
       .select("id, name, description")
       .eq("id", id)
       .eq("user_id", user!.id)
       .single(),
-    supabase
+    graveyardDb(supabase)
       .from("compiled_recipe")
       .select("id, recipe_id, version, compiled_recipe, created_at, updated_at")
       .eq("recipe_id", id)

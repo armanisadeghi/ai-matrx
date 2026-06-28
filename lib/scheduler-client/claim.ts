@@ -16,56 +16,58 @@
 // caller whether the write actually landed.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
+import { schedulerDb } from "@/utils/supabase/schedulerDb";
 
 import {
-    SchedulerClientError,
-    TaskClaimRaceError,
-    isClaimRaceLoss,
+  SchedulerClientError,
+  TaskClaimRaceError,
+  isClaimRaceLoss,
 } from "./errors";
 import type {
-    Json,
-    OutputRef,
-    RunStatus,
-    SchRunInsert,
-    SchRunRow,
-    SchTaskRow,
+  Json,
+  OutputRef,
+  RunStatus,
+  SchRunInsert,
+  SchRunRow,
+  SchTaskRow,
 } from "./types";
 
 /** Default claim lease — matches Python scanner.DEFAULT_LEASE_SECONDS. */
 const DEFAULT_LEASE_SECONDS = 600;
 
 async function resolveOrganizationIdForUser(
-    supabase: SupabaseClient,
-    userId: string,
+  supabase: SupabaseClient,
+  userId: string,
 ): Promise<string> {
-    const { data, error } = await supabase.rpc("ensure_personal_organization", {
-        p_user_id: userId,
-    });
-    if (error || !data) {
-        throw new SchedulerClientError(
-            `Could not resolve organization for user ${userId}: ${error?.message ?? "unknown"}`,
-            error ?? undefined,
-        );
-    }
-    return data;
+  const { data, error } = await supabase.rpc("ensure_personal_organization", {
+    p_user_id: userId,
+  });
+  if (error || !data) {
+    throw new SchedulerClientError(
+      `Could not resolve organization for user ${userId}: ${error?.message ?? "unknown"}`,
+      error ?? undefined,
+    );
+  }
+  return data;
 }
 
 // ── claimTask ──────────────────────────────────────────────────────────────
 
 export interface ClaimTaskOptions {
-    /** Task being claimed. We only need id, user_id, and next_due_at. */
-    task: Pick<SchTaskRow, "id" | "user_id" | "next_due_at">;
-    /** Surface of the claiming host (e.g. 'chrome-extension-chat'). */
-    surface: string;
-    /** Stable per-host instance id. Not written to the row today, but tracked
-     *  in the client envelope for future correlation. */
-    instanceId: string;
-    /** Optional trigger id, written when claiming a scheduled (not manual) run. */
-    triggerId?: string | null;
-    /** Optional queue name (passthrough of sch_task.queue). */
-    queue?: string | null;
-    /** Lease length in seconds. Default 600s, matching Python. */
-    leaseSeconds?: number;
+  /** Task being claimed. We only need id, user_id, and next_due_at. */
+  task: Pick<SchTaskRow, "id" | "user_id" | "next_due_at">;
+  /** Surface of the claiming host (e.g. 'chrome-extension-chat'). */
+  surface: string;
+  /** Stable per-host instance id. Not written to the row today, but tracked
+   *  in the client envelope for future correlation. */
+  instanceId: string;
+  /** Optional trigger id, written when claiming a scheduled (not manual) run. */
+  triggerId?: string | null;
+  /** Optional queue name (passthrough of sch_task.queue). */
+  queue?: string | null;
+  /** Lease length in seconds. Default 600s, matching Python. */
+  leaseSeconds?: number;
 }
 
 /**
@@ -77,68 +79,68 @@ export interface ClaimTaskOptions {
  * the claim_token the caller will need for subsequent updates).
  */
 export async function claimTask(
-    supabase: SupabaseClient,
-    opts: ClaimTaskOptions,
+  supabase: SupabaseClient,
+  opts: ClaimTaskOptions,
 ): Promise<SchRunRow> {
-    const claimToken = crypto.randomUUID();
-    const now = new Date();
-    const lease = opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
-    const expires = new Date(now.getTime() + lease * 1000);
+  const claimToken = crypto.randomUUID();
+  const now = new Date();
+  const lease = opts.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
+  const expires = new Date(now.getTime() + lease * 1000);
 
-    const organizationId = await resolveOrganizationIdForUser(
-        supabase,
-        opts.task.user_id,
+  const organizationId = await resolveOrganizationIdForUser(
+    supabase,
+    opts.task.user_id,
+  );
+
+  const row: SchRunInsert = {
+    task_id: opts.task.id,
+    trigger_id: opts.triggerId ?? null,
+    user_id: opts.task.user_id,
+    organization_id: organizationId,
+    status: "claimed" satisfies RunStatus,
+    surface: opts.surface,
+    queue: opts.queue ?? null,
+    due_at: opts.task.next_due_at ?? now.toISOString(),
+    claimed_at: now.toISOString(),
+    claim_token: claimToken,
+    claim_expires_at: expires.toISOString(),
+  };
+
+  const { data, error } = await schedulerDb(supabase)
+    .from("sch_run")
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) {
+    if (isClaimRaceLoss(error)) {
+      throw new TaskClaimRaceError(opts.task.id, error);
+    }
+    throw new SchedulerClientError(
+      `claimTask failed for task ${opts.task.id}: ${error.message}`,
+      error,
     );
+  }
 
-    const row: SchRunInsert = {
-        task_id: opts.task.id,
-        trigger_id: opts.triggerId ?? null,
-        user_id: opts.task.user_id,
-        organization_id: organizationId,
-        status: "claimed" satisfies RunStatus,
-        surface: opts.surface,
-        queue: opts.queue ?? null,
-        due_at: opts.task.next_due_at ?? now.toISOString(),
-        claimed_at: now.toISOString(),
-        claim_token: claimToken,
-        claim_expires_at: expires.toISOString(),
-    };
+  if (!data) {
+    throw new SchedulerClientError(
+      `claimTask returned no row for task ${opts.task.id}`,
+    );
+  }
 
-    const { data, error } = await supabase
-        .from("sch_run")
-        .insert(row)
-        .select()
-        .single();
-
-    if (error) {
-        if (isClaimRaceLoss(error)) {
-            throw new TaskClaimRaceError(opts.task.id, error);
-        }
-        throw new SchedulerClientError(
-            `claimTask failed for task ${opts.task.id}: ${error.message}`,
-            error,
-        );
-    }
-
-    if (!data) {
-        throw new SchedulerClientError(
-            `claimTask returned no row for task ${opts.task.id}`,
-        );
-    }
-
-    return data as SchRunRow;
+  return data as SchRunRow;
 }
 
 // ── completeRun ────────────────────────────────────────────────────────────
 
 export interface CompleteRunOptions {
-    runId: string;
-    /** Token returned by claimTask — gates the UPDATE so stale leases can't write. */
-    claimToken: string;
-    /** Truncated to 2000 chars to match Python queries.py:273. */
-    resultSummary?: string | null;
-    resultMetadata?: Record<string, Json> | null;
-    outputRef?: OutputRef | null;
+  runId: string;
+  /** Token returned by claimTask — gates the UPDATE so stale leases can't write. */
+  claimToken: string;
+  /** Truncated to 2000 chars to match Python queries.py:273. */
+  resultSummary?: string | null;
+  resultMetadata?: Record<string, Json> | null;
+  outputRef?: OutputRef | null;
 }
 
 /**
@@ -147,42 +149,42 @@ export interface CompleteRunOptions {
  * owns this run, do not write).
  */
 export async function completeRun(
-    supabase: SupabaseClient,
-    opts: CompleteRunOptions,
+  supabase: SupabaseClient,
+  opts: CompleteRunOptions,
 ): Promise<boolean> {
-    const { data, error } = await supabase
-        .from("sch_run")
-        .update({
-            status: "success" satisfies RunStatus,
-            finished_at: new Date().toISOString(),
-            claim_token: null,
-            result_summary: opts.resultSummary?.slice(0, 2000) ?? null,
-            result_metadata: (opts.resultMetadata ?? null) as Json | null,
-            output_ref: (opts.outputRef ?? null) as Json | null,
-        })
-        .eq("id", opts.runId)
-        .eq("claim_token", opts.claimToken)
-        .select("id");
+  const { data, error } = await schedulerDb(supabase)
+    .from("sch_run")
+    .update({
+      status: "success" satisfies RunStatus,
+      finished_at: new Date().toISOString(),
+      claim_token: null,
+      result_summary: opts.resultSummary?.slice(0, 2000) ?? null,
+      result_metadata: (opts.resultMetadata ?? null) as Json | null,
+      output_ref: (opts.outputRef ?? null) as Json | null,
+    })
+    .eq("id", opts.runId)
+    .eq("claim_token", opts.claimToken)
+    .select("id");
 
-    if (error) {
-        throw new SchedulerClientError(
-            `completeRun failed for run ${opts.runId}: ${error.message}`,
-            error,
-        );
-    }
+  if (error) {
+    throw new SchedulerClientError(
+      `completeRun failed for run ${opts.runId}: ${error.message}`,
+      error,
+    );
+  }
 
-    return (data?.length ?? 0) > 0;
+  return (data?.length ?? 0) > 0;
 }
 
 // ── failRun ────────────────────────────────────────────────────────────────
 
 export interface FailRunOptions {
-    runId: string;
-    claimToken: string;
-    /** Truncated to 2000 chars to match Python queries.py:275. */
-    errorMessage: string;
-    resultMetadata?: Record<string, Json> | null;
-    outputRef?: OutputRef | null;
+  runId: string;
+  claimToken: string;
+  /** Truncated to 2000 chars to match Python queries.py:275. */
+  errorMessage: string;
+  resultMetadata?: Record<string, Json> | null;
+  outputRef?: OutputRef | null;
 }
 
 /**
@@ -190,39 +192,39 @@ export interface FailRunOptions {
  * UPDATE matched 0 rows (caller should not retry the same run id).
  */
 export async function failRun(
-    supabase: SupabaseClient,
-    opts: FailRunOptions,
+  supabase: SupabaseClient,
+  opts: FailRunOptions,
 ): Promise<boolean> {
-    const { data, error } = await supabase
-        .from("sch_run")
-        .update({
-            status: "failed" satisfies RunStatus,
-            finished_at: new Date().toISOString(),
-            claim_token: null,
-            error_message: opts.errorMessage.slice(0, 2000),
-            result_metadata: (opts.resultMetadata ?? null) as Json | null,
-            output_ref: (opts.outputRef ?? null) as Json | null,
-        })
-        .eq("id", opts.runId)
-        .eq("claim_token", opts.claimToken)
-        .select("id");
+  const { data, error } = await schedulerDb(supabase)
+    .from("sch_run")
+    .update({
+      status: "failed" satisfies RunStatus,
+      finished_at: new Date().toISOString(),
+      claim_token: null,
+      error_message: opts.errorMessage.slice(0, 2000),
+      result_metadata: (opts.resultMetadata ?? null) as Json | null,
+      output_ref: (opts.outputRef ?? null) as Json | null,
+    })
+    .eq("id", opts.runId)
+    .eq("claim_token", opts.claimToken)
+    .select("id");
 
-    if (error) {
-        throw new SchedulerClientError(
-            `failRun failed for run ${opts.runId}: ${error.message}`,
-            error,
-        );
-    }
+  if (error) {
+    throw new SchedulerClientError(
+      `failRun failed for run ${opts.runId}: ${error.message}`,
+      error,
+    );
+  }
 
-    return (data?.length ?? 0) > 0;
+  return (data?.length ?? 0) > 0;
 }
 
 // ── markRunRunning ─────────────────────────────────────────────────────────
 
 export interface MarkRunRunningOptions {
-    runId: string;
-    claimToken: string;
-    outputRef?: OutputRef | null;
+  runId: string;
+  claimToken: string;
+  outputRef?: OutputRef | null;
 }
 
 /**
@@ -234,30 +236,30 @@ export interface MarkRunRunningOptions {
  * Returns false if the lease was lost.
  */
 export async function markRunRunning(
-    supabase: SupabaseClient,
-    opts: MarkRunRunningOptions,
+  supabase: SupabaseClient,
+  opts: MarkRunRunningOptions,
 ): Promise<boolean> {
-    const patch: Record<string, Json | null | string> = {
-        status: "running" satisfies RunStatus,
-        started_at: new Date().toISOString(),
-    };
-    if (opts.outputRef !== undefined) {
-        patch.output_ref = (opts.outputRef ?? null) as Json | null;
-    }
+  const patch: Record<string, Json | null | string> = {
+    status: "running" satisfies RunStatus,
+    started_at: new Date().toISOString(),
+  };
+  if (opts.outputRef !== undefined) {
+    patch.output_ref = (opts.outputRef ?? null) as Json | null;
+  }
 
-    const { data, error } = await supabase
-        .from("sch_run")
-        .update(patch)
-        .eq("id", opts.runId)
-        .eq("claim_token", opts.claimToken)
-        .select("id");
+  const { data, error } = await schedulerDb(supabase)
+    .from("sch_run")
+    .update(patch)
+    .eq("id", opts.runId)
+    .eq("claim_token", opts.claimToken)
+    .select("id");
 
-    if (error) {
-        throw new SchedulerClientError(
-            `markRunRunning failed for run ${opts.runId}: ${error.message}`,
-            error,
-        );
-    }
+  if (error) {
+    throw new SchedulerClientError(
+      `markRunRunning failed for run ${opts.runId}: ${error.message}`,
+      error,
+    );
+  }
 
-    return (data?.length ?? 0) > 0;
+  return (data?.length ?? 0) > 0;
 }

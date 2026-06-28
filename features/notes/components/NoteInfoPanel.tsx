@@ -294,7 +294,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       <SectionHeader icon={Hash} label="Identifiers" />
       <div className="pb-3">
         <CopyableRow label="Note ID" value={note.id} />
-        <CopyableRow label="Owner ID" value={note.user_id} />
+        <CopyableRow label="Owner ID" value={note.created_by} />
         {note.organization_id && (
           <CopyableRow label="Org ID" value={note.organization_id} />
         )}

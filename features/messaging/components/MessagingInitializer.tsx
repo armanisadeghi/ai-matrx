@@ -12,12 +12,32 @@ import {
   setLoading,
 } from "../redux/messagingSlice";
 import { createClient } from "@/utils/supabase/client";
-import type { ConversationWithDetails, Message } from "../types";
+import type { Database } from "@/types/database.types";
+import type {
+  ConversationType,
+  ConversationWithDetails,
+  Message,
+  ParticipantRole,
+} from "../types";
 import {
   playNotificationSound,
   showDesktopNotification,
   unlockAudio,
 } from "../utils/notificationSound";
+
+type DmConversationRpcRow =
+  Database["public"]["Functions"]["get_dm_conversations_with_details"]["Returns"][number];
+
+function toConversationType(value: string): ConversationType {
+  return value === "group" ? "group" : "direct";
+}
+
+function toParticipantRole(value: string | null | undefined): ParticipantRole {
+  if (value === "owner" || value === "admin" || value === "member") {
+    return value;
+  }
+  return "member";
+}
 
 /**
  * MessagingInitializer - Central hub for messaging state management
@@ -114,7 +134,8 @@ export function MessagingInitializer() {
       try {
         // Get conversation basic info
         const { data: convData, error: convError } = await supabase
-          .schema("communication").from("dm_conversations")
+          .schema("communication")
+          .from("dm_conversations")
           .select("*")
           .eq("id", conversationId)
           .single();
@@ -123,7 +144,8 @@ export function MessagingInitializer() {
 
         // Get participants with user info
         const { data: participants } = await supabase
-          .schema("communication").from("dm_conversation_participants")
+          .schema("communication")
+          .from("dm_conversation_participants")
           .select("*")
           .eq("conversation_id", conversationId);
 
@@ -141,7 +163,8 @@ export function MessagingInitializer() {
 
         // Get last message
         const { data: lastMsgData } = await supabase
-          .schema("communication").from("dm_messages")
+          .schema("communication")
+          .from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -230,9 +253,10 @@ export function MessagingInitializer() {
 
       // Fetch participants for each conversation
       const conversationsWithParticipants = await Promise.all(
-        (data || []).map(async (conv: Record<string, unknown>) => {
+        (data || []).map(async (conv: DmConversationRpcRow) => {
           const { data: participants } = await supabase
-            .schema("communication").from("dm_conversation_participants")
+            .schema("communication")
+            .from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", String(conv.conversation_id));
 
@@ -245,6 +269,9 @@ export function MessagingInitializer() {
               );
               return {
                 ...p,
+                role: toParticipantRole(p.role),
+                is_muted: p.is_muted ?? false,
+                is_archived: p.is_archived ?? false,
                 user: userInfo?.[0] || null,
               };
             }),
@@ -255,9 +282,9 @@ export function MessagingInitializer() {
             (p) => p.user_id !== userId,
           );
 
-          return {
+          const conversation: ConversationWithDetails = {
             id: conv.conversation_id,
-            type: conv.conversation_type,
+            type: toConversationType(conv.conversation_type),
             group_name: conv.group_name,
             group_image_url: conv.group_image_url,
             created_by: null,
@@ -267,23 +294,24 @@ export function MessagingInitializer() {
             last_message: conv.last_message_content
               ? {
                   id: "",
-                  conversation_id: conv.conversation_id as string,
-                  sender_id: conv.last_message_sender_id as string,
-                  content: conv.last_message_content as string,
-                  message_type: "text" as const,
+                  conversation_id: conv.conversation_id,
+                  sender_id: conv.last_message_sender_id,
+                  content: conv.last_message_content,
+                  message_type: "text",
                   media_url: null,
                   media_thumbnail_url: null,
                   media_metadata: null,
-                  status: "sent" as const,
+                  status: "sent",
                   reply_to_id: null,
                   deleted_at: null,
                   deleted_for_everyone: false,
-                  created_at: conv.last_message_at as string,
+                  created_at: conv.last_message_at,
                   edited_at: null,
                   client_message_id: null,
+                  action_data: null,
                 }
               : null,
-            unread_count: conv.unread_count as number,
+            unread_count: conv.unread_count,
             display_name:
               conv.conversation_type === "direct" && otherParticipant
                 ? otherParticipant.user?.display_name ||
@@ -294,7 +322,9 @@ export function MessagingInitializer() {
               conv.conversation_type === "direct" && otherParticipant
                 ? otherParticipant.user?.avatar_url
                 : conv.group_image_url,
-          } as unknown as ConversationWithDetails;
+          };
+
+          return conversation;
         }),
       );
 

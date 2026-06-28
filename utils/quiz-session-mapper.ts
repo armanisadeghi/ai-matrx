@@ -1,4 +1,4 @@
-import type { Database, Json } from "@/types/database.types";
+import type { Json } from "@/types/database.types";
 import type {
   OriginalQuestion,
   QuizAnswer,
@@ -9,7 +9,20 @@ import type {
 } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type { QuizSession } from "@/types/quiz-session";
 
-type QuizSessionRow = Database["public"]["Tables"]["quiz_sessions"]["Row"];
+// quiz_sessions is in `education` schema; local type until `education` is in PGRST_DB_SCHEMAS and types regenerated.
+type QuizSessionRow = Record<string, unknown> & {
+  id: string;
+  user_id: string | null;
+  title: string | null;
+  category: string | null;
+  state: import("@/types/database.types").Json;
+  is_completed: boolean | null;
+  quiz_content_hash: string | null;
+  quiz_metadata: import("@/types/database.types").Json | null;
+  completed_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
 
 function isJsonRecord(value: Json): value is Record<string, Json> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

@@ -1,3 +1,5 @@
+import type { Database, Json } from "@/types/database.types";
+
 export type PcDisplayMode = "audio_only" | "with_metadata" | "with_video";
 
 /**
@@ -165,3 +167,103 @@ export type PcStudioRun = {
   created_at: string;
   updated_at: string;
 };
+
+type PcEpisodeRow = Database["public"]["Tables"]["pc_episodes"]["Row"];
+type PcShowRow = Database["public"]["Tables"]["pc_shows"]["Row"];
+
+function isPcDisplayMode(v: string): v is PcDisplayMode {
+  return v === "audio_only" || v === "with_metadata" || v === "with_video";
+}
+
+function parseSpeakers(raw: Json | null): PcEpisodeSpeaker[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: PcEpisodeSpeaker[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const name =
+      "name" in item && typeof item.name === "string" ? item.name : "";
+    const voice =
+      "voice" in item && typeof item.voice === "string" ? item.voice : "";
+    if (name || voice) out.push({ name, voice });
+  }
+  return out.length ? out : null;
+}
+
+function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  return raw as PcShowRssSettings;
+}
+
+export function mapPcShowRow(row: PcShowRow): PcShow {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    og_image_url: row.og_image_url,
+    thumbnail_url: row.thumbnail_url,
+    author: row.author,
+    is_published: row.is_published,
+    rss_settings: parseRssSettings(row.rss_settings),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
+  return {
+    id: row.id,
+    slug: row.slug,
+    show_id: row.show_id,
+    user_id: row.user_id,
+    title: row.title,
+    description: row.description,
+    audio_url: row.audio_url,
+    image_url: row.image_url,
+    og_image_url: row.og_image_url,
+    thumbnail_url: row.thumbnail_url,
+    video_url: row.video_url,
+    display_mode: isPcDisplayMode(row.display_mode)
+      ? row.display_mode
+      : "audio_only",
+    episode_number: row.episode_number,
+    duration_seconds: row.duration_seconds,
+    host_count: row.host_count,
+    speakers: parseSpeakers(row.speakers),
+    script: row.script,
+    is_published: row.is_published,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/** Supabase join row — `show` may be required with a partial column pick. */
+export type PcEpisodeWithShowRowInput = PcEpisodeRow & {
+  show?: Partial<PcShowRow> | null;
+};
+
+export function mapPcEpisodeWithShowRow(
+  row: PcEpisodeWithShowRowInput,
+): PcEpisodeWithShow {
+  return {
+    ...mapPcEpisodeRow(row),
+    show:
+      row.show && row.show.id && row.show.slug && row.show.title
+        ? mapPcShowRow({
+            id: row.show.id,
+            slug: row.show.slug,
+            title: row.show.title,
+            description: row.show.description ?? null,
+            image_url: row.show.image_url ?? null,
+            og_image_url: row.show.og_image_url ?? null,
+            thumbnail_url: row.show.thumbnail_url ?? null,
+            author: row.show.author ?? null,
+            is_published: row.show.is_published ?? false,
+            rss_settings: row.show.rss_settings ?? null,
+            created_at: row.show.created_at ?? "",
+            updated_at: row.show.updated_at ?? "",
+          })
+        : null,
+  };
+}

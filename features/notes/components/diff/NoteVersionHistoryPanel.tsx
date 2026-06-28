@@ -140,7 +140,7 @@ export function NoteVersionHistoryPanel({
 
   const leftVersionOptions: Option[] = versions.map((v) => ({
     value: v.version_number.toString(),
-    label: `v${v.version_number}${v.change_note ? ` — ${v.change_note}` : ""}`,
+    label: `v${v.version_number}${v.change_type ? ` — ${v.change_type}` : ""}`,
   }));
 
   const rightVersionOptions: Option[] = [
@@ -150,7 +150,7 @@ export function NoteVersionHistoryPanel({
     },
     ...versions.map((v) => ({
       value: v.version_number.toString(),
-      label: `v${v.version_number}${v.change_note ? ` — ${v.change_note}` : ""}`,
+      label: `v${v.version_number}${v.change_type ? ` — ${v.change_type}` : ""}`,
     })),
   ];
 
@@ -606,9 +606,9 @@ function NoteHistoryTimeline({
                   </span>
                 </td>
                 <td className="py-2.5 pr-3">
-                  {version.change_note ? (
+                  {version.change_type ? (
                     <div className="mb-0.5 text-muted-foreground">
-                      {version.change_note}
+                      {version.change_type}
                     </div>
                   ) : null}
                   {version.diff ? (

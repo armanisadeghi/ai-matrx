@@ -27,6 +27,7 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("workbench")
         .from("udt_datasets")
         .select("description, created_at")
         .eq("id", id)

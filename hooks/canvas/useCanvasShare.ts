@@ -42,6 +42,12 @@ export function useCanvasShare() {
       console.log("📦 Canvas data:", request.canvas_data);
 
       // Insert into database
+      // Map legacy "unlisted" to canonical platform.visibility "link".
+      const visibility =
+        request.visibility === "unlisted"
+          ? ("link" as const)
+          : request.visibility || "public";
+
       const insertData = {
         share_token: shareToken,
         title: request.title,
@@ -49,7 +55,7 @@ export function useCanvasShare() {
         canvas_type: request.canvas_type,
         canvas_data: request.canvas_data,
         thumbnail_url: request.thumbnail_url ?? null,
-        visibility: request.visibility || "public",
+        visibility,
         allow_remixes: request.allow_remixes !== false,
         require_attribution: request.require_attribution !== false,
         has_scoring: request.has_scoring || false,
@@ -64,7 +70,8 @@ export function useCanvasShare() {
       console.log("💾 Inserting to database:", insertData);
 
       const { data, error } = await supabase
-        .schema("canvas").from("shared_canvas_items")
+        .schema("canvas")
+        .from("shared_canvas_items")
         .insert(insertData)
         .select()
         .single();

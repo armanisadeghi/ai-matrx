@@ -10,34 +10,31 @@
 
 import type { Database, Json } from "@/types/database.types";
 
+type SchTables = Database["scheduler"]["Tables"];
+
 // ── sch_task ───────────────────────────────────────────────────────────────
 
-export type SchTaskRow = Database["public"]["Tables"]["sch_task"]["Row"];
-export type SchTaskInsert = Database["public"]["Tables"]["sch_task"]["Insert"];
-export type SchTaskUpdate = Database["public"]["Tables"]["sch_task"]["Update"];
+export type SchTaskRow = SchTables["sch_task"]["Row"];
+export type SchTaskInsert = SchTables["sch_task"]["Insert"];
+export type SchTaskUpdate = SchTables["sch_task"]["Update"];
 
 // ── sch_run ────────────────────────────────────────────────────────────────
 
-export type SchRunRow = Database["public"]["Tables"]["sch_run"]["Row"];
-export type SchRunInsert = Database["public"]["Tables"]["sch_run"]["Insert"];
-export type SchRunUpdate = Database["public"]["Tables"]["sch_run"]["Update"];
+export type SchRunRow = SchTables["sch_run"]["Row"];
+export type SchRunInsert = SchTables["sch_run"]["Insert"];
+export type SchRunUpdate = SchTables["sch_run"]["Update"];
 
 // ── sch_trigger ────────────────────────────────────────────────────────────
 
-export type SchTriggerRow = Database["public"]["Tables"]["sch_trigger"]["Row"];
-export type SchTriggerInsert =
-    Database["public"]["Tables"]["sch_trigger"]["Insert"];
-export type SchTriggerUpdate =
-    Database["public"]["Tables"]["sch_trigger"]["Update"];
+export type SchTriggerRow = SchTables["sch_trigger"]["Row"];
+export type SchTriggerInsert = SchTables["sch_trigger"]["Insert"];
+export type SchTriggerUpdate = SchTables["sch_trigger"]["Update"];
 
 // ── sch_agent_task ─────────────────────────────────────────────────────────
 
-export type SchAgentTaskRow =
-    Database["public"]["Tables"]["sch_agent_task"]["Row"];
-export type SchAgentTaskInsert =
-    Database["public"]["Tables"]["sch_agent_task"]["Insert"];
-export type SchAgentTaskUpdate =
-    Database["public"]["Tables"]["sch_agent_task"]["Update"];
+export type SchAgentTaskRow = SchTables["sch_agent_task"]["Row"];
+export type SchAgentTaskInsert = SchTables["sch_agent_task"]["Insert"];
+export type SchAgentTaskUpdate = SchTables["sch_agent_task"]["Update"];
 
 // ── Literal unions (the generator emits these as plain `string`) ──────────
 //
@@ -46,24 +43,24 @@ export type SchAgentTaskUpdate =
 
 /** Run status — matches sch_run_status_chk. */
 export type RunStatus =
-    | "queued"
-    | "claimed"
-    | "running"
-    | "success"
-    | "failed"
-    | "cancelled"
-    | "skipped";
+  | "queued"
+  | "claimed"
+  | "running"
+  | "success"
+  | "failed"
+  | "cancelled"
+  | "skipped";
 
 /** Trigger type — matches sch_trigger_type_chk. */
 export type TriggerType =
-    | "one-shot"
-    | "interval"
-    | "cron"
-    | "heartbeat"
-    | "context-match"
-    | "event"
-    | "manual"
-    | "dependency";
+  | "one-shot"
+  | "interval"
+  | "cron"
+  | "heartbeat"
+  | "context-match"
+  | "event"
+  | "manual"
+  | "dependency";
 
 /** Agent task auth mode — matches sch_agent_task_auth_mode_chk. */
 export type AgentAuthMode = "ask" | "auto";
@@ -79,9 +76,9 @@ export type AgentAuthMode = "ask" | "auto";
 export type OutputRefKind = "conversation" | "capture" | "workflow_run";
 
 export interface OutputRef {
-    kind: OutputRefKind | (string & {});
-    id: string;
-    [extra: string]: Json | undefined;
+  kind: OutputRefKind | (string & {});
+  id: string;
+  [extra: string]: Json | undefined;
 }
 
 // Re-export Json for downstream callers that need to type-annotate

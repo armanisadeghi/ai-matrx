@@ -9,7 +9,7 @@ import {
   Step,
 } from "./types";
 
-type MathProblemRow = Database["public"]["Tables"]["math_problems"]["Row"];
+type MathProblemRow = Database["education"]["Tables"]["math_problems"]["Row"];
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -103,6 +103,7 @@ export async function getAllMathProblems(): Promise<MathProblem[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
+    .schema("education")
     .from("math_problems")
     .select("*")
     .eq("is_published", true)
@@ -126,6 +127,7 @@ export async function getMathProblemById(
   const supabase = await createClient();
 
   const { data, error } = await supabase
+    .schema("education")
     .from("math_problems")
     .select("*")
     .eq("id", id)
@@ -151,6 +153,7 @@ export async function getMathProblemsByModule(
   const supabase = await createClient();
 
   const { data, error } = await supabase
+    .schema("education")
     .from("math_problems")
     .select("*")
     .eq("course_name", courseName)
@@ -174,6 +177,7 @@ export async function getMathCourseStructure() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
+    .schema("education")
     .from("math_problems")
     .select("course_name, topic_name, module_name")
     .eq("is_published", true);
@@ -215,6 +219,7 @@ export async function insertMathProblem(
   const supabase = await createClient();
 
   const { data, error } = await supabase
+    .schema("education")
     .from("math_problems")
     .insert(problem)
     .select()
@@ -236,7 +241,7 @@ export async function bulkInsertMathProblems(
 ): Promise<void> {
   const supabase = await createClient();
 
-  const { error } = await supabase.from("math_problems").insert(problems);
+  const { error } = await supabase.schema("education").from("math_problems").insert(problems);
 
   if (error) {
     console.error("Error bulk inserting math problems:", error);
