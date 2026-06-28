@@ -417,6 +417,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   pdf_redaction_audits: {
     resourceType: "pdf_redaction_audits",
     tableName: "pdf_redaction_audits",
+    schemaName: "pdf",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -427,6 +428,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   redaction_mapping: {
     resourceType: "redaction_mapping",
     tableName: "redaction_mapping",
+    schemaName: "pdf",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,

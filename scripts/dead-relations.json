@@ -2,6 +2,46 @@
   "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
+      "relation": "pc_shows",
+      "old": "public.pc_shows",
+      "newSchema": "podcast",
+      "new": "podcast.pc_shows",
+      "since": "2026-06-28",
+      "reason": "moved to podcast schema (clean cut). Use .schema('podcast').from('pc_shows')."
+    },
+    {
+      "relation": "pc_episodes",
+      "old": "public.pc_episodes",
+      "newSchema": "podcast",
+      "new": "podcast.pc_episodes",
+      "since": "2026-06-28",
+      "reason": "moved to podcast schema (clean cut). Use .schema('podcast').from('pc_episodes')."
+    },
+    {
+      "relation": "pc_articles",
+      "old": "public.pc_articles",
+      "newSchema": "podcast",
+      "new": "podcast.pc_articles",
+      "since": "2026-06-28",
+      "reason": "moved to podcast schema (clean cut). Use .schema('podcast').from('pc_articles')."
+    },
+    {
+      "relation": "pc_studio_runs",
+      "old": "public.pc_studio_runs",
+      "newSchema": "podcast",
+      "new": "podcast.pc_studio_runs",
+      "since": "2026-06-28",
+      "reason": "moved to podcast schema (clean cut). Use .schema('podcast').from('pc_studio_runs')."
+    },
+    {
+      "relation": "pc_studio_run_assets",
+      "old": "public.pc_studio_run_assets",
+      "newSchema": "podcast",
+      "new": "podcast.pc_studio_run_assets",
+      "since": "2026-06-28",
+      "reason": "moved to podcast schema (clean cut). Use .schema('podcast').from('pc_studio_run_assets')."
+    },
+    {
       "relation": "code_repositories",
       "old": "public.code_repositories",
       "newSchema": "code",
@@ -904,6 +944,38 @@
       "new": "docproc.page_extraction_results",
       "since": "2026-06-28",
       "reason": "moved to docproc schema (clean cut). Use .schema('docproc').from('page_extraction_results')."
+    },
+    {
+      "relation": "pdf_consolidation_log",
+      "old": "public.pdf_consolidation_log",
+      "newSchema": "pdf",
+      "new": "pdf.pdf_consolidation_log",
+      "since": "2026-06-28",
+      "reason": "moved to pdf schema (clean cut). Use .schema('pdf').from('pdf_consolidation_log')."
+    },
+    {
+      "relation": "pdf_redaction_audits",
+      "old": "public.pdf_redaction_audits",
+      "newSchema": "pdf",
+      "new": "pdf.pdf_redaction_audits",
+      "since": "2026-06-28",
+      "reason": "moved to pdf schema (clean cut). Use .schema('pdf').from('pdf_redaction_audits')."
+    },
+    {
+      "relation": "pdf_redaction_key_escrow",
+      "old": "public.pdf_redaction_key_escrow",
+      "newSchema": "pdf",
+      "new": "pdf.pdf_redaction_key_escrow",
+      "since": "2026-06-28",
+      "reason": "moved to pdf schema (clean cut). Use .schema('pdf').from('pdf_redaction_key_escrow')."
+    },
+    {
+      "relation": "redaction_mapping",
+      "old": "public.redaction_mapping",
+      "newSchema": "pdf",
+      "new": "pdf.redaction_mapping",
+      "since": "2026-06-28",
+      "reason": "moved to pdf schema (clean cut). Use .schema('pdf').from('redaction_mapping')."
     }
   ]
 }
