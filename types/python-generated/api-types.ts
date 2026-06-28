@@ -4692,12 +4692,12 @@ export interface paths {
          * Get Db Surface Manifest
          * @description DB-driven surface manifest. The canonical path — used by frontends
          *     that declare a ``client.surface`` from the 60+ rows in
-         *     ``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
+         *     ``ui.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
          *
          *     Includes tools inherited from every ancestor surface walked via
          *     ``ui_surface.parent_surface_name`` so the response reflects exactly
          *     what ``apply_unified_tools`` would inject. Returns 404 when the name
-         *     isn't in ``public.ui_surface``.
+         *     isn't in ``ui.ui_surface``.
          */
         get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
         put?: never;
@@ -17050,7 +17050,7 @@ export interface components {
          *
          *     - ``surface`` — single string naming the UI context the request originated
          *       from (e.g. ``matrx-user/chat``, ``chrome-extension/pilot``). The host
-         *       resolves this against its surface registry (``public.ui_surface`` in
+         *       resolves this against its surface registry (``ui.ui_surface`` in
          *       aidream) to derive the default tool set + value bindings, with
          *       inheritance from ``matrx-default/default``.
          *
@@ -28505,7 +28505,7 @@ export interface components {
          *     and needs reconciliation per TOOL_ROUTING_RULES.md §11.
          *
          *     Sources can be one of:
-         *       - ``db_surface`` — resolved from ``public.ui_surface`` +
+         *       - ``db_surface`` — resolved from ``ui.ui_surface`` +
          *         ``public.tool_surface_defaults`` (the common path; 60+ matrx-user
          *         surfaces).
          *       - ``capability`` — resolved from a Python-registered ``Capability``
