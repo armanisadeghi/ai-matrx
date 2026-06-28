@@ -65,10 +65,10 @@ Already graveyarded peers (for reference): `data_broker`, `message_broker`, `bro
 
 | Table | rows | Canonical / replacement | FE refs | aidream refs | Action |
 |---|---|---|---|---|---|
-| `system_prompts_new` | 24 | `system_prompts` (24) OR `agent.definition` | 0 | ~3 | Looks like the abandoned half of an old/new rename. Verify the 3 aidream refs are dead, confirm which is canonical, graveyard the loser. |
-| `system_prompts` | 24 | `agent.definition` (prompt→agent sweep) | ~7 | ~3 | Per LEGACY_SYSTEM_DECOMMISSION "easy UUID-swap": same UUIDs exist as agents. Repoint then graveyard. |
-| `schema_migrations` (public) | 5 | `public._schema_migrations` (420) + `supabase_migrations.schema_migrations` | 0 | ~2 | Legacy ledger. Verify the 2 aidream refs, then graveyard. |
-| `note_shares` | 0 | `public.permissions` | 0 | ~7 | DB_TRANSITION_PENDING flags folding into `permissions`. Empty table — repoint aidream's 7 refs, then graveyard. |
+| `system_prompts_new` | 24 | abandoned half of pair; canonical = `agent.definition` | 0 | 0 real (gen-only) | ✅ **GRAVEYARDED 2026-06-27** — verified zero real consumers. |
+| `schema_migrations` (public) | 5 | `public._schema_migrations` + `supabase_migrations.schema_migrations` | 0 | 0 real (gen-only) | ✅ **GRAVEYARDED 2026-06-27** — legacy ledger, zero real consumers. |
+| `system_prompts` | 24 | `agent.definition` (prompt→agent sweep) | ~7 | ~3 | 🟨 Still live in FE. Per LEGACY_SYSTEM_DECOMMISSION "easy UUID-swap": same UUIDs exist as agents. Repoint then graveyard. |
+| `note_shares` | 0 | `public.permissions` | 0 | **live RAG SQL** | 🟥 **BLOCKED** — `matrx-rag/search.py:1162` + `rag_search_lab.py:299` read `public.note_shares` in the share-ACL subquery (even at 0 rows the table must exist). Repoint that SQL to `permissions` first, then graveyard. |
 
 ---
 
@@ -93,4 +93,5 @@ The bulk of `public` is canonical and stays: `organizations`, `organization_pref
 5. Hard `DROP` only later, PITR-gated, after the graveyard soak.
 
 ## Change log
+- **2026-06-27 (later)** — Graveyarded `system_prompts_new` (24) + legacy `schema_migrations` (5) after verifying zero real consumers. Reclassified `note_shares` → BLOCKED (live RAG-search ACL SQL).
 - **2026-06-27** — Created. scraper investigated → BLOCKED-LIVE (graveyard attempted + reverted, 0 data loss). cld_/wr_/broker set confirmed already graveyarded. Membership cutover completed (organization_members gone; create/delete unblocked; org_select_policy RLS fixed). Categories 2–4 enumerated with indicative consumer counts pending per-file confirmation.
