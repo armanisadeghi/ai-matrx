@@ -220,9 +220,9 @@ export function RunTruthInspector({
               .eq("run_id", agentRunId)
               .order("started_at", { ascending: true, nullsFirst: true })
           : Promise.resolve({ data: [], error: null }),
-        supabase.from("pc_studio_runs").select("*").eq("id", studioRunId).maybeSingle(),
+        supabase.schema("podcast").from("pc_studio_runs").select("*").eq("id", studioRunId).maybeSingle(),
         episodeId
-          ? supabase.from("pc_episodes").select("*").eq("id", episodeId).maybeSingle()
+          ? supabase.schema("podcast").from("pc_episodes").select("*").eq("id", episodeId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
       ]);
       const firstErr =

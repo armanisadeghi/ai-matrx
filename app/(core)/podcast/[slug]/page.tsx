@@ -37,7 +37,7 @@ const resolveSlug = cache(async (slug: string) => {
 
   // Try episode first — include all show fields needed for display and OG metadata
   const episodeQuery = supabase
-    .from("pc_episodes")
+    .schema("podcast").from("pc_episodes")
     .select(
       "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
     );
@@ -51,7 +51,7 @@ const resolveSlug = cache(async (slug: string) => {
   }
 
   // Try show (slug or UUID)
-  const showQuery = supabase.from("pc_shows").select("*");
+  const showQuery = supabase.schema("podcast").from("pc_shows").select("*");
 
   const { data: show } = isUUID(slug)
     ? await showQuery.eq("id", slug).single()
@@ -152,7 +152,7 @@ export default async function PodcastPage({
     // Published companion content (blog / show notes) drives the live CTAs.
     const supabase = await createClient();
     const { data: articles } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .select("*")
       .eq("episode_id", result.data.id)
       .eq("status", "published");
@@ -167,7 +167,7 @@ export default async function PodcastPage({
   // Show page — fetch its published episodes
   const supabase = await createClient();
   const { data: episodes } = await supabase
-    .from("pc_episodes")
+    .schema("podcast").from("pc_episodes")
     .select("*")
     .eq("show_id", result.data.id)
     .eq("is_published", true)

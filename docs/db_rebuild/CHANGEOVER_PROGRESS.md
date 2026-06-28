@@ -22,6 +22,14 @@
 
 ---
 
+## `podcast` schema — podcast studio tables (2026-06-28) ✅ MOVED + CANONICALIZED
+
+Schema `podcast` already existed (empty). Canonicalized then moved 5 `pc_*` tables `public → podcast`. Migrations (applied + verified live + ledgered): `pc_canonicalize_in_public.sql` + `pc_move_to_podcast_schema.sql` + `expose_podcast_schema_postgrest.sql` + `pc_register_deprecated_relations.sql`.
+
+**Entities:** `pc_shows` (entity, was ownerless → owner backfilled from each show's episode owner), `pc_episodes`, `pc_articles`, `pc_studio_runs` (all entity), `pc_studio_run_assets` (**component** of `agent_run` via `run_id` composition edge). Tokens kept (`pc_show`/`pc_episode`/`pc_article`/`pc_studio_run` + new `pc_studio_run_asset`). `visibility` added: `'public'` on shows/episodes/articles (preserves anon public-page + RSS reads), `'private'` on studio_runs. Canonical `iam.apply_rls` on all 5; verify_canonical = zero FAIL (only the permanent `legacy_owner_col` WARN on episode/article/studio_run — `user_id` kept; backend still writes it, NOT NULL on studio_runs). Live-verified: anon reads 4 shows/42 episodes/4 articles and is denied private studio_runs; owner reads their 24 runs.
+
+**PostgREST:** `podcast` was NOT actually exposed — added it to `authenticator pgrst.db_schemas` (full existing list + podcast) + `grant usage`. FE repointed (`.schema('podcast')` on all 39 callsites + 3 type refs; `podcast` added to `db-types` `--schema`). Repointed 3 schema-qualified functions (`pc_check_episode_slug_unique`, `pc_check_show_slug_unique`, `get_user_dashboard_metrics`). **aidream:** `matrx_orm.yaml` podcast block + import paths staged — **requires `python db/generate.py` (DB access) + boot-verify** to materialize `db/models/podcast.py` + `db/managers/podcast/` (couldn't run here: DB unreachable + concurrent generate in flight).
+
 ## `scheduler` schema — scheduling tables (2026-06-27) ✅ MOVED + CANONICALIZED
 
 Schema `scheduler` already existed. Moved 4 `sch_*` tables and applied full canonicalization. Migrations: `scheduler_tables_prep.sql` + `scheduler_tables_schema_move.sql` + `scheduler_tables_rls_and_registry.sql` (applied + verified live, ledgered).

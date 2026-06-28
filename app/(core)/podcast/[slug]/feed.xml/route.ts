@@ -82,7 +82,7 @@ export async function GET(
     const supabase = await createClient();
 
     // Resolve show by id (UUID) or slug.
-    const showQuery = supabase.from('pc_shows').select('*');
+    const showQuery = supabase.schema('podcast').from('pc_shows').select('*');
     const { data: showRow } = isUUID(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
@@ -98,7 +98,7 @@ export async function GET(
 
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
     const { data: episodeRows } = await supabase
-        .from('pc_episodes')
+        .schema('podcast').from('pc_episodes')
         .select('*')
         .eq('show_id', show.id)
         .eq('is_published', true)

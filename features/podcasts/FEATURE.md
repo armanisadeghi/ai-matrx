@@ -87,6 +87,7 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-28 — **DB: `pc_*` canonicalized + moved `public → podcast` schema.** All 5 tables (`pc_shows`, `pc_episodes`, `pc_articles`, `pc_studio_runs`, `pc_studio_run_assets`) brought onto the platform base entity (visibility/org/created_by/satellites) and relocated to the `podcast` schema (exposed via PostgREST). Public content stays anon-readable via `visibility='public'`; studio runs are owner-private. FE now uses `.schema('podcast').from('pc_*')` everywhere; `mapPcShowRow` accepts the display-column subset. **Show editing is now owner/org-gated** (was open to any authed user); the 4 existing ownerless shows were assigned their episode owner. aidream ORM config staged but needs a `generate.py` run. See `docs/db_rebuild/CHANGEOVER_PROGRESS.md` → `podcast` schema.
 - 2026-06-24 — **Matrx entryway prefill.** `/podcast/studio/create` now accepts `topic`, `format`, and `agent` query params from the new `/demos/matrx-entry` route. `CreateView` validates the format param against `PodcastFormat`, and `GeneratorForm` seeds the topic textarea, selected format, and advanced agent-profile note so submit still uses the existing `pc_studio_runs` creation + live run handoff.
 - 2026-06-17 — **Live voice catalog (Supabase `public.voices`) + Run Truth inspector.**
   Voices now come from one Supabase table (read directly, RLS-scoped) with public

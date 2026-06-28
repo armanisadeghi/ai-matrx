@@ -168,8 +168,8 @@ export type PcStudioRun = {
   updated_at: string;
 };
 
-type PcEpisodeRow = Database["public"]["Tables"]["pc_episodes"]["Row"];
-type PcShowRow = Database["public"]["Tables"]["pc_shows"]["Row"];
+type PcEpisodeRow = Database["podcast"]["Tables"]["pc_episodes"]["Row"];
+type PcShowRow = Database["podcast"]["Tables"]["pc_shows"]["Row"];
 
 function isPcDisplayMode(v: string): v is PcDisplayMode {
   return v === "audio_only" || v === "with_metadata" || v === "with_video";
@@ -194,7 +194,26 @@ function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
   return raw as PcShowRssSettings;
 }
 
-export function mapPcShowRow(row: PcShowRow): PcShow {
+// Accepts the display-column subset (the embed `show:pc_shows(...)` selects a
+// partial pick; the canonical base columns added in the podcast-schema move are
+// not needed for display mapping).
+type PcShowDisplayRow = Pick<
+  PcShowRow,
+  | "id"
+  | "slug"
+  | "title"
+  | "description"
+  | "image_url"
+  | "og_image_url"
+  | "thumbnail_url"
+  | "author"
+  | "is_published"
+  | "rss_settings"
+  | "created_at"
+  | "updated_at"
+>;
+
+export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
   return {
     id: row.id,
     slug: row.slug,

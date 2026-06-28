@@ -13,7 +13,7 @@ export const articleService = {
   /** Every article for an episode (blog + show_notes), newest first. */
   async fetchByEpisode(episodeId: string): Promise<PcArticle[]> {
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .select("*")
       .eq("episode_id", episodeId)
       .order("updated_at", { ascending: false });
@@ -27,7 +27,7 @@ export const articleService = {
     kind: PcArticleKind,
   ): Promise<PcArticle | null> {
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .select("*")
       .eq("episode_id", episodeId)
       .eq("kind", kind)
@@ -39,7 +39,7 @@ export const articleService = {
   /** Public read by slug (anonymous blog/show-notes page). */
   async fetchPublishedBySlug(slug: string): Promise<PcArticle | null> {
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .select("*")
       .eq("slug", slug)
       .eq("status", "published")
@@ -70,7 +70,7 @@ export const articleService = {
       data: { user },
     } = await supabase.auth.getUser();
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .upsert(
         { ...payload, user_id: payload.user_id ?? user?.id ?? null },
         { onConflict: "episode_id,kind" },
@@ -86,7 +86,7 @@ export const articleService = {
     status: PcArticle["status"],
   ): Promise<PcArticle> {
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .update({ status })
       .eq("id", id)
       .select()
@@ -100,7 +100,7 @@ export const articleService = {
     content_markdown: string,
   ): Promise<PcArticle> {
     const { data, error } = await supabase
-      .from("pc_articles")
+      .schema("podcast").from("pc_articles")
       .update({ content_markdown })
       .eq("id", id)
       .select()

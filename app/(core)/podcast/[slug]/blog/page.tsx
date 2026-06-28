@@ -24,7 +24,7 @@ function isUUID(str: string): boolean {
 const resolveBlog = cache(async (slug: string) => {
   const supabase = await createClient();
   const episodeQuery = supabase
-    .from("pc_episodes")
+    .schema("podcast").from("pc_episodes")
     .select(
       "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
     );
@@ -36,7 +36,7 @@ const resolveBlog = cache(async (slug: string) => {
   const mappedEpisode = mapPcEpisodeWithShowRow(episode);
 
   const { data: article } = await supabase
-    .from("pc_articles")
+    .schema("podcast").from("pc_articles")
     .select("*")
     .eq("episode_id", mappedEpisode.id)
     .eq("kind", "blog")

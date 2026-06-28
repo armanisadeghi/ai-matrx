@@ -14,7 +14,7 @@ import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types
 import type { Database } from "@/types/database.types";
 
 type PcStudioRunDbInsert =
-  Database["public"]["Tables"]["pc_studio_runs"]["Insert"];
+  Database["podcast"]["Tables"]["pc_studio_runs"]["Insert"];
 
 export type PcStudioRunInsert = {
   status?: PcStudioRun["status"];
@@ -47,7 +47,7 @@ export const studioRunsService = {
     };
 
     const { data, error } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .insert(row)
       .select()
       .single();
@@ -57,7 +57,7 @@ export const studioRunsService = {
 
   async updateRun(id: string, patch: PcStudioRunUpdate): Promise<void> {
     const { error } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .update(patch)
       .eq("id", id);
     if (error) throw error;
@@ -65,7 +65,7 @@ export const studioRunsService = {
 
   async fetchRunsByUser(userId: string): Promise<PcStudioRun[]> {
     const { data, error } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -79,7 +79,7 @@ export const studioRunsService = {
     // to the durable agent_run detail). .single() turns that into a noisy 406;
     // .maybeSingle() returns null cleanly.
     const { data, error } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .select("*")
       .eq("id", id)
       .maybeSingle();
@@ -89,7 +89,7 @@ export const studioRunsService = {
 
   async deleteRun(id: string): Promise<void> {
     const { error } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .delete()
       .eq("id", id);
     if (error) throw error;

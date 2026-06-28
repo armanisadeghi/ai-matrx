@@ -18,7 +18,7 @@ export const podcastService = {
 
   async fetchAllShows(): Promise<PcShow[]> {
     const { data, error } = await supabase
-      .from("pc_shows")
+      .schema("podcast").from("pc_shows")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -35,7 +35,7 @@ export const podcastService = {
     },
   ): Promise<PcShow> {
     const { data, error } = await supabase
-      .from("pc_shows")
+      .schema("podcast").from("pc_shows")
       .insert(payload)
       .select()
       .single();
@@ -48,7 +48,7 @@ export const podcastService = {
     payload: Partial<Omit<PcShow, "id" | "created_at" | "updated_at">>,
   ): Promise<PcShow> {
     const { data, error } = await supabase
-      .from("pc_shows")
+      .schema("podcast").from("pc_shows")
       .update(payload)
       .eq("id", id)
       .select()
@@ -58,7 +58,7 @@ export const podcastService = {
   },
 
   async removeShow(id: string): Promise<void> {
-    const { error } = await supabase.from("pc_shows").delete().eq("id", id);
+    const { error } = await supabase.schema("podcast").from("pc_shows").delete().eq("id", id);
     if (error) throw error;
   },
 
@@ -66,7 +66,7 @@ export const podcastService = {
 
   async fetchAllEpisodes(): Promise<PcEpisodeWithShow[]> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -75,7 +75,7 @@ export const podcastService = {
 
   async fetchEpisodesByShow(showId: string): Promise<PcEpisode[]> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select("*")
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
@@ -85,7 +85,7 @@ export const podcastService = {
 
   async fetchEpisodesForShow(showId: string): Promise<PcEpisodeWithShow[]> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
@@ -95,7 +95,7 @@ export const podcastService = {
 
   async fetchEpisodesByUser(userId: string): Promise<PcEpisodeWithShow[]> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
@@ -105,7 +105,7 @@ export const podcastService = {
 
   async fetchShowById(id: string): Promise<PcShow | null> {
     const { data, error } = await supabase
-      .from("pc_shows")
+      .schema("podcast").from("pc_shows")
       .select("*")
       .eq("id", id)
       .single();
@@ -115,7 +115,7 @@ export const podcastService = {
 
   async fetchEpisodeById(id: string): Promise<PcEpisodeWithShow | null> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .eq("id", id)
       .single();
@@ -133,7 +133,7 @@ export const podcastService = {
     } = await supabase.auth.getUser();
 
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .insert({
         ...payload,
         user_id: payload.user_id ?? user?.id ?? null,
@@ -149,7 +149,7 @@ export const podcastService = {
     payload: Partial<Omit<PcEpisode, "id" | "created_at" | "updated_at">>,
   ): Promise<PcEpisode> {
     const { data, error } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .update(payload)
       .eq("id", id)
       .select()
@@ -159,7 +159,7 @@ export const podcastService = {
   },
 
   async removeEpisode(id: string): Promise<void> {
-    const { error } = await supabase.from("pc_episodes").delete().eq("id", id);
+    const { error } = await supabase.schema("podcast").from("pc_episodes").delete().eq("id", id);
     if (error) throw error;
   },
 
@@ -168,7 +168,7 @@ export const podcastService = {
   async lookupBySlug(slug: string): Promise<PcSlugLookupResult> {
     // Check episodes first (most common case for sharing)
     const { data: episode } = await supabase
-      .from("pc_episodes")
+      .schema("podcast").from("pc_episodes")
       .select(
         "*, show:pc_shows(id, slug, title, description, image_url, author, is_published, created_at, updated_at)",
       )
@@ -181,7 +181,7 @@ export const podcastService = {
 
     // Fall back to shows
     const { data: show } = await supabase
-      .from("pc_shows")
+      .schema("podcast").from("pc_shows")
       .select("*")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .single();

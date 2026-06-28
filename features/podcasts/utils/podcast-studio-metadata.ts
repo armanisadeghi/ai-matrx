@@ -15,7 +15,7 @@ export async function createPodcastStudioRunMetadata(
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("pc_studio_runs")
+      .schema("podcast").from("pc_studio_runs")
       .select("title, description")
       .eq("id", runId)
       .maybeSingle();

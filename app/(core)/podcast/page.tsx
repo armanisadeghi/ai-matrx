@@ -9,7 +9,7 @@ export const revalidate = 3600;
 export default async function PodcastsIndexPage() {
     const supabase = await createClient();
     const { data: shows } = await supabase
-        .from('pc_shows')
+        .schema('podcast').from('pc_shows')
         .select('*')
         .eq('is_published', true)
         .order('created_at', { ascending: false });
