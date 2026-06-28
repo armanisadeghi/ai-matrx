@@ -48,9 +48,30 @@ export async function POST(
       // empty body is fine — fall through with defaults
     }
 
+    // Aliased select restores old field names on the source object.
+    const CATEGORY_SELECT = [
+      "id",
+      "label:name",
+      "icon_name:icon",
+      "color",
+      "placement_type",
+      "parent_category_id:parent_id",
+      "sort_order:position",
+      "organization_id",
+      "metadata",
+      "description:metadata->>description",
+      "is_active:metadata->>is_active",
+      "enabled_features:metadata->enabled_features",
+      "user_id:metadata->>user_id",
+      "project_id:metadata->>project_id",
+      "task_id:metadata->>task_id",
+    ].join(",");
+
     const { data: source, error: sourceError } = await supabase
-      .from("shortcut_categories")
-      .select("*")
+      .schema("platform")
+      .from("categories")
+      .select(CATEGORY_SELECT)
+      .eq("dimension", "shortcut")
       .eq("id", id)
       .maybeSingle();
 
@@ -100,29 +121,58 @@ export async function POST(
         ? overrides.sort_order
         : source.sort_order;
 
+    // Build platform.categories row — map old field names to new schema.
+    // Metadata-backed fields from source come back as aliased top-level strings.
     const insertPayload = {
-      label: nextLabel,
-      description: source.description,
-      icon_name: source.icon_name,
-      color: source.color,
+      dimension: "shortcut" as const,
+      name: nextLabel,
+      icon: source.icon_name ?? null,
+      color: source.color ?? null,
       placement_type: nextPlacementType,
-      parent_category_id: nextParentCategoryId,
-      sort_order: nextSortOrder,
-      is_active: source.is_active,
-      metadata: source.metadata,
-      enabled_features: source.enabled_features,
-      // Preserve ownership exactly — admins keep global, users keep user,
-      // orgs keep org, etc.
-      user_id: source.user_id,
-      organization_id: source.organization_id,
-      project_id: source.project_id,
-      task_id: source.task_id,
+      parent_id: nextParentCategoryId,
+      position: nextSortOrder ?? null,
+      // organization_id stays top-level; user/project/task live in metadata.
+      organization_id: source.organization_id ?? null,
+      created_by: user.id,
+      metadata: {
+        ...(source.metadata as Record<string, unknown> | null ?? {}),
+        description: source.description ?? null,
+        is_active: source.is_active !== undefined ? source.is_active : true,
+        enabled_features: source.enabled_features ?? null,
+        // Preserve ownership exactly — admins keep global, users keep user,
+        // orgs keep org, etc.
+        user_id: source.user_id ?? null,
+        project_id: source.project_id ?? null,
+        task_id: source.task_id ?? null,
+        legacy_table: "shortcut_categories",
+      },
     };
 
+    const CATEGORY_SELECT_INSERT = [
+      "id",
+      "label:name",
+      "icon_name:icon",
+      "color",
+      "placement_type",
+      "parent_category_id:parent_id",
+      "sort_order:position",
+      "organization_id",
+      "created_at",
+      "updated_at",
+      "metadata",
+      "description:metadata->>description",
+      "is_active:metadata->>is_active",
+      "enabled_features:metadata->enabled_features",
+      "user_id:metadata->>user_id",
+      "project_id:metadata->>project_id",
+      "task_id:metadata->>task_id",
+    ].join(",");
+
     const { data, error } = await supabase
-      .from("shortcut_categories")
+      .schema("platform")
+      .from("categories")
       .insert(insertPayload as never)
-      .select()
+      .select(CATEGORY_SELECT_INSERT)
       .single();
 
     if (error) {

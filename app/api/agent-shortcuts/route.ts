@@ -214,8 +214,10 @@ async function filterByPlacementType(
   if (rows.length === 0) return rows;
   const categoryIds = Array.from(new Set(rows.map((r) => r.category_id)));
   const { data: cats } = await supabase
-    .from("shortcut_categories")
+    .schema("platform")
+    .from("categories")
     .select("id, placement_type")
+    .eq("dimension", "shortcut")
     .in("id", categoryIds)
     .eq("placement_type", placementType);
   const allowed = new Set((cats ?? []).map((c) => c.id));

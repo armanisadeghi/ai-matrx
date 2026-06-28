@@ -141,9 +141,10 @@ export async function fetchAgentAppCategories(): Promise<
 > {
   const supabase = getClient();
   const { data, error } = await supabase
-    .schema("app").from("category")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    .schema("platform").from("categories")
+    .select("id, name, sort_order:position, icon, description:metadata->>description")
+    .eq("dimension", "app")
+    .order("position", { ascending: true });
   if (error) throw error;
   return (data ?? []) as AgentAppCategoryRow[];
 }
@@ -153,17 +154,21 @@ export async function createAgentAppCategory(
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .schema("app").from("category")
+    .schema("platform").from("categories")
     .insert([
       {
-        id: input.id,
+        dimension: "app",
         name: input.name,
-        description: input.description ?? null,
         icon: input.icon ?? null,
-        sort_order: input.sort_order ?? 0,
+        position: input.sort_order ?? 0,
+        metadata: {
+          description: input.description ?? null,
+          legacy_id: input.id,
+          legacy_table: "app.category",
+        },
       },
     ])
-    .select()
+    .select("id, name, sort_order:position, icon, description:metadata->>description")
     .single();
   if (error) throw error;
   return data as AgentAppCategoryRow;
@@ -175,14 +180,18 @@ export async function updateAgentAppCategory(
   const supabase = getClient();
   const patch: Record<string, any> = {};
   if (input.name !== undefined) patch.name = input.name;
-  if (input.description !== undefined) patch.description = input.description;
   if (input.icon !== undefined) patch.icon = input.icon;
-  if (input.sort_order !== undefined) patch.sort_order = input.sort_order;
+  if (input.sort_order !== undefined) patch.position = input.sort_order;
+  // description lives in metadata; set the whole metadata object when provided
+  if (input.description !== undefined) {
+    patch.metadata = { description: input.description };
+  }
   const { data, error } = await supabase
-    .schema("app").from("category")
+    .schema("platform").from("categories")
     .update(patch)
     .eq("id", input.id)
-    .select()
+    .eq("dimension", "app")
+    .select("id, name, sort_order:position, icon, description:metadata->>description")
     .single();
   if (error) throw error;
   return data as AgentAppCategoryRow;
@@ -190,7 +199,11 @@ export async function updateAgentAppCategory(
 
 export async function deleteAgentAppCategory(id: string): Promise<void> {
   const supabase = getClient();
-  const { error } = await supabase.schema("app").from("category").delete().eq("id", id);
+  const { error } = await supabase
+    .schema("platform").from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("dimension", "app");
   if (error) throw error;
 }
 

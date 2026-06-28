@@ -34,9 +34,11 @@ export async function GET() {
     }
 
     const { data: categories, error } = await supabase
-      .from("feedback_categories")
-      .select("*")
-      .order("sort_order", { ascending: true });
+      .schema("platform")
+      .from("categories")
+      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .eq("dimension", "feedback")
+      .order("position", { ascending: true });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -55,7 +57,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin();
-    // feedback_categories is RLS-protected with no write policy — use the admin client.
+    // platform.categories (feedback dimension) is managed via admin client — is_system rows need service_role.
     const supabase = createAdminClient();
 
     const body = await request.json();
@@ -69,15 +71,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: category, error } = await supabase
-      .from("feedback_categories")
+      .schema("platform")
+      .from("categories")
       .insert({
+        dimension: "feedback",
         name,
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-        description: description || null,
-        color,
-        sort_order,
+        position: sort_order,
+        is_system: true,
+        metadata: { description: description || null, color, is_active: true },
       })
-      .select()
+      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .single();
 
     if (error) {

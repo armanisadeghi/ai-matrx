@@ -35,7 +35,7 @@ function rowToIndustry(r: IndustryRow): Industry {
 }
 
 export async function fetchIndustries(includeInactive = false): Promise<Industry[]> {
-  let q = supabase.from("industries").select("*").order("sort_order");
+  let q = supabase.schema("iam").from("industries").select("*").order("sort_order");
   if (!includeInactive) q = q.eq("is_active", true);
   const { data, error } = await q;
   if (error) throw new Error(error.message);

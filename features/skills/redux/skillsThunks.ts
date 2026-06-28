@@ -48,6 +48,7 @@ import {
   wireToIngestReport,
   wireToSkillRow,
 } from "./skillsConverters";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 /** Columns selected for every skill read, plus the project-membership join.
  * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
@@ -176,13 +177,17 @@ export const fetchSkillCategories = createAsyncThunk<
   // GET endpoint this preserves `user_id` so the editor can route
   // writes (Supabase direct for owned rows, Python admin for system
   // rows). Matches CLAUDE.md doctrine for simple reads.
+  // Formerly skill.category — now platform.categories with dimension='skill'.
+  // Aliases map new column names back to the old shape so supabaseRowToCategoryRow
+  // keeps working without changes.
   const { data, error } = await supabase
-    .schema("skill")
-    .from("category")
+    .schema("platform")
+    .from("categories")
     .select(
-      "id, category_key, label, description, icon_name, color, parent_category_id, sort_order, is_active, user_id",
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
     )
-    .eq("is_active", true);
+    .eq("dimension", "skill")
+    .eq("metadata->>is_active", "true");
 
   if (error) {
     dispatch(skillsActions.categoriesError(error.message));
@@ -525,22 +530,34 @@ export const createCategoryThunk = createAsyncThunk<
     return row;
   }
 
-  // Personal category — Supabase direct. RLS stamps + validates.
+  // Personal category — Supabase direct via platform.categories (dimension='skill').
+  // RLS stamps + validates. created_by and organization_id are required for
+  // org-scoped dimensions.
+  const organizationId = selectOrganizationId(getState());
   const insertPayload = {
-    category_key: draft.categoryKey,
-    label: draft.label,
-    description: draft.description ?? null,
-    icon_name: draft.iconName ?? null,
+    dimension: "skill" as const,
+    slug: draft.categoryKey,
+    name: draft.label,
+    icon: draft.iconName ?? null,
     color: draft.color ?? null,
-    parent_category_id: draft.parentCategoryId ?? null,
-    sort_order: draft.sortOrder ?? 0,
-    user_id: userId,
+    parent_id: draft.parentCategoryId ?? null,
+    position: draft.sortOrder ?? 0,
+    created_by: userId,
+    organization_id: organizationId ?? null,
+    metadata: {
+      category_key: draft.categoryKey,
+      description: draft.description ?? null,
+      is_active: true,
+      legacy_table: "skill.category",
+    },
   };
   const { data, error } = await supabase
-    .schema("skill")
-    .from("category")
+    .schema("platform")
+    .from("categories")
     .insert(insertPayload)
-    .select()
+    .select(
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
+    )
     .single();
   if (error) throw new Error(error.message);
   const row = supabaseRowToCategoryRow(data);
@@ -607,19 +624,39 @@ export const updateCategoryThunk = createAsyncThunk<
     return row;
   }
 
-  // Supabase direct — owned/org-admin row.
-  const updateBody: Record<string, unknown> = {};
-  if (patch.categoryKey !== undefined)
-    updateBody.category_key = patch.categoryKey;
-  if (patch.label !== undefined) updateBody.label = patch.label;
-  if (patch.description !== undefined)
-    updateBody.description = patch.description;
-  if (patch.iconName !== undefined) updateBody.icon_name = patch.iconName;
-  if (patch.color !== undefined) updateBody.color = patch.color;
+  // Supabase direct — owned/org-admin row via platform.categories (dimension='skill').
+  // Top-level renames: category_key→slug, label→name, icon_name→icon,
+  // parent_category_id→parent_id, sort_order→position.
+  // Metadata fields (description, is_active) merge into the metadata jsonb.
+  const topLevel: Record<string, unknown> = {};
+  const metadataPatch: Record<string, unknown> = {};
+
+  if (patch.categoryKey !== undefined) {
+    topLevel.slug = patch.categoryKey;
+    // Keep metadata.category_key in sync.
+    metadataPatch.category_key = patch.categoryKey;
+  }
+  if (patch.label !== undefined) topLevel.name = patch.label;
+  if (patch.description !== undefined) metadataPatch.description = patch.description;
+  if (patch.iconName !== undefined) topLevel.icon = patch.iconName;
+  if (patch.color !== undefined) topLevel.color = patch.color;
   if (patch.parentCategoryId !== undefined)
-    updateBody.parent_category_id = patch.parentCategoryId;
-  if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
-  if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
+    topLevel.parent_id = patch.parentCategoryId;
+  if (patch.sortOrder !== undefined) topLevel.position = patch.sortOrder;
+  if (patch.isActive !== undefined) metadataPatch.is_active = patch.isActive;
+
+  // Merge metadata patch if any metadata fields changed. Use jsonb concat operator
+  // via a Postgres function isn't available in supabase-js directly, so we build
+  // the full metadata object from cached row + patch fields. If no cached row,
+  // we fall back to metadata patch only (Postgres merges jsonb with ||).
+  const updateBody: Record<string, unknown> = { ...topLevel };
+  if (Object.keys(metadataPatch).length > 0) {
+    // We can't do a partial jsonb merge directly in supabase-js UPDATE, so we
+    // set metadata to the merged value using the cached row as the base.
+    const existingMeta =
+      (cached as unknown as { metadata?: Record<string, unknown> })?.metadata ?? {};
+    updateBody.metadata = { ...existingMeta, ...metadataPatch };
+  }
 
   if (Object.keys(updateBody).length === 0) {
     // Nothing to update — return the cached row.
@@ -628,11 +665,14 @@ export const updateCategoryThunk = createAsyncThunk<
   }
 
   const { data, error } = await supabase
-    .schema("skill")
-    .from("category")
+    .schema("platform")
+    .from("categories")
     .update(updateBody)
     .eq("id", id)
-    .select()
+    .eq("dimension", "skill")
+    .select(
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
+    )
     .single();
   if (error) throw new Error(error.message);
   const row = supabaseRowToCategoryRow(data);
@@ -666,13 +706,18 @@ export const deleteCategoryThunk = createAsyncThunk<
     );
     if (result.error) throw new Error(result.error.message);
   } else {
-    // Supabase direct soft-delete (is_active=false) — matches the
-    // semantics of the Python endpoint.
+    // Supabase direct soft-delete via platform.categories (dimension='skill').
+    // is_active moved to metadata; merge false into the existing metadata jsonb.
+    const cachedCat = state.skills.categories.byId[id];
+    const existingMeta =
+      (cachedCat as unknown as { metadata?: Record<string, unknown> })
+        ?.metadata ?? {};
     const { error } = await supabase
-      .schema("skill")
-      .from("category")
-      .update({ is_active: false })
-      .eq("id", id);
+      .schema("platform")
+      .from("categories")
+      .update({ metadata: { ...existingMeta, is_active: false } })
+      .eq("id", id)
+      .eq("dimension", "skill");
     if (error) throw new Error(error.message);
   }
 

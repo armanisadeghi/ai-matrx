@@ -150,9 +150,9 @@ export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
   };
 }
 
-/** Adapter for rows read straight off `skill.category` via Supabase
- * (`.schema('skill').from('category').select(...)`). Accepts the Supabase-
- * generated Row type — no double-cast. */
+/** Adapter for rows read straight off `platform.categories` (dimension='skill') via Supabase
+ * (`.schema('platform').from('categories').select(...)`). Column aliases in the select
+ * map new names back to the old shape so this converter stays unchanged. */
 export function supabaseRowToCategoryRow(row: SklCategoryRow): CategoryRow {
   return {
     id: row.id,

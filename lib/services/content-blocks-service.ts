@@ -165,21 +165,22 @@ export async function fetchContentBlocksWithoutSubcategory(categoryId: string) {
   return data as ContentBlockDB[];
 }
 
-// Fetch category configurations from unified shortcut_categories
+// Fetch category configurations from platform.categories (was shortcut_categories)
 export async function fetchCategoryConfigs() {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from("shortcut_categories")
-    .select("*")
+    .schema("platform").from("categories")
+    .select("id, label:name, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, parent_category_id:parent_id, placement_type")
+    .eq("dimension", "shortcut")
     .eq("placement_type", "content-block")
-    .eq("is_active", true)
-    .is("parent_category_id", null) // Top-level categories only
-    .order("sort_order");
+    .eq("metadata->>is_active", "true")
+    .is("parent_id", null) // Top-level categories only
+    .order("position");
 
   if (error) throw error;
 
   // Convert to old format for compatibility
-  return data.map((sc) => ({
+  return (data ?? []).map((sc) => ({
     id: sc.id,
     category_id: sc.id, // Use UUID directly
     label: sc.label,
@@ -190,28 +191,28 @@ export async function fetchCategoryConfigs() {
   })) as CategoryConfigDB[];
 }
 
-// Fetch subcategory configurations from unified shortcut_categories
+// Fetch subcategory configurations from platform.categories (was shortcut_categories)
 export async function fetchSubcategoryConfigs(categoryId?: string) {
   const supabase = getClient();
   let query = supabase
-    .from("shortcut_categories")
-    .select("*")
+    .schema("platform").from("categories")
+    .select("id, label:name, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, parent_category_id:parent_id, placement_type")
+    .eq("dimension", "shortcut")
     .eq("placement_type", "content-block")
-    .eq("is_active", true)
-    .not("parent_category_id", "is", null); // Only child categories
+    .eq("metadata->>is_active", "true")
+    .not("parent_id", "is", null); // Only child categories
 
   if (categoryId) {
-    // If categoryId is a UUID, use it directly; if it's a string ID, look it up
-    query = query.eq("parent_category_id", categoryId);
+    query = query.eq("parent_id", categoryId);
   }
 
-  query = query.order("sort_order");
+  query = query.order("position");
 
   const { data, error } = await query;
   if (error) throw error;
 
   // Convert to old format for compatibility
-  return data.map((sc) => ({
+  return (data ?? []).map((sc) => ({
     id: sc.id,
     category_id: sc.parent_category_id || "", // Parent UUID
     subcategory_id: sc.id, // Use UUID directly

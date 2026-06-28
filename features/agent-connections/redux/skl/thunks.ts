@@ -210,10 +210,11 @@ export const fetchRenderBlockCategories = createAsyncThunk(
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
       let query = supabase
-        .from("shortcut_categories")
-        .select("*")
-        .order("sort_order", { ascending: true, nullsFirst: false })
-        .order("label", { ascending: true });
+        .schema("platform").from("categories")
+        .select("id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, parent_category_id:parent_id, organization_id, user_id, project_id, task_id, created_at, updated_at")
+        .eq("dimension", "shortcut")
+        .order("position", { ascending: true, nullsFirst: false })
+        .order("name", { ascending: true });
       query = applyScopeFilter(query, args, userId);
       const { data, error } = await query;
       if (error) throw error;

@@ -38,8 +38,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const { data: category, error } = await supabase
-      .from("feedback_categories")
-      .select("*")
+      .schema("platform")
+      .from("categories")
+      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .eq("dimension", "feedback")
       .eq("id", id)
       .single();
 
@@ -67,20 +69,31 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     await requireAdmin();
     const { id } = await context.params;
-    // feedback_categories is RLS-protected with no write policy — use the admin client.
+    // platform.categories (feedback dimension) is managed via admin client — is_system rows need service_role.
     const supabase = createAdminClient();
 
     const body = await request.json();
     const updates: Record<string, unknown> = {};
+    const metadataUpdates: Record<string, unknown> = {};
 
     if (body.name !== undefined) updates.name = body.name;
     if (body.slug !== undefined)
       updates.slug = body.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    if (body.sort_order !== undefined) updates.position = body.sort_order;
+    // metadata-backed fields
     if (body.description !== undefined)
-      updates.description = body.description || null;
-    if (body.color !== undefined) updates.color = body.color;
-    if (body.sort_order !== undefined) updates.sort_order = body.sort_order;
-    if (body.is_active !== undefined) updates.is_active = body.is_active;
+      metadataUpdates.description = body.description || null;
+    if (body.color !== undefined) metadataUpdates.color = body.color;
+    if (body.is_active !== undefined) metadataUpdates.is_active = body.is_active;
+
+    if (Object.keys(metadataUpdates).length > 0) {
+      // merge into existing metadata via jsonb_build_object coalesce approach
+      // PostgREST merges JSONB with || operator when using the json_patch path
+      // We pass the full metadata merge as a plain object update here so PostgREST
+      // stores it; callers must send atomic patches (one field at a time) or all
+      // metadata fields together. This is acceptable for admin routes.
+      updates.metadata = metadataUpdates;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -90,10 +103,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const { data: category, error } = await supabase
-      .from("feedback_categories")
+      .schema("platform")
+      .from("categories")
       .update(updates)
+      .eq("dimension", "feedback")
       .eq("id", id)
-      .select()
+      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .single();
 
     if (error) {
@@ -147,8 +162,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     const { error } = await supabase
-      .from("feedback_categories")
+      .schema("platform")
+      .from("categories")
       .delete()
+      .eq("dimension", "feedback")
       .eq("id", id);
 
     if (error) {

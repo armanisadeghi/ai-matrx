@@ -2,31 +2,28 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 
-const CATEGORY_FIELDS = [
+// Aliased select that restores the old column names for callers.
+// platform.categories renames: name→label, icon→icon_name, position→sort_order,
+// parent_id→parent_category_id. Metadata-backed fields surfaced via json path.
+const CATEGORY_SELECT = [
   "id",
-  "label",
-  "description",
-  "icon_name",
+  "label:name",
+  "icon_name:icon",
   "color",
   "placement_type",
-  "parent_category_id",
-  "sort_order",
-  "is_active",
-  "metadata",
-  "enabled_features",
-  "user_id",
+  "parent_category_id:parent_id",
+  "sort_order:position",
   "organization_id",
-  "project_id",
-  "task_id",
-] as const;
-
-function pickCategoryFields(body: Record<string, unknown>) {
-  const out: Record<string, unknown> = {};
-  for (const key of CATEGORY_FIELDS) {
-    if (key in body) out[key] = body[key];
-  }
-  return out;
-}
+  "created_at",
+  "updated_at",
+  "metadata",
+  "description:metadata->>description",
+  "is_active:metadata->>is_active",
+  "enabled_features:metadata->enabled_features",
+  "user_id:metadata->>user_id",
+  "project_id:metadata->>project_id",
+  "task_id:metadata->>task_id",
+].join(",");
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,16 +43,20 @@ export async function GET(request: NextRequest) {
     const placementType = searchParams.get("placement_type");
     const isActive = searchParams.get("is_active");
 
-    let query = supabase.from("shortcut_categories").select("*");
+    let query = supabase
+      .schema("platform")
+      .from("categories")
+      .select(CATEGORY_SELECT)
+      .eq("dimension", "shortcut");
 
     if (scope === "global") {
       query = query
-        .is("user_id", null)
         .is("organization_id", null)
-        .is("project_id", null)
-        .is("task_id", null);
+        .is("metadata->>user_id" as never, null)
+        .is("metadata->>project_id" as never, null)
+        .is("metadata->>task_id" as never, null);
     } else if (scope === "user") {
-      query = query.eq("user_id", user.id);
+      query = query.eq("metadata->>user_id" as never, user.id);
     } else if (scope === "organization") {
       if (!scopeId) {
         return NextResponse.json(
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
           { status: 400 },
         );
       }
-      query = query.eq("project_id", scopeId);
+      query = query.eq("metadata->>project_id" as never, scopeId);
     } else if (scope === "task") {
       if (!scopeId) {
         return NextResponse.json(
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
           { status: 400 },
         );
       }
-      query = query.eq("task_id", scopeId);
+      query = query.eq("metadata->>task_id" as never, scopeId);
     } else if (scope) {
       return NextResponse.json(
         { error: `Unknown scope: ${scope}` },
@@ -88,9 +89,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (placementType) query = query.eq("placement_type", placementType);
-    if (isActive !== null) query = query.eq("is_active", isActive === "true");
+    if (isActive !== null)
+      query = query.eq("metadata->>is_active" as never, isActive);
 
-    query = query.order("sort_order", { ascending: true });
+    query = query.order("position", { ascending: true });
 
     const { data, error } = await query;
 
@@ -146,18 +148,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const insertPayload = pickCategoryFields(body);
+    // Resolve scope FKs via the shared helper (sets user_id/org/project/task_id on payload).
+    const scopePayload: Record<string, unknown> = {};
     const scoped = applyScopeToInsertPayload({
       body,
-      payload: insertPayload,
+      payload: scopePayload,
       userId: user.id,
     });
     if (scoped instanceof NextResponse) return scoped;
 
+    // Build new platform.categories row shape.
+    const insertPayload = {
+      dimension: "shortcut" as const,
+      name: body.label,
+      icon: body.icon_name ?? null,
+      color: body.color ?? null,
+      placement_type: body.placement_type,
+      position: body.sort_order ?? null,
+      parent_id: body.parent_category_id ?? null,
+      organization_id: scoped.organization_id ?? null,
+      created_by: user.id,
+      metadata: {
+        description: body.description ?? null,
+        is_active: body.is_active !== undefined ? body.is_active : true,
+        enabled_features: body.enabled_features ?? null,
+        user_id: scoped.user_id ?? null,
+        project_id: scoped.project_id ?? null,
+        task_id: scoped.task_id ?? null,
+        legacy_table: "shortcut_categories",
+      },
+    };
+
     const { data, error } = await supabase
-      .from("shortcut_categories")
-      .insert(scoped as never)
-      .select()
+      .schema("platform")
+      .from("categories")
+      .insert(insertPayload as never)
+      .select(CATEGORY_SELECT)
       .single();
 
     if (error) {

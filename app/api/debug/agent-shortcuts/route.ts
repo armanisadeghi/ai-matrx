@@ -30,8 +30,10 @@ export async function GET() {
       viewRows,
     ] = await Promise.all([
       client
-        .from("shortcut_categories")
-        .select("*", { count: "exact", head: true }),
+        .schema("platform")
+        .from("categories")
+        .select("*", { count: "exact", head: true })
+        .eq("dimension", "shortcut"),
       client
         .schema("agent")
         .from("shortcut")
@@ -42,10 +44,12 @@ export async function GET() {
         .from("definition")
         .select("*", { count: "exact", head: true }),
       client
-        .from("shortcut_categories")
+        .schema("platform")
+        .from("categories")
         .select(
-          "id,label,placement_type,parent_category_id,is_active,user_id,organization_id",
+          "id,label:name,placement_type,parent_category_id:parent_id,is_active:metadata->>is_active,user_id:metadata->>user_id,organization_id",
         )
+        .eq("dimension", "shortcut")
         .limit(10),
       client
         .schema("agent")

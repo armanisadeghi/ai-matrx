@@ -1,30 +1,26 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-const CATEGORY_UPDATE_FIELDS = [
-  "label",
-  "description",
-  "icon_name",
+// Aliased select that restores the old column names for callers.
+const CATEGORY_SELECT = [
+  "id",
+  "label:name",
+  "icon_name:icon",
   "color",
   "placement_type",
-  "parent_category_id",
-  "sort_order",
-  "is_active",
-  "metadata",
-  "enabled_features",
-  "user_id",
+  "parent_category_id:parent_id",
+  "sort_order:position",
   "organization_id",
-  "project_id",
-  "task_id",
-] as const;
-
-function pickUpdateFields(body: Record<string, unknown>) {
-  const out: Record<string, unknown> = {};
-  for (const key of CATEGORY_UPDATE_FIELDS) {
-    if (key in body) out[key] = body[key];
-  }
-  return out;
-}
+  "created_at",
+  "updated_at",
+  "metadata",
+  "description:metadata->>description",
+  "is_active:metadata->>is_active",
+  "enabled_features:metadata->enabled_features",
+  "user_id:metadata->>user_id",
+  "project_id:metadata->>project_id",
+  "task_id:metadata->>task_id",
+].join(",");
 
 export async function GET(
   _request: NextRequest,
@@ -43,8 +39,10 @@ export async function GET(
     }
 
     const { data, error } = await supabase
-      .from("shortcut_categories")
-      .select("*")
+      .schema("platform")
+      .from("categories")
+      .select(CATEGORY_SELECT)
+      .eq("dimension", "shortcut")
       .eq("id", id)
       .maybeSingle();
 
@@ -103,20 +101,61 @@ export async function PATCH(
       );
     }
 
-    const updatePayload = pickUpdateFields(body);
+    // Map old column names to new platform.categories schema.
+    const topLevel: Record<string, unknown> = {};
+    const metadataUpdates: Record<string, unknown> = {};
+    let hasUpdates = false;
 
-    if (Object.keys(updatePayload).length === 0) {
+    if ("label" in body) { topLevel.name = body.label; hasUpdates = true; }
+    if ("icon_name" in body) { topLevel.icon = body.icon_name; hasUpdates = true; }
+    if ("color" in body) { topLevel.color = body.color; hasUpdates = true; }
+    if ("placement_type" in body) { topLevel.placement_type = body.placement_type; hasUpdates = true; }
+    if ("parent_category_id" in body) { topLevel.parent_id = body.parent_category_id; hasUpdates = true; }
+    if ("sort_order" in body) { topLevel.position = body.sort_order; hasUpdates = true; }
+    if ("organization_id" in body) { topLevel.organization_id = body.organization_id; hasUpdates = true; }
+
+    if ("description" in body) { metadataUpdates.description = body.description; hasUpdates = true; }
+    if ("is_active" in body) { metadataUpdates.is_active = body.is_active; hasUpdates = true; }
+    if ("enabled_features" in body) { metadataUpdates.enabled_features = body.enabled_features; hasUpdates = true; }
+    if ("user_id" in body) { metadataUpdates.user_id = body.user_id; hasUpdates = true; }
+    if ("project_id" in body) { metadataUpdates.project_id = body.project_id; hasUpdates = true; }
+    if ("task_id" in body) { metadataUpdates.task_id = body.task_id; hasUpdates = true; }
+
+    if (!hasUpdates) {
       return NextResponse.json(
         { error: "No updatable fields provided" },
         { status: 400 },
       );
     }
 
+    // Merge metadata patch if needed (use jsonb concat via the update payload).
+    if (Object.keys(metadataUpdates).length > 0) {
+      // PostgREST doesn't support partial jsonb merge via update directly;
+      // pass metadata as a plain object that replaces only the specified sub-keys
+      // by fetching existing metadata first and merging server-side.
+      const { data: existing } = await supabase
+        .schema("platform")
+        .from("categories")
+        .select("metadata")
+        .eq("dimension", "shortcut")
+        .eq("id", id)
+        .maybeSingle();
+
+      topLevel.metadata = {
+        ...(existing?.metadata as Record<string, unknown> | null ?? {}),
+        ...metadataUpdates,
+      };
+    }
+
+    const updatePayload = { ...topLevel };
+
     const { data, error } = await supabase
-      .from("shortcut_categories")
+      .schema("platform")
+      .from("categories")
       .update(updatePayload as never)
+      .eq("dimension", "shortcut")
       .eq("id", id)
-      .select()
+      .select(CATEGORY_SELECT)
       .maybeSingle();
 
     if (error) {
@@ -168,8 +207,10 @@ export async function DELETE(
     }
 
     const { error, count } = await supabase
-      .from("shortcut_categories")
+      .schema("platform")
+      .from("categories")
       .delete({ count: "exact" })
+      .eq("dimension", "shortcut")
       .eq("id", id);
 
     if (error) {

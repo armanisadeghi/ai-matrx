@@ -354,13 +354,17 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       setLoading(true);
       const supabase = createClient();
 
-      // Load all categories from unified shortcut_categories
+      // Load all categories from platform.categories (dimension: shortcut)
       const { data: allCategoriesData, error: categoryError } = await supabase
-        .from("shortcut_categories")
-        .select("*")
+        .schema("platform")
+        .from("categories")
+        .select(
+          "id, label:name, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, parent_category_id:parent_id, placement_type",
+        )
+        .eq("dimension", "shortcut")
         .eq("placement_type", "content-block")
-        .eq("is_active", true)
-        .order("sort_order");
+        .eq("metadata->>is_active", "true")
+        .order("position");
 
       if (categoryError) throw categoryError;
 
@@ -667,19 +671,20 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         ? findCategoryById(parentCategoryId)?.color || color
         : color;
 
-      // Insert into unified shortcut_categories table
+      // Insert into platform.categories (dimension: shortcut)
       const { data, error } = await supabase
-        .from("shortcut_categories")
+        .schema("platform")
+        .from("categories")
         .insert([
           {
+            dimension: "shortcut",
             placement_type: "content-block",
-            parent_category_id: parentCategoryId,
-            label: label,
-            icon_name: iconName,
+            parent_id: parentCategoryId,
+            name: label,
+            icon: iconName,
             color: finalColor,
-            sort_order: maxSortOrder + 1,
-            is_active: true,
-            metadata: {},
+            position: maxSortOrder + 1,
+            metadata: { is_active: true, legacy_table: "shortcut_categories" },
           },
         ])
         .select()
@@ -714,9 +719,27 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const handleUpdateCategory = async (categoryId: string, updates: any) => {
     try {
       const supabase = createClient();
+      // Remap old column names to platform.categories columns
+      const remapped: Record<string, unknown> = {};
+      const metaUpdates: Record<string, unknown> = {};
+      if ("label" in updates) remapped.name = updates.label;
+      if ("icon_name" in updates) remapped.icon = updates.icon_name;
+      if ("sort_order" in updates) remapped.position = updates.sort_order;
+      if ("parent_category_id" in updates)
+        remapped.parent_id = updates.parent_category_id;
+      if ("color" in updates) remapped.color = updates.color;
+      if ("placement_type" in updates)
+        remapped.placement_type = updates.placement_type;
+      if ("is_active" in updates) metaUpdates.is_active = updates.is_active;
+      if (Object.keys(metaUpdates).length > 0) {
+        // Merge into metadata jsonb via jsonb_set equivalent: pass metadata patch
+        remapped.metadata = metaUpdates;
+      }
       const { error } = await supabase
-        .from("shortcut_categories")
-        .update(updates)
+        .schema("platform")
+        .from("categories")
+        .update(remapped)
+        .eq("dimension", "shortcut")
         .eq("id", categoryId);
 
       if (error) throw error;
@@ -788,8 +811,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           await handleUpdateCategory(item.id, { is_active: false });
         } else {
           const { error } = await supabase
-            .from("shortcut_categories")
+            .schema("platform")
+            .from("categories")
             .delete()
+            .eq("dimension", "shortcut")
             .eq("id", item.id);
 
           if (error) throw error;

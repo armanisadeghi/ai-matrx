@@ -282,8 +282,10 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
 
     let cancelled = false;
     supabase
-      .from("shortcut_categories")
-      .select("label")
+      .schema("platform")
+      .from("categories")
+      .select("label:name")
+      .eq("dimension", "shortcut")
       .eq("id", category)
       .maybeSingle()
       .then(({ data, error }) => {

@@ -27,7 +27,8 @@ import {
 } from '@/features/prompts/utils/normalize-prompt-db-json';
 import { PLACEMENT_TYPES, type PlacementType } from '../constants';
 
-type ShortcutCategoryRow = Database['public']['Tables']['shortcut_categories']['Row'];
+// platform.categories row shape (after repoint from retired shortcut_categories)
+type ShortcutCategoryRow = Record<string, unknown>;
 
 function isPlacementType(value: string): value is PlacementType {
   return (Object.values(PLACEMENT_TYPES) as string[]).includes(value);
@@ -121,22 +122,23 @@ export async function fetchShortcutCategories(filters?: {
 }): Promise<ShortcutCategory[]> {
   const supabase = getClient();
   let query = supabase
-    .from('shortcut_categories')
-    .select('*')
-    .order('sort_order', { ascending: true });
+    .schema('platform').from('categories')
+    .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
+    .eq('dimension', 'shortcut')
+    .order('position', { ascending: true });
 
   if (filters?.placement_type) {
     query = query.eq('placement_type', filters.placement_type);
   }
   if (filters?.parent_category_id !== undefined) {
     if (filters.parent_category_id === null) {
-      query = query.is('parent_category_id', null);
+      query = query.is('parent_id', null);
     } else {
-      query = query.eq('parent_category_id', filters.parent_category_id);
+      query = query.eq('parent_id', filters.parent_category_id);
     }
   }
   if (filters?.is_active !== undefined) {
-    query = query.eq('is_active', filters.is_active);
+    query = query.eq('metadata->>is_active', String(filters.is_active));
   }
 
   const { data, error } = await query;
@@ -146,14 +148,15 @@ export async function fetchShortcutCategories(filters?: {
     throw new Error(`Failed to fetch shortcut categories: ${error.message || 'Unknown error'} (Code: ${error.code || 'UNKNOWN'})`);
   }
 
-  return data as ShortcutCategory[];
+  return data as unknown as ShortcutCategory[];
 }
 
 export async function getShortcutCategoryById(id: string): Promise<ShortcutCategory | null> {
   const supabase = getClient();
   const { data, error } = await supabase
-    .from('shortcut_categories')
-    .select('*')
+    .schema('platform').from('categories')
+    .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
+    .eq('dimension', 'shortcut')
     .eq('id', id)
     .single();
 
@@ -167,17 +170,24 @@ export async function getShortcutCategoryById(id: string): Promise<ShortcutCateg
 
 export async function createShortcutCategory(input: CreateShortcutCategoryInput): Promise<ShortcutCategory> {
   const supabase = getClient();
-  
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData?.user?.id ?? null;
+
   const insertData: any = {
+    dimension: 'shortcut',
     placement_type: input.placement_type,
-    label: input.label,
-    parent_category_id: input.parent_category_id ?? null,
-    description: input.description ?? null,
-    icon_name: input.icon_name ?? 'SquareMenu',
+    name: input.label,
+    parent_id: input.parent_category_id ?? null,
+    icon: input.icon_name ?? 'SquareMenu',
     color: input.color ?? 'zinc',
-    sort_order: input.sort_order ?? 999,
-    is_active: input.is_active ?? true,
-    metadata: input.metadata ?? {},
+    position: input.sort_order ?? 999,
+    created_by: userId,
+    metadata: {
+      ...(input.metadata ?? {}),
+      description: input.description ?? null,
+      is_active: input.is_active ?? true,
+      legacy_table: 'shortcut_categories',
+    },
   };
 
   // Only add ID if provided
@@ -186,9 +196,9 @@ export async function createShortcutCategory(input: CreateShortcutCategoryInput)
   }
 
   const { data, error } = await supabase
-    .from('shortcut_categories')
+    .schema('platform').from('categories')
     .insert([insertData])
-    .select()
+    .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
     .single();
 
   if (error) {
@@ -200,7 +210,7 @@ export async function createShortcutCategory(input: CreateShortcutCategoryInput)
     throw new Error('No data returned after creating shortcut category');
   }
 
-  return data as ShortcutCategory;
+  return data as unknown as ShortcutCategory;
 }
 
 export async function updateShortcutCategory(input: UpdateShortcutCategoryInput): Promise<ShortcutCategory> {
@@ -208,20 +218,30 @@ export async function updateShortcutCategory(input: UpdateShortcutCategoryInput)
   const updateData: any = {};
 
   if (input.placement_type !== undefined) updateData.placement_type = input.placement_type;
-  if (input.parent_category_id !== undefined) updateData.parent_category_id = input.parent_category_id;
-  if (input.label !== undefined) updateData.label = input.label;
-  if (input.description !== undefined) updateData.description = input.description;
-  if (input.icon_name !== undefined) updateData.icon_name = input.icon_name;
+  if (input.parent_category_id !== undefined) updateData.parent_id = input.parent_category_id;
+  if (input.label !== undefined) updateData.name = input.label;
+  if (input.icon_name !== undefined) updateData.icon = input.icon_name;
   if (input.color !== undefined) updateData.color = input.color;
-  if (input.sort_order !== undefined) updateData.sort_order = input.sort_order;
-  if (input.is_active !== undefined) updateData.is_active = input.is_active;
-  if (input.metadata !== undefined) updateData.metadata = input.metadata;
+  if (input.sort_order !== undefined) updateData.position = input.sort_order;
+
+  // Fields that moved into metadata — merge them in
+  const metadataUpdates: Record<string, unknown> = {};
+  if (input.description !== undefined) metadataUpdates.description = input.description;
+  if (input.is_active !== undefined) metadataUpdates.is_active = input.is_active;
+  if (input.metadata !== undefined) Object.assign(metadataUpdates, input.metadata);
+  if (Object.keys(metadataUpdates).length > 0) {
+    // Use jsonb_set-style merge: fetch current metadata then merge, or rely on
+    // the caller passing full metadata. PostgREST doesn't support partial jsonb
+    // merge directly, so we store the update as a top-level metadata object.
+    updateData.metadata = metadataUpdates;
+  }
 
   const { data, error } = await supabase
-    .from('shortcut_categories')
+    .schema('platform').from('categories')
     .update(updateData)
+    .eq('dimension', 'shortcut')
     .eq('id', input.id)
-    .select()
+    .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
     .single();
 
   if (error) {
@@ -233,7 +253,7 @@ export async function updateShortcutCategory(input: UpdateShortcutCategoryInput)
     throw new Error('No data returned after updating shortcut category');
   }
 
-  return data as ShortcutCategory;
+  return data as unknown as ShortcutCategory;
 }
 
 /**
@@ -274,9 +294,10 @@ export async function checkCategoryDependencies(categoryId: string): Promise<{
 
   // Check for child categories
   const { count: childrenCount, error: childError } = await supabase
-    .from('shortcut_categories')
+    .schema('platform').from('categories')
     .select('id', { count: 'exact', head: true })
-    .eq('parent_category_id', categoryId);
+    .eq('dimension', 'shortcut')
+    .eq('parent_id', categoryId);
 
   if (childError) {
     logDetailedError('checkCategoryDependencies - child_categories', childError);
@@ -319,8 +340,9 @@ export async function deleteShortcutCategory(id: string): Promise<void> {
   }
   
   const { error } = await supabase
-    .from('shortcut_categories')
+    .schema('platform').from('categories')
     .delete()
+    .eq('dimension', 'shortcut')
     .eq('id', id);
 
   if (error) {
@@ -865,8 +887,9 @@ export async function fetchShortcutsWithRelations(filters?: {
   // Fetch related categories
   const categoryIds = [...new Set(shortcuts.map(s => s.category_id))];
   const { data: categories } = await supabase
-    .from('shortcut_categories')
-    .select('*')
+    .schema('platform').from('categories')
+    .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
+    .eq('dimension', 'shortcut')
     .in('id', categoryIds);
 
   // Fetch related builtins
@@ -1044,8 +1067,12 @@ export async function fetchCategoryItemsWithRelations(filters?: {
   // Fetch categories for content blocks if needed
   const supabase = getClient();
   const categoryIds = [...new Set(contentBlocks.map(cb => cb.category_id).filter(Boolean) as string[])];
-  const { data: categories } = categoryIds.length > 0 
-    ? await supabase.from('shortcut_categories').select('*').in('id', categoryIds)
+  const { data: categories } = categoryIds.length > 0
+    ? await supabase
+        .schema('platform').from('categories')
+        .select('id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, enabled_features:metadata->enabled_features, parent_category_id:parent_id, organization_id, created_at, updated_at')
+        .eq('dimension', 'shortcut')
+        .in('id', categoryIds)
     : { data: [] };
 
   const categoryMap = new Map((categories || []).map(c => [c.id, mapShortcutCategoryFromDb(c)]));

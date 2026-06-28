@@ -164,8 +164,10 @@ async function getCategoryName(
   try {
     const supabase = createAdminClient();
     const { data } = await supabase
-      .from("feedback_categories")
+      .schema("platform")
+      .from("categories")
       .select("name")
+      .eq("dimension", "feedback")
       .eq("id", categoryId)
       .maybeSingle();
     return data?.name ?? null;
