@@ -606,6 +606,7 @@ export function PicklistManagerV1({
     );
     setSaveStatus("saving");
     const { error } = await supabase
+      .schema("workbench")
       .from("udt_picklist_items")
       .update({ [field]: value })
       .eq("id", id);
@@ -667,6 +668,7 @@ export function PicklistManagerV1({
     setSaveStatus("saving");
 
     const { error } = await supabase
+      .schema("workbench")
       .from("udt_picklist_items")
       .update({ group_name: newName || null })
       .eq("list_id", activeId)

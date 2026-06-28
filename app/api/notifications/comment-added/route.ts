@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     // Get commenter's name
     const { data: commenterProfile } = await supabase
-      .schema("user")
+      .schema("users")
       .from("profiles")
       .select("display_name")
       .eq("id", user.id)

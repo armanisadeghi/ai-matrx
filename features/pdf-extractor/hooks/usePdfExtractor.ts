@@ -200,7 +200,8 @@ async function fetchProcessedDocument(
 
   const promise = (async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
+        .schema("docproc")
         .from("processed_documents")
         .select("*")
         .eq("id", docId)
@@ -302,7 +303,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     if (!userId) return;
     setHistoryLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
+        .schema("docproc")
         .from("processed_documents")
         // Metadata-only projection. We deliberately do NOT pull `content`,
         // `clean_content`, or `structured_json` here — those columns can be

@@ -27,7 +27,7 @@ export async function submitInvitationRequestStep1(
 
     // Check if email already exists
     const { data: existing } = await supabase
-      .schema('user')
+      .schema('users')
       .from('invitation_requests')
       .select('id, status')
       .eq('email', data.email.toLowerCase().trim())
@@ -44,7 +44,7 @@ export async function submitInvitationRequestStep1(
       // If rejected, they can resubmit
       if (existing.status === 'rejected') {
         const { data: updated, error: updateError } = await supabase
-          .schema('user')
+          .schema('users')
           .from('invitation_requests')
           .update({
             ...data,
@@ -75,7 +75,7 @@ export async function submitInvitationRequestStep1(
 
     // Create new invitation request
     const { data: newRequest, error } = await supabase
-      .schema('user')
+      .schema('users')
       .from('invitation_requests')
       .insert({
         ...data,
@@ -135,7 +135,7 @@ export async function submitInvitationRequestStep2(
 
     // Update the existing request with step 2 data
     const { error } = await supabase
-      .schema('user')
+      .schema('users')
       .from('invitation_requests')
       .update({
         ...data,
@@ -170,7 +170,7 @@ export async function validateInvitationCode(
 
     // Check if code exists and is valid
     const { data, error } = await supabase
-      .schema('user')
+      .schema('users')
       .from('invitation_codes')
       .select('id, code, status, max_uses, current_uses, expires_at')
       .eq('code', cleanCode)

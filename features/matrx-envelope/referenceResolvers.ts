@@ -127,6 +127,7 @@ async function resolveCell(
 ): Promise<string | undefined> {
   if (!rowId || !column) return undefined;
   const { data, error } = await supabase
+    .schema("workbench")
     .from("udt_dataset_rows")
     .select("data")
     .eq("id", rowId)
@@ -152,6 +153,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_picklists")
         .select("list_name, description")
         .eq("id", ref.list_id)
@@ -182,6 +184,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.item_id) return undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_picklist_items")
         .select("description, label")
         .eq("id", ref.item_id)
@@ -203,6 +206,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.table_id) return undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_datasets")
         .select("table_name, description")
         .eq("id", ref.table_id)
@@ -227,11 +231,13 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         { data: fields, error: fieldsErr },
       ] = await Promise.all([
         supabase
+          .schema("workbench")
           .from("udt_datasets")
           .select("table_name")
           .eq("id", ref.table_id)
           .maybeSingle(),
         supabase
+          .schema("workbench")
           .from("udt_dataset_fields")
           .select("display_name, field_name, data_type")
           .eq("table_id", ref.table_id)
@@ -271,6 +277,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.table_id || !ref.column_name) return undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_dataset_fields")
         .select("display_name, field_name")
         .eq("table_id", ref.table_id)
@@ -299,6 +306,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.row_id) return undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_dataset_rows")
         .select("data")
         .eq("id", ref.row_id)
@@ -350,6 +358,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   note: createRecordResolver({
     openItemType: "note",
     table: "notes",
+    schema: "workbench",
     select: "label, content",
     titleFields: ["label"],
     bodyFields: ["content"],
@@ -476,6 +485,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     ...createRecordResolver({
       openItemType: "file",
       table: "transcripts",
+      schema: "transcripts",
       select: "title, description",
       titleFields: ["title"],
       bodyFields: ["description"],
@@ -499,6 +509,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       const idx = Number.parseInt(ref.segment_index ?? "", 10);
       if (!Number.isFinite(idx) || idx < 0) return stringify(ref.label);
       const { data, error } = await supabase
+        .schema("transcripts")
         .from("transcripts")
         .select("title, content")
         .eq("id", ref.transcript_id)
@@ -528,6 +539,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.transcript_id) return undefined;
       const { data, error } = await supabase
+        .schema("transcripts")
         .from("transcripts")
         .select("title, description")
         .eq("id", ref.transcript_id)
@@ -547,6 +559,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   workbook: createRecordResolver({
     openItemType: "workbook",
     table: "udt_workbooks",
+    schema: "workbench",
     select: "workbook_name, description",
     titleFields: ["workbook_name"],
     bodyFields: ["description"],
@@ -554,6 +567,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   document: createRecordResolver({
     openItemType: "document",
     table: "udt_documents",
+    schema: "workbench",
     select: "document_name, description",
     titleFields: ["document_name"],
     bodyFields: ["description"],
@@ -569,6 +583,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
         stringify(ref.workbook_name) ??
         stringify(ref.label);
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_workbooks")
         .select("workbook_name")
         .eq("id", ref.workbook_id)
@@ -594,6 +609,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
       // is intentional: an empty/absent page yields no page suffix.
       const page = ref.page_index ? `p.${ref.page_index}` : undefined;
       const { data, error } = await supabase
+        .schema("workbench")
         .from("udt_documents")
         .select("document_name")
         .eq("id", ref.document_id)

@@ -28,6 +28,8 @@ import type {
 type LooseSupabase = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: (schema: string) => { from: (table: string) => any };
 };
 const db = supabase as unknown as LooseSupabase;
 
@@ -114,7 +116,7 @@ export async function listSessions(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const { data, error } = await applySourceFilter(
-    db.from("studio_sessions").select("*").eq("is_deleted", false),
+    db.schema("transcripts").from("studio_sessions").select("*").eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -128,6 +130,7 @@ export async function listSessions(
 
 export async function getSession(id: string): Promise<StudioSession | null> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .select("*")
     .eq("id", id)
@@ -154,6 +157,7 @@ export async function createSession(
   };
 
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .insert(insert)
     .select("*")
@@ -194,6 +198,7 @@ export async function updateSession(
   // a missing row returns null so callers no-op instead of surfacing
   // PostgREST's "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .update(update)
     .eq("id", id)
@@ -212,6 +217,7 @@ export async function updateSession(
  */
 export async function softDeleteSession(id: string): Promise<void> {
   const { error } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .update({ is_deleted: true })
     .eq("id", id);
@@ -225,12 +231,13 @@ export async function softDeleteSession(id: string): Promise<void> {
 export async function listSessionsServer(
   serverClient: {
     from: (table: string) => unknown;
+    schema: (schema: string) => { from: (table: string) => unknown };
   },
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await applySourceFilter(
-    looseClient.from("studio_sessions").select("*").eq("is_deleted", false),
+    looseClient.schema("transcripts").from("studio_sessions").select("*").eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -244,11 +251,13 @@ export async function listSessionsServer(
 export async function getSessionServer(
   serverClient: {
     from: (table: string) => unknown;
+    schema: (schema: string) => { from: (table: string) => unknown };
   },
   id: string,
 ): Promise<StudioSession | null> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_sessions")
     .select("*")
     .eq("id", id)
@@ -305,6 +314,7 @@ export async function insertRawSegment(
   input: InsertRawSegmentInput,
 ): Promise<import("../types").RawSegment> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_raw_segments")
     .insert({
       session_id: input.sessionId,
@@ -330,6 +340,7 @@ export async function listRawSegments(
   sessionId: string,
 ): Promise<import("../types").RawSegment[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_raw_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -341,11 +352,12 @@ export async function listRawSegments(
 }
 
 export async function listRawSegmentsServer(
-  serverClient: { from: (table: string) => unknown },
+  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
   sessionId: string,
 ): Promise<import("../types").RawSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_raw_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -362,6 +374,7 @@ export async function updateRawSegmentText(
   text: string,
 ): Promise<import("../types").RawSegment> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_raw_segments")
     .update({ text })
     .eq("id", id)
@@ -377,7 +390,7 @@ export async function updateRawSegmentText(
 
 /** Hard-delete a raw segment. Use case: corrective edits on noisy chunks. */
 export async function deleteRawSegment(id: string): Promise<void> {
-  const { error } = await db.from("studio_raw_segments").delete().eq("id", id);
+  const { error } = await db.schema("transcripts").from("studio_raw_segments").delete().eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteRawSegment failed: ${error.message}`);
   }
@@ -444,6 +457,7 @@ export async function setRecordingSegmentState(
   // returns null so callers can no-op instead of surfacing PostgREST's cryptic
   // "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
@@ -463,6 +477,7 @@ export async function listUnsortedRecordingSegments(
   userId: string,
 ): Promise<import("../types").RecordingSegment[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .select("*")
     .eq("user_id", userId)
@@ -480,6 +495,7 @@ export async function insertRecordingSegment(
   input: import("../types").CreateRecordingSegmentInput,
 ): Promise<import("../types").RecordingSegment> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .insert({
       session_id: input.sessionId,
@@ -511,6 +527,7 @@ export async function updateRecordingSegment(
   // (callers no-op) rather than throwing PostgREST's "Cannot coerce the result
   // to a single JSON object"; genuine errors still throw.
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
@@ -527,6 +544,7 @@ export async function listRecordingSegments(
   sessionId: string,
 ): Promise<import("../types").RecordingSegment[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -538,11 +556,12 @@ export async function listRecordingSegments(
 }
 
 export async function listRecordingSegmentsServer(
-  serverClient: { from: (table: string) => unknown },
+  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
   sessionId: string,
 ): Promise<import("../types").RecordingSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_recording_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -563,6 +582,7 @@ export async function listRecordingSegmentsServer(
  */
 export async function deleteRecordingSegment(id: string): Promise<void> {
   const { error: rawError } = await db
+    .schema("transcripts")
     .from("studio_raw_segments")
     .delete()
     .eq("recording_segment_id", id);
@@ -572,6 +592,7 @@ export async function deleteRecordingSegment(id: string): Promise<void> {
     );
   }
   const { error } = await db
+    .schema("transcripts")
     .from("studio_recording_segments")
     .delete()
     .eq("id", id);
@@ -612,6 +633,7 @@ export async function listStudioDocuments(
   sessionId: string,
 ): Promise<import("../types").StudioDocument[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_documents")
     .select("*")
     .eq("session_id", sessionId)
@@ -633,6 +655,7 @@ export async function getOrCreateWorkingDocument(
   title = "Working Document",
 ): Promise<import("../types").StudioDocument> {
   const existing = await db
+    .schema("transcripts")
     .from("studio_documents")
     .select("*")
     .eq("session_id", sessionId)
@@ -648,6 +671,7 @@ export async function getOrCreateWorkingDocument(
   }
 
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_documents")
     .insert({ session_id: sessionId, kind, title })
     .select("*")
@@ -655,6 +679,7 @@ export async function getOrCreateWorkingDocument(
   if (error) {
     // A concurrent insert won the race — re-read the now-existing row.
     const retry = await db
+      .schema("transcripts")
       .from("studio_documents")
       .select("*")
       .eq("session_id", sessionId)
@@ -692,6 +717,7 @@ export async function upsertStudioDocument(
   if (patch.title !== undefined) row.title = patch.title;
 
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_documents")
     .upsert(row, { onConflict: "session_id,kind" })
     .select("*")
@@ -714,6 +740,7 @@ export async function updateStudioDocumentContent(
   content: string,
 ): Promise<import("../types").StudioDocument> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_documents")
     .update({ content })
     .eq("id", id)
@@ -793,6 +820,7 @@ export async function insertAgentRun(
     insert.input_char_range = `[${input.inputCharRange[0]},${input.inputCharRange[1]})`;
   }
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_runs")
     .insert(insert)
     .select("*")
@@ -823,6 +851,7 @@ export async function finalizeAgentRun(
     update.conversation_id = input.conversationId;
   if (input.error !== undefined) update.error = input.error;
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_runs")
     .update(update)
     .eq("id", input.id)
@@ -876,6 +905,7 @@ export async function listCleanedSegments(
   // Active rows only — superseded ones stay in the DB for audit but never
   // surface to the UI.
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -888,11 +918,12 @@ export async function listCleanedSegments(
 }
 
 export async function listCleanedSegmentsServer(
-  serverClient: { from: (table: string) => unknown },
+  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
   sessionId: string,
 ): Promise<import("../types").CleanedSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -951,6 +982,7 @@ export async function applyCleanupRun(
   //  - Recording-aligned: only this recording's prior output for this processor.
   //  - Time-windowed (Studio): any active row at/after this window's start.
   let supersedeQuery = db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .update({ superseded_at: supersedeAt })
     .eq("session_id", input.sessionId)
@@ -983,6 +1015,7 @@ export async function applyCleanupRun(
   if (recordingAligned)
     insertRow.recording_segment_id = input.recordingSegmentId;
   const { data, error: insertError } = await db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .insert(insertRow)
     .select("*")
@@ -1001,6 +1034,7 @@ export async function updateCleanedSegmentText(
   text: string,
 ): Promise<import("../types").CleanedSegment> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .update({ text })
     .eq("id", id)
@@ -1017,6 +1051,7 @@ export async function updateCleanedSegmentText(
 /** Hard-delete a cleaned segment. Audit trail (`studio_runs`) is unaffected. */
 export async function deleteCleanedSegment(id: string): Promise<void> {
   const { error } = await db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .delete()
     .eq("id", id);
@@ -1095,6 +1130,7 @@ export async function insertConceptItems(
     confidence: i.confidence ?? null,
   }));
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_concept_items")
     .insert(rows)
     .select("*");
@@ -1110,6 +1146,7 @@ export async function listConceptItems(
   sessionId: string,
 ): Promise<import("../types").ConceptItem[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_concept_items")
     .select("*")
     .eq("session_id", sessionId)
@@ -1121,11 +1158,12 @@ export async function listConceptItems(
 }
 
 export async function listConceptItemsServer(
-  serverClient: { from: (table: string) => unknown },
+  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
   sessionId: string,
 ): Promise<import("../types").ConceptItem[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_concept_items")
     .select("*")
     .eq("session_id", sessionId)
@@ -1155,6 +1193,7 @@ export async function updateConceptItem(
   if (patch.description !== undefined) dbPatch.description = patch.description;
   if (patch.confidence !== undefined) dbPatch.confidence = patch.confidence;
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_concept_items")
     .update(dbPatch)
     .eq("id", id)
@@ -1169,7 +1208,7 @@ export async function updateConceptItem(
 }
 
 export async function deleteConceptItem(id: string): Promise<void> {
-  const { error } = await db.from("studio_concept_items").delete().eq("id", id);
+  const { error } = await db.schema("transcripts").from("studio_concept_items").delete().eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteConceptItem failed: ${error.message}`);
   }
@@ -1241,6 +1280,7 @@ export async function insertModuleSegments(
     payload: i.payload,
   }));
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_module_segments")
     .insert(rows)
     .select("*");
@@ -1256,6 +1296,7 @@ export async function listModuleSegments(
   sessionId: string,
 ): Promise<import("../types").ModuleSegment[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_module_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -1267,11 +1308,12 @@ export async function listModuleSegments(
 }
 
 export async function listModuleSegmentsServer(
-  serverClient: { from: (table: string) => unknown },
+  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
   sessionId: string,
 ): Promise<import("../types").ModuleSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await looseClient
+    .schema("transcripts")
     .from("studio_module_segments")
     .select("*")
     .eq("session_id", sessionId)
@@ -1290,6 +1332,7 @@ export async function updateModuleSegmentPayload(
   payload: unknown,
 ): Promise<import("../types").ModuleSegment> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_module_segments")
     .update({ payload })
     .eq("id", id)
@@ -1305,6 +1348,7 @@ export async function updateModuleSegmentPayload(
 
 export async function deleteModuleSegment(id: string): Promise<void> {
   const { error } = await db
+    .schema("transcripts")
     .from("studio_module_segments")
     .delete()
     .eq("id", id);
@@ -1355,6 +1399,7 @@ export async function fetchSessionSettings(
   (import("../types").SessionSettings & { showPriorModules: boolean }) | null
 > {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_session_settings")
     .select("*")
     .eq("session_id", sessionId)
@@ -1417,6 +1462,7 @@ export async function upsertSessionSettings(
   if (input.customSlots !== undefined) update.custom_slots = input.customSlots;
 
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_session_settings")
     .upsert(update, { onConflict: "session_id" })
     .select("*")

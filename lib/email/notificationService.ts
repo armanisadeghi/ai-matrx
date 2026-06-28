@@ -104,7 +104,7 @@ async function getUserDetails(
     }
 
     const { data: profile } = await supabase
-      .schema("user")
+      .schema("users")
       .from("profiles")
       .select("display_name")
       .eq("id", userId)

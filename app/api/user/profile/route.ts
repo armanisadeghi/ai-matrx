@@ -66,7 +66,7 @@ export async function GET() {
     // Pull the chat-visible row (may not exist yet — that's fine, we return
     // sensible defaults so the form has values to bind to).
     const { data: profileRow, error: profileError } = await supabase
-      .schema("user")
+      .schema("users")
       .from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)
@@ -197,7 +197,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       const { error: upsertError } = await supabase
-        .schema("user")
+        .schema("users")
       .from("profiles")
         .upsert(
           {
@@ -225,7 +225,7 @@ export async function PATCH(request: NextRequest) {
     const echoUser = (await supabase.auth.getUser()).data.user;
     const echoMeta = (echoUser?.user_metadata ?? {}) as Record<string, unknown>;
     const { data: echoProfile } = await supabase
-      .schema("user")
+      .schema("users")
       .from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)

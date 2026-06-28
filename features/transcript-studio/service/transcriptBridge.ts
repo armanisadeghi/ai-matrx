@@ -57,6 +57,8 @@ import type {
 type LooseSupabase = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: (schema: string) => { from: (table: string) => any };
 };
 const db = supabase as unknown as LooseSupabase;
 
@@ -82,6 +84,7 @@ async function findStudioSessionByTranscriptId(
   transcriptId: string,
 ): Promise<StudioSession | null> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .select("*")
     .eq("transcript_id", transcriptId)
@@ -135,6 +138,7 @@ export async function promoteTranscriptToStudio(
 
   // 1. Create the parent studio_sessions row.
   const { data: sessionRow, error: sessionError } = await db
+    .schema("transcripts")
     .from("studio_sessions")
     .insert({
       user_id: userId,
@@ -184,6 +188,7 @@ export async function promoteTranscriptToStudio(
       };
     });
     const { error: rawError } = await db
+      .schema("transcripts")
       .from("studio_raw_segments")
       .insert(rows);
     if (rawError) {
@@ -332,6 +337,7 @@ async function fetchActiveCleanedSegments(
   sessionId: string,
 ): Promise<{ tStart: number; tEnd: number; text: string }[]> {
   const { data, error } = await db
+    .schema("transcripts")
     .from("studio_cleaned_segments")
     .select("t_start, t_end, text")
     .eq("session_id", sessionId)

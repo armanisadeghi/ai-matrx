@@ -109,6 +109,7 @@ async function migrateMathProblems() {
             
             // Check if problem already exists
             const { data: existing } = await supabase
+                .schema('education')
                 .from('math_problems')
                 .select('id')
                 .eq('id', problem.id)
@@ -117,6 +118,7 @@ async function migrateMathProblems() {
             if (existing) {
                 // Update existing problem
                 const { error } = await supabase
+                    .schema('education')
                     .from('math_problems')
                     .update(transformedProblem)
                     .eq('id', problem.id);
@@ -126,6 +128,7 @@ async function migrateMathProblems() {
             } else {
                 // Insert new problem
                 const { error } = await supabase
+                    .schema('education')
                     .from('math_problems')
                     .insert(transformedProblem);
                 
