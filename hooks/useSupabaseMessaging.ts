@@ -15,6 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getMessagingService } from "@/lib/supabase/messaging";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
 import type {
   Message,
@@ -74,7 +75,7 @@ export function useMessages(
       try {
         // Fetch the most recent messages (descending to get newest first, then reverse for display)
         const { data: rawData, error: fetchError } = await supabase
-          .from("dm_messages")
+          .schema("communication").from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -314,7 +315,7 @@ export function useMessages(
 
     try {
       const { data, error: fetchError } = await supabase
-        .from("dm_messages")
+        .schema("communication").from("dm_messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
@@ -581,7 +582,7 @@ export function useConversations(
           }
 
           const { data: participants } = await supabase
-            .from("dm_conversation_participants")
+            .schema("communication").from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", conversationId);
 
@@ -630,6 +631,7 @@ export function useConversations(
                   created_at: conv.last_message_at as string,
                   edited_at: null,
                   client_message_id: null,
+                  action_data: null,
                 }
               : null,
             unread_count: conv.unread_count as number,
@@ -695,7 +697,7 @@ export function useConversations(
       "postgres_changes",
       {
         event: "INSERT",
-        schema: "public",
+        schema: "communication",
         table: "dm_messages",
       },
       async () => {
@@ -708,7 +710,7 @@ export function useConversations(
       "postgres_changes",
       {
         event: "UPDATE",
-        schema: "public",
+        schema: "communication",
         table: "dm_conversation_participants",
         filter: `user_id=eq.${userId}`,
       },
@@ -748,12 +750,15 @@ export function useConversations(
         return existingConv;
       }
 
+      const organizationId = await resolvePersonalOrgId();
+
       // Create new conversation
       const { data: newConv, error: createError } = await supabase
-        .from("dm_conversations")
+        .schema("communication").from("dm_conversations")
         .insert({
           type: "direct",
           created_by: userId,
+          organization_id: organizationId,
         })
         .select()
         .single();
@@ -762,7 +767,7 @@ export function useConversations(
 
       // Add both participants
       const { error: participantError } = await supabase
-        .from("dm_conversation_participants")
+        .schema("communication").from("dm_conversation_participants")
         .insert([
           { conversation_id: newConv.id, user_id: userId, role: "owner" },
           {

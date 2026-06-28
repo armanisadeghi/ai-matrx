@@ -31,7 +31,7 @@ export interface UpsertEntryInput {
   metadata?: Record<string, unknown>;
 }
 
-const supabase = () => createClient();
+const supabase = () => createClient().schema("agent");
 
 export async function createComparisonSet(
   input: CreateComparisonSetInput,

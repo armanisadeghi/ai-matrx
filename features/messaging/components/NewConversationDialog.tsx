@@ -96,7 +96,7 @@ export function NewConversationDialog({
 
     // Create new conversation
     const { data: newConv, error: createError } = await supabase
-      .from('dm_conversations')
+      .schema('communication').from('dm_conversations')
       .insert({
         type: 'direct',
         created_by: currentUserId,
@@ -108,7 +108,7 @@ export function NewConversationDialog({
 
     // Add both participants - this triggers realtime subscription in MessagingInitializer
     const { error: participantError } = await supabase
-      .from('dm_conversation_participants')
+      .schema('communication').from('dm_conversation_participants')
       .insert([
         { conversation_id: newConv.id, user_id: currentUserId, role: 'owner' },
         { conversation_id: newConv.id, user_id: participantId, role: 'member' },

@@ -28,13 +28,13 @@ export async function findOrCreateDirectConversation(
   if (existing) return existing as string;
 
   const { data: conv, error: createError } = await supabase
-    .from("dm_conversations")
+    .schema("communication").from("dm_conversations")
     .insert({ type: "direct", created_by: currentUserId })
     .select("id")
     .single();
   if (createError) throw createError;
 
-  const { error: partError } = await supabase.from("dm_conversation_participants").insert([
+  const { error: partError } = await supabase.schema("communication").from("dm_conversation_participants").insert([
     { conversation_id: conv.id, user_id: currentUserId, role: "owner" },
     { conversation_id: conv.id, user_id: recipientId, role: "member" },
   ]);

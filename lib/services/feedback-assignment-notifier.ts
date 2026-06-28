@@ -83,15 +83,27 @@ async function findOrCreateDirectConversation(
   if (findError) throw findError;
   if (existing) return existing;
 
+  const { data: organizationId, error: orgError } = await supabase.rpc(
+    "ensure_personal_organization",
+    { p_user_id: userA },
+  );
+  if (orgError || !organizationId) {
+    throw orgError ?? new Error("No personal organization for conversation creator");
+  }
+
   const { data: newConv, error: createError } = await supabase
-    .from("dm_conversations")
-    .insert({ type: "direct", created_by: userA })
+    .schema("communication").from("dm_conversations")
+    .insert({
+      type: "direct",
+      created_by: userA,
+      organization_id: organizationId,
+    })
     .select("id")
     .single();
   if (createError) throw createError;
 
   const { error: partErr } = await supabase
-    .from("dm_conversation_participants")
+    .schema("communication").from("dm_conversation_participants")
     .insert([
       { conversation_id: newConv.id, user_id: userA, role: "owner" },
       { conversation_id: newConv.id, user_id: userB, role: "member" },
@@ -115,7 +127,7 @@ async function sendAssignmentDm(
       assigneeId,
     );
     const supabase = createAdminClient();
-    const { error } = await supabase.from("dm_messages").insert({
+    const { error } = await supabase.schema("communication").from("dm_messages").insert({
       conversation_id: conversationId,
       sender_id: assignerId,
       content,

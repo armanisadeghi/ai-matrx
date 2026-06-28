@@ -85,6 +85,172 @@ export type Database = {
           },
         ]
       }
+      cmp_comparison_entries: {
+        Row: {
+          agent_id: string
+          agent_version: number | null
+          agent_version_snapshot_id: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at: string
+          display_order: number
+          id: string
+          metadata: Json
+        }
+        Insert: {
+          agent_id: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id: string
+          conversation_id: string
+          created_at?: string
+          display_order: number
+          id?: string
+          metadata?: Json
+        }
+        Update: {
+          agent_id?: string
+          agent_version?: number | null
+          agent_version_snapshot_id?: string | null
+          comparison_set_id?: string
+          conversation_id?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_comparison_entries_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cmp_comparison_sets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          task_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          task_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: []
+      }
+      cmp_response_feedback: {
+        Row: {
+          comment: string | null
+          comparison_set_id: string | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string | null
+          overall: number | null
+          rank: number | null
+          rating: string | null
+          request_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          comment?: string | null
+          comparison_set_id?: string | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string | null
+          overall?: number | null
+          rank?: number | null
+          rating?: string | null
+          request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cmp_response_feedback_comparison_set_id_fkey"
+            columns: ["comparison_set_id"]
+            isOneToOne: false
+            referencedRelation: "cmp_comparison_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       definition: {
         Row: {
           agent_type: string
@@ -15430,181 +15596,6 @@ export type Database = {
           slug?: string
         }
         Relationships: []
-      }
-      cmp_comparison_entries: {
-        Row: {
-          agent_id: string
-          agent_version: number | null
-          agent_version_snapshot_id: string | null
-          comparison_set_id: string
-          conversation_id: string
-          created_at: string
-          display_order: number
-          id: string
-          metadata: Json
-        }
-        Insert: {
-          agent_id: string
-          agent_version?: number | null
-          agent_version_snapshot_id?: string | null
-          comparison_set_id: string
-          conversation_id: string
-          created_at?: string
-          display_order: number
-          id?: string
-          metadata?: Json
-        }
-        Update: {
-          agent_id?: string
-          agent_version?: number | null
-          agent_version_snapshot_id?: string | null
-          comparison_set_id?: string
-          conversation_id?: string
-          created_at?: string
-          display_order?: number
-          id?: string
-          metadata?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cmp_comparison_entries_comparison_set_id_fkey"
-            columns: ["comparison_set_id"]
-            isOneToOne: false
-            referencedRelation: "cmp_comparison_sets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cmp_comparison_sets: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string | null
-          project_id: string | null
-          task_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          task_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cmp_comparison_sets_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cmp_response_feedback: {
-        Row: {
-          comment: string | null
-          comparison_set_id: string | null
-          conversation_id: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          organization_id: string | null
-          overall: number | null
-          rank: number | null
-          rating: string | null
-          request_id: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          comment?: string | null
-          comparison_set_id?: string | null
-          conversation_id: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string | null
-          overall?: number | null
-          rank?: number | null
-          rating?: string | null
-          request_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          comment?: string | null
-          comparison_set_id?: string | null
-          conversation_id?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string | null
-          overall?: number | null
-          rank?: number | null
-          rating?: string | null
-          request_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cmp_response_feedback_comparison_set_id_fkey"
-            columns: ["comparison_set_id"]
-            isOneToOne: false
-            referencedRelation: "cmp_comparison_sets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cmp_response_feedback_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       code_file_folders: {
         Row: {

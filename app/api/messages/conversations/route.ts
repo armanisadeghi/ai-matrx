@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const conversationsWithParticipants = await Promise.all(
       paginatedConversations.map(async (conv: DmConversationDetail) => {
         const { data: participants } = await supabase
-          .from("dm_conversation_participants")
+          .schema("communication").from("dm_conversation_participants")
           .select("*")
           .eq("conversation_id", conv.conversation_id);
 
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
 
     // Create conversation
     const { data: newConversation, error: createError } = await supabase
-      .from("dm_conversations")
+      .schema("communication").from("dm_conversations")
       .insert({
         type,
         group_name: type === "group" ? group_name : null,
@@ -251,13 +251,13 @@ export async function POST(request: NextRequest) {
     }));
 
     const { error: participantsError } = await supabase
-      .from("dm_conversation_participants")
+      .schema("communication").from("dm_conversation_participants")
       .insert(participantRecords);
 
     if (participantsError) {
       // Rollback: delete the conversation
       await supabase
-        .from("dm_conversations")
+        .schema("communication").from("dm_conversations")
         .delete()
         .eq("id", newConversation.id);
       console.error(
