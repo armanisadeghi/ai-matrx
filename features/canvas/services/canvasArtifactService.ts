@@ -231,7 +231,7 @@ export const canvasArtifactService = {
     ): Promise<void> {
         try {
             const { error } = await supabase
-                .from("canvas_items")
+                .schema("canvas").from("canvas_items")
                 .update({
                     external_system: link.externalSystem ?? null,
                     external_id: link.externalId ?? null,
@@ -254,7 +254,7 @@ export const canvasArtifactService = {
     async getById(canvasId: string): Promise<CanvasArtifactRow | null> {
         try {
             const { data, error } = await supabase
-                .from("canvas_items")
+                .schema("canvas").from("canvas_items")
                 .select("*")
                 .eq("id", canvasId)
                 .maybeSingle();

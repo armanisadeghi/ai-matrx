@@ -16,6 +16,7 @@ export const canvasItemStateService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
+        .schema("canvas")
         .from("canvas_item_state")
         .select("state")
         .eq("canvas_id", canvasId)
@@ -45,7 +46,7 @@ export const canvasItemStateService = {
       const userId = requireUserId();
       const existing = await this.getState(canvasId);
       const merged = { ...(existing ?? {}), ...patch };
-      const { error } = await supabase.from("canvas_item_state").upsert(
+      const { error } = await supabase.schema("canvas").from("canvas_item_state").upsert(
         { canvas_id: canvasId, user_id: userId, state: merged },
         { onConflict: "canvas_id,user_id" },
       );

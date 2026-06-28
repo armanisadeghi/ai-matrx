@@ -52,6 +52,7 @@ async function trackView(shareToken: string) {
 
         // Insert view
         await supabase
+            .schema('canvas')
             .from('canvas_views')
             .insert({
                 canvas_id: canvas.id,

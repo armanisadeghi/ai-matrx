@@ -7,7 +7,7 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 
-type CanvasItemDbRow = Database["public"]["Tables"]["canvas_items"]["Row"];
+type CanvasItemDbRow = Database["canvas"]["Tables"]["canvas_items"]["Row"];
 
 function parseCanvasContent(raw: unknown): CanvasContent {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -166,7 +166,7 @@ export const canvasItemsService = {
 
       // Check for existing item with same hash
       const { data: existing } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("*")
         .eq("user_id", userId)
         .eq("content_hash", contentHash)
@@ -175,7 +175,7 @@ export const canvasItemsService = {
       if (existing) {
         // Update last_accessed_at on existing item
         const { data: updated, error } = await supabase
-          .from("canvas_items")
+          .schema("canvas").from("canvas_items")
           .update({ last_accessed_at: new Date().toISOString() })
           .eq("id", existing.id)
           .select()
@@ -190,7 +190,7 @@ export const canvasItemsService = {
 
       // Create new item
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .insert({
           user_id: userId,
           type: input.content.type,
@@ -235,7 +235,7 @@ export const canvasItemsService = {
       }
 
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .update(updateData)
         .eq("id", id)
         .eq("user_id", userId)
@@ -260,7 +260,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       let query = supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("*")
         .eq("user_id", userId);
 
@@ -306,7 +306,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("*")
         .eq("id", id)
         .eq("user_id", userId)
@@ -315,7 +315,7 @@ export const canvasItemsService = {
       // Update last_accessed_at
       if (data) {
         await supabase
-          .from("canvas_items")
+          .schema("canvas").from("canvas_items")
           .update({ last_accessed_at: new Date().toISOString() })
           .eq("id", id);
       }
@@ -338,7 +338,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("*")
         .eq("user_id", userId)
         .eq("task_id", taskId)
@@ -360,7 +360,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .delete()
         .eq("id", id)
         .eq("user_id", userId);
@@ -401,7 +401,7 @@ export const canvasItemsService = {
       const shareToken = `share-${crypto.randomUUID().split("-")[0]}-${Date.now().toString(36)}`;
 
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .update({
           is_public: true,
           share_token: shareToken,
@@ -429,7 +429,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .update({
           is_public: false,
           share_token: null,
@@ -451,7 +451,7 @@ export const canvasItemsService = {
   ): Promise<{ data: CanvasItemRow | null; error: any }> {
     try {
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("*")
         .eq("share_token", shareToken)
         .eq("is_public", true)
@@ -473,7 +473,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .delete()
         .in("id", ids)
         .eq("user_id", userId);
@@ -494,7 +494,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .update({ is_archived: isArchived })
         .in("id", ids)
         .eq("user_id", userId);
@@ -518,7 +518,7 @@ export const canvasItemsService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .from("canvas_items")
+        .schema("canvas").from("canvas_items")
         .select("type, is_favorited, is_archived")
         .eq("user_id", userId);
 

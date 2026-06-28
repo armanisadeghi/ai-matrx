@@ -39,6 +39,7 @@ async function getResourceDetails(
 
       case "canvas": {
         const { data } = await supabase
+          .schema("canvas")
           .from("canvas_items")
           .select("title")
           .eq("id", resourceId)
@@ -55,6 +56,7 @@ async function getResourceDetails(
       case "collection":
       case "udt_picklists": {
         const { data } = await supabase
+          .schema("workbench")
           .from("udt_picklists")
           .select("list_name")
           .eq("id", resourceId)
@@ -70,6 +72,7 @@ async function getResourceDetails(
 
       case "udt_datasets": {
         const { data } = await supabase
+          .schema("workbench")
           .from("udt_datasets")
           .select("table_name")
           .eq("id", resourceId)

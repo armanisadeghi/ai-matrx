@@ -27,6 +27,7 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
+        .schema("canvas")
         .from("canvas_items")
         .select("title, description, created_at")
         .eq("id", id)

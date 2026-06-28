@@ -21,6 +21,7 @@ export function useCanvasScore(canvasId: string) {
       const userId = requireUserId();
 
       const { data } = await supabase
+        .schema("canvas")
         .from("canvas_scores")
         .select("*")
         .eq("canvas_id", canvasId)
@@ -42,6 +43,7 @@ export function useCanvasScore(canvasId: string) {
       // Get attempt number
       let attemptNumber = 1;
       const { count } = await supabase
+        .schema("canvas")
         .from("canvas_scores")
         .select("*", { count: "exact", head: true })
         .eq("canvas_id", canvasId)
@@ -51,6 +53,7 @@ export function useCanvasScore(canvasId: string) {
 
       // Insert score
       const { data: score, error } = await supabase
+        .schema("canvas")
         .from("canvas_scores")
         .insert({
           canvas_id: canvasId,
@@ -71,6 +74,7 @@ export function useCanvasScore(canvasId: string) {
 
       // Get rank
       const { count: rankCount } = await supabase
+        .schema("canvas")
         .from("canvas_scores")
         .select("*", { count: "exact", head: true })
         .eq("canvas_id", canvasId)

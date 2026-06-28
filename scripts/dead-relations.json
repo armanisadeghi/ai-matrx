@@ -560,6 +560,62 @@
       "new": "scheduler.sch_agent_task",
       "since": "2026-06-27",
       "reason": "moved to scheduler schema (clean cut). Use .schema('scheduler').from('sch_agent_task')."
+    },
+    {
+      "relation": "canvas_items",
+      "old": "public.canvas_items",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_items",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_items')."
+    },
+    {
+      "relation": "canvas_item_state",
+      "old": "public.canvas_item_state",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_item_state",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_item_state')."
+    },
+    {
+      "relation": "canvas_comments",
+      "old": "public.canvas_comments",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_comments",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_comments')."
+    },
+    {
+      "relation": "canvas_comment_likes",
+      "old": "public.canvas_comment_likes",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_comment_likes",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_comment_likes')."
+    },
+    {
+      "relation": "canvas_likes",
+      "old": "public.canvas_likes",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_likes",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_likes')."
+    },
+    {
+      "relation": "canvas_scores",
+      "old": "public.canvas_scores",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_scores",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_scores')."
+    },
+    {
+      "relation": "canvas_views",
+      "old": "public.canvas_views",
+      "newSchema": "canvas",
+      "new": "canvas.canvas_views",
+      "since": "2026-06-27",
+      "reason": "moved to canvas schema (clean cut). Use .schema('canvas').from('canvas_views')."
     }
   ]
 }
