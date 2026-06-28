@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
       "relation": "agent_run",
@@ -143,7 +143,7 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
@@ -151,7 +151,7 @@
       "newSchema": "permissions",
       "new": "public.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) — note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -159,7 +159,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -696,6 +696,46 @@
       "new": "legal.wc_impairment_definition",
       "since": "2026-06-27",
       "reason": "moved to legal schema (clean cut). Use .schema('legal').from('wc_impairment_definition')."
+    },
+    {
+      "relation": "admins",
+      "old": "public.admins",
+      "newSchema": "admin",
+      "new": "admin.admins",
+      "since": "2026-06-27",
+      "reason": "moved to admin schema (clean cut). Direct self-reads via .schema('admin').from('admins'); writes via the admin_* SECURITY DEFINER RPCs (still in public)."
+    },
+    {
+      "relation": "admin_audit_log",
+      "old": "public.admin_audit_log",
+      "newSchema": "admin",
+      "new": "admin.admin_audit_log",
+      "since": "2026-06-27",
+      "reason": "moved to admin schema (clean cut). Read via admin_list_audit() RPC; written only by the audit trigger."
+    },
+    {
+      "relation": "admin_email_logs",
+      "old": "public.admin_email_logs",
+      "newSchema": "admin",
+      "new": "admin.admin_email_logs",
+      "since": "2026-06-27",
+      "reason": "moved to admin schema (clean cut). Use .schema('admin').from('admin_email_logs')."
+    },
+    {
+      "relation": "admin_markdown_samples",
+      "old": "public.admin_markdown_samples",
+      "newSchema": "admin",
+      "new": "admin.admin_markdown_samples",
+      "since": "2026-06-27",
+      "reason": "moved to admin schema (clean cut). Use .schema('admin').from('admin_markdown_samples')."
+    },
+    {
+      "relation": "agx_context_menu_view",
+      "old": "public.agx_context_menu_view",
+      "newSchema": "agent",
+      "new": "agent.context_menu_view",
+      "since": "2026-06-28",
+      "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
     }
   ]
 }

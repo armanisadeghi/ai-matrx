@@ -166,7 +166,7 @@ export async function POST(request: Request) {
     const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.success)).length;
 
     // Log the email send operation
-    await adminSupabase.from("admin_email_logs").insert({
+    await adminSupabase.schema("admin").from("admin_email_logs").insert({
       sent_by: authUser.id,
       recipient_count: recipients.length,
       subject,

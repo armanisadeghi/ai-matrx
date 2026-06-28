@@ -30,7 +30,7 @@ export async function getAdminStatus(
   userId: string,
 ): Promise<AdminStatus> {
   const { data, error } = await supabase
-    .from("admins")
+    .schema("admin").from("admins")
     .select("user_id, level")
     .eq("user_id", userId)
     .maybeSingle();

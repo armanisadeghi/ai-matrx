@@ -14,6 +14,139 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  admin: {
+    Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
+      admin_email_logs: {
+        Row: {
+          created_at: string | null
+          failed_count: number | null
+          id: string
+          recipient_count: number
+          sent_by: string
+          subject: string
+          successful_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          recipient_count: number
+          sent_by: string
+          subject: string
+          successful_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          failed_count?: number | null
+          id?: string
+          recipient_count?: number
+          sent_by?: string
+          subject?: string
+          successful_count?: number | null
+        }
+        Relationships: []
+      }
+      admin_markdown_samples: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          description: string
+          detected_blocks: string[]
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          detected_blocks?: string[]
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admins: {
+        Row: {
+          created_at: string | null
+          level: Database["public"]["Enums"]["admin_level"]
+          metadata: Json
+          permissions: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          level?: Database["public"]["Enums"]["admin_level"]
+          metadata?: Json
+          permissions?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          level?: Database["public"]["Enums"]["admin_level"]
+          metadata?: Json
+          permissions?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   agent: {
     Tables: {
       agent_surface: {
@@ -15598,123 +15731,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_audit_log: {
-        Row: {
-          action: string
-          actor_user_id: string | null
-          after: Json | null
-          before: Json | null
-          created_at: string
-          id: string
-          target_user_id: string
-        }
-        Insert: {
-          action: string
-          actor_user_id?: string | null
-          after?: Json | null
-          before?: Json | null
-          created_at?: string
-          id?: string
-          target_user_id: string
-        }
-        Update: {
-          action?: string
-          actor_user_id?: string | null
-          after?: Json | null
-          before?: Json | null
-          created_at?: string
-          id?: string
-          target_user_id?: string
-        }
-        Relationships: []
-      }
-      admin_email_logs: {
-        Row: {
-          created_at: string | null
-          failed_count: number | null
-          id: string
-          recipient_count: number
-          sent_by: string
-          subject: string
-          successful_count: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          failed_count?: number | null
-          id?: string
-          recipient_count: number
-          sent_by: string
-          subject: string
-          successful_count?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          failed_count?: number | null
-          id?: string
-          recipient_count?: number
-          sent_by?: string
-          subject?: string
-          successful_count?: number | null
-        }
-        Relationships: []
-      }
-      admin_markdown_samples: {
-        Row: {
-          content: string
-          created_at: string
-          created_by: string | null
-          description: string
-          detected_blocks: string[]
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          detected_blocks?: string[]
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          detected_blocks?: string[]
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      admins: {
-        Row: {
-          created_at: string | null
-          level: Database["public"]["Enums"]["admin_level"]
-          metadata: Json
-          permissions: Json
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          level?: Database["public"]["Enums"]["admin_level"]
-          metadata?: Json
-          permissions?: Json
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          level?: Database["public"]["Enums"]["admin_level"]
-          metadata?: Json
-          permissions?: Json
-          user_id?: string
-        }
-        Relationships: []
-      }
       analysis_recipes: {
         Row: {
           created_at: string
@@ -22375,13 +22391,7 @@ export type Database = {
           target_permissions?: Json
           target_user_id: string
         }
-        Returns: {
-          created_at: string | null
-          level: Database["public"]["Enums"]["admin_level"]
-          metadata: Json
-          permissions: Json
-          user_id: string
-        }
+        Returns: Database["admin"]["Tables"]["admins"]["Row"]
         SetofOptions: {
           from: "*"
           to: "admins"
@@ -22422,13 +22432,7 @@ export type Database = {
           }
       admin_revoke: {
         Args: { target_user_id: string }
-        Returns: {
-          created_at: string | null
-          level: Database["public"]["Enums"]["admin_level"]
-          metadata: Json
-          permissions: Json
-          user_id: string
-        }
+        Returns: Database["admin"]["Tables"]["admins"]["Row"]
         SetofOptions: {
           from: "*"
           to: "admins"
@@ -22447,13 +22451,7 @@ export type Database = {
           target_permissions?: Json
           target_user_id: string
         }
-        Returns: {
-          created_at: string | null
-          level: Database["public"]["Enums"]["admin_level"]
-          metadata: Json
-          permissions: Json
-          user_id: string
-        }
+        Returns: Database["admin"]["Tables"]["admins"]["Row"]
         SetofOptions: {
           from: "*"
           to: "admins"
@@ -31210,6 +31208,293 @@ export type Database = {
       [_ in never]: never
     }
   }
+  scheduler: {
+    Tables: {
+      sch_agent_task: {
+        Row: {
+          agent_id: string | null
+          auth_mode: string
+          id: string
+          max_concurrent: number
+          max_runtime_seconds: number
+          persistent_conversation_id: string | null
+          prompt: string
+          variables: Json
+        }
+        Insert: {
+          agent_id?: string | null
+          auth_mode?: string
+          id: string
+          max_concurrent?: number
+          max_runtime_seconds?: number
+          persistent_conversation_id?: string | null
+          prompt: string
+          variables?: Json
+        }
+        Update: {
+          agent_id?: string | null
+          auth_mode?: string
+          id?: string
+          max_concurrent?: number
+          max_runtime_seconds?: number
+          persistent_conversation_id?: string | null
+          prompt?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sch_agent_task_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "sch_task"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sch_run: {
+        Row: {
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          output_ref: Json | null
+          queue: string | null
+          result_metadata: Json | null
+          result_summary: string | null
+          started_at: string | null
+          status: string
+          surface: string | null
+          task_id: string
+          trigger_id: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          output_ref?: Json | null
+          queue?: string | null
+          result_metadata?: Json | null
+          result_summary?: string | null
+          started_at?: string | null
+          status?: string
+          surface?: string | null
+          task_id: string
+          trigger_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Update: {
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          output_ref?: Json | null
+          queue?: string | null
+          result_metadata?: Json | null
+          result_summary?: string | null
+          started_at?: string | null
+          status?: string
+          surface?: string | null
+          task_id?: string
+          trigger_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sch_run_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "sch_task"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sch_run_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "sch_trigger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sch_task: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          enabled: boolean
+          expires_at: string | null
+          id: string
+          kind: string
+          last_run_at: string | null
+          metadata: Json
+          next_due_at: string | null
+          organization_id: string | null
+          queue: string
+          surfaces: string[]
+          tags: string[]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          expires_at?: string | null
+          id?: string
+          kind: string
+          last_run_at?: string | null
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id?: string | null
+          queue?: string
+          surfaces?: string[]
+          tags?: string[]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          last_run_at?: string | null
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id?: string | null
+          queue?: string
+          surfaces?: string[]
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: []
+      }
+      sch_trigger: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          id: string
+          last_fired_at: string | null
+          metadata: Json
+          next_due_at: string | null
+          organization_id: string | null
+          task_id: string
+          type: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          last_fired_at?: string | null
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id?: string | null
+          task_id: string
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          id?: string
+          last_fired_at?: string | null
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id?: string | null
+          task_id?: string
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sch_trigger_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "sch_task"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   skill: {
     Tables: {
       category: {
@@ -36261,6 +36546,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  admin: {
+    Enums: {},
+  },
   agent: {
     Enums: {},
   },
@@ -36958,6 +37246,9 @@ export const Constants = {
     Enums: {},
   },
   research: {
+    Enums: {},
+  },
+  scheduler: {
     Enums: {},
   },
   skill: {

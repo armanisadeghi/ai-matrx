@@ -69,7 +69,7 @@ export function usePublicAuthSync() {
                     let adminLevel: AdminLevel | null = null;
                     try {
                         const { data: adminData } = await supabase
-                            .from('admins')
+                            .schema('admin').from('admins')
                             .select('user_id, level')
                             .eq('user_id', user.id)
                             .maybeSingle();

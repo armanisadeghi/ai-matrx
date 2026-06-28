@@ -8,7 +8,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Tables, TablesUpdate } from "@/types/database.types";
 
-export type MarkdownSample = Tables<"admin_markdown_samples">;
+export type MarkdownSample = Tables<{ schema: "admin" }, "admin_markdown_samples">;
 
 export interface SampleCreateInput {
   name: string;
@@ -18,13 +18,13 @@ export interface SampleCreateInput {
 }
 
 export type SampleUpdateInput = Pick<
-  TablesUpdate<"admin_markdown_samples">,
+  TablesUpdate<{ schema: "admin" }, "admin_markdown_samples">,
   "name" | "description" | "content" | "detected_blocks"
 >;
 
 export async function listSamples(): Promise<MarkdownSample[]> {
   const { data, error } = await supabase
-    .from("admin_markdown_samples")
+    .schema("admin").from("admin_markdown_samples")
     .select("*")
     .order("updated_at", { ascending: false });
   if (error) throw error;
@@ -33,7 +33,7 @@ export async function listSamples(): Promise<MarkdownSample[]> {
 
 export async function getSample(id: string): Promise<MarkdownSample | null> {
   const { data, error } = await supabase
-    .from("admin_markdown_samples")
+    .schema("admin").from("admin_markdown_samples")
     .select("*")
     .eq("id", id)
     .single();
@@ -49,7 +49,7 @@ export async function createSample(
 ): Promise<MarkdownSample> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("admin_markdown_samples")
+    .schema("admin").from("admin_markdown_samples")
     .insert({
       name: input.name.trim(),
       description: input.description ?? "",
@@ -68,7 +68,7 @@ export async function updateSample(
   patch: SampleUpdateInput,
 ): Promise<MarkdownSample> {
   const { data, error } = await supabase
-    .from("admin_markdown_samples")
+    .schema("admin").from("admin_markdown_samples")
     .update(patch)
     .eq("id", id)
     .select()
@@ -79,7 +79,7 @@ export async function updateSample(
 
 export async function deleteSample(id: string): Promise<void> {
   const { error } = await supabase
-    .from("admin_markdown_samples")
+    .schema("admin").from("admin_markdown_samples")
     .delete()
     .eq("id", id);
   if (error) throw error;

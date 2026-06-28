@@ -62,7 +62,7 @@ export interface UserFeedback {
   parent_id: string | null;
   // Category
   category_id: string | null;
-  // Admin assignee (must be a user in the public.admins table). Set by admins
+  // Admin assignee (must be a user in the admin.admins table). Set by admins
   // at submit time or post-submit. When this changes to a non-null value other
   // than the actor, an in-app DM + email notification is sent to the assignee.
   assigned_to: string | null;
