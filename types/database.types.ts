@@ -24666,6 +24666,8 @@ export type Database = {
       get_org_invitation_by_token: {
         Args: { p_token: string }
         Returns: {
+          created_at: string
+          created_by: string
           email: string
           expires_at: string
           id: string

@@ -86,7 +86,7 @@ export interface MediaRef {
 // was dropped in the 2026 DB restructure). Permissions are the exception —
 // they live in the canonical `public.permissions` grant store.
 type FilesTables = Database["files"]["Tables"];
-type PublicTables = Database["public"]["Tables"];
+type IamTables = Database["iam"]["Tables"];
 
 export type CloudFileRow = FilesTables["files"]["Row"];
 export type CloudFileInsert = FilesTables["files"]["Insert"];
@@ -98,11 +98,11 @@ export type CloudFolderUpdate = FilesTables["folders"]["Update"];
 
 export type CloudFileVersionRow = FilesTables["file_versions"]["Row"];
 /**
- * File-permission grants live in the CANONICAL grant store `public.permissions`
+ * File-permission grants live in the CANONICAL grant store `iam.permissions`
  * (resource_type='file'), NOT in the legacy cld_ file-permission duplicate
  * (graveyarded in the 2026 DB cutover — see docs/db_rebuild/03-app-agent-cutover-instructions.md §1a).
  */
-export type CloudFilePermissionRow = PublicTables["permissions"]["Row"];
+export type CloudFilePermissionRow = IamTables["permissions"]["Row"];
 export type CloudShareLinkRow = FilesTables["share_links"]["Row"];
 
 // ---------------------------------------------------------------------------

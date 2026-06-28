@@ -17,7 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { acceptInvitation } from "@/features/organizations/service";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
-import type { OrganizationInvitationWithOrg } from "@/features/organizations/types";
+import type {
+  OrganizationInvitationWithOrg,
+  OrgRole,
+} from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files";
 
@@ -154,9 +157,9 @@ export default function AcceptInvitationPage() {
         organizationId: data.organization_id,
         email: data.email,
         token: data.token,
-        role: data.role,
-        invitedAt: data.invited_at,
-        invitedBy: data.invited_by,
+        role: data.role as OrgRole,
+        invitedAt: data.created_at,
+        invitedBy: data.created_by,
         expiresAt: data.expires_at,
         organization: {
           id: data.organizations.id,
