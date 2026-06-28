@@ -1941,8 +1941,22 @@ export async function processStream({
     // session. On reload, DB hydration replaces it with the server-persisted
     // row (if the server got far enough to persist one); the client-temp id is
     // Redux-only, so it can never duplicate a real DB row.
+    // Self-classifying diagnostic so this scream pinpoints the cause instead of
+    // leaving us guessing:
+    //   • isEphemeral=true  → expected (server persists nothing); harmless.
+    //   • isEphemeral=false + userRequestReserved=true → SMOKING GUN: the server
+    //     persisted the user turn (reserved its cx_user_request) but never
+    //     reserved a cx_message(role=assistant) for the response. That is a
+    //     BACKEND reservation gap, not a client issue — the FE correctly asked
+    //     for persistence (is_new:true, no store:false).
+    //   • isEphemeral=false + userRequestReserved=false → nothing was reserved at
+    //     all: the stream died before any record_reserved arrived, or the
+    //     request was (wrongly) flagged ephemeral upstream.
+    const conv = finalState.conversations.byConversationId[conversationId];
     console.error(
-      `[stream:${requestId.slice(0, 8)}] no assistant reservation arrived but ${assistantBlocks.length} content block(s) were produced — committing to a client-temp message to avoid transcript loss`,
+      `[stream:${requestId.slice(0, 8)}] no assistant reservation arrived but ${assistantBlocks.length} content block(s) were produced — committing to a client-temp message to avoid transcript loss. ` +
+        `DIAGNOSIS isEphemeral=${conv?.isEphemeral ?? false} apiEndpointMode=${conv?.apiEndpointMode ?? "agent"} userRequestReserved=${reservedUserRequestId !== null} toolReservations=${toolCallIdByProviderCallId.size} streamError=${!!finalErrorMessage}. ` +
+        `If isEphemeral=false the server should have reserved a cx_message(role=assistant); a false/true (isEphemeral/userRequestReserved) pair is a backend reservation gap.`,
     );
     const tempId = `client-assistant-${requestId}`;
     const existingById =

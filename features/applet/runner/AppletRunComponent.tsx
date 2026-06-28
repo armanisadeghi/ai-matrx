@@ -122,13 +122,31 @@ export default function AppletRunComponent({
 
   const handleNewTurn = useCallback((turn: FollowUpTurn) => {
     setFollowUpTurns((prev) => [...prev, turn]);
-    // Scroll to bottom after a tick so the new turn is in the DOM
     setTimeout(() => {
       if (scrollAreaRef.current) {
         scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
       }
     }, 50);
   }, []);
+
+  const handleTurnUpdate = useCallback(
+    (taskId: string, updates: Partial<FollowUpTurn>) => {
+      setFollowUpTurns((prev) =>
+        prev.map((turn) =>
+          turn.taskId === taskId ? { ...turn, ...updates } : turn,
+        ),
+      );
+      if (updates.assistantContent !== undefined) {
+        setTimeout(() => {
+          if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTop =
+              scrollAreaRef.current.scrollHeight;
+          }
+        }, 50);
+      }
+    },
+    [],
+  );
 
   const coordinatorId = SLUG_TO_COORDINATOR_MAP[appletSlug] || "default";
 
@@ -261,11 +279,16 @@ export default function AppletRunComponent({
                     {turn.userMessage}
                   </div>
                 </div>
-                <MarkdownStream
-                  taskId={turn.taskId}
-                  className="bg-textured"
-                  hideCopyButton={false}
-                />
+                {turn.error ? (
+                  <p className="text-sm text-destructive">{turn.error}</p>
+                ) : (
+                  <MarkdownStream
+                    content={turn.assistantContent}
+                    isStreamActive={turn.isStreaming}
+                    className="bg-textured"
+                    hideCopyButton={false}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -279,6 +302,7 @@ export default function AppletRunComponent({
             <AppletFollowUpInput
               conversationId={conversationId}
               onNewTurn={handleNewTurn}
+              onTurnUpdate={handleTurnUpdate}
             />
           </div>
         </div>

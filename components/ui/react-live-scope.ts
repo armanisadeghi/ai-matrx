@@ -208,11 +208,6 @@ export { Credenza } from "./credenza-modal/credenza";
 export { FileUpload } from "./file-upload/file-upload";
 export { Spinner, LoadingSpinner } from "./spinner";
 export { DatePicker } from "./date-picker";
-export {
-  MatrxDatePicker,
-  MatrxDateRangePicker,
-  MatrxDatePickerWithPresets,
-} from "./matrx-date-picker";
 
 export { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 

@@ -59,7 +59,8 @@ export async function listExtractionCatalog(opts?: {
   includeArchived?: boolean;
 }): Promise<ExtractionCatalogEntry[]> {
   let jobsQuery = docproc
-    .schema("docproc").from("page_extraction_jobs")
+    .schema("docproc")
+    .from("page_extraction_jobs")
     .select(
       "id, name, kind, file_id, processed_document_id, latest_run_id, organization_id, project_id, created_at, updated_at",
     )
@@ -103,18 +104,21 @@ export async function listExtractionCatalog(opts?: {
   const [docsRes, runsRes, resultsRes] = await Promise.all([
     docIds.length
       ? docproc
-          .schema("docproc").from("processed_documents")
+          .schema("docproc")
+          .from("processed_documents")
           .select("id, name, total_pages")
           .in("id", docIds)
       : Promise.resolve({ data: [], error: null }),
     runIds.length
       ? docproc
-          .schema("docproc").from("page_extraction_runs")
+          .schema("docproc")
+          .from("page_extraction_runs")
           .select("id, status, finished_at")
           .in("id", runIds)
       : Promise.resolve({ data: [], error: null }),
     docproc
-      .schema("docproc").from("page_extraction_results")
+      .schema("docproc")
+      .from("page_extraction_results")
       .select("job_id")
       .in("job_id", jobIds),
   ]);
@@ -184,7 +188,8 @@ export async function listExtractionCatalog(opts?: {
 export async function deleteResultRows(resultIds: string[]): Promise<void> {
   if (resultIds.length === 0) return;
   const { error } = await docproc
-    .schema("docproc").from("page_extraction_results")
+    .schema("docproc")
+    .from("page_extraction_results")
     .delete()
     .in("id", resultIds);
   if (error) throw error;
@@ -193,7 +198,8 @@ export async function deleteResultRows(resultIds: string[]): Promise<void> {
 /** Duplicate a template (job) WITHOUT its results — a fresh dataset shell. */
 export async function duplicateJob(jobId: string): Promise<string> {
   const { data: src, error: getErr } = await docproc
-    .schema("docproc").from("page_extraction_jobs")
+    .schema("docproc")
+    .from("page_extraction_jobs")
     .select("*")
     .eq("id", jobId)
     .single();
@@ -208,7 +214,8 @@ export async function duplicateJob(jobId: string): Promise<string> {
   clone.archived_at = null;
 
   const { data: created, error: insErr } = await docproc
-    .schema("docproc").from("page_extraction_jobs")
+    .schema("docproc")
+    .from("page_extraction_jobs")
     .insert(clone)
     .select("id")
     .single();

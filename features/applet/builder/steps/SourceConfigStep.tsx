@@ -19,7 +19,7 @@ import {
   setCompiledRecipeId,
 } from "@/lib/redux/app-builder/slices/appletBuilderSlice";
 import { saveAppletThunk } from "@/lib/redux/app-builder/thunks/appletBuilderThunks";
-import { useFetchQuickRef } from "@/app/entities/hooks/useFetchQuickRef";
+import { useFetchQuickRef } from "@/hooks/useFetchQuickRef";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
 import { Button } from "@/components/ui/button";
 import { AppletBuilder } from "@/lib/redux/app-builder/types";

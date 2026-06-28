@@ -27,7 +27,7 @@ import {
   AppletSourceConfig,
 } from "@/types/customAppTypes";
 import { AppletBuilder } from "@/lib/redux/app-builder/types";
-import { useFetchQuickRef } from "@/app/entities/hooks/useFetchQuickRef";
+import { useFetchQuickRef } from "@/hooks/useFetchQuickRef";
 
 const EMPTY_APPLETS: AppletBuilder[] = [];
 import NeededBrokersCard from "../../modules/broker-mapping/NeededBrokersCard";

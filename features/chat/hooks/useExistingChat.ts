@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import useChatBasics from "@/features/chat/hooks/useChatBasics";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { saveMessageThunk } from "@/lib/redux/features/aiChats/thunks/entity/createMessageThunk";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/stream-tasks/thunks/submitChatFastAPI";
 
 const INFO = true;
 const DEBUG = false;
@@ -22,7 +21,8 @@ export function useExistingChat({ existingConversationId }: ExistingChatProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const { chatActions, conversationId, routeLoadComplete, messageKey } = useChatBasics();
+  const { chatActions, conversationId, routeLoadComplete, messageKey } =
+    useChatBasics();
 
   // Coordinate (active-conversation switch + message fetch) EXACTLY ONCE per
   // URL conversation id. The old code fired on mount, then a second effect
@@ -38,7 +38,9 @@ export function useExistingChat({ existingConversationId }: ExistingChatProps) {
     if (coordinatedIdRef.current === existingConversationId) return;
     coordinatedIdRef.current = existingConversationId;
     dispatch(
-      chatActions.coordinateActiveConversationAndMessageFetch(existingConversationId),
+      chatActions.coordinateActiveConversationAndMessageFetch(
+        existingConversationId,
+      ),
     );
     setFirstLoadComplete(true);
   }, [existingConversationId, dispatch, chatActions]);
@@ -53,54 +55,66 @@ export function useExistingChat({ existingConversationId }: ExistingChatProps) {
         existingConversationId !== conversationId,
       ),
     );
-  }, [existingConversationId, conversationId, firstLoadComplete, dispatch, chatActions]);
+  }, [
+    existingConversationId,
+    conversationId,
+    firstLoadComplete,
+    dispatch,
+    chatActions,
+  ]);
 
   const submitChatMessage = useCallback(async () => {
     try {
       setIsSubmitting(true);
 
       if (!messageKey) {
-        console.error("USE EXISTING CHAT ERROR! submitChatMessage failed:", "Message key was not found");
+        console.error(
+          "USE EXISTING CHAT ERROR! submitChatMessage failed:",
+          "Message key was not found",
+        );
         return false;
       }
 
-      const result = await dispatch(saveMessageThunk({ messageTempId: messageKey })).unwrap();
+      const result = await dispatch(
+        saveMessageThunk({ messageTempId: messageKey }),
+      ).unwrap();
 
-      if (VERBOSE) console.log("🚀 ~ submitChatMessage ~ result:", JSON.stringify(result, null, 2));
+      if (VERBOSE)
+        console.log(
+          "🚀 ~ submitChatMessage ~ result:",
+          JSON.stringify(result, null, 2),
+        );
 
       if (result && result.success) {
-        const message = result.messageData.data;
-
-        // Pre-generate taskId and store it in Redux BEFORE dispatch so the
-        // streaming UI mounts immediately and shows chunks as they arrive.
         const taskId = uuidv4();
         dispatch(
           chatActions.updateConversationCustomData({
             keyOrId: conversationId,
             customData: { taskId },
-          })
+          }),
         );
 
-        await dispatch(
-          createAndSubmitTask({
-            service: "chat_service",
-            taskName: "ai_chat",
-            taskData: {
-              conversation_id: conversationId,
-              message_object: message,
-            },
-            customTaskId: taskId,
-          })
-        ).unwrap();
-
-        if (DEBUG) console.log("USE EXISTING CHAT: Task created and submitted with taskId:", taskId, "for conversationId:", conversationId);
+        // Legacy stream-tasks submit removed — message is saved; streaming UI
+        // will not update until legacy chat migrates to the agents execution path.
+        if (DEBUG) {
+          console.warn(
+            "[useExistingChat] Message saved but stream submit is disabled (stream-tasks removed). taskId:",
+            taskId,
+          );
+        }
         return true;
       } else {
-        console.error("USE EXISTING CHAT ERROR! submitChatMessage failed:", result);
+        console.error(
+          "USE EXISTING CHAT ERROR! submitChatMessage failed:",
+          result,
+        );
         return false;
       }
     } catch (error) {
-      console.error("USE EXISTING CHAT ERROR! submitChatMessage failed:", error);
+      console.error(
+        "USE EXISTING CHAT ERROR! submitChatMessage failed:",
+        error,
+      );
       return false;
     } finally {
       setIsSubmitting(false);

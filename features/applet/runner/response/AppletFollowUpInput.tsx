@@ -4,14 +4,7 @@
  * AppletFollowUpInput
  *
  * Fixed bottom input bar for continuing the conversation after an applet response.
- * Sits in the fixed bottom bar rendered by AppletRunComponent.
- *
- * conversationId may arrive slightly after mount (it comes from the stream headers/body).
- * We hold it in a ref so sends wait for it gracefully without stale closures.
- *
- * Each follow-up turn dispatches to a fresh Redux listenerId — the initial response is
- * never mutated. The turn list is managed by the parent (AppletRunComponent) so it renders
- * in the scrollable content area above this bar.
+ * Uses local turn state + MarkdownStream `content` prop (stream-tasks Redux removed).
  */
 
 import React, {
@@ -23,23 +16,11 @@ import React, {
 } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import {
-  addResponse,
-  appendTextChunk,
-  updateErrorResponse,
-  markResponseEnd,
-} from "@/lib/redux/stream-tasks/slices/socketResponseSlice";
-import {
-  initializeTask,
-  setTaskListenerIds,
-  setTaskStreaming,
-  completeTask,
-} from "@/lib/redux/stream-tasks/slices/socketTasksSlice";
 import type {
   ChunkPayload,
   ErrorPayload,
@@ -48,18 +29,22 @@ import type {
 export interface FollowUpTurn {
   userMessage: string;
   taskId: string;
+  assistantContent: string;
+  isStreaming: boolean;
+  error?: string;
 }
 
 interface AppletFollowUpInputProps {
   conversationId: string | undefined;
   onNewTurn: (turn: FollowUpTurn) => void;
+  onTurnUpdate: (taskId: string, updates: Partial<FollowUpTurn>) => void;
 }
 
 export default function AppletFollowUpInput({
   conversationId,
   onNewTurn,
+  onTurnUpdate,
 }: AppletFollowUpInputProps) {
-  const dispatch = useAppDispatch();
   const { getHeaders } = useApiAuth();
   const resolvedBaseUrl = useAppSelector(
     selectResolvedBaseUrl as (state: unknown) => string | undefined,
@@ -96,25 +81,19 @@ export default function AppletFollowUpInput({
     if (!content || isStreaming || !convId) return;
 
     const taskId = uuidv4();
-    const listenerId = taskId;
 
     setInputValue("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-    onNewTurn({ userMessage: content, taskId });
+    onNewTurn({
+      userMessage: content,
+      taskId,
+      assistantContent: "",
+      isStreaming: true,
+    });
     setIsStreaming(true);
 
-    dispatch(
-      initializeTask({
-        taskId,
-        service: "applet_agent",
-        taskName: "conversation_continue",
-        connectionId: "fastapi",
-      }),
-    );
-    dispatch(addResponse({ listenerId, taskId }));
-    dispatch(setTaskListenerIds({ taskId, listenerIds: [listenerId] }));
-
     const endpoint = `${getBackendUrl()}${ENDPOINTS.ai.conversationContinue(convId)}`;
+    let assistantContent = "";
 
     try {
       const response = await fetch(endpoint, {
@@ -130,33 +109,23 @@ export default function AppletFollowUpInput({
       }
 
       const { events } = parseNdjsonStream(response);
-      let isFirstChunk = true;
 
       for await (const event of events) {
         switch (event.event) {
           case "chunk": {
-            if (isFirstChunk) {
-              dispatch(setTaskStreaming({ taskId, isStreaming: true }));
-              isFirstChunk = false;
-            }
             const { text } = event.data as unknown as ChunkPayload;
-            dispatch(appendTextChunk({ listenerId, text }));
+            assistantContent += text;
+            onTurnUpdate(taskId, { assistantContent, isStreaming: true });
             break;
           }
           case "tool_event":
             break;
           case "error": {
             const errData = event.data as unknown as ErrorPayload;
-            dispatch(
-              updateErrorResponse({
-                listenerId,
-                error: {
-                  message: errData.message,
-                  type: errData.error_type,
-                  user_message: errData.user_message,
-                },
-              }),
-            );
+            onTurnUpdate(taskId, {
+              error: errData.user_message || errData.message,
+              isStreaming: false,
+            });
             break;
           }
           case "completion":
@@ -167,22 +136,22 @@ export default function AppletFollowUpInput({
       }
     } catch (err) {
       console.error("[AppletFollowUpInput] Conversation continue failed:", err);
-      dispatch(
-        updateErrorResponse({
-          listenerId,
-          error: {
-            message: err instanceof Error ? err.message : "Request failed",
-            type: "stream_error",
-          },
-        }),
-      );
+      onTurnUpdate(taskId, {
+        error: err instanceof Error ? err.message : "Request failed",
+        isStreaming: false,
+      });
     } finally {
-      dispatch(setTaskStreaming({ taskId, isStreaming: false }));
-      dispatch(markResponseEnd(listenerId));
-      dispatch(completeTask(taskId));
+      onTurnUpdate(taskId, { assistantContent, isStreaming: false });
       setIsStreaming(false);
     }
-  }, [inputValue, isStreaming, dispatch, getBackendUrl, getHeaders, onNewTurn]);
+  }, [
+    inputValue,
+    isStreaming,
+    getBackendUrl,
+    getHeaders,
+    onNewTurn,
+    onTurnUpdate,
+  ]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

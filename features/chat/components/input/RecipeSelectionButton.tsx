@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { LuWorkflow } from "react-icons/lu";
 import { SiDassaultsystemes } from "react-icons/si";
 import HierarchicalToggleMenu from "@/components/matrx/toggles/HierarchicalToggleMenu";
-import { useFetchQuickRef } from "@/app/entities/hooks/useFetchQuickRef";
+import { useFetchQuickRef } from "@/hooks/useFetchQuickRef";
 
 interface RecipeSelectionButtonProps {
   selectedRecipeIds?: string[];
@@ -20,15 +20,20 @@ const RecipeSelectionButton: React.FC<RecipeSelectionButtonProps> = ({
   isEnabled = false,
 }) => {
   // Internal state for when component is uncontrolled
-  const [internalSelectedRecipeIds, setInternalSelectedRecipeIds] = useState<string[]>([]);
-  
+  const [internalSelectedRecipeIds, setInternalSelectedRecipeIds] = useState<
+    string[]
+  >([]);
+
   // Determine if we're in controlled mode
   const isControlled = externalSelectedRecipeIds !== undefined;
-  
+
   // Use either external or internal state based on whether we're controlled
-  const selectedRecipeIds = isControlled ? externalSelectedRecipeIds : internalSelectedRecipeIds;
-  
-  const { quickReferenceKeyDisplayPairs: recipeItems } = useFetchQuickRef("recipe");
+  const selectedRecipeIds = isControlled
+    ? externalSelectedRecipeIds
+    : internalSelectedRecipeIds;
+
+  const { quickReferenceKeyDisplayPairs: recipeItems } =
+    useFetchQuickRef("recipe");
 
   const recipeOptions = useMemo(
     () =>
@@ -37,7 +42,7 @@ const RecipeSelectionButton: React.FC<RecipeSelectionButtonProps> = ({
         label: displayValue,
         icon: <LuWorkflow />,
       })),
-    [recipeItems]
+    [recipeItems],
   );
 
   // Sync internal state with external state when in controlled mode
@@ -52,7 +57,7 @@ const RecipeSelectionButton: React.FC<RecipeSelectionButtonProps> = ({
     if (!isControlled) {
       setInternalSelectedRecipeIds(selectedIds);
     }
-    
+
     // Notify parent if callback is provided
     if (onRecipeSelection) {
       onRecipeSelection(selectedIds);
