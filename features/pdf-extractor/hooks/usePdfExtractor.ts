@@ -24,7 +24,7 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
- * Frontend view of a `public.processed_documents` row.
+ * Frontend view of a `docproc.processed_documents` row.
  *
  * Note: this used to be backed by `public.extracted_documents` which the RAG
  * team has now superseded. `processed_documents` is the single source of
@@ -201,8 +201,7 @@ async function fetchProcessedDocument(
   const promise = (async () => {
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         .select("*")
         .eq("id", docId)
         // RLS already restricts to the owner, but include the predicate
@@ -304,8 +303,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     setHistoryLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         // Metadata-only projection. We deliberately do NOT pull `content`,
         // `clean_content`, or `structured_json` here — those columns can be
         // megabytes per row and were causing the workspace to take 2+ minutes

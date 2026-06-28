@@ -18,7 +18,7 @@ export async function fetchAckedSuggestionIds(
 ): Promise<Set<string>> {
   const { data, error } = await supabase
     .schema("rag")
-    .from("kg_suggestion_ack")
+    .schema("reg").from("kg_suggestion_ack")
     .select("suggestion_id")
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
@@ -37,7 +37,7 @@ export async function ackSuggestions(
   }));
   const { error } = await supabase
     .schema("rag")
-    .from("kg_suggestion_ack")
+    .schema("reg").from("kg_suggestion_ack")
     .upsert(rows, {
       onConflict: "user_id,suggestion_id",
       ignoreDuplicates: true,

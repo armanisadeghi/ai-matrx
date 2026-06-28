@@ -1,21 +1,21 @@
 // File Location: app/(authenticated)/demo/code-generator/components/ComponentGenerator.tsx
 
-'use client';
+"use client";
 
-import DynamicComponentRenderer from './DynamicComponentRenderer';
-import React, { useState, useEffect } from 'react'; 
-import AIAssistant from './AIAssistant';
-import CodeEditor from './CodeEditor';
-import ComponentManager from './ComponentManager';
+import DynamicComponentRenderer from "./DynamicComponentRenderer";
+import React, { useState, useEffect } from "react";
+import AIAssistant from "./AIAssistant";
+import CodeEditor from "./CodeEditor";
+import ComponentManager from "./ComponentManager";
 
 // Main application component that orchestrates everything
 const ComponentGenerator = () => {
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [savedComponents, setSavedComponents] = useState([]);
-  const [currentComponentName, setCurrentComponentName] = useState('');
-  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [currentComponentName, setCurrentComponentName] = useState("");
+  const [aiSuggestion, setAiSuggestion] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  
+
   // Example initial code to help users get started
   const initialCode = `
 // You can use React hooks and Tailwind CSS here
@@ -115,13 +115,13 @@ function EnhancedCounter() {
         <label className="block text-gray-700 dark:text-gray-300 mb-2 text-sm">
           Increment/Decrement Amount:
         </label>
-        <input 
-          type="range" 
-          min="1" 
-          max="10" 
-          value={incrementAmount} 
-          onChange={(e) => setIncrementAmount(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+        <Slider
+          min={1}
+          max={10}
+          step={1}
+          value={[incrementAmount]}
+          onValueChange={([v]) => setIncrementAmount(v)}
+          className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
           <span>1</span>
@@ -173,44 +173,44 @@ function EnhancedCounter() {
   );
 }
 `.trim();
-  
+
   useEffect(() => {
     // Initialize with example code
     if (!code) {
       setCode(initialCode);
     }
-    
+
     // In a real app, you'd load saved components from your database here
     // For demo purposes, we'll use localStorage
     const loadSavedComponents = async () => {
       try {
-        const saved = localStorage.getItem('savedComponents');
+        const saved = localStorage.getItem("savedComponents");
         if (saved) {
           setSavedComponents(JSON.parse(saved));
         }
       } catch (err) {
-        console.error('Failed to load saved components:', err);
+        console.error("Failed to load saved components:", err);
       }
     };
-    
+
     loadSavedComponents();
   }, []);
-  
+
   // Reset code to initial example
   const resetCode = () => {
     setCode(initialCode);
   };
-  
+
   // Simulate AI code generation (in real app, this would call your AI service)
   const generateWithAI = async (prompt) => {
     setIsGenerating(true);
-    
+
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     // Example AI response based on prompt
-    let suggestion = '';
-    if (prompt.includes('counter')) {
+    let suggestion = "";
+    if (prompt.includes("counter")) {
       suggestion = `
 import { useState } from "react";
 
@@ -239,7 +239,7 @@ function CounterComponent() {
   );
 }
         `;
-    } else if (prompt.includes('form')) {
+    } else if (prompt.includes("form")) {
       suggestion = `
 import { useState } from "react";
 
@@ -325,21 +325,21 @@ function CustomComponent() {
 }
       `;
     }
-    
+
     setAiSuggestion(suggestion);
     setIsGenerating(false);
   };
-  
+
   // Apply AI suggestion to editor
   const applySuggestion = () => {
     setCode(aiSuggestion);
-    setAiSuggestion('');
+    setAiSuggestion("");
   };
-  
+
   // Save current component to database
   const saveComponent = async () => {
     if (!currentComponentName.trim()) {
-      alert('Please enter a name for your component');
+      alert("Please enter a name for your component");
       return;
     }
     // In a real app, you would save to your database
@@ -347,59 +347,60 @@ function CustomComponent() {
     const newComponent = {
       id: Date.now().toString(),
       name: currentComponentName,
-      code: code
+      code: code,
     };
-    
+
     const updatedComponents = [...savedComponents, newComponent];
     setSavedComponents(updatedComponents);
-    
+
     try {
-      localStorage.setItem('savedComponents', JSON.stringify(updatedComponents));
+      localStorage.setItem(
+        "savedComponents",
+        JSON.stringify(updatedComponents),
+      );
       alert(`Component "${currentComponentName}" saved successfully!`);
-      setCurrentComponentName('');
+      setCurrentComponentName("");
     } catch (err) {
-      console.error('Failed to save component:', err);
-      alert('Failed to save component');
+      console.error("Failed to save component:", err);
+      alert("Failed to save component");
     }
   };
-  
+
   // Load a saved component into the editor
   const loadComponent = (component) => {
     setCode(component.code);
     setCurrentComponentName(component.name);
   };
-  
+
   // Delete a saved component
   const deleteComponent = (id) => {
-    const updatedComponents = savedComponents.filter(comp => comp.id !== id);
+    const updatedComponents = savedComponents.filter((comp) => comp.id !== id);
     setSavedComponents(updatedComponents);
-    localStorage.setItem('savedComponents', JSON.stringify(updatedComponents));
+    localStorage.setItem("savedComponents", JSON.stringify(updatedComponents));
   };
-  
+
   return (
     <div className="flex flex-col h-dvh bg-gray-100 dark:bg-gray-800">
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-800 text-white p-3">
-        <h1 className="text-2xl font-bold">AI-Powered React Component Generator</h1>
+        <h1 className="text-2xl font-bold">
+          AI-Powered React Component Generator
+        </h1>
       </header>
-      
+
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Panel: Component Editor and AI Assistant */}
         <div className="w-full md:w-1/2 flex flex-col border-r border-border">
           {/* AI Assistant Section */}
-          <AIAssistant 
+          <AIAssistant
             generateWithAI={generateWithAI}
             isGenerating={isGenerating}
             aiSuggestion={aiSuggestion}
             applySuggestion={applySuggestion}
           />
-          
+
           {/* Code Editor */}
-          <CodeEditor 
-            code={code}
-            setCode={setCode}
-            resetCode={resetCode}
-          />
-          
+          <CodeEditor code={code} setCode={setCode} resetCode={resetCode} />
+
           {/* Save Component Section */}
           <ComponentManager
             currentComponentName={currentComponentName}
@@ -410,9 +411,9 @@ function CustomComponent() {
             deleteComponent={deleteComponent}
           />
         </div>
-        
+
         <div className="h-full w-full md:w-1/2 flex flex-col">
-            <DynamicComponentRenderer code={code} />
+          <DynamicComponentRenderer code={code} />
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

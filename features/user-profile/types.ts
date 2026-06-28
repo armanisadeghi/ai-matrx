@@ -10,7 +10,7 @@
 //   - user_form_profile_append_to_array(p_column, p_item, p_user_id)
 //   - user_form_profile_set_custom_field(p_key, p_user_id, p_value)
 //
-// Authoritative DB tables: `public.profiles`, `public.user_form_profile`,
+// Authoritative DB tables: `users.profiles`, `users.user_form_profile`,
 // plus `auth.users.user_metadata` (via supabase.auth.updateUser).
 
 import type { Json } from "@/types/database.types";
@@ -66,7 +66,7 @@ export type CustomFields = Record<string, unknown>;
 
 /**
  * Account-level identity. Surfaces the auth-metadata fields (canonical for
- * headers and the JWT) plus the chat-visible `public.profiles` row.
+ * headers and the JWT) plus the chat-visible `users.profiles` row.
  */
 export interface UserAccountData {
   // From auth.users.user_metadata — drives Redux userProfile.userMetadata.
@@ -80,7 +80,7 @@ export interface UserAccountData {
   avatar_file_id: string | null;
   picture: string | null;
 
-  // From public.profiles — chat-visible presence.
+  // From users.profiles — chat-visible presence.
   display_name: string;
   status_text: string | null;
   // `is_online` / `last_seen_at` are auto-managed; not editable here.
@@ -91,7 +91,7 @@ export type UserAccountPatch = Partial<UserAccountData>;
 
 /**
  * Rich form profile — used by agents working on behalf of the user. Mirrors
- * `public.user_form_profile` 1:1, with JSONB columns strongly typed.
+ * `users.user_form_profile` 1:1, with JSONB columns strongly typed.
  */
 export interface UserFormProfileData {
   legal_first_name: string | null;

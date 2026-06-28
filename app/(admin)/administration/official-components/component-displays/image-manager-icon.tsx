@@ -1,18 +1,25 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ComponentEntry } from '../parts/component-list';
-import { ComponentDisplayWrapper } from '../component-usage';
-import { ImageManagerIcon } from '@/components/image/shared/ImageManagerIcon';
-import { ImageManagerRow } from '@/components/image/shared/ImageManagerRow';
-import { useSelectedImages } from '@/components/image/context/SelectedImagesProvider';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from "react";
+import { ComponentEntry } from "../parts/component-list";
+import { ComponentDisplayWrapper } from "../component-usage";
+import { ImageManagerIcon } from "@/components/image/shared/ImageManagerIcon";
+import { ImageManagerRow } from "@/components/image/shared/ImageManagerRow";
+import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -20,14 +27,16 @@ interface ComponentDisplayProps {
 
 // Sample image URLs for demos
 const sampleImageUrls = [
-  'https://images.unsplash.com/photo-1614974121916-81eadb4dd6b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHw5fHxsYXMlMjBWZWdhc3xlbnwwfHx8fDE3Mzk3NzI3NDJ8MA&ixlib=rb-4.0.3&q=80&w=1080',
-  'https://images.unsplash.com/photo-1605379399843-5870eea9b74e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHwxOXx8Y29kaW5nfGVufDB8fHx8MTczOTg1MDkwOXww&ixlib=rb-4.0.3&q=80&w=1080',
-  'https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?crop=entropy&cs=srgb&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHwxOHx8ZGlnaXRhbCUyMHJlcG9ydHxlbnwwfHx8fDE3NDU3NjgzNTJ8MA&ixlib=rb-4.0.3&q=85'
+  "https://images.unsplash.com/photo-1614974121916-81eadb4dd6b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHw5fHxsYXMlMjBWZWdhc3xlbnwwfHx8fDE3Mzk3NzI3NDJ8MA&ixlib=rb-4.0.3&q=80&w=1080",
+  "https://images.unsplash.com/photo-1605379399843-5870eea9b74e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHwxOXx8Y29kaW5nfGVufDB8fHx8MTczOTg1MDkwOXww&ixlib=rb-4.0.3&q=80&w=1080",
+  "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?crop=entropy&cs=srgb&fm=jpg&ixid=M3w2NjE4MDZ8MHwxfHNlYXJjaHwxOHx8ZGlnaXRhbCUyMHJlcG9ydHxlbnwwfHx8fDE3NDU3NjgzNTJ8MA&ixlib=rb-4.0.3&q=85",
 ];
 
-export default function ImageManagerIconDemo({ component }: ComponentDisplayProps) {
+export default function ImageManagerIconDemo({
+  component,
+}: ComponentDisplayProps) {
   if (!component) return null;
-  
+
   return (
     <Tabs defaultValue="basic">
       <TabsList className="mb-4">
@@ -36,7 +45,7 @@ export default function ImageManagerIconDemo({ component }: ComponentDisplayProp
         <TabsTrigger value="comparison">Comparison</TabsTrigger>
         <TabsTrigger value="customization">Customization</TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="basic">
         <ComponentDisplayWrapper
           component={component}
@@ -92,7 +101,7 @@ function BasicExample() {
           <BasicUsageDemo />
         </ComponentDisplayWrapper>
       </TabsContent>
-      
+
       <TabsContent value="sizes">
         <ComponentDisplayWrapper
           component={component}
@@ -155,7 +164,7 @@ function SizesExample() {
           <SizesDemo />
         </ComponentDisplayWrapper>
       </TabsContent>
-      
+
       <TabsContent value="comparison">
         <ComponentDisplayWrapper
           component={component}
@@ -198,7 +207,7 @@ function ComparisonExample() {
           <ComparisonDemo />
         </ComponentDisplayWrapper>
       </TabsContent>
-      
+
       <TabsContent value="customization">
         <ComponentDisplayWrapper
           component={component}
@@ -221,59 +230,42 @@ function CustomizationExample() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Selection Mode</Label>
-            <div className="flex gap-4">
+            <RadioGroup
+              value={mode}
+              onValueChange={(v) => setMode(v as "single" | "multiple")}
+              className="flex gap-4"
+            >
               <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="single"
-                  checked={mode === "single"}
-                  onChange={() => setMode("single")}
-                />
-                <Label htmlFor="single">Single</Label>
+                <RadioGroupItem value="single" id="custom-mode-single" />
+                <Label htmlFor="custom-mode-single">Single</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="multiple"
-                  checked={mode === "multiple"}
-                  onChange={() => setMode("multiple")}
-                />
-                <Label htmlFor="multiple">Multiple</Label>
+                <RadioGroupItem value="multiple" id="custom-mode-multiple" />
+                <Label htmlFor="custom-mode-multiple">Multiple</Label>
               </div>
-            </div>
+            </RadioGroup>
           </div>
           
           <div className="space-y-2">
             <Label>Size</Label>
-            <div className="flex gap-4">
+            <RadioGroup
+              value={size}
+              onValueChange={(v) => setSize(v as "sm" | "md" | "lg")}
+              className="flex gap-4"
+            >
               <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="sm"
-                  checked={size === "sm"}
-                  onChange={() => setSize("sm")}
-                />
-                <Label htmlFor="sm">Small</Label>
+                <RadioGroupItem value="sm" id="custom-size-sm" />
+                <Label htmlFor="custom-size-sm">Small</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="md"
-                  checked={size === "md"}
-                  onChange={() => setSize("md")}
-                />
-                <Label htmlFor="md">Medium</Label>
+                <RadioGroupItem value="md" id="custom-size-md" />
+                <Label htmlFor="custom-size-md">Medium</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="lg"
-                  checked={size === "lg"}
-                  onChange={() => setSize("lg")}
-                />
-                <Label htmlFor="lg">Large</Label>
+                <RadioGroupItem value="lg" id="custom-size-lg" />
+                <Label htmlFor="custom-size-lg">Large</Label>
               </div>
-            </div>
+            </RadioGroup>
           </div>
           
           <div className="flex items-center justify-between">
@@ -331,13 +323,15 @@ function CustomizationExample() {
 // Basic usage demo component
 function BasicUsageDemo() {
   const { clearImages } = useSelectedImages();
-  
+
   return (
     <div className="w-full space-y-8">
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Single Selection Mode</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Single Selection Mode
+        </h3>
         <div className="flex items-center gap-6">
-          <ImageManagerIcon 
+          <ImageManagerIcon
             mode="single"
             emptyTooltip="Select a profile image"
             selectedTooltip="Change profile image"
@@ -347,11 +341,13 @@ function BasicUsageDemo() {
           </p>
         </div>
       </div>
-      
+
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Multiple Selection Mode</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Multiple Selection Mode
+        </h3>
         <div className="flex items-center gap-6">
-          <ImageManagerIcon 
+          <ImageManagerIcon
             mode="multiple"
             emptyTooltip="Select gallery images"
             selectedTooltip="Manage gallery images"
@@ -361,12 +357,8 @@ function BasicUsageDemo() {
           </p>
         </div>
       </div>
-      
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={clearImages}
-      >
+
+      <Button variant="outline" size="sm" onClick={clearImages}>
         Clear Selection
       </Button>
     </div>
@@ -375,64 +367,59 @@ function BasicUsageDemo() {
 
 // Sizes demo component
 function SizesDemo() {
-  const [mode, setMode] = useState<'single' | 'multiple'>('single');
+  const [mode, setMode] = useState<"single" | "multiple">("single");
   const { clearImages } = useSelectedImages();
-  
+
   return (
     <div className="w-full space-y-6">
       <div className="flex flex-wrap gap-8 items-center">
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Small</h3>
-          <ImageManagerIcon 
-            size="sm" 
-            mode={mode}
-          />
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Small
+          </h3>
+          <ImageManagerIcon size="sm" mode={mode} />
         </div>
-        
+
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Medium (Default)</h3>
-          <ImageManagerIcon 
-            size="md" 
-            mode={mode}
-          />
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Medium (Default)
+          </h3>
+          <ImageManagerIcon size="md" mode={mode} />
         </div>
-        
+
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Large</h3>
-          <ImageManagerIcon 
-            size="lg" 
-            mode={mode}
-          />
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Large
+          </h3>
+          <ImageManagerIcon size="lg" mode={mode} />
         </div>
       </div>
-      
+
       <div className="flex flex-wrap gap-4 items-center">
         <div className="space-y-2">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Selection Mode:</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Selection Mode:
+          </p>
           <div className="flex gap-4">
-            <Button 
-              variant={mode === 'single' ? 'default' : 'outline'} 
+            <Button
+              variant={mode === "single" ? "default" : "outline"}
               size="sm"
-              onClick={() => setMode('single')}
+              onClick={() => setMode("single")}
             >
               Single Selection
             </Button>
-            <Button 
-              variant={mode === 'multiple' ? 'default' : 'outline'} 
+            <Button
+              variant={mode === "multiple" ? "default" : "outline"}
               size="sm"
-              onClick={() => setMode('multiple')}
+              onClick={() => setMode("multiple")}
             >
               Multiple Selection
             </Button>
           </div>
         </div>
-        
+
         <div className="ml-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={clearImages}
-          >
+          <Button variant="outline" size="sm" onClick={clearImages}>
             Clear Selection
           </Button>
         </div>
@@ -444,17 +431,19 @@ function SizesDemo() {
 // Comparison demo component
 function ComparisonDemo() {
   const { clearImages } = useSelectedImages();
-  
+
   return (
     <div className="w-full space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">ImageManagerIcon</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            ImageManagerIcon
+          </h3>
           <div className="p-6 bg-white dark:bg-gray-950 border-border rounded-md flex items-center justify-center">
-            <ImageManagerIcon 
-              size="lg" 
+            <ImageManagerIcon
+              size="lg"
               imageManagerProps={{
-                userImages: sampleImageUrls
+                userImages: sampleImageUrls,
               }}
             />
           </div>
@@ -464,13 +453,15 @@ function ComparisonDemo() {
             <li>Good for form fields and tight spaces</li>
           </ul>
         </div>
-        
+
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">ImageManagerRow</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            ImageManagerRow
+          </h3>
           <div className="p-6 bg-white dark:bg-gray-950 border-border rounded-md flex items-center justify-center">
-            <ImageManagerRow 
+            <ImageManagerRow
               imageManagerProps={{
-                userImages: sampleImageUrls
+                userImages: sampleImageUrls,
               }}
             />
           </div>
@@ -481,20 +472,17 @@ function ComparisonDemo() {
           </ul>
         </div>
       </div>
-      
+
       <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={clearImages}
-        >
+        <Button variant="outline" size="sm" onClick={clearImages}>
           Clear Selection
         </Button>
       </div>
-      
+
       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-4 rounded-md">
         <p className="text-sm text-amber-800 dark:text-amber-200">
-          Note: Both components share the same selected images state through the SelectedImagesProvider context.
+          Note: Both components share the same selected images state through the
+          SelectedImagesProvider context.
         </p>
       </div>
     </div>
@@ -508,103 +496,114 @@ function CustomizationDemo() {
   const [showCount, setShowCount] = useState(true);
   const [emptyTooltip, setEmptyTooltip] = useState("Select image");
   const [selectedTooltip, setSelectedTooltip] = useState("Change image");
-  
+
   return (
     <div className="w-full space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Configure Icon</CardTitle>
-          <CardDescription>Customize the appearance and behavior of the ImageManagerIcon</CardDescription>
+          <CardDescription>
+            Customize the appearance and behavior of the ImageManagerIcon
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Selection Mode</Label>
-                <div className="flex gap-4">
+                <RadioGroup
+                  value={mode}
+                  onValueChange={(v) => setMode(v as "single" | "multiple")}
+                  className="flex gap-4"
+                >
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="single"
-                      checked={mode === "single"}
-                      onChange={() => setMode("single")}
-                      className="rounded-full text-blue-500"
+                    <RadioGroupItem
+                      value="single"
+                      id="playground-mode-single"
                     />
-                    <Label htmlFor="single" className="text-sm font-normal">Single</Label>
+                    <Label
+                      htmlFor="playground-mode-single"
+                      className="text-sm font-normal"
+                    >
+                      Single
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="multiple"
-                      checked={mode === "multiple"}
-                      onChange={() => setMode("multiple")}
-                      className="rounded-full text-blue-500"
+                    <RadioGroupItem
+                      value="multiple"
+                      id="playground-mode-multiple"
                     />
-                    <Label htmlFor="multiple" className="text-sm font-normal">Multiple</Label>
+                    <Label
+                      htmlFor="playground-mode-multiple"
+                      className="text-sm font-normal"
+                    >
+                      Multiple
+                    </Label>
                   </div>
-                </div>
+                </RadioGroup>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Size</Label>
-                <div className="flex gap-4">
+                <RadioGroup
+                  value={size}
+                  onValueChange={(v) => setSize(v as "sm" | "md" | "lg")}
+                  className="flex gap-4"
+                >
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="sm"
-                      checked={size === "sm"}
-                      onChange={() => setSize("sm")}
-                      className="rounded-full text-blue-500"
-                    />
-                    <Label htmlFor="sm" className="text-sm font-normal">Small</Label>
+                    <RadioGroupItem value="sm" id="playground-size-sm" />
+                    <Label
+                      htmlFor="playground-size-sm"
+                      className="text-sm font-normal"
+                    >
+                      Small
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="md"
-                      checked={size === "md"}
-                      onChange={() => setSize("md")}
-                      className="rounded-full text-blue-500"
-                    />
-                    <Label htmlFor="md" className="text-sm font-normal">Medium</Label>
+                    <RadioGroupItem value="md" id="playground-size-md" />
+                    <Label
+                      htmlFor="playground-size-md"
+                      className="text-sm font-normal"
+                    >
+                      Medium
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="lg"
-                      checked={size === "lg"}
-                      onChange={() => setSize("lg")}
-                      className="rounded-full text-blue-500"
-                    />
-                    <Label htmlFor="lg" className="text-sm font-normal">Large</Label>
+                    <RadioGroupItem value="lg" id="playground-size-lg" />
+                    <Label
+                      htmlFor="playground-size-lg"
+                      className="text-sm font-normal"
+                    >
+                      Large
+                    </Label>
                   </div>
-                </div>
+                </RadioGroup>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="show-count">Show Count Badge</Label>
-                <Switch 
-                  id="show-count" 
+                <Switch
+                  id="show-count"
                   checked={showCount}
                   onCheckedChange={setShowCount}
                 />
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="empty-tooltip">Empty State Tooltip</Label>
-                <Input 
-                  id="empty-tooltip" 
+                <Input
+                  id="empty-tooltip"
                   value={emptyTooltip}
                   onChange={(e) => setEmptyTooltip(e.target.value)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="selected-tooltip">Selected State Tooltip</Label>
-                <Input 
-                  id="selected-tooltip" 
+                <Input
+                  id="selected-tooltip"
                   value={selectedTooltip}
                   onChange={(e) => setSelectedTooltip(e.target.value)}
                 />
@@ -613,19 +612,19 @@ function CustomizationDemo() {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-lg flex items-center justify-center border-border">
-        <ImageManagerIcon 
+        <ImageManagerIcon
           mode={mode}
           size={size}
           showCount={showCount}
           emptyTooltip={emptyTooltip}
           selectedTooltip={selectedTooltip}
           imageManagerProps={{
-            userImages: sampleImageUrls
+            userImages: sampleImageUrls,
           }}
         />
       </div>
     </div>
   );
-} 
+}

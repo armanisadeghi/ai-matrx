@@ -2,7 +2,7 @@
  * User-secrets vault — public wire shapes.
  *
  * Source of truth: `aidream/aidream/api/schemas/user_secrets.py` +
- * `public.user_secrets` table. These mirror the aidream Pydantic shapes
+ * `users.user_secrets` table. These mirror the aidream Pydantic shapes
  * one-for-one; if they drift, fix it here AND in Python.
  *
  * Plaintext `value` is NEVER on a `UserSecretSummary` — that field is

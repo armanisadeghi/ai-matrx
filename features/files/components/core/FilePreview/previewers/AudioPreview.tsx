@@ -33,6 +33,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
 
 export interface AudioPreviewProps {
@@ -66,8 +67,11 @@ export function AudioPreview({
   // file never just "expires". `src` is the (possibly re-minted) URL to play;
   // `remintOnError` is wired to the <audio> error event; `remintFailed` flips
   // true only after re-mint is exhausted. Durable/foreign URLs pass through.
-  const { src, onError: remintOnError, failed: remintFailed } =
-    useRemintableSrc(url);
+  const {
+    src,
+    onError: remintOnError,
+    failed: remintFailed,
+  } = useRemintableSrc(url);
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -192,7 +196,10 @@ export function AudioPreview({
       const audio = audioRef.current;
       if (!track || !audio || !duration) return;
       const rect = track.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const pct = Math.max(
+        0,
+        Math.min(1, (e.clientX - rect.left) / rect.width),
+      );
       const newTime = pct * duration;
       audio.currentTime = newTime;
       setPosition(newTime);
@@ -231,7 +238,8 @@ export function AudioPreview({
   // ── Render ───────────────────────────────────────────────────────────────
 
   const positionPct = duration > 0 ? (position / duration) * 100 : 0;
-  const bufferedPct = duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0;
+  const bufferedPct =
+    duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0;
 
   // Terminal error shown to the user: a playback failure (`error`) OR an
   // exhausted re-mint of an expired owned URL (`remintFailed`). A recoverable
@@ -366,19 +374,17 @@ export function AudioPreview({
               <Volume2 className="h-3.5 w-3.5" />
             )}
           </button>
-          <input
-            type="range"
+          <Slider
             min={0}
             max={1}
             step={0.01}
-            value={muted ? 0 : volume}
-            onChange={(e) => {
-              const v = Number(e.target.value);
+            value={[muted ? 0 : volume]}
+            onValueChange={([v]) => {
               setVolume(v);
               if (v > 0 && muted) setMuted(false);
             }}
             aria-label="Volume"
-            className="w-20 accent-primary"
+            className="w-20"
           />
         </label>
 
@@ -405,7 +411,9 @@ export function AudioPreview({
           title={loop ? "Loop on" : "Loop off"}
           className={cn(
             "flex items-center gap-1 rounded-md px-2 py-0.5",
-            loop ? "bg-primary/10 text-primary" : "hover:bg-accent hover:text-foreground",
+            loop
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-accent hover:text-foreground",
           )}
         >
           <Repeat className="h-3.5 w-3.5" />

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useWindowSize } from "@uidotdev/usehooks";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import ModuleHeaderMobileContent from "@/components/matrx/navigation/ModuleHeaderMobileContent";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 

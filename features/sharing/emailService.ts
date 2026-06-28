@@ -39,8 +39,7 @@ async function getResourceDetails(
 
       case "canvas": {
         const { data } = await supabase
-          .schema("canvas")
-          .from("canvas_items")
+          .schema("canvas").from("canvas_items")
           .select("title")
           .eq("id", resourceId)
           .single();

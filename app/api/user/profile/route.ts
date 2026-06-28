@@ -7,7 +7,7 @@
 //   • user.profiles — chat-visible display_name, avatar_url, status_text.
 //     Upserted so a missing row is created on first save.
 //
-// The richer `public.user_form_profile` (legal name, addresses, phones,
+// The richer `users.user_form_profile` (legal name, addresses, phones,
 // etc.) is owned by /api/user/form-profile/route.ts. This route is
 // intentionally limited to what drives the header avatar/name everywhere.
 
@@ -66,8 +66,7 @@ export async function GET() {
     // Pull the chat-visible row (may not exist yet — that's fine, we return
     // sensible defaults so the form has values to bind to).
     const { data: profileRow, error: profileError } = await supabase
-      .schema("users")
-      .from("profiles")
+      .schema("users").from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)
       .maybeSingle();
@@ -168,7 +167,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Build the public.profiles patch.
+    // Build the users.profiles patch.
     const profilesPatch: Record<string, string | null> = {};
     for (const key of PROFILES_FIELDS) {
       if (key in body) {
@@ -197,8 +196,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       const { error: upsertError } = await supabase
-        .schema("users")
-      .from("profiles")
+        .schema("users").from("profiles")
         .upsert(
           {
             id: user.id,
@@ -225,8 +223,7 @@ export async function PATCH(request: NextRequest) {
     const echoUser = (await supabase.auth.getUser()).data.user;
     const echoMeta = (echoUser?.user_metadata ?? {}) as Record<string, unknown>;
     const { data: echoProfile } = await supabase
-      .schema("users")
-      .from("profiles")
+      .schema("users").from("profiles")
       .select("display_name, avatar_url, status_text")
       .eq("id", user.id)
       .maybeSingle();

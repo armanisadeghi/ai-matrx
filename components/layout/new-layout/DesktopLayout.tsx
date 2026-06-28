@@ -208,8 +208,8 @@ export default function DesktopLayout({
                           <span
                             className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                               isSidebarCollapsed
-                                ? "opacity-0 translate-x-2 pointer-events-none"
-                                : "opacity-100 translate-x-0"
+                                ? "opacity-0 pointer-events-none"
+                                : "opacity-100"
                             }`}
                           >
                             {link.label}
@@ -246,8 +246,8 @@ export default function DesktopLayout({
                 }}
                 className={`px-1 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider transition-all duration-300 ease-in-out cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 flex-shrink-0 ${
                   isSidebarCollapsed
-                    ? "opacity-0 translate-x-2 pointer-events-none"
-                    : "opacity-100 translate-x-0"
+                    ? "opacity-0 pointer-events-none"
+                    : "opacity-100"
                 }`}
               >
                 Admin{" "}
@@ -274,8 +274,8 @@ export default function DesktopLayout({
                               <span
                                 className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                                   isSidebarCollapsed
-                                    ? "opacity-0 translate-x-2 pointer-events-none"
-                                    : "opacity-100 translate-x-0"
+                                    ? "opacity-0 pointer-events-none"
+                                    : "opacity-100"
                                 }`}
                               >
                                 {link.label}
@@ -327,8 +327,8 @@ export default function DesktopLayout({
                     <span
                       className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                         isSidebarCollapsed
-                          ? "opacity-0 translate-x-2 pointer-events-none"
-                          : "opacity-100 translate-x-0"
+                          ? "opacity-0 pointer-events-none"
+                          : "opacity-100"
                       }`}
                     >
                       {isAdminIndicatorVisible ? "Hide" : "Show"} Indicator
@@ -366,8 +366,8 @@ export default function DesktopLayout({
                   <span
                     className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                       isSidebarCollapsed
-                        ? "opacity-0 translate-x-2 pointer-events-none"
-                        : "opacity-100 translate-x-0"
+                        ? "opacity-0 pointer-events-none"
+                        : "opacity-100"
                     }`}
                   >
                     Voice
@@ -404,8 +404,8 @@ export default function DesktopLayout({
                     <span
                       className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                         isSidebarCollapsed
-                          ? "opacity-0 translate-x-2 pointer-events-none"
-                          : "opacity-100 translate-x-0"
+                          ? "opacity-0 pointer-events-none"
+                          : "opacity-100"
                       }`}
                     >
                       Admin
@@ -450,8 +450,8 @@ export default function DesktopLayout({
                   <span
                     className={`absolute left-9 text-xs whitespace-nowrap transition-all duration-300 ease-in-out ${
                       isSidebarCollapsed
-                        ? "opacity-0 translate-x-2 pointer-events-none"
-                        : "opacity-100 translate-x-0"
+                        ? "opacity-0 pointer-events-none"
+                        : "opacity-100"
                     }`}
                   >
                     {displayName}

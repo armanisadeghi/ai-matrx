@@ -15,13 +15,25 @@
  */
 
 import { useState } from "react";
-import { PlayCircle, CircleHelp, Ban, Info, Search, X, Plus, Check } from "lucide-react";
+import {
+  PlayCircle,
+  CircleHelp,
+  Ban,
+  Info,
+  Search,
+  X,
+  Plus,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentMatrxActions } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentMatrxActions } from "@/features/agents/redux/agent-definition/slice";
 import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
 import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
-import { buildDirectiveOptions, groupDirectiveOptions } from "./directiveOptions";
+import {
+  buildDirectiveOptions,
+  groupDirectiveOptions,
+} from "./directiveOptions";
 
 type Policy = "default" | "auto" | "ask" | "off";
 
@@ -46,10 +58,30 @@ const POLICY_OPTIONS: {
   icon: React.ReactNode;
   hint: string;
 }[] = [
-  { id: "default", label: "Default", icon: <Info className="h-3.5 w-3.5" />, hint: "Use the system default — ask the user before applying." },
-  { id: "auto", label: "Auto-apply", icon: <PlayCircle className="h-3.5 w-3.5" />, hint: "Apply the agent's actions automatically, no confirmation." },
-  { id: "ask", label: "Ask first", icon: <CircleHelp className="h-3.5 w-3.5" />, hint: "Propose each action; apply only when the user approves." },
-  { id: "off", label: "Off", icon: <Ban className="h-3.5 w-3.5" />, hint: "Never apply — actions are inert." },
+  {
+    id: "default",
+    label: "Default",
+    icon: <Info className="h-3.5 w-3.5" />,
+    hint: "Use the system default — ask the user before applying.",
+  },
+  {
+    id: "auto",
+    label: "Auto-apply",
+    icon: <PlayCircle className="h-3.5 w-3.5" />,
+    hint: "Apply the agent's actions automatically, no confirmation.",
+  },
+  {
+    id: "ask",
+    label: "Ask first",
+    icon: <CircleHelp className="h-3.5 w-3.5" />,
+    hint: "Propose each action; apply only when the user approves.",
+  },
+  {
+    id: "off",
+    label: "Off",
+    icon: <Ban className="h-3.5 w-3.5" />,
+    hint: "Never apply — actions are inert.",
+  },
 ];
 
 interface MatrxActionsTabProps {
@@ -99,7 +131,11 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
     const has = actions.includes(type);
     write(has ? actions.filter((a) => a !== type) : [...actions, type], policy);
   };
-  const remove = (type: string) => write(actions.filter((a) => a !== type), policy);
+  const remove = (type: string) =>
+    write(
+      actions.filter((a) => a !== type),
+      policy,
+    );
   const addCustom = () => {
     const t = custom.trim();
     setCustom("");
@@ -111,17 +147,19 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[11px] text-muted-foreground leading-snug">
-        <span className="font-medium text-foreground">Matrx Actions</span> are the
-        things this agent can do from its output — create tasks or projects, write
-        records, run custom actions. List as many as you need. Guidance for them is
-        added to the system prompt <span className="font-medium">automatically at
-        run time</span> — your authored prompt is never modified.
+        <span className="font-medium text-foreground">Matrx Actions</span> are
+        the things this agent can do from its output — create tasks or projects,
+        write records, run custom actions. List as many as you need. Guidance
+        for them is added to the system prompt{" "}
+        <span className="font-medium">automatically at run time</span> — your
+        authored prompt is never modified.
       </p>
 
       {/* ── Selected actions ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-semibold text-foreground">
-          Actions this agent can perform{actions.length ? ` (${actions.length})` : ""}
+          Actions this agent can perform
+          {actions.length ? ` (${actions.length})` : ""}
         </span>
         {actions.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">
@@ -135,7 +173,9 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
                 className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 py-0.5 pl-2 pr-1 text-[11px] text-foreground"
               >
                 <span className="font-medium">{labelFor(type)}</span>
-                <code className="font-mono text-[10px] text-muted-foreground">{type}</code>
+                <code className="font-mono text-[10px] text-muted-foreground">
+                  {type}
+                </code>
                 <button
                   type="button"
                   onClick={() => remove(type)}
@@ -165,8 +205,8 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
 
         {error ? (
           <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-            Couldn&apos;t load the live action catalog ({error}). Built-in actions
-            are still available below.
+            Couldn&apos;t load the live action catalog ({error}). Built-in
+            actions are still available below.
           </div>
         ) : null}
 
@@ -180,8 +220,8 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
           <div className="max-h-52 overflow-y-auto rounded-md border border-border">
             {groups.length === 0 ? (
               <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                No catalog actions match &ldquo;{query}&rdquo; — add it as a custom
-                action below.
+                No catalog actions match &ldquo;{query}&rdquo; — add it as a
+                custom action below.
               </div>
             ) : (
               groups.map((group) => (
@@ -198,16 +238,14 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
                         onClick={() => toggle(opt.type)}
                         className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-accent"
                       >
-                        <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                            checked
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-background"
-                          }`}
-                        >
-                          {checked && <Check className="h-3 w-3" />}
+                        <Checkbox
+                          checked={checked}
+                          tabIndex={-1}
+                          className="pointer-events-none shrink-0"
+                        />
+                        <span className="flex-1 text-foreground">
+                          {opt.label}
                         </span>
-                        <span className="flex-1 text-foreground">{opt.label}</span>
                         <code className="font-mono text-[10px] text-muted-foreground">
                           {opt.type}
                         </code>
@@ -248,7 +286,9 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
 
       {/* ── Policy ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1.5 border-t border-border pt-3">
-        <span className="text-xs font-semibold text-foreground">How they apply</span>
+        <span className="text-xs font-semibold text-foreground">
+          How they apply
+        </span>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {POLICY_OPTIONS.map((opt) => {
             const active = policy === opt.id;

@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 
 interface IntervalSliderProps {
   label: string;
@@ -39,28 +40,21 @@ export function IntervalSlider({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <label
-          htmlFor={id}
-          className="text-[11px] font-medium text-foreground"
-        >
+        <label htmlFor={id} className="text-[11px] font-medium text-foreground">
           {label}
         </label>
         <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
           {formatInterval(valueMs)}
         </span>
       </div>
-      <input
+      <Slider
         id={id}
-        type="range"
         min={minMs}
         max={maxMs}
         step={stepMs}
-        value={valueMs}
-        onChange={(e) => onChange(Number(e.currentTarget.value))}
-        className={cn(
-          "h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted/60",
-          "accent-primary",
-        )}
+        value={[valueMs]}
+        onValueChange={([v]) => onChange(v)}
+        className="w-full"
       />
       <div className="flex items-center justify-between text-[10px] text-muted-foreground/70">
         <span>{formatInterval(minMs)}</span>

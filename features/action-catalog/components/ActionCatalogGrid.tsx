@@ -14,6 +14,7 @@ import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StateBadge, StateCell } from "@/features/action-catalog/components/StateCell";
+import {
+  StateBadge,
+  StateCell,
+} from "@/features/action-catalog/components/StateCell";
 import type {
   ActionCatalog,
   ActionVerb,
@@ -32,9 +36,7 @@ const ALL_FAMILIES = "__all__";
 
 function isWritable(noun: NounActions): boolean {
   return (
-    noun.create === "yes" ||
-    noun.update === "yes" ||
-    noun.delete === "yes"
+    noun.create === "yes" || noun.update === "yes" || noun.delete === "yes"
   );
 }
 
@@ -110,11 +112,9 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
         </Select>
 
         <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={writableOnly}
-            onChange={(e) => setWritableOnly(e.target.checked)}
-            className="h-3.5 w-3.5 accent-primary"
+            onCheckedChange={(checked) => setWritableOnly(checked === true)}
           />
           Writable only
         </label>
@@ -153,7 +153,12 @@ export function ActionCatalogGrid({ catalog }: { catalog: ActionCatalog }) {
           </thead>
           <tbody>
             {grouped.map(({ family, rows }) => (
-              <FamilyGroup key={family} family={family} rows={rows} verbs={verbs} />
+              <FamilyGroup
+                key={family}
+                family={family}
+                rows={rows}
+                verbs={verbs}
+              />
             ))}
             {filtered.length === 0 && (
               <tr>

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -260,15 +261,11 @@ function GuidedCheckbox({
               }`}
             >
               <span className="flex items-center gap-2">
-                <span
-                  className={`flex items-center justify-center w-4 h-4 rounded-sm border flex-shrink-0 ${
-                    isActive
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-primary"
-                  }`}
-                >
-                  {isActive && <Check className="w-3 h-3" />}
-                </span>
+                <Checkbox
+                  checked={isActive}
+                  tabIndex={-1}
+                  className="pointer-events-none shrink-0"
+                />
                 <span className={isActive ? "font-medium" : ""}>
                   {option || "(empty)"}
                 </span>
@@ -294,15 +291,11 @@ function GuidedCheckbox({
             }`}
           >
             <span className="flex items-center gap-2">
-              <span
-                className={`flex items-center justify-center w-4 h-4 rounded-sm border flex-shrink-0 ${
-                  showOther
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "border-primary"
-                }`}
-              >
-                {showOther && <Check className="w-3 h-3" />}
-              </span>
+              <Checkbox
+                checked={showOther}
+                tabIndex={-1}
+                className="pointer-events-none shrink-0"
+              />
               <span>Other...</span>
             </span>
           </div>
@@ -641,7 +634,10 @@ export function AgentVariablesGuided({
 
   // Clamp when a variable resolves mid-session and the step list shrinks past the cursor.
   useEffect(() => {
-    if (activeIndex > variableDefaults.length - 1 && variableDefaults.length > 0) {
+    if (
+      activeIndex > variableDefaults.length - 1 &&
+      variableDefaults.length > 0
+    ) {
       setActiveIndex(variableDefaults.length - 1);
     }
   }, [variableDefaults.length, activeIndex]);
@@ -772,34 +768,34 @@ export function AgentVariablesGuided({
   if (isCollapsed) {
     return (
       <>
-      <BoundVariableChips conversationId={conversationId} />
-      <div
-        className={cn(
-          `w-full bg-card border border-border ${collapsedRadius} ${seamless ? "border-b-0" : ""}`,
-          disabled && "opacity-50 pointer-events-none",
-        )}
-      >
+        <BoundVariableChips conversationId={conversationId} />
         <div
-          role="button"
-          tabIndex={0}
-          onClick={handleToggleCollapse}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              handleToggleCollapse();
-            }
-          }}
-          className={`w-full flex items-center justify-between px-3 py-2 hover:bg-accent/50 transition-colors cursor-pointer ${collapsedRadius}`}
+          className={cn(
+            `w-full bg-card border border-border ${collapsedRadius} ${seamless ? "border-b-0" : ""}`,
+            disabled && "opacity-50 pointer-events-none",
+          )}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            {progressDots}
-            <span className="text-xs text-muted-foreground truncate">
-              {answeredCount}/{total} answered
-            </span>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleToggleCollapse}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleToggleCollapse();
+              }
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2 hover:bg-accent/50 transition-colors cursor-pointer ${collapsedRadius}`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              {progressDots}
+              <span className="text-xs text-muted-foreground truncate">
+                {answeredCount}/{total} answered
+              </span>
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         </div>
-      </div>
       </>
     );
   }
@@ -807,92 +803,92 @@ export function AgentVariablesGuided({
   // --- Expanded state ---
   return (
     <>
-    <BoundVariableChips conversationId={conversationId} />
-    <div
-      className={cn(
-        `flex flex-col h-64 max-h-64 w-full overflow-hidden bg-muted border border-border ${outerRadius} ${seamless ? "border-b-0" : ""}`,
-        disabled && "opacity-50 pointer-events-none",
-      )}
-      onKeyDown={handleKeyDown}
-    >
-      {/* Header — always visible, never scrolls */}
-      <div className="px-3 pt-2.5 pb-2 border-b border-border/40 shrink-0">
-        {/* Row 1: progress dots + title + skip */}
-        <div className="flex items-center gap-2">
-          {progressDots}
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground hover:bg-accent px-2 py-0.5 rounded transition-colors whitespace-nowrap"
-          >
-            Skip questions
-          </button>
+      <BoundVariableChips conversationId={conversationId} />
+      <div
+        className={cn(
+          `flex flex-col h-64 max-h-64 w-full overflow-hidden bg-muted border border-border ${outerRadius} ${seamless ? "border-b-0" : ""}`,
+          disabled && "opacity-50 pointer-events-none",
+        )}
+        onKeyDown={handleKeyDown}
+      >
+        {/* Header — always visible, never scrolls */}
+        <div className="px-3 pt-2.5 pb-2 border-b border-border/40 shrink-0">
+          {/* Row 1: progress dots + title + skip */}
+          <div className="flex items-center gap-2">
+            {progressDots}
+            <button
+              type="button"
+              onClick={handleSkipAll}
+              className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground hover:bg-accent px-2 py-0.5 rounded transition-colors whitespace-nowrap"
+            >
+              Skip questions
+            </button>
+          </div>
+          {/* Row 2: description (only when present) */}
+          <p className="mt-1.5 text-xs text-muted-foreground leading-snug break-words min-w-0 w-full">
+            {formattedName}
+            {helpText && (
+              <span className="text-muted-foreground">: {helpText}</span>
+            )}
+          </p>
         </div>
-        {/* Row 2: description (only when present) */}
-        <p className="mt-1.5 text-xs text-muted-foreground leading-snug break-words min-w-0 w-full">
-          {formattedName}
-          {helpText && (
-            <span className="text-muted-foreground">: {helpText}</span>
+
+        {/* Question content — fills remaining space between header and nav, scrolls */}
+        <div className="relative flex-1 min-h-0 pb-3">
+          <div
+            ref={scrollRef}
+            className="h-full overflow-y-scroll overscroll-contain px-3 py-2"
+          >
+            <GuidedVariableContent
+              variable={variable}
+              value={value}
+              onChange={handleChange}
+              onAutoAdvance={goNext}
+            />
+          </div>
+          {isScrollable && (
+            <div className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10 bg-gradient-to-t from-muted to-transparent" />
           )}
-        </p>
-      </div>
-
-      {/* Question content — fills remaining space between header and nav, scrolls */}
-      <div className="relative flex-1 min-h-0 pb-3">
-        <div
-          ref={scrollRef}
-          className="h-full overflow-y-scroll overscroll-contain px-3 py-2"
-        >
-          <GuidedVariableContent
-            variable={variable}
-            value={value}
-            onChange={handleChange}
-            onAutoAdvance={goNext}
-          />
         </div>
-        {isScrollable && (
-          <div className="pointer-events-none absolute bottom-0 inset-x-0 h-8 z-10 bg-gradient-to-t from-muted to-transparent" />
-        )}
-      </div>
 
-      {/* Navigation — always visible, never scrolls */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 shrink-0">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={activeIndex === 0}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors px-1 py-0.5"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-          Prev
-        </button>
-
-        <span className="text-xs text-muted-foreground">
-          {activeIndex + 1} of {total}
-        </span>
-
-        {activeIndex < total - 1 ? (
+        {/* Navigation — always visible, never scrolls */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 shrink-0">
           <button
             type="button"
-            onClick={goNext}
-            className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
+            onClick={goPrev}
+            disabled={activeIndex === 0}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors px-1 py-0.5"
           >
-            Next
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Prev
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleSkipAll}
-            className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
-          >
-            <Check className="w-3.5 h-3.5" />
-            Done
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        )}
+
+          <span className="text-xs text-muted-foreground">
+            {activeIndex + 1} of {total}
+          </span>
+
+          {activeIndex < total - 1 ? (
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
+            >
+              Next
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSkipAll}
+              className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
+            >
+              <Check className="w-3.5 h-3.5" />
+              Done
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }

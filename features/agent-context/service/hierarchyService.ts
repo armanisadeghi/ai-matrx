@@ -87,8 +87,7 @@ export const hierarchyService = {
     const userEmail = getUserEmail() ?? "";
 
     const { data: profile } = await supabase
-      .schema("users")
-      .from("profiles")
+      .schema("users").from("profiles")
       .select("display_name")
       .eq("id", userId)
       .maybeSingle();

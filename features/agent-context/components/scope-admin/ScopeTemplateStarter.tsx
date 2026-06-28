@@ -4,6 +4,7 @@ import { useState } from "react";
 import * as icons from "lucide-react";
 import {
   Check,
+  CheckCircle2,
   ChevronRight,
   Globe,
   Loader2,
@@ -688,9 +689,10 @@ function TemplateSheet({
                       <div className="flex items-start gap-3">
                         <div className="pt-0.5">
                           {alreadyExists ? (
-                            <div className="h-4 w-4 rounded border border-green-500/40 bg-green-500/10 flex items-center justify-center">
-                              <Check className="h-3 w-3 text-green-500" />
-                            </div>
+                            <CheckCircle2
+                              className="h-4 w-4 text-green-500"
+                              aria-hidden
+                            />
                           ) : (
                             <Checkbox
                               checked={isChecked}

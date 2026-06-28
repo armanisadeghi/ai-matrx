@@ -1,39 +1,62 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ComponentEntry } from '../parts/component-list';
-import { ComponentDisplayWrapper } from '../component-usage';
-import FloatingDock from '@/components/official/FloatingDock';
-import BalancedFloatingDock from '@/components/official/BalancedFloatingDock';
-import { Home, Settings, Bell, Search, User, Sliders } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { ComponentEntry } from "../parts/component-list";
+import { ComponentDisplayWrapper } from "../component-usage";
+import FloatingDock from "@/components/official/FloatingDock";
+import BalancedFloatingDock from "@/components/official/BalancedFloatingDock";
+import { Home, Settings, Bell, Search, User, Sliders } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
 }
 
-export default function FloatingDockDisplay({ component }: ComponentDisplayProps) {
+export default function FloatingDockDisplay({
+  component,
+}: ComponentDisplayProps) {
   if (!component) return null;
-  
+
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>("original");
-  
+
   // State for BalancedFloatingDock controls
   const [growthFactor, setGrowthFactor] = useState<number>(1.8);
-  const [labelPosition, setLabelPosition] = useState<'side' | 'bottom'>('side');
-  
+  const [labelPosition, setLabelPosition] = useState<"side" | "bottom">("side");
+
   // Common dock items
   const dockItems = [
-    { label: 'Home', icon: <Home className="text-gray-700 dark:text-gray-300" />, href: '#' },
-    { label: 'Search', icon: <Search className="text-gray-700 dark:text-gray-300" />, href: '#' },
-    { label: 'Notifications', icon: <Bell className="text-gray-700 dark:text-gray-300" />, href: '#' },
-    { label: 'Settings', icon: <Settings className="text-gray-700 dark:text-gray-300" />, href: '#' },
-    { label: 'Profile', icon: <User className="text-gray-700 dark:text-gray-300" />, href: '#' },
+    {
+      label: "Home",
+      icon: <Home className="text-gray-700 dark:text-gray-300" />,
+      href: "#",
+    },
+    {
+      label: "Search",
+      icon: <Search className="text-gray-700 dark:text-gray-300" />,
+      href: "#",
+    },
+    {
+      label: "Notifications",
+      icon: <Bell className="text-gray-700 dark:text-gray-300" />,
+      href: "#",
+    },
+    {
+      label: "Settings",
+      icon: <Settings className="text-gray-700 dark:text-gray-300" />,
+      href: "#",
+    },
+    {
+      label: "Profile",
+      icon: <User className="text-gray-700 dark:text-gray-300" />,
+      href: "#",
+    },
   ];
-  
+
   // Example code for original FloatingDock
   const originalCode = `import FloatingDock from '@/components/official/FloatingDock';
 import { Home, Settings, Bell, Search, User } from 'lucide-react';
@@ -97,8 +120,10 @@ const dockItems = [
 
   // Component descriptions
   const descriptions = {
-    original: "A responsive floating dock that adapts to desktop and mobile views. On desktop, it shows an interactive dock with animated icons that move upward on hover. On mobile, it collapses to a menu button that expands to a full-screen menu.",
-    balanced: "An enhanced version of the floating dock that grows in place rather than moving upward on hover. Designed for use near the top edge of the page where upward movement would be problematic. Features configurable growth factor and label positioning."
+    original:
+      "A responsive floating dock that adapts to desktop and mobile views. On desktop, it shows an interactive dock with animated icons that move upward on hover. On mobile, it collapses to a menu button that expands to a full-screen menu.",
+    balanced:
+      "An enhanced version of the floating dock that grows in place rather than moving upward on hover. Designed for use near the top edge of the page where upward movement would be problematic. Features configurable growth factor and label positioning.",
   };
 
   // Handle tab change to sync all tab components
@@ -113,13 +138,20 @@ const dockItems = [
       description={descriptions[activeTab as keyof typeof descriptions]}
       className="min-h-[320px] flex flex-col"
     >
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex-grow">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="w-full flex-grow"
+      >
         <TabsList className="mb-4 space-x-2">
           <TabsTrigger value="original">Original FloatingDock</TabsTrigger>
           <TabsTrigger value="balanced">Balanced FloatingDock</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="original" className="mt-0 h-[220px] flex items-end justify-center">
+
+        <TabsContent
+          value="original"
+          className="mt-0 h-[220px] flex items-end justify-center"
+        >
           <div className="w-full">
             <FloatingDock
               items={dockItems}
@@ -128,7 +160,7 @@ const dockItems = [
             />
           </div>
         </TabsContent>
-        
+
         <TabsContent value="balanced" className="mt-0 flex flex-col space-y-6">
           {/* Configuration Panel */}
           <div className="bg-zinc-50 dark:bg-zinc-900 p-4 rounded-md border border-zinc-200 dark:border-zinc-800">
@@ -141,38 +173,49 @@ const dockItems = [
                 <Label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
                   Growth Factor: {growthFactor.toFixed(1)}
                 </Label>
-                <input 
-                  type="range" 
-                  min="1.0" 
-                  max="3.0" 
-                  step="0.1"
-                  value={growthFactor}
-                  onChange={(e) => setGrowthFactor(parseFloat(e.target.value))}
-                  className="w-full accent-blue-500 dark:accent-blue-400"
+                <Slider
+                  min={1.0}
+                  max={3.0}
+                  step={0.1}
+                  value={[growthFactor]}
+                  onValueChange={([v]) => setGrowthFactor(v)}
+                  className="w-full"
                 />
               </div>
               <div>
                 <Label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
                   Label Position
                 </Label>
-                <RadioGroup 
-                  value={labelPosition} 
-                  onValueChange={(value) => setLabelPosition(value as 'side' | 'bottom')}
+                <RadioGroup
+                  value={labelPosition}
+                  onValueChange={(value) =>
+                    setLabelPosition(value as "side" | "bottom")
+                  }
                   className="flex space-x-3"
                 >
                   <div className="flex items-center space-x-1">
                     <RadioGroupItem value="side" id="side-option" />
-                    <Label htmlFor="side-option" className="text-xs text-gray-700 dark:text-gray-300">Side</Label>
+                    <Label
+                      htmlFor="side-option"
+                      className="text-xs text-gray-700 dark:text-gray-300"
+                    >
+                      Side
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <RadioGroupItem value="bottom" id="bottom-option" />
-                    <Label htmlFor="bottom-option" className="text-xs text-gray-700 dark:text-gray-300">Bottom</Label>
+                    <Label
+                      htmlFor="bottom-option"
+                      className="text-xs text-gray-700 dark:text-gray-300"
+                    >
+                      Bottom
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
             </div>
           </div>
-          
+
           {/* Component Demo */}
           <div className="w-full h-[160px] flex items-start justify-center">
             <BalancedFloatingDock
@@ -187,4 +230,4 @@ const dockItems = [
       </Tabs>
     </ComponentDisplayWrapper>
   );
-} 
+}

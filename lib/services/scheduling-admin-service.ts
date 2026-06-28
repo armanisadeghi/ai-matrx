@@ -44,7 +44,7 @@ export async function fetchAllTasksAdmin(
   } = {},
 ): Promise<AdminTaskRow[]> {
   let q = schedulerDb(supabase)
-    .from("sch_task")
+    .schema("scheduler").from("sch_task")
     .select(
       `
       *,
@@ -121,7 +121,7 @@ export async function fetchAllRunsAdmin(
   } = {},
 ): Promise<SchRunRow[]> {
   let q = schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(options.limit ?? 100);
@@ -140,7 +140,7 @@ export async function fetchAllRunsAdmin(
 export async function fetchOrphanLeases(): Promise<SchRunRow[]> {
   const nowIso = new Date().toISOString();
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .select("*")
     .in("status", ["claimed", "running"])
     .lt("claim_expires_at", nowIso)
@@ -170,18 +170,18 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
     await Promise.all([
       // total tasks
       schedulerDb(supabase)
-        .from("sch_task")
+        .schema("scheduler").from("sch_task")
         .select("*", { head: true, count: "exact" })
         .then(unwrapCount),
       // enabled tasks
       schedulerDb(supabase)
-        .from("sch_task")
+        .schema("scheduler").from("sch_task")
         .select("*", { head: true, count: "exact" })
         .eq("enabled", true)
         .then(unwrapCount),
       // due in next hour
       schedulerDb(supabase)
-        .from("sch_task")
+        .schema("scheduler").from("sch_task")
         .select("*", { head: true, count: "exact" })
         .eq("enabled", true)
         .lte("next_due_at", hourFromNowIso)
@@ -189,20 +189,20 @@ export async function fetchHealthSummary(): Promise<SchedulingHealthSummary> {
         .then(unwrapCount),
       // runs last 24h
       schedulerDb(supabase)
-        .from("sch_run")
+        .schema("scheduler").from("sch_run")
         .select("*", { head: true, count: "exact" })
         .gte("created_at", dayAgoIso)
         .then(unwrapCount),
       // failures last 24h
       schedulerDb(supabase)
-        .from("sch_run")
+        .schema("scheduler").from("sch_run")
         .select("*", { head: true, count: "exact" })
         .gte("created_at", dayAgoIso)
         .eq("status", "failed")
         .then(unwrapCount),
       // orphan leases
       schedulerDb(supabase)
-        .from("sch_run")
+        .schema("scheduler").from("sch_run")
         .select("*", { head: true, count: "exact" })
         .in("status", ["claimed", "running"])
         .lt("claim_expires_at", nowIso)
@@ -231,7 +231,7 @@ function unwrapCount(res: {
 
 export async function disableTaskAdmin(taskId: string): Promise<void> {
   const { error } = await schedulerDb(supabase)
-    .from("sch_task")
+    .schema("scheduler").from("sch_task")
     .update({ enabled: false })
     .eq("id", taskId);
   if (error) throw pgErrorToError(error);
@@ -242,7 +242,7 @@ export async function markRunFailedAdmin(
   reason: string,
 ): Promise<void> {
   const { error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .update({
       status: "failed",
       finished_at: new Date().toISOString(),

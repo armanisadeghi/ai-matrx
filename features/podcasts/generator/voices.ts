@@ -1,7 +1,7 @@
 // features/podcasts/generator/voices.ts
 //
 // Cast-building helpers for the studio's speaker picker. The voice DATA now
-// lives in Supabase `public.voices` and is loaded via `useVoices` /
+// lives in Supabase `ai.voices` and is loaded via `useVoices` /
 // `voiceCatalog.ts` — there are no hardcoded rosters or sample URLs here
 // anymore (they drifted from the server and went stale). These helpers operate
 // on the live `Voice[]` the caller passes in.

@@ -429,9 +429,9 @@ export const settingsRegistry: SettingsTabDef[] = [
   //
   // The five sub-tabs all render the same UserProfilePage; each just scrolls
   // to its section on mount. Persistence model:
-  //   • "Profile" itself (parent) saves to auth.users.user_metadata + public.profiles
+  //   • "Profile" itself (parent) saves to auth.users.user_metadata + users.profiles
   //     via /api/user/profile (custom Supabase write, not the unified sync engine).
-  //   • All children save to public.user_form_profile via /api/user/form-profile.
+  //   • All children save to users.user_form_profile via /api/user/form-profile.
   // We mark them all "synced" because saved data lives in Supabase and is
   // available across all the user's devices.
   {

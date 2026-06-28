@@ -1,7 +1,7 @@
 /**
  * Types for /rag/library — the visibility surface for processed documents.
  *
- * A "processed document" is a row in `public.processed_documents` representing
+ * A "processed document" is a row in `docproc.processed_documents` representing
  * one extraction/processing run over a source (PDF, note, code file, …).
  * The library lists every doc the caller owns with derived counts and a
  * status badge, so partial / failed ingestions are visible at a glance.

@@ -134,8 +134,7 @@ export function MessagingInitializer() {
       try {
         // Get conversation basic info
         const { data: convData, error: convError } = await supabase
-          .schema("communication")
-          .from("dm_conversations")
+          .schema("communication").from("dm_conversations")
           .select("*")
           .eq("id", conversationId)
           .single();
@@ -144,8 +143,7 @@ export function MessagingInitializer() {
 
         // Get participants with user info
         const { data: participants } = await supabase
-          .schema("communication")
-          .from("dm_conversation_participants")
+          .schema("communication").from("dm_conversation_participants")
           .select("*")
           .eq("conversation_id", conversationId);
 
@@ -163,8 +161,7 @@ export function MessagingInitializer() {
 
         // Get last message
         const { data: lastMsgData } = await supabase
-          .schema("communication")
-          .from("dm_messages")
+          .schema("communication").from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -255,8 +252,7 @@ export function MessagingInitializer() {
       const conversationsWithParticipants = await Promise.all(
         (data || []).map(async (conv: DmConversationRpcRow) => {
           const { data: participants } = await supabase
-            .schema("communication")
-            .from("dm_conversation_participants")
+            .schema("communication").from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", String(conv.conversation_id));
 

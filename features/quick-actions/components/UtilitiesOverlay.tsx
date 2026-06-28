@@ -5,12 +5,19 @@ import React, { useState } from "react";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";
-import { NotesLayout } from "@/features/notes/components/NotesLayout";
 import TaskApp from "@/features/tasks/components/TaskApp";
 import dynamic from "next/dynamic";
 import { QuickChatSheet } from "./QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
 import { WindowPanelShell } from "@/features/files";
+
+const LazyNotesLayout = dynamic(
+  () =>
+    import("@/features/notes/components/NotesLayout").then((m) => ({
+      default: m.NotesLayout,
+    })),
+  { ssr: false },
+);
 // ChatHistoryWorkspace is the frameless body shared with the floating
 // ChatHistoryWindow. It lives under window-panels/windows, so it's pulled in
 // via dynamic() — the sanctioned path that keeps the heavy chat bundle lazy
@@ -63,7 +70,7 @@ export function UtilitiesOverlay({
       ) as any,
       content: (
         <div className="h-full">
-          <NotesLayout />
+          <LazyNotesLayout hidePageHeader />
         </div>
       ),
     },

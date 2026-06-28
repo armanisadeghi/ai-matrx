@@ -975,6 +975,22 @@ export interface ManagedAgentOptions {
    *     re-attaches to the retained instance instead of re-fetching.
    */
   retainOnUnmount?: boolean;
+
+  /**
+   * CLIENT-ONLY (read by `useAgentLauncher`, never forwarded to the thunk).
+   *
+   * When true, the hook mints a new conversation id instead of reusing the
+   * surface's cached focus. Required on fresh chat routes (`/chat/new`,
+   * `/chat/a/[agentId]`) so navigating from an existing conversation does
+   * not revive its transcript on the first render (before `clearFocus` runs).
+   */
+  preferFresh?: boolean;
+
+  /**
+   * CLIENT-ONLY. Bumped when the user explicitly starts a new chat (+). Forces
+   * the managed launcher to remint even when the URL stays on `/chat/new`.
+   */
+  freshSessionKey?: number;
 }
 
 // =============================================================================

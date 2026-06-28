@@ -1,6 +1,6 @@
 // File: app/api/user/form-profile/route.ts
 //
-// CRUD for `public.user_form_profile` — the rich "agent-on-behalf-of-user"
+// CRUD for `users.user_form_profile` — the rich "agent-on-behalf-of-user"
 // profile (legal name, addresses, phones, emails, social handles, emergency
 // contacts, work info, custom fields). RLS guarantees the user can only
 // touch their own row; we still validate `user_id` on every write.
@@ -10,7 +10,7 @@
 // actually present in the request body are written — partial patches are
 // the common case from per-section saves on the UI.
 //
-// Companion route: /api/user/profile (auth metadata + public.profiles).
+// Companion route: /api/user/profile (auth metadata + users.profiles).
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";

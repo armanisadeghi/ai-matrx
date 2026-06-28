@@ -70,8 +70,7 @@ export function useCanvasShare() {
       console.log("💾 Inserting to database:", insertData);
 
       const { data, error } = await supabase
-        .schema("canvas")
-        .from("shared_canvas_items")
+        .schema("canvas").from("shared_canvas_items")
         .insert(insertData)
         .select()
         .single();

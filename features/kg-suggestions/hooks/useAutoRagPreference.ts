@@ -7,7 +7,7 @@
 // auto-ingested into the KG / RAG corpus.
 //
 // The column was added in Phase A and now lives natively on
-// `Database['public']['Tables']['user_preferences']['Row']`, so we read
+// `Database['users']['Tables']['user_preferences']]['Row']`, so we read
 // it from the typed row without any casts.
 //
 // Write path: UPDATE first, fall back to INSERT only when no row exists.

@@ -8,8 +8,8 @@
  * Python side must land here too, otherwise consumers won't get types.
  *
  * Backed by:
- *   - public.processed_documents     (Phase 4A)
- *   - public.processed_document_pages (Phase 4A)
+ *   - docproc.processed_documents     (Phase 4A)
+ *   - docproc.processed_document_pages (Phase 4A)
  *   - rag.kg_chunks (with FK to processed_documents) (Phase 4A/4B)
  */
 

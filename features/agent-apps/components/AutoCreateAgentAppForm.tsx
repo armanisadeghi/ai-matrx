@@ -1,6 +1,48 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { Badge } from "@/components/ui/badge";
+import {
+  MessageSquare,
+  FileText,
+  Box,
+  Rocket,
+  Code2,
+  Zap,
+  Clock,
+  Palette,
+  ChevronRight,
+  Check,
+  Layers,
+  MessageCircle,
+  Type,
+  ListOrdered,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatTitleCase } from "@/utils/text/text-case-converter";
+import {
+  generateBuiltinVariables,
+  FormatType,
+  DisplayMode,
+  ResponseMode,
+} from "../config-instructions";
+import { useAutoCreateApp } from "../hooks/useAutoCreateApp";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
+import {
+  selectAccumulatedText,
+  selectRequestStatus,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import MarkdownStream from "@/components/MarkdownStream";
 
@@ -122,18 +164,23 @@ export function AutoCreateAgentAppForm({
     },
   });
 
-  // Live streaming text from Redux — same pattern as AutoCreateDebugView
+  // Live streaming text from agent execution activeRequests (requestId = legacy taskId)
   const liveCodeText = useAppSelector((state) =>
-    codeTaskId ? '' : "",
+    codeTaskId ? selectAccumulatedText(codeTaskId)(state) : "",
   );
   const liveMetadataText = useAppSelector((state) =>
-    metadataTaskId
-      ? ''
-      : "",
+    metadataTaskId ? selectAccumulatedText(metadataTaskId)(state) : "",
   );
-  const isCodeStreamEnded = useAppSelector((state) =>
-    codeTaskId ? true : false,
-  );
+  const isCodeStreamEnded = useAppSelector((state) => {
+    if (!codeTaskId) return false;
+    const status = selectRequestStatus(codeTaskId)(state);
+    return (
+      status === "complete" ||
+      status === "error" ||
+      status === "timeout" ||
+      status === "cancelled"
+    );
+  });
 
   // Extract variables from agent. Agents store their input contract in
   // `variable_definitions`; some legacy/migrated rows still expose
@@ -412,8 +459,8 @@ export function AutoCreateAgentAppForm({
         {/* Heading */}
         <div className="text-center space-y-3">
           <h2 className="text-3xl font-bold">
-            Create Your Custom{" "}
-            <span className="text-primary">{agentName}</span> App
+            Create Your Custom <span className="text-primary">{agentName}</span>{" "}
+            App
           </h2>
         </div>
 

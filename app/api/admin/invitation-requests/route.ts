@@ -41,8 +41,7 @@ export async function GET(request: Request) {
 
     // Build query
     let query = adminSupabase
-      .schema("users")
-      .from("invitation_requests")
+      .schema("users").from("invitation_requests")
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);

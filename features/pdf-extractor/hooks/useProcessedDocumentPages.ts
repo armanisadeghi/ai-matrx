@@ -121,8 +121,7 @@ async function fetchProcessedDocumentPages(
 
   const promise = (async () => {
     const { data, error } = await (supabase as any)
-      .schema("docproc")
-      .from("processed_document_pages")
+      .schema("docproc").from("processed_document_pages")
       .select(
         "id, page_index, page_number, width, height, rotation, raw_text, raw_char_count, cleaned_text, cleaned_char_count, section_kind, section_title, is_continuation, used_ocr, extraction_method, extraction_confidence, blocks, words, image_cld_file_id, image_dpi",
       )

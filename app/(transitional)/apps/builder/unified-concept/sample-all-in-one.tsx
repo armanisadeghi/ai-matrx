@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 // Initial field definition with all basic properties
 const initialFieldDefinition = {
@@ -162,29 +165,27 @@ const DynamicField = ({ field }) => {
 
       case "radio":
         return (
-          <div className="space-y-2">
+          <RadioGroup
+            value={value ?? ""}
+            onValueChange={(v) => setValue(v)}
+            disabled={field.disabled}
+            className="space-y-2"
+          >
             {field.options.map((option) => (
-              <div key={option.id} className="flex items-center">
-                <input
-                  type="radio"
-                  id={`${field.id}-${option.id}`}
-                  name={field.id}
+              <div key={option.id} className="flex items-center space-x-2">
+                <RadioGroupItem
                   value={option.id}
-                  checked={value === option.id}
-                  onChange={handleChange}
-                  disabled={field.disabled}
-                  required={field.required}
-                  className="mr-2 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-700"
+                  id={`${field.id}-${option.id}`}
                 />
-                <label
+                <Label
                   htmlFor={`${field.id}-${option.id}`}
-                  className="text-sm text-gray-800 dark:text-gray-200"
+                  className="text-sm text-gray-800 dark:text-gray-200 font-normal"
                 >
                   {option.label}
-                </label>
+                </Label>
               </div>
             ))}
-          </div>
+          </RadioGroup>
         );
 
       case "checkbox":
@@ -225,16 +226,15 @@ const DynamicField = ({ field }) => {
       case "slider":
         return (
           <div>
-            <input
-              type="range"
+            <Slider
               id={field.id}
               min={field.componentProps.min}
               max={field.componentProps.max}
               step={field.componentProps.step}
-              value={value || field.componentProps.min}
-              onChange={handleChange}
+              value={[value || field.componentProps.min]}
+              onValueChange={([v]) => setValue(v)}
               disabled={field.disabled}
-              className="w-full accent-blue-600 dark:accent-blue-400"
+              className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300">
               <span>{field.componentProps.min}</span>

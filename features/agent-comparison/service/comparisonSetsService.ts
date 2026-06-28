@@ -37,7 +37,7 @@ export async function createComparisonSet(
   input: CreateComparisonSetInput,
 ): Promise<ComparisonSetRow> {
   const { data, error } = await supabase()
-    .from("cmp_comparison_sets")
+    .schema("agent").from("cmp_comparison_sets")
     .insert({
       name: input.name,
       user_id: input.userId,
@@ -58,7 +58,7 @@ export async function renameComparisonSet(
   name: string,
 ): Promise<void> {
   const { error } = await supabase()
-    .from("cmp_comparison_sets")
+    .schema("agent").from("cmp_comparison_sets")
     .update({ name })
     .eq("id", setId);
   if (error) throw error;
@@ -69,7 +69,7 @@ export async function listComparisonSets(
   limit = 50,
 ): Promise<ComparisonSetRow[]> {
   const { data, error } = await supabase()
-    .from("cmp_comparison_sets")
+    .schema("agent").from("cmp_comparison_sets")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
@@ -86,12 +86,12 @@ export async function loadComparisonSet(
 
   const [setRes, entriesRes] = await Promise.all([
     client
-      .from("cmp_comparison_sets")
+      .schema("agent").from("cmp_comparison_sets")
       .select("*")
       .eq("id", setId)
       .single(),
     client
-      .from("cmp_comparison_entries")
+      .schema("agent").from("cmp_comparison_entries")
       .select("*")
       .eq("comparison_set_id", setId)
       .order("display_order", { ascending: true }),
@@ -108,7 +108,7 @@ export async function loadComparisonSet(
 
 export async function deleteComparisonSet(setId: string): Promise<void> {
   const { error } = await supabase()
-    .from("cmp_comparison_sets")
+    .schema("agent").from("cmp_comparison_sets")
     .delete()
     .eq("id", setId);
   if (error) throw error;
@@ -125,7 +125,7 @@ export async function replaceEntries(
   const client = supabase();
 
   const { error: delErr } = await client
-    .from("cmp_comparison_entries")
+    .schema("agent").from("cmp_comparison_entries")
     .delete()
     .eq("comparison_set_id", setId);
   if (delErr) throw delErr;
@@ -143,7 +143,7 @@ export async function replaceEntries(
   }));
 
   const { data, error } = await client
-    .from("cmp_comparison_entries")
+    .schema("agent").from("cmp_comparison_entries")
     .insert(rows)
     .select("*");
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { Slider } from "@/components/ui/slider";
+
 const SETTINGS_ROWS = [
   { label: "Theme", value: "System" },
   { label: "Language", value: "English" },
@@ -21,23 +23,11 @@ export function SettingsWindowBody() {
       ))}
       <div className="pt-2">
         <div className="text-xs text-muted-foreground mb-2">Window opacity</div>
-        <input
-          type="range"
-          min={50}
-          max={100}
-          defaultValue={95}
-          className="w-full accent-primary"
-        />
+        <Slider min={50} max={100} defaultValue={[95]} className="w-full" />
       </div>
       <div>
         <div className="text-xs text-muted-foreground mb-2">Snap threshold</div>
-        <input
-          type="range"
-          min={5}
-          max={50}
-          defaultValue={20}
-          className="w-full accent-primary"
-        />
+        <Slider min={5} max={50} defaultValue={[20]} className="w-full" />
       </div>
     </div>
   );

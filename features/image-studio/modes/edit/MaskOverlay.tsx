@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Paintbrush, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { MaskState } from "./use-mask-state";
 
@@ -28,7 +29,16 @@ interface Props {
  * masking is intended to be used at the default fit.
  */
 export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
-  const { mode, active, brushSize, canvasRef, setMode, setBrushSize, markDirty, clear } = mask;
+  const {
+    mode,
+    active,
+    brushSize,
+    canvasRef,
+    setMode,
+    setBrushSize,
+    markDirty,
+    clear,
+  } = mask;
   const [box, setBox] = useState<{
     left: number;
     top: number;
@@ -212,13 +222,7 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
     // Render a hidden canvas so the ref stays valid (so the toolbar can
     // export it even when not actively painting — useful if user paints,
     // toggles off, then runs an AI op).
-    return (
-      <canvas
-        ref={canvasRef}
-        className="hidden"
-        aria-hidden="true"
-      />
-    );
+    return <canvas ref={canvasRef} className="hidden" aria-hidden="true" />;
   }
 
   return (
@@ -271,13 +275,13 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
         </Button>
         <div className="flex items-center gap-1.5 pl-1.5 border-l border-border">
           <span className="text-[11px] text-muted-foreground">Brush</span>
-          <input
-            type="range"
+          <Slider
             min={4}
             max={120}
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="h-1.5 w-24 accent-primary"
+            step={1}
+            value={[brushSize]}
+            onValueChange={([v]) => setBrushSize(v)}
+            className="w-24"
             aria-label="Brush size"
           />
           <span className="w-7 text-right text-[11px] tabular-nums text-muted-foreground">

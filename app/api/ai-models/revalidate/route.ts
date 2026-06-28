@@ -27,7 +27,7 @@ export async function POST() {
         // For now, any authenticated user can refresh the cache
         // Example:
         // const { data: profile } = await supabase
-        //     .from("profiles")
+        //     .schema("users").from("profiles")
         //     .select("role")
         //     .eq("id", user.id)
         //     .single();

@@ -16,8 +16,7 @@ export const canvasItemStateService = {
     try {
       const userId = requireUserId();
       const { data, error } = await supabase
-        .schema("canvas")
-        .from("canvas_item_state")
+        .schema("canvas").from("canvas_item_state")
         .select("state")
         .eq("canvas_id", canvasId)
         .eq("user_id", userId)

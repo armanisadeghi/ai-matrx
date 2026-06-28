@@ -479,8 +479,7 @@ async function saveAsCropDerivative(params: {
     };
   }
   const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
+    .schema("docproc").from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
       storage_uri: storageUri,
@@ -534,8 +533,7 @@ async function saveAsReorderDerivative(params: {
     };
   }
   const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
+    .schema("docproc").from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
       storage_uri: storageUri,
@@ -1500,8 +1498,7 @@ function PageBlock({
     const charCol =
       field === "cleaned" ? "cleaned_char_count" : "raw_char_count";
     const { error } = await (supabase as any)
-      .schema("docproc")
-      .from("processed_document_pages")
+      .schema("docproc").from("processed_document_pages")
       .update({ [col]: editText, [charCol]: editText.length })
       .eq("id", page.id);
     setSaving(false);

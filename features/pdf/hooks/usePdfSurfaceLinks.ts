@@ -60,8 +60,7 @@ async function resolveIds(opts: {
     processedDocumentId = bridge?.canonical_processed_document_id ?? null;
     if (!processedDocumentId) {
       const { data: doc } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         .select("id")
         .eq("source_kind", "cld_file")
         .eq("source_id", fileId)
@@ -73,8 +72,7 @@ async function resolveIds(opts: {
     }
   } else if (processedDocumentId && !fileId) {
     const { data: doc } = await (supabase as any)
-      .schema("docproc")
-      .from("processed_documents")
+      .schema("docproc").from("processed_documents")
       .select("source_kind, source_id")
       .eq("id", processedDocumentId)
       .maybeSingle();

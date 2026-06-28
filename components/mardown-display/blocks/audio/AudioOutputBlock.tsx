@@ -16,6 +16,7 @@ import {
   LayoutTemplate,
   Rows2,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 export interface AudioOutputBlockProps {
   /** URL to the audio file */
@@ -90,44 +91,15 @@ function RangeInput({
   accentVar?: string;
   className?: string;
 }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
   return (
-    <>
-      <input
-        type="range"
-        min={min}
-        max={max || 0}
-        step={step ?? 1}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className={`w-full appearance-none cursor-pointer rounded-full h-1.5 ${className}`}
-        style={{
-          background: `linear-gradient(to right, ${accentVar} ${pct}%, hsl(var(--muted)) ${pct}%)`,
-        }}
-      />
-      <style>{`
-        input[type='range'].audio-range::-webkit-slider-thumb {
-          appearance: none;
-          width: 12px; height: 12px;
-          background: hsl(var(--primary));
-          border-radius: 50%;
-          cursor: pointer;
-          border: 2px solid hsl(var(--background));
-          box-shadow: 0 0 6px hsl(var(--primary) / 0.5);
-          transition: transform 0.15s;
-        }
-        input[type='range'].audio-range:hover::-webkit-slider-thumb {
-          transform: scale(1.25);
-        }
-        input[type='range'].audio-range::-moz-range-thumb {
-          width: 12px; height: 12px;
-          background: hsl(var(--primary));
-          border-radius: 50%;
-          cursor: pointer;
-          border: 2px solid hsl(var(--background));
-        }
-      `}</style>
-    </>
+    <Slider
+      min={min}
+      max={max || 0}
+      step={step ?? 1}
+      value={[value]}
+      onValueChange={([v]) => onChange(v)}
+      className={`w-full ${className}`}
+    />
   );
 }
 

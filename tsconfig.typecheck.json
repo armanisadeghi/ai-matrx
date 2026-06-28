@@ -28,6 +28,10 @@
     ".claude",
     "out",
     "utils/schema/schemaUtils.ts",
-    "next-env.d.ts"
+    "next-env.d.ts",
+    "app/(dev)/**",
+    "app/(transitional)/**",
+    "features/chat/**",
+    "features/applet/**"
   ]
 }

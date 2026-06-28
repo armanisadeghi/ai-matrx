@@ -60,8 +60,7 @@ async function getUserEmailPreferences(
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .schema("users")
-      .from("user_email_preferences")
+      .schema("users").from("user_email_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();
@@ -104,8 +103,7 @@ async function getUserDetails(
     }
 
     const { data: profile } = await supabase
-      .schema("users")
-      .from("profiles")
+      .schema("users").from("profiles")
       .select("display_name")
       .eq("id", userId)
       .maybeSingle();

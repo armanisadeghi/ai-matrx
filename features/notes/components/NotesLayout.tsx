@@ -13,7 +13,6 @@ import { NoteEditor } from "./NoteEditor";
 import { NoteTabs } from "./NoteTabs";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { ShareNoteDialog } from "./ShareNoteDialog";
-import { NotesHeader } from "@/components/layout/new-layout/PageSpecificHeader";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
 import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
@@ -23,12 +22,26 @@ import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { useToastManager } from "@/hooks/useToastManager";
+import dynamic from "next/dynamic";
+
+const NotesHeader = dynamic(
+  () =>
+    import("@/features/notes/components/NotesHeaderPortal").then((m) => ({
+      default: m.NotesHeader,
+    })),
+  { ssr: false },
+);
 
 interface NotesLayoutProps {
   className?: string;
+  /** Suppress the route header portal (e.g. inside Utilities overlay). */
+  hidePageHeader?: boolean;
 }
 
-export function NotesLayout({ className }: NotesLayoutProps) {
+export function NotesLayout({
+  className,
+  hidePageHeader = false,
+}: NotesLayoutProps) {
   const {
     notes,
     isLoading,
@@ -336,13 +349,14 @@ export function NotesLayout({ className }: NotesLayoutProps) {
 
   return (
     <>
-      {/* Page Header - Inject into main layout header */}
-      <NotesHeader
-        onCreateNote={() => handleCreateNote()}
-        onCreateFolder={handleCreateFolder}
-        sortConfig={sortConfig}
-        onSortChange={handleSortChange}
-      />
+      {!hidePageHeader && (
+        <NotesHeader
+          onCreateNote={() => handleCreateNote()}
+          onCreateFolder={handleCreateFolder}
+          sortConfig={sortConfig}
+          onSortChange={handleSortChange}
+        />
+      )}
 
       <div className={cn("flex h-page overflow-hidden", className)}>
         {/* Desktop Sidebar - Compact */}

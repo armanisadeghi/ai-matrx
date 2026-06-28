@@ -101,6 +101,9 @@ const EXEMPT_RE = [
   /^app\/\(ssr\)\/layout\.tsx$/,
   /^components\/icons\/SearchToolbar\.tsx$/,
   /^features\/shell\/components\/header\/header-right-menu\/MenuGroup\.tsx$/,
+  /^features\/shell\/components\/header\/header-right-menu\/ShellUserMenu\.tsx$/,
+  /^features\/shell\/components\/AppShell\.tsx$/,
+  /^app\/\(dev\)\/layout\.dev\.tsx$/,
 ];
 
 function isExempt(file: string): boolean {

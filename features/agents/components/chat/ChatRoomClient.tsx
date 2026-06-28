@@ -19,6 +19,7 @@ import {
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { selectChatIncognitoActive } from "./chat-incognito.slice";
+import { selectChatFreshSessionNonce } from "./chat-route.slice";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import {
   registerSurface,
@@ -72,6 +73,8 @@ export function ChatRoomClient({
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
   const isIncognito = useAppSelector(selectChatIncognitoActive);
+  const freshSessionKey = useAppSelector(selectChatFreshSessionNonce);
+  const isFreshRoute = !conversationIdProp;
   useCreatorOwnershipSync(agentId);
 
   // Register this client as a `page` surface so action bars can route
@@ -142,9 +145,11 @@ export function ChatRoomClient({
   const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
-    ready: !isInitializing && !conversationIdProp,
+    ready: !isInitializing && isFreshRoute,
     config: { responseDensity: "compact" },
     isEphemeral: isIncognito,
+    preferFresh: isFreshRoute,
+    freshSessionKey: isFreshRoute ? freshSessionKey : 0,
     // The chat route promotes /chat/new → /chat/[conversationId] right after
     // the first submit, which unmounts this launcher mid-stream. Retain the
     // started conversation so the destination route re-attaches to the live
@@ -300,6 +305,9 @@ export function ChatRoomClient({
     liveConversationId ? selectMessageCount(liveConversationId)(state) : 0,
   );
   const promotedRef = useRef<string | null>(null);
+  useEffect(() => {
+    promotedRef.current = null;
+  }, [freshSessionKey, agentId]);
   useEffect(() => {
     if (conversationIdProp) return; // already at /chat/[cid]
     if (!liveConversationId || messageCount < 2) return;

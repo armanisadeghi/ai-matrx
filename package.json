@@ -55,6 +55,7 @@
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
+    "core-check": "pnpm check:ui-primitives && pnpm check:dead-relations",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
     "check:data-integrity:strict": "tsx scripts/check-data-integrity.ts --strict",

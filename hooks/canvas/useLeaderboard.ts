@@ -12,8 +12,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
     queryFn: async () => {
       // Get top scores
       const { data: scores, error } = await supabase
-        .schema("canvas")
-        .from("canvas_scores")
+        .schema("canvas").from("canvas_scores")
         .select("*")
         .eq("canvas_id", canvasId)
         .order("score", { ascending: false })
@@ -41,8 +40,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
         if (!userInTop) {
           // Get user's best score
           const { data: userScore } = await supabase
-            .schema("canvas")
-            .from("canvas_scores")
+            .schema("canvas").from("canvas_scores")
             .select("score")
             .eq("canvas_id", canvasId)
             .eq("user_id", userId)
@@ -53,8 +51,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
           if (userScore) {
             // Count how many scores are better
             const { count } = await supabase
-              .schema("canvas")
-              .from("canvas_scores")
+              .schema("canvas").from("canvas_scores")
               .select("*", { count: "exact", head: true })
               .eq("canvas_id", canvasId)
               .gt("score", userScore.score);

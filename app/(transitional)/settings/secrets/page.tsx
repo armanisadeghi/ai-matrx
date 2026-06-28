@@ -4,7 +4,7 @@
  * Settings → Secrets — the user's per-account env-var / token vault.
  *
  * Backend: aidream `/api/user-secrets/*` (Fernet-encrypted at rest in
- * `public.user_secrets`). See `aidream/services/user_secrets/` for the
+ * `users.user_secrets`). See `aidream/services/user_secrets/` for the
  * service layer; this page is the canonical UI.
  *
  * Three input methods (per user spec):

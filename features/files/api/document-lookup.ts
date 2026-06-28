@@ -78,8 +78,7 @@ export async function lookupFileDocument(
   const promise = (async (): Promise<FileDocumentState> => {
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         .select(
           "id, derivation_kind, total_pages, updated_at, clean_content_completed_at",
         )

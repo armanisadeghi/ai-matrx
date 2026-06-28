@@ -5,7 +5,7 @@ import { ClientGroup } from "@/app/(dev)/demos/resizables/_lib/ClientGroup";
 import { Handle } from "@/app/(dev)/demos/resizables/_lib/Handle";
 import { PanelControlProvider } from "@/app/(dev)/demos/resizables/_lib/PanelControlProvider";
 import { RegisteredPanel } from "@/app/(dev)/demos/resizables/_lib/RegisteredPanel";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { SurfacesAgentHeaderControls } from "./SurfacesAgentHeaderControls";

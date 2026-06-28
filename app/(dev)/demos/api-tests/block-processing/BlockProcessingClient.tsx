@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import MarkdownStream from "@/components/MarkdownStream";
 import type {
   TypedStreamEvent,
@@ -467,15 +468,14 @@ export default function BlockProcessingClient() {
                       <span className="text-[10px] text-muted-foreground font-mono">
                         {replayDelay}ms
                       </span>
-                      <input
-                        type="range"
+                      <Slider
                         min={20}
                         max={1000}
                         step={20}
-                        value={replayDelay}
-                        onChange={(e) => setReplayDelay(Number(e.target.value))}
+                        value={[replayDelay]}
+                        onValueChange={([v]) => setReplayDelay(v)}
                         disabled={isReplaying}
-                        className="w-16 h-1 accent-primary cursor-pointer disabled:opacity-40"
+                        className="w-16"
                         title="Replay delay between events"
                       />
                     </div>

@@ -153,7 +153,7 @@ export async function listAgentTasks(): Promise<AgendaTask[]> {
   // aidream /scheduler/tasks router and the partial index
   // sch_task_user_id_active_idx.
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_task")
+    .schema("scheduler").from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
     .is("deleted_at", null)
@@ -168,7 +168,7 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // their "not found" branch instead of letting users re-edit a row
   // they've already deleted.
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_task")
+    .schema("scheduler").from("sch_task")
     .select(SELECT_AGENT_TASK)
     .eq("kind", "agent")
     .eq("id", id)
@@ -205,7 +205,7 @@ export async function updateAgentTaskFields(
 ): Promise<void> {
   if (Object.keys(patch).length === 0) return;
   const { error } = await schedulerDb(supabase)
-    .from("sch_agent_task")
+    .schema("scheduler").from("sch_agent_task")
     .update(patch)
     .eq("id", id);
   if (error) throw pgErrorToError(error);
@@ -218,7 +218,7 @@ export async function listRunsForTask(
   limit = 20,
 ): Promise<SchRunRow[]> {
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .select("*")
     .eq("task_id", taskId)
     .order("created_at", { ascending: false })

@@ -107,8 +107,7 @@ export function NewConversationDialog({
       // Create new conversation
       const organizationId = await resolvePersonalOrgId();
       const { data: newConv, error: createError } = await supabase
-        .schema("communication")
-        .from("dm_conversations")
+        .schema("communication").from("dm_conversations")
         .insert({
           type: "direct",
           created_by: currentUserId,
@@ -121,8 +120,7 @@ export function NewConversationDialog({
 
       // Add both participants - this triggers realtime subscription in MessagingInitializer
       const { error: participantError } = await supabase
-        .schema("communication")
-        .from("dm_conversation_participants")
+        .schema("communication").from("dm_conversation_participants")
         .insert([
           {
             conversation_id: newConv.id,

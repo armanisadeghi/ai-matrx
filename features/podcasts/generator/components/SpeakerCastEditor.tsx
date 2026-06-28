@@ -4,7 +4,7 @@
 //
 // The studio's speaker cast editor: one card per host (exactly `hostCount`
 // cards, always in sync with the count chosen above), each with a NAME, a
-// GENDER, and a VOICE chosen from the LIVE catalog (Supabase `public.voices`),
+// GENDER, and a VOICE chosen from the LIVE catalog (Supabase `ai.voices`),
 // with an audio SAMPLE you can play for any voice (the row's CDN `sample_url`).
 // Up to 20 hosts.
 //

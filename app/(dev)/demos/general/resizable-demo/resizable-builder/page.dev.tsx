@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import {
   NestedResizableLayout,
   Section,
@@ -139,16 +140,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="5"
+                <Slider
+                  min={5}
                   max={section.maxSize || 90}
-                  value={section.defaultSize || 0}
-                  onChange={(e) =>
+                  value={[section.defaultSize || 0]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "defaultSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"
@@ -162,16 +162,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Min Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  value={section.minSize || 10}
-                  onChange={(e) =>
+                <Slider
+                  min={5}
+                  max={50}
+                  value={[section.minSize || 10]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "minSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"
@@ -185,16 +184,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Max Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="90"
-                  value={section.maxSize || 90}
-                  onChange={(e) =>
+                <Slider
+                  min={10}
+                  max={90}
+                  value={[section.maxSize || 90]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "maxSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"
@@ -229,16 +227,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="90"
-                  value={section.defaultSize || 0}
-                  onChange={(e) =>
+                <Slider
+                  min={5}
+                  max={90}
+                  value={[section.defaultSize || 0]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "defaultSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"
@@ -252,16 +249,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Min Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  value={section.minSize || 10}
-                  onChange={(e) =>
+                <Slider
+                  min={5}
+                  max={50}
+                  value={[section.minSize || 10]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "minSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"
@@ -275,16 +271,15 @@ const ResizableLayoutDemo = () => {
                 <label className="block text-sm font-medium mb-1 text-gray-700">
                   Max Size (%)
                 </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="90"
-                  value={section.maxSize || 90}
-                  onChange={(e) =>
+                <Slider
+                  min={10}
+                  max={90}
+                  value={[section.maxSize || 90]}
+                  onValueChange={([v]) =>
                     updateSection(
                       currentPath.map((p) => Number(p)),
                       "maxSize",
-                      parseInt(e.target.value),
+                      v,
                     )
                   }
                   className="w-full"

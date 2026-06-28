@@ -1,6 +1,6 @@
 // File: features/user-profile/hooks/useUserFormProfile.ts
 //
-// Fetch + save the rich `public.user_form_profile` (the "agent on behalf
+// Fetch + save the rich `users.user_form_profile` (the "agent on behalf
 // of the user" data — legal name, addresses, phones, emails, social
 // handles, emergency contacts, etc.). Local state only — this shape is
 // large and only needed on the profile surface, so we don't pay the cost

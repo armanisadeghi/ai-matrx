@@ -56,7 +56,7 @@ export async function fetchLatestFeedback(
   conversationId: string,
 ): Promise<ResponseFeedbackRow[]> {
   const { data, error } = await supabase()
-    .from("cmp_response_feedback")
+    .schema("agent").from("cmp_response_feedback")
     .select("*")
     .eq("user_id", userId)
     .eq("conversation_id", conversationId)
@@ -76,7 +76,7 @@ export async function fetchFeedbackBySet(
   comparisonSetId: string,
 ): Promise<ResponseFeedbackRow[]> {
   const { data, error } = await supabase()
-    .from("cmp_response_feedback")
+    .schema("agent").from("cmp_response_feedback")
     .select("*")
     .eq("user_id", userId)
     .eq("comparison_set_id", comparisonSetId)
@@ -102,7 +102,7 @@ export async function saveFeedback(
   };
 
   const { data, error } = await supabase()
-    .from("cmp_response_feedback")
+    .schema("agent").from("cmp_response_feedback")
     .upsert(payload, { onConflict: "user_id,conversation_id,request_id" })
     .select("*")
     .single();
@@ -128,7 +128,7 @@ export async function clearRankForOthers(args: {
   exceptRequestId: string | null;
 }): Promise<string[]> {
   let q = supabase()
-    .from("cmp_response_feedback")
+    .schema("agent").from("cmp_response_feedback")
     .update({ rank: null })
     .eq("user_id", args.userId)
     .eq("comparison_set_id", args.comparisonSetId)

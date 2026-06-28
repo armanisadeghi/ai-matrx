@@ -16,8 +16,7 @@ export function useCanvasLike(canvasId: string) {
     
             // Use maybeSingle() to avoid PGRST116 error when no like exists
             const { data } = await supabase
-                .schema('canvas')
-                .from('canvas_likes')
+                .schema('canvas').from('canvas_likes')
                 .select('id')
                 .eq('canvas_id', canvasId)
                 .eq('user_id', userId)
@@ -35,8 +34,7 @@ export function useCanvasLike(canvasId: string) {
             
 
             const { error } = await supabase
-                .schema('canvas')
-                .from('canvas_likes')
+                .schema('canvas').from('canvas_likes')
                 .insert({
                     canvas_id: canvasId,
                     user_id: userId
@@ -93,8 +91,7 @@ export function useCanvasLike(canvasId: string) {
             
 
             const { error } = await supabase
-                .schema('canvas')
-                .from('canvas_likes')
+                .schema('canvas').from('canvas_likes')
                 .delete()
                 .eq('canvas_id', canvasId)
                 .eq('user_id', userId);

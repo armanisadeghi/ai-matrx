@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useState, useEffect } from "react";
 
@@ -24,12 +24,14 @@ const AnimatedEventComponent: React.FC<Props> = ({ sections }) => {
     // Show sections one by one with a delay
     sections.forEach((_, index) => {
       setTimeout(() => {
-        setVisibleSections(prev => [...prev, index]);
-        
+        setVisibleSections((prev) => [...prev, index]);
+
         // After a section appears, show its items one by one
         sections[index].items.forEach((item, itemIndex) => {
           setTimeout(() => {
-            setVisibleItems(prev => new Set([...prev, `${index}-${itemIndex}`]));
+            setVisibleItems(
+              (prev) => new Set([...prev, `${index}-${itemIndex}`]),
+            );
           }, itemIndex * 200); // 200ms delay between items
         });
       }, index * 600); // 600ms delay between sections
@@ -46,9 +48,11 @@ const AnimatedEventComponent: React.FC<Props> = ({ sections }) => {
               bg-gradient-to-br from-pink-50 to-cyan-50 dark:from-pink-950 dark:to-cyan-950 
               border-2 border-pink-200 dark:border-pink-800 shadow-lg rounded-xl p-2
               transform transition-all duration-500 ease-out
-              ${visibleSections.includes(sectionIndex) 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-8'}
+              ${
+                visibleSections.includes(sectionIndex)
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8"
+              }
             `}
           >
             <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-cyan-400 dark:from-pink-400 dark:to-cyan-300 bg-clip-text text-transparent">
@@ -63,9 +67,11 @@ const AnimatedEventComponent: React.FC<Props> = ({ sections }) => {
                     border border-pink-100 dark:border-pink-700 
                     transform transition-all duration-300 ease-out
                     hover:scale-[1.02]
-                    ${visibleItems.has(`${sectionIndex}-${itemIndex}`)
-                      ? 'opacity-100 translate-x-0'
-                      : 'opacity-0 translate-x-4'}
+                    ${
+                      visibleItems.has(`${sectionIndex}-${itemIndex}`)
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2"
+                    }
                   `}
                 >
                   <h3 className="text-lg font-semibold text-pink-700 dark:text-pink-300">

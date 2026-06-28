@@ -15,6 +15,7 @@
  */
 
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 export const INLINE_DEFAULT_CHARS = 200;
@@ -29,7 +30,9 @@ export interface InlinePolicyValue {
 }
 
 /** Decode a stored `max_inline_chars` into the three-mode UI value. */
-export function decodeInlinePolicy(maxInlineChars: number | null | undefined): InlinePolicyValue {
+export function decodeInlinePolicy(
+  maxInlineChars: number | null | undefined,
+): InlinePolicyValue {
   if (maxInlineChars === undefined || maxInlineChars === null) {
     return { mode: "default", customChars: "" };
   }
@@ -45,39 +48,39 @@ export function encodeInlinePolicy(
   if (value.mode === "never") return { maxInlineChars: 0 };
   const raw = parseInt(value.customChars, 10);
   if (!Number.isFinite(raw) || raw <= 0) {
-    return { error: `Custom ceiling must be a positive integer (1–${INLINE_HARD_CAP}).` };
+    return {
+      error: `Custom ceiling must be a positive integer (1–${INLINE_HARD_CAP}).`,
+    };
   }
   return { maxInlineChars: Math.min(raw, INLINE_HARD_CAP) };
 }
 
 function RadioRow({
-  name,
-  checked,
-  onSelect,
+  value,
+  currentValue,
   label,
   description,
   right,
 }: {
-  name: string;
-  checked: boolean;
-  onSelect: () => void;
+  value: InlineMode;
+  currentValue: InlineMode;
   label: string;
   description: string;
   right?: React.ReactNode;
 }) {
+  const selected = value === currentValue;
   return (
     <label
+      htmlFor={`inline-mode-${value}`}
       className={cn(
         "flex items-start gap-3 rounded-md border border-border p-2.5 cursor-pointer transition-colors",
-        checked ? "border-primary/60 bg-accent/40" : "hover:bg-accent/20",
+        selected ? "border-primary/60 bg-accent/40" : "hover:bg-accent/20",
       )}
     >
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={onSelect}
-        className="mt-0.5 accent-primary"
+      <RadioGroupItem
+        value={value}
+        id={`inline-mode-${value}`}
+        className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
@@ -100,18 +103,27 @@ export function InlinePolicyControl({
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <RadioGroup
+      value={value.mode}
+      onValueChange={(mode) => {
+        const nextMode = mode as InlineMode;
+        if (nextMode === "default")
+          onChange({ mode: "default", customChars: "" });
+        else if (nextMode === "never")
+          onChange({ mode: "never", customChars: "" });
+        else onChange({ mode: "custom", customChars: value.customChars });
+      }}
+      className={cn("space-y-2", className)}
+    >
       <RadioRow
-        name="inline-mode"
-        checked={value.mode === "default"}
-        onSelect={() => onChange({ mode: "default", customChars: "" })}
+        value="default"
+        currentValue={value.mode}
         label="Default"
         description={`Inline if content fits in ${INLINE_DEFAULT_CHARS} characters.`}
       />
       <RadioRow
-        name="inline-mode"
-        checked={value.mode === "custom"}
-        onSelect={() => onChange({ mode: "custom", customChars: value.customChars })}
+        value="custom"
+        currentValue={value.mode}
         label="Custom ceiling"
         description={`Inline up to N characters. Hard cap is ${INLINE_HARD_CAP}.`}
         right={
@@ -122,9 +134,12 @@ export function InlinePolicyControl({
               min={1}
               max={INLINE_HARD_CAP}
               value={value.customChars}
-              onChange={(e) => onChange({ mode: "custom", customChars: e.target.value })}
+              onChange={(e) =>
+                onChange({ mode: "custom", customChars: e.target.value })
+              }
               onFocus={() => {
-                if (value.mode !== "custom") onChange({ mode: "custom", customChars: value.customChars });
+                if (value.mode !== "custom")
+                  onChange({ mode: "custom", customChars: value.customChars });
               }}
               placeholder="800"
               className="h-8 w-24 text-sm"
@@ -135,12 +150,11 @@ export function InlinePolicyControl({
         }
       />
       <RadioRow
-        name="inline-mode"
-        checked={value.mode === "never"}
-        onSelect={() => onChange({ mode: "never", customChars: "" })}
+        value="never"
+        currentValue={value.mode}
         label="Never inline"
         description="Always deferred — retrieved on demand, never injected inline."
       />
-    </div>
+    </RadioGroup>
   );
 }

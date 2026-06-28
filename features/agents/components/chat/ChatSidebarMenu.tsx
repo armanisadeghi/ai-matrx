@@ -41,9 +41,10 @@
 // pattern — NOT to add a parallel styling system here.
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mic, Plus, Search, Webhook } from "lucide-react";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   Popover,
   PopoverTrigger,
@@ -53,6 +54,7 @@ import { cn } from "@/lib/utils";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
+import { beginFreshChat, parseChatPath } from "./begin-fresh-chat";
 
 /** Sidebar history list scope. Stable, owned by ChatSidebarMenu. */
 const CHAT_HISTORY_SCOPE = "chat-route";
@@ -74,36 +76,27 @@ const NAV_ITEM_CLASS = "shell-nav-item shell-nav-stable shell-tactile-subtle";
 const ICON_SIZE = 18;
 const ICON_STROKE = 1.75;
 
-/** Derive the active conversation + active agent from the chat URL. */
-function parseChatPath(pathname: string): {
-  activeConversationId: string | null;
-  activeAgentId: string | undefined;
-} {
-  // /chat/a/[agentId]
-  const agentMatch = pathname.match(/^\/chat\/a\/([^/]+)/);
-  if (agentMatch) {
-    return {
-      activeConversationId: null,
-      activeAgentId: decodeURIComponent(agentMatch[1]),
-    };
-  }
-  // /chat/[conversationId] — but NOT /chat/new
-  const convMatch = pathname.match(/^\/chat\/([^/]+)$/);
-  if (convMatch && convMatch[1] !== "new") {
-    return { activeConversationId: convMatch[1], activeAgentId: undefined };
-  }
-  return { activeConversationId: null, activeAgentId: undefined };
-}
-
 interface ChatSidebarMenuProps {
   expanded: boolean;
 }
 
 export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { activeConversationId, activeAgentId } = parseChatPath(pathname);
   const isVoiceRoute = pathname.startsWith(VOICE_AGENT_HREF);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
+
+  const handleNewChat = () => {
+    beginFreshChat({
+      dispatch,
+      router,
+      pathname,
+      getState: store.getState,
+    });
+  };
 
   return (
     // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`
@@ -113,18 +106,32 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
 
-      {/* New chat — Link so cmd/ctrl+click opens /chat/new in a new tab. */}
-      <Link
-        href="/chat/new"
+      {/* New chat — clears stale surface focus and bumps the fresh-session
+          nonce so `/chat/new` remints even when the path is unchanged.
+          Cmd/ctrl+click: open the fresh route in a new tab (no nonce bump). */}
+      <button
+        type="button"
         title="New chat"
         aria-label="New chat"
         className={NAV_ITEM_CLASS}
+        onClick={(event) => {
+          if (event.metaKey || event.ctrlKey) {
+            window.open("/chat/new", "_blank", "noopener,noreferrer");
+            return;
+          }
+          handleNewChat();
+        }}
+        onAuxClick={(event) => {
+          if (event.button !== 1) return;
+          event.preventDefault();
+          window.open("/chat/new", "_blank", "noopener,noreferrer");
+        }}
       >
         <span className="shell-nav-icon">
           <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} />
         </span>
         <span className="shell-nav-label">New chat</span>
-      </Link>
+      </button>
 
       {/* Search chats — popover (independent scope so it doesn't filter
           the sidebar list after close). */}

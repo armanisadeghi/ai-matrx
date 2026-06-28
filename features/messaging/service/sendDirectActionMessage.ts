@@ -30,8 +30,7 @@ export async function findOrCreateDirectConversation(
 
   const organizationId = await resolvePersonalOrgId();
   const { data: conv, error: createError } = await supabase
-    .schema("communication")
-    .from("dm_conversations")
+    .schema("communication").from("dm_conversations")
     .insert({
       type: "direct",
       created_by: currentUserId,
@@ -42,8 +41,7 @@ export async function findOrCreateDirectConversation(
   if (createError) throw createError;
 
   const { error: partError } = await supabase
-    .schema("communication")
-    .from("dm_conversation_participants")
+    .schema("communication").from("dm_conversation_participants")
     .insert([
       { conversation_id: conv.id, user_id: currentUserId, role: "owner" },
       { conversation_id: conv.id, user_id: recipientId, role: "member" },

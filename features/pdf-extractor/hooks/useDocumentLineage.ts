@@ -64,8 +64,7 @@ async function walkProcessingAncestors(
   let cursor = startParentId;
   for (let i = 0; cursor && i < MAX_WALK; i++) {
     const { data, error } = await (supabase as any)
-      .schema("docproc")
-      .from("processed_documents")
+      .schema("docproc").from("processed_documents")
       .select(
         "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
       )
@@ -90,8 +89,7 @@ async function fetchProcessingChildren(
   docId: string,
 ): Promise<ProcessingNode[]> {
   const { data, error } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
+    .schema("docproc").from("processed_documents")
     .select(
       "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
     )

@@ -14,6 +14,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Loader2, Stars } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
@@ -232,10 +233,15 @@ export default function TranscriptionCleanup({
         <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
           Agent
         </div>
-        <div className="flex flex-col gap-1">
+        <RadioGroup
+          value={agentId}
+          onValueChange={setAgentId}
+          className="flex flex-col gap-1"
+        >
           {AI_POST_PROCESS_AGENTS.map((agent) => (
             <label
               key={agent.id}
+              htmlFor={`transcription-cleanup-agent-${instanceId}-${agent.id}`}
               className={cn(
                 "flex items-start gap-2 rounded-md border p-2 cursor-pointer transition-colors text-xs",
                 agent.id === agentId
@@ -243,12 +249,9 @@ export default function TranscriptionCleanup({
                   : "border-border/50 hover:bg-accent/40",
               )}
             >
-              <input
-                type="radio"
-                name={`transcription-cleanup-agent-${instanceId}`}
+              <RadioGroupItem
                 value={agent.id}
-                checked={agent.id === agentId}
-                onChange={() => setAgentId(agent.id)}
+                id={`transcription-cleanup-agent-${instanceId}-${agent.id}`}
                 className="mt-0.5 shrink-0"
               />
               <div className="flex min-w-0 flex-col gap-0.5">
@@ -267,7 +270,7 @@ export default function TranscriptionCleanup({
               </div>
             </label>
           ))}
-        </div>
+        </RadioGroup>
 
         <div className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
           Context

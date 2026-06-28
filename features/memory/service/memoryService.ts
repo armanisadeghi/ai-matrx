@@ -1,5 +1,5 @@
 /**
- * Per-user memory — Supabase-direct CRUD on `public.user_memory`.
+ * Per-user memory — Supabase-direct CRUD on `users.user_memory`.
  *
  * Memory is a small, cross-project bag of text files (markdown, notes,
  * preferences) keyed on the user only — it follows the user into every

@@ -1,7 +1,7 @@
 // features/podcasts/generator/voiceCatalog.ts
 //
 // THE live voice catalog. Reads every TTS voice straight from the Matrx Main
-// Supabase table `public.voices` (world-readable for the shared catalog; a
+// Supabase table `ai.voices` (world-readable for the shared catalog; a
 // signed-in user additionally sees their own `user_created` rows via RLS).
 // This is the single source of truth — it replaces the old hardcoded rosters
 // and the generated sample manifest. Samples are permanent public CDN URLs

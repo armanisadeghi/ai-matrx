@@ -1,7 +1,7 @@
 // File: features/user-profile/hooks/useUserProfile.ts
 //
 // Fetch + save the user's account identity (auth.user_metadata +
-// public.profiles). Mirrors the EmailTab pattern: local state, explicit
+// users.profiles). Mirrors the EmailTab pattern: local state, explicit
 // save, dirty tracking — no Redux slice for the data itself.
 //
 // After a successful save we DO dispatch `setUserMetadata(...)` so the

@@ -149,6 +149,7 @@ import { default as instanceResourcesReducer } from "@/features/agents/redux/exe
 import { default as instanceUserInputReducer } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { default as conversationsReducer } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import chatIncognitoReducer from "@/features/agents/components/chat/chat-incognito.slice";
+import chatRouteReducer from "@/features/agents/components/chat/chat-route.slice";
 import { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { default as observabilityReducer } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { default as contextStateReducer } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
@@ -334,6 +335,7 @@ export const slimReducerMap = {
 
   conversations: conversationsReducer,
   chatIncognito: chatIncognitoReducer,
+  chatRoute: chatRouteReducer,
   instanceModelOverrides: instanceModelOverridesReducer,
   instanceVariableValues: instanceVariableValuesReducer,
   instanceResources: instanceResourcesReducer,

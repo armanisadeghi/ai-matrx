@@ -8,7 +8,7 @@
  * tier, TTL, env vars, optional git repo to auto-clone.
  *
  * Persistence: standard userPreferences slice (`sandbox` module). The slice's
- * auto-save middleware debounces an upsert into `public.user_preferences`.
+ * auto-save middleware debounces an upsert into `users.user_preferences`.
  * Read on both sides — web (SandboxPanel + this page) and aidream
  * (`ensure_default_sandbox.py` reads `user_preferences.preferences.sandbox`).
  */

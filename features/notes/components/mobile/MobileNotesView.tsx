@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
 import MobileNoteEditor, { type MobileEditorMode } from "./MobileNoteEditor";

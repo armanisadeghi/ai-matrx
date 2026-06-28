@@ -2,7 +2,7 @@
  * features/notes/hooks/useNoteIngestStatus.ts
  *
  * "Is this note in the knowledge base?" — a DIRECT Supabase read of
- * `public.processed_documents` anchored to the note, mirroring the
+ * `docproc.processed_documents` anchored to the note, mirroring the
  * cloud-files `document-lookup.ts` pattern (RLS-readable table, no
  * Python round-trip).
  *
@@ -44,8 +44,7 @@ export function useNoteIngestStatus(noteId: string | null): {
     }
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         .select("id")
         .eq("source_kind", "note")
         .eq("source_id", noteId)

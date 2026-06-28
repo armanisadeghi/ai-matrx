@@ -148,8 +148,7 @@ export async function resolveSourceTitle(
     switch (kind) {
       case "note": {
         const { data } = await supabase
-          .schema("workbench")
-          .from("notes")
+          .schema("workbench").from("notes")
           .select("label")
           .eq("id", id)
           .maybeSingle();
@@ -314,8 +313,7 @@ async function resolveTitlesForKind(
       // Prefer each source's ROOT ingested doc (clean filename). One query for
       // the whole page; pick the best row per source_id client-side.
       const { data } = await (supabase as any)
-        .schema("docproc")
-        .from("processed_documents")
+        .schema("docproc").from("processed_documents")
         .select("source_id, name, parent_processed_id, updated_at")
         .eq("source_kind", "cld_file")
         .in("source_id", ids)
@@ -343,8 +341,7 @@ async function resolveTitlesForKind(
     }
     case "note": {
       const { data } = await supabase
-        .schema("workbench")
-        .from("notes")
+        .schema("workbench").from("notes")
         .select("id, label")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.label);
@@ -420,8 +417,7 @@ async function fetchProcessedDocument(
   id: string,
 ): Promise<ProcessedDocLite | null> {
   const { data, error } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
+    .schema("docproc").from("processed_documents")
     .select(
       "name, mime_type, clean_content, content, total_pages, updated_at, parent_processed_id",
     )
@@ -446,8 +442,7 @@ function clipBody(body: string): { text: string; truncated: boolean } {
 async function loadNote(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("note", id);
   const { data } = await supabase
-    .schema("workbench")
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("label, content, updated_at")
     .eq("id", id)
     .maybeSingle();

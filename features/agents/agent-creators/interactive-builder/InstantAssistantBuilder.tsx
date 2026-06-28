@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useAgentBuilder } from "../services/agentBuilderService";
 import {
@@ -379,14 +380,13 @@ function LevelSlider({
           {levels[snapped]?.label}
         </span>
       </div>
-      <input
-        type="range"
-        min="1"
-        max="10"
-        step="1"
-        value={value}
-        onChange={(e) => onChange(snapToNearestLevel(parseInt(e.target.value)))}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+      <Slider
+        min={1}
+        max={10}
+        step={1}
+        value={[value]}
+        onValueChange={([v]) => onChange(snapToNearestLevel(v))}
+        className="w-full"
       />
       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
         <span>{leftLabel}</span>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { WebPlayer } from "@cartesia/cartesia-js";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 import {
   EMOTION_OPTIONS,
   EMPTY_METRICS,
@@ -60,7 +61,9 @@ export function TtsTesterPanel({
   const [metrics, setMetrics] = useState<TtsRunMetrics>(EMPTY_METRICS);
   const [phase, setPhase] = useState<TtsRunPhase>("idle");
   const handleRef = useRef<TtsRunHandle | null>(null);
-  const playerRef = useRef<{ player: WebPlayer; bufferSec: number } | null>(null);
+  const playerRef = useRef<{ player: WebPlayer; bufferSec: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     return () => {
@@ -82,8 +85,10 @@ export function TtsTesterPanel({
     return playerRef.current.player;
   };
 
-  const set = <K extends keyof TtsTestConfig>(key: K, value: TtsTestConfig[K]) =>
-    setConfig((c) => ({ ...c, [key]: value }));
+  const set = <K extends keyof TtsTestConfig>(
+    key: K,
+    value: TtsTestConfig[K],
+  ) => setConfig((c) => ({ ...c, [key]: value }));
 
   const synthesizing = phase === "connecting" || phase === "synthesizing";
   const playing = phase === "playing";
@@ -270,25 +275,23 @@ export function TtsTesterPanel({
         </div>
 
         <Field label="Speed" hint={`${config.speed.toFixed(2)}× (0.6–1.5)`}>
-          <input
-            type="range"
+          <Slider
             min={0.6}
             max={1.5}
             step={0.05}
-            value={config.speed}
-            onChange={(e) => set("speed", Number(e.target.value))}
-            className="w-full accent-primary"
+            value={[config.speed]}
+            onValueChange={([v]) => set("speed", v)}
+            className="w-full"
           />
         </Field>
         <Field label="Volume" hint={`${config.volume.toFixed(2)}× (0.5–2.0)`}>
-          <input
-            type="range"
+          <Slider
             min={0.5}
             max={2}
             step={0.05}
-            value={config.volume}
-            onChange={(e) => set("volume", Number(e.target.value))}
-            className="w-full accent-primary"
+            value={[config.volume]}
+            onValueChange={([v]) => set("volume", v)}
+            className="w-full"
           />
         </Field>
 
@@ -297,14 +300,13 @@ export function TtsTesterPanel({
             label="Playback buffer (client)"
             hint={`${config.playbackBufferSec.toFixed(2)}s`}
           >
-            <input
-              type="range"
+            <Slider
               min={0.05}
               max={2}
               step={0.05}
-              value={config.playbackBufferSec}
-              onChange={(e) => set("playbackBufferSec", Number(e.target.value))}
-              className="w-full accent-primary"
+              value={[config.playbackBufferSec]}
+              onValueChange={([v]) => set("playbackBufferSec", v)}
+              className="w-full"
             />
           </Field>
         </div>
@@ -317,14 +319,13 @@ export function TtsTesterPanel({
                 : `managed · ${config.maxBufferDelayMs}ms`
             }
           >
-            <input
-              type="range"
+            <Slider
               min={0}
               max={3000}
               step={100}
-              value={config.maxBufferDelayMs}
-              onChange={(e) => set("maxBufferDelayMs", Number(e.target.value))}
-              className="w-full accent-primary"
+              value={[config.maxBufferDelayMs]}
+              onValueChange={([v]) => set("maxBufferDelayMs", v)}
+              className="w-full"
             />
           </Field>
         </div>

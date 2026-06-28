@@ -59,6 +59,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -326,26 +327,14 @@ function MiniToggle({
   label: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-    >
-      <span
-        className={cn(
-          "relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full transition-colors",
-          on ? "bg-primary" : "bg-muted-foreground/30",
-        )}
-      >
-        <span
-          className={cn(
-            "inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform",
-            on ? "translate-x-3" : "translate-x-0.5",
-          )}
-        />
-      </span>
+    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer">
+      <Switch
+        checked={on}
+        onCheckedChange={onChange}
+        className="scale-75 origin-left"
+      />
       {label}
-    </button>
+    </label>
   );
 }
 

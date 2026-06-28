@@ -107,7 +107,7 @@ export async function claimTask(
   };
 
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .insert(row)
     .select()
     .single();
@@ -153,7 +153,7 @@ export async function completeRun(
   opts: CompleteRunOptions,
 ): Promise<boolean> {
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .update({
       status: "success" satisfies RunStatus,
       finished_at: new Date().toISOString(),
@@ -196,7 +196,7 @@ export async function failRun(
   opts: FailRunOptions,
 ): Promise<boolean> {
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .update({
       status: "failed" satisfies RunStatus,
       finished_at: new Date().toISOString(),
@@ -248,7 +248,7 @@ export async function markRunRunning(
   }
 
   const { data, error } = await schedulerDb(supabase)
-    .from("sch_run")
+    .schema("scheduler").from("sch_run")
     .update(patch)
     .eq("id", opts.runId)
     .eq("claim_token", opts.claimToken)

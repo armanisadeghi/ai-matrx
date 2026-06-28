@@ -1,6 +1,6 @@
 "use client";
 
-import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { LayoutGrid } from "lucide-react";
 import { CmsArtifactList } from "@/features/artifacts/components/CmsArtifactList";
 

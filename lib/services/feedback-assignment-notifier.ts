@@ -94,8 +94,7 @@ async function findOrCreateDirectConversation(
   }
 
   const { data: newConv, error: createError } = await supabase
-    .schema("communication")
-    .from("dm_conversations")
+    .schema("communication").from("dm_conversations")
     .insert({
       type: "direct",
       created_by: userA,
@@ -106,8 +105,7 @@ async function findOrCreateDirectConversation(
   if (createError) throw createError;
 
   const { error: partErr } = await supabase
-    .schema("communication")
-    .from("dm_conversation_participants")
+    .schema("communication").from("dm_conversation_participants")
     .insert([
       { conversation_id: newConv.id, user_id: userA, role: "owner" },
       { conversation_id: newConv.id, user_id: userB, role: "member" },
@@ -132,8 +130,7 @@ async function sendAssignmentDm(
     );
     const supabase = createAdminClient();
     const { error } = await supabase
-      .schema("communication")
-      .from("dm_messages")
+      .schema("communication").from("dm_messages")
       .insert({
         conversation_id: conversationId,
         sender_id: assignerId,

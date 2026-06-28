@@ -5,8 +5,8 @@
 // having to also touch Contact or Addresses.
 //
 // Data sources:
-//   • Account (auth metadata + public.profiles) → `useUserProfile`
-//   • Form profile (public.user_form_profile)   → `useUserFormProfile`
+//   • Account (auth metadata + users.profiles) → `useUserProfile`
+//   • Form profile (users.user_form_profile)   → `useUserFormProfile`
 //   • Read-only auth info (id, last sign-in, providers, email-verified)
 //     comes straight from Redux via `useAppSelector(selectUser)`.
 //

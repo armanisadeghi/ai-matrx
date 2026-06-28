@@ -37,7 +37,7 @@ export async function updateResultPayloadField(opts: {
 }): Promise<void> {
   const nextPayload = { ...opts.currentPayload, [opts.key]: opts.value };
   const { error } = await docproc
-    .from("page_extraction_results")
+    .schema("docproc").from("page_extraction_results")
     .update({ payload: nextPayload })
     .eq("id", opts.resultId);
   if (error) throw error;
@@ -57,7 +57,7 @@ export async function updateResultPayloadField(opts: {
  */
 export async function deleteRun(runId: string): Promise<void> {
   const { error } = await docproc
-    .from("page_extraction_runs")
+    .schema("docproc").from("page_extraction_runs")
     .delete()
     .eq("id", runId);
   if (error) throw error;
@@ -65,7 +65,7 @@ export async function deleteRun(runId: string): Promise<void> {
 
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {
   const { data, error } = await docproc
-    .from("page_extraction_runs")
+    .schema("docproc").from("page_extraction_runs")
     .select("*")
     .eq("id", runId)
     .maybeSingle();
@@ -77,7 +77,7 @@ export async function listRunsForJob(
   jobId: string,
 ): Promise<PageExtractionRun[]> {
   const { data, error } = await docproc
-    .from("page_extraction_runs")
+    .schema("docproc").from("page_extraction_runs")
     .select("*")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
@@ -89,7 +89,7 @@ export async function listPageRunsForRun(
   runId: string,
 ): Promise<PageExtractionPageRun[]> {
   const { data, error } = await docproc
-    .from("page_extraction_page_runs")
+    .schema("docproc").from("page_extraction_page_runs")
     .select("*")
     .eq("run_id", runId)
     .order("chunk_index", { ascending: true });
@@ -102,7 +102,7 @@ export async function listResults(opts: {
   runId?: string | null;
 }): Promise<PageExtractionResult[]> {
   let query = docproc
-    .from("page_extraction_results")
+    .schema("docproc").from("page_extraction_results")
     .select("*")
     .eq("job_id", opts.jobId)
     .order("canonical_page", { ascending: true, nullsFirst: false })
@@ -123,7 +123,7 @@ export async function listResultsForFile(
   fileId: string,
 ): Promise<PageExtractionResult[]> {
   const { data, error } = await docproc
-    .from("page_extraction_results")
+    .schema("docproc").from("page_extraction_results")
     .select("*")
     .eq("file_id", fileId)
     .order("canonical_page", { ascending: true, nullsFirst: false })
@@ -134,7 +134,7 @@ export async function listResultsForFile(
 
 export async function getLatestRunId(jobId: string): Promise<string | null> {
   const { data: jobRow, error: jobErr } = await docproc
-    .from("page_extraction_jobs")
+    .schema("docproc").from("page_extraction_jobs")
     .select("latest_run_id")
     .eq("id", jobId)
     .maybeSingle();
@@ -142,7 +142,7 @@ export async function getLatestRunId(jobId: string): Promise<string | null> {
   if (jobRow?.latest_run_id) return jobRow.latest_run_id as string;
 
   const { data, error } = await docproc
-    .from("page_extraction_runs")
+    .schema("docproc").from("page_extraction_runs")
     .select("id")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false })

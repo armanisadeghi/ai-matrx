@@ -6,6 +6,9 @@ import HelpIcon from "@/components/official/HelpIcon";
 import { FileUploadWithStorage } from "@/components/ui/file-upload/FileUploadWithStorage";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 import { normalizeFieldDefinition } from "@/features/applet/utils/field-normalization";
 
 interface FieldDefWithDisabled extends FieldDefinition {
@@ -173,19 +176,18 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
       case "radio":
         return (
-          <div className="space-y-2">
+          <RadioGroup
+            value={value ?? ""}
+            onValueChange={(v) => setValue(v)}
+            disabled={field.disabled}
+            className="space-y-2"
+          >
             {field.options?.map((option) => (
               <div key={option.id} className="flex items-center">
-                <input
-                  type="radio"
-                  id={`${field.id}-${option.id}`}
-                  name={field.id}
+                <RadioGroupItem
                   value={option.id}
-                  checked={value === option.id}
-                  onChange={handleChange}
-                  disabled={field.disabled}
-                  required={field.required}
-                  className="mr-2 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-700"
+                  id={`${field.id}-${option.id}`}
+                  className="mr-2"
                 />
                 <label
                   htmlFor={`${field.id}-${option.id}`}
@@ -200,15 +202,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
             {field.includeOther && (
               <div className="space-y-2">
                 <div className="flex items-center">
-                  <input
-                    type="radio"
-                    id={`${field.id}-other`}
-                    name={field.id}
+                  <RadioGroupItem
                     value="other"
-                    checked={value === "other"}
-                    onChange={handleChange}
-                    disabled={field.disabled}
-                    className="mr-2 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-700"
+                    id={`${field.id}-other`}
+                    className="mr-2"
                   />
                   <label
                     htmlFor={`${field.id}-other`}
@@ -229,7 +226,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 )}
               </div>
             )}
-          </div>
+          </RadioGroup>
         );
 
       case "checkbox":
@@ -312,16 +309,15 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       case "slider":
         return (
           <div>
-            <input
-              type="range"
+            <Slider
               id={field.id}
               min={field.componentProps.min}
               max={field.componentProps.max}
               step={field.componentProps.step}
-              value={value || field.componentProps.min}
-              onChange={handleChange}
+              value={[value || field.componentProps.min]}
+              onValueChange={([v]) => setValue(v)}
               disabled={field.disabled}
-              className="w-full accent-blue-600 dark:accent-blue-400"
+              className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300">
               <span>{field.componentProps.min}</span>
@@ -418,59 +414,15 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       case "rangeSlider":
         return (
           <div className="space-y-4">
-            <div className="relative pt-6">
-              <div className="absolute left-0 right-0 h-1 bg-gray-300 dark:bg-gray-700 rounded">
-                <div
-                  className="absolute h-1 bg-blue-600 dark:bg-blue-500 rounded"
-                  style={{
-                    left: `${((rangeValues[0] - (field.componentProps?.min || 0)) / ((field.componentProps?.max || 100) - (field.componentProps?.min || 0))) * 100}%`,
-                    right: `${100 - ((rangeValues[1] - (field.componentProps?.min || 0)) / ((field.componentProps?.max || 100) - (field.componentProps?.min || 0))) * 100}%`,
-                  }}
-                />
-              </div>
-              <input
-                type="range"
-                id={`${field.id}-min`}
-                min={field.componentProps?.min || 0}
-                max={field.componentProps?.max || 100}
-                step={field.componentProps?.step || 1}
-                value={rangeValues[0]}
-                onChange={(e) => {
-                  const newMin = Math.min(
-                    Number(e.target.value),
-                    rangeValues[1],
-                  );
-                  setRangeValues([newMin, rangeValues[1]]);
-                }}
-                className="absolute top-0 left-0 w-full h-6 appearance-none bg-transparent"
-                style={{
-                  background: "transparent",
-                  zIndex: 2,
-                }}
-                disabled={field.disabled}
-              />
-              <input
-                type="range"
-                id={`${field.id}-max`}
-                min={field.componentProps?.min || 0}
-                max={field.componentProps?.max || 100}
-                step={field.componentProps?.step || 1}
-                value={rangeValues[1]}
-                onChange={(e) => {
-                  const newMax = Math.max(
-                    Number(e.target.value),
-                    rangeValues[0],
-                  );
-                  setRangeValues([rangeValues[0], newMax]);
-                }}
-                className="absolute top-0 left-0 w-full h-6 appearance-none bg-transparent"
-                style={{
-                  background: "transparent",
-                  zIndex: 3,
-                }}
-                disabled={field.disabled}
-              />
-            </div>
+            <Slider
+              min={field.componentProps?.min || 0}
+              max={field.componentProps?.max || 100}
+              step={field.componentProps?.step || 1}
+              value={rangeValues}
+              onValueChange={setRangeValues}
+              disabled={field.disabled}
+              className="w-full"
+            />
             <div className="flex justify-between text-xs font-medium text-gray-700 dark:text-gray-300">
               <span>{field.componentProps?.min || 0}</span>
               <div className="flex space-x-4">

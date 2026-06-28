@@ -162,14 +162,25 @@ export function useAgentLauncher(
   // (or reuse) using this same id. The id is client-authoritative end-to-end:
   // the server honors it (turn-1 body `conversation_id` + `X-Conversation-ID`).
   const isManagedHook = agentId != null && surfaceKey != null;
+  const preferFresh = options?.preferFresh ?? false;
+  const freshSessionKey = options?.freshSessionKey ?? 0;
   const mintedIdRef = useRef<string | null>(null);
   const mintedForKeyRef = useRef<string | undefined>(undefined);
-  if (isManagedHook && mintedForKeyRef.current !== surfaceKey) {
-    // First run, or the surface changed (incl. an agent swap that re-keys the
-    // surfaceKey) → resolve a fresh stable id for this surface: reuse its
-    // focused id if one exists, else mint once.
-    mintedForKeyRef.current = surfaceKey;
-    mintedIdRef.current = focusedConversationId ?? generateConversationId();
+  const mintedFreshKeyRef = useRef<number>(-1);
+  if (isManagedHook) {
+    const shouldRemint =
+      mintedForKeyRef.current !== surfaceKey ||
+      (preferFresh && mintedFreshKeyRef.current !== freshSessionKey);
+    if (shouldRemint) {
+      // First run, surface change, or an explicit fresh-session bump (+).
+      // Fresh routes must never inherit stale surface focus — that is how
+      // clicking + from an existing conversation revives the old transcript.
+      mintedForKeyRef.current = surfaceKey;
+      mintedFreshKeyRef.current = freshSessionKey;
+      mintedIdRef.current = preferFresh
+        ? generateConversationId()
+        : (focusedConversationId ?? generateConversationId());
+    }
   }
   const conversationId = isManagedHook
     ? (focusedConversationId ?? mintedIdRef.current)
@@ -379,7 +390,7 @@ export function useAgentLauncher(
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentId, ready, isManaged, surfaceKey]);
+  }, [agentId, ready, isManaged, surfaceKey, freshSessionKey]);
 
   if (isManaged) {
     return {

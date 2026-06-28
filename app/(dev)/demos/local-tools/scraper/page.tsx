@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import {
   ArrowLeft,
   ChevronDown,
@@ -359,12 +360,12 @@ function SearchPanel({ local }: { local: UseMatrxLocalReturn }) {
             <label className="text-xs font-medium text-muted-foreground">
               Count ({count})
             </label>
-            <input
-              type="range"
+            <Slider
               min={1}
               max={20}
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
+              step={1}
+              value={[count]}
+              onValueChange={([v]) => setCount(v)}
               className="w-full mt-2"
             />
           </div>

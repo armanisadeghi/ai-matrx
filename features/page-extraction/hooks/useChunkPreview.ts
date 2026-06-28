@@ -86,8 +86,7 @@ export function useChunkPreview(opts: {
     setLoading(true);
     setError(null);
     void (supabase as any)
-      .schema("docproc")
-      .from("processed_document_pages")
+      .schema("docproc").from("processed_document_pages")
       .select("page_number, raw_text, cleaned_text")
       .eq("processed_document_id", processedDocumentId)
       .order("page_number", { ascending: true })

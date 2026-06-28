@@ -212,7 +212,7 @@ export function GeneratorForm({
   const [speakerDrafts, setSpeakerDrafts] = useState<
     Record<number, SpeakerDraft>
   >({});
-  // Live voice catalog (Supabase public.voices) — shared one fetch, filtered to
+  // Live voice catalog (Supabase ai.voices) — shared one fetch, filtered to
   // the current host count's provider band for the cast editor + buildCast.
   const { voices, loading: voicesLoading, error: voicesError, reload: reloadVoices } =
     useVoices();
