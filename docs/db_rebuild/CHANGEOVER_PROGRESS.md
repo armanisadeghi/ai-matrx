@@ -4,7 +4,7 @@
 >
 > **Process + per-table recipe:** the **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/`). **Standard:** `db-core-standards-and-automation.md`. **RLS:** `db-canonical-rls.md` (+ sweep `db-canonical-rls-sweep-todo.md`). **Cutover safety:** `db-staging-and-cutover-plan.md`. **Live docs index:** `README.md` → `official/` + `CUTOVER_HANDOFF.md`.
 
-**Last updated:** 2026-06-28 (quiz/flashcard/canvas/dashboard/shortcut/achievement/stats batch) · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
+**Last updated:** 2026-06-28 (sms ×5, dm_conversation_participants, user_email_preferences, user_preferences, user_feedback, agent_user_kv, app_settings, window_sessions — 12 tables) · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
 
 ---
 
@@ -12,11 +12,11 @@
 
 | Metric | Count / 434 |
 |---|---|
-| **Retrofitted** (standard base cols + `_stamp_actor`) | **87** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×3, flashcard ×5, aga ×1, ctx-wr ×2, app/content/ui-components ×9, kg ×4, scope ×3, ui-surface ×2, dict ×1, context_item_suggestions ×1, ner_shadow ×1, quiz_sessions ×1, dashboard_saved_views ×1, shortcut_categories ×1, user_achievements ×1, user_stats ×1) — 86 also have `_touch_row` (skl_definitions: varchar-semver `version`, `_stamp_actor`+own trigger, see #10) |
+| **Retrofitted** (standard base cols + `_stamp_actor`) | **107** (cx ×10, rs ×10, udt ×7, skl ×5, agx ×4, prompt ×5, studio ×4, note ×5, canvas ×7, flashcard ×5, aga ×1, ctx-wr ×2, app/content/ui-components ×9, kg ×5, scope ×3, ui-surface ×2, dict ×1, context_item_suggestions ×1, ner_shadow ×1, quiz_sessions ×1, dashboard_saved_views ×1, shortcut_categories ×1, user_achievements ×1, user_stats ×1, heatmap_saves ×1, microservice_project ×1, industry_curators ×1, sms ×5, dm_conversation_participants ×1, user_email_preferences ×1, user_preferences ×1, user_feedback ×1, agent_user_kv ×1, app_settings ×1, window_sessions ×1) — 105 also have `_touch_row` (skl_definitions: varchar-semver `version`; user_preferences + agent_user_kv: no uuid id, `_stamp_actor`+own updated_at trigger only, see #10) |
 | Org-first RLS applied (`std_*` policies) | 0 |
 | Litter columns (`project_id`/`task_id`) dropped | 0 |
 | Drop-consumer repoints done | 1 (conversation favorites) |
-| Registered in `platform.entity_types` | 48 |
+| Registered in `platform.entity_types` | 68 |
 
 **Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — 87 tables done, continuing** (see [compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md)) · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
 
@@ -75,10 +75,10 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | Group | Tables | R | O | L | | Group | Tables | R | O | L |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **cx** | 21 | **10** | 4 | 3 | | ui | 6 | **5** | 2 | 0 |
-| ctx | 24 | **2** | 7 | 10 | | **kg** | 6 | **4** | 5 | 0 |
+| ctx | 24 | **2** | 7 | 10 | | **kg** | 6 | **5** | 6 | 0 |
 | scrape | 25 | 0 | 0 | 0 | | app | 6 | **3** | 1 | 1 |
 | cld | 18 | 0 | 7 | 0 | | ai | 6 | 0 | 1 | 1 |
-| user | 16 | 0 | 0 | 0 | | **aga** | 6 | **1** | 1 | 2 |
+| **user** | 16 | **5** | 5 | 0 | | **aga** | 6 | **1** | 1 | 2 |
 | tool | 14 | 0 | 0 | 0 | | pc | 5 | 0 | 0 | 0 |
 | rs | 12 | **10** | 0 | 1 | | flashcard | 5 | **5** | 5 | 2 |
 | wf | 12 | 0 | 3 | 3 | | sch | 4 | 0 | 0 | 2* |
@@ -86,12 +86,12 @@ Legend: **R**=retrofitted · **O**=has org column · **L**=has litter (`project_
 | udt | 10 | **7** | 3 | 3 | | page | 4 | 0 | 1 | 1 |
 | studio | 9 | **4** | 1 | 1 | | audio | 4 | 0 | 0 | 0 |
 | system | 9 | 0 | 1 | 0 | | code | 4 | 0 | 3 | 3* |
-| sms | 9 | 0 | 0 | 0 | | organization | 3 | 0 | 3 | 0 |
+| **sms** | 9 | **5** | 5 | 0 | | organization | 3 | 0 | 3 | 0 |
 | file | 7 | 0 | 0 | 0 | | agent | 3 | 0 | 0 | 0 |
 | wbx | 7 | 0 | 0 | 0 | | cmp | 3 | 0 | 1 | 1 |
 | **agx** | 7 | **4** | 4 | 4 | | **dict** | 3 | **1** | 2 | 0 |
-| canvas | 7 | **3** | 2 | 1 | | dm | 3 | 0 | 0 | 0 |
-| note | 6 | **5** | 0 | 0 | | feedback | 3 | 0 | 0 | 0 |
+| canvas | 7 | **7** | 7 | 1 | | **dm** | 3 | **1** | 1 | 0 |
+| note | 6 | **5** | 0 | 0 | | **feedback** | 3 | **1** | 1 | 0 |
 | skl | 6 | **5** | 3 | 4 | | admin | 3 | 0 | 0 | 0 |
 | | | | | | | pdf | 3 | 0 | 1 | 0 |
 | | | | | | | **scope** | 3 | **3** | 3 | 0 |
@@ -175,6 +175,7 @@ Admin dashboards (both Next.js) audited: **do not read** these columns. Python a
 
 ## Change log
 
+- **2026-06-27** — **Social/event/entity batch (8 tables)**: `canvas_likes` (1r, Base-3 ledger, personal org), `canvas_scores` (0r, Base-3, personal), `canvas_views` (120r, Base-3, personal — user_id nullable for anon; all 120 got org via system org fallback), `canvas_comment_likes` (0r, Base-3, parent=`canvas_comments` via `comment_id`), `heatmap_saves` (0r, Base-1, manual — user_id is TEXT not UUID so retrofit_entity skipped; legacy trigger dropped, visibility col added alongside is_public), `kg_suggestion_ack` (78r, Base-3, composite PK user_id+suggestion_id), `microservice_project` (1r, Base-1 — is_system row has NULL user_id/created_by = system actor, valid per Decision #9), `industry_curators` (1r, Base-2 join, personal org — parent `industries` has no org col). `note_versions` SKIPPED — already in `graveyard` schema. Legacy `set_updated_at` triggers dropped on all tables; `trigger_update_heatmap_saves_updated_at` dropped on heatmap_saves. 0 null_org on all 8, 8 entity_type tokens registered, 8 migration files written + ledgered. canvas group: 3→7 ✅; kg group: 4→5. **95 tables retrofitted total, 56 in entity_types.**
 - **2026-06-28** — **kg / scope / ui-surface / dict / ner / context-item batch (12 tables)**: `kg_alerts` (18r), `kg_sweep_queue` (66r, org already NOT NULL, 7 system-row null creators), `kg_sweep_run` (62r, Base-3 log, org already NOT NULL, 3 system-row null creators, kept `stamp_run_org`+`emit_run_lifecycle`, replaced `_fn_kg_sweep_touch_updated_at` with `_touch_row`), `kg_value_matches` (3r), `scope_suggestions` (8r), `scope_association_suggestions` (109r), `scope_item_value_suggestions` (30r), `context_item_suggestions` (3r, added `deleted_at`), `ner_canonicalizer_shadow` (49r, added `deleted_at`), `dict_settings` (0r, replaced `dict_touch_updated_at`), `ui_surface_config` (0r), `ui_surface_agent_pref` (3r). **`one_scope` CHECK constraint** on both `ui_surface_*` tables prevents org backfill for user-scoped rows — null org when `user_id` is set is intentional. All 12: 0 null_org for user-owned rows, `_touch_row`+`_stamp_actor` attached, 12 entity_type tokens registered, 12 migration files written + ledgered. **78 tables retrofitted total, 39 in entity_types.**
 - **2026-06-26** — **Canonical-RLS lane opened** (owner: dedicated agent; fence: [`CANONICAL_RLS_LANE.md`](./CANONICAL_RLS_LANE.md)). Built **`iam.apply_rls` v2** (single RLS generator, owner short-circuit + `has_access` delegation — fixes the `INSERT…RETURNING` `42501` that broke War Room create) and fixed **`platform._stamp_actor`** to fall back to `auth.uid()` over PostgREST. **Org-first RLS now applied (`std_*`) on: `wr_sessions`, `wr_threads`, `notes`.** `notes` slice = added `visibility` (`is_public`→`visibility`, 0 public), `apply_rls`, verified live (create + isolation), **0 code changes needed** (access preserved exactly). Decisions: assignment→`public.permissions` grant; assignee/sharing/versions/associations tackled when their groups are claimed. Mechanism: [`db-canonical-rls.md`](./db-canonical-rls.md); sweep: [`db-canonical-rls-sweep-todo.md`](./db-canonical-rls-sweep-todo.md). **Owned by this lane — other agents stay clear of `notes` + the shared RLS primitives.**
 - **2026-06-24** — Tracker created. Waves 0–2 complete. `cx_conversation` / `cx_message` / `cx_artifact` retrofitted (additive). Conversation-favorites repoint landed. Enterprise-grade decisions logged. Schema exported (434 tables / ~40 groups).
