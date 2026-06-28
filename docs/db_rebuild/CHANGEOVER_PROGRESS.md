@@ -22,6 +22,30 @@
 
 ---
 
+## `communication` schema reorg — messaging tables (2026-06-28)
+
+New domain schema **`communication`** created for messaging tables (sms_*, dm_*, emails). **Two-phase** because the FE reads several of these directly via supabase-js + `postgres_changes` realtime, so the SET SCHEMA move is gated on PostgREST exposing `communication` (dashboard/mgmt-API; not MCP-reachable).
+
+**Phase 1 — canonicalize IN PLACE in public ✅ (applied + verified live, ledgered):** `migrations/communication_schema.sql` + `migrations/communication_canonicalize_phase1.sql`.
+
+| Table | Token | Variant | Notes |
+|---|---|---|---|
+| dm_conversations | dm_conversation | entity | +org(personal)/visibility/version/metadata/deleted_at; `trg_default_org` fills org for FE inserts |
+| dm_messages | dm_message | component | parent dm_conversation(conversation_id); created_by←sender_id |
+| dm_conversation_participants | dm_participant | component | switched entity→component; legacy `set_updated_at` dropped |
+| sms_conversations | sms_conversation | entity | +visibility |
+| sms_messages | sms_message | component | parent sms_conversation(conversation_id); legacy updated-at trigger→trio; business triggers kept |
+| sms_media | sms_message_media | component | parent sms_message(message_id) |
+| sms_consent / sms_phone_numbers / sms_notification_preferences / sms_notifications | (existing) | entity | +visibility; notifications got updated_at/version/touch trigger |
+| sms_rate_limits / sms_webhook_logs / emails | — | infra/log | service-role/form RLS; not base entities |
+
+- **Multi-party DM access preserved:** 13 active participants mirrored into `public.permissions` (resource_type=`dm_conversation`, editor). Self-maintaining via trigger **`dm_participant_sync_grant`** (add/leave participant ⇄ grant) so canonical `has_access` resolves for any surface. `dm_conversation` registered in `shareable_resource_registry`. Verified live: non-creator participant → can_view+can_send=true, sees all messages.
+- All 10 entity/component tables: `verify_canonical_ok = true` (only the permanent `legacy_owner_col` WARN on tables still carrying `user_id`). Phase 1 is **non-breaking** — tables remain in `public`, columns additive, RLS canonical; system can return to service on Phase 1.
+
+**Phase 2 — SET SCHEMA move ⏳ (gated on PostgREST exposing `communication`):** move all 13 → `communication`; update `entity_types`/`shareable_resource_registry` `schema_name`; repoint functions (`get_ssr_shell_data`, `get_ssr_agent_shell_data`, `get_user_dashboard_metrics`, `sms_handle_opt_out_keywords`, `sms_update_conversation_on_message`); add `--schema communication` to `pnpm db-types`; FE `.from()`→`.schema('communication').from()` + API routes; aidream `matrx_orm.yaml` + models; `scripts/dead-relations.json` + `platform.deprecated_relations`; realtime publication. (`dm_default_org`/`dm_participant_sync_grant` touch only stable `public` tables — no repoint needed.)
+
+---
+
 ## Path to the DROP phase — what's left (2026-06-25 live inventory)
 
 Live DB: **394 base tables · 57 retrofitted · 0 org-first RLS on public · 57 tables carry `project_id`/`task_id` litter · 13 rename compat-views · 62 empty tables · `pg_stat_statements` ON.**
