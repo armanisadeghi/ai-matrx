@@ -69,7 +69,7 @@ async function getResourceDetails(
 
       case 'note': {
         const { data } = await supabase
-          .from('notes')
+          .schema("workbench").from('notes')
           .select('title')
           .eq('id', resourceId)
           .single();

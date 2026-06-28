@@ -148,7 +148,7 @@ export async function resolveSourceTitle(
     switch (kind) {
       case "note": {
         const { data } = await supabase
-          .from("notes")
+          .schema("workbench").from("notes")
           .select("label")
           .eq("id", id)
           .maybeSingle();
@@ -339,7 +339,7 @@ async function resolveTitlesForKind(
     }
     case "note": {
       const { data } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .select("id, label")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.label);
@@ -438,7 +438,7 @@ function clipBody(body: string): { text: string; truncated: boolean } {
 async function loadNote(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("note", id);
   const { data } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("label, content, updated_at")
     .eq("id", id)
     .maybeSingle();

@@ -116,7 +116,7 @@ export async function createManualVersion(
 ): Promise<NoteVersion> {
   // Get the note's owner
   const { data: note, error: noteError } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("created_by")
     .eq("id", noteId)
     .single();

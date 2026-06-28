@@ -167,7 +167,7 @@ export function useWorkspaceNotesRedux() {
           }
 
           const { data, error } = await supabase
-            .from("notes")
+            .schema("workbench").from("notes")
             .update(updates)
             .eq("id", noteId)
             .select("updated_at")
@@ -284,7 +284,7 @@ export function useWorkspaceNotesRedux() {
   const deleteNote = useCallback(
     async (noteId: string) => {
       await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", noteId);
       dispatch(removeNote(noteId));
@@ -301,7 +301,7 @@ export function useWorkspaceNotesRedux() {
       if (!record || !userId) return;
 
       const { data, error } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .insert({
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
@@ -334,7 +334,7 @@ export function useWorkspaceNotesRedux() {
     async (noteId: string, folder: string) => {
       dispatch(setNoteField({ id: noteId, field: "folder_name", value: folder }));
       await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .update({ folder_name: folder })
         .eq("id", noteId);
       window.dispatchEvent(
@@ -348,7 +348,7 @@ export function useWorkspaceNotesRedux() {
     async (folder: string) => {
       if (!userId) return;
       const { data, error } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .insert({
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
@@ -380,7 +380,7 @@ export function useWorkspaceNotesRedux() {
   const updateTags = useCallback(
     async (noteId: string, tags: string[]) => {
       dispatch(setNoteField({ id: noteId, field: "tags", value: tags }));
-      await supabase.from("notes").update({ tags }).eq("id", noteId);
+      await supabase.schema("workbench").from("notes").update({ tags }).eq("id", noteId);
     },
     [dispatch],
   );

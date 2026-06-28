@@ -48,7 +48,11 @@ Update the registry `schema_name` rows; `CREATE OR REPLACE` any function/view th
 ## Step 5 — Cross-repo finalize
 db-change SOP: `pnpm db-types` (schema added) → swap `.from('<table>')` → `.schema('<new>').from('<table>')` everywhere → `pnpm sync-types` (fix TS). aidream: `python db/generate.py` → update imports to the new model module + `package_integration.py` → `python db/detect_applied.py` → `python run.py` clean boot. Ledger the migration. Commit + push `main` on both repos.
 
+## Clean cut — no silent shim (SKILL `db-change` → THE CUT)
+The move makes `public.<t>` vanish, so every stale ref **errors** — that's correct and desired; do NOT soften it. **Register the move FIRST** in `scripts/dead-relations.json` + `platform.deprecated_relations`, then repoint using `pnpm check:dead-relations` as your checklist until it's green (it catches the raw-SQL/comment/Python refs `tsc` can't). If a table genuinely can't move in the window, **tripwire it** (`platform.deprecate_relation`), never a passthrough view.
+
 ## NEVER
+- **Leave a compat VIEW at the old `public.<t>` name** (the silent shim — the #1 disaster: reads/writes split silently across two tables). The old name must error or tripwire-RAISE, never pass through.
 - Move a FE-read table into a schema that isn't exposed + in the `db-types` list (silent 404s).
 - Forget the registry `schema_name` rows — `verify_canonical`/`has_access` resolve schema from `entity_types`, so a stale `schema_name` breaks RLS resolution.
 - Recreate policies/triggers/constraints by hand — they moved with the table; recreating them risks drift.

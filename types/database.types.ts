@@ -14175,72 +14175,6 @@ export type Database = {
           },
         ]
       }
-      note_folders: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string | null
-          parent_id: string | null
-          path: string
-          position: number | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: "private" | "internal" | "link" | "public"
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          parent_id?: string | null
-          path?: string
-          position?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          parent_id?: string | null
-          path?: string
-          position?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_folders_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "note_folders_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "note_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       note_shares: {
         Row: {
           created_at: string
@@ -14292,20 +14226,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "note_shares_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "note_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "note_shares_note_id_fkey"
-            columns: ["note_id"]
-            isOneToOne: false
-            referencedRelation: "notes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "note_shares_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -14354,105 +14274,7 @@ export type Database = {
           user_id?: string
           version_number?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "note_versions_note_id_fkey"
-            columns: ["note_id"]
-            isOneToOne: false
-            referencedRelation: "notes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notes: {
-        Row: {
-          content: string | null
-          content_hash: string | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          file_path: string | null
-          folder_id: string | null
-          folder_name: string | null
-          id: string
-          label: string
-          last_device_id: string | null
-          metadata: Json | null
-          organization_id: string | null
-          position: number | null
-          project_id: string | null
-          sync_version: number
-          tags: string[] | null
-          task_id: string | null
-          updated_at: string | null
-          updated_by: string | null
-          version: number
-          visibility: "private" | "internal" | "link" | "public"
-        }
-        Insert: {
-          content?: string | null
-          content_hash?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          file_path?: string | null
-          folder_id?: string | null
-          folder_name?: string | null
-          id?: string
-          label?: string
-          last_device_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          position?: number | null
-          project_id?: string | null
-          sync_version?: number
-          tags?: string[] | null
-          task_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Update: {
-          content?: string | null
-          content_hash?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          file_path?: string | null
-          folder_id?: string | null
-          folder_name?: string | null
-          id?: string
-          label?: string
-          last_device_id?: string | null
-          metadata?: Json | null
-          organization_id?: string | null
-          position?: number | null
-          project_id?: string | null
-          sync_version?: number
-          tags?: string[] | null
-          task_id?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number
-          visibility?: "private" | "internal" | "link" | "public"
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notes_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "note_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notes_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ops_issue_class: {
         Row: {
@@ -33215,6 +33037,164 @@ export type Database = {
       [_ in never]: never
     }
   }
+  workbench: {
+    Tables: {
+      note_folders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string | null
+          parent_id: string | null
+          path: string
+          position: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          parent_id?: string | null
+          path?: string
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          parent_id?: string | null
+          path?: string
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "note_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string | null
+          content_hash: string | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          file_path: string | null
+          folder_id: string | null
+          folder_name: string | null
+          id: string
+          label: string
+          last_device_id: string | null
+          metadata: Json | null
+          organization_id: string | null
+          position: number | null
+          project_id: string | null
+          sync_version: number
+          tags: string[] | null
+          task_id: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          content?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string
+          label?: string
+          last_device_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          position?: number | null
+          project_id?: string | null
+          sync_version?: number
+          tags?: string[] | null
+          task_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          content?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          file_path?: string | null
+          folder_id?: string | null
+          folder_name?: string | null
+          id?: string
+          label?: string
+          last_device_id?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          position?: number | null
+          project_id?: string | null
+          sync_version?: number
+          tags?: string[] | null
+          task_id?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "note_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   workflow: {
     Tables: {
       checkpoint: {
@@ -35152,6 +35132,9 @@ export const Constants = {
     Enums: {},
   },
   tool: {
+    Enums: {},
+  },
+  workbench: {
     Enums: {},
   },
   workflow: {

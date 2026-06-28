@@ -20,6 +20,14 @@ A change is rarely one table. Before executing anything risky (a cluster, a data
 4. **Verify live, not on faith.** After every DDL, `execute_sql` to confirm the object exists and `SELECT count(*)` to confirm no rows were lost. Compare pre/post counts.
 5. **Loud recovery.** Any bridge/backfill/mirror you add must scream (RAISE / log) when it fires on data it shouldn't — a silent fallback hides the bug it's papering over.
 
+## THE CUT — no silent shim (read twice; this is the #1 source of disasters)
+When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.** AI agents do not reliably catch lingering references, so a "nice fallback" old table is how reads/writes silently split across two tables and burn a day to debug. **A clean cut + 15 minutes of repointing beats a silent shim every time.**
+
+- **Default = make the old name vanish.** `SET SCHEMA workbench` / `SET SCHEMA graveyard` / rename — the data is preserved at the NEW location, but `public.<old>` no longer resolves, so every stale ref **errors loudly** (PostgREST 404 in the browser console = red; a raised exception in server logs = red). That IS the desired behavior.
+- **NEVER leave a compat VIEW or a still-readable old table** that silently passes through. That is the forbidden shim. (Reconciles with Law #1: "data preserved, reversible" ≠ "old name still readable." Graveyard/move preserves data AND kills the old name.)
+- **If a table genuinely can't move yet** (consumers can't all be cut in the window), do NOT leave it readable — install a **tripwire**: `select platform.deprecate_relation('public','<t>','<new.ref>','<reason>')` renames the data aside (zero loss) and replaces the old name with a view + INSTEAD-OF triggers that **RAISE on any read or write** with a message naming the new location (TOOLKIT.md §9). A shim that errors loudly is acceptable; one that silently works is not.
+- **Light up the terminal RED until refs are gone.** Every move/retire MUST: (1) add the relation to **`scripts/dead-relations.json`** + `platform.deprecated_relations`, and (2) leave **`pnpm check:dead-relations`** green. It runs on pre-commit (loud) and `:strict` in CI — it scans for bare `.from("<old>")`, `public.<old>`, and `Database["public"][…]["<old>"]` and screams until every one is repointed. Add the manifest entry *before* repointing so the guard becomes your checklist. (aidream has the parallel `db/check_dead_relations.py`.)
+
 ## Pick the change (route here)
 
 | Task | Skill |

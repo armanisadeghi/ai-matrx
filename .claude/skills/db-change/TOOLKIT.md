@@ -206,3 +206,14 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 3. **Python (aidream)** — `python db/generate.py` (regenerates `db/models*.py` + managers). New schema → add to `db/matrx_orm.yaml` `additional_schemas` + a generate block. Table consumed by a sub-package (matrx-ai/graph/rag/…) → wire it in `aidream/package_integration.py` (`configure_packages()`). Drift check `python db/detect_applied.py`. Update usages. Start `python run.py`, confirm a clean boot (`Local Link: http://localhost:8000`, no ERROR/CRITICAL).
 4. **matrx-extend / matrx-local** — update references if any, but **never let them block production**.
 5. **Commit + push `main`** on both primary repos.
+
+---
+
+## 9. Clean cut — no silent shim (tripwire + RED guard)
+
+Doctrine in `SKILL.md` → **THE CUT**. A moved/retired table's old name MUST error; never leave a compat view or a still-readable old table. Machinery (all live):
+
+- **`platform.deprecated_relations`** — registry of every moved/retired relation: `old_ref` (PK, e.g. `public.notes`), `new_ref`, `archived_as` (NULL when moved/dropped; set when tripwired), `reason`, `deprecated_at`. Mirror of `scripts/dead-relations.json`. **Record every move here.**
+- **`platform.deprecate_relation(p_schema, p_name, p_new_ref, p_reason)`** — the **tripwire** for a table that must physically stay. Renames the table aside to `<name>__deprecated` (zero data loss, reversible), then replaces the old name with a view + INSTEAD-OF triggers that **RAISE on any read or write** (`platform.dead_relation_read()` / `dead_relation_write()`). The read tripwire is an uncorrelated VOLATILE qual (`… WHERE platform.dead_relation_read(old,new)`) — a one-time filter that fires on ANY query, even `count(*)` on an empty table (verified). The error names the new location. Reverse: `drop view; alter table <name>__deprecated rename to <name>; delete from platform.deprecated_relations`. Use ONLY when you can't make the old name vanish — the default (move / `SET SCHEMA`) is louder and cleaner.
+- **`scripts/check-dead-relations.ts`** (`pnpm check:dead-relations` / `:strict`) — the **terminal RED guard**. Reads `scripts/dead-relations.json`, scans source for `.from("<old>")`/`.table("<old>")` without the new schema, `public.<old>` strings, and `Database["public"][…]["<old>"]` type refs; prints a red box of file:line until clean. Non-blocking on pre-commit (screams), `--strict` blocks CI. **tsc catches typed `.from()` drift; this catches what tsc can't — raw SQL strings, comments, Python, cross-repo** (it found 4 stale `public.notes` comments tsc passed). aidream parallel: `db/check_dead_relations.py`.
+- **Workflow for any move/retire:** add the entry to `dead-relations.json` + `platform.deprecated_relations` **first** → repoint (the guard is your checklist) → `pnpm check:dead-relations` green → done. Runtime RED (PostgREST 404 / server exception) is automatic once the old name is gone.

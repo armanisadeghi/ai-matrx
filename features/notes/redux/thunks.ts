@@ -73,7 +73,7 @@ export const fetchNotesList = createAsyncThunk<void, void>(
     dispatch(setListStatus("loading"));
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select(
         "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
       )
@@ -124,7 +124,7 @@ export const fetchNoteContent = createAsyncThunk<Note | null, string>(
     }
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("*")
       .eq("id", noteId)
       .maybeSingle();
@@ -168,7 +168,7 @@ export const refreshNoteContent = createAsyncThunk<Note | null, string>(
     }
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("*")
       .eq("id", noteId)
       .maybeSingle();
@@ -222,7 +222,7 @@ export const saveNote = createAsyncThunk<void, string>(
 
     // Concurrency check: fetch server updated_at
     const { data: serverNote, error: fetchError } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("updated_at")
       .eq("id", noteId)
       .single();
@@ -243,7 +243,7 @@ export const saveNote = createAsyncThunk<void, string>(
     dispatch(markNoteSaving(noteId));
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update(updates)
       .eq("id", noteId)
       .select("updated_at")
@@ -290,7 +290,7 @@ async function resolveFolderId(
 ): Promise<string | null> {
   // Try to find existing folder for this user
   const { data: existing } = await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .select("id")
     .eq("created_by", userId)
     .eq("name", folderName)
@@ -302,7 +302,7 @@ async function resolveFolderId(
 
   // Create the folder record
   const { data: created, error } = await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .insert({
       created_by: userId,
       name: folderName,
@@ -333,7 +333,7 @@ export const createNewNote = createAsyncThunk<
     input.folder_id ?? (await resolveFolderId(userId, folderName));
 
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .insert({
       // Canonical RLS std_insert requires created_by = auth.uid().
       created_by: userId,
@@ -384,7 +384,7 @@ export const deleteNote = createAsyncThunk<void, string>(
   "notes/deleteNote",
   async (noteId, { dispatch }) => {
     const { error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", noteId);
 
@@ -418,7 +418,7 @@ export const copyNote = createAsyncThunk<Note, string>(
         : `${record.label} (Copy)`;
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .insert({
         // Canonical RLS std_insert requires created_by = auth.uid().
         created_by: userId,
@@ -570,7 +570,7 @@ export const restoreNote = createAsyncThunk<void, string>(
   "notes/restoreNote",
   async (noteId, { dispatch }) => {
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update({ deleted_at: null })
       .eq("id", noteId)
       .select("*")
@@ -597,7 +597,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
     const userId = getUserId(getState);
 
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select(
         "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, project_id, task_id, visibility, deleted_at, version",
       )

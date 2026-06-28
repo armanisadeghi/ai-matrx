@@ -1,0 +1,21 @@
+{
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "relations": [
+    {
+      "relation": "notes",
+      "old": "public.notes",
+      "newSchema": "workbench",
+      "new": "workbench.notes",
+      "since": "2026-06-27",
+      "reason": "moved to workbench schema (clean cut, no shim). Use .schema('workbench').from('notes')."
+    },
+    {
+      "relation": "note_folders",
+      "old": "public.note_folders",
+      "newSchema": "workbench",
+      "new": "workbench.note_folders",
+      "since": "2026-06-27",
+      "reason": "moved to workbench schema (clean cut, no shim). Use .schema('workbench').from('note_folders')."
+    }
+  ]
+}

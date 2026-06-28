@@ -135,7 +135,7 @@ export const autoSaveMiddleware: Middleware =
           let folderId = recordAfterLabel.folder_id;
           if (!folderId && recordAfterLabel.folder_name) {
             const { data: folderData } = await supabase
-              .from("note_folders")
+              .schema("workbench").from("note_folders")
               .select("id")
               .eq("created_by", userId)
               .eq("name", recordAfterLabel.folder_name)
@@ -146,7 +146,7 @@ export const autoSaveMiddleware: Middleware =
           }
 
           const { data, error } = await supabase
-            .from("notes")
+            .schema("workbench").from("notes")
             .insert({
               id: noteId,
               // Canonical RLS std_insert requires created_by = auth.uid().
@@ -193,7 +193,7 @@ export const autoSaveMiddleware: Middleware =
           }
 
           const { data, error } = await supabase
-            .from("notes")
+            .schema("workbench").from("notes")
             .update(updates)
             .eq("id", noteId)
             .select("updated_at")

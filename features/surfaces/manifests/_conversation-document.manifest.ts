@@ -115,7 +115,7 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     name: "binding_kind",
     label: "Document binding",
     description:
-      'Where the document persists: "cx_working_document" (the durable per-conversation row, the default), "note" (synced to a `public.notes` row), "studio_document" (Scribe\'s source), or "none" (ephemeral). Lets an action know whether/where edits durably land.',
+      'Where the document persists: "cx_working_document" (the durable per-conversation row, the default), "note" (synced to a `workbench.notes` row), "studio_document" (Scribe\'s source), or "none" (ephemeral). Lets an action know whether/where edits durably land.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 20,

@@ -14,7 +14,7 @@
  *   - `linkConversationDocumentThunk` — point this conversation's (kind) at an
  *     EXISTING document from another conversation (cross-conversation linking).
  *   - `bindWorkingDocumentToNoteThunk` / `unbindWorkingDocumentThunk` — bind a
- *     working doc to / from a `public.notes` row (working kind only).
+ *     working doc to / from a `workbench.notes` row (working kind only).
  *   - `syncWorkingDocumentFromAgentThunk` — resolve an agent writeback from a
  *     stream `context_changed` event (re-read the bound document/note).
  */

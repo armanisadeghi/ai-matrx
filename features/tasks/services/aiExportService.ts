@@ -57,7 +57,7 @@ async function fetchNotesForProject(
 ): Promise<NoteExportRow[]> {
   try {
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id, label, content, updated_at, task_id, project_id, tags")
       .eq("project_id", projectId)
       .is("deleted_at", null)
@@ -77,7 +77,7 @@ async function fetchNotesForProject(
 async function fetchNotesForTask(taskId: string): Promise<NoteExportRow[]> {
   try {
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id, label, content, updated_at, task_id, project_id, tags")
       .eq("task_id", taskId)
       .is("deleted_at", null)

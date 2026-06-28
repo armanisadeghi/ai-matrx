@@ -27,7 +27,7 @@ export async function fetchSourceNames(
   );
   if (noteIds.length > 0) {
     const { data } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id,label")
       .in("id", noteIds);
     for (const row of data ?? []) {

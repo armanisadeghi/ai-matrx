@@ -36,7 +36,7 @@ export const notesRealtimeMiddleware: Middleware = (storeApi) => {
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "workbench",
           table: "notes",
           filter: `created_by=eq.${userId}`,
         },

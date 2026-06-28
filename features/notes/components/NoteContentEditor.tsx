@@ -127,7 +127,7 @@ export function NoteContentEditor({
     }
     // Fetch fresh remote content
     supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("content")
       .eq("id", noteId)
       .single()

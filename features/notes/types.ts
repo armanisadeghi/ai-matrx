@@ -3,11 +3,11 @@ import type { Database } from "@/types/database.types";
 
 // ── Database row alias ──────────────────────────────────────────────────────
 // Single source of truth. All code referencing the DB shape must derive from here.
-export type NoteRow = Database["public"]["Tables"]["notes"]["Row"];
-export type NoteInsert = Database["public"]["Tables"]["notes"]["Insert"];
-export type NoteUpdate = Database["public"]["Tables"]["notes"]["Update"];
+export type NoteRow = Database["workbench"]["Tables"]["notes"]["Row"];
+export type NoteInsert = Database["workbench"]["Tables"]["notes"]["Insert"];
+export type NoteUpdate = Database["workbench"]["Tables"]["notes"]["Update"];
 
-export type NoteFolderRow = Database["public"]["Tables"]["note_folders"]["Row"];
+export type NoteFolderRow = Database["workbench"]["Tables"]["note_folders"]["Row"];
 export type NoteVersionRow = Database["public"]["Tables"]["note_versions"]["Row"];
 export type NoteShareRow = Database["public"]["Tables"]["note_shares"]["Row"];
 

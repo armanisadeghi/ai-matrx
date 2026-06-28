@@ -13,7 +13,7 @@ const SELECT_COLS = "id, label, updated_at, organization_id, created_by, tags";
 
 const fetchOwned = async (orgId: string) => {
   const res = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select(SELECT_COLS)
     .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });

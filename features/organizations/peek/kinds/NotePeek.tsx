@@ -32,7 +32,7 @@ export default function NotePeek({ id, open, onClose }: PeekProps) {
     (async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .select("label, content, tags, updated_at")
         .eq("id", id)
         .maybeSingle();

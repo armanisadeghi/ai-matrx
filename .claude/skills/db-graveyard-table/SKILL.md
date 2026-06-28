@@ -60,7 +60,11 @@ Leave satellite rows (`associations`/`comments`/…) keyed by the token in place
 ## Step 6 — Cross-repo cleanup + finalize
 `graveyard` IS in the `db-types` schema list, so the table still appears under the `graveyard` schema in FE types — that's fine; the point is to **delete every code usage**. Then run the finalize SOP (db-change/SKILL.md): `pnpm db-types` → remove FE usages → `pnpm sync-types` (fix TS); `python db/generate.py` → remove aidream usages + `package_integration.py` entry → `python db/detect_applied.py` → `python run.py` clean boot. Record the migration in the ledger. Commit + push `main` on both repos.
 
+## Clean cut — no silent shim (SKILL `db-change` → THE CUT)
+`SET SCHEMA graveyard` makes `public.<t>` vanish → stale refs error (correct). **Register it** in `scripts/dead-relations.json` + `platform.deprecated_relations` and clear `pnpm check:dead-relations` (it finds the raw-SQL/Python/comment refs `tsc` misses). Never leave a readable old table or a compat view as a "fallback"; if it can't be moved yet, **tripwire it** (`platform.deprecate_relation` — data preserved, reads/writes RAISE).
+
 ## NEVER
 - `DROP TABLE` — `SET SCHEMA graveyard` only (DROP is a separate PITR-gated step).
+- Leave the old name readable as a silent fallback — move it (vanishes → errors) or tripwire it (RAISES). Never a passthrough view.
 - Graveyard a table that still has live reads you haven't repointed or tracked.
 - Leave a generated type / Python model / `package_integration.py` reference pointing at the moved table.

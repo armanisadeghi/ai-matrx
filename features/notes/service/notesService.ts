@@ -20,7 +20,7 @@ import { findEmptyNewNote } from "../utils/noteUtils";
 export async function fetchNotes(): Promise<Note[]> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("*")
     .eq("created_by", userId)
     .is("deleted_at", null)
@@ -40,7 +40,7 @@ export async function fetchNotes(): Promise<Note[]> {
 export async function fetchNoteListItems(): Promise<NoteListItem[]> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select(
       "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
     )
@@ -61,7 +61,7 @@ export async function fetchNoteListItems(): Promise<NoteListItem[]> {
  */
 export async function fetchNoteById(id: string): Promise<Note | null> {
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("*")
     .eq("id", id)
     .is("deleted_at", null)
@@ -92,7 +92,7 @@ export async function assignHomelessNotesToPersonalOrg(): Promise<{
   const organizationId = await resolvePersonalOrgId();
 
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .update({ organization_id: organizationId })
     .eq("created_by", userId)
     .is("organization_id", null)
@@ -173,7 +173,7 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
 
   // No existing empty note found, create a new one
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .insert({
       // Canonical RLS std_insert requires created_by = auth.uid(). The
       // _stamp_actor trigger fills this too, but set it explicitly so the
@@ -225,7 +225,7 @@ export async function updateNote(
   updates: UpdateNoteInput,
 ): Promise<Note> {
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .update(updates)
     .eq("id", id)
     .select()
@@ -244,7 +244,7 @@ export async function updateNote(
  */
 export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
 
@@ -258,7 +258,7 @@ export async function deleteNote(id: string): Promise<void> {
  * Permanently delete a note
  */
 export async function permanentlyDeleteNote(id: string): Promise<void> {
-  const { error } = await supabase.from("notes").delete().eq("id", id);
+  const { error } = await supabase.schema("workbench").from("notes").delete().eq("id", id);
 
   if (error) {
     console.error("Error permanently deleting note:", error);
@@ -273,7 +273,7 @@ export async function permanentlyDeleteNote(id: string): Promise<void> {
 export async function copyNote(id: string): Promise<Note> {
   // First fetch the original note
   const { data: original, error: fetchError } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("*")
     .eq("id", id)
     .maybeSingle();
@@ -325,7 +325,7 @@ export async function acceptSharedNote(
   _userId: string,
 ): Promise<Note> {
   const { data: note, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("*")
     .eq("id", noteId)
     .maybeSingle();
@@ -356,7 +356,7 @@ export async function fetchSharedNotes(userId: string): Promise<Note[]> {
   const noteIds = grants.map((g) => g.resource_id);
 
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("*")
     .in("id", noteIds)
     .neq("created_by", userId)
@@ -377,7 +377,7 @@ export async function fetchSharedNotes(userId: string): Promise<Note[]> {
 export async function fetchFolderNames(): Promise<string[]> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("folder_name")
     .eq("created_by", userId)
     .is("deleted_at", null);
@@ -397,7 +397,7 @@ export async function fetchFolderNames(): Promise<string[]> {
 export async function fetchTags(): Promise<string[]> {
   const userId = requireUserId();
   const { data, error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("tags")
     .eq("created_by", userId)
     .is("deleted_at", null);
@@ -421,7 +421,7 @@ export async function createFolder(name: string): Promise<string> {
 
   // Check if folder already exists
   const { data: existing } = await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .select("id")
     .eq("created_by", userId)
     .eq("name", name)
@@ -432,7 +432,7 @@ export async function createFolder(name: string): Promise<string> {
   if (existing?.id) return existing.id;
 
   const { data, error } = await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .insert({
       created_by: userId,
       name,
@@ -462,7 +462,7 @@ export async function renameFolder(
 
   // Update the note_folders record
   await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .update({ name: newName, path: newName })
     .eq("created_by", userId)
     .eq("name", oldName)
@@ -470,7 +470,7 @@ export async function renameFolder(
 
   // Update the denormalized folder_name on all notes
   const { error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .update({ folder_name: newName })
     .eq("created_by", userId)
     .eq("folder_name", oldName)
@@ -490,7 +490,7 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
   const userId = requireUserId();
 
   const { data: notesToDelete } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .select("id")
     .eq("created_by", userId)
     .eq("folder_name", folderName)
@@ -501,7 +501,7 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
   // Soft-delete the notes
   const deletedAt = new Date().toISOString();
   const { error } = await supabase
-    .from("notes")
+    .schema("workbench").from("notes")
     .update({ deleted_at: deletedAt })
     .eq("created_by", userId)
     .eq("folder_name", folderName)
@@ -514,7 +514,7 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
 
   // Soft-delete the folder record
   await supabase
-    .from("note_folders")
+    .schema("workbench").from("note_folders")
     .update({ deleted_at: deletedAt })
     .eq("created_by", userId)
     .eq("name", folderName)

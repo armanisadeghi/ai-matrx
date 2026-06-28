@@ -95,11 +95,11 @@ const notesAdapter: VirtualSourceAdapter = {
       // that exist in either source.
       const [folderRows, noteFolders] = await Promise.all([
         supabase
-          .from("note_folders")
+          .schema("workbench").from("note_folders")
           .select("name")
           .eq("created_by", userId),
         supabase
-          .from("notes")
+          .schema("workbench").from("notes")
           .select("folder_name")
           .eq("created_by", userId)
           .is("deleted_at", null),
@@ -134,7 +134,7 @@ const notesAdapter: VirtualSourceAdapter = {
     // Inside a folder — list notes whose folder_name matches.
     const folderName = folderNameFromVid(args.parentId);
     let query = supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id, label, updated_at, version, folder_name")
       .eq("created_by", userId);
     query = args.includeDeleted
@@ -163,7 +163,7 @@ const notesAdapter: VirtualSourceAdapter = {
 
   async read(supabase, userId, id): Promise<VirtualContent> {
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id, label, content, updated_at")
       .eq("id", id)
       .eq("created_by", userId)
@@ -189,7 +189,7 @@ const notesAdapter: VirtualSourceAdapter = {
       updated_at: new Date().toISOString(),
     };
     let query = supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update(update)
       .eq("id", args.id)
       .eq("created_by", userId);
@@ -211,7 +211,7 @@ const notesAdapter: VirtualSourceAdapter = {
       updated_at: new Date().toISOString(),
     };
     let query = supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update(update)
       .eq("id", args.id)
       .eq("created_by", userId);
@@ -237,7 +237,7 @@ const notesAdapter: VirtualSourceAdapter = {
       updated_at: new Date().toISOString(),
     };
     let query = supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update(update)
       .eq("id", args.id)
       .eq("created_by", userId);
@@ -256,7 +256,7 @@ const notesAdapter: VirtualSourceAdapter = {
   async delete(supabase, userId, id, hard) {
     if (hard) {
       const { error } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .delete()
         .eq("id", id)
         .eq("created_by", userId);
@@ -264,7 +264,7 @@ const notesAdapter: VirtualSourceAdapter = {
       return;
     }
     const { error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("id", id)
       .eq("created_by", userId);
@@ -275,7 +275,7 @@ const notesAdapter: VirtualSourceAdapter = {
     if (args.kind === "folder") {
       // note_folders is the materialized list — insert and return as a node.
       const { data, error } = await supabase
-        .from("note_folders")
+        .schema("workbench").from("note_folders")
         .insert({ created_by: userId, name: args.name, path: args.name })
         .select("id, name")
         .maybeSingle();
@@ -294,7 +294,7 @@ const notesAdapter: VirtualSourceAdapter = {
         ? null
         : folderNameFromVid(args.parentId);
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .insert({
         // Canonical RLS std_insert requires created_by = auth.uid().
         created_by: userId,

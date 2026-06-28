@@ -273,7 +273,7 @@ export async function buildRoomAgentContext(
   const noteContentById = new Map<string, string | null>();
   if (noteIds.length > 0) {
     const { data, error } = await supabase
-      .from("notes")
+      .schema("workbench").from("notes")
       .select("id,content")
       .in("id", noteIds)
       .is("deleted_at", null);

@@ -20,7 +20,7 @@
  * - `binding`  — durable source. `{ kind: "none" }` = ephemeral;
  *                `{ kind: "cx_working_document", id }` = a row in
  *                `cx_working_documents` (the chat default); `{ kind: "note" }`
- *                = a `public.notes` row (working kind only); `studio_document`
+ *                = a `workbench.notes` row (working kind only); `studio_document`
  *                = Scribe's source (shared context-value builder).
  * - `saving`   — true while a bound-source persist is in flight.
  *
@@ -55,7 +55,7 @@ export function workingDocKey(
 /**
  * Durable source the document is bound to.
  *   - "none"               — ephemeral (Redux only).
- *   - "note"               — a `public.notes` row (working kind only).
+ *   - "note"               — a `workbench.notes` row (working kind only).
  *   - "cx_working_document"— a `public.cx_working_documents` row: the durable,
  *                            conversation-scoped default backing. The agent's
  *                            ctx_patch edits persist here (working kind) and

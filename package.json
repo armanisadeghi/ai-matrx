@@ -23,7 +23,7 @@
     "clean:turbo": "rimraf .next/dev/cache/turbopack",
     "clean:deep": "rimraf .next .turbo node_modules/.cache tsconfig.tsbuildinfo",
     "clean:worktrees": "find .claude/worktrees -type d \\( -name .next -o -name .turbo -o -name node_modules \\) -prune -exec rm -rf {} + 2>/dev/null; echo 'worktree caches cleared'",
-    "db-types": "npx supabase gen types typescript --project-id txzxabzwovsujtloxrus --schema public --schema context --schema files --schema workflow --schema workspace --schema app --schema skill --schema tool --schema agent --schema chat --schema ai --schema graveyard > types/database.types.ts && perl -i -0pe 's/\\s*<claude-code-hint[^>]*\\/?>\\s*$/\\n/' types/database.types.ts && bash scripts/fix-encoding.sh && bash scripts/patch-db-types.sh",
+    "db-types": "npx supabase gen types typescript --project-id txzxabzwovsujtloxrus --schema public --schema context --schema files --schema workflow --schema workspace --schema workbench --schema app --schema skill --schema tool --schema agent --schema chat --schema ai --schema graveyard > types/database.types.ts && perl -i -0pe 's/\\s*<claude-code-hint[^>]*\\/?>\\s*$/\\n/' types/database.types.ts && bash scripts/fix-encoding.sh && bash scripts/patch-db-types.sh",
     "analyze": "ANALYZE=true pnpm build",
     "analyze:win": "set ANALYZE=true && pnpm build",
     "migrate-content-blocks": "npx tsx scripts/migrate-content-blocks.ts",
@@ -53,6 +53,8 @@
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:dead-relations": "tsx scripts/check-dead-relations.ts",
+    "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
     "check:data-integrity:strict": "tsx scripts/check-data-integrity.ts --strict",
@@ -340,7 +342,7 @@
     ]
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:ui-primitives:staged && pnpm -s check:migrations"
+    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:ui-primitives:staged && pnpm -s check:migrations && pnpm -s check:dead-relations"
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

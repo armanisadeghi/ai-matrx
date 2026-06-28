@@ -17,7 +17,7 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
     if (!user) return [];
 
     const { data, error } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .select(
             "id, created_by, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, visibility, version",
         )
@@ -37,7 +37,7 @@ export const getNoteListSeed = cache(async (): Promise<NoteListItem[]> => {
 export const getNote = cache(async (id: string): Promise<Note> => {
     const supabase = await createClient();
     const { data, error } = await supabase
-        .from("notes")
+        .schema("workbench").from("notes")
         .select("*")
         .eq("id", id)
         .single();
