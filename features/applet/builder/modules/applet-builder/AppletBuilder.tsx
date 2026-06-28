@@ -1,26 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { BoxIcon } from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
+import React, { useState, useEffect, useMemo } from "react";
+import { BoxIcon } from "lucide-react";
+import {
+  Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+} from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeInfo } from "@/features/recipes/types";
+import { listAppletSourceAgents } from "@/features/applet/services/appletAgentSource";
 
-import { 
-  isAppletSlugAvailable, 
-  getUserRecipes, 
+import {
+  isAppletSlugAvailable,
   getAllCustomAppletConfigs,
   getCustomAppletConfigById,
   createCustomAppletConfig,
@@ -28,43 +23,50 @@ import {
   deleteCustomAppletConfig,
   addContainersToApplet,
   recompileContainerInAppletById,
-  recompileAllContainersInApplet
-} from '@/lib/redux/app-builder/service/customAppletService';
-import { getAllComponentGroups } from '@/lib/redux/app-builder/service/fieldContainerService';
-import { ICON_OPTIONS } from '@/features/applet/styles/StyledComponents';
-import { CustomAppletConfig, ComponentGroup, AppletSourceConfig } from '@/types/customAppTypes';
+  recompileAllContainersInApplet,
+} from "@/lib/redux/app-builder/service/customAppletService";
+import { getAllComponentGroups } from "@/lib/redux/app-builder/service/fieldContainerService";
+import { ICON_OPTIONS } from "@/features/applet/styles/StyledComponents";
+import {
+  CustomAppletConfig,
+  ComponentGroup,
+  AppletSourceConfig,
+} from "@/types/customAppTypes";
 
 // Import our modular components
-import CreateAppletTab from './CreateAppletTab';
-import SavedAppletsTab from './SavedAppletsTab';
-import IconPickerDialog from './IconPickerDialog';
-import RecipeSelectDialog from '../recipe-source/RecipeSelectDialog';
-import GroupSelector from './GroupSelector';
+import CreateAppletTab from "./CreateAppletTab";
+import SavedAppletsTab from "./SavedAppletsTab";
+import IconPickerDialog from "./IconPickerDialog";
+import RecipeSelectDialog from "../recipe-source/RecipeSelectDialog";
+import GroupSelector from "./GroupSelector";
 
 export const AppletBuilder = () => {
   const { toast } = useToast();
   const [newApplet, setNewApplet] = useState<Partial<CustomAppletConfig>>({
-    name: '',
-    description: '',
-    slug: '',
-    appletIcon: 'SiCodemagic',
-    appletSubmitText: 'Submit',
-    creator: '',
-    primaryColor: 'emerald',
-    accentColor: 'blue',
-    layoutType: 'flat',
-    imageUrl: '',
+    name: "",
+    description: "",
+    slug: "",
+    appletIcon: "SiCodemagic",
+    appletSubmitText: "Submit",
+    creator: "",
+    primaryColor: "emerald",
+    accentColor: "blue",
+    layoutType: "flat",
+    imageUrl: "",
     containers: [],
   });
   const [savedApplets, setSavedApplets] = useState<CustomAppletConfig[]>([]);
-  const [activeTab, setActiveTab] = useState<string>('create');
-  const [selectedApplet, setSelectedApplet] = useState<CustomAppletConfig | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("create");
+  const [selectedApplet, setSelectedApplet] =
+    useState<CustomAppletConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Icon selection
   const [showIconPicker, setShowIconPicker] = useState(false);
-  const [iconPickerType, setIconPickerType] = useState<'main' | 'submit'>('main');
-  
+  const [iconPickerType, setIconPickerType] = useState<"main" | "submit">(
+    "main",
+  );
+
   // Group management
   const [showAddGroupsDialog, setShowAddGroupsDialog] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<ComponentGroup[]>([]);
@@ -74,29 +76,53 @@ export const AppletBuilder = () => {
   const [showRecipeDialog, setShowRecipeDialog] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeInfo | null>(null);
   const [compiledRecipeId, setCompiledRecipeId] = useState<string | null>(null);
-  const [compiledRecipeWithNeededBrokers, setCompiledRecipeWithNeededBrokers] = useState<AppletSourceConfig | null>(null);
+  const [compiledRecipeWithNeededBrokers, setCompiledRecipeWithNeededBrokers] =
+    useState<AppletSourceConfig | null>(null);
   const [userRecipes, setUserRecipes] = useState<RecipeInfo[]>([]);
 
   // List of available colors
-  const availableColors = useMemo(() => [
-    'rose', 'blue', 'green', 'purple', 'yellow', 'red', 'orange', 'pink', 
-    'slate', 'zinc', 'neutral', 'stone', 'amber', 'lime', 'emerald', 
-    'teal', 'cyan', 'sky', 'violet', 'fuchsia'
-  ], []);
+  const availableColors = useMemo(
+    () => [
+      "rose",
+      "blue",
+      "green",
+      "purple",
+      "yellow",
+      "red",
+      "orange",
+      "pink",
+      "slate",
+      "zinc",
+      "neutral",
+      "stone",
+      "amber",
+      "lime",
+      "emerald",
+      "teal",
+      "cyan",
+      "sky",
+      "violet",
+      "fuchsia",
+    ],
+    [],
+  );
 
   // List of available layout types
-  const layoutTypes = useMemo(() => [
-    { value: 'flat', label: 'Flat' },
-    { value: 'tabs', label: 'Tabs' },
-    { value: 'wizard', label: 'Wizard' },
-    { value: 'accordion', label: 'Accordion' },
-  ], []);
+  const layoutTypes = useMemo(
+    () => [
+      { value: "flat", label: "Flat" },
+      { value: "tabs", label: "Tabs" },
+      { value: "wizard", label: "Wizard" },
+      { value: "accordion", label: "Accordion" },
+    ],
+    [],
+  );
 
   // Load saved applets from the API on component mount
   useEffect(() => {
     // Fetch saved applets
     fetchSavedApplets();
-    
+
     // Load available groups
     fetchAvailableGroups();
 
@@ -112,7 +138,7 @@ export const AppletBuilder = () => {
       console.log("applets", JSON.stringify(applets, null, 2));
       setSavedApplets(applets);
     } catch (error) {
-      console.error('Failed to load applets:', error);
+      console.error("Failed to load applets:", error);
       toast({
         title: "Error",
         description: "Failed to load applets",
@@ -129,7 +155,7 @@ export const AppletBuilder = () => {
       const groups = await getAllComponentGroups();
       setAvailableGroups(groups);
     } catch (error) {
-      console.error('Failed to load groups:', error);
+      console.error("Failed to load groups:", error);
       toast({
         title: "Error",
         description: "Failed to load field groups",
@@ -141,10 +167,10 @@ export const AppletBuilder = () => {
   // Fetch user recipes
   const fetchUserRecipes = async () => {
     try {
-      const recipes = await getUserRecipes();
+      const recipes = await listAppletSourceAgents();
       setUserRecipes(recipes);
     } catch (error) {
-      console.error('Failed to load recipes:', error);
+      console.error("Failed to load recipes:", error);
       toast({
         title: "Error",
         description: "Failed to load recipes",
@@ -156,46 +182,45 @@ export const AppletBuilder = () => {
   // Helper function to render the correct icon component
   const renderIcon = (iconName: string | undefined) => {
     if (!iconName) return <BoxIcon className="h-5 w-5" />;
-    
+
     const IconComponent = ICON_OPTIONS[iconName];
     if (!IconComponent) return <BoxIcon className="h-5 w-5" />;
-    
+
     return <IconComponent className="h-5 w-5" />;
   };
 
-
   const handleIconSelect = (iconName: string) => {
-    if (iconPickerType === 'main') {
-      setNewApplet(prev => ({
+    if (iconPickerType === "main") {
+      setNewApplet((prev) => ({
         ...prev,
-        appletIcon: iconName
+        appletIcon: iconName,
       }));
     } else {
-      setNewApplet(prev => ({
+      setNewApplet((prev) => ({
         ...prev,
-        appletSubmitIcon: iconName
+        appletSubmitIcon: iconName,
       }));
     }
     setShowIconPicker(false);
   };
 
-  const openIconPicker = (type: 'main' | 'submit') => {
+  const openIconPicker = (type: "main" | "submit") => {
     setIconPickerType(type);
     setShowIconPicker(true);
   };
 
   const resetForm = () => {
     setNewApplet({
-      name: '',
-      description: '',
-      slug: '',
-      appletIcon: 'SiCodemagic',
-      appletSubmitText: 'Submit',
-      creator: '',
-      primaryColor: 'emerald',
-      accentColor: 'blue',
-      layoutType: 'flat',
-      imageUrl: '',
+      name: "",
+      description: "",
+      slug: "",
+      appletIcon: "SiCodemagic",
+      appletSubmitText: "Submit",
+      creator: "",
+      primaryColor: "emerald",
+      accentColor: "blue",
+      layoutType: "flat",
+      imageUrl: "",
       compiledRecipeId: null,
       containers: [],
     });
@@ -219,7 +244,7 @@ export const AppletBuilder = () => {
     setIsLoading(true);
     try {
       const isAvailable = await isAppletSlugAvailable(newApplet.slug);
-      
+
       if (!isAvailable) {
         toast({
           title: "Slug Error",
@@ -229,18 +254,20 @@ export const AppletBuilder = () => {
         setIsLoading(false);
         return;
       }
-      
-      const createdApplet = await createCustomAppletConfig(newApplet as CustomAppletConfig);
-      setSavedApplets(prev => [...prev, createdApplet]);
-      
+
+      const createdApplet = await createCustomAppletConfig(
+        newApplet as CustomAppletConfig,
+      );
+      setSavedApplets((prev) => [...prev, createdApplet]);
+
       toast({
         title: "Applet Saved",
         description: `Applet "${newApplet.name}" has been saved successfully.`,
       });
-      
+
       resetForm();
     } catch (error) {
-      console.error('Error saving applet:', error);
+      console.error("Error saving applet:", error);
       toast({
         title: "Error",
         description: "Failed to save applet",
@@ -254,25 +281,28 @@ export const AppletBuilder = () => {
   const editApplet = (applet: CustomAppletConfig) => {
     setSelectedApplet(applet);
     setNewApplet(applet);
-    
+
     // Load the recipe information if available
     if (applet.compiledRecipeId) {
       setCompiledRecipeId(applet.compiledRecipeId);
       // Note: Ideally we'd look up the recipe details as well, but we'll leave that as a TO-DO
     }
-    
-    setActiveTab('create');
+
+    setActiveTab("create");
   };
 
   const updateApplet = async () => {
     if (!selectedApplet?.id) return;
-    
+
     // Check slug uniqueness if it was changed
     setIsLoading(true);
     try {
       if (selectedApplet.slug !== newApplet.slug) {
-        const isAvailable = await isAppletSlugAvailable(newApplet.slug, selectedApplet.id);
-        
+        const isAvailable = await isAppletSlugAvailable(
+          newApplet.slug,
+          selectedApplet.id,
+        );
+
         if (!isAvailable) {
           toast({
             title: "Slug Error",
@@ -283,19 +313,24 @@ export const AppletBuilder = () => {
           return;
         }
       }
-      
-      const updatedApplet = await updateCustomAppletConfig(selectedApplet.id, newApplet as CustomAppletConfig);
-      setSavedApplets(prev => prev.map(applet => 
-        applet.id === selectedApplet.id ? updatedApplet : applet
-      ));
-      
+
+      const updatedApplet = await updateCustomAppletConfig(
+        selectedApplet.id,
+        newApplet as CustomAppletConfig,
+      );
+      setSavedApplets((prev) =>
+        prev.map((applet) =>
+          applet.id === selectedApplet.id ? updatedApplet : applet,
+        ),
+      );
+
       toast({
         title: "Applet Updated",
         description: `Applet "${newApplet.name}" has been updated successfully.`,
       });
       resetForm();
     } catch (error) {
-      console.error('Error updating applet:', error);
+      console.error("Error updating applet:", error);
       toast({
         title: "Error",
         description: "Failed to update applet",
@@ -310,13 +345,13 @@ export const AppletBuilder = () => {
     setIsLoading(true);
     try {
       await deleteCustomAppletConfig(id);
-      setSavedApplets(prev => prev.filter(applet => applet.id !== id));
+      setSavedApplets((prev) => prev.filter((applet) => applet.id !== id));
       toast({
         title: "Applet Deleted",
         description: "Applet has been deleted successfully.",
       });
     } catch (error) {
-      console.error('Error deleting applet:', error);
+      console.error("Error deleting applet:", error);
       toast({
         title: "Error",
         description: "Failed to delete applet",
@@ -329,10 +364,10 @@ export const AppletBuilder = () => {
 
   // Group management functions
   const toggleGroupSelection = (groupId: string) => {
-    setSelectedGroups(prev => 
-      prev.includes(groupId) 
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
+    setSelectedGroups((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId],
     );
   };
 
@@ -342,25 +377,32 @@ export const AppletBuilder = () => {
       setShowAddGroupsDialog(false);
       return;
     }
-    
+
     setIsLoading(true);
     try {
       // Add the groups as containers to the applet using the RPC function
       console.log("selectedGroups", selectedGroups);
-      const success = await addContainersToApplet(selectedApplet.id, selectedGroups);
+      const success = await addContainersToApplet(
+        selectedApplet.id,
+        selectedGroups,
+      );
       console.log("success", success);
-      
+
       if (success) {
         // Refresh the applet data to get the updated containers
-        const updatedApplet = await getCustomAppletConfigById(selectedApplet.id);
-        
+        const updatedApplet = await getCustomAppletConfigById(
+          selectedApplet.id,
+        );
+
         if (updatedApplet) {
           // Update the local state
           setNewApplet(updatedApplet);
-          setSavedApplets(prev => prev.map(applet => 
-            applet.id === selectedApplet.id ? updatedApplet : applet
-          ));
-          
+          setSavedApplets((prev) =>
+            prev.map((applet) =>
+              applet.id === selectedApplet.id ? updatedApplet : applet,
+            ),
+          );
+
           toast({
             title: "Groups Added",
             description: `${selectedGroups.length} groups have been added to the applet.`,
@@ -374,7 +416,7 @@ export const AppletBuilder = () => {
         });
       }
     } catch (error) {
-      console.error('Error adding groups to applet:', error);
+      console.error("Error adding groups to applet:", error);
       toast({
         title: "Error",
         description: "Failed to add groups to applet.",
@@ -397,7 +439,7 @@ export const AppletBuilder = () => {
       });
       return;
     }
-    
+
     setSelectedGroups([]);
     setShowAddGroupsDialog(true);
   };
@@ -405,25 +447,33 @@ export const AppletBuilder = () => {
   // Refresh a single group container
   const refreshGroup = async (groupId: string) => {
     if (!selectedApplet?.id) return;
-    
+
     setIsLoading(true);
     try {
-      const success = await recompileContainerInAppletById(selectedApplet.id, groupId);
-      
+      const success = await recompileContainerInAppletById(
+        selectedApplet.id,
+        groupId,
+      );
+
       if (success) {
         // Refresh the applet data to get the updated container
-        const updatedApplet = await getCustomAppletConfigById(selectedApplet.id);
-        
+        const updatedApplet = await getCustomAppletConfigById(
+          selectedApplet.id,
+        );
+
         if (updatedApplet) {
           // Update the local state
           setNewApplet(updatedApplet);
-          setSavedApplets(prev => prev.map(applet => 
-            applet.id === selectedApplet.id ? updatedApplet : applet
-          ));
-          
+          setSavedApplets((prev) =>
+            prev.map((applet) =>
+              applet.id === selectedApplet.id ? updatedApplet : applet,
+            ),
+          );
+
           toast({
             title: "Group Refreshed",
-            description: "Group container has been refreshed with the latest configuration.",
+            description:
+              "Group container has been refreshed with the latest configuration.",
           });
         }
       } else {
@@ -434,7 +484,7 @@ export const AppletBuilder = () => {
         });
       }
     } catch (error) {
-      console.error('Error refreshing group container:', error);
+      console.error("Error refreshing group container:", error);
       toast({
         title: "Error",
         description: "Failed to refresh group container.",
@@ -448,25 +498,30 @@ export const AppletBuilder = () => {
   // Refresh all group containers
   const refreshAllGroups = async () => {
     if (!selectedApplet?.id) return;
-    
+
     setIsLoading(true);
     try {
       const success = await recompileAllContainersInApplet(selectedApplet.id);
-      
+
       if (success) {
         // Refresh the applet data to get the updated containers
-        const updatedApplet = await getCustomAppletConfigById(selectedApplet.id);
-        
+        const updatedApplet = await getCustomAppletConfigById(
+          selectedApplet.id,
+        );
+
         if (updatedApplet) {
           // Update the local state
           setNewApplet(updatedApplet);
-          setSavedApplets(prev => prev.map(applet => 
-            applet.id === selectedApplet.id ? updatedApplet : applet
-          ));
-          
+          setSavedApplets((prev) =>
+            prev.map((applet) =>
+              applet.id === selectedApplet.id ? updatedApplet : applet,
+            ),
+          );
+
           toast({
             title: "All Groups Refreshed",
-            description: "All group containers have been refreshed with the latest configurations.",
+            description:
+              "All group containers have been refreshed with the latest configurations.",
           });
         }
       } else {
@@ -477,7 +532,7 @@ export const AppletBuilder = () => {
         });
       }
     } catch (error) {
-      console.error('Error refreshing group containers:', error);
+      console.error("Error refreshing group containers:", error);
       toast({
         title: "Error",
         description: "Failed to refresh group containers.",
@@ -492,31 +547,37 @@ export const AppletBuilder = () => {
     <div className="container mx-auto px-4 py-6">
       <Card className="border-border bg-textured shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">Applet Builder</CardTitle>
+          <CardTitle className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
+            Applet Builder
+          </CardTitle>
           <CardDescription className="text-gray-500 dark:text-gray-400">
             Create and manage applets for your applications
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-              <TabsTrigger 
+              <TabsTrigger
                 value="create"
                 className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400"
               >
                 Create Applet
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="saved"
                 className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400"
               >
                 Saved Applets ({savedApplets.length})
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="create" className="mt-6">
-              <CreateAppletTab 
+              <CreateAppletTab
                 newApplet={newApplet}
                 setNewApplet={setNewApplet}
                 selectedApplet={selectedApplet}
@@ -536,9 +597,9 @@ export const AppletBuilder = () => {
                 renderIcon={renderIcon}
               />
             </TabsContent>
-            
+
             <TabsContent value="saved" className="mt-6">
-              <SavedAppletsTab 
+              <SavedAppletsTab
                 savedApplets={savedApplets}
                 isLoading={isLoading}
                 setActiveTab={setActiveTab}
@@ -550,15 +611,15 @@ export const AppletBuilder = () => {
           </Tabs>
         </CardContent>
       </Card>
-      
+
       {/* Dialogs */}
-      <IconPickerDialog 
+      <IconPickerDialog
         showIconPicker={showIconPicker}
         setShowIconPicker={setShowIconPicker}
         handleIconSelect={handleIconSelect}
       />
-      
-      <RecipeSelectDialog 
+
+      <RecipeSelectDialog
         showRecipeDialog={showRecipeDialog}
         setShowRecipeDialog={setShowRecipeDialog}
         initialSelectedRecipe={selectedRecipe?.id || null}
@@ -567,11 +628,11 @@ export const AppletBuilder = () => {
         setRecipeSourceConfig={setCompiledRecipeWithNeededBrokers}
         onRecipeSelected={(recipeId) => {
           // First find the recipe in userRecipes if available
-          const foundRecipe = userRecipes.find(r => r.id === recipeId);
-          setSelectedRecipe(foundRecipe || { id: recipeId } as RecipeInfo);
+          const foundRecipe = userRecipes.find((r) => r.id === recipeId);
+          setSelectedRecipe(foundRecipe || ({ id: recipeId } as RecipeInfo));
         }}
       />
-      
+
       <GroupSelector
         showAddGroupsDialog={showAddGroupsDialog}
         setShowAddGroupsDialog={setShowAddGroupsDialog}
@@ -584,4 +645,4 @@ export const AppletBuilder = () => {
   );
 };
 
-export default AppletBuilder; 
+export default AppletBuilder;

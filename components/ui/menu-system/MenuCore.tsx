@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toggleMode } from "@/styles/themes/themeSlice";
-import { extractErrorMessage } from "@/utils/errors";
 
 interface MenuCoreProps extends MenuRenderProps {
   menuId: string;
@@ -38,27 +37,8 @@ export const MenuCore: React.FC<MenuCoreProps> = ({
     return null;
   }
 
-  // Generate custom items from the definition and override execute functionality
-  const customItems = menuDefinition.customItems(menuProps).map((item) => {
-    // Override execute functionality for workflow nodes
-    if (item.id === "execute" && menuId === "workflow-node") {
-      return {
-        ...item,
-        onClick: async () => {
-          try {
-            const { onExecuteError } = menuProps;
-            onExecuteError?.(
-              "Workflow step execution is temporarily unavailable (legacy stream-tasks removed).",
-            );
-          } catch (err) {
-            const errorMessage = extractErrorMessage(err);
-            menuProps.onExecuteError?.(errorMessage);
-          }
-        },
-      };
-    }
-    return item;
-  });
+  // Generate custom items from the definition
+  const customItems = menuDefinition.customItems(menuProps);
 
   // Get global items and apply menu-specific visibility rules
   const globalItems = GlobalMenuItems.getAll()

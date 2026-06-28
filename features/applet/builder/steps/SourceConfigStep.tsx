@@ -245,7 +245,7 @@ const SourceConfigContent: React.FC<SourceConfigContentProps> = ({
 
   const itemCounts = {
     recipe: quickRefCount,
-    "ai-agent": 0,
+    "ai-agent": quickRefCount,
     action: 0,
     "api-integration": 0,
   };

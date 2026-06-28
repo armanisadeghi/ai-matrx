@@ -1,348 +1,473 @@
-# Fast Fire Flashcards — Requirements & Rebuild Spec
+# Fast Fire Flashcards — Requirements, Vision & Ground-Up Build Spec
 
-> **Status: NOT BUILT. This route does not work and never has.** This document is the
-> single source of truth for the eventual ground-up rebuild. It captures (a) the original
-> vision, (b) a firsthand audit of the failed attempt and *why* it failed, and (c) the
-> target architecture using today's platform primitives. When the rebuild happens, it
-> happens from this doc — not by patching the existing files.
+> **Status: NOT BUILT. Build from scratch, correctly, canonical from day one.**
 >
-> **Do not "quick-fix" the current route.** The owner has deliberately chosen to wait so
-> this fits the larger learning system (persistence, per-card scoring, adaptive selection)
-> rather than shipping a working-but-isolated toy. Premature patching is the wrong move.
+> This is the single source of truth for the eventual rebuild. We are **not** patching the old
+> route and **not** binding to any existing flashcard tables. Everything the platform has today
+> (the `education` schema, the old `users.user_flashcard_*` tables, the localStorage AI hooks) is
+> **inspiration only** — we study it to understand the goal, then design the ideal from a blank
+> page so every table is built right and every aspect of the vision is captured from the start.
+>
+> Two hard constraints govern the database:
+> 1. **It must follow our new canonical system** (`docs/official/canonical_db.md`).
+> 2. **It must allow everything described in this document** — nothing in the vision may be
+>    blocked by a shortcut taken in the schema.
+>
+> **Do not "quick-fix" the current route.** Working-but-isolated is the wrong outcome. The point
+> of waiting is to fit the larger learning system from day one.
 
-**Route:** `/flash-cards/fast-fire` → `app/(transitional)/flash-cards/fast-fire/page.tsx`
-**Author of vision:** Armani (owner). This is a years-long dream — "I love helping kids learn,
-and the technology had just gotten in my way." Get it right.
+**Route today:** `/flash-cards/fast-fire` → `app/(transitional)/flash-cards/fast-fire/page.tsx`
+**Vision owner:** Armani. A years-long dream — "I love helping kids learn, and the technology
+had just gotten in my way." Get it right.
 
 ---
 
 ## 1. The Vision (the *why*)
 
-Fast Fire is **spoken, timed, AI-graded flashcard practice** — oral-exam drilling where the
+**Fast Fire** is **spoken, timed, AI-graded flashcard practice** — oral-exam drilling where the
 learner *talks* their answers out loud instead of flipping cards, and an AI judge scores each
 answer and gives spoken coaching that can be replayed afterward.
 
-But Fast Fire is **only the first surface of a much bigger system.** The real goal:
+But Fast Fire is only the **first input method** into a much larger learning engine. The real goal:
 
-> **A flashcard engine that doesn't flip through a static set — it surfaces the exact cards a
-> learner needs to see, when they need to see them, based on the topics they've chosen to study
-> and their entire history of performance on those cards.**
+> **A study system that doesn't flip through a static set — it surfaces the exact cards a learner
+> needs to see, when they need to see them, based on the topics they've chosen to study and their
+> entire history of performance on every card.**
 
-That requires tracking *everything* the learner does, storing it correctly, and running
-selection algorithms on top of it. This is the part the owner is most passionate about. Fast
-Fire is one *input method* feeding that engine; it must be built so its data is a first-class
-citizen of the larger system from day one.
+That demands tracking everything a learner does, storing it correctly, and running selection
+algorithms on top of it. This is the part the owner is most passionate about. Every persistence
+and identity decision in this doc is made to keep that reachable.
 
-**This generalizes beyond flashcards.** The same session + per-item-scoring + provenance +
-adaptive-selection spine should serve **quiz sessions** and other study modes. Design the
-persistence and grading layers to be mode-agnostic, with Fast Fire as the first consumer.
+**This is mode-agnostic by design.** The same spine — rich cards, sessions, per-card scoring with
+provenance, dimensions, lineage, adaptive selection — must also serve **quiz sessions** and other
+study modes. Fast Fire is the first consumer, never the only one.
 
 ---
 
-## 2. The Learner Experience (UX flow)
+## 2. The Learner Experience (Fast Fire flow)
 
-1. **Setup** — choose a card source (a saved set today; in the target, *any* set or a
-   dynamically-assembled batch), seconds-per-card, and number of cards.
+1. **Setup** — choose a source (a saved set, or a dynamically-assembled batch — see §4.3),
+   seconds-per-card, and number of cards.
 2. **"Get Ready!"** — short 3·2·1 countdown.
-3. **The drill — fully automatic, no buttons.** For each card:
-   - Show **only the front** (the question).
-   - A timer bar depletes over the allotted seconds.
-   - The learner **speaks the answer aloud**.
-   - Timer expires → advance immediately to the next card. The learner never waits on the AI.
+3. **The drill — fully automatic, no buttons.** For each card: show **only the front**; a timer
+   bar depletes; the learner **speaks the answer aloud**; timer expires → advance immediately. The
+   learner never waits on the AI.
 4. **Background grading — parallel, non-blocking.** Each answer is graded while the drill keeps
-   moving. The UI shows live "processing N in background…" without ever stalling the flow.
-5. **Live scoreboard** — running total score, # correct, overall %, expandable per-question list.
-6. **Review modes** — after the session: *Review All / Review Correct / Review Best* play back
-   the AI's spoken feedback (TTS) for the matching cards.
+   moving; the UI shows "processing N in background…" without ever stalling.
+5. **Live scoreboard** — running score, # correct, overall %, expandable per-question list.
+6. **Review modes** — after the session: *Review All / Review Correct / Review Best* play back the
+   AI's spoken feedback for the matching cards.
 
-The defining principle: **"fast fire" = you never wait on the AI.** Answers stream off to
-graders; grades and coaching catch up in the background.
+Defining principle: **"fast fire" = you never wait on the AI.** Answers stream off to graders;
+grades and coaching catch up in the background.
 
 ---
 
-## 3. Audit of the Failed Attempt (firsthand)
+## 3. What a Flashcard *Can Be* (simple → arbitrarily rich)
 
-### 3.1 What's in the folder — three coexisting generations, only one is wired
+A card is not "front + back." It is a **rich, hierarchical, sourced, multi-media knowledge object**
+that can be as simple or as complex as we want. The model must support, from day one:
 
-| File | Generation | Wired in? | Notes |
+- **Core prompt/answer** — `front` / `back`, plus optional `card_kind` (basic, cloze/fill-in,
+  concept, definition, image-prompt, etc.) so we're not locked to one question shape.
+- **Layered explanation** — `example`, `detailed_explanation`, and AI-written **helper text** (the
+  "I'm confused" copy), each independently present or absent.
+- **Pre-generated audio** — durable TTS of the helper text (and potentially the answer/example), so
+  "I'm confused" plays **instantly** from storage, not generated on click (see §9).
+- **Media** — one or more images, diagrams, or audio clips attached to a card.
+- **Learner annotations** — `personal_notes`, custom tags.
+- **Difficulty / level / topic / lesson** — for filtering, scheduling, and adaptive selection.
+- **Hierarchy (expand / collapse)** — a card can **expand into child cards** when a learner
+  struggles (one concept becomes several finer-grained cards) and **collapse** when they've
+  mastered a topic (children fold back into the parent). Cards form a tree/graph, not a flat list.
+  This is a first-class feature, not a tag. See §4.2.
+- **Dimensions / themes / cross-cutting tags** — entity-level connectors that let a single
+  "string" run through ten different sets and assemble, say, 25 cards into a themed batch. See §4.3.
+- **Source lineage** — a reference back to where the card's knowledge originated: class notes, a
+  textbook, a specific page of a specific uploaded guide. Powered by the knowledge system. See §11.
+- **Provenance-tagged performance history** — every score the learner ever earns on this card,
+  from any mode, follows the card everywhere. See §10 / §12.
+
+> Acceptance test for the card model: *"Can a card be a one-line Q&A, AND a concept that expands
+> into five sub-cards, each with an image, pre-recorded audio, a citation to page 42 of an uploaded
+> PDF, three cross-set themes, and a full per-learner score history — with no schema change?"*
+> If no, the model is too thin.
+
+---
+
+## 4. Structure: Sets, Hierarchy, Dimensions
+
+### 4.1 Sets (explicit, ordered collections)
+A **set** is a named, ordered collection that **references** cards (many-to-many) — it does not own
+or embed them. The same card lives in many sets and carries one identity and one history across all
+of them. Order is a property of the membership, not the card.
+
+### 4.2 Hierarchy (expand-on-struggle / collapse-on-mastery)
+Cards relate to other cards through typed relations (`expands_into`, `summarizes`, `prerequisite_of`,
+`see_also`, …). "Expand" surfaces a card's `expands_into` children when the learner struggles;
+"collapse" hides them once mastery is shown. The relation graph is queryable and ordered, and the
+adaptive engine (§13) drives expand/collapse automatically from performance.
+
+### 4.3 Dimensions / Themes (cross-cutting connectors)
+Beyond sets, cards carry **dimensions** — tags, categories, and entity associations that cut across
+sets. A theme is a dimension value ("Photosynthesis", "Unit 3 Final", "Cell Biology"); querying a
+dimension assembles a **dynamic batch** of cards drawn from many sets. Dynamic batches are
+first-class study sources, equal to saved sets, and are exactly what feeds the adaptive engine.
+
+---
+
+## 5. Audit of the Failed Attempt (firsthand — kept so the lessons aren't lost)
+
+### 5.1 Files in the folder — three coexisting generations, only one wired
+- **Live route:** `page.tsx` (`FastFirePractice`) → `useFastFireSession`
+  (`hooks/flashcard-app/useFastFireFlashcards.ts`). Settings panel, countdown, auto-record loop.
+- **Orphans (imported by nothing):** `FastFirePractice.tsx`, `FastFireContainer.tsx`,
+  `FastFireFlashcard.tsx`, `FastFireAnalysis.tsx`, plus the second hook
+  `hooks/flashcard-app/useFastFireSessionNew.ts`.
+
+The rebuild **deletes all five components + both session hooks**. One clean hook/slice replaces them.
+
+### 5.2 What actually works — the audio layer
+The mic stack is modern and solid (retrofitted 2026-06-24, per `features/audio/FEATURE.md`):
+mic **singleton** (`acquireMicStream`/`releaseMicStream`), **shared** `AudioContext`, app-wide
+**capture lock** (`claimCapture`/`releaseCapture`, start-always-wins, no iOS re-prompt). **Reuse
+this. Do not rebuild it.**
+
+### 5.3 Why it never worked — root causes (all state/result plumbing, none in audio)
+1. **🔴 KILLER — stale React state read after `await submit()`.** `submit()` writes the AI grade via
+   `setConversations(...)` and returns `void`; the next line reads `conversations` from the same
+   render's closure (not yet updated) → `lastResult` is `undefined` → the grade is computed
+   server-side but **never reaches the UI**. *Fix:* grading must **return** the result up the call
+   stack (or be read from the DB after auto-persist — §7), never re-read state set in the same tick.
+2. **🔴 `audioPlayer` is a ref mutated in an effect** → never re-renders → review playback is dead.
+   Must be state.
+3. **🟠 Timer fights React** — `setInterval` decrementing state in an effect with unstable deps →
+   teardown/re-subscribe every render → double-starts, dropped ticks. *Fix:* a **deadline** (`ref`)
+   read by one `requestAnimationFrame` loop vs `Date.now()`.
+4. **🟠 Legacy AI path** — `processAiRequest` (Next.js server action, raw SDK keys) +
+   `useDynamicVoiceAiProcessing` (localStorage store, bespoke TTS) predate the platform's agent
+   system and violate "agents run on the Python backend." **Replaced wholesale** (§6).
+
+---
+
+## 6. Audio Capture — the better model
+
+The old design cut the mic off/on **per card**, introducing start/stop unknowns, re-arm latency,
+and brittle per-chunk grading. New design:
+
+- **One continuous recording for the whole session.** Start the stream once; never stop between cards.
+- **Chunk what you *send*, not what you *record*.** Slice the continuous stream per card for grading.
+- **~1 second of overlap each side** — each card's grading clip includes ~1s *before* the card
+  appeared and ~1s *after* the buzzer, so an early start or a trailing word or two is still captured.
+- **Audible buzzer markers** at each card's start/stop. The grader hears the boundaries but is
+  instructed to still count a stray word after the buzzer as part of the answer. Agents reason about
+  a continuous, marked clip far better than a naked hard-cut slice.
+- **Retain the full-session audio** (durable media ref) — one stream means we keep the whole thing,
+  which unlocks §8.
+
+> Reuse the mic singleton + shared `AudioContext`. The new requirement is continuous capture +
+> per-card slicing with overlap. Open decision (§14): client-side `MediaRecorder` timeslice
+> re-assembly vs upload-whole-stream + server-side slice by timestamps.
+
+---
+
+## 7. Grading — agent-based, audio-native, auto-persisted
+
+**Replace the client-side server action with a real Matrx agent run** through the normal agent
+execution system. Grading is compute that belongs on the Python backend (or a realtime agent).
+
+### 7.1 Preferred — native-audio model, parallel background grading
+- Send the audio clip **directly to a model that natively accepts audio** and ask for JSON back.
+  Current pick: **Google Gemini 3.5 Flash** — fast, inexpensive, native audio in, structured out.
+  (Confirm exact model id at build time.)
+- Grade **per card, in parallel, in the background**, keyed by the **stable card id** (§12). The
+  drill loop never awaits a grade.
+- **Matrx-action auto-persist.** The server bakes in a **Matrx action** — a marker the backend
+  auto-detects in the model's response and persists to the DB before returning. The grade is
+  **already saved** by the time the client reads it; the client read is a nicety, not a dependency.
+  (This structurally prevents the §5.3 killer bug.)
+
+### 7.2 Alternative — realtime agent (e.g. xAI Grok Realtime, already working)
+- Stream audio to a realtime agent with a **tool call that records the score.** Lowest latency →
+  true real-time feedback. Trade-off: if we're not playing feedback back live, realtime may not beat
+  fast background batch grading. Default per product goal; likely support both lanes.
+
+### 7.3 Rubric & provenance
+- The old **0–6 score is discarded.** The new rubric is **highly structured**, defined in the
+  grading agent's prompt; the score payload stores a structured breakdown, not just a number.
+- Every grade records **provenance/method** (`fast_fire`) so it's distinguishable from other modes
+  (e.g. `self_reported` classic review, `quiz`). See §12.
+
+---
+
+## 8. Session-Level Review (unlocked by continuous audio)
+Because the whole session is one recording: **transcribe the full session**, then run **one agent
+over the entire set together** as a *secondary* score/insight indicator — catching cross-card
+patterns (consistency, confusion between related cards, in-session improvement, topics to revisit)
+that no single-card grade can. A second lane layered on the per-card grades.
+
+---
+
+## 9. Background Helper-Text → Audio ("I'm confused" plays instantly)
+
+**Vision:** when a learner generates a set and starts using it, a background agent writes short
+helper/explanation text for **batches** of cards, and those batches are **processed into audio
+(TTS) and stored durably** — so clicking "I'm confused" on a card plays **pre-recorded** audio with
+zero wait.
+
+**Today's gap (confirmed):** the "confused" button currently generates TTS **on click** (Groq, via
+`useTextToSpeech` → `/api/audio/text-to-speech`) and the audio is **transient**. The vision is
+**pre-generated and persisted.** The schema must therefore:
+- store helper text per card,
+- store a **durable audio asset** per card (a `file_id` / media ref under the file handler + media
+  durability rules — never a transient blob, never an expiring signed URL),
+- track generation status per card (pending / text-ready / audio-ready) so the UI knows what's warm.
+
+**Flow to build:** set created → background agent writes helper text per card in batches → TTS job
+renders each to a durable audio file → status flips to audio-ready → "I'm confused" serves the
+stored file instantly (regenerate-on-miss as a loud recovery, never as the happy path).
+
+---
+
+## 10. Context Management Integration
+
+Study sessions run inside the learner's **active working context**. Read it from the canonical
+context system and pass it to every generation/grading agent so the agent knows what the learner is
+working on:
+- Global active context lives in `lib/redux/slices/appContextSlice.ts`
+  (`selectEffectiveOrganizationId`, `selectScopeSelectionsContext`, `selectProjectId`,
+  `selectTaskId`). The backend `resolve_full_context` RPC merges these into the agent's context
+  slots at invocation — no client-side resolution.
+- Card/session **local** context (a card's own topic/dimension tags) is read local-first with the
+  global active context as fallback, per the scopes invariant (`features/scopes/FEATURE.md`). A
+  study picker must **never** silently rewrite the global active context.
+
+---
+
+## 11. Knowledge-System Source Lineage ("See source")
+
+Every card can carry a **lineage reference back to its origin** — the knowledge system already
+models exactly this. A card generated from ingested knowledge captures, per source:
+`{ source_kind, source_id, processed_document_id, chunk_id, page_number, offsets }`, resolving
+through `docproc.processed_documents` → `rag.kg_chunks` (and `education.study_source_chunk` /
+`study_structured_section`) back to the original file/page. The study UI offers **"See source"**,
+opening the RAG **Source Inspector** (`features/rag/components/source-inspector/`) at the exact cited
+page with the matched chunk highlighted.
+
+This is a core requirement, not a nicety: knowing the **root source** of every fact (class notes vs
+textbook vs page 42 of an uploaded guide) is a headline feature of the knowledge system, and cards
+are a knowledge surface. A card may cite **multiple** sources, modeled as **`platform.associations`
+edges** (`flashcard → <source>`, the page/chunk/offsets in `metadata`) — not a column and not a
+bespoke table (§12.4).
+
+---
+
+## 12. The Canonical Database — Ground-Up Design
+
+> **Greenfield. Canonical from day one.** Every entity table below carries the full canonical base
+> and is registered + access-controlled the canonical way. No `is_deleted`/`is_public` booleans, no
+> per-table permission/version tables, no `shared_with` arrays, no `user_id`-as-owner — those are
+> exactly the legacy patterns the canonical standard kills.
+
+### 12.0 Canonical base (applies to EVERY entity table — stated once)
+Per `docs/official/canonical_db.md`:
+- **Identity/owner:** `id uuid pk`, `created_by uuid`, `updated_by uuid`.
+- **Org:** `organization_id uuid NOT NULL` → `public.organizations`.
+- **Audience:** `visibility platform.visibility` (`private|internal|public|link`); `is_listed` for
+  discovery. No `is_public` boolean as the access driver.
+- **Soft delete:** `deleted_at timestamptz` (NULL = live). No `is_deleted`.
+- **Versioning:** `version int` via `_touch`; `is_versioned=true`; `_history` →
+  `history.row_versions`. No per-table version tables.
+- **Timestamps/triggers:** `created_at`, `updated_at`, trigger trio `_stamp` / `_touch` / `_history`.
+- **Register** in `platform.entity_types` (declare token; for components declare the parent in
+  `platform.entity_relationships`, `kind='composition'`).
+- **RLS** generated by `iam.apply_rls(schema, table, token, variant)` — variant `entity`
+  (owner+org), `component` (defers to parent), or `ledger` (append-only). Never hand-write policies.
+- **Sharing** via rows in `public.permissions` keyed on the entity token + registration in
+  `public.shareable_resource_registry` (`owner_column='created_by'`). No bespoke share tables.
+- **Satellites** (polymorphic, attach as needed, never per-feature clones): `platform.associations`
+  (cross-cutting links/themes), `platform.categories` (tags/dimensions/topics), comments, favorites,
+  `platform.activity_log`.
+- **Gate:** `iam.verify_canonical_ok('<schema>','<table>','<token>')` returns true (zero WARN).
+
+Schema: target **`education`** (or a dedicated study schema — open decision §14), exposed to
+PostgREST so the FE reaches it via `.schema(...)` direct reads + `SECURITY DEFINER` RPCs, per the
+data-flow rules. **Names below are illustrative**; finalize tokens at build time.
+
+> **Relationships use `platform.associations`, NOT bespoke M2M/junction tables.** The canonical
+> association system exists precisely to *replace per-feature M2M tables and FK litter*. So a card's
+> membership in sets, the card↔card hierarchy, quiz↔card links, and card↔source lineage are all
+> **association edges** — not their own tables. The *only* relationship that stays a real table is
+> **composition** (a component owned by exactly one parent), declared in
+> `platform.entity_relationships`. Rule: **owned by one parent → composition table; relates
+> many↔many across entities → association edge.** (See §12.4.)
+
+### 12.1 Content entities
+
+**`flashcard`** *(entity — new token, must be registered)* — the rich, stable card. Domain columns
+(beyond base): `card_kind`, `front`, `back`, `example`, `detailed_explanation`, `helper_text`,
+`difficulty`, `topic`, `lesson`, `personal_notes`, `dynamic_content jsonb` (flexible extra panels).
+Stable `id` is the identity that performance, relationships, and lineage hang off of — **never** a
+set-position. *(`entity_types` today has `flashcard_set`/`flashcard_history`/`flashcard_review` but
+**no bare `flashcard`** — register it.)*
+
+**`flashcard_set`** *(entity — token exists)* — a named, ordered collection. Domain: `name`,
+`description`, `topic`, `lesson`, `difficulty`, optional `audio_overview` media ref. Does **not**
+embed or own cards; membership is an association edge (§12.4).
+
+### 12.2 Owned sub-content (composition — real child tables)
+
+**`flashcard_asset`** *(composition child of `flashcard`)* — media/explanation owned by one card:
+`flashcard_id` (FK), `asset_kind` (`image|audio_explanation|example_audio|diagram|…`),
+`media_ref` (`file_id` under the file handler / media durability rules), `generation_status`
+(`pending|text_ready|audio_ready|failed`), `generated_by` (`agent|user`), `metadata jsonb`. Holds the
+pre-generated "confused" audio durably (§9) and multiple images/audio. **Stays a table** because it
+is owned sub-content, not a cross-entity relation — declare it in `platform.entity_relationships`
+(`kind='composition'`, `child_type='flashcard_asset'`, `parent_type='flashcard'`,
+`fk_column='flashcard_id'`) and use the `component` RLS variant.
+
+### 12.3 Study + performance spine (mode-agnostic — also serves quizzes)
+
+**`study_session`** *(entity)* — one run of any study mode. Domain: `mode`
+(`fast_fire|quiz|classic_review|…`), `source_kind` (`set|dynamic_batch`), `source_ref` (set id or a
+serialized batch query), `settings jsonb` (seconds-per-card, count, etc.), `started_at`, `ended_at`,
+`status`, `aggregate_score jsonb`, `session_audio_ref` (durable full-session recording, §6),
+`session_review jsonb` (the §8 holistic agent review).
+
+**`study_attempt`** *(ledger — append-only)* — **the heart of the system.** One row per card answer,
+keyed by **stable `flashcard_id`** so a card's history follows it everywhere. Domain:
+`flashcard_id`, `session_id` (nullable — attempts can exist outside a formal session),
+`method` (`fast_fire|self_reported|quiz|…` — provenance), `result` (`correct|partial|incorrect` or
+richer), `score jsonb` (structured rubric breakdown, §7.3), `response_audio_ref` (per-card clip),
+`response_transcript`, `latency_ms`, plus base ledger columns. Append-only; never updated in place.
+
+**`flashcard_mastery`** *(entity — per (learner, card) rollup)* — durable scheduling/mastery state
+for the adaptive engine: `flashcard_id`, `user_id` (owner), `mastery_score`, spaced-repetition
+fields (`box`/`interval`, `due_at`, `ease`), `last_result`, `streak`, `struggle_flag`,
+`collapse_state` (whether children are folded). Derivable from `study_attempt` but persisted for
+fast selection; refreshed on each attempt (and recomputable from the ledger for integrity).
+
+### 12.4 Relationships — `platform.associations` edges (the rich-relation layer)
+
+**Every M2M / cross-entity relation is an association edge** on `platform.associations`
+(`source_type, source_id, target_type, target_id, organization_id, label, metadata jsonb,
+created_by`). One edge table relates any entity to any entity — which is exactly what lets a quiz
+relate to a specific card, a card expand into others, a card belong to many sets, and a card cite
+many sources, all uniformly and queryably. Ordering and typed-kind ride the edge's
+`label` / `metadata` (e.g. `metadata.order`, `metadata.kind='expands_into'`).
+
+| Relation | Edge (`source_type → target_type`) | Carries | Replaces |
 |---|---|---|---|
-| `page.tsx` (`FastFirePractice`) | **Gen 3 (live)** | **Yes** — the route | Settings panel, countdown, auto-record loop, `processingCount`. Uses `useFastFireSession`. |
-| `FastFirePractice.tsx` | Gen 2 | No (orphan) | Manual Start/Stop buttons, "buffer phase". Reads `bufferTimeLeft`/`isInBufferPhase` the live hook no longer returns — hence its `@ts-ignore` + `as any`. |
-| `FastFireContainer.tsx` | Gen 1 | No (orphan) | Uses a *second* hook `useFastFireSessionNew`; renders the two below. |
-| `FastFireFlashcard.tsx` | Gen 1 | No (orphan) | Child of Container only. |
-| `FastFireAnalysis.tsx` | Gen 1 | No (orphan) | Child of Container only. |
+| **Set membership** | `flashcard_set → flashcard` | `metadata.order` | a `flashcard_set_member` junction |
+| **Hierarchy (expand/collapse)** | `flashcard → flashcard` | `label`/`metadata.kind` = `expands_into\|summarizes\|prerequisite_of\|see_also`, `metadata.order` | a `flashcard_relation` table — drives §4.2 |
+| **Quiz ↔ card** | `quiz_session → flashcard` | `metadata` (role, weight) | ad-hoc FK litter; `quiz_session` token already exists |
+| **Source lineage** | `flashcard → <source>` | `metadata` = `{processed_document_id, chunk_id, page_number, offsets}` (§11) | a `flashcard_source` table |
+| **Themes / dimensions** | `flashcard → category` | cross-set "strings" → dynamic batches (§4.3) | bespoke tag tables |
 
-**Hooks:** `hooks/flashcard-app/useFastFireFlashcards.ts` (`useFastFireSession`, live) and
-`hooks/flashcard-app/useFastFireSessionNew.ts` (`useFastFireSessionNew`, orphan) +
-`hooks/flashcard-app/useAudioRecorder.ts`.
+**Required platform work (small, but NOT free — verified against the live DB):**
+1. **Register the `flashcard` token** in `platform.entity_types` (absent today).
+2. **Widen `associations_target_type_chk`** — today it allows only
+   `scope/scope_type/project/task/context_item/thread/war_room/category`. Add `flashcard`,
+   `flashcard_set`, and the chosen source token(s). (`source_type` is free-text — no change needed.)
+3. **FE access is RPC-only.** `authenticated` has **no** grant on the `platform` schema; the FE must
+   reach edges through the existing `public` `SECURITY DEFINER` RPCs (`assoc_for_entity` / `assoc_add`
+   / `assoc_remove` / `assoc_set_targets`) via `features/scopes/service/associationsService.ts` +
+   `useAssociations` + `EntityAssociator` — never `.from('platform.associations')`. Category
+   assignment reuses `assoc_add(target_type='category')`; favorites/pins use `ues_*`.
 
-**Rebuild deletes all five components + both session hooks.** Keep only the audio-capture
-primitives (below). One clean hook/slice replaces the lot.
+### 12.5 Goals & dimensions (adaptive inputs)
 
-### 3.2 What actually works — and it's the part you'd expect to be hard
+**Topics/themes/tags** ride **`platform.categories`** (dimension-based) + **`platform.associations`**
+(cross-set "strings", §4.3/§12.4) rather than bespoke tag tables — so the same primitives that tag
+agents, notes, and files tag cards, and dynamic batches are just dimension queries.
 
-The **audio layer is modern and solid.** `useAudioRecorder` and `useFastFireFlashcards` were
-retrofitted (2026-06-24, per `features/audio/FEATURE.md`) onto the canonical primitives:
-- `acquireMicStream` / `releaseMicStream` — the app-wide mic singleton (chosen device, warm
-  grant, no re-prompt on iOS, never `track.stop()`s the shared device).
-- `getSharedAudioContext` / `resumeSharedAudioContext` — one shared `AudioContext` (iOS caps live
-  contexts).
-- `claimCapture` / `releaseCapture` — app-wide "one live capture, anywhere," start-always-wins.
+**`study_goal`** *(entity — optional, near-term)* — the topics a learner has declared they want to
+study: `user_id`, `topic`/dimension refs, `target`/exam date, `metadata jsonb`. The adaptive engine
+reads goals + `flashcard_mastery` + the dimension graph to choose the next batch.
 
-**Recording is a solved problem here. Do not rebuild it — reuse it.**
-
-### 3.3 Why it never worked — root causes (all in state/result plumbing, none in audio)
-
-1. **🔴 KILLER BUG — stale-state read after `await submit()`.** Both hooks do:
-   ```ts
-   await submit(audioBlob);
-   const conversation = getCurrentConversation();
-   const lastResult = conversation?.structuredData?.[last];   // always stale → undefined
-   ```
-   `submit()` (in `hooks/ai/useDynamicVoiceAiProcessing.tsx`) writes the AI result via
-   `setConversations(...)` (async React state) and **returns `void`**. The next line reads
-   `conversations` from the *same render's closure*, which hasn't updated. `lastResult` is
-   `undefined` → `useFastFireSessionNew` throws *"No response received from AI"*; the live hook's
-   `if (lastResult)` guard silently fails and **no result is ever recorded.** The AI grades
-   correctly server-side — the grade just never reaches the UI. **This alone makes the whole
-   feature look broken.**
-   - *Fix shape:* the grade function must **return** the structured result up the call stack
-     (`processAiRequest` already returns it — the hook throws it into state and re-reads stale).
-     Never read React state immediately after the `await` that set it.
-
-2. **🔴 `audioPlayer` is a ref mutated inside an effect.** `useDynamicVoiceAiProcessing` returns
-   `audioPlayer: audioPlayerRef.current`, set by mutating `.current` in a `useEffect`. Mutating a
-   ref never triggers a re-render → the review/playback player is flaky-to-dead. Must be `useState`.
-
-3. **🟠 The timer fights React.** A `setInterval` decrementing React state, inside an effect whose
-   deps include `startRecording`/`stopRecording` (new identities every render). The effect tears
-   down and re-subscribes constantly → double-starts, dropped ticks, mid-card resets.
-   - *Fix shape:* a **deadline** (`deadlineTs` in a ref) read by a single `requestAnimationFrame`
-     loop against `Date.now()`. Never resets on re-render, never double-fires.
-
-4. **🟠 Legacy AI path (whole approach is obsolete).** `actions/ai-actions/assistant-modular.ts`
-   (`processAiRequest`) is a self-contained Next.js server action calling OpenAI/Groq/Anthropic
-   SDKs with raw API keys; `useDynamicVoiceAiProcessing` keeps its own localStorage conversation
-   store + a bespoke `TextToSpeechPlayer` queue. This predates the platform's AI integration and
-   violates the "no Next.js middle tier; agents run on the Python backend" rule. **Replace
-   wholesale** (§5).
-
-5. **Minor:** `sessionState.isProcessing` is never set true in the live hook (only
-   `processingCount`); results dedupe by a synthetic `cardId` that can collide; `moveToNextCard`
-   and `recorder.onstop` capture `currentCardIndex` from stale closures.
+> **RLS variants:** entities (`flashcard`, `flashcard_set`, `study_session`, `flashcard_mastery`,
+> `study_goal`) → `entity`; the one composition child (`flashcard_asset`) → `component` (declared in
+> `entity_relationships`); `study_attempt` → `ledger` (append-only). Relationships are edges on
+> `platform.associations`, governed by the association system's own RLS — not new tables. Every
+> entity/component table must pass `iam.verify_canonical_ok`.
 
 ---
 
-## 4. Audio Capture — the better model (owner's design)
+## 13. The Adaptive Engine (north star — design toward it, don't block on it)
 
-The old design **cut the mic off and on per card.** That introduces start/stop unknowns,
-re-arm latency, and brittle per-chunk grading. The new design:
-
-- **One continuous recording for the whole session.** Start the stream once; never stop between
-  cards.
-- **Chunk what you *send*, not what you *record*.** Slice the continuous stream per card for
-  grading.
-- **~1 second of overlap on each side.** Each card's grading clip includes ~1s *before* the card
-  appeared and ~1s *after* the buzzer — so a learner who starts a beat early or trails a word or
-  two past the buzzer still has their full answer captured.
-- **Audible markers for the AI.** Play a small buzz/tone at each card's start and stop. The grader
-  hears these boundaries in the audio, but is instructed to still count a stray word or two
-  *after* the buzzer as part of the answer. Agents reason about "what's going on" far better with
-  a continuous, marked clip than with an isolated hard-cut chunk.
-- **Retain the full-session audio.** Because it's one stream, we keep the entire session recording.
-  That unlocks §6.
-
-This is both more robust (no per-card mic re-arm) and more intelligent (the model gets context,
-not a naked slice).
-
-> Implementation note: reuse the mic singleton + shared `AudioContext`. Continuous capture +
-> client-side slicing (with overlap) is the new requirement on top of the existing recorder.
-> Decide whether slices are produced client-side (`MediaRecorder` timeslices buffered + re-assembled
-> with overlap) or whether the whole stream is uploaded and sliced server-side by timestamps.
+The end state isn't flipping a static set. It's a system that **chooses the next card**: the learner
+declares **topics** (`study_goal`); the engine draws on **all past performance**
+(`study_attempt` provenance + recency + `flashcard_mastery` scheduling) and the **dimension graph**
+to assemble the next batch — pulling individual cards from across many sets, expanding cards on
+struggle and collapsing on mastery (§4.2). "Random themed batch from different places" is a
+first-class concept, which is *why* stable per-card identity and cross-set scoring (§12) are
+non-negotiable foundations. Fast Fire feeds this engine; it need not *be* it on day one, but every
+schema decision must keep it reachable. **This is the acceptance criterion for the data model.**
 
 ---
 
-## 5. Grading — agent-based, audio-native, auto-persisted
-
-**Replace the client-side server action entirely with a real Matrx agent run.** Grading is
-compute that belongs on the Python backend (or a realtime agent), via the normal agent execution
-system — not a Next.js server action with baked-in API keys.
-
-### 5.1 Preferred path — native-audio model, batch grading
-
-- **Send the audio clip directly to a model that natively accepts audio** and ask for JSON back.
-  Owner's current pick: **Google Gemini 3.5 Flash** — fast, inexpensive, native audio in,
-  structured JSON out. (Confirm exact model id at build time.)
-- Grade **per card, in parallel, in the background**, keyed by a stable card identity (§7). The
-  drill loop must never await a grade.
-- **Matrx action auto-persist.** The server can bake in a **Matrx action** — a marker the backend
-  auto-detects in the model's response and persists to the DB before the response returns. So a
-  grade is **already saved** by the time the client reads it. The client still consumes the
-  response for live UI, but persistence does not depend on the client round-trip.
-
-### 5.2 Alternative path — realtime agent (e.g. xAI Grok Realtime, already working)
-
-- Stream audio to a realtime agent and give it a **tool call that records the score.**
-- **Advantage:** lowest latency → true real-time feedback during the drill.
-- **Disadvantage:** if we're *not* playing audio feedback back live, realtime may not actually
-  save wall-clock vs. fast background batch grading. Choose per product goal: real-time coaching
-  → realtime agent; review-after → batch native-audio.
-
-### 5.3 Scoring rubric
-
-- The old **0–6 score is irrelevant** and will be redone. Owner doesn't recall the original logic;
-  the new rubric will be **highly structured**, defined in the grading agent's prompt.
-- The grade payload must record **provenance**: this score came from **Fast Fire** (spoken,
-  AI-graded) as opposed to other methods (e.g. normal flashcard review = self-reported). See §7.
-
----
-
-## 6. Session-level review (unlocked by continuous audio)
-
-Because we keep the entire session as one recording:
-
-- **Transcribe the full session.**
-- Run **one agent over the whole set together** as a *secondary* score/insight indicator —
-  catching patterns no single-card grade can (consistency, confusion across related cards,
-  improvement within the session, topics to revisit).
-
-This is a second grading lane layered on the per-card grades, not a replacement.
-
----
-
-## 7. Persistence — the part that justifies waiting
-
-### 7.1 What exists today (and why it's not enough)
-
-A persistence layer already exists (`features/flashcards/`):
-- `users.user_flashcard_sets` — sets (cards stored as JSON; auto-generated from chat, linked to
-  `cx_conversation`/`cx_message`).
-- `users.user_flashcard_reviews` — review log keyed by **`(set_id, card_index)`**, result is
-  `correct | partial | incorrect`.
-- A Leitner spaced-repetition concept (`LeitnerBox = 1|2|3`, `isDue`), `CardReviewStats`,
-  `masteryPercent`, in `features/flashcards/services/flashcardPersistenceService.ts`.
-
-**The blocking limitation:** reviews are keyed by a card's **position inside one set**
-(`set_id` + `card_index`). A card has no identity of its own. That **directly conflicts** with the
-owner's core requirement:
-
-> "Score per individual card… all of the scores you ever get for that flashcard follow you
-> wherever you go… even reviewing flashcards randomly created into a batch by taking individual
-> cards from different places."
-
-You cannot make scores follow a card across sets/batches when the card *is* just an index into a
-set. **The card must become a first-class entity with a stable id.**
-
-### 7.2 Target persistence model (redo the table structure)
-
-The owner explicitly expects to **redo the DB structure**. Target concepts (names illustrative —
-finalize against the platform DB conventions and the 2026 schema reorg / canonical-RLS rules):
-
-- **Canonical card entity** — a stable per-card identity so the same card can live in many sets
-  and in ad-hoc batches, and carry its history everywhere. Sets/batches *reference* cards rather
-  than embedding them as positional JSON (or: embedded cards still resolve to a canonical card id).
-- **Study session entity** — one row per session (e.g. one Fast Fire run): mode, source, settings,
-  start/end, the **full-session audio reference** (durable, per the media-durability rules — never
-  a raw signed URL), the session-level review (§6), aggregate score.
-- **Per-card score/attempt log** — every attempt on a card, with:
-  - stable **card id** (not set-position),
-  - **provenance / method** (`fast_fire` vs `self_reported` vs `quiz` vs …),
-  - structured score (new rubric), correct/partial/incorrect or richer,
-  - link back to the **session** and to the **audio clip** for that card,
-  - timestamp.
-- **Study analytics surface** — enough signal to later (a) drive adaptive selection and (b) help a
-  learner prep for a final exam by identifying weak topics/cards. Track topics, mastery trends,
-  struggle areas.
-
-This model is **mode-agnostic** on purpose: quiz sessions and other study modes write the same
-session + per-item-score shape, just with a different `method`/mode.
-
-> DB work follows the house rules: the DB is the source of truth, migrations applied via Supabase
-> MCP + verified live + `pnpm db-types`, canonical RLS via `iam.apply_rls`, schema reorg aware.
-> See `CLAUDE.md` and the `db-change` skill family. Coordinate with the existing
-> `features/flashcards/` persistence so we extend/replace it cleanly rather than forking a parallel
-> store.
-
----
-
-## 8. The Adaptive Engine (the dream — design toward it, don't block on it)
-
-The end state isn't flipping a static set. It's a system that **chooses what to show next**:
-
-- Learner states the **topics** they want to study.
-- The engine draws on **all past performance** (per-card history, provenance, recency, mastery,
-  spaced-repetition scheduling) to assemble the next batch — pulling individual cards from across
-  many sets.
-- "Random batch from different places" is a first-class concept, which is *why* per-card identity
-  and cross-set scoring (§7) are non-negotiable foundations.
-
-Fast Fire feeds this engine; it doesn't have to *be* it on day one. But every persistence and
-identity decision must keep this reachable. This is the owner's north star — treat it as the
-acceptance criterion for the data model.
-
----
-
-## 9. Build Plan — keep / replace / delete + the simple wins
+## 14. Build Plan & Open Decisions
 
 ### Keep
-- Mic singleton (`acquireMicStream`/`releaseMicStream`), shared `AudioContext`, `captureLock`.
-- The `flashcardGrader` JSON shape as a *starting point* (`{correct, score, audioFeedback}`) —
-  will evolve with the new rubric.
-- `FlashcardData` type (`types/flashcards.types.ts`) and existing flashcard sets as a data source
-  to start, pending the DB redo.
+- Mic singleton, shared `AudioContext`, capture lock (`features/audio/**`).
+- The canonical primitives: file handler / media durability for audio, `appContextSlice` for
+  context, RAG source-inspector for lineage, agent execution system for grading/generation.
 
 ### Replace
-- `useDynamicVoiceAiProcessing` + `processAiRequest` (legacy client/server-action AI) → **agent
-  run on the Python backend** (native-audio model, Matrx-action auto-persist) or **realtime agent**.
-- Bespoke `TextToSpeechPlayer` ref-as-render trick → platform audio/TTS primitives
-  (`@/features/files` / `InlineMediaRef` / the audio pipeline).
-- Per-card mic on/off → **one continuous stream, sliced with overlap + buzzer markers** (§4).
+- `useDynamicVoiceAiProcessing` + `processAiRequest` → agent run on the Python backend
+  (Gemini-3.5-Flash native audio + Matrx-action auto-persist) and/or realtime agent (Grok).
+- Transient on-click TTS → **pre-generated, durable** helper audio (§9).
+- Per-card mic on/off → one continuous stream, sliced with overlap + buzzer markers (§6).
 
-### Delete (after the rebuild lands)
-- All 5 components in this folder, `useFastFireSession`, `useFastFireSessionNew`,
-  `useAudioRecorder` (if superseded). No shims, no fallbacks (house rule: deprecated code is
-  deleted, not preserved).
+### Delete (after the rebuild lands — no shims, no fallbacks)
+- All 5 components in this folder, `useFastFireSession`, `useFastFireSessionNew`, and
+  `useAudioRecorder` if superseded.
 
-### The simple wins that actually unblock this (smallest leverage first)
-1. **Grading returns its result** instead of stashing in state and re-reading stale. Single
-   highest-leverage fix — surfaces every grade. (Or rely on Matrx-action DB persistence + read
-   back, sidestepping client state entirely.)
-2. **Never `await` the AI in the drill loop.** Fire-and-forget per card, keyed by stable card id;
-   render grades as they resolve. (Already the *intent* — the stale-read bug defeats it.)
-3. **Deadline timer, not a countdown.** One `deadlineTs` ref + one rAF loop vs `Date.now()`.
-   Kills the entire class of timer bugs.
-4. **One explicit state machine** (`idle → countdown → recording → advancing → … → complete`) in a
-   single reducer / Redux slice, not four drifting `useState`s + a fragile effect.
+### The simple wins that unblock the drill
+1. **Grading returns its result** (or read from the DB after Matrx-action auto-persist) — never
+   re-read React state set in the same tick. Single highest-leverage fix.
+2. **Never `await` the AI in the drill loop** — fire-and-forget per card, keyed by stable card id;
+   render grades as they resolve.
+3. **Deadline timer, not a countdown** — one `deadlineTs` ref + one rAF loop vs `Date.now()`.
+4. **One explicit state machine** in a Redux slice (`idle → countdown → recording → advancing →
+   complete`), not drifting `useState`s + a fragile effect.
 
-Rough effort once the DB model is decided: the drill mechanics are small (~150 lines with a
-deadline timer); the AI side is the "few lines" of a normal agent run. **The DB redo + adaptive
-foundations are the real work, and the reason to wait.**
-
----
-
-## 10. Open Decisions (resolve before/at build time)
-
-1. **Card identity & DB redo** — finalize the canonical-card + session + per-card-attempt schema
-   (§7) against the 2026 schema reorg and `features/flashcards/` current tables. *Biggest item.*
-2. **Card source** — when does Fast Fire start taking a real set/batch id from the DB instead of
-   the hardcoded `historyFlashcards`?
-3. **Grading lane** — batch native-audio (Gemini 3.5 Flash) vs realtime agent (Grok). Likely
-   support both; pick the default by whether live coaching matters.
-4. **Audio slicing** — client-side `MediaRecorder` timeslice re-assembly with overlap, vs upload
-   whole stream + server-side slice by timestamps. (Affects where overlap/markers are applied.)
-5. **Buzzer markers** — exact tones, and the grader-prompt instruction for handling post-buzzer
-   trailing words.
-6. **Session review agent** (§6) — in v1 or fast-follow?
-7. **Generalization** — confirm the session + per-item-score + provenance spine is the shared
-   foundation for **quiz sessions** and other modes, and name them so the schema is designed for
-   reuse, not retrofitted later.
+### Open decisions (resolve at build time)
+1. **Schema home & token names** — `education` vs a dedicated study schema; finalize every
+   `entity_types` token. *(Biggest structural item.)*
+2. **Hierarchy storage** — resolved: `platform.associations` `flashcard → flashcard` edges with a
+   typed `kind` (§12.4), not a junction table or self-FK. Confirm the `kind` vocabulary.
+3. **Card source for Fast Fire v1** — real set/batch id from the DB from the start (no hardcoded
+   `historyFlashcards`).
+4. **Audio slicing** — client-side `MediaRecorder` timeslice re-assembly with overlap vs
+   upload-whole + server-side slice by timestamp (affects where overlap/markers apply).
+5. **Grading lane default** — batch native-audio (Gemini) vs realtime (Grok); likely both.
+6. **`flashcard_mastery`** — persisted rollup (proposed, for fast selection) vs computed-on-read
+   from `study_attempt`. Confirm refresh strategy.
+7. **Session review agent** (§8) — v1 or fast-follow.
+8. **Generalization** — confirm `study_session` + `study_attempt` + dimensions are the shared spine
+   for **quiz sessions** and other modes, and name those modes now so the schema is designed for
+   reuse, not retrofitted.
+9. **Buzzer markers** — exact tones + the grader-prompt instruction for post-buzzer trailing words.
 
 ---
 
-## 11. Change Log
-- `2026-06-28` — Initial requirements doc. Firsthand audit of the failed attempt (3 generations,
-  root-cause bug catalog), plus the owner's full target vision: continuous-audio capture with
-  overlap + buzzer markers, agent-based audio-native grading with Matrx-action auto-persist,
-  redone per-card-identity persistence with provenance, session-level review, and the adaptive
-  topic/performance-driven card-selection engine as the north star. Nothing from the discussion
-  omitted.
+## 15. Change Log
+- `2026-06-28` — **Relationships moved onto `platform.associations`.** Verified live: the
+  association system is the canonical replacement for per-feature M2M tables, and is what enables
+  rich cross-entity relations (quiz↔card, card↔card, set↔card, card↔source). Collapsed the proposed
+  `flashcard_set_member` / `flashcard_relation` / `flashcard_source` junction tables into association
+  edges (§12.4); kept only `flashcard_asset` as a composition child (owned sub-content). Flagged the
+  required platform work (register a `flashcard` token — absent today; widen
+  `associations_target_type_chk`; FE via `assoc_*` RPCs only, no direct `platform.*` access).
+- `2026-06-28` — **Reframed to ground-up + canonical.** Removed all binding to legacy tables.
+  Studied the `education`-schema flashcard/quiz/study tables, the canonical standard
+  (`docs/official/canonical_db.md`), and three live systems (background helper-text→audio,
+  active-context, knowledge/RAG source lineage) as inspiration, then specified a greenfield
+  canonical schema: rich hierarchical sourced cards, sets via ordered membership, card↔card relation
+  graph (expand/collapse), dimensions/themes via canonical categories+associations, a mode-agnostic
+  `study_session` + append-only `study_attempt` spine with provenance, `flashcard_mastery` for the
+  adaptive engine, durable pre-generated "confused" audio, and source lineage. Kept the failed-attempt
+  audit and the better continuous-audio capture + audio-native grading design. Nothing from the
+  discussion omitted.
+- *(superseded)* `2026-06-28` — Initial audit + first-pass requirements (legacy-aware version).

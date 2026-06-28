@@ -31,7 +31,6 @@
     "next-env.d.ts",
     "app/(dev)/**",
     "app/(transitional)/**",
-    "features/chat/**",
     "features/applet/**"
   ]
 }

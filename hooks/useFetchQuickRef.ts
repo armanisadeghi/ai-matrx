@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { QuickReferenceRecord } from "@/types/records";
+import { listAppletSourceAgents } from "@/features/applet/services/appletAgentSource";
 
 export interface QuickReferenceKeyDisplayPair {
   recordKey: string;
@@ -6,16 +10,61 @@ export interface QuickReferenceKeyDisplayPair {
 }
 
 /**
- * Stub — the entity-system quick-reference hook was removed with the entities
- * decommission. Returns empty data so legacy applet/chat surfaces compile.
+ * Legacy quick-reference hook — entity system removed.
+ * `recipe` and `ai-agent` keys resolve to the agents catalog (same UUIDs as recipes).
  */
-export function useFetchQuickRef(_entityKey: string) {
+export function useFetchQuickRef(entityKey: string) {
+  const [quickReferenceRecords, setQuickReferenceRecords] = useState<
+    QuickReferenceRecord[]
+  >([]);
+  const [loadingState, setLoadingState] = useState<
+    "idle" | "loading" | "loaded" | "error"
+  >("idle");
+
+  useEffect(() => {
+    if (entityKey !== "recipe" && entityKey !== "ai-agent") {
+      setQuickReferenceRecords([]);
+      setLoadingState("loaded");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingState("loading");
+
+    listAppletSourceAgents()
+      .then((agents) => {
+        if (cancelled) return;
+        setQuickReferenceRecords(
+          agents.map((agent) => ({
+            recordKey: agent.id,
+            primaryKeyValues: { id: agent.id },
+            displayValue: agent.name,
+            metadata: { status: agent.status },
+          })),
+        );
+        setLoadingState("loaded");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setQuickReferenceRecords([]);
+        setLoadingState("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entityKey]);
+
+  const quickReferenceKeyDisplayPairs = quickReferenceRecords.map((record) => ({
+    recordKey: record.recordKey,
+    displayValue: record.displayValue,
+  }));
+
   return {
-    quickReferenceRecords: [] as QuickReferenceRecord[],
-    quickReferenceKeyDisplayPairs: [] as QuickReferenceKeyDisplayPair[],
-    loadingState: "idle" as const,
-    getRecordIdByRecord: (_record: QuickReferenceRecord) =>
-      null as string | null,
+    quickReferenceRecords,
+    quickReferenceKeyDisplayPairs,
+    loadingState,
+    getRecordIdByRecord: (record: QuickReferenceRecord) => record.recordKey,
   };
 }
 

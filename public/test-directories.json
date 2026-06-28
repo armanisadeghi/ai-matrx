@@ -24,10 +24,6 @@
     "name": "camera-test"
   },
   {
-    "path": "/demos/tests/chat-tests",
-    "name": "chat-tests"
-  },
-  {
     "path": "/demos/tests/direct-chat-test",
     "name": "direct-chat-test"
   },
@@ -106,9 +102,5 @@
   {
     "path": "/demos/tests/windows",
     "name": "windows"
-  },
-  {
-    "path": "/demos/tests/workflow-source-config",
-    "name": "workflow-source-config"
   }
 ]

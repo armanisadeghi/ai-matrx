@@ -7,34 +7,6 @@ import { PageSpecificHeader } from "./PageSpecificHeaderPortal";
 
 export { PageSpecificHeader } from "./PageSpecificHeaderPortal";
 
-interface ChatHeaderProps {
-  baseRoute?: string;
-}
-
-export function ChatHeader({ baseRoute = "/chat" }: ChatHeaderProps) {
-  const pathname = usePathname();
-  const [ChatHeaderCompact, setChatHeaderCompact] = useState<any>(null);
-
-  useEffect(() => {
-    if (!pathname?.includes("/chat")) return;
-    import("@/features/chat/components/header/ChatHeaderCompact").then(
-      (module) => {
-        setChatHeaderCompact(() => module.ChatHeaderCompact);
-      },
-    );
-  }, [pathname]);
-
-  if (!pathname?.includes("/chat") || !ChatHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <ChatHeaderCompact baseRoute={baseRoute} />
-    </PageSpecificHeader>
-  );
-}
-
 interface RecipeViewHeaderProps {
   recipeId: string;
 }
