@@ -1,10 +1,12 @@
 -- ============================================================================
 -- STRAGGLER DETECTOR — finds tables left behind when their batch moved.
 -- Run via the Supabase MCP (execute_sql), project txzxabzwovsujtloxrus.
--- Three detectors, increasing fuzziness. A finding is a CANDIDATE, not a verdict —
--- always characterize (rows, FKs, function refs, code grep) before acting, because
--- a name collision can be three legitimately-distinct tables (e.g. public.category
--- vs app.category vs skill.category) rather than a straggler.
+-- Four detectors. A finding is a CANDIDATE, not a verdict — always characterize (rows,
+-- FKs, function refs, code grep) before acting, because a name collision can be three
+-- legitimately-distinct tables (e.g. public.category vs app.category vs skill.category).
+-- ⚠️ A-C scan TABLES ONLY (relkind='r'). The #1 shim type is a leftover compat VIEW
+-- (public.cx_conversation_summary -> chat.*, public.agx_context_menu_view -> agent.*) —
+-- those hide from A-C. ALWAYS run Detector D too.
 -- ============================================================================
 
 -- ── DETECTOR A: cross-schema name collision ─────────────────────────────────
@@ -63,3 +65,18 @@ from d dom join d pub
   on dom.base = pub.base and dom.tbl <> pub.tbl and dom.schema <> pub.schema
 where dom.rows = 0 and pub.rows > 0 and pub.schema = 'public'
 order by old_rows desc;
+
+-- ── DETECTOR D: leftover compat VIEWS over a moved schema (the shim hunter) ──
+-- A public view whose body SELECTs from a domain schema is almost always a rename
+-- shim (public.cx_conversation_summary = SELECT … FROM chat.conversation_summary).
+-- Characterize each: a 1:1 `SELECT … FROM <schema>.<x>` is a pure shim (repoint
+-- consumers + DROP); a multi-table aggregation that merely *joins* a domain table is
+-- a real feature view (keep). Watch for divergence — two views (public copy vs the
+-- moved one) read by different consumers can drift out of sync.
+select c.relname as public_view,
+  array(select distinct (m)[1] from regexp_matches(pg_get_viewdef(c.oid, true),
+        '\m(chat|agent|skill|tool|app|workflow|context|files|workspace|workbench|iam|runtime)\.', 'g') m) as references_schemas
+from pg_class c join pg_namespace n on n.oid = c.relnamespace
+where c.relkind in ('v','m') and n.nspname = 'public'
+  and pg_get_viewdef(c.oid, true) ~* '\m(chat|agent|skill|tool|app|workflow|context|files|workspace|workbench|iam|runtime)\.'
+order by c.relname;
