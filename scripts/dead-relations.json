@@ -868,26 +868,26 @@
     {
       "relation": "invitation_codes",
       "old": "public.invitation_codes",
-      "newSchema": "user",
-      "new": "user.invitation_codes",
+      "newSchema": "users",
+      "new": "users.invitation_codes",
       "since": "2026-06-27",
-      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('invitation_codes')."
+      "reason": "moved to users schema + canonicalized (clean cut). Use .schema('users').from('invitation_codes')."
     },
     {
       "relation": "invitation_requests",
       "old": "public.invitation_requests",
-      "newSchema": "user",
-      "new": "user.invitation_requests",
+      "newSchema": "users",
+      "new": "users.invitation_requests",
       "since": "2026-06-27",
-      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('invitation_requests')."
+      "reason": "moved to users schema + canonicalized (clean cut). Use .schema('users').from('invitation_requests')."
     },
     {
       "relation": "profiles",
       "old": "public.profiles",
-      "newSchema": "user",
-      "new": "user.profiles",
+      "newSchema": "users",
+      "new": "users.profiles",
       "since": "2026-06-27",
-      "reason": "moved to user schema + canonicalized (clean cut). Use .schema('user').from('profiles')."
+      "reason": "moved to users schema + canonicalized (clean cut). Use .schema('users').from('profiles')."
     },
     {
       "relation": "processed_documents",
