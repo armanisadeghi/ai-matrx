@@ -53,7 +53,7 @@ import { getShareableResource } from "./registry";
 
 type RpcPermissionRow =
   Database["public"]["Functions"]["get_resource_permissions"]["Returns"][number];
-type PermissionsTableRow = Database["public"]["Tables"]["permissions"]["Row"];
+type PermissionsTableRow = Database["iam"]["Tables"]["permissions"]["Row"];
 
 function errMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
