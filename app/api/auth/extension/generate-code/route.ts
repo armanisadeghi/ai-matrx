@@ -34,7 +34,7 @@ export async function POST() {
 
     // Store code in database
     const { error: insertError } = await supabase
-      .from('extension_auth_codes')
+      .schema('extend').from('extension_auth_codes')
       .insert({
         code,
         user_id: user.id,

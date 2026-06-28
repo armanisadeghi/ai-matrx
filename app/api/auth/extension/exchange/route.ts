@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Look up code
     const { data: authCode, error: lookupError } = await supabase
-      .from('extension_auth_codes')
+      .schema('extend').from('extension_auth_codes')
       .select('*')
       .eq('code', code)
       .eq('used', false)
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (expiresAt < new Date()) {
       // Delete expired code
       await supabase
-        .from('extension_auth_codes')
+        .schema('extend').from('extension_auth_codes')
         .delete()
         .eq('code', code);
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Mark code as used (prevents reuse)
     const { error: updateError } = await supabase
-      .from('extension_auth_codes')
+      .schema('extend').from('extension_auth_codes')
       .update({ used: true })
       .eq('code', code);
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     // Clean up used codes older than 1 hour
     await supabase
-      .from('extension_auth_codes')
+      .schema('extend').from('extension_auth_codes')
       .delete()
       .lt('expires_at', new Date(Date.now() - 60 * 60 * 1000).toISOString());
 

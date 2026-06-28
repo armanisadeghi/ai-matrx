@@ -46,6 +46,29 @@ New domain schema **`communication`** created for messaging tables (sms_*, dm_*,
 
 ---
 
+## `extend` schema — Chrome-extension tables (2026-06-27) ✅ MOVED
+
+Moved the 8 matrx-extend (Chrome extension) tables out of `public` into the pre-planned **`extend`**
+schema and canonicalized them. **All 8 tables EMPTY (0 rows) → zero data-loss risk; a single clean cut, no shim.**
+Migrations: `migrations/canonicalize_wbx_entities_pre_move.sql` + `migrations/move_extension_tables_to_extend_schema.sql` (applied + verified live, ledgered). Proposal: [proposals/extend-schema-cutover.md](./proposals/extend-schema-cutover.md).
+
+| Table | Token | Variant | Notes |
+|---|---|---|---|
+| extend.wbx_capture | wbx_capture | entity | `apply_rls` entity; +visibility; user_id→created_by; `verify_canonical_ok=true`, zero FAIL/WARN |
+| extend.wbx_seo_audit | wbx_seo_audit | entity | same |
+| extend.wbx_screenshot | wbx_screenshot | entity | same |
+| extend.wbx_pattern | wbx_pattern | entity | same; UNIQUE→`(created_by,domain,name)` |
+| extend.wbx_highlight | wbx_highlight | entity (owner RLS) | +visibility/created_by; **keeps `is_deleted`** (app soft-delete); owner-by-created_by RLS |
+| extend.wbx_guidance | wbx_guidance | entity (owner RLS) | +visibility/created_by; **keeps `is_deleted`** (cross-machine **tombstone** must stay readable — canonical `deleted_at` RLS would break guidance sync); owner-by-created_by RLS |
+| extend.wbx_recipe | — | reference | global read-all catalog (no owner); move only |
+| extend.extension_auth_codes | — | auth plumbing | ephemeral OAuth handshake; keeps `user_id` owner RLS; move only |
+
+- **Excluded** (not primarily the extension): `extractor` (generic PDF/scraper config), `user_bookmarks` (canvas bookmarks, FK→`shared_canvas_items`, registered entity `user_bookmark`).
+- **Consumers repointed:** matrx-extend `src/lib/supabase/queries.ts`, `src/lib/highlights/queries.ts`(+`types.ts`), `src/lib/data-pattern/recipes.ts`; matrx-frontend `app/api/auth/extension/{exchange,generate-code}/route.ts` → `.schema('extend')`. aidream: no logic consumers; `db/models/extend.py` in sync. `scripts/dead-relations.json` + `platform.deprecated_relations` registered; `pnpm check:dead-relations` green.
+- **⛔ One external step to bring the extension back online (NOT MCP-reachable, like `communication` Phase 2):** add **`extend`** to the project's PostgREST **Exposed Schemas** (dashboard → Settings → API → *append*, don't replace) — `--schema extend` is already in `pnpm db-types`. Until exposed, every supabase-js read of these tables 404s. Acceptable: the extension is down with the rest of the system.
+
+---
+
 ## Path to the DROP phase — what's left (2026-06-25 live inventory)
 
 Live DB: **394 base tables · 57 retrofitted · 0 org-first RLS on public · 57 tables carry `project_id`/`task_id` litter · 13 rename compat-views · 62 empty tables · `pg_stat_statements` ON.**
