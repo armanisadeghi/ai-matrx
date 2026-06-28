@@ -36,7 +36,7 @@ export async function GET() {
     const { data: categories, error } = await supabase
       .schema("platform")
       .from("categories")
-      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .eq("dimension", "feedback")
       .order("position", { ascending: true });
 
@@ -78,10 +78,11 @@ export async function POST(request: NextRequest) {
         name,
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
         position: sort_order,
+        color,
         is_system: true,
-        metadata: { description: description || null, color, is_active: true },
+        metadata: { description: description || null, is_active: true },
       })
-      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .single();
 
     if (error) {

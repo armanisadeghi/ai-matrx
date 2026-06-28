@@ -159,6 +159,11 @@ export async function createAgentAppCategory(
       {
         dimension: "app",
         name: input.name,
+        slug: input.name
+          ?.toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, ""),
         icon: input.icon ?? null,
         position: input.sort_order ?? 0,
         metadata: {
@@ -182,9 +187,19 @@ export async function updateAgentAppCategory(
   if (input.name !== undefined) patch.name = input.name;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.sort_order !== undefined) patch.position = input.sort_order;
-  // description lives in metadata; set the whole metadata object when provided
+  // description lives in metadata; merge atomically so legacy_id/legacy_table
+  // and any other existing metadata keys are not wiped by a partial update.
   if (input.description !== undefined) {
-    patch.metadata = { description: input.description };
+    const { data: current } = await supabase
+      .schema("platform").from("categories")
+      .select("metadata")
+      .eq("id", input.id)
+      .eq("dimension", "app")
+      .single();
+    patch.metadata = {
+      ...((current?.metadata as Record<string, unknown>) ?? {}),
+      description: input.description,
+    };
   }
   const { data, error } = await supabase
     .schema("platform").from("categories")

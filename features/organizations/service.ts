@@ -918,7 +918,9 @@ function transformMemberFromDb(dbRecord: any): OrganizationMemberWithUser {
 }
 
 /**
- * Transform database invitation record to application format
+ * Transform database invitation record to application format.
+ * iam.invitations columns: created_at (was invited_at), created_by (was invited_by).
+ * email_sent / email_sent_at live in metadata, not top-level columns.
  */
 function transformInvitationFromDb(dbRecord: any): OrganizationInvitation {
   return {
@@ -927,8 +929,8 @@ function transformInvitationFromDb(dbRecord: any): OrganizationInvitation {
     email: dbRecord.email,
     token: dbRecord.token,
     role: dbRecord.role,
-    invitedAt: dbRecord.invited_at ?? dbRecord.created_at,
-    invitedBy: dbRecord.invited_by ?? dbRecord.created_by,
+    invitedAt: dbRecord.created_at,
+    invitedBy: dbRecord.created_by,
     expiresAt: dbRecord.expires_at,
   };
 }

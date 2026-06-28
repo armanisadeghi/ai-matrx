@@ -20,10 +20,33 @@ import type {
   SkillType,
 } from "../types";
 
-/** Supabase-generated Row shape for skill.category — used when reads
- * go direct via the Supabase client (vs. the Python `/api/skills/
- * categories` GET which strips `user_id`). */
-type SklCategoryRow = Database["skill"]["Tables"]["category"]["Row"];
+/** Aliased row shape returned by the `platform.categories` select used in
+ * `fetchSkillCategories` / `createCategoryThunk` / `updateCategoryThunk`.
+ * PostgREST column aliases map the new column names back to the old shape:
+ *   category_key:slug, label:name, icon_name:icon,
+ *   parent_category_id:parent_id, sort_order:position,
+ *   description:metadata->>description  (text | null)
+ *   is_active:metadata->>is_active      (text | null — "true"/"false"/null)
+ *   user_id:metadata->>user_id          (text | null)
+ *   metadata                            (Json — full blob for merge-patch writes)
+ * `skill.category` no longer exists — this type replaces the deleted table's Row. */
+type SklCategoryRow = {
+  id: string;
+  category_key: string | null;
+  label: string;
+  description: string | null;
+  icon_name: string | null;
+  color: string | null;
+  parent_category_id: string | null;
+  sort_order: number | null;
+  /** JSONB text extraction — "true" | "false" | null (never a real boolean). */
+  is_active: string | null;
+  /** JSONB text extraction — UUID string or null. */
+  user_id: string | null;
+  /** Full metadata blob — kept in CategoryRow so updateCategoryThunk can
+   * merge-patch it without wiping fields it didn't touch. */
+  metadata: Json | null;
+};
 
 /** Supabase-generated Row shape for skill.resource — reads + writes go
  * direct (no backend endpoint today). */
@@ -152,19 +175,28 @@ export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
 
 /** Adapter for rows read straight off `platform.categories` (dimension='skill') via Supabase
  * (`.schema('platform').from('categories').select(...)`). Column aliases in the select
- * map new names back to the old shape so this converter stays unchanged. */
+ * map new names back to the old shape so this converter stays unchanged.
+ *
+ * NOTE: `is_active` and `user_id` come from `metadata->>` JSONB extraction, so
+ * PostgREST returns them as `string | null`, not booleans. Use strict string
+ * comparison (`=== "true"`) — `Boolean("false")` is `true` and would be wrong.
+ *
+ * `metadata` (the full blob) is preserved on the view model so that
+ * `updateCategoryThunk` can merge-patch without wiping unrelated fields. */
 export function supabaseRowToCategoryRow(row: SklCategoryRow): CategoryRow {
   return {
     id: row.id,
-    categoryKey: row.category_key,
+    categoryKey: row.category_key ?? "",
     label: row.label,
     description: row.description ?? null,
     iconName: row.icon_name ?? null,
     color: row.color ?? null,
     parentCategoryId: row.parent_category_id ?? null,
     sortOrder: row.sort_order ?? 0,
-    isActive: Boolean(row.is_active),
+    // metadata->>is_active is a text field ("true"/"false"/null), never a real boolean.
+    isActive: row.is_active === "true",
     userId: row.user_id ?? null,
+    metadata: row.metadata ? jsonToConfig(row.metadata) : null,
   };
 }
 

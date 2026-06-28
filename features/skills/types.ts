@@ -223,6 +223,10 @@ export interface CategoryRow {
    * via the Python `/api/skills/categories` GET (which strips it
    * today). The editor uses this to gate write-paths. */
   userId?: string | null;
+  /** Full `platform.categories.metadata` blob. Kept so `updateCategoryThunk`
+   * can merge-patch it without wiping unrelated fields (description, is_active,
+   * legacy_table, etc. all live here). Absent on wire-path rows (Python API). */
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface IngestReport {

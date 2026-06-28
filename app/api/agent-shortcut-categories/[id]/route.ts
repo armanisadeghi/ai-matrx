@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 // Aliased select that restores the old column names for callers.
+// platform.categories renames: label→name, icon_name→icon, sort_order→position,
+// parent_category_id→parent_id. Metadata-backed fields surfaced via json path.
 const CATEGORY_SELECT = [
   "id",
   "label:name",
@@ -21,6 +23,18 @@ const CATEGORY_SELECT = [
   "project_id:metadata->>project_id",
   "task_id:metadata->>task_id",
 ].join(",");
+
+/**
+ * `metadata->>field` extracts JSONB values as text, so boolean fields come back
+ * as the strings "true" / "false". Coerce them back to real booleans so
+ * downstream consumers (categoryRowToDef) receive the correct type.
+ */
+function coerceCategoryRow<T extends { is_active?: unknown }>(row: T): T {
+  if (typeof row.is_active === "string") {
+    return { ...row, is_active: row.is_active === "true" };
+  }
+  return row;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -64,7 +78,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: coerceCategoryRow(data) });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcut-categories/[id]:", error);
     return NextResponse.json(
@@ -177,7 +191,7 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: coerceCategoryRow(data) });
   } catch (error) {
     console.error("Error in PATCH /api/agent-shortcut-categories/[id]:", error);
     return NextResponse.json(

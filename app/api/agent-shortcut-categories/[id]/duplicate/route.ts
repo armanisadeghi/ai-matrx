@@ -121,6 +121,14 @@ export async function POST(
         ? overrides.sort_order
         : source.sort_order;
 
+    // `metadata->>is_active` returns a string; coerce to boolean before storing.
+    const sourceIsActive =
+      source.is_active === undefined
+        ? true
+        : typeof source.is_active === "string"
+          ? source.is_active === "true"
+          : Boolean(source.is_active);
+
     // Build platform.categories row — map old field names to new schema.
     // Metadata-backed fields from source come back as aliased top-level strings.
     const insertPayload = {
@@ -137,7 +145,7 @@ export async function POST(
       metadata: {
         ...(source.metadata as Record<string, unknown> | null ?? {}),
         description: source.description ?? null,
-        is_active: source.is_active !== undefined ? source.is_active : true,
+        is_active: sourceIsActive,
         enabled_features: source.enabled_features ?? null,
         // Preserve ownership exactly — admins keep global, users keep user,
         // orgs keep org, etc.
@@ -188,7 +196,9 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ data }, { status: 201 });
+    // `metadata->>is_active` returns string; coerce to boolean for consumers.
+    const coerced = { ...data, is_active: data.is_active === "true" || data.is_active === true };
+    return NextResponse.json({ data: coerced }, { status: 201 });
   } catch (error) {
     console.error(
       "Error in POST /api/agent-shortcut-categories/[id]/duplicate:",

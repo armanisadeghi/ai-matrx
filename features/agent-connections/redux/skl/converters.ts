@@ -14,8 +14,29 @@ type RenderDefRow = Database["skill"]["Tables"]["render_definition"]["Row"];
 type RenderComponentRow =
   Database["skill"]["Tables"]["render_component"]["Row"];
 type ResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
-type ShortcutCategoryDbRow =
-  Database["public"]["Tables"]["shortcut_categories"]["Row"];
+
+/**
+ * Row shape returned by fetchRenderBlockCategories after the May 2026 migration
+ * to platform.categories. The query aliases new column names back to the old
+ * consumer-expected names via PostgREST syntax (e.g. `label:name`). user_id /
+ * project_id / task_id are no longer top-level columns on platform.categories
+ * (they moved into metadata) and are not selected.
+ */
+type PlatformCategoryAliasedRow = {
+  id: string;
+  placement_type: string;
+  label: string | null;            // aliased from: name
+  description: string | null;      // aliased from: metadata->>description
+  icon_name: string | null;        // aliased from: icon
+  color: string | null;
+  sort_order: number | null;        // aliased from: position
+  is_active: string | null;         // aliased from: metadata->>is_active (text from jsonb ->>)
+  metadata: Record<string, unknown> | null;
+  parent_category_id: string | null; // aliased from: parent_id
+  organization_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export function rowToSklRenderDefinition(
   row: RenderDefRow,
@@ -116,21 +137,30 @@ export function rowToSklResource(row: ResourceRow): SklResource {
 }
 
 export function rowToShortcutCategory(
-  row: ShortcutCategoryDbRow,
+  row: PlatformCategoryAliasedRow,
 ): ShortcutCategoryRow {
+  // is_active is extracted via metadata->>is_active which returns a text string;
+  // coerce to boolean. Absent/null means true (default active).
+  const isActive =
+    row.is_active === null || row.is_active === undefined
+      ? true
+      : row.is_active !== "false";
+
   return {
     id: row.id,
-    label: row.label,
+    label: row.label ?? "",
     description: row.description,
-    iconName: row.icon_name,
+    iconName: row.icon_name ?? "",
     color: row.color,
     parentCategoryId: row.parent_category_id,
     sortOrder: row.sort_order ?? 0,
-    isActive: row.is_active ?? true,
+    isActive,
     placementType: row.placement_type,
-    userId: row.user_id,
+    // user_id / project_id / task_id no longer exist as top-level columns on
+    // platform.categories (moved into metadata). Default to null.
+    userId: null,
     organizationId: row.organization_id,
-    projectId: row.project_id,
-    taskId: row.task_id,
+    projectId: null,
+    taskId: null,
   };
 }

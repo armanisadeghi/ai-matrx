@@ -26,30 +26,30 @@ interface ScopedQueryArgs {
 }
 
 /**
- * Apply scope filter to a Supabase select query.
- * - user scope: rows where user_id = current user, plus is_system rows
- * - organization scope: rows where organization_id = scopeId
- * - project scope: rows where project_id = scopeId
- * - task scope: rows where task_id = scopeId
+ * Apply scope filter to a Supabase select query against platform.categories.
+ *
+ * After the May 2026 migration to platform.categories, only organization_id
+ * survives as a top-level scope column. user_id / project_id / task_id moved
+ * into the metadata jsonb and cannot be used in PostgREST eq() filters without
+ * a generated column or RPC.
+ *
+ * - user scope: no explicit filter — RLS + dimension='shortcut' is sufficient;
+ *   platform-level shortcut categories are org/system-scoped, not user-scoped.
+ * - organization scope: filter organization_id = scopeId (still a real column)
+ * - project / task scope: no explicit filter — these scopes don't apply to
+ *   platform.categories; rely on RLS.
  */
 function applyScopeFilter<Q extends { eq: Function; is: Function }>(
   query: Q,
   args: ScopedQueryArgs,
-  userId: string | null,
+  _userId: string | null,
 ): Q {
-  if (args.scope === "user") {
-    // RLS handles the "owned + system" logic; explicit filter on user_id ensures
-    // we don't return other users' rows even if RLS would allow it.
-    return userId ? (query.eq("user_id", userId) as Q) : (query.is("user_id", null) as Q);
+  if (args.scope === "organization" && args.scopeId) {
+    return query.eq("organization_id", args.scopeId) as Q;
   }
-  if (!args.scopeId) return query;
-  const column =
-    args.scope === "organization"
-      ? "organization_id"
-      : args.scope === "project"
-        ? "project_id"
-        : "task_id";
-  return query.eq(column, args.scopeId) as Q;
+  // user / project / task scopes: no top-level column available on
+  // platform.categories — RLS covers the authorization boundary.
+  return query;
 }
 
 /**
@@ -211,7 +211,12 @@ export const fetchRenderBlockCategories = createAsyncThunk(
       const userId = userData?.user?.id ?? null;
       let query = supabase
         .schema("platform").from("categories")
-        .select("id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, parent_category_id:parent_id, organization_id, user_id, project_id, task_id, created_at, updated_at")
+        // user_id / project_id / task_id moved into metadata in platform.categories;
+        // they are not top-level columns. Scope filtering below falls back to
+        // organization_id (the only surviving top-level scope column). The metadata
+        // equivalents are not used for scoping at query time — RLS + dimension filter
+        // is sufficient for this read.
+        .select("id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, parent_category_id:parent_id, organization_id, created_at, updated_at")
         .eq("dimension", "shortcut")
         .order("position", { ascending: true, nullsFirst: false })
         .order("name", { ascending: true });

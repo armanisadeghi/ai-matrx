@@ -40,7 +40,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const { data: category, error } = await supabase
       .schema("platform")
       .from("categories")
-      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .eq("dimension", "feedback")
       .eq("id", id)
       .single();
@@ -80,19 +80,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (body.slug !== undefined)
       updates.slug = body.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-");
     if (body.sort_order !== undefined) updates.position = body.sort_order;
+    // color is a real top-level column
+    if (body.color !== undefined) updates.color = body.color;
     // metadata-backed fields
     if (body.description !== undefined)
       metadataUpdates.description = body.description || null;
-    if (body.color !== undefined) metadataUpdates.color = body.color;
     if (body.is_active !== undefined) metadataUpdates.is_active = body.is_active;
 
     if (Object.keys(metadataUpdates).length > 0) {
-      // merge into existing metadata via jsonb_build_object coalesce approach
-      // PostgREST merges JSONB with || operator when using the json_patch path
-      // We pass the full metadata merge as a plain object update here so PostgREST
-      // stores it; callers must send atomic patches (one field at a time) or all
-      // metadata fields together. This is acceptable for admin routes.
-      updates.metadata = metadataUpdates;
+      // Merge metadata atomically: fetch the current value, then shallow-merge
+      // only the changed keys so existing fields (legacy_id, legacy_table, etc.)
+      // are not wiped. A plain .update({ metadata: {...} }) would overwrite the
+      // whole JSONB column with only the subset we know about.
+      const { data: current } = await supabase
+        .schema("platform")
+        .from("categories")
+        .select("metadata")
+        .eq("id", id)
+        .eq("dimension", "feedback")
+        .single();
+      updates.metadata = { ...((current?.metadata as Record<string, unknown>) ?? {}), ...metadataUpdates };
     }
 
     if (Object.keys(updates).length === 0) {
@@ -108,7 +115,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .update(updates)
       .eq("dimension", "feedback")
       .eq("id", id)
-      .select("id, name, slug, description:metadata->>description, color:metadata->>color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
       .single();
 
     if (error) {

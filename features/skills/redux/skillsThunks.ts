@@ -184,7 +184,7 @@ export const fetchSkillCategories = createAsyncThunk<
     .schema("platform")
     .from("categories")
     .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
     )
     .eq("dimension", "skill")
     .eq("metadata->>is_active", "true");
@@ -556,7 +556,7 @@ export const createCategoryThunk = createAsyncThunk<
     .from("categories")
     .insert(insertPayload)
     .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
     )
     .single();
   if (error) throw new Error(error.message);
@@ -645,16 +645,15 @@ export const updateCategoryThunk = createAsyncThunk<
   if (patch.sortOrder !== undefined) topLevel.position = patch.sortOrder;
   if (patch.isActive !== undefined) metadataPatch.is_active = patch.isActive;
 
-  // Merge metadata patch if any metadata fields changed. Use jsonb concat operator
-  // via a Postgres function isn't available in supabase-js directly, so we build
-  // the full metadata object from cached row + patch fields. If no cached row,
-  // we fall back to metadata patch only (Postgres merges jsonb with ||).
+  // Merge metadata patch if any metadata fields changed. supabase-js UPDATE
+  // replaces the whole jsonb column, so we must provide the full merged object.
+  // `cached.metadata` (populated from the select's `metadata` column) is the
+  // base; we merge the changed fields on top. Falls back to {} if the row wasn't
+  // in the slice cache yet (first write after a page load won't wipe anything
+  // because the DB still holds the real metadata — the worst case is a race).
   const updateBody: Record<string, unknown> = { ...topLevel };
   if (Object.keys(metadataPatch).length > 0) {
-    // We can't do a partial jsonb merge directly in supabase-js UPDATE, so we
-    // set metadata to the merged value using the cached row as the base.
-    const existingMeta =
-      (cached as unknown as { metadata?: Record<string, unknown> })?.metadata ?? {};
+    const existingMeta: Record<string, unknown> = cached?.metadata ?? {};
     updateBody.metadata = { ...existingMeta, ...metadataPatch };
   }
 
@@ -671,7 +670,7 @@ export const updateCategoryThunk = createAsyncThunk<
     .eq("id", id)
     .eq("dimension", "skill")
     .select(
-      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id",
+      "id, category_key:slug, label:name, description:metadata->>description, icon_name:icon, color, parent_category_id:parent_id, sort_order:position, is_active:metadata->>is_active, user_id:metadata->>user_id, metadata",
     )
     .single();
   if (error) throw new Error(error.message);
@@ -709,9 +708,7 @@ export const deleteCategoryThunk = createAsyncThunk<
     // Supabase direct soft-delete via platform.categories (dimension='skill').
     // is_active moved to metadata; merge false into the existing metadata jsonb.
     const cachedCat = state.skills.categories.byId[id];
-    const existingMeta =
-      (cachedCat as unknown as { metadata?: Record<string, unknown> })
-        ?.metadata ?? {};
+    const existingMeta: Record<string, unknown> = cachedCat?.metadata ?? {};
     const { error } = await supabase
       .schema("platform")
       .from("categories")

@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { applyScopeToInsertPayload } from "../_lib/apply-scope-to-insert";
 
 // Aliased select that restores the old column names for callers.
-// platform.categories renames: name→label, icon→icon_name, position→sort_order,
-// parent_id→parent_category_id. Metadata-backed fields surfaced via json path.
+// platform.categories renames: label→name, icon_name→icon, sort_order→position,
+// parent_category_id→parent_id. Metadata-backed fields surfaced via json path.
 const CATEGORY_SELECT = [
   "id",
   "label:name",
@@ -24,6 +24,18 @@ const CATEGORY_SELECT = [
   "project_id:metadata->>project_id",
   "task_id:metadata->>task_id",
 ].join(",");
+
+/**
+ * `metadata->>field` extracts JSONB values as text, so boolean fields come back
+ * as the strings "true" / "false". Coerce them back to real booleans so
+ * downstream consumers (categoryRowToDef) receive the correct type.
+ */
+function coerceCategoryRow<T extends { is_active?: unknown }>(row: T): T {
+  if (typeof row.is_active === "string") {
+    return { ...row, is_active: row.is_active === "true" };
+  }
+  return row;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,7 +119,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data: data ?? [] });
+    return NextResponse.json({ data: (data ?? []).map(coerceCategoryRow) });
   } catch (error) {
     console.error("Error in GET /api/agent-shortcut-categories:", error);
     return NextResponse.json(
@@ -199,7 +211,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data }, { status: 201 });
+    return NextResponse.json({ data: coerceCategoryRow(data) }, { status: 201 });
   } catch (error) {
     console.error("Error in POST /api/agent-shortcut-categories:", error);
     return NextResponse.json(

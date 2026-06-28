@@ -24669,8 +24669,18 @@ export type Database = {
           email: string
           expires_at: string
           id: string
+          org_created_at: string
+          org_created_by: string
+          org_description: string
+          org_is_personal: boolean
+          org_logo_file_id: string
+          org_logo_url: string
+          org_name: string
+          org_settings: Json
+          org_slug: string
+          org_updated_at: string
+          org_website: string
           organization_id: string
-          organization_name: string
           role: string
           status: string
           token: string

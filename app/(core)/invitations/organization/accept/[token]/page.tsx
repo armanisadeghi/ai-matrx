@@ -112,7 +112,17 @@ export default function AcceptInvitationPage() {
         ...invitationOnly,
         organizations: {
           id: invitationOnly.organization_id,
-          name: invitationOnly.organization_name,
+          name: invitationOnly.org_name,
+          slug: invitationOnly.org_slug,
+          description: invitationOnly.org_description,
+          logo_url: invitationOnly.org_logo_url,
+          logo_file_id: invitationOnly.org_logo_file_id,
+          website: invitationOnly.org_website,
+          is_personal: invitationOnly.org_is_personal,
+          settings: invitationOnly.org_settings,
+          created_at: invitationOnly.org_created_at,
+          updated_at: invitationOnly.org_updated_at,
+          created_by: invitationOnly.org_created_by,
         },
       };
 
