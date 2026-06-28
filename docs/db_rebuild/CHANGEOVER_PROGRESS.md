@@ -4,7 +4,7 @@
 >
 > **Process + per-table recipe:** the **`db-table-retrofit` skill** (`.claude/skills/db-table-retrofit/`). **Standard:** `db-core-standards-and-automation.md`. **RLS:** `db-canonical-rls.md` (+ sweep `db-canonical-rls-sweep-todo.md`). **Cutover safety:** `db-staging-and-cutover-plan.md`. **Live docs index:** `README.md` → `official/` + `CUTOVER_HANDOFF.md`.
 
-**Last updated:** 2026-06-28 (sms ×5, dm_conversation_participants, user_email_preferences, user_preferences, user_feedback, agent_user_kv, app_settings, window_sessions — 12 tables) · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
+**Last updated:** 2026-06-28 (sms ×5, dm_conversation_participants, user_email_preferences, user_preferences, user_feedback, agent_user_kv, app_settings, window_sessions — 12 tables; reg schema: kg_* ×6 + scope_*_suggestions ×3 + context_item_suggestions + ner_canonicalizer_shadow — 11 tables) · **DB:** `txzxabzwovsujtloxrus` (Matrx Main) · **Scope:** 434 public base tables.
 
 ---
 
@@ -19,6 +19,30 @@
 | Registered in `platform.entity_types` | 68 |
 
 **Wave status:** 0 Entity registry ✅ · 1 Scaffolding/RLS engine ✅ · 2 Associations + categories + user_entity_state ✅ · **3 Base retrofit — 87 tables done, continuing** (see [compat-view-drop-repoint-list.md](./compat-view-drop-repoint-list.md)) · **4 Renames — file→cld + ctx_war_room→wr ✅** · 5 Org-first RLS + litter drops ⏳ (PITR-gated)
+
+---
+
+## `reg` schema — KG/suggestion pipeline tables (2026-06-27) ✅ MOVED + CANONICALIZED
+
+New domain schema **`reg`** created for knowledge-graph sweep, NER, and scope/context suggestion pipeline tables. **11 tables moved, all verified zero-FAIL.** Migrations: `reg_tables_prep.sql` + `reg_tables_schema_move.sql` + `reg_tables_rls_and_registry.sql` + `reg_tables_fix_fails.sql` (applied + verified live, ledgered).
+
+**Pre-move prep:** Added `id uuid` to `kg_suggestion_ack` (had composite PK only), added `visibility` column to all 10 entity tables, backfilled `created_by` from `user_id`, dropped legacy `set_updated_at` double-fire triggers, dropped non-canonical `trg_kg_sweep_state_touch`. Fixed `kg_sweep_queue` missing `created_at` (was using `enqueued_at`), fixed `shareable_resource_registry` token mismatch (plural→singular) for two tables.
+
+| Table | Token | Variant | Notes |
+|---|---|---|---|
+| reg.kg_alerts | kg_alert | entity | +visibility; legacy user_id WARN (permanent til drop) |
+| reg.kg_suggestion_ack | kg_suggestion_ack | entity | Added id uuid; composite PK (user_id,suggestion_id) retained |
+| reg.kg_value_matches | kg_value_match | entity | +visibility |
+| reg.ner_canonicalizer_shadow | ner_shadow | entity | +visibility |
+| reg.kg_sweep_queue | kg_sweep_queue | entity | +created_at (was using enqueued_at); +visibility |
+| reg.kg_sweep_run | kg_sweep_run | entity | +visibility; stamp_run_org + emit_run_lifecycle triggers kept |
+| reg.kg_sweep_state | kg_sweep_state | ledger | Registered in entity_types (was missing); ledger variant (no created_by/user writes) |
+| reg.scope_suggestions | scope_suggestion | entity | +visibility |
+| reg.scope_association_suggestions | scope_association_suggestion | entity | +visibility; registry token fixed (plural→singular) |
+| reg.scope_item_value_suggestions | scope_item_value_suggestion | entity | +visibility; registry token fixed (plural→singular) |
+| reg.context_item_suggestions | context_item_suggestion | entity | +visibility |
+
+**Status:** All 11 → `verify_canonical_ok=true`. Only permanent WARNs: `legacy_owner_col` (user_id present, drops after soak). `sharing_token SKIP` on KG infra tables (not user-shareable — correct). `reg` schema **not yet PostgREST-exposed** — aidream backend accesses via service_role (no supabase-js direct reads from FE for these tables). PostgREST exposure needed only if FE adds direct reads.
 
 ---
 

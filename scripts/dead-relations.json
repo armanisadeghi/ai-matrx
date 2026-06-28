@@ -232,6 +232,198 @@
       "new": "extend.extension_auth_codes",
       "since": "2026-06-27",
       "reason": "moved to extend schema (Chrome extension auth handshake, clean cut). Use .schema('extend').from('extension_auth_codes')."
+    },
+    {
+      "relation": "emails",
+      "old": "public.emails",
+      "newSchema": "communication",
+      "new": "communication.emails",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('emails')."
+    },
+    {
+      "relation": "dm_conversations",
+      "old": "public.dm_conversations",
+      "newSchema": "communication",
+      "new": "communication.dm_conversations",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('dm_conversations')."
+    },
+    {
+      "relation": "dm_messages",
+      "old": "public.dm_messages",
+      "newSchema": "communication",
+      "new": "communication.dm_messages",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('dm_messages')."
+    },
+    {
+      "relation": "dm_conversation_participants",
+      "old": "public.dm_conversation_participants",
+      "newSchema": "communication",
+      "new": "communication.dm_conversation_participants",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('dm_conversation_participants')."
+    },
+    {
+      "relation": "sms_consent",
+      "old": "public.sms_consent",
+      "newSchema": "communication",
+      "new": "communication.sms_consent",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_consent')."
+    },
+    {
+      "relation": "sms_conversations",
+      "old": "public.sms_conversations",
+      "newSchema": "communication",
+      "new": "communication.sms_conversations",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_conversations')."
+    },
+    {
+      "relation": "sms_media",
+      "old": "public.sms_media",
+      "newSchema": "communication",
+      "new": "communication.sms_media",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_media')."
+    },
+    {
+      "relation": "sms_messages",
+      "old": "public.sms_messages",
+      "newSchema": "communication",
+      "new": "communication.sms_messages",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_messages')."
+    },
+    {
+      "relation": "sms_notification_preferences",
+      "old": "public.sms_notification_preferences",
+      "newSchema": "communication",
+      "new": "communication.sms_notification_preferences",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_notification_preferences')."
+    },
+    {
+      "relation": "sms_notifications",
+      "old": "public.sms_notifications",
+      "newSchema": "communication",
+      "new": "communication.sms_notifications",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_notifications')."
+    },
+    {
+      "relation": "sms_phone_numbers",
+      "old": "public.sms_phone_numbers",
+      "newSchema": "communication",
+      "new": "communication.sms_phone_numbers",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_phone_numbers')."
+    },
+    {
+      "relation": "sms_rate_limits",
+      "old": "public.sms_rate_limits",
+      "newSchema": "communication",
+      "new": "communication.sms_rate_limits",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_rate_limits')."
+    },
+    {
+      "relation": "sms_webhook_logs",
+      "old": "public.sms_webhook_logs",
+      "newSchema": "communication",
+      "new": "communication.sms_webhook_logs",
+      "since": "2026-06-28",
+      "reason": "moved to communication schema (messaging domain, clean cut). Use .schema('communication').from('sms_webhook_logs')."
+    },
+    {
+      "relation": "kg_alerts",
+      "old": "public.kg_alerts",
+      "newSchema": "reg",
+      "new": "reg.kg_alerts",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_alerts')."
+    },
+    {
+      "relation": "kg_suggestion_ack",
+      "old": "public.kg_suggestion_ack",
+      "newSchema": "reg",
+      "new": "reg.kg_suggestion_ack",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_suggestion_ack')."
+    },
+    {
+      "relation": "kg_value_matches",
+      "old": "public.kg_value_matches",
+      "newSchema": "reg",
+      "new": "reg.kg_value_matches",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_value_matches')."
+    },
+    {
+      "relation": "ner_canonicalizer_shadow",
+      "old": "public.ner_canonicalizer_shadow",
+      "newSchema": "reg",
+      "new": "reg.ner_canonicalizer_shadow",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG/NER pipeline, clean cut). Use .schema('reg').from('ner_canonicalizer_shadow')."
+    },
+    {
+      "relation": "kg_sweep_queue",
+      "old": "public.kg_sweep_queue",
+      "newSchema": "reg",
+      "new": "reg.kg_sweep_queue",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG sweep pipeline, clean cut). Use .schema('reg').from('kg_sweep_queue')."
+    },
+    {
+      "relation": "kg_sweep_run",
+      "old": "public.kg_sweep_run",
+      "newSchema": "reg",
+      "new": "reg.kg_sweep_run",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG sweep pipeline, clean cut). Use .schema('reg').from('kg_sweep_run')."
+    },
+    {
+      "relation": "kg_sweep_state",
+      "old": "public.kg_sweep_state",
+      "newSchema": "reg",
+      "new": "reg.kg_sweep_state",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (KG sweep state tracker, clean cut). Use .schema('reg').from('kg_sweep_state')."
+    },
+    {
+      "relation": "scope_suggestions",
+      "old": "public.scope_suggestions",
+      "newSchema": "reg",
+      "new": "reg.scope_suggestions",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_suggestions')."
+    },
+    {
+      "relation": "scope_association_suggestions",
+      "old": "public.scope_association_suggestions",
+      "newSchema": "reg",
+      "new": "reg.scope_association_suggestions",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_association_suggestions')."
+    },
+    {
+      "relation": "scope_item_value_suggestions",
+      "old": "public.scope_item_value_suggestions",
+      "newSchema": "reg",
+      "new": "reg.scope_item_value_suggestions",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_item_value_suggestions')."
+    },
+    {
+      "relation": "context_item_suggestions",
+      "old": "public.context_item_suggestions",
+      "newSchema": "reg",
+      "new": "reg.context_item_suggestions",
+      "since": "2026-06-27",
+      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('context_item_suggestions')."
     }
   ]
 }
