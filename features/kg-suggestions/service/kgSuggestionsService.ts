@@ -26,10 +26,7 @@ import { supabase } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import {
-  isScopesRpcErr,
-  type EntityType,
-} from "@/features/scopes/types";
+import { isScopesRpcErr, type EntityType } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
 import {
   kgSourceKindToEntityType,
@@ -43,9 +40,9 @@ import {
 } from "@/features/kg-suggestions/types";
 
 type AssociationRow =
-  Database["public"]["Tables"]["scope_association_suggestions"]["Row"];
+  Database["rag"]["Tables"]["scope_association_suggestions"]["Row"];
 type ValueRow =
-  Database["public"]["Tables"]["scope_item_value_suggestions"]["Row"];
+  Database["rag"]["Tables"]["scope_item_value_suggestions"]["Row"];
 type SuggestionView = Database["public"]["Views"]["v_scope_suggestions"]["Row"];
 type SuggestionStatsView =
   Database["public"]["Views"]["v_scope_suggestion_stats"]["Row"];
@@ -148,6 +145,7 @@ export async function listKgSuggestions(
   // Per-slot panel: value ledger only.
   if ("scopeItemId" in filter) {
     let q = supabase
+      .schema("rag")
       .from("scope_item_value_suggestions")
       .select("*")
       .eq("target_context_item_id", filter.scopeItemId)
@@ -163,8 +161,14 @@ export async function listKgSuggestions(
   // Both ledgers (global or per-source).
   const isSource = "sourceKind" in filter;
 
-  let assocQ = supabase.from("scope_association_suggestions").select("*");
-  let valueQ = supabase.from("scope_item_value_suggestions").select("*");
+  let assocQ = supabase
+    .schema("rag")
+    .from("scope_association_suggestions")
+    .select("*");
+  let valueQ = supabase
+    .schema("rag")
+    .from("scope_item_value_suggestions")
+    .select("*");
   if (status !== "all") {
     assocQ = assocQ.eq("status", status);
     valueQ = valueQ.eq("status", status);
@@ -234,6 +238,7 @@ async function markDecided(
     patch.decision_note = opts.note?.trim() ? opts.note.trim() : null;
   }
   const { error } = await supabase
+    .schema("rag")
     .from(tableFor(row))
     .update(patch)
     .eq("id", row.id);
@@ -274,6 +279,7 @@ export async function markKgSuggestionAccepted(
  */
 export async function restoreKgSuggestion(row: KgSuggestionRow): Promise<void> {
   const { error } = await supabase
+    .schema("rag")
     .from(tableFor(row))
     .update({
       status: "pending",
@@ -291,6 +297,7 @@ export async function setKgSuggestionStarred(
   starred: boolean,
 ): Promise<void> {
   const { error } = await supabase
+    .schema("rag")
     .from(tableFor(row))
     .update({ is_starred: starred })
     .eq("id", row.id);
@@ -320,6 +327,7 @@ export async function markKgSuggestionsViewed(
   if (valueIds.length) {
     ops.push(
       supabase
+        .schema("rag")
         .from("scope_item_value_suggestions")
         .update({ viewed_at: now })
         .in("id", valueIds)
@@ -329,6 +337,7 @@ export async function markKgSuggestionsViewed(
   if (assocIds.length) {
     ops.push(
       supabase
+        .schema("rag")
         .from("scope_association_suggestions")
         .update({ viewed_at: now })
         .in("id", assocIds)
