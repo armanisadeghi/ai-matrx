@@ -2,6 +2,22 @@
   "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
+      "relation": "agent_run",
+      "old": "public.agent_run",
+      "newSchema": "chat",
+      "new": "chat.agent_run",
+      "since": "2026-06-28",
+      "reason": "moved to chat schema (clean cut). Use .schema('chat').from('agent_run')."
+    },
+    {
+      "relation": "agent_run_stage",
+      "old": "public.agent_run_stage",
+      "newSchema": "chat",
+      "new": "chat.agent_run_stage",
+      "since": "2026-06-28",
+      "reason": "moved to chat schema (component of agent_run, clean cut). Use .schema('chat').from('agent_run_stage')."
+    },
+    {
       "relation": "rs_topic",
       "old": "public.rs_topic",
       "newSchema": "research",
@@ -648,6 +664,38 @@
       "new": "agent.cmp_response_feedback",
       "since": "2026-06-27",
       "reason": "moved to agent schema (clean cut). Use .schema('agent').from('cmp_response_feedback')."
+    },
+    {
+      "relation": "wc_claim",
+      "old": "public.wc_claim",
+      "newSchema": "legal",
+      "new": "legal.wc_claim",
+      "since": "2026-06-27",
+      "reason": "moved to legal schema (clean cut). Use .schema('legal').from('wc_claim')."
+    },
+    {
+      "relation": "wc_report",
+      "old": "public.wc_report",
+      "newSchema": "legal",
+      "new": "legal.wc_report",
+      "since": "2026-06-27",
+      "reason": "moved to legal schema (clean cut). Use .schema('legal').from('wc_report')."
+    },
+    {
+      "relation": "wc_injury",
+      "old": "public.wc_injury",
+      "newSchema": "legal",
+      "new": "legal.wc_injury",
+      "since": "2026-06-27",
+      "reason": "moved to legal schema (clean cut). Use .schema('legal').from('wc_injury')."
+    },
+    {
+      "relation": "wc_impairment_definition",
+      "old": "public.wc_impairment_definition",
+      "newSchema": "legal",
+      "new": "legal.wc_impairment_definition",
+      "since": "2026-06-27",
+      "reason": "moved to legal schema (clean cut). Use .schema('legal').from('wc_impairment_definition')."
     }
   ]
 }

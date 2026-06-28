@@ -31,6 +31,7 @@ export interface SavedClaimRow {
   updated_at: string | null;
 }
 
+const SCHEMA = "legal";
 const TABLE = "wc_claim";
 
 const claimsKeys = {
@@ -49,6 +50,7 @@ export function useMyClaims(userId: string | undefined) {
     staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
+        .schema(SCHEMA as never)
         .from(TABLE as never)
         .select(
           "id, applicant_name, case_number, date_of_injury, occupational_code, " +
@@ -68,6 +70,7 @@ export function useDeleteClaim() {
   return useMutation<void, Error, { userId: string; claimId: string }>({
     mutationFn: async ({ claimId }) => {
       const { error } = await supabase
+        .schema(SCHEMA as never)
         .from(TABLE as never)
         .delete()
         .eq("id", claimId);

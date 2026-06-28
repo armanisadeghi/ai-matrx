@@ -2555,6 +2555,119 @@ export type Database = {
           },
         ]
       }
+      agent_run: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          episode_id: string | null
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          last_heartbeat_at: string | null
+          metadata: Json
+          organization_id: string
+          request: Json
+          result: Json | null
+          status: string
+          total_cost: number
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          episode_id?: string | null
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind: string
+          last_heartbeat_at?: string | null
+          metadata?: Json
+          organization_id: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          episode_id?: string | null
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind?: string
+          last_heartbeat_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+        }
+        Relationships: []
+      }
+      agent_run_stage: {
+        Row: {
+          cost: number | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          output: Json | null
+          run_id: string
+          stage_key: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id: string
+          stage_key: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id?: string
+          stage_key?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_stage_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_task: {
         Row: {
           conversation_id: string
@@ -14535,6 +14648,930 @@ export type Database = {
       [_ in never]: never
     }
   }
+  legal: {
+    Tables: {
+      _stage_dockets_966c18eca7: {
+        Row: {
+          appeal_from_id: string | null
+          appeal_from_str: string | null
+          appellate_case_type_information: string | null
+          appellate_fee_status: string | null
+          assigned_to_id: string | null
+          assigned_to_str: string | null
+          blocked: string | null
+          case_name: string | null
+          case_name_full: string | null
+          case_name_short: string | null
+          cause: string | null
+          court_id: string | null
+          date_argued: string | null
+          date_blocked: string | null
+          date_cert_denied: string | null
+          date_cert_granted: string | null
+          date_created: string | null
+          date_filed: string | null
+          date_last_filing: string | null
+          date_last_index: string | null
+          date_modified: string | null
+          date_reargued: string | null
+          date_reargument_denied: string | null
+          date_terminated: string | null
+          docket_number: string | null
+          docket_number_core: string | null
+          docket_number_raw: string | null
+          docket_number_source: string | null
+          federal_defendant_number: string | null
+          federal_dn_case_type: string | null
+          federal_dn_judge_initials_assigned: string | null
+          federal_dn_judge_initials_referred: string | null
+          federal_dn_office_code: string | null
+          filepath_ia: string | null
+          filepath_ia_json: string | null
+          filepath_local: string | null
+          ia_date_first_change: string | null
+          ia_needs_upload: string | null
+          ia_upload_failure_count: string | null
+          id: string | null
+          idb_data_id: string | null
+          jurisdiction_type: string | null
+          jury_demand: string | null
+          mdl_status: string | null
+          nature_of_suit: string | null
+          originating_court_information_id: string | null
+          pacer_case_id: string | null
+          panel_str: string | null
+          parent_docket_id: string | null
+          referred_to_id: string | null
+          referred_to_str: string | null
+          slug: string | null
+          source: string | null
+          view_count: string | null
+        }
+        Insert: {
+          appeal_from_id?: string | null
+          appeal_from_str?: string | null
+          appellate_case_type_information?: string | null
+          appellate_fee_status?: string | null
+          assigned_to_id?: string | null
+          assigned_to_str?: string | null
+          blocked?: string | null
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          cause?: string | null
+          court_id?: string | null
+          date_argued?: string | null
+          date_blocked?: string | null
+          date_cert_denied?: string | null
+          date_cert_granted?: string | null
+          date_created?: string | null
+          date_filed?: string | null
+          date_last_filing?: string | null
+          date_last_index?: string | null
+          date_modified?: string | null
+          date_reargued?: string | null
+          date_reargument_denied?: string | null
+          date_terminated?: string | null
+          docket_number?: string | null
+          docket_number_core?: string | null
+          docket_number_raw?: string | null
+          docket_number_source?: string | null
+          federal_defendant_number?: string | null
+          federal_dn_case_type?: string | null
+          federal_dn_judge_initials_assigned?: string | null
+          federal_dn_judge_initials_referred?: string | null
+          federal_dn_office_code?: string | null
+          filepath_ia?: string | null
+          filepath_ia_json?: string | null
+          filepath_local?: string | null
+          ia_date_first_change?: string | null
+          ia_needs_upload?: string | null
+          ia_upload_failure_count?: string | null
+          id?: string | null
+          idb_data_id?: string | null
+          jurisdiction_type?: string | null
+          jury_demand?: string | null
+          mdl_status?: string | null
+          nature_of_suit?: string | null
+          originating_court_information_id?: string | null
+          pacer_case_id?: string | null
+          panel_str?: string | null
+          parent_docket_id?: string | null
+          referred_to_id?: string | null
+          referred_to_str?: string | null
+          slug?: string | null
+          source?: string | null
+          view_count?: string | null
+        }
+        Update: {
+          appeal_from_id?: string | null
+          appeal_from_str?: string | null
+          appellate_case_type_information?: string | null
+          appellate_fee_status?: string | null
+          assigned_to_id?: string | null
+          assigned_to_str?: string | null
+          blocked?: string | null
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          cause?: string | null
+          court_id?: string | null
+          date_argued?: string | null
+          date_blocked?: string | null
+          date_cert_denied?: string | null
+          date_cert_granted?: string | null
+          date_created?: string | null
+          date_filed?: string | null
+          date_last_filing?: string | null
+          date_last_index?: string | null
+          date_modified?: string | null
+          date_reargued?: string | null
+          date_reargument_denied?: string | null
+          date_terminated?: string | null
+          docket_number?: string | null
+          docket_number_core?: string | null
+          docket_number_raw?: string | null
+          docket_number_source?: string | null
+          federal_defendant_number?: string | null
+          federal_dn_case_type?: string | null
+          federal_dn_judge_initials_assigned?: string | null
+          federal_dn_judge_initials_referred?: string | null
+          federal_dn_office_code?: string | null
+          filepath_ia?: string | null
+          filepath_ia_json?: string | null
+          filepath_local?: string | null
+          ia_date_first_change?: string | null
+          ia_needs_upload?: string | null
+          ia_upload_failure_count?: string | null
+          id?: string | null
+          idb_data_id?: string | null
+          jurisdiction_type?: string | null
+          jury_demand?: string | null
+          mdl_status?: string | null
+          nature_of_suit?: string | null
+          originating_court_information_id?: string | null
+          pacer_case_id?: string | null
+          panel_str?: string | null
+          parent_docket_id?: string | null
+          referred_to_id?: string | null
+          referred_to_str?: string | null
+          slug?: string | null
+          source?: string | null
+          view_count?: string | null
+        }
+        Relationships: []
+      }
+      citations: {
+        Row: {
+          cited_opinion_id: number
+          citing_opinion_id: number
+          depth: number
+          id: number
+          synced_at: string
+        }
+        Insert: {
+          cited_opinion_id: number
+          citing_opinion_id: number
+          depth?: number
+          id: number
+          synced_at?: string
+        }
+        Update: {
+          cited_opinion_id?: number
+          citing_opinion_id?: number
+          depth?: number
+          id?: number
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      courts: {
+        Row: {
+          citation_string: string | null
+          cl_modified: string | null
+          end_date: string | null
+          fjc_court_id: string | null
+          full_name: string | null
+          has_opinion_scraper: boolean
+          has_oral_argument_scraper: boolean
+          id: string
+          in_use: boolean
+          jurisdiction: string | null
+          notes: string | null
+          pacer_court_id: string | null
+          position: number | null
+          raw: Json | null
+          short_name: string | null
+          start_date: string | null
+          synced_at: string
+          url: string | null
+        }
+        Insert: {
+          citation_string?: string | null
+          cl_modified?: string | null
+          end_date?: string | null
+          fjc_court_id?: string | null
+          full_name?: string | null
+          has_opinion_scraper?: boolean
+          has_oral_argument_scraper?: boolean
+          id: string
+          in_use?: boolean
+          jurisdiction?: string | null
+          notes?: string | null
+          pacer_court_id?: string | null
+          position?: number | null
+          raw?: Json | null
+          short_name?: string | null
+          start_date?: string | null
+          synced_at?: string
+          url?: string | null
+        }
+        Update: {
+          citation_string?: string | null
+          cl_modified?: string | null
+          end_date?: string | null
+          fjc_court_id?: string | null
+          full_name?: string | null
+          has_opinion_scraper?: boolean
+          has_oral_argument_scraper?: boolean
+          id?: string
+          in_use?: boolean
+          jurisdiction?: string | null
+          notes?: string | null
+          pacer_court_id?: string | null
+          position?: number | null
+          raw?: Json | null
+          short_name?: string | null
+          start_date?: string | null
+          synced_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      dockets: {
+        Row: {
+          absolute_url: string | null
+          appeal_from_str: string | null
+          assigned_to_str: string | null
+          blocked: boolean
+          case_name: string | null
+          case_name_full: string | null
+          case_name_short: string | null
+          cause: string | null
+          cl_created: string | null
+          cl_modified: string | null
+          court_id: string | null
+          date_argued: string | null
+          date_blocked: string | null
+          date_cert_denied: string | null
+          date_cert_granted: string | null
+          date_filed: string | null
+          date_last_filing: string | null
+          date_reargued: string | null
+          date_reargument_denied: string | null
+          date_terminated: string | null
+          docket_number: string | null
+          docket_number_core: string | null
+          filepath_ia: string | null
+          filepath_local: string | null
+          id: number
+          jurisdiction_type: string | null
+          jury_demand: string | null
+          nature_of_suit: string | null
+          pacer_case_id: string | null
+          raw: Json | null
+          referred_to_str: string | null
+          slug: string | null
+          source: number | null
+          synced_at: string
+        }
+        Insert: {
+          absolute_url?: string | null
+          appeal_from_str?: string | null
+          assigned_to_str?: string | null
+          blocked?: boolean
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          cause?: string | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          court_id?: string | null
+          date_argued?: string | null
+          date_blocked?: string | null
+          date_cert_denied?: string | null
+          date_cert_granted?: string | null
+          date_filed?: string | null
+          date_last_filing?: string | null
+          date_reargued?: string | null
+          date_reargument_denied?: string | null
+          date_terminated?: string | null
+          docket_number?: string | null
+          docket_number_core?: string | null
+          filepath_ia?: string | null
+          filepath_local?: string | null
+          id: number
+          jurisdiction_type?: string | null
+          jury_demand?: string | null
+          nature_of_suit?: string | null
+          pacer_case_id?: string | null
+          raw?: Json | null
+          referred_to_str?: string | null
+          slug?: string | null
+          source?: number | null
+          synced_at?: string
+        }
+        Update: {
+          absolute_url?: string | null
+          appeal_from_str?: string | null
+          assigned_to_str?: string | null
+          blocked?: boolean
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          cause?: string | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          court_id?: string | null
+          date_argued?: string | null
+          date_blocked?: string | null
+          date_cert_denied?: string | null
+          date_cert_granted?: string | null
+          date_filed?: string | null
+          date_last_filing?: string | null
+          date_reargued?: string | null
+          date_reargument_denied?: string | null
+          date_terminated?: string | null
+          docket_number?: string | null
+          docket_number_core?: string | null
+          filepath_ia?: string | null
+          filepath_local?: string | null
+          id?: number
+          jurisdiction_type?: string | null
+          jury_demand?: string | null
+          nature_of_suit?: string | null
+          pacer_case_id?: string | null
+          raw?: Json | null
+          referred_to_str?: string | null
+          slug?: string | null
+          source?: number | null
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dockets_court_id_fkey"
+            columns: ["court_id"]
+            isOneToOne: false
+            referencedRelation: "courts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingest_runs: {
+        Row: {
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          resource: string
+          rows_inserted: number
+          rows_skipped: number
+          rows_updated: number
+          started_at: string
+          status: string
+          triggered_by: string | null
+          watermark: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          resource: string
+          rows_inserted?: number
+          rows_skipped?: number
+          rows_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          watermark?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          resource?: string
+          rows_inserted?: number
+          rows_skipped?: number
+          rows_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          watermark?: string | null
+        }
+        Relationships: []
+      }
+      opinion_clusters: {
+        Row: {
+          absolute_url: string | null
+          attorneys: string | null
+          blocked: boolean
+          case_name: string | null
+          case_name_full: string | null
+          case_name_short: string | null
+          citation_count: number
+          citations: Json | null
+          cl_created: string | null
+          cl_modified: string | null
+          correction: string | null
+          cross_reference: string | null
+          date_blocked: string | null
+          date_filed: string | null
+          date_filed_is_approximate: boolean | null
+          disposition: string | null
+          docket_id: number | null
+          federal_cite_one: string | null
+          federal_cite_three: string | null
+          federal_cite_two: string | null
+          headnotes: string | null
+          history: string | null
+          id: number
+          judges: string | null
+          lexis_cite: string | null
+          nature_of_suit: string | null
+          neutral_cite: string | null
+          other_dates: string | null
+          posture: string | null
+          precedential_status: string | null
+          procedural_history: string | null
+          raw: Json | null
+          scdb_decision_direction: number | null
+          scdb_id: string | null
+          scdb_votes_majority: number | null
+          scdb_votes_minority: number | null
+          scotus_early_cite: string | null
+          slug: string | null
+          source: string | null
+          specialty_cite_one: string | null
+          state_cite_one: string | null
+          state_cite_regional: string | null
+          state_cite_three: string | null
+          state_cite_two: string | null
+          summary: string | null
+          syllabus: string | null
+          synced_at: string
+          westlaw_cite: string | null
+        }
+        Insert: {
+          absolute_url?: string | null
+          attorneys?: string | null
+          blocked?: boolean
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          citation_count?: number
+          citations?: Json | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          correction?: string | null
+          cross_reference?: string | null
+          date_blocked?: string | null
+          date_filed?: string | null
+          date_filed_is_approximate?: boolean | null
+          disposition?: string | null
+          docket_id?: number | null
+          federal_cite_one?: string | null
+          federal_cite_three?: string | null
+          federal_cite_two?: string | null
+          headnotes?: string | null
+          history?: string | null
+          id: number
+          judges?: string | null
+          lexis_cite?: string | null
+          nature_of_suit?: string | null
+          neutral_cite?: string | null
+          other_dates?: string | null
+          posture?: string | null
+          precedential_status?: string | null
+          procedural_history?: string | null
+          raw?: Json | null
+          scdb_decision_direction?: number | null
+          scdb_id?: string | null
+          scdb_votes_majority?: number | null
+          scdb_votes_minority?: number | null
+          scotus_early_cite?: string | null
+          slug?: string | null
+          source?: string | null
+          specialty_cite_one?: string | null
+          state_cite_one?: string | null
+          state_cite_regional?: string | null
+          state_cite_three?: string | null
+          state_cite_two?: string | null
+          summary?: string | null
+          syllabus?: string | null
+          synced_at?: string
+          westlaw_cite?: string | null
+        }
+        Update: {
+          absolute_url?: string | null
+          attorneys?: string | null
+          blocked?: boolean
+          case_name?: string | null
+          case_name_full?: string | null
+          case_name_short?: string | null
+          citation_count?: number
+          citations?: Json | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          correction?: string | null
+          cross_reference?: string | null
+          date_blocked?: string | null
+          date_filed?: string | null
+          date_filed_is_approximate?: boolean | null
+          disposition?: string | null
+          docket_id?: number | null
+          federal_cite_one?: string | null
+          federal_cite_three?: string | null
+          federal_cite_two?: string | null
+          headnotes?: string | null
+          history?: string | null
+          id?: number
+          judges?: string | null
+          lexis_cite?: string | null
+          nature_of_suit?: string | null
+          neutral_cite?: string | null
+          other_dates?: string | null
+          posture?: string | null
+          precedential_status?: string | null
+          procedural_history?: string | null
+          raw?: Json | null
+          scdb_decision_direction?: number | null
+          scdb_id?: string | null
+          scdb_votes_majority?: number | null
+          scdb_votes_minority?: number | null
+          scotus_early_cite?: string | null
+          slug?: string | null
+          source?: string | null
+          specialty_cite_one?: string | null
+          state_cite_one?: string | null
+          state_cite_regional?: string | null
+          state_cite_three?: string | null
+          state_cite_two?: string | null
+          summary?: string | null
+          syllabus?: string | null
+          synced_at?: string
+          westlaw_cite?: string | null
+        }
+        Relationships: []
+      }
+      opinions: {
+        Row: {
+          absolute_url: string | null
+          author_id: number | null
+          cl_created: string | null
+          cl_modified: string | null
+          cluster_id: number | null
+          download_url: string | null
+          extracted_by_ocr: boolean
+          id: number
+          local_path: string | null
+          main_version: number | null
+          ordering_key: number | null
+          page_count: number | null
+          per_curiam: boolean
+          raw: Json | null
+          sha1: string | null
+          synced_at: string
+          text_format: string | null
+          text_size_bytes: number | null
+          text_storage_uri: string | null
+          type: string | null
+        }
+        Insert: {
+          absolute_url?: string | null
+          author_id?: number | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          cluster_id?: number | null
+          download_url?: string | null
+          extracted_by_ocr?: boolean
+          id: number
+          local_path?: string | null
+          main_version?: number | null
+          ordering_key?: number | null
+          page_count?: number | null
+          per_curiam?: boolean
+          raw?: Json | null
+          sha1?: string | null
+          synced_at?: string
+          text_format?: string | null
+          text_size_bytes?: number | null
+          text_storage_uri?: string | null
+          type?: string | null
+        }
+        Update: {
+          absolute_url?: string | null
+          author_id?: number | null
+          cl_created?: string | null
+          cl_modified?: string | null
+          cluster_id?: number | null
+          download_url?: string | null
+          extracted_by_ocr?: boolean
+          id?: number
+          local_path?: string | null
+          main_version?: number | null
+          ordering_key?: number | null
+          page_count?: number | null
+          per_curiam?: boolean
+          raw?: Json | null
+          sha1?: string | null
+          synced_at?: string
+          text_format?: string | null
+          text_size_bytes?: number | null
+          text_storage_uri?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      wc_claim: {
+        Row: {
+          age_at_doi: number | null
+          applicant_name: string | null
+          case_number: string | null
+          comments: string | null
+          created_at: string
+          created_by: string | null
+          date_of_birth: string | null
+          date_of_injury: string | null
+          deleted_at: string | null
+          evaluator_name: string | null
+          gender: string | null
+          id: string
+          is_public: boolean
+          job_offer_date: string | null
+          large_employer: boolean
+          metadata: Json
+          occupational_code: number | null
+          organization_id: string | null
+          p_s_date: string | null
+          person_id: string | null
+          project_id: string | null
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+          version: number
+          visibility: "private" | "internal" | "link" | "public"
+          weekly_earnings: number | null
+        }
+        Insert: {
+          age_at_doi?: number | null
+          applicant_name?: string | null
+          case_number?: string | null
+          comments?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          date_of_injury?: string | null
+          deleted_at?: string | null
+          evaluator_name?: string | null
+          gender?: string | null
+          id?: string
+          is_public?: boolean
+          job_offer_date?: string | null
+          large_employer?: boolean
+          metadata?: Json
+          occupational_code?: number | null
+          organization_id?: string | null
+          p_s_date?: string | null
+          person_id?: string | null
+          project_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          weekly_earnings?: number | null
+        }
+        Update: {
+          age_at_doi?: number | null
+          applicant_name?: string | null
+          case_number?: string | null
+          comments?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_of_birth?: string | null
+          date_of_injury?: string | null
+          deleted_at?: string | null
+          evaluator_name?: string | null
+          gender?: string | null
+          id?: string
+          is_public?: boolean
+          job_offer_date?: string | null
+          large_employer?: boolean
+          metadata?: Json
+          occupational_code?: number | null
+          organization_id?: string | null
+          p_s_date?: string | null
+          person_id?: string | null
+          project_id?: string | null
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+          version?: number
+          visibility?: "private" | "internal" | "link" | "public"
+          weekly_earnings?: number | null
+        }
+        Relationships: []
+      }
+      wc_impairment_definition: {
+        Row: {
+          attributes: Json | null
+          fec_rank: number | null
+          finger_type: Database["legal"]["Enums"]["wc_finger_type"] | null
+          id: string
+          impairment_number: string | null
+          name: string | null
+          search_aliases: string[]
+        }
+        Insert: {
+          attributes?: Json | null
+          fec_rank?: number | null
+          finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
+          id?: string
+          impairment_number?: string | null
+          name?: string | null
+          search_aliases?: string[]
+        }
+        Update: {
+          attributes?: Json | null
+          fec_rank?: number | null
+          finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
+          id?: string
+          impairment_number?: string | null
+          name?: string | null
+          search_aliases?: string[]
+        }
+        Relationships: []
+      }
+      wc_injury: {
+        Row: {
+          ag: boolean
+          created_at: string
+          digit: number | null
+          formula: string | null
+          id: string
+          impairment_definition_id: string | null
+          industrial: number | null
+          le: number | null
+          pain: number | null
+          rating: number | null
+          report_id: string | null
+          side: Database["legal"]["Enums"]["wc_side"] | null
+          ue: number | null
+          updated_at: string | null
+          wpi: number | null
+        }
+        Insert: {
+          ag?: boolean
+          created_at?: string
+          digit?: number | null
+          formula?: string | null
+          id?: string
+          impairment_definition_id?: string | null
+          industrial?: number | null
+          le?: number | null
+          pain?: number | null
+          rating?: number | null
+          report_id?: string | null
+          side?: Database["legal"]["Enums"]["wc_side"] | null
+          ue?: number | null
+          updated_at?: string | null
+          wpi?: number | null
+        }
+        Update: {
+          ag?: boolean
+          created_at?: string
+          digit?: number | null
+          formula?: string | null
+          id?: string
+          impairment_definition_id?: string | null
+          industrial?: number | null
+          le?: number | null
+          pain?: number | null
+          rating?: number | null
+          report_id?: string | null
+          side?: Database["legal"]["Enums"]["wc_side"] | null
+          ue?: number | null
+          updated_at?: string | null
+          wpi?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wc_injury_impairment_definition_id_fkey"
+            columns: ["impairment_definition_id"]
+            isOneToOne: false
+            referencedRelation: "wc_impairment_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wc_injury_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "wc_report"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wc_report: {
+        Row: {
+          claim_id: string
+          compensation_amount: number | null
+          compensation_days: number | null
+          compensation_weeks: number | null
+          created_at: string
+          daily_rate: number | null
+          default_side_total: number | null
+          final_rating: number | null
+          id: string
+          left_side_total: number | null
+          life_pension_weekly: number | null
+          pd_adjustment_pct: number | null
+          pd_adjustment_reason: string | null
+          right_side_total: number | null
+          updated_at: string
+          weekly_payment: number | null
+        }
+        Insert: {
+          claim_id: string
+          compensation_amount?: number | null
+          compensation_days?: number | null
+          compensation_weeks?: number | null
+          created_at?: string
+          daily_rate?: number | null
+          default_side_total?: number | null
+          final_rating?: number | null
+          id?: string
+          left_side_total?: number | null
+          life_pension_weekly?: number | null
+          pd_adjustment_pct?: number | null
+          pd_adjustment_reason?: string | null
+          right_side_total?: number | null
+          updated_at?: string
+          weekly_payment?: number | null
+        }
+        Update: {
+          claim_id?: string
+          compensation_amount?: number | null
+          compensation_days?: number | null
+          compensation_weeks?: number | null
+          created_at?: string
+          daily_rate?: number | null
+          default_side_total?: number | null
+          final_rating?: number | null
+          id?: string
+          left_side_total?: number | null
+          life_pension_weekly?: number | null
+          pd_adjustment_pct?: number | null
+          pd_adjustment_reason?: string | null
+          right_side_total?: number | null
+          updated_at?: string
+          weekly_payment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wc_report_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "wc_claim"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      wc_finger_type: "index" | "middle" | "ring" | "little" | "thumb"
+      wc_side: "right" | "left" | "default"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       _schema_migrations: {
@@ -14677,131 +15714,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      agent_run: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          episode_id: string | null
-          error: Json | null
-          id: string
-          input_fingerprint: string | null
-          kind: string
-          last_heartbeat_at: string | null
-          metadata: Json
-          organization_id: string
-          request: Json
-          result: Json | null
-          status: string
-          total_cost: number
-          updated_at: string
-          updated_by: string | null
-          user_id: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          episode_id?: string | null
-          error?: Json | null
-          id?: string
-          input_fingerprint?: string | null
-          kind: string
-          last_heartbeat_at?: string | null
-          metadata?: Json
-          organization_id: string
-          request?: Json
-          result?: Json | null
-          status?: string
-          total_cost?: number
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          episode_id?: string | null
-          error?: Json | null
-          id?: string
-          input_fingerprint?: string | null
-          kind?: string
-          last_heartbeat_at?: string | null
-          metadata?: Json
-          organization_id?: string
-          request?: Json
-          result?: Json | null
-          status?: string
-          total_cost?: number
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_run_episode_id_fkey"
-            columns: ["episode_id"]
-            isOneToOne: false
-            referencedRelation: "pc_episodes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_run_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      agent_run_stage: {
-        Row: {
-          cost: number | null
-          error: Json | null
-          finished_at: string | null
-          id: string
-          output: Json | null
-          run_id: string
-          stage_key: string
-          started_at: string
-          status: string
-        }
-        Insert: {
-          cost?: number | null
-          error?: Json | null
-          finished_at?: string | null
-          id?: string
-          output?: Json | null
-          run_id: string
-          stage_key: string
-          started_at?: string
-          status?: string
-        }
-        Update: {
-          cost?: number | null
-          error?: Json | null
-          finished_at?: string | null
-          id?: string
-          output?: Json | null
-          run_id?: string
-          stage_key?: string
-          started_at?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_run_stage_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "agent_run"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       analysis_recipes: {
         Row: {
@@ -18412,20 +19324,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pc_studio_run_assets_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "agent_run"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pc_studio_run_assets_stage_id_fkey"
-            columns: ["stage_id"]
-            isOneToOne: false
-            referencedRelation: "agent_run_stage"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "pc_studio_run_assets_superseded_by_fkey"
             columns: ["superseded_by"]
             isOneToOne: false
@@ -20168,253 +21066,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pdf_unified_pages"
             referencedColumns: ["file_id"]
-          },
-        ]
-      }
-      wc_claim: {
-        Row: {
-          age_at_doi: number | null
-          applicant_name: string | null
-          case_number: string | null
-          comments: string | null
-          created_at: string
-          date_of_birth: string | null
-          date_of_injury: string | null
-          evaluator_name: string | null
-          gender: string | null
-          id: string
-          is_public: boolean
-          job_offer_date: string | null
-          large_employer: boolean
-          metadata: Json
-          occupational_code: number | null
-          organization_id: string | null
-          p_s_date: string | null
-          person_id: string | null
-          project_id: string | null
-          tags: string[]
-          updated_at: string
-          user_id: string | null
-          weekly_earnings: number | null
-        }
-        Insert: {
-          age_at_doi?: number | null
-          applicant_name?: string | null
-          case_number?: string | null
-          comments?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          date_of_injury?: string | null
-          evaluator_name?: string | null
-          gender?: string | null
-          id?: string
-          is_public?: boolean
-          job_offer_date?: string | null
-          large_employer?: boolean
-          metadata?: Json
-          occupational_code?: number | null
-          organization_id?: string | null
-          p_s_date?: string | null
-          person_id?: string | null
-          project_id?: string | null
-          tags?: string[]
-          updated_at?: string
-          user_id?: string | null
-          weekly_earnings?: number | null
-        }
-        Update: {
-          age_at_doi?: number | null
-          applicant_name?: string | null
-          case_number?: string | null
-          comments?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          date_of_injury?: string | null
-          evaluator_name?: string | null
-          gender?: string | null
-          id?: string
-          is_public?: boolean
-          job_offer_date?: string | null
-          large_employer?: boolean
-          metadata?: Json
-          occupational_code?: number | null
-          organization_id?: string | null
-          p_s_date?: string | null
-          person_id?: string | null
-          project_id?: string | null
-          tags?: string[]
-          updated_at?: string
-          user_id?: string | null
-          weekly_earnings?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wc_claim_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wc_impairment_definition: {
-        Row: {
-          attributes: Json | null
-          fec_rank: number | null
-          finger_type: Database["public"]["Enums"]["wc_finger_type"] | null
-          id: string
-          impairment_number: string | null
-          name: string | null
-          search_aliases: string[]
-        }
-        Insert: {
-          attributes?: Json | null
-          fec_rank?: number | null
-          finger_type?: Database["public"]["Enums"]["wc_finger_type"] | null
-          id?: string
-          impairment_number?: string | null
-          name?: string | null
-          search_aliases?: string[]
-        }
-        Update: {
-          attributes?: Json | null
-          fec_rank?: number | null
-          finger_type?: Database["public"]["Enums"]["wc_finger_type"] | null
-          id?: string
-          impairment_number?: string | null
-          name?: string | null
-          search_aliases?: string[]
-        }
-        Relationships: []
-      }
-      wc_injury: {
-        Row: {
-          ag: boolean
-          created_at: string
-          digit: number | null
-          formula: string | null
-          id: string
-          impairment_definition_id: string | null
-          industrial: number | null
-          le: number | null
-          pain: number | null
-          rating: number | null
-          report_id: string | null
-          side: Database["public"]["Enums"]["wc_side"] | null
-          ue: number | null
-          updated_at: string | null
-          wpi: number | null
-        }
-        Insert: {
-          ag?: boolean
-          created_at?: string
-          digit?: number | null
-          formula?: string | null
-          id?: string
-          impairment_definition_id?: string | null
-          industrial?: number | null
-          le?: number | null
-          pain?: number | null
-          rating?: number | null
-          report_id?: string | null
-          side?: Database["public"]["Enums"]["wc_side"] | null
-          ue?: number | null
-          updated_at?: string | null
-          wpi?: number | null
-        }
-        Update: {
-          ag?: boolean
-          created_at?: string
-          digit?: number | null
-          formula?: string | null
-          id?: string
-          impairment_definition_id?: string | null
-          industrial?: number | null
-          le?: number | null
-          pain?: number | null
-          rating?: number | null
-          report_id?: string | null
-          side?: Database["public"]["Enums"]["wc_side"] | null
-          ue?: number | null
-          updated_at?: string | null
-          wpi?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wc_injury_impairment_definition_id_fkey"
-            columns: ["impairment_definition_id"]
-            isOneToOne: false
-            referencedRelation: "wc_impairment_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "wc_injury_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "wc_report"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wc_report: {
-        Row: {
-          claim_id: string
-          compensation_amount: number | null
-          compensation_days: number | null
-          compensation_weeks: number | null
-          created_at: string
-          daily_rate: number | null
-          default_side_total: number | null
-          final_rating: number | null
-          id: string
-          left_side_total: number | null
-          life_pension_weekly: number | null
-          pd_adjustment_pct: number | null
-          pd_adjustment_reason: string | null
-          right_side_total: number | null
-          weekly_payment: number | null
-        }
-        Insert: {
-          claim_id: string
-          compensation_amount?: number | null
-          compensation_days?: number | null
-          compensation_weeks?: number | null
-          created_at?: string
-          daily_rate?: number | null
-          default_side_total?: number | null
-          final_rating?: number | null
-          id?: string
-          left_side_total?: number | null
-          life_pension_weekly?: number | null
-          pd_adjustment_pct?: number | null
-          pd_adjustment_reason?: string | null
-          right_side_total?: number | null
-          weekly_payment?: number | null
-        }
-        Update: {
-          claim_id?: string
-          compensation_amount?: number | null
-          compensation_days?: number | null
-          compensation_weeks?: number | null
-          created_at?: string
-          daily_rate?: number | null
-          default_side_total?: number | null
-          final_rating?: number | null
-          id?: string
-          left_side_total?: number | null
-          life_pension_weekly?: number | null
-          pd_adjustment_pct?: number | null
-          pd_adjustment_reason?: string | null
-          right_side_total?: number | null
-          weekly_payment?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wc_report_claim_id_fkey"
-            columns: ["claim_id"]
-            isOneToOne: false
-            referencedRelation: "wc_claim"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -27763,8 +28414,6 @@ export type Database = {
         | "UrlLink"
         | "none"
       task_priority: "low" | "medium" | "high"
-      wc_finger_type: "index" | "middle" | "ring" | "little" | "thumb"
-      wc_side: "right" | "left" | "default"
       workbook_source:
         | "created"
         | "imported_xlsx"
@@ -35645,6 +36294,12 @@ export const Constants = {
   graveyard: {
     Enums: {},
   },
+  legal: {
+    Enums: {
+      wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
+      wc_side: ["right", "left", "default"],
+    },
+  },
   public: {
     Enums: {
       admin_level: ["developer", "senior_admin", "super_admin"],
@@ -36290,8 +36945,6 @@ export const Constants = {
         "none",
       ],
       task_priority: ["low", "medium", "high"],
-      wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
-      wc_side: ["right", "left", "default"],
       workbook_source: [
         "created",
         "imported_xlsx",
