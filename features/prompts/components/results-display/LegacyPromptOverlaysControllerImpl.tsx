@@ -70,7 +70,6 @@ import {
   closeFlexiblePanel,
   removeToast,
 } from "@/lib/redux/slices/promptRunnerSlice";
-import { selectPrimaryResponseTextByTaskId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 
 const PromptRunnerModal = dynamic(
   () =>
@@ -111,9 +110,7 @@ function PromptRunnerModalSurface() {
   const isOpen = useAppSelector(selectIsPromptModalOpen);
   const config = useAppSelector(selectPromptModalConfig);
   const taskId = useAppSelector(selectPromptModalTaskId);
-  const responseText = useAppSelector((s) =>
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(s) : "",
-  );
+  const responseText = useAppSelector((s) => (taskId ? "" : ""));
 
   if (!isOpen || !config?.runId) return null;
   return (
@@ -132,9 +129,7 @@ function PromptCompactModalSurface() {
   const isOpen = useAppSelector(selectIsCompactModalOpen);
   const runId = useAppSelector(selectCompactModalRunId);
   const taskId = useAppSelector(selectCompactModalTaskId);
-  const responseText = useAppSelector((s) =>
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(s) : "",
-  );
+  const responseText = useAppSelector((s) => (taskId ? "" : ""));
 
   if (!isOpen || !runId) return null;
   return (
@@ -178,9 +173,7 @@ function PromptSidebarRunnerSurface() {
   const position = useAppSelector(selectSidebarPosition);
   const size = useAppSelector(selectSidebarSize);
   const taskId = useAppSelector(selectSidebarTaskId);
-  const responseText = useAppSelector((s) =>
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(s) : "",
-  );
+  const responseText = useAppSelector((s) => (taskId ? "" : ""));
 
   if (!isOpen || !(runId || config?.runId)) return null;
   return (
@@ -202,9 +195,7 @@ function PromptFlexiblePanelSurface() {
   const runId = useAppSelector(selectFlexiblePanelRunId);
   const position = useAppSelector(selectFlexiblePanelPosition);
   const taskId = useAppSelector(selectFlexiblePanelTaskId);
-  const responseText = useAppSelector((s) =>
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(s) : "",
-  );
+  const responseText = useAppSelector((s) => (taskId ? "" : ""));
 
   if (!isOpen || !(runId || config?.runId)) return null;
   return (

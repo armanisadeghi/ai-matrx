@@ -83,6 +83,7 @@ import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveActions } from "@/features/rich-document/actions/registry";
@@ -119,8 +120,10 @@ import type {
   ContextMenuExtraItem,
 } from "../types";
 
-export interface MobileMenuContentProps
-  extends Omit<MenuContentProps, "variant"> {
+export interface MobileMenuContentProps extends Omit<
+  MenuContentProps,
+  "variant"
+> {
   /** Close the bottom sheet (run after any terminal action). */
   onClose: () => void;
 }
@@ -187,7 +190,10 @@ function getPlacementIcon(placementType: string): Icon {
       return FileText;
   }
 }
-function resolveIcon(iconName: string | null | undefined, fallback = "FileText") {
+function resolveIcon(
+  iconName: string | null | undefined,
+  fallback = "FileText",
+) {
   return getIconComponent(iconName ?? fallback, fallback) as Icon;
 }
 function groupsByPlacement(
@@ -386,7 +392,9 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       const { start, end } = selectionRange;
       if (onTextReplace) {
         onTextReplace(
-          element.value.substring(0, start) + text + element.value.substring(end),
+          element.value.substring(0, start) +
+            text +
+            element.value.substring(end),
         );
       } else {
         spliceInputValue(element, start, end, text);
@@ -427,14 +435,15 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     }
   };
 
-  const editableElement: HTMLTextAreaElement | HTMLInputElement | null = (() => {
-    const fromRange =
-      selectionRange?.type === "editable" ? selectionRange.element : null;
-    const el = fromRange ?? getTextarea?.() ?? null;
-    return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
-      ? el
-      : null;
-  })();
+  const editableElement: HTMLTextAreaElement | HTMLInputElement | null =
+    (() => {
+      const fromRange =
+        selectionRange?.type === "editable" ? selectionRange.element : null;
+      const el = fromRange ?? getTextarea?.() ?? null;
+      return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
+        ? el
+        : null;
+    })();
   const canNativeUndo = Boolean(isEditable && editableElement);
   const runNativeEdit = (command: "undo" | "redo") => {
     if (!editableElement) return;
@@ -508,7 +517,8 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       });
       return;
     }
-    const resultDisplay = (entry.displayMode ?? "modal-full") as ResultDisplayMode;
+    const resultDisplay = (entry.displayMode ??
+      "modal-full") as ResultDisplayMode;
     try {
       await launchShortcut(entry.id, scope, {
         surfaceKey: `${sourceFeature}:${entry.id}`,
@@ -537,7 +547,11 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
           allowChat: true,
           showVariablePanel: true,
         },
-        runtime: { applicationScope: scope, originalText: actionText.text, surfaceName },
+        runtime: {
+          applicationScope: scope,
+          originalText: actionText.text,
+          surfaceName,
+        },
       });
     } catch (error) {
       toast({
@@ -554,15 +568,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   ) => {
     const template = entry.template;
     if (editorId) {
-      try {
-        const { insertTextAtCursor } =
-          require("@/features/rich-text-editor/utils/insertTextUtils") as {
-            insertTextAtCursor: (id: string, text: string) => boolean;
-          };
-        if (insertTextAtCursor(editorId, template)) onContentInserted?.();
-      } catch (err) {
-        console.error("[ContextMenuV3] content block insert failed", err);
-      }
+      if (insertTextAtCursor(editorId, template)) onContentInserted?.();
       return;
     }
     if (getTextarea) {
@@ -595,7 +601,11 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   const handleAttach = () => {
     if (!entity) return;
     openContextAssignment({
-      subject: { entityType: entity.type, entityId: entity.id, title: entity.title },
+      subject: {
+        entityType: entity.type,
+        entityId: entity.id,
+        title: entity.title,
+      },
     });
   };
   const handleShare = () => {
@@ -638,12 +648,13 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     };
   };
 
-  const categoryGroupToNodes = (group: AgentMenuCategoryGroup): MobileNode[] => {
+  const categoryGroupToNodes = (
+    group: AgentMenuCategoryGroup,
+  ): MobileNode[] => {
     const nodes: MobileNode[] = [];
     for (const entry of group.items) {
       const ItemIcon = resolveIcon(entry.iconName);
-      const isDisabled =
-        entry.entryType === "agent_shortcut" && !entry.agentId;
+      const isDisabled = entry.entryType === "agent_shortcut" && !entry.agentId;
       nodes.push({
         kind: "action",
         id: entry.id,
@@ -712,7 +723,11 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     const children: MobileNode[] = [];
     for (const section of boundAgentSections) {
       if (section.agents.length === 0) continue;
-      children.push({ kind: "section", id: `sec-${section.label}`, label: section.label });
+      children.push({
+        kind: "section",
+        id: `sec-${section.label}`,
+        label: section.label,
+      });
       for (const agent of section.agents) {
         children.push({
           kind: "action",
@@ -746,7 +761,11 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     const out: MobileNode[] = [];
     for (const section of sections) {
       if (section.label)
-        out.push({ kind: "section", id: `xl-${section.id}`, label: section.label });
+        out.push({
+          kind: "section",
+          id: `xl-${section.id}`,
+          label: section.label,
+        });
       for (const item of section.items) out.push(...extraItemToNodes(item));
     }
     return out;
@@ -961,12 +980,48 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
       iconClass: "text-pink-500",
       disabled: resolvedPlacementMode["quick-action"] === "disable",
       children: [
-        { kind: "action", id: "q-notes", label: "Notes", icon: StickyNote, onSelect: close(() => openQuickNotes()) },
-        { kind: "action", id: "q-tasks", label: "Tasks", icon: CheckSquare, onSelect: close(() => openQuickTasks()) },
-        { kind: "action", id: "q-chat", label: "Chat", icon: MessageSquare, onSelect: close(() => openQuickChat()) },
-        { kind: "action", id: "q-data", label: "Data", icon: Database, onSelect: close(() => openQuickData()) },
-        { kind: "action", id: "q-files", label: "Files", icon: FolderOpen, onSelect: close(() => openQuickFiles()) },
-        { kind: "action", id: "q-voice", label: "Voice Input", icon: Mic, onSelect: close(() => openVoicePad()) },
+        {
+          kind: "action",
+          id: "q-notes",
+          label: "Notes",
+          icon: StickyNote,
+          onSelect: close(() => openQuickNotes()),
+        },
+        {
+          kind: "action",
+          id: "q-tasks",
+          label: "Tasks",
+          icon: CheckSquare,
+          onSelect: close(() => openQuickTasks()),
+        },
+        {
+          kind: "action",
+          id: "q-chat",
+          label: "Chat",
+          icon: MessageSquare,
+          onSelect: close(() => openQuickChat()),
+        },
+        {
+          kind: "action",
+          id: "q-data",
+          label: "Data",
+          icon: Database,
+          onSelect: close(() => openQuickData()),
+        },
+        {
+          kind: "action",
+          id: "q-files",
+          label: "Files",
+          icon: FolderOpen,
+          onSelect: close(() => openQuickFiles()),
+        },
+        {
+          kind: "action",
+          id: "q-voice",
+          label: "Voice Input",
+          icon: Mic,
+          onSelect: close(() => openVoicePad()),
+        },
       ],
     });
 

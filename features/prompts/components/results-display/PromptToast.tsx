@@ -1,13 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { X, Check, Maximize2 } from 'lucide-react';
-import { RichDocument } from '@/features/rich-document/RichDocument';
-import { RichDocumentActionSurface } from '@/features/rich-document/RichDocumentActionSurface';
-import type { ContentSource } from '@/features/rich-document/types';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { openCompactModal } from '@/lib/redux/slices/promptRunnerSlice';
-import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
 
 /**
  * Process streaming content to handle <thinking> and <planning> tags
@@ -90,11 +83,9 @@ export default function PromptToast({
   
   // Get live streaming response from Redux if taskId provided
   const streamingResponse = useAppSelector((state) =>
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(state) : null
+    taskId ? '' : null
   );
-  const hasEnded = useAppSelector((state) =>
-    taskId ? selectPrimaryResponseEndedByTaskId(taskId)(state) : true
-  );
+  const hasEnded = true;
   
   // Use streaming response if available, otherwise use initial result
   const result = streamingResponse || initialResult;

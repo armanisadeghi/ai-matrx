@@ -8,19 +8,6 @@ import { createChatSelectors } from "@/lib/redux/entity/custom-selectors/chatSel
 import type { RootState } from "@/lib/redux/store";
 import { DebugInfo } from "./DebugInfo";
 import ErrorCard from "./assistant-message/stream/ErrorCard";
-import { selectTaskStreamingById } from "@/lib/redux/socket-io/selectors/socket-task-selectors";
-import {
-  selectPrimaryResponseEndedByTaskId,
-  selectPrimaryResponseErrorsByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
-import { selectTaskFirstListenerId } from "@/lib/redux/socket-io/selectors/socket-task-selectors";
-import {
-  selectResponseTextByListenerId,
-  selectResponseEndedByListenerId,
-  selectResponseDataByListenerId,
-  selectResponseInfoByListenerId,
-  selectResponseErrorsByListenerId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 
 const INFO = false;
 const DEBUG = false;
@@ -43,34 +30,14 @@ const ResponseColumn: React.FC<{ isOverlay?: boolean }> = ({
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isStreaming = useAppSelector((state: RootState) =>
-    selectTaskStreamingById(state, taskId),
-  );
-  const isStreamEnded = useAppSelector(
-    selectPrimaryResponseEndedByTaskId(taskId),
-  );
-  const streamError = useAppSelector(
-    selectPrimaryResponseErrorsByTaskId(taskId),
-  );
-
-  const firstListenerId = useAppSelector((state) =>
-    selectTaskFirstListenerId(state, taskId),
-  );
-  const textResponse = useAppSelector(
-    selectResponseTextByListenerId(firstListenerId),
-  );
-  const dataResponse = useAppSelector(
-    selectResponseDataByListenerId(firstListenerId),
-  );
-  const infoResponse = useAppSelector(
-    selectResponseInfoByListenerId(firstListenerId),
-  );
-  const errorsResponse = useAppSelector(
-    selectResponseErrorsByListenerId(firstListenerId),
-  );
-  const isTaskComplete = useAppSelector(
-    selectResponseEndedByListenerId(firstListenerId),
-  );
+  const isStreaming = false;
+  const isStreamEnded = true;
+  const streamError: unknown[] = [];
+  const textResponse = "";
+  const dataResponse: unknown[] = [];
+  const infoResponse: unknown[] = [];
+  const errorsResponse: unknown[] = [];
+  const isTaskComplete = true;
 
   const activeMessageStatus = useAppSelector((state: RootState) =>
     chatSelectors.activeMessageStatus(state),

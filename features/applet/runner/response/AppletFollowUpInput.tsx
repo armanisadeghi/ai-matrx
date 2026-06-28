@@ -33,13 +33,13 @@ import {
   appendTextChunk,
   updateErrorResponse,
   markResponseEnd,
-} from "@/lib/redux/socket-io/slices/socketResponseSlice";
+} from "@/lib/redux/stream-tasks/slices/socketResponseSlice";
 import {
   initializeTask,
   setTaskListenerIds,
   setTaskStreaming,
   completeTask,
-} from "@/lib/redux/socket-io/slices/socketTasksSlice";
+} from "@/lib/redux/stream-tasks/slices/socketTasksSlice";
 import type {
   ChunkPayload,
   ErrorPayload,

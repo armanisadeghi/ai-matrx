@@ -24,12 +24,12 @@ import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCook
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
 import ActiveOrgBootstrap from "@/features/shell/components/ActiveOrgBootstrap";
 import type { UserData } from "@/utils/userDataMapper";
-import type { InitialReduxState } from "@/types/reduxTypes";
+import type { BaseReduxState } from "@/types/reduxTypes";
 
 interface AppShellProps {
   children: React.ReactNode;
-  /** Preloaded Redux state (user, globalCache). */
-  initialReduxState: InitialReduxState;
+  /** Preloaded Redux bootstrap state (user + optional SSR caches). */
+  initialReduxState: BaseReduxState;
   /** Resolved user (real user or mapped guest). Drives the header user menu. */
   userData: UserData;
   isAuthenticated: boolean;

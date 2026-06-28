@@ -7,13 +7,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
-import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import { supabase } from "@/utils/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -38,7 +31,7 @@ import {
   AlertTriangle,
   Zap,
   BookmarkPlus,
-  BookmarkCheck
+  BookmarkCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -48,7 +41,7 @@ import { usePromptsBasePath } from "@/features/prompts/hooks/usePromptsBasePath"
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { PromptJsonDisplay } from "./PromptJsonDisplay";
 import { extractNonJsonContent } from "./progressive-json-parser";
-import { PROMPT_BUILTINS } from "@/lib/redux/prompt-execution/builtins";
+import { PROMPT_BUILTINS } from "@/features/agents/constants/system-agent-registry";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { requireUserId } from "@/utils/auth/getUserId";
 
@@ -75,16 +68,10 @@ export function PromptGenerator({ isOpen, onClose }: PromptGeneratorProps) {
   const sessionNoteId = useRef<string | null>(null);
 
   // Watch streaming text
-  const streamingText = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
-      : "",
-  );
+  const streamingText = useAppSelector((state) => (currentTaskId ? "" : ""));
 
   const isResponseEnded = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
-      : false,
+    currentTaskId ? true : false,
   );
 
   // Extract JSON from streaming response when it ends

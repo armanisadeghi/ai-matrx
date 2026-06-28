@@ -35,7 +35,7 @@ import {
   type CodeEditorContext,
 } from "@/features/code-editor/utils/specialVariables";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
-import { getBuiltinId } from "@/lib/redux/prompt-execution/builtins";
+import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 
 export type EditorState =
   | "input"
@@ -91,7 +91,7 @@ export function useAICodeEditor({
   const language = normalizeLanguage(rawLanguage);
 
   // Use explicit builtinId if provided, otherwise use context
-  const defaultBuiltinId = builtinId || getBuiltinId(promptKey);
+  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
 
   // State for prompt selection
   const [selectedBuiltinId, setSelectedBuiltinId] = useState(defaultBuiltinId);

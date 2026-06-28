@@ -1,51 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
-import { Badge } from "@/components/ui/badge";
-import {
-  MessageSquare,
-  FileText,
-  Box,
-  Stars,
-  Code2,
-  Zap,
-  Clock,
-  Palette,
-  ChevronRight,
-  Check,
-  Layers,
-  MessageCircle,
-  Type,
-  ListOrdered,
-  Loader2,
-  AlertTriangle,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatTitleCase } from "@/utils/text/text-case-converter";
-import {
-  generateBuiltinVariables,
-  FormatType,
-  DisplayMode,
-  ResponseMode,
-} from "../config-instructions";
-import {
-  useAutoCreateApp,
-  type AutoCreateMode,
-} from "../hooks/useAutoCreateApp";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import MarkdownStream from "@/components/MarkdownStream";
 
@@ -149,15 +103,15 @@ export function AutoCreatePromptAppForm({
 
   // Live streaming text from Redux — same pattern as AutoCreateDebugView
   const liveCodeText = useAppSelector((state) =>
-    codeTaskId ? selectPrimaryResponseTextByTaskId(codeTaskId)(state) : "",
+    codeTaskId ? '' : "",
   );
   const liveMetadataText = useAppSelector((state) =>
     metadataTaskId
-      ? selectPrimaryResponseTextByTaskId(metadataTaskId)(state)
+      ? ''
       : "",
   );
   const isCodeStreamEnded = useAppSelector((state) =>
-    codeTaskId ? selectPrimaryResponseEndedByTaskId(codeTaskId)(state) : false,
+    codeTaskId ? true : false,
   );
 
   // Extract variables from prompt

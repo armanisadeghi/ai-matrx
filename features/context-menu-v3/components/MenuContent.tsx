@@ -97,6 +97,7 @@ import { toast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveActions } from "@/features/rich-document/actions/registry";
@@ -183,7 +184,10 @@ function getPlacementIcon(placementType: string) {
   }
 }
 
-function resolveIcon(iconName: string | null | undefined, fallback = "FileText") {
+function resolveIcon(
+  iconName: string | null | undefined,
+  fallback = "FileText",
+) {
   return getIconComponent(iconName ?? fallback, fallback);
 }
 
@@ -466,14 +470,15 @@ export default function MenuContent(props: MenuContentProps) {
   // undo stack — "offer undo" without standing up a history system. There is no
   // non-deprecated API to trigger a textarea's native undo, so `execCommand` is
   // the intentional (and only) mechanism here.
-  const editableElement: HTMLTextAreaElement | HTMLInputElement | null = (() => {
-    const fromRange =
-      selectionRange?.type === "editable" ? selectionRange.element : null;
-    const el = fromRange ?? getTextarea?.() ?? null;
-    return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
-      ? el
-      : null;
-  })();
+  const editableElement: HTMLTextAreaElement | HTMLInputElement | null =
+    (() => {
+      const fromRange =
+        selectionRange?.type === "editable" ? selectionRange.element : null;
+      const el = fromRange ?? getTextarea?.() ?? null;
+      return el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement
+        ? el
+        : null;
+    })();
   const canNativeUndo = Boolean(isEditable && editableElement);
   const runNativeEdit = (command: "undo" | "redo") => {
     if (!editableElement) return;
@@ -553,7 +558,8 @@ export default function MenuContent(props: MenuContentProps) {
       });
       return;
     }
-    const resultDisplay = (entry.displayMode ?? "modal-full") as ResultDisplayMode;
+    const resultDisplay = (entry.displayMode ??
+      "modal-full") as ResultDisplayMode;
     try {
       await launchShortcut(entry.id, scope, {
         surfaceKey: `${sourceFeature}:${entry.id}`,
@@ -605,15 +611,7 @@ export default function MenuContent(props: MenuContentProps) {
   ) => {
     const template = entry.template;
     if (editorId) {
-      try {
-        const { insertTextAtCursor } =
-          require("@/features/rich-text-editor/utils/insertTextUtils") as {
-            insertTextAtCursor: (id: string, text: string) => boolean;
-          };
-        if (insertTextAtCursor(editorId, template)) onContentInserted?.();
-      } catch (err) {
-        console.error("[ContextMenuV3] content block insert failed", err);
-      }
+      if (insertTextAtCursor(editorId, template)) onContentInserted?.();
       return;
     }
     if (getTextarea) {
@@ -771,7 +769,9 @@ export default function MenuContent(props: MenuContentProps) {
     const hasContent = items.length > 0 || children.length > 0;
     return (
       <Sub key={category.id}>
-        <SubTrigger className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}>
+        <SubTrigger
+          className={!hasContent ? "opacity-50 cursor-not-allowed" : ""}
+        >
           <CategoryIcon
             className="h-4 w-4 mr-2"
             style={{ color: category.color || "currentColor" }}
@@ -825,7 +825,9 @@ export default function MenuContent(props: MenuContentProps) {
           {children.length > 0 && (
             <>
               {items.length > 0 && <Separator />}
-              {children.map((child) => renderCategoryGroup(child, placementType))}
+              {children.map((child) =>
+                renderCategoryGroup(child, placementType),
+              )}
             </>
           )}
         </SubContent>

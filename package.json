@@ -249,7 +249,6 @@
     "remirror": "latest",
     "resend": "^6.9.3",
     "server-only": "^0.0.1",
-    "socket.io-client": "latest",
     "sonner": "latest",
     "styled-components": "^6.4.1",
     "supabase": "^2.98.2",

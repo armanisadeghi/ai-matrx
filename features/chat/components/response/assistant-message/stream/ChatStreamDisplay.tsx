@@ -10,14 +10,8 @@ import { parseTaggedContent } from "@/components/mardown-display/markdown-classi
 import ThinkingVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ThinkingVisualization";
 import ReasoningVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ReasoningVisualization";
 import QuestionnaireLoadingVisualization from "@/components/mardown-display/chat-markdown/QuestionnaireLoadingVisualization";
-import type { RootState } from "@/lib/redux/store";
 import ControlledLoadingIndicator from "@/features/chat/components/response/chat-loading/ControlledLoadingIndicator";
 import { createChatSelectors } from "@/lib/redux/entity/custom-selectors/chatSelectors";
-import { createTaskResponseSelectors } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
-import {
-  selectTaskFirstListenerId,
-  selectTaskStreamingById,
-} from "@/lib/redux/socket-io/selectors/socket-task-selectors";
 import markdownComponents from "./markdownComponents";
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
@@ -32,22 +26,12 @@ const ChatStreamDisplay: React.FC<ChatStreamDisplayProps> = memo(
     const dispatch = useAppDispatch();
     const chatActions = getChatActionsWithThunks();
     const chatSelectors = createChatSelectors();
-    const responseSelectors = useMemo(
-      () => createTaskResponseSelectors(taskId),
-      [taskId],
-    );
-
-    const content = useAppSelector(responseSelectors.selectText);
-    const streamData = useAppSelector(responseSelectors.selectData);
-    const isStreamEnded = useAppSelector(responseSelectors.selectEnded);
-    const streamError = useAppSelector(responseSelectors.selectErrors);
-
-    const isStreaming = useAppSelector((state: RootState) =>
-      selectTaskStreamingById(state, taskId),
-    );
-    const hasListenerId = useAppSelector((state: RootState) =>
-      selectTaskFirstListenerId(state, taskId),
-    );
+    const content = "";
+    const streamData: unknown[] = [];
+    const isStreamEnded = true;
+    const streamError: unknown[] = [];
+    const isStreaming = false;
+    const hasListenerId = "";
 
     const settings = useAppSelector(chatSelectors.activeMessageSettings);
     const shouldShowLoader = useAppSelector(chatSelectors.shouldShowLoader);

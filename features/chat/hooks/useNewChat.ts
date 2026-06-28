@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useChatBasics from "@/features/chat/hooks/useChatBasics";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { createTask } from "@/lib/redux/socket-io/thunks/createTaskThunk";
+import { createTask } from "@/lib/redux/stream-tasks/thunks/createTaskThunk";
 
 const INFO = true;
 const DEBUG = false;

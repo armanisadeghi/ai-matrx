@@ -10,7 +10,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { getBuiltinId } from "@/lib/redux/prompt-execution/builtins";
+import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 
 /**
  * AICodeEditorModalV2
@@ -61,7 +61,7 @@ export function AICodeEditorModalV2({
   const conversationIdRef = useRef<string | null>(null);
 
   // Agent id equals the old prompt_builtins id — migration preserved UUIDs 1:1
-  const defaultBuiltinId = builtinId || getBuiltinId(promptKey);
+  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
 
   const closePrompt = useCallback(() => {
     if (conversationIdRef.current) {

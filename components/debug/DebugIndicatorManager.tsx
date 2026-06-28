@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,
@@ -10,10 +10,10 @@ import {
   hidePromptDebugIndicator,
   hideResourceDebugIndicator,
   hideExecutionStateDebug,
-} from '@/lib/redux/preferences/adminDebugSlice';
-import { DebugIndicator } from './DebugIndicator';
-import { ResourceDebugIndicator } from './ResourceDebugIndicator';
-import { PromptExecutionDebugPanel } from './PromptExecutionDebugPanel';
+} from "@/lib/redux/preferences/adminDebugSlice";
+import { DebugIndicator } from "./DebugIndicator";
+import { ResourceDebugIndicator } from "./ResourceDebugIndicator";
+import { PromptExecutionDebugPanel } from "./PromptExecutionDebugPanel";
 
 /**
  * Centralized manager for all debug indicators
@@ -42,7 +42,7 @@ export function DebugIndicatorManager() {
       {/* Resource Debug Indicator */}
       {resourceDebug?.isOpen && resourceDebug.runId && (
         <ResourceDebugIndicator
-          runId={resourceDebug.runId}
+          conversationId={resourceDebug.runId}
           onClose={() => dispatch(hideResourceDebugIndicator())}
         />
       )}
@@ -50,11 +50,10 @@ export function DebugIndicatorManager() {
       {/* Execution State Debug Panel */}
       {executionStateDebug?.isOpen && executionStateDebug.runId && (
         <PromptExecutionDebugPanel
-          runId={executionStateDebug.runId}
+          conversationId={executionStateDebug.runId}
           onClose={() => dispatch(hideExecutionStateDebug())}
         />
       )}
     </>
   );
 }
-

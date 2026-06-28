@@ -19,11 +19,10 @@ import BookmarkViewer from "../BookmarkViewer";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import SEOAnalysisPage from "@/features/scraper/parts/SEOAnalysisPage";
 import HeaderAnalysis from "../HeaderAnalysis";
-import FactChecker from "../recipes/FactChecker";
-import KeywordAnalysis from "../recipes/KeywordAnalysis";
+import FactChecker from "../agent-analysis/FactChecker";
+import KeywordAnalysis from "../agent-analysis/KeywordAnalysis";
 import FeatureDisabledPlaceholder from "../reusable/FeatureDisabledPlaceholder";
 import ImageGallery from "../tabs/images/ImageGallery";
-import SerpResultsPage from "@/features/workflows/results/registered-components/SerpResultsPage";
 import { ScrapedContentPretty } from "../ScrapedContentPretty";
 
 interface PageContentProps {
@@ -56,7 +55,7 @@ const PageContent: React.FC<PageContentProps> = ({
   // Extract data using the new ScraperDataUtils system
   const extractedData = useMemo(() => {
     try {
-      // The pageData should already be processed from ScraperResultsComponent
+      // pageData is processed by ScraperDataUtils before render
       // Extract the first result for display
       const firstResult = pageData?.results?.[0];
 
@@ -272,13 +271,6 @@ const PageContent: React.FC<PageContentProps> = ({
                   onEnable={() => enableFeature("factChecker")}
                 />
               )}
-            </TabsContent>
-
-            <TabsContent
-              value="serp-results"
-              className="m-0 h-full overflow-auto"
-            >
-              {/* <SerpResultsPage data={serpData} /> */}
             </TabsContent>
 
             <TabsContent value="hashes" className="m-0 h-full overflow-auto">

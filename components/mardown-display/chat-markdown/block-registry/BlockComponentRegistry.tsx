@@ -3,7 +3,6 @@
 import React, { Suspense, lazy } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../BasicMarkdownContent";
-import { LazyEntityGate } from "@/providers/packs/LazyEntityGate";
 
 // Lazy-load CodeBlock to avoid circular dependency with Redux store
 const CodeBlock = lazy(

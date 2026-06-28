@@ -26,7 +26,7 @@ import {
   FileCode,
   SquareArrowOutUpRight,
   MoreHorizontal,
-  Globe
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
@@ -39,7 +39,7 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import { getBuiltinInfoByKey } from "@/lib/redux/prompt-execution/builtins";
+import { getBuiltinInfoByKey } from "@/features/agents/constants/system-agent-registry";
 import AdvancedMenu, {
   type MenuItem,
 } from "@/components/official/AdvancedMenu";

@@ -20,8 +20,7 @@ import {
   getAdminStatus,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
-import { getEmptyGlobalCache } from "@/utils/schema/schema-processing/emptyGlobalCache";
-import type { InitialReduxState } from "@/types/reduxTypes";
+import type { BaseReduxState } from "@/types/reduxTypes";
 import NavigationLoader from "@/components/loaders/NavigationLoader";
 import { headers } from "next/headers";
 // Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
@@ -29,8 +28,6 @@ import { headers } from "next/headers";
 // `lib/sync/identity::attachStore` (called from StoreProvider) wires the
 // reactive identity source so non-React consumers see the current state.
 import ResponsiveLayout from "@/components/layout/new-layout/ResponsiveLayout";
-
-const emptyGlobalCache = getEmptyGlobalCache();
 
 export default async function AuthenticatedLayout({
   children,
@@ -83,9 +80,8 @@ export default async function AuthenticatedLayout({
     serverIsMobile: isMobile,
   };
 
-  const initialReduxState: InitialReduxState = {
+  const initialReduxState: BaseReduxState = {
     user: userData,
-    globalCache: emptyGlobalCache,
   };
 
   return (

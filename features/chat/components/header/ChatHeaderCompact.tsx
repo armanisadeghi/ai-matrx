@@ -1,35 +1,35 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TbListSearch } from "react-icons/tb";
 import { IoCreateOutline } from "react-icons/io5";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
 const ConversationSearchOverlay = dynamic(
-    () => import("@/features/chat/components/conversations/ConversationSearchOverlay").then(m => ({ default: m.ConversationSearchOverlay })),
-    { ssr: false }
+  () =>
+    import("@/features/chat/components/conversations/ConversationSearchOverlay").then(
+      (m) => ({ default: m.ConversationSearchOverlay }),
+    ),
+  { ssr: false },
 );
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { getChatActionsWithThunks } from "@/lib/redux/entity/custom-actions/chatActions";
 
 interface ChatHeaderCompactProps {
   baseRoute?: string;
 }
 
-export function ChatHeaderCompact({ baseRoute = "/chat" }: ChatHeaderCompactProps) {
-  const dispatch = useAppDispatch();
-  const chatActions = getChatActionsWithThunks();
+export function ChatHeaderCompact({
+  baseRoute = "/chat",
+}: ChatHeaderCompactProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  // Critical initialization that was in the old header
-  useEffect(() => {
-    dispatch(chatActions.initialize());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch]);
 
   const handleOpenSearch = () => {
     setIsSearchOpen(true);
@@ -46,7 +46,11 @@ export function ChatHeaderCompact({ baseRoute = "/chat" }: ChatHeaderCompactProp
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-full">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 rounded-full"
+              >
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import useChatBasics from "@/features/chat/hooks/useChatBasics";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { saveMessageThunk } from "@/lib/redux/features/aiChats/thunks/entity/createMessageThunk";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/stream-tasks/thunks/submitChatFastAPI";
 
 const INFO = true;
 const DEBUG = false;

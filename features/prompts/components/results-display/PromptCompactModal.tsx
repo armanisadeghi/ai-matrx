@@ -1,15 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, GripVertical, ChevronsUp, ChevronsDown } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import {
-  selectInstance,
-  selectMessages,
-} from '@/lib/redux/prompt-execution/selectors';
-import { selectExecutionConfig } from '@/lib/redux/prompt-execution/slice';
-import { selectCachedPrompt } from '@/lib/redux/slices/promptCacheSlice';
-import { selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
 import { finalizeExecution } from '@/lib/redux/prompt-execution/thunks/finalizeExecutionThunk';
 import { SmartPromptInput } from '../smart/SmartPromptInput';
 import { SmartMessageList } from '../smart/SmartMessageList';
@@ -42,9 +33,7 @@ export default function PromptCompactModal({
   );
   
   const currentTaskId = instance?.execution?.currentTaskId;
-  const isResponseEnded = useAppSelector((state) =>
-    currentTaskId ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state) : false
-  );
+  const isResponseEnded = true;
   
   const title = prompt?.name || 'AI Response';
   

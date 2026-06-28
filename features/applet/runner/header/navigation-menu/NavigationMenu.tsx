@@ -1,26 +1,5 @@
 "use client";
 import React from "react";
-import { useRouter } from "next/navigation";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Menu, Crown, Settings, Sun, Moon, Bug } from "lucide-react";
-import { setMode } from "@/styles/themes/themeSlice";
-import Image from "next/image";
-import Link from "next/link";
-import { navigationLinks } from "@/features/shell/navigation/navigationLinks";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectUser } from "@/lib/redux/selectors/userSelectors";
-import type { RootState } from "@/lib/redux/store";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { brokerSelectors } from "@/lib/redux/brokerSlice";
-import { selectTaskFirstListenerId } from "@/lib/redux/socket-io/selectors/socket-task-selectors";
-import { selectResponseTextByListenerId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import AdminMenu from "./AdminMenu";
 import CreatorMenu from "./CreatorMenu";
 import { useMenuAnimations } from "./useMenuAnimations";
@@ -100,11 +79,11 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
     brokerSelectors.selectValue(state, "CURRENT_TASK_ID"),
   );
   const firstListenerId = useAppSelector((state) =>
-    currentTaskId ? selectTaskFirstListenerId(state, currentTaskId) : null,
+    currentTaskId ? '' : null,
   );
   const textResponse = useAppSelector((state) =>
     firstListenerId
-      ? selectResponseTextByListenerId(firstListenerId)(state)
+      ? ''
       : "",
   );
 

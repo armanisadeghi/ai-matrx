@@ -10,10 +10,6 @@
  * For UI-based execution (with state management), use usePromptExecutionCore.
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { submitChatFastAPI as createAndSubmitTask } from '@/lib/redux/socket-io/thunks/submitChatFastAPI';
-import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
 import { replaceVariablesInText } from '../utils/variable-resolver';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
@@ -54,11 +50,11 @@ export function usePromptExecution(): UsePromptExecutionReturn {
   const [result, setResult] = useState<ExecutionResult | null>(null);
   
   const streamingText = useAppSelector(state => 
-    currentTaskId ? selectPrimaryResponseTextByTaskId(currentTaskId)(state) : ""
+    currentTaskId ? '' : ""
   );
   
   const isResponseEnded = useAppSelector(state =>
-    currentTaskId ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state) : false
+    currentTaskId ? true : false
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);

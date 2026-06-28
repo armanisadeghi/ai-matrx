@@ -1,19 +1,4 @@
 import React, { useState, RefObject, useMemo } from "react";
-import { MessageSquare, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { PromptUserMessage } from "./PromptUserMessage";
-import dynamic from "next/dynamic";
-
-const PromptAssistantMessage = dynamic(
-  () =>
-    import("./PromptAssistantMessage").then((m) => ({
-      default: m.PromptAssistantMessage,
-    })),
-  { ssr: false },
-);
-import { PromptStats } from "./PromptStats";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectPrimaryResponseTextByTaskId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import { PromptVariable } from "@/features/prompts/types/core";
 import type { Resource } from "../../types/resources";
 import { PromptInput } from "../PromptInput";
@@ -101,7 +86,7 @@ export function PromptBuilderRightPanel({
   // Get streaming text from Redux - this doesn't cause parent re-renders
   const streamingText = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
+      ? ''
       : "",
   );
 

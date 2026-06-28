@@ -8,8 +8,7 @@ import {
   getAdminStatus,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
-import { getEmptyGlobalCache } from "@/utils/schema/schema-processing/emptyGlobalCache";
-import type { InitialReduxState } from "@/types/reduxTypes";
+import type { BaseReduxState } from "@/types/reduxTypes";
 // Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
 // is deleted in this PR. The Redux preloaded state below carries the user data;
 // `lib/sync/identity::attachStore` (called from StoreProvider) wires the
@@ -44,8 +43,6 @@ export const metadata: Metadata = {
   },
 };
 
-const emptyGlobalCache = getEmptyGlobalCache();
-
 export default async function AppLayout({
   children,
 }: {
@@ -61,7 +58,7 @@ export default async function AppLayout({
   const { user, isAuthenticated } = await getServerAuth();
   const supabase = await createClient();
 
-  let initialReduxState: InitialReduxState;
+  let initialReduxState: BaseReduxState;
   let userData: UserData;
 
   if (user) {
@@ -88,7 +85,6 @@ export default async function AppLayout({
 
     initialReduxState = {
       user: userData,
-      globalCache: emptyGlobalCache,
     };
   } else {
     const guestUserData = mapUserData(null, undefined, false);
@@ -96,7 +92,6 @@ export default async function AppLayout({
 
     initialReduxState = {
       user: guestUserData,
-      globalCache: emptyGlobalCache,
     };
   }
 

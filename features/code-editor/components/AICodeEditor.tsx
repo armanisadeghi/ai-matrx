@@ -37,8 +37,8 @@ import {
 } from "@/features/code-editor/hooks/useAICodeEditor";
 import {
   PROMPT_BUILTINS,
-  PromptBuiltin,
-} from "@/lib/redux/prompt-execution/builtins";
+  type PromptBuiltin,
+} from "@/features/agents/constants/system-agent-registry";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;

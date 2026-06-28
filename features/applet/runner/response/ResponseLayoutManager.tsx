@@ -2,8 +2,6 @@
 
 import React, { useMemo, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectTaskFirstListenerId } from "@/lib/redux/socket-io/selectors/socket-task-selectors";
-import { selectResponseTextByListenerId, selectResponseEndedByListenerId, selectResponseDataByListenerId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import MarkdownStream from "@/components/MarkdownStream";
 import FullscreenWrapper from "@/components/matrx/FullscreenWrapper";
 import AppletLayoutManager from "@/features/applet/runner/layouts/AppletLayoutManager";
@@ -35,18 +33,9 @@ export default function ResponseLayoutManager({
   allowEditing = false,
 }: ResponseLayoutManagerProps) {
   const dispatch = useAppDispatch();
-  const firstListenerId = useAppSelector((state) =>
-    selectTaskFirstListenerId(state, taskId),
-  );
-  const textResponse = useAppSelector(
-    selectResponseTextByListenerId(firstListenerId),
-  );
-  const dataResponse = useAppSelector(
-    selectResponseDataByListenerId(firstListenerId),
-  );
-  const isTaskComplete = useAppSelector(
-    selectResponseEndedByListenerId(firstListenerId),
-  );
+  const textResponse = "";
+  const dataResponse: unknown[] = [];
+  const isTaskComplete = true;
   const hasCustomView = useMemo(
     () => hasCoordinator(coordinatorId),
     [coordinatorId],

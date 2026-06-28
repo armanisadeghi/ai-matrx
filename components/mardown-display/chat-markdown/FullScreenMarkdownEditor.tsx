@@ -29,7 +29,6 @@ import TuiEditorContent, {
 } from "./tui/TuiEditorContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { LazyEntityGate } from "@/providers/packs/LazyEntityGate";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -1201,11 +1200,9 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       label: TAB_LABELS.analysis,
       content: wrapInBoundary(
         "analysis",
-        <LazyEntityGate label="MarkdownAnalyzer/FullScreenEditor">
-          <Suspense fallback={<SuspenseLoader />}>
-            <MarkdownAnalyzer messageId={messageId} />
-          </Suspense>
-        </LazyEntityGate>,
+        <Suspense fallback={<SuspenseLoader />}>
+          <MarkdownAnalyzer messageId={messageId} />
+        </Suspense>,
       ),
       className: "p-4",
     });

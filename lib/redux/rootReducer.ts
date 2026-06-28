@@ -31,9 +31,6 @@ import creatorDebugReducer from "./preferences/creatorDebugSlice";
 import themeReducer from "@/styles/themes/themeSlice";
 import uiReducer from "./ui/uiSlice";
 
-import socketConnectionReducer from "./socket-io/slices/socketConnectionsSlice";
-import socketResponseReducer from "./socket-io/slices/socketResponseSlice";
-import socketTasksReducer from "./socket-io/slices/socketTasksSlice";
 import { componentDefinitionsSlice } from "./app-runner/slices/componentDefinitionsSlice";
 import { appBuilderSlice } from "./app-builder/slices/appBuilderSlice";
 import { appletBuilderSlice } from "./app-builder/slices/appletBuilderSlice";
@@ -42,15 +39,11 @@ import { fieldBuilderSlice } from "./app-builder/slices/fieldBuilderSlice";
 import customAppRuntimeSlice from "./app-runner/slices/customAppRuntimeSlice";
 import customAppletRuntimeSlice from "./app-runner/slices/customAppletRuntimeSlice";
 
-import brokerSlice from "./brokerSlice/slice";
 import overlaySlice from "./slices/overlaySlice";
 import overlayDataReducer from "./slices/overlayDataSlice";
 import voicePadReducer from "./slices/voicePadSlice";
 import voiceAgentReducer from "@/features/voice-agent/state/voiceAgentSlice";
 import windowManagerReducer from "./slices/windowManagerSlice";
-import dbFunctionNodeSlice from "./workflows/db-function-node/dbFunctionNodeSlice";
-import workflowSlice from "./workflow/slice";
-import workflowNodeSlice from "./workflow-nodes/slice";
 import canvasReducer from "@/features/canvas/redux/canvasSlice";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
@@ -106,14 +99,8 @@ import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import agentConsumersReducer from "@/features/agents/redux/agent-consumers/slice";
 import toolsReducer from "@/features/agents/redux/tools/tools.slice";
-
-import promptCacheReducer from "./slices/promptCacheSlice";
-import promptConsumersReducer from "./slices/promptConsumersSlice";
 import contextMenuCacheReducer from "./slices/contextMenuCacheSlice";
 import agentContextMenuCacheReducer from "./slices/agentContextMenuCacheSlice";
-import promptRunnerReducer from "./slices/promptRunnerSlice";
-import promptExecutionReducer from "./prompt-execution/slice";
-import actionCacheReducer from "./prompt-execution/actionCacheSlice";
 import scopeTypesReducer from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import scopesReducer from "@/features/agent-context/redux/scope/scopesSlice";
 import scopeAssignmentsReducer from "@/features/agent-context/redux/scope/scopeAssignmentsSlice";
@@ -122,7 +109,6 @@ import scopeValuesReducer from "@/features/scope-system/redux/scopeValuesSlice";
 import templatesReducer from "@/features/scope-system/redux/templatesSlice";
 import promptEditorReducer from "./slices/promptEditorSlice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
-import { messageActionsReducer } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import agentSettingsReducer from "./slices/agent-settings/agentSettingsSlice";
 
 import artifactsReducer from "./slices/artifactsSlice";
@@ -274,16 +260,6 @@ export const slimReducerMap = {
   flashcardChat: flashcardChatReducer,
   ui: uiReducer,
 
-  // ===== LEGACY CX CHAT SLICES — UNMOUNTED =====
-  // `activeChat`, `chatConversations`, `cxConversations`, `agentConversations`
-  // were removed from the store during the Redux unification.
-  messageActions: messageActionsReducer,
-
-  // ===== OLD SOCKET.IO SYSTEM (DEPRECATED) ====
-  socketConnections: socketConnectionReducer,
-  socketResponse: socketResponseReducer,
-  socketTasks: socketTasksReducer,
-
   // ==== OLD APPLET SYSTEM (DEPRECATED) ====
   componentDefinitions: componentDefinitionsSlice.reducer,
   appBuilder: appBuilderSlice.reducer,
@@ -292,22 +268,11 @@ export const slimReducerMap = {
   fieldBuilder: fieldBuilderSlice.reducer,
   customAppRuntime: customAppRuntimeSlice,
   customAppletRuntime: customAppletRuntimeSlice,
-  broker: brokerSlice,
 
   // OLD PROMPT SYSTEM (DEPRECATED)
   contextMenuCache: contextMenuCacheReducer,
   agentContextMenuCache: agentContextMenuCacheReducer,
   agentCache: agentCacheReducer,
-  promptCache: promptCacheReducer,
-  promptConsumers: promptConsumersReducer,
-  promptRunner: promptRunnerReducer,
-  promptExecution: promptExecutionReducer,
-  actionCache: actionCacheReducer,
-
-  dbFunctionNode: dbFunctionNodeSlice,
-
-  workflows: workflowSlice,
-  workflowNodes: workflowNodeSlice,
 
   promptEditor: promptEditorReducer,
 

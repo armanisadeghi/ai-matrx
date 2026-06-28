@@ -1,13 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
-import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import { createClient } from "@/utils/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -99,13 +92,13 @@ export function GeneratePromptForBuiltinModal({
   // Watch streaming text
   const streamingText = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
+      ? ''
       : "",
   );
 
   const isResponseEnded = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
+      ? true
       : false,
   );
 

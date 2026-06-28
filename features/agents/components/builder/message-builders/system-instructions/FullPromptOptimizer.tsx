@@ -12,13 +12,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 // TODO(prompt-to-agent-sweep): re-enable useAppDispatch when handleOptimize is re-wired
-import { useAppSelector } from "@/lib/redux/hooks";
-// TODO(prompt-to-agent-sweep): re-enable when handleOptimize is re-wired to agent.definition
-// import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
-import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 // TODO(prompt-to-agent-sweep): re-add supabase import when re-wiring to agent.definition
 // import { v4 as uuidv4 } from "uuid";
 import {
@@ -105,13 +98,13 @@ export function FullPromptOptimizer({
   // Watch streaming text
   const streamingText = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
+      ? ''
       : "",
   );
 
   const isResponseEnded = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
+      ? true
       : false,
   );
 

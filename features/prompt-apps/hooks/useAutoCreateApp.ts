@@ -17,15 +17,16 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
-import { executeBuiltinWithCodeExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithCodeExtractionThunk";
-import { executeBuiltinWithJsonExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithJsonExtractionThunk";
+import {
+  executeBuiltinWithCodeExtraction,
+  executeBuiltinWithJsonExtraction,
+} from "@/features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks";
 import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   validateSlugsInBatch,
   generateSlugCandidates,
 } from "../services/slug-service";
 import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
-import { SocketConnectionManager } from "@/lib/redux/socket-io/connection/socketConnectionManager";
 import type { AppMetadata } from "../types/promptAppTypes";
 
 export type AutoCreateMode = "standard" | "lightning";
@@ -125,15 +126,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
       }
 
       if (document.visibilityState === "visible" && isCreatingRef.current) {
-        // Tab came back - check socket health
-        const socketManager = SocketConnectionManager.getInstance();
-        const isHealthy = socketManager.isConnectionHealthy();
-
-        if (!isHealthy) {
-          console.warn(
-            "[AutoCreateApp] Socket disconnected while tab was in background - forcing reconnect",
-          );
-          socketManager.forceReconnectAll();
+        if (tabWasHiddenDuringCreation.current) {
           setWasBackgrounded(true);
         }
       }
@@ -277,7 +270,9 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
 
         const userId = requireUserId();
 
-        const { data: appData, error: insertError } = await graveyardDb(supabase)
+        const { data: appData, error: insertError } = await graveyardDb(
+          supabase,
+        )
           .from("prompt_apps")
           .insert({
             user_id: userId,

@@ -24,7 +24,7 @@
 import React from "react";
 import StoreProvider from "@/providers/StoreProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { InitialReduxState } from "@/types/reduxTypes";
+import type { BaseReduxState } from "@/types/reduxTypes";
 import { RefProvider } from "@/lib/refs";
 import { ToastProvider } from "@/providers/toast-context";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
@@ -100,7 +100,7 @@ import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
-  initialReduxState?: InitialReduxState;
+  initialReduxState?: BaseReduxState;
 }
 
 export function Providers({ children, initialReduxState }: ProvidersProps) {

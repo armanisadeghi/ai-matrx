@@ -1,25 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { Button } from "@/components/ui/button";
-import {
-    resolveExecutionConfig,
-    type NewExecutionConfig
-} from "@/features/prompts/types/modal";
-
-import { SmartPromptInput } from "./SmartPromptInput";
-import { SmartMessageList } from "./SmartMessageList";
-import {
-    selectInstance,
-    selectExecutionConfig,
-} from "@/lib/redux/prompt-execution/slice";
-import { executeMessage } from "@/lib/redux/prompt-execution/thunks/executeMessageThunk";
-import { startPromptInstance } from "@/lib/redux/prompt-execution/thunks/startInstanceThunk";
-import { finalizeExecution } from "@/lib/redux/prompt-execution/thunks/finalizeExecutionThunk";
-import { selectPrimaryResponseEndedByTaskId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 
 export interface SmartPromptRunnerProps {
     promptId?: string;
@@ -106,9 +87,7 @@ export function SmartPromptRunner({
     const currentTaskId = instance?.execution?.currentTaskId;
 
     // Select ONLY the completion status, NOT the text
-    const isResponseEnded = useAppSelector((state) =>
-        currentTaskId ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state) : false
-    );
+    const isResponseEnded = true;
 
     // Finalize execution when streaming ends
     useEffect(() => {

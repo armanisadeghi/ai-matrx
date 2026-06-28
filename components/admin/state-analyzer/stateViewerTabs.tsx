@@ -129,7 +129,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "ui",
   "conversationList",
   "messageActions",
-  "socketConnections",
   "socketResponse",
   "socketTasks",
   "componentDefinitions",
@@ -641,18 +640,8 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "socketConnections",
-      label: "Socket Connections",
-      content: (
-        <GenericSliceViewer
-          sliceKey="socketConnections"
-          state={completeState.socketConnections}
-        />
-      ),
-    },
-    {
       id: "socketResponse",
-      label: "Socket Response",
+      label: "Stream Response",
       content: (
         <GenericSliceViewer
           sliceKey="socketResponse"

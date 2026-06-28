@@ -16,7 +16,6 @@ import {
 import MatrxDynamicPanel from "@/components/matrx/resizable/MatrxDynamicPanel";
 import PageDebugDisplay from "@/components/admin/debug/PageDebugDisplay";
 import { buildAgentContext } from "@/components/admin/debug/buildAgentContext";
-import { LazyEntityGate } from "@/providers/packs/LazyEntityGate";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,
@@ -459,15 +458,13 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
             {debugData && Object.keys(debugData).length > 0 ? (
               <PageDebugDisplay debugData={debugData} />
             ) : (
-              <LazyEntityGate label="LargeIndicator/EnhancedEntityAnalyzer">
-                <Suspense
-                  fallback={
-                    <div className="text-xs text-slate-400">
-                      Loading entity analyzer...
-                    </div>
-                  }
-                ></Suspense>
-              </LazyEntityGate>
+              <Suspense
+                fallback={
+                  <div className="text-xs text-slate-400">
+                    Loading entity analyzer...
+                  </div>
+                }
+              ></Suspense>
             )}
           </div>
         )}

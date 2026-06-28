@@ -1,19 +1,19 @@
 /**
  * usePromptRunner Hook
- * 
+ *
  * Centralized hook for opening/closing prompt runner modals via Redux.
  * Replaces the need for local state management (usePromptRunnerModal).
- * 
+ *
  * Features:
  * - Automatic prompt caching (fetch once per session)
  * - Global modal management (single instance)
  * - Simple API (just call openPrompt)
  * - No prop drilling or local state
- * 
+ *
  * @example
  * ```tsx
  * const { openPrompt, closePrompt, isOpen } = usePromptRunner();
- * 
+ *
  * // Open with prompt ID (auto-caches) - New execution config
  * openPrompt({
  *   promptId: 'text-analyzer',
@@ -25,7 +25,7 @@
  *   },
  *   variables: { text: selectedText }
  * });
- * 
+ *
  * // Open with prompt data (skip cache)
  * openPrompt({
  *   promptData: myPrompt,
@@ -37,7 +37,7 @@
  *   },
  *   variables: { topic: 'AI' }
  * });
- * 
+ *
  * // Close modal
  * closePrompt();
  * ```
@@ -45,36 +45,45 @@
 
 "use client";
 
-import { useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { openPromptExecution } from '@/lib/redux/thunks/openPromptExecutionThunk';
-import { closePromptModal, selectIsPromptModalOpen, selectPromptModalConfig } from '@/lib/redux/slices/promptRunnerSlice';
-import type { PromptRunnerModalConfig } from '../types/modal';
-import type { ResultDisplay, PromptExecutionConfig } from '@/features/prompt-builtins/types/execution-modes';
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  closePromptModal,
+  selectIsPromptModalOpen,
+  selectPromptModalConfig,
+} from "@/lib/redux/slices/promptRunnerSlice";
+import type { PromptRunnerModalConfig } from "../types/modal";
+import type {
+  ResultDisplay,
+  PromptExecutionConfig,
+} from "@/features/prompt-builtins/types/execution-modes";
 
-export interface OpenPromptOptions extends Omit<PromptRunnerModalConfig, 'executionConfig'> {
+export interface OpenPromptOptions extends Omit<
+  PromptRunnerModalConfig,
+  "executionConfig"
+> {
   /** NEW: Specify which UI to show (defaults to 'modal-full') */
   result_display?: ResultDisplay;
-  
+
   /** NEW: Which table to fetch prompt from (defaults to 'prompts') */
-  promptSource?: 'prompts' | 'prompt_builtins';
-  
+  promptSource?: "prompts" | "prompt_builtins";
+
   /** NEW: Execution configuration with separate flags */
-  executionConfig?: Omit<PromptExecutionConfig, 'result_display'>;
-  
+  executionConfig?: Omit<PromptExecutionConfig, "result_display">;
+
   /** Display variant for PromptRunner (standard | compact) */
-  displayVariant?: 'standard' | 'compact';
-  
+  displayVariant?: "standard" | "compact";
+
   /** Inline-specific: text manipulation callbacks */
   onTextReplace?: (text: string) => void;
   onTextInsertBefore?: (text: string) => void;
   onTextInsertAfter?: (text: string) => void;
   originalText?: string;
-  
+
   /** Sidebar-specific: position and size */
-  sidebarPosition?: 'left' | 'right';
-  sidebarSize?: 'sm' | 'md' | 'lg';
-  
+  sidebarPosition?: "left" | "right";
+  sidebarSize?: "sm" | "md" | "lg";
+
   /** Callback for non-UI executions */
   onExecutionComplete?: (result: { response: string; metadata?: any }) => void;
 }
@@ -82,13 +91,13 @@ export interface OpenPromptOptions extends Omit<PromptRunnerModalConfig, 'execut
 export interface UsePromptRunnerReturn {
   /** Open a prompt with any display type */
   openPrompt: (options: OpenPromptOptions) => Promise<void>;
-  
+
   /** Close the active prompt runner modal */
   closePrompt: () => void;
-  
+
   /** Is the prompt modal currently open */
   isOpen: boolean;
-  
+
   /** Current modal configuration (if open) */
   config: PromptRunnerModalConfig | null;
 }
@@ -102,26 +111,31 @@ export function usePromptRunner(): UsePromptRunnerReturn {
   const isOpen = useAppSelector(selectIsPromptModalOpen);
   const config = useAppSelector(selectPromptModalConfig);
 
-  const openPrompt = useCallback(async (options: OpenPromptOptions) => {
-    const {
-      result_display = 'modal-full',
-      executionConfig = {
-        auto_run: true,
-        allow_chat: true,
-        show_variables: false,
-        apply_variables: true,
-        track_in_runs: true,
-        use_pre_execution_input: false,
-      },
-      ...restOptions
-    } = options;
+  const openPrompt = useCallback(
+    async (options: OpenPromptOptions) => {
+      const {
+        result_display = "modal-full",
+        executionConfig = {
+          auto_run: true,
+          allow_chat: true,
+          show_variables: false,
+          apply_variables: true,
+          track_in_runs: true,
+          use_pre_execution_input: false,
+        },
+        ...restOptions
+      } = options;
 
-    await dispatch(openPromptExecution({
-      ...restOptions,
-      result_display,
-      executionConfig,
-    })).unwrap();
-  }, [dispatch]);
+      await dispatch(
+        openPromptExecution({
+          ...restOptions,
+          result_display,
+          executionConfig,
+        }),
+      ).unwrap();
+    },
+    [dispatch],
+  );
 
   const closePromptModalHandler = useCallback(() => {
     // Note: OverlayController passes responseText when closing; this is for manual/programmatic closes
@@ -142,10 +156,10 @@ export function usePromptRunner(): UsePromptRunnerReturn {
  */
 export function openPromptImperative(
   dispatch: any,
-  options: OpenPromptOptions
+  options: OpenPromptOptions,
 ): Promise<void> {
   const {
-    result_display = 'modal-full',
+    result_display = "modal-full",
     executionConfig = {
       auto_run: true,
       allow_chat: true,
@@ -157,10 +171,11 @@ export function openPromptImperative(
     ...restOptions
   } = options;
 
-  return dispatch(openPromptExecution({
-    ...restOptions,
-    result_display,
-    executionConfig,
-  })).unwrap();
+  return dispatch(
+    openPromptExecution({
+      ...restOptions,
+      result_display,
+      executionConfig,
+    }),
+  ).unwrap();
 }
-

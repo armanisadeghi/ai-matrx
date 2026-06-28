@@ -1,19 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
-import {
-    selectConversationMessages,
-    selectTestModeState,
-    addConversationMessage,
-    clearConversation,
-    selectPromptSettings,
-    selectPromptMessages,
-    selectPromptVariables,
-    selectSelectedModelId,
-    setCurrentTaskId,
-} from '@/lib/redux/slices/promptEditorSlice';
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
-import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,12 +21,8 @@ export const PromptTestPanel: React.FC = () => {
 
     // Streaming selectors
     const currentTaskId = testMode.currentTaskId;
-    const streamingText = useAppSelector((state) =>
-        currentTaskId ? selectPrimaryResponseTextByTaskId(currentTaskId)(state) : ""
-    );
-    const isResponseEnded = useAppSelector((state) =>
-        currentTaskId ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state) : false
-    );
+    const streamingText = "";
+    const isResponseEnded = true;
 
     // When stream ends, add the completed message to conversation and clear taskId
     useEffect(() => {

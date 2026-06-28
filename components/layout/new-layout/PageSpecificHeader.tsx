@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { CockpitControls } from "@/components/playground/types";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 
 interface PageSpecificHeaderProps {
@@ -38,23 +37,10 @@ export function PageSpecificHeader({ children }: PageSpecificHeaderProps) {
   return createPortal(children, targetElement);
 }
 
-interface CockpitHeaderProps {
-  cockpitControls: CockpitControls;
-}
-
-export function CockpitHeader({ cockpitControls }: CockpitHeaderProps) {
+export function CockpitHeader(props: any) {
   const pathname = usePathname();
   const [PlaygroundHeaderAllInOne, setPlaygroundHeaderAllInOne] =
     useState<any>(null);
-
-  useEffect(() => {
-    if (!pathname?.includes("/ai/cockpit")) return;
-    import("@/components/playground/header/PlaygroundHeaderAllInOne").then(
-      (module) => {
-        setPlaygroundHeaderAllInOne(() => module.default);
-      },
-    );
-  }, [pathname]);
 
   if (!pathname?.includes("/ai/cockpit") || !PlaygroundHeaderAllInOne) {
     return null;
@@ -62,7 +48,7 @@ export function CockpitHeader({ cockpitControls }: CockpitHeaderProps) {
 
   return (
     <PageSpecificHeader>
-      <PlaygroundHeaderAllInOne {...cockpitControls} />
+      <PlaygroundHeaderAllInOne {...props} />
     </PageSpecificHeader>
   );
 }

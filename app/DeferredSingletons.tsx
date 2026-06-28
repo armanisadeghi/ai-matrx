@@ -162,56 +162,6 @@ export default function DeferredSingletons() {
   const user = useAppSelector(selectUser);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
-  // Broker registration + initial values. The broker slice (and its
-  // reducer barrel) is part of the root reducer's compile unit anyway,
-  // so lazy-importing here keeps it out of *this* entry's static graph
-  // without adding meaningful runtime cost.
-  // Note the direct `/slice` path — `@/lib/redux/brokerSlice` is a
-  // barrel-of-barrels (re-exports selectors/hooks/thunks/utils) and must
-  // not be used in this file's compile graph.
-  useIdleTask("broker-registration", 5, async () => {
-    const { brokerActions } = await import("@/lib/redux/brokerSlice/slice");
-    dispatch(brokerActions.addOrUpdateRegisterEntries(SYSTEM_BROKERS));
-  });
-
-  useIdleTask("broker-values", 5, async () => {
-    if (!user?.id) return;
-    const { brokerActions } = await import("@/lib/redux/brokerSlice/slice");
-
-    dispatch(
-      brokerActions.setValue({ brokerId: "GLOBAL_USER_OBJECT", value: user }),
-    );
-    dispatch(
-      brokerActions.setValue({ brokerId: "GLOBAL_USER_ID", value: user.id }),
-    );
-
-    const userName =
-      user.userMetadata?.fullName ||
-      user.userMetadata?.name ||
-      user.userMetadata?.preferredUsername ||
-      user.email;
-    dispatch(
-      brokerActions.setValue({ brokerId: "GLOBAL_USER_NAME", value: userName }),
-    );
-
-    const profileImage =
-      user.userMetadata?.avatarUrl || user.userMetadata?.picture || null;
-    dispatch(
-      brokerActions.setValue({
-        brokerId: "GLOBAL_USER_PROFILE_IMAGE",
-        value: profileImage,
-      }),
-    );
-    // Reflects the highest-bar (Super Admin) since admin levels shipped.
-    // Broker name preserved for back-compat with downstream gates.
-    dispatch(
-      brokerActions.setValue({
-        brokerId: "GLOBAL_USER_IS_ADMIN",
-        value: isSuperAdmin,
-      }),
-    );
-  });
-
   // Pre-warm the scope tree (features/scopes) on idle. This is the ONLY
   // boot-time fetch in the scope/context system. `ensureScopeTree` is
   // idempotent — status === "ready" short-circuits and in-flight is
@@ -264,7 +214,6 @@ export default function DeferredSingletons() {
     <>
       <PersistentDOMConnector />
       <OverlayController />
-      <LegacyPromptOverlaysController />
       <LazyMessagingIsland />
       <AudioRecoveryToast />
       <LazyKgNewSuggestionNotifier />

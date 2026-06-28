@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toggleMode } from "@/styles/themes/themeSlice";
-import { createTaskFromPresetQuick } from "@/lib/redux/socket-io/thunks/createTaskFromPreset";
+import { createTaskFromPresetQuick } from "@/lib/redux/stream-tasks/thunks/createTaskFromPreset";
 import { extractErrorMessage } from "@/utils/errors";
 
 interface MenuCoreProps extends MenuRenderProps {

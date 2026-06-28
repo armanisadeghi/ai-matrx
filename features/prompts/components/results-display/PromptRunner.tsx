@@ -7,39 +7,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import dynamic from "next/dynamic";
-
-const ResizableCanvas = dynamic(
-  () =>
-    import("@/features/canvas/core/ResizableCanvas").then((m) => ({
-      default: m.ResizableCanvas,
-    })),
-  { ssr: false },
-);
-const CanvasRenderer = dynamic(
-  () =>
-    import("@/features/canvas/core/CanvasRenderer").then((m) => ({
-      default: m.CanvasRenderer,
-    })),
-  { ssr: false },
-);
-import {
-  selectCanvasWidth,
-  setCanvasWidth,
-  selectCurrentCanvasItem,
-} from "@/features/canvas/redux/canvasSlice";
-
-import { SmartPromptInput } from "../smart/SmartPromptInput";
-import { SmartMessageList } from "../smart/SmartMessageList";
-import { selectInstance } from "@/lib/redux/prompt-execution/slice";
-import { executeMessage } from "@/lib/redux/prompt-execution/thunks/executeMessageThunk";
-import { finalizeExecution } from "@/lib/redux/prompt-execution/thunks/finalizeExecutionThunk";
-import { selectPrimaryResponseEndedByTaskId } from "@/lib/redux/socket-io/selectors/socket-response-selectors";
 
 export interface PromptRunnerProps {
   /** Required: The run ID - instance must exist in Redux */
@@ -134,7 +101,7 @@ export function PromptRunner({
   // Select ONLY the completion status, NOT the text
   const isResponseEnded = useAppSelector((state) =>
     currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
+      ? true
       : false,
   );
 

@@ -32,7 +32,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { createUserPrompt } from "@/lib/redux/thunks/promptCrudThunks";
 import { usePromptRunner } from "@/features/prompts/hooks/usePromptRunner";
 import { useUser } from "@/lib/hooks/useUser";
 import { ConvertToBuiltinModal } from "@/features/prompts/components/layouts/ConvertToBuiltinModal";

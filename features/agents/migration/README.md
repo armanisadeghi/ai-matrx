@@ -14,6 +14,7 @@ Replace every capability built on the prompt system with an agent-native equival
 | `MASTER-PLAN.md` | The ordered phase plan. Start here. |
 | `INVENTORY.md` | Complete inventory of the legacy prompt surface and the agent surface it maps to. |
 | `phases/phase-NN-*.md` | Per-phase detailed plans. One per phase. Living documents. |
+| `MIGRATE-recipe-to-agent-execution.md` | Reusable playbook: legacy recipe/broker/socket execution → `useRunAgent` / `launchAgentExecution`. |
 | `DECISIONS.md` | Decisions log — questions raised during phases and how they were resolved. |
 
 ## Non-negotiable rules for every contributor

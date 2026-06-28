@@ -9,9 +9,6 @@ import {
   ContextMenuTrigger,
   ContextMenuLabel,
 } from "@/components/ui/context-menu/context-menu";
-import { ContentBlock } from "@/features/rich-text-editor/config/contentBlocks";
-import { DynamicContextMenuSection } from "@/features/rich-text-editor/components/DynamicContextMenuSection";
-import { useContentBlocks } from "@/hooks/useContentBlocks";
 import { insertTextAtTextareaCursor } from "../utils/textareaInsertUtils";
 import contentBlocksConfig from "@/config/content-blocks";
 

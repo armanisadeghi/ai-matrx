@@ -63,7 +63,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { getBuiltinPrompt } from "@/lib/redux/thunks/promptSystemThunks";
 import { selectCachedPrompt } from "@/lib/redux/slices/promptCacheSlice";
-import { getBuiltinId } from "@/lib/redux/prompt-execution/builtins";
+import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
 import {
   parseCodeEdits,
@@ -154,7 +154,7 @@ export function ContextAwareCodeEditorModal({
   const updateContextRef = useRef<
     ((content: string, summary?: string) => void) | null
   >(null);
-  const defaultBuiltinId = builtinId || getBuiltinId(promptKey);
+  const defaultBuiltinId = builtinId || agentForPromptKey(promptKey).id;
 
   // Use centralized prompt cache
   const promptData = useAppSelector((state) => {

@@ -19,8 +19,8 @@ import dynamic from "next/dynamic";
 
 export const PromptAppPublicRenderer = dynamic(
   () =>
-    import("./PromptAppPublicRendererImpl").then((m) => ({
-      default: m.PromptAppPublicRenderer,
+    import("./PromptAppPublicRendererDirectImpl").then((m) => ({
+      default: m.PromptAppPublicRendererDirect,
     })),
   { ssr: false },
 );

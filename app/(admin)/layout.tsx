@@ -24,16 +24,13 @@ import {
   checkIsSuperAdmin,
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
-import { getEmptyGlobalCache } from "@/utils/schema/schema-processing/emptyGlobalCache";
-import type { InitialReduxState } from "@/types/reduxTypes";
+import type { BaseReduxState } from "@/types/reduxTypes";
 import NavigationLoader from "@/components/loaders/NavigationLoader";
 import AppShell from "@/features/shell/components/AppShell";
 import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
 
 // Admin pages require authentication and cannot be statically generated
 export const dynamic = "force-dynamic";
-
-const emptyGlobalCache = getEmptyGlobalCache();
 
 export default async function AdminLayout({
   children,
@@ -79,9 +76,8 @@ export default async function AdminLayout({
   const accessToken = session?.access_token;
   const userData = mapUserData(user, accessToken, isAdmin, adminLevel);
 
-  const initialReduxState: InitialReduxState = {
+  const initialReduxState: BaseReduxState = {
     user: userData,
-    globalCache: emptyGlobalCache,
   };
 
   return (

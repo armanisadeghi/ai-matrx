@@ -38,13 +38,6 @@ export interface BaseReduxState {
   agentContextMenuCache?: { rows: ContextMenuRow[]; hydrated: boolean };
 }
 
-/**
- * @deprecated Migration alias — use `EntityReduxState` for entity routes or
- * `BaseReduxState` for slim routes. Removed in Phase 5 of the entity-isolation
- * migration (see `~/.claude/plans/the-entity-system-which-bubbly-wind.md`).
- */
-export interface InitialReduxState extends BaseReduxState {}
-
 export type Id = string;
 export type Page = number;
 export type PageSize = number;

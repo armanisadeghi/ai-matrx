@@ -20,12 +20,7 @@ import {
   PromptsPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 import { updateDebugData } from "@/lib/redux/preferences/adminDebugSlice";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
-import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-  selectPrimaryResponseDataByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
+import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/stream-tasks/thunks/submitChatFastAPI";
 import { toast } from "sonner";
 import {
   PromptMessageRole,
@@ -348,16 +343,8 @@ function PromptBuilderInner({
   const timeToFirstTokenRef = useRef<number | undefined>(undefined);
 
   // Get streaming response from socket
-  const streamingText = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
-      : "",
-  );
-  const isResponseEnded = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
-      : false,
-  );
+  const streamingText = "";
+  const isResponseEnded = true;
 
   // UI state — new prompts start dirty (pre-populated defaults are unsaved)
   const [isDirty, setIsDirty] = useState(!initialData?.id);
@@ -786,9 +773,7 @@ function PromptBuilderInner({
 
       // Read data events directly from store at completion time — not subscribed to avoid
       // triggering re-renders on every data update during streaming.
-      const responseDataSnapshot = currentTaskId
-        ? selectPrimaryResponseDataByTaskId(currentTaskId)(store.getState())
-        : [];
+      const responseDataSnapshot: unknown[] = [];
       const audioData = (
         responseDataSnapshot as Array<Record<string, unknown>>
       ).find((d) => d?.type === "audio_output");

@@ -24,7 +24,6 @@
  */
 
 import { isMatrxEnvelope } from "@/features/matrx-envelope/envelope";
-import { getMetadataFromText } from "@/features/rich-text-editor/utils/patternUtils";
 import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
 import type { MissingBlockType } from "@/types/python-generated/missing-types";
 import {
@@ -1675,29 +1674,29 @@ export const splitContentIntoBlocksV2 = (
     }
 
     // 1. Check for MATRX pattern
-    const matrxCheck = detectMatrxPattern(line, 0);
-    if (matrxCheck.hasPattern && matrxCheck.match) {
-      if (currentText.trim()) {
-        blocks.push({ type: "text", content: currentText.trimEnd() });
-        currentText = "";
-      }
+    // const matrxCheck = detectMatrxPattern(line, 0);
+    // if (matrxCheck.hasPattern && matrxCheck.match) {
+    //   if (currentText.trim()) {
+    //     blocks.push({ type: "text", content: currentText.trimEnd() });
+    //     currentText = "";
+    //   }
 
-      try {
-        const metadata = getMetadataFromText(matrxCheck.match[0]);
-        if (metadata.length > 0) {
-          blocks.push({
-            type: "matrxBroker",
-            content: matrxCheck.match[0],
-            metadata: metadata[0],
-          });
-        }
-      } catch (error) {
-        currentText += line;
-      }
+    //   try {
+    //     const metadata = getMetadataFromText(matrxCheck.match[0]);
+    //     if (metadata.length > 0) {
+    //       blocks.push({
+    //         type: "matrxBroker",
+    //         content: matrxCheck.match[0],
+    //         metadata: metadata[0],
+    //       });
+    //     }
+    //   } catch (error) {
+    //     currentText += line;
+    //   }
 
-      i++;
-      continue;
-    }
+    //   i++;
+    //   continue;
+    // }
 
     // 1b. Check for custom divider variants before they get absorbed as text.
     //  *** (or * * * etc.) = accent divider, #=== or # === = heavy divider.

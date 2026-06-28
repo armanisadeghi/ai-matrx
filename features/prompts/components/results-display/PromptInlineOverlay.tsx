@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAppSelector } from '@/lib/redux/hooks';
-import { selectPrimaryResponseTextByTaskId, selectPrimaryResponseEndedByTaskId } from '@/lib/redux/socket-io/selectors/socket-response-selectors';
 import { Check, X, CornerDownLeft, ArrowLeftToLine, ArrowRightFromLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RichDocument } from '@/features/rich-document/RichDocument';
@@ -50,10 +48,10 @@ export default function PromptInlineOverlay({
   
   // Get live streaming result if taskId provided
   const streamingResult = useAppSelector(state => 
-    taskId ? selectPrimaryResponseTextByTaskId(taskId)(state) : null
+    taskId ? '' : null
   );
   const hasEnded = useAppSelector(state => 
-    taskId ? selectPrimaryResponseEndedByTaskId(taskId)(state) : true
+    taskId ? true : true
   );
   
   const result = streamingResult || initialResult;

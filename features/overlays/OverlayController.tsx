@@ -422,9 +422,7 @@ const FilePreviewWindow = lazyOverlay(
 );
 const SourceInspectorWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/window-panels/windows/source-inspector/SourceInspectorWindow"
-    ),
+    import("@/features/window-panels/windows/source-inspector/SourceInspectorWindow"),
   { ssr: false },
 );
 const ItemDetailWindow = lazyOverlay(
@@ -540,9 +538,9 @@ const SurfaceContextInspectorOverlay = lazyOverlay(
 );
 const ContextAssignmentWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/scopes/components/context-assignment/ContextAssignmentWindow"
-    ).then((m) => ({ default: m.ContextAssignmentWindow })),
+    import("@/features/scopes/components/context-assignment/ContextAssignmentWindow").then(
+      (m) => ({ default: m.ContextAssignmentWindow }),
+    ),
   { ssr: false },
 );
 const NewsWindow = lazyOverlay(
@@ -605,9 +603,9 @@ const QuickNotesSheet = lazyOverlay(
 );
 const DocumentsWorkspace = lazyOverlay(
   () =>
-    import(
-      "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace"
-    ).then((m) => ({ default: m.DocumentsWorkspace })),
+    import("@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
+      (m) => ({ default: m.DocumentsWorkspace }),
+    ),
   { ssr: false },
 );
 const NoteKnowledgePanel = lazyOverlay(
@@ -695,10 +693,7 @@ const SmartCodeEditorWindow = lazyOverlay(
     ),
   { ssr: false },
 );
-const FullscreenSocketAccordion = lazyOverlay(
-  () => import("@/components/socket/response/FullscreenSocketAccordion"),
-  { ssr: false },
-);
+
 const StreamDebugFloating = lazyOverlay(
   () =>
     import("@/features/agents/components/debug/StreamDebugFloating").then(
@@ -4014,8 +4009,7 @@ export default function OverlayController() {
           | null
           | undefined;
         if (!isOpen) return null;
-        const noteId =
-          typeof data?.noteId === "string" ? data.noteId : null;
+        const noteId = typeof data?.noteId === "string" ? data.noteId : null;
         if (!noteId) return null;
         const title =
           typeof data?.title === "string" && data.title
@@ -4344,9 +4338,7 @@ export default function OverlayController() {
         return (
           <FindReplaceOverlay
             isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "findReplace" }))
-            }
+            onClose={() => dispatch(closeOverlay({ overlayId: "findReplace" }))}
             callbackGroupId={
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
@@ -4368,9 +4360,7 @@ export default function OverlayController() {
           <SurfaceContextInspectorOverlay
             isOpen
             onClose={() =>
-              dispatch(
-                closeOverlay({ overlayId: "surfaceContextInspector" }),
-              )
+              dispatch(closeOverlay({ overlayId: "surfaceContextInspector" }))
             }
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : null
@@ -4553,41 +4543,6 @@ export default function OverlayController() {
           />
         );
       })}
-
-      {/* TODO: review prop wiring for socketAccordion */}
-      {/* socketAccordion */}
-      {(() => {
-        const isOpen = isOpenById.socketAccordion;
-        const data = dataById.socketAccordion as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        if (!isOpen) return null;
-        return (
-          <FullscreenSocketAccordion
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "socketAccordion" }))
-            }
-            triggerClassName={
-              typeof data?.triggerClassName === "string"
-                ? data.triggerClassName
-                : undefined
-            }
-            triggerLabel={
-              typeof data?.triggerLabel === "string"
-                ? data.triggerLabel
-                : undefined
-            }
-            taskId={typeof data?.taskId === "string" ? data.taskId : undefined}
-            showTrigger={
-              typeof data?.showTrigger === "boolean"
-                ? data.showTrigger
-                : undefined
-            }
-          />
-        );
-      })()}
 
       {/* TODO: review prop wiring for streamDebug */}
       {/* streamDebug */}

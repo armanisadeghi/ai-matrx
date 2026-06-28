@@ -94,6 +94,8 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
 import { extractErrorMessage } from "@/utils/errors";
+import { insertTextAtCursor } from "@/utils/editor-text-insertion";
+import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { getIconComponent } from "@/components/official/icons/IconResolver";
 import { toast } from "@/components/ui/use-toast";
 
@@ -977,7 +979,7 @@ export function UnifiedContextMenu({
             {isDebugMode && (
               <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
                 {error instanceof Error
-                  ? error.stack ?? error.message
+                  ? (error.stack ?? error.message)
                   : extractErrorMessage(error)}
               </pre>
             )}
@@ -993,17 +995,9 @@ export function UnifiedContextMenu({
     const template = block.template;
 
     if (editorId) {
-      // Use editor insertion
-      const {
-        insertTextAtCursor,
-      } = require("@/features/rich-text-editor/utils/insertTextUtils");
       const success = insertTextAtCursor(editorId, template);
       if (success) onContentInserted?.();
     } else if (getTextarea) {
-      // Use textarea insertion
-      const {
-        insertTextAtTextareaCursor,
-      } = require("@/features/prompts/utils/textareaInsertUtils");
       const textarea = getTextarea();
       if (textarea) {
         const success = insertTextAtTextareaCursor(textarea, template);

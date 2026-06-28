@@ -4,14 +4,11 @@
  * Handles AI-driven generation of app metadata + component code, plus the
  * insert into `aga_apps`. Ported from `features/prompt-apps/hooks/useAutoCreateApp.ts`
  * with the data layer retargeted; the underlying generation step still uses
- * `executeBuiltinWith*Extraction` thunks because those builtin keys map to
- * agents under the hood (the prompt-builtin → agent migration preserved IDs).
- * When Phase 18 retires those thunks the call sites here switch to
- * `launchAgentExecution` directly — see MIGRATION-STATUS.md.
+ * `executeBuiltinWith*Extraction` thunks (agent execution system under the hood).
  *
  * IMPORTANT: This hook includes protection against background tab failures.
- * Browser tabs that go to background can suspend WebSocket connections, causing
- * socket.io streaming to fail silently. This hook uses:
+ * Browser tabs that go to background can suspend network connections, causing
+ * streaming to fail silently. This hook uses:
  * - Web Locks API to prevent tab suspension during long-running operations
  * - Visibility change detection to catch connection drops early
  * - Automatic retry logic for recoverable failures
@@ -23,14 +20,15 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
-import { executeBuiltinWithCodeExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithCodeExtractionThunk";
-import { executeBuiltinWithJsonExtraction } from "@/lib/redux/prompt-execution/thunks/executeBuiltinWithJsonExtractionThunk";
+import {
+  executeBuiltinWithCodeExtraction,
+  executeBuiltinWithJsonExtraction,
+} from "@/features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks";
 import {
   validateSlugsInBatch,
   generateSlugCandidates,
 } from "../services/slug-service";
 import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
-import { SocketConnectionManager } from "@/lib/redux/socket-io/connection/socketConnectionManager";
 import type { AppMetadata } from "../types";
 
 export type AutoCreateMode = "standard" | "lightning";
@@ -135,15 +133,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
       }
 
       if (document.visibilityState === "visible" && isCreatingRef.current) {
-        // Tab came back - check socket health
-        const socketManager = SocketConnectionManager.getInstance();
-        const isHealthy = socketManager.isConnectionHealthy();
-
-        if (!isHealthy) {
-          console.warn(
-            "[AutoCreateApp] Socket disconnected while tab was in background - forcing reconnect",
-          );
-          socketManager.forceReconnectAll();
+        if (tabWasHiddenDuringCreation.current) {
           setWasBackgrounded(true);
         }
       }
