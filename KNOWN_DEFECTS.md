@@ -17,6 +17,18 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D25 — Prompts-system deletion: applet execution gated "under construction" + a few surfaces degraded
+**Severity: medium — known, intentional, temporary. Created 2026-06-28 when the legacy prompts system + dead socket schema system were deleted (commits `3eef0cab1`, `35d8214bc`). The prompts system was replaced by the agents system (same UUIDs, agent execution path).**
+
+**What's gated / degraded (compiles clean, `tsc` 0 errors):**
+- **Applet execution is OFF.** `features/applet/runner/AppletRunComponent.tsx` has `APPLET_EXECUTION_UNDER_CONSTRUCTION = true`. Both old execution paths died with prompts: `useAppletRecipe` (Socket.IO `run_recipe_to_chat`) and `useAppletRecipeFastAPI` (the removed `POST /api/recipes/{id}/convert-to-prompt`). The applet subsystem is **deliberately kept fully wired + rendered** (so it isn't forgotten/deleted) — execution side effects are short-circuited via a new `enabled` prop on both hooks, an under-construction banner shows, and submit raises a toast. **To resurrect:** flip the flag to `false` AND finish the recipe→agent rewire in `useAppletRecipeFastAPI` (restore agent resolution; the `submitAppletAgentThunk` it references is currently undefined). Owner: applet (user is rebuilding this).
+- **`PromptEditorContextMenu` removed from 4 surfaces** — `features/content-templates/admin/ContentTemplateManager.tsx`, `features/content-templates/components/SaveTemplateModal.tsx`, `components/admin/MarkdownTester.tsx`, `components/official/content-editor/ContentEditor.tsx`. Right-click "insert content block" into those textareas is lost (TODO markers left). Fix: lift a content-block context menu into a shared component independent of the deleted prompts feature.
+- **`ModelSettingsDialog` stubbed** in `features/ai-models/components/DeprecatedModelsAudit.tsx` + `ModelUsageAudit.tsx` — the "review settings" step is now a plain confirm. The agents `AgentSettingsModal` is agentId/Redux-driven, not a callback drop-in. Fix: extract `ModelSettings` to a shared callback component, or wire an agentId.
+- **`DynamicButtons` / `DynamicCards`** (`components/dynamic/`) prompt-exec UIs stubbed (toast / placeholder card). Proper fix is `useShortcutTrigger()` (TODO markers left).
+- **Dead data flow (harmless):** `features/shell/components/DeferredShellData.tsx` still preloads `contextMenuCacheSlice` rows for the deleted v1 `features/context-menu/UnifiedContextMenu` (the slice is kept; only the v1 menu was deleted). Safe to leave; remove the preload when convenient.
+
+**Fence.** DB tables were already graveyarded; this was a pure code delete, so there's no shim/fallback to rot (clean-cut doctrine). All deletions verified: 0 `tsc` errors, no live `fetch()`/links to deleted routes, no remaining imports of deleted dirs/slices.
+
 ### D24 — `ContentHistoryViewer` is a live overlay backed by no-op stubs → shows empty history, "restore" does nothing
 **Severity: medium — the message content-history overlay is silently non-functional (no error, just empty). Found 2026-06-27 during the KNOWN_DEFECTS sweep.**
 
