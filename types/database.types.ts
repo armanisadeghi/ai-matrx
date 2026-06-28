@@ -12379,36 +12379,54 @@ export type Database = {
       app_sync_status: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error_message: string | null
           id: string
           instance_id: string
           last_sync_at: string | null
           last_sync_direction: string | null
           last_sync_result: string | null
+          metadata: Json
+          organization_id: string | null
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           id?: string
           instance_id: string
           last_sync_at?: string | null
           last_sync_direction?: string | null
           last_sync_result?: string | null
+          metadata?: Json
+          organization_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error_message?: string | null
           id?: string
           instance_id?: string
           last_sync_at?: string | null
           last_sync_direction?: string | null
           last_sync_result?: string | null
+          metadata?: Json
+          organization_id?: string | null
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -13726,44 +13744,62 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
           email: string
           id: string
           message: string
+          metadata: Json
           name: string
+          organization_id: string | null
           resolved_at: string | null
           resolved_by: string | null
           status: string
           subject: string
           updated_at: string | null
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           admin_notes?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           email: string
           id?: string
           message: string
+          metadata?: Json
           name: string
+          organization_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           subject: string
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           admin_notes?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
           email?: string
           id?: string
           message?: string
+          metadata?: Json
           name?: string
+          organization_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
           status?: string
           subject?: string
           updated_at?: string | null
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -21789,11 +21825,14 @@ export type Database = {
           agent_id: string | null
           context: Json | null
           conversation_id: string | null
+          created_at: string
+          created_by: string | null
           error_text: string
           error_type: string | null
           id: string
           kind: string
           occurred_at: string
+          organization_id: string | null
           payload: Json | null
           request_id: string | null
           resolution_note: string | null
@@ -21807,11 +21846,14 @@ export type Database = {
           agent_id?: string | null
           context?: Json | null
           conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
           error_text: string
           error_type?: string | null
           id?: string
           kind: string
           occurred_at?: string
+          organization_id?: string | null
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
@@ -21825,11 +21867,14 @@ export type Database = {
           agent_id?: string | null
           context?: Json | null
           conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
           error_text?: string
           error_type?: string | null
           id?: string
           kind?: string
           occurred_at?: string
+          organization_id?: string | null
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
