@@ -141,15 +141,11 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "broker",
   "contextMenuCache",
   "agentCache",
-  "promptCache",
-  "promptConsumers",
-  "promptRunner",
   "promptExecution",
   "actionCache",
   "dbFunctionNode",
   "workflows",
   "workflowNodes",
-  "promptEditor",
   "messaging",
   "adminPreferences",
   "entitySystem",
@@ -747,36 +743,6 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "promptCache",
-      label: "Prompt Cache",
-      content: (
-        <GenericSliceViewer
-          sliceKey="promptCache"
-          state={completeState.promptCache}
-        />
-      ),
-    },
-    {
-      id: "promptConsumers",
-      label: "Prompt Consumers",
-      content: (
-        <GenericSliceViewer
-          sliceKey="promptConsumers"
-          state={completeState.promptConsumers}
-        />
-      ),
-    },
-    {
-      id: "promptRunner",
-      label: "Prompt Runner",
-      content: (
-        <GenericSliceViewer
-          sliceKey="promptRunner"
-          state={completeState.promptRunner}
-        />
-      ),
-    },
-    {
       id: "promptExecution",
       label: "Prompt Execution",
       content: (
@@ -823,16 +789,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="workflowNodes"
           state={completeState.workflowNodes}
-        />
-      ),
-    },
-    {
-      id: "promptEditor",
-      label: "Prompt Editor",
-      content: (
-        <GenericSliceViewer
-          sliceKey="promptEditor"
-          state={completeState.promptEditor}
         />
       ),
     },

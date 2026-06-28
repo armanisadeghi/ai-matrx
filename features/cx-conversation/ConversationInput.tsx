@@ -79,7 +79,6 @@ import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
-import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
 import type { Resource } from "@/features/agents/resources/types";
@@ -824,17 +823,7 @@ export function ConversationInput({
           </div>
         )}
 
-        {/* Settings dialog */}
-        {showSettings && (
-          <ModelSettingsDialog
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            modelId={uiState?.modelOverride ?? ""}
-            models={availableModels}
-            settings={settingsForDialog}
-            onSettingsChange={handleSettingsChange}
-          />
-        )}
+        {/* Settings dialog removed — ModelSettingsDialog was in deleted features/prompts */}
       </div>
 
       {/* ── Footer row (outside the bordered box, below it) ───────────── */}

@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { formatText } from "@/utils/text/text-case-converter";
 import type { VariableDefinition as PromptVariable } from "@/features/agents/types/agent-definition.types";
@@ -177,7 +178,7 @@ function GuidedSelect({
   );
 }
 
-/** Multi-select with tappable items — uses <div role="button"> to avoid nested button with Checkbox */
+/** Multi-select with tappable rows — official Checkbox inside each label row. */
 function GuidedCheckbox({
   value,
   onChange,
@@ -230,70 +231,42 @@ function GuidedCheckbox({
         {options.map((option) => {
           const isActive = selected.includes(option);
           return (
-            <div
+            <label
               key={option}
-              role="button"
-              tabIndex={0}
-              onClick={() => toggle(option)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggle(option);
-                }
-              }}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border cursor-pointer ${
+              className={`flex w-full items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all border cursor-pointer text-left ${
                 isActive
                   ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/30"
                   : "bg-textured border-border hover:bg-accent hover:border-foreground/20 text-foreground"
               }`}
             >
-              <span className="flex items-center gap-2">
-                <span
-                  className={`flex items-center justify-center w-4 h-4 rounded-sm border flex-shrink-0 ${
-                    isActive
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "border-primary"
-                  }`}
-                >
-                  {isActive && <Check className="w-3 h-3" />}
-                </span>
-                <span className={isActive ? "font-medium" : ""}>
-                  {option || "(empty)"}
-                </span>
+              <Checkbox
+                checked={isActive}
+                onCheckedChange={() => toggle(option)}
+                aria-label={option || "(empty)"}
+                className="flex-shrink-0"
+              />
+              <span className={isActive ? "font-medium" : ""}>
+                {option || "(empty)"}
               </span>
-            </div>
+            </label>
           );
         })}
         {allowOther && (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={handleOtherToggle}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleOtherToggle();
-              }
-            }}
-            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border cursor-pointer ${
+          <label
+            className={`flex w-full items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all border cursor-pointer text-left ${
               showOther
                 ? "bg-primary/10 border-primary text-foreground ring-1 ring-primary/30"
                 : "bg-textured border-border hover:bg-accent hover:border-foreground/20 text-foreground"
             }`}
           >
-            <span className="flex items-center gap-2">
-              <span
-                className={`flex items-center justify-center w-4 h-4 rounded-sm border flex-shrink-0 ${
-                  showOther
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "border-primary"
-                }`}
-              >
-                {showOther && <Check className="w-3 h-3" />}
-              </span>
-              <span>Other...</span>
-            </span>
-          </div>
+            <Checkbox
+              checked={showOther}
+              onCheckedChange={handleOtherToggle}
+              aria-label="Other"
+              className="flex-shrink-0"
+            />
+            <span>Other...</span>
+          </label>
         )}
       </div>
       {showOther && (

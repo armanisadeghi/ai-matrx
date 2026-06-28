@@ -421,34 +421,24 @@ export function ContentEditor({
         >
           {/* Plain Text Mode */}
           {currentMode === "plain" && (
-            <PromptEditorContextMenu
-              getTextarea={() => plainTextareaRef.current}
-              onContentInserted={() => {
-                // Trigger a re-render after insertion
-                if (plainTextareaRef.current) {
-                  handleContentChange(plainTextareaRef.current.value);
-                }
+            <Textarea
+              ref={plainTextareaRef}
+              value={localContent}
+              onChange={(e) => handleContentChange(e.target.value)}
+              placeholder={placeholder}
+              className="w-full min-h-[300px] border-none rounded-none resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3"
+              style={{
+                height: "auto",
+                minHeight: "300px",
+                maxHeight: "none",
               }}
-            >
-              <Textarea
-                ref={plainTextareaRef}
-                value={localContent}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full min-h-[300px] border-none rounded-none resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3"
-                style={{
-                  height: "auto",
-                  minHeight: "300px",
-                  maxHeight: "none",
-                }}
-                rows={Math.max(
-                  12,
-                  Math.ceil(localContent.length / 80) +
-                    localContent.split("\n").length +
-                    2,
-                )}
-              />
-            </PromptEditorContextMenu>
+              rows={Math.max(
+                12,
+                Math.ceil(localContent.length / 80) +
+                  localContent.split("\n").length +
+                  2,
+              )}
+            />
           )}
 
           {/* WYSIWYG Mode */}

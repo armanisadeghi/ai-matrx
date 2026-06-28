@@ -76,12 +76,8 @@ import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
-import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
+import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import { toast } from "sonner";
-import type { LLMParams } from "@/features/agents/types/agent-api-types";
-// PromptSettings was @/features/prompts/types/core — replaced with an inline alias
-// that adds model_id (not in LLMParams) so this file stays off features/prompts.
-type PromptSettings = LLMParams & { model_id?: string };
 import type {
   ManagedResource,
   ResourceBlockType,
@@ -136,7 +132,7 @@ export interface ConversationInputProps {
   showVoice?: boolean; // default: true
   showResourcePicker?: boolean; // default: true
   showModelPicker?: boolean; // inline model selector for dynamic_model agents
-  showSettings?: boolean; // settings icon (opens ModelSettingsDialog)
+  showSettings?: boolean; // gear menu (RunControlsMenu — model/tools/sandbox overrides)
   showAgentPicker?: boolean;
   showSubmitOnEnterToggle?: boolean;
   showAutoClearToggle?: boolean;
@@ -230,7 +226,6 @@ export function ConversationInput({
   const [submitOnEnter, setSubmitOnEnter] = useState(false);
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const openDebugWindow = () =>
     dispatch(
@@ -474,25 +469,6 @@ export function ConversationInput({
     [dispatch, conversationId],
   );
 
-  // ── Settings dialog ────────────────────────────────────────────────────────
-  // selectCurrentSettings returns merged base+overrides — the instance system
-  // handles diff tracking internally (selectSettingsOverridesForApi sends only deltas).
-  const handleSettingsChange = useCallback(
-    (newSettings: PromptSettings) => {
-      const { model_id, ...rest } = newSettings as Record<string, unknown>;
-      if (model_id)
-        dispatch(
-          setOverrides({
-            conversationId,
-            changes: { model: model_id as string },
-          }),
-        );
-      if (Object.keys(rest).length > 0)
-        dispatch(setOverrides({ conversationId, changes: rest }));
-    },
-    [dispatch, conversationId],
-  );
-
   const isDisabled = isExecuting;
 
   // The bordered input box — its shape changes based on mode:
@@ -594,9 +570,6 @@ export function ConversationInput({
                       supportsAudio: true,
                     }
                   }
-                  onSettingsClick={
-                    showSettings ? () => setIsSettingsOpen(true) : undefined
-                  }
                   onDebugClick={isAdmin ? openDebugWindow : undefined}
                   showDebugActive={isAdmin}
                 />
@@ -627,6 +600,15 @@ export function ConversationInput({
             ].join(" ")}
             rows={1}
           />
+
+          {showSettings && (
+            <RunControlsMenu
+              conversationId={conversationId}
+              variant="gear"
+              side="top"
+              align="end"
+            />
+          )}
 
           <InputActionButtons
             showVoice={showVoice}
@@ -698,20 +680,6 @@ export function ConversationInput({
               <span>Enter to send</span>
             </button>
           </div>
-        )}
-
-        {/* Settings dialog */}
-        {showSettings && (
-          <ModelSettingsDialog
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            modelId={currentModelId ?? ""}
-            models={availableModels}
-            settings={settingsForDialog}
-            onSettingsChange={handleSettingsChange}
-            showModelSelector
-            onModelChange={handleModelSelect}
-          />
         )}
 
         {/* Admin debug modal */}

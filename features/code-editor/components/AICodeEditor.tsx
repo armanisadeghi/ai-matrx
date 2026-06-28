@@ -492,7 +492,7 @@ export function AICodeEditor({
               </Button>
             </div>
           ) : (
-            /* Input State - Show SmartPromptInput */
+            /* Input State - Show SmartAgentInput */
             <>
               {isLoadingPrompt ? (
                 <div className="h-[50px] flex items-center justify-center text-muted-foreground text-sm">

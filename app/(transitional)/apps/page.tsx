@@ -4,8 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, ExternalLink, Calendar, BarChart3, Edit } from "lucide-react";
-// PromptApp type kept so the template below compiles (apps is always empty now)
-import type { PromptApp } from "@/features/prompt-apps/types/promptAppTypes";
+// Minimal inline type — prompt_apps table is in graveyard; this page always returns empty.
+type PromptApp = {
+  id: string;
+  name: string;
+  tagline?: string;
+  status: string;
+  total_executions: number;
+  updated_at: string;
+  tags?: string[];
+  slug?: string;
+};
 
 export default async function AppsListPage() {
   const supabase = await createClient();

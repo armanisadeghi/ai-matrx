@@ -2,103 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { createPortal } from "react-dom";
 import type { ModulePage } from "@/components/matrx/navigation/types";
+import { PageSpecificHeader } from "./PageSpecificHeaderPortal";
 
-interface PageSpecificHeaderProps {
-  children: React.ReactNode;
-}
-
-export function PageSpecificHeader({ children }: PageSpecificHeaderProps) {
-  const [mounted, setMounted] = useState(false);
-  const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    // SSR shell header center takes priority, then authenticated layout header
-    const element =
-      document.getElementById("shell-header-center") ||
-      document.getElementById("page-specific-header-content");
-    setTargetElement(element);
-  }, []);
-
-  if (!mounted || !targetElement) {
-    return null;
-  }
-
-  // Wrap with shell-header-inject when portaling into SSR shell for proper styling
-  if (targetElement.id === "shell-header-center") {
-    return createPortal(
-      <div className="shell-header-inject">{children}</div>,
-      targetElement,
-    );
-  }
-
-  return createPortal(children, targetElement);
-}
-
-export function CockpitHeader(props: any) {
-  const pathname = usePathname();
-  const [PlaygroundHeaderAllInOne, setPlaygroundHeaderAllInOne] =
-    useState<any>(null);
-
-  if (!pathname?.includes("/ai/cockpit") || !PlaygroundHeaderAllInOne) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <PlaygroundHeaderAllInOne {...props} />
-    </PageSpecificHeader>
-  );
-}
-
-interface PromptHeaderProps {
-  promptId?: string;
-  promptName: string;
-  onPromptNameChange: (value: string) => void;
-  isDirty: boolean;
-  isSaving: boolean;
-  onSave: () => void;
-  onOpenFullScreenEditor?: () => void;
-  onOpenSettings?: () => void;
-  developerMessage: string;
-  onDeveloperMessageChange: (value: string) => void;
-  fullPromptObject?: any;
-  onAcceptFullPrompt?: (optimizedObject: any) => void;
-  onAcceptAsCopy?: (optimizedObject: any) => void;
-  // Mobile tab support
-  mobileActiveTab?: "edit" | "test";
-  onMobileTabChange?: (tab: "edit" | "test") => void;
-}
-
-export function PromptHeader(props: PromptHeaderProps) {
-  const pathname = usePathname();
-  const [PromptBuilderHeaderCompact, setPromptBuilderHeaderCompact] =
-    useState<any>(null);
-
-  const isPromptRoute =
-    pathname?.includes("/ai/prompts") || pathname?.includes("/ssr/prompts");
-
-  useEffect(() => {
-    if (!isPromptRoute) return;
-    import("@/features/prompts/components/layouts/PromptBuilderHeaderCompact").then(
-      (module) => {
-        setPromptBuilderHeaderCompact(() => module.PromptBuilderHeaderCompact);
-      },
-    );
-  }, [isPromptRoute]);
-
-  if (!isPromptRoute || !PromptBuilderHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <PromptBuilderHeaderCompact {...props} />
-    </PageSpecificHeader>
-  );
-}
+export { PageSpecificHeader } from "./PageSpecificHeaderPortal";
 
 interface ChatHeaderProps {
   baseRoute?: string;
@@ -193,35 +100,6 @@ export function RecipeEditHeader(props: RecipeEditHeaderProps) {
   return (
     <PageSpecificHeader>
       <RecipeEditHeaderCompact {...props} />
-    </PageSpecificHeader>
-  );
-}
-
-interface NotesHeaderProps {
-  onCreateNote: () => void;
-  onCreateFolder: () => void;
-  sortConfig: { field: string; order: "asc" | "desc" };
-  onSortChange: (field: string, order: "asc" | "desc") => void;
-}
-
-export function NotesHeader(props: NotesHeaderProps) {
-  const pathname = usePathname();
-  const [NotesHeaderCompact, setNotesHeaderCompact] = useState<any>(null);
-
-  useEffect(() => {
-    if (!pathname?.includes("/notes")) return;
-    import("@/features/notes/components/NotesHeaderCompact").then((module) => {
-      setNotesHeaderCompact(() => module.NotesHeaderCompact);
-    });
-  }, [pathname]);
-
-  if (!pathname?.includes("/notes") || !NotesHeaderCompact) {
-    return null;
-  }
-
-  return (
-    <PageSpecificHeader>
-      <NotesHeaderCompact {...props} />
     </PageSpecificHeader>
   );
 }
