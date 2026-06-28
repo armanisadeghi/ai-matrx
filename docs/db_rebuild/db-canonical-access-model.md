@@ -37,10 +37,13 @@ For (user U, row R of type T), R is accessible iff, short-circuiting in order:
 1. **Component?** (`entity_types.is_component`) → return `has_access(parent_type, R.<fk>)`. Nothing else applies.
 2. `R.visibility = 'public'` → yes.
 3. `R.created_by = U` (owner) → yes.
-4. `R.visibility >= 'internal'` AND (`has_org_access(R.org_id)` OR any **containment** parent grants access) → yes.
-5. Explicit grant: `has_permission(T, R.id, required)` (covers user grant, org grant, `is_public`/`link`) → yes.
-6. else **no**.
+4. **Platform-global tenant** — `R.org_id` is a `system_orgs` row with `global_readable=true` (the Matrx System tenant) AND `R.visibility >= 'internal'`: every authenticated user gets **viewer**; super-admins (`is_super_admin()`) get **full**. This is the "all platform users" tier (builtin agents, system prompts, default templates) — broader than `internal` (one org), narrower than `public` (anonymous). → yes.
+5. `R.visibility >= 'internal'` AND (`has_org_access(R.org_id)` OR any **containment** parent grants access) → yes.
+6. Explicit grant: `has_permission(T, R.id, required)` (covers user grant, org grant, `is_public`/`link`) → yes.
+7. else **no**.
 Role = `max()` across every pathway that says yes (broadest-access-wins, per Notion/Drive).
+
+> **Why this tier exists (2026-06-27).** "Global/builtin" content used to be reachable only through `SECURITY DEFINER` list RPCs that hardcode `agent_type='builtin'`. RLS knew nothing about it, so every **direct** read of a system row (e.g. `getAgent` behind every `/agents/[id]` detail/build/surfaces page) returned 0 rows → blank page. The rule now lives once in `has_access`, keyed on `system_orgs.global_readable` — generic across all entity types, no per-feature DEFINER read-RPC. Never reintroduce that split-brain; never reach for `public` just to share platform-wide (it leaks to anonymous scrapers).
 
 ## 5. Generation, not hand-writing
 `apply_rls(schema, table, token)` (v2, to build) reads `entity_types` (default_visibility, is_component) + `entity_relationships` (parent hops) and **emits** the table's policy:
