@@ -1,8 +1,9 @@
 /**
  * Org module settings — per-org rules for each resource kind.
  *
- * Reads go through the (RLS-guarded) `org_module_settings` table; the write goes
- * through the `set_org_module_setting` SECURITY DEFINER RPC (owner/admin gated).
+ * Reads go through the `get_org_module_settings` RPC (over canonical
+ * `platform.org_module_config`); the write goes through the `set_org_module_setting`
+ * SECURITY DEFINER RPC (owner/admin gated). Both bridge module table-name <-> entity token.
  * `module_key` matches `moduleKey(entry)` from the resource catalogue (canonical
  * table name for shareable kinds — the share RPC enforces members_can_add /
  * requires_approval off the same key).
@@ -36,12 +37,9 @@ export async function getOrgModuleSettings(
 ): Promise<Map<string, OrgModuleSetting>> {
   const map = new Map<string, OrgModuleSetting>();
   if (!orgId) return map;
-  const { data, error } = await supabase
-    .from("org_module_settings")
-    .select(
-      "module_key, members_can_add, requires_approval, default_permission, auto_ingest, is_scopeable",
-    )
-    .eq("organization_id", orgId);
+  const { data, error } = await supabase.rpc("get_org_module_settings", {
+    p_org_id: orgId,
+  });
   if (error) {
     console.error("[orgModuleSettings] load failed:", error.message);
     return map;

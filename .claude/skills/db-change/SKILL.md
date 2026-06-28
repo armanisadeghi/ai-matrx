@@ -61,6 +61,9 @@ Additive pipeline: pick/confirm the survivor → add any missing columns to it �
 ### Modify logic (function / RPC / trigger / policy)
 `CREATE OR REPLACE` (idempotent); keep the signature stable or you break callers — if the signature must change, add the new overload, repoint callers, then drop the old. RLS policy changes go through `iam.apply_rls` only (never hand-edit canonical policies). Re-verify dependent RPCs and run `iam.verify_canonical` if a canonical table's policies were touched. Regenerate types if a return shape changed.
 
+### Find stragglers (tables left behind when their batch moved)
+Run [`docs/db_rebuild/STRAGGLER_DETECTOR.sql`](../../../docs/db_rebuild/STRAGGLER_DETECTOR.sql) via `execute_sql` — three detectors: (A) same name in `public` + a domain schema, (B) legacy-prefix tables still in `public`, (C) empty canonical table whose live old sibling holds the data (the `org_module` pattern). **A hit is a candidate, not a verdict** — characterize (rows, inbound FKs, function refs via `pg_get_functiondef ~* name`, code grep) before acting; a name collision can be 3 legitimately-distinct tables (e.g. `public.category` vs `app.category` vs `skill.category`). The detectors MISS renamed moves (`org_module_settings`→`org_module_config`, different base names) — those still need a manual domain audit.
+
 ### Anything else (split, partition, rename, backfill-only)
 Same law: additive, verify counts, repoint, retire-not-destroy, finalize cross-repo, document what you did in the relevant `docs/db_rebuild/` tracker.
 
