@@ -4589,6 +4589,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -4668,12 +4692,12 @@ export interface paths {
          * Get Db Surface Manifest
          * @description DB-driven surface manifest. The canonical path — used by frontends
          *     that declare a ``client.surface`` from the 60+ rows in
-         *     ``ui.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
+         *     ``public.ui_surface`` (e.g. ``GET /api/surfaces/matrx-user/chat/manifest``).
          *
          *     Includes tools inherited from every ancestor surface walked via
          *     ``ui_surface.parent_surface_name`` so the response reflects exactly
          *     what ``apply_unified_tools`` would inject. Returns 404 when the name
-         *     isn't in ``ui.ui_surface``.
+         *     isn't in ``public.ui_surface``.
          */
         get: operations["get_db_surface_manifest_api_surfaces__client_name___surface_name__manifest_get"];
         put?: never;
@@ -17026,7 +17050,7 @@ export interface components {
          *
          *     - ``surface`` — single string naming the UI context the request originated
          *       from (e.g. ``matrx-user/chat``, ``chrome-extension/pilot``). The host
-         *       resolves this against its surface registry (``ui.ui_surface`` in
+         *       resolves this against its surface registry (``public.ui_surface`` in
          *       aidream) to derive the default tool set + value bindings, with
          *       inheritance from ``matrx-default/default``.
          *
@@ -18684,6 +18708,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -28454,7 +28505,7 @@ export interface components {
          *     and needs reconciliation per TOOL_ROUTING_RULES.md §11.
          *
          *     Sources can be one of:
-         *       - ``db_surface`` — resolved from ``ui.ui_surface`` +
+         *       - ``db_surface`` — resolved from ``public.ui_surface`` +
          *         ``public.tool_surface_defaults`` (the common path; 60+ matrx-user
          *         surfaces).
          *       - ``capability`` — resolved from a Python-registered ``Capability``
@@ -39209,6 +39260,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
