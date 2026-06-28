@@ -83,9 +83,12 @@ export async function createAgentFromSeed(
 
 /**
  * Admin-only: creates a system ("builtin") agent from a seed and redirects
- * to the admin system-agents builder. Sets `agent_type = 'builtin'` with all
- * scope columns null so the row is globally visible. Uses the admin client
- * to bypass RLS since `user_id = null` would otherwise fail the INSERT policy.
+ * to the admin system-agents builder. Sets `agent_type = 'builtin'`; the
+ * Matrx System org ownership that makes it globally visible (iam.has_access's
+ * platform-global tier) is enforced at the DB edge by the
+ * agent._enforce_builtin_system_org trigger — never write organization_id here.
+ * Uses the admin client to bypass RLS since `user_id = null` would otherwise
+ * fail the INSERT policy.
  */
 export async function createSystemAgentFromSeed(
   seed: Omit<Partial<AgentDefinition>, "id">,
@@ -116,7 +119,8 @@ export async function createSystemAgentFromSeed(
       is_public: true,
       is_active: true,
       user_id: null,
-      organization_id: null,
+      // organization_id intentionally omitted — the DB guard forces it to the
+      // Matrx System org for every builtin (see agent._enforce_builtin_system_org).
       project_id: null,
       task_id: null,
     })

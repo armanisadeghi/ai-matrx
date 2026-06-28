@@ -168,7 +168,9 @@ export async function POST(request: Request) {
           is_archived: false,
           is_favorite: false,
           user_id: null,
-          organization_id: null,
+          // organization_id intentionally omitted — the DB guard forces it to the
+          // Matrx System org for every builtin (agent._enforce_builtin_system_org),
+          // so the row is globally visible via has_access's platform-global tier.
           project_id: null,
           task_id: null,
           source_agent_id: agent_id,
