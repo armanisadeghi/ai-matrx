@@ -3,7 +3,7 @@
 /**
  * /rag/repositories — code repositories you can index for RAG.
  *
- * Lists every public.code_repositories row owned by the caller, with
+ * Lists every code.code_repositories row owned by the caller, with
  * file counts (total vs already-indexed) and a one-click "Index" button
  * that walks every code_file in the repo through ingest_source().
  */
@@ -278,7 +278,7 @@ function EmptyState() {
       <Code2 className="h-12 w-12 text-muted-foreground/50 mb-3" />
       <h3 className="text-lg font-medium">No repositories yet</h3>
       <p className="text-sm text-muted-foreground max-w-md mt-1">
-        Repositories live in <code>public.code_repositories</code>. Once you
+        Repositories live in <code>code.code_repositories</code>. Once you
         create one and bind code files to it (via
         <code> code_files.metadata.repository_id</code>), it will appear here
         ready to index.

@@ -146,24 +146,24 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     const [folderRes, fileRes] = await Promise.all([
       args.parentId === null
         ? supabase
-            .from("code_file_folders")
+            .schema("code").from("code_file_folders")
             .select(FOLDER_LIST_COLUMNS)
             .is("parent_folder_id", null)
             .order("name", { ascending: true })
         : supabase
-            .from("code_file_folders")
+            .schema("code").from("code_file_folders")
             .select(FOLDER_LIST_COLUMNS)
             .eq("parent_folder_id", args.parentId)
             .order("name", { ascending: true }),
       args.parentId === null
         ? supabase
-            .from("code_files")
+            .schema("code").from("code_files")
             .select(FILE_LIST_COLUMNS)
             .eq("is_deleted", false)
             .is("folder_id", null)
             .order("updated_at", { ascending: false })
         : supabase
-            .from("code_files")
+            .schema("code").from("code_files")
             .select(FILE_LIST_COLUMNS)
             .eq("is_deleted", false)
             .eq("folder_id", args.parentId)
@@ -197,7 +197,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
 
   async read(supabase, _userId, id): Promise<VirtualContent> {
     const { data, error } = await supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .select(`${FILE_LIST_COLUMNS},content`)
       .eq("id", id)
       .maybeSingle();
@@ -230,7 +230,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     // RLS scopes the update — no explicit user_id predicate. Adding one
     // would silently drop the write when `userAuth.id` hasn't hydrated.
     let query = supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .update({
         content: args.content,
         updated_at: new Date().toISOString(),
@@ -253,7 +253,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
 
   async rename(supabase, _userId, args: RenameArgs) {
     let query = supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .update({ name: args.newName, updated_at: new Date().toISOString() })
       .eq("id", args.id);
     if (args.expectedUpdatedAt) {
@@ -265,7 +265,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     }
     // Try as a folder.
     const folderRes = await supabase
-      .from("code_file_folders")
+      .schema("code").from("code_file_folders")
       .update({ name: args.newName, updated_at: new Date().toISOString() })
       .eq("id", args.id)
       .select("updated_at")
@@ -281,7 +281,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
   async move(supabase, _userId, args: MoveArgs) {
     // Files use folder_id; folders use parent_folder_id. Try file first.
     const fileRes = await supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .update({
         folder_id: args.newParentId,
         updated_at: new Date().toISOString(),
@@ -293,7 +293,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
       return { updatedAt: (fileRes.data as { updated_at: string }).updated_at };
     }
     const folderRes = await supabase
-      .from("code_file_folders")
+      .schema("code").from("code_file_folders")
       .update({
         parent_folder_id: args.newParentId,
         updated_at: new Date().toISOString(),
@@ -312,14 +312,14 @@ const codeFilesAdapter: VirtualSourceAdapter = {
   async delete(supabase, _userId, id, hard) {
     if (hard) {
       const { error } = await supabase
-        .from("code_files")
+        .schema("code").from("code_files")
         .delete()
         .eq("id", id);
       if (error) throw error;
       return;
     }
     const { error } = await supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .update({ is_deleted: true, updated_at: new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
@@ -328,7 +328,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
   async create(supabase, userId, args: CreateArgs) {
     if (args.kind === "folder") {
       const { data, error } = await supabase
-        .from("code_file_folders")
+        .schema("code").from("code_file_folders")
         .insert({
           user_id: userId,
           name: args.name,
@@ -349,7 +349,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
       };
     }
     const { data, error } = await supabase
-      .from("code_files")
+      .schema("code").from("code_files")
       .insert({
         user_id: userId,
         name: args.name,

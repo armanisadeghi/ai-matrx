@@ -148,7 +148,8 @@ export async function resolveSourceTitle(
     switch (kind) {
       case "note": {
         const { data } = await supabase
-          .schema("workbench").from("notes")
+          .schema("workbench")
+          .from("notes")
           .select("label")
           .eq("id", id)
           .maybeSingle();
@@ -172,6 +173,7 @@ export async function resolveSourceTitle(
       }
       case "transcript": {
         const { data } = await supabase
+          .schema("transcripts")
           .from("transcripts")
           .select("title")
           .eq("id", id)
@@ -180,7 +182,8 @@ export async function resolveSourceTitle(
       }
       case "conversation": {
         const { data } = await supabase
-          .schema("chat").from("conversation")
+          .schema("chat")
+          .from("conversation")
           .select("title")
           .eq("id", id)
           .maybeSingle();
@@ -203,7 +206,7 @@ export async function resolveSourceTitle(
       }
       case "code_file": {
         const { data } = await supabase
-          .from("code_files")
+          .schema("code").from("code_files")
           .select("name, path")
           .eq("id", id)
           .maybeSingle();
@@ -339,7 +342,8 @@ async function resolveTitlesForKind(
     }
     case "note": {
       const { data } = await supabase
-        .schema("workbench").from("notes")
+        .schema("workbench")
+        .from("notes")
         .select("id, label")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.label);
@@ -363,6 +367,7 @@ async function resolveTitlesForKind(
     }
     case "transcript": {
       const { data } = await supabase
+        .schema("transcripts")
         .from("transcripts")
         .select("id, title")
         .in("id", ids);
@@ -372,7 +377,8 @@ async function resolveTitlesForKind(
     case "conversation":
     case "cx_message": {
       const { data } = await supabase
-        .schema("chat").from("conversation")
+        .schema("chat")
+        .from("conversation")
         .select("id, title")
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
@@ -380,7 +386,7 @@ async function resolveTitlesForKind(
     }
     case "code_file": {
       const { data } = await supabase
-        .from("code_files")
+        .schema("code").from("code_files")
         .select("id, name, path")
         .in("id", ids);
       for (const r of data ?? [])
@@ -438,7 +444,8 @@ function clipBody(body: string): { text: string; truncated: boolean } {
 async function loadNote(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("note", id);
   const { data } = await supabase
-    .schema("workbench").from("notes")
+    .schema("workbench")
+    .from("notes")
     .select("label, content, updated_at")
     .eq("id", id)
     .maybeSingle();
@@ -520,6 +527,7 @@ function reconstructTranscript(segments: unknown): string | null {
 async function loadTranscript(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("transcript", id);
   const { data } = await supabase
+    .schema("transcripts")
     .from("transcripts")
     .select("title, description, segments, created_at")
     .eq("id", id)
@@ -541,7 +549,8 @@ async function loadTranscript(id: string): Promise<SourcePreviewDoc> {
 async function loadConversation(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("conversation", id);
   const { data } = await supabase
-    .schema("chat").from("conversation")
+    .schema("chat")
+    .from("conversation")
     .select("title, description, created_at")
     .eq("id", id)
     .maybeSingle();
@@ -586,7 +595,7 @@ async function loadFile(id: string): Promise<SourcePreviewDoc> {
 async function loadCodeFile(id: string): Promise<SourcePreviewDoc> {
   const doc = emptyDoc("code_file", id);
   const { data } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .select("name, path, content, language, updated_at")
     .eq("id", id)
     .maybeSingle();

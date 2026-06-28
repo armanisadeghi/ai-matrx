@@ -89,7 +89,7 @@ const LIST_COLUMNS =
  */
 export async function fetchCodeFilesList(): Promise<CodeFile[]> {
   const { data, error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .select(LIST_COLUMNS)
     .eq("is_deleted", false)
     .order("updated_at", { ascending: false });
@@ -108,7 +108,7 @@ export async function fetchCodeFilesList(): Promise<CodeFile[]> {
 /** Fetch a single code file with full content. */
 export async function fetchCodeFileById(id: string): Promise<CodeFile | null> {
   const { data, error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .select("*")
     .eq("id", id)
     .eq("is_deleted", false)
@@ -125,7 +125,7 @@ export async function fetchCodeFileById(id: string): Promise<CodeFile | null> {
 export async function fetchCodeFilesByIds(ids: string[]): Promise<CodeFile[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .select("*")
     .in("id", ids)
     .eq("is_deleted", false);
@@ -147,7 +147,7 @@ export async function createCodeFile(
   // Never write a null org — fall back to the cached personal org.
   const organizationId = await ensureOrgId(input.organization_id);
   const { data, error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .insert({
       user_id: userId,
       name,
@@ -181,7 +181,7 @@ export async function updateCodeFile(
   updates: UpdateCodeFileInput,
 ): Promise<CodeFile> {
   const { data, error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .update(updates)
     .eq("id", id)
     .select("*")
@@ -195,7 +195,7 @@ export async function updateCodeFile(
 
 export async function deleteCodeFile(id: string): Promise<void> {
   const { error } = await supabase
-    .from("code_files")
+    .schema("code").from("code_files")
     .update({ is_deleted: true })
     .eq("id", id);
   if (error) {
@@ -211,7 +211,7 @@ export async function fetchCodeFolders(): Promise<CodeFolder[]> {
   // the matching note on `fetchCodeFilesList` for why we don't gate this
   // fetch on Redux auth-state hydration.
   const { data, error } = await supabase
-    .from("code_file_folders")
+    .schema("code").from("code_file_folders")
     .select("*")
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
@@ -230,7 +230,7 @@ export async function createCodeFolder(
   // Never write a null org — fall back to the cached personal org.
   const organizationId = await ensureOrgId(input.organization_id);
   const { data, error } = await supabase
-    .from("code_file_folders")
+    .schema("code").from("code_file_folders")
     .insert({
       user_id: userId,
       name: input.name,
@@ -259,7 +259,7 @@ export async function updateCodeFolder(
   updates: UpdateCodeFolderInput,
 ): Promise<CodeFolder> {
   const { data, error } = await supabase
-    .from("code_file_folders")
+    .schema("code").from("code_file_folders")
     .update(updates)
     .eq("id", id)
     .select("*")
@@ -273,7 +273,7 @@ export async function updateCodeFolder(
 
 export async function deleteCodeFolder(id: string): Promise<void> {
   const { error } = await supabase
-    .from("code_file_folders")
+    .schema("code").from("code_file_folders")
     .update({ is_active: false })
     .eq("id", id);
   if (error) {
