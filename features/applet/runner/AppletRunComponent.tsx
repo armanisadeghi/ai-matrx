@@ -23,6 +23,22 @@ import MarkdownStream from "@/components/MarkdownStream";
 import PreviewLoadingWithMessage from "@/features/applet/builder/previews/PreviewLoadingWithMessage";
 import { AppletLayoutOption } from "@/types/customAppTypes";
 import { useToastManager } from "@/hooks/useToastManager";
+import { Construction } from "lucide-react";
+
+/**
+ * TEMPORARY — applet execution is under construction.
+ *
+ * The applet runner used to execute via the prompts system (recipe → prompt
+ * conversion + Socket.IO transport). Both paths were retired with the prompts
+ * removal and will be rebuilt on the agents execution system. Until then we
+ * keep the entire applet subsystem WIRED AND RENDERED (so nothing gets
+ * orphaned/forgotten and accidentally deleted) but disable the execution side
+ * effects and show an under-construction notice at the submit boundary.
+ *
+ * To resurrect: flip this to `false`, finish the agent-execution rewire in
+ * useAppletRecipeFastAPI (restore the recipe→agent path) and re-test.
+ */
+const APPLET_EXECUTION_UNDER_CONSTRUCTION = true;
 
 const SLUG_TO_COORDINATOR_MAP = {
   "core-info-generator": "app_suggestions",
@@ -79,8 +95,17 @@ export default function AppletRunComponent({
 
   // Both hooks are always called (React rules — no conditional hooks).
   // Only the result from the active path is used.
-  const socketResult = useAppletRecipe({ appletId });
-  const fastApiResult = useAppletRecipeFastAPI({ appletId });
+  // `enabled: false` while under construction short-circuits all execution side
+  // effects (socket task creation + the removed recipe→agent conversion fetch)
+  // without unwiring the hooks/components.
+  const socketResult = useAppletRecipe({
+    appletId,
+    enabled: !APPLET_EXECUTION_UNDER_CONSTRUCTION,
+  });
+  const fastApiResult = useAppletRecipeFastAPI({
+    appletId,
+    enabled: !APPLET_EXECUTION_UNDER_CONSTRUCTION,
+  });
 
   // Auto-enable FastAPI path when the applet has a cached agent ID (promptId),
   // or when ?fx=1 is explicitly set. Falls back to Socket.IO otherwise.
@@ -127,6 +152,12 @@ export default function AppletRunComponent({
   }, [conversationId, useFastApi, router, pathname]);
 
   const handleSubmit = () => {
+    if (APPLET_EXECUTION_UNDER_CONSTRUCTION) {
+      toast.info(
+        "Applet execution is temporarily under construction and will be back soon.",
+      );
+      return;
+    }
     if (socketTaskId) {
       if (!allowSubmit) {
         console.log("In the current mode, Submit is not available.");
@@ -178,6 +209,23 @@ export default function AppletRunComponent({
         ref={scrollAreaRef}
         className={`flex-1 overflow-y-auto scrollbar-none ${showFollowUpBar ? "pb-[50dvh]" : ""}`}
       >
+        {APPLET_EXECUTION_UNDER_CONSTRUCTION && (
+          <div className="w-full max-w-4xl mx-auto px-4 pt-4">
+            <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+              <Construction className="h-5 w-5 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-foreground">
+                  Applet execution is temporarily under construction
+                </p>
+                <p className="text-muted-foreground">
+                  You can still explore and edit this applet. Running it is
+                  disabled while we rebuild execution on the agents system — it
+                  will be back soon.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {!taskSubmitted && (
           <>
             {isPreview && <div className="py-4"></div>}

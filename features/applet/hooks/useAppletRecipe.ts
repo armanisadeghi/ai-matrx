@@ -39,6 +39,14 @@ interface BrokerValue {
 
 interface UseAppletRecipeProps {
   appletId: string;
+  /**
+   * When false, all execution side effects are short-circuited (no task is
+   * created/submitted over the socket transport). Used while applet execution
+   * is temporarily under construction after the prompts-system removal.
+   * Defaults to true so the hook's normal behavior is restored simply by
+   * passing `enabled` truthy (or omitting it). See AppletRunComponent.
+   */
+  enabled?: boolean;
 }
 
 const EMPTY_VALIDATION_STATE = {
@@ -46,7 +54,10 @@ const EMPTY_VALIDATION_STATE = {
   validationErrors: {} as Record<string, string>,
 };
 
-export function useAppletRecipe({ appletId }: UseAppletRecipeProps) {
+export function useAppletRecipe({
+  appletId,
+  enabled = true,
+}: UseAppletRecipeProps) {
   const dispatch = useAppDispatch();
   const sourceConfig = useAppSelector((state) =>
     selectAppletRuntimeDataSourceConfig(state, appletId),
@@ -96,6 +107,7 @@ export function useAppletRecipe({ appletId }: UseAppletRecipeProps) {
   // Initialize the task and brokers
   useEffect(() => {
     if (
+      !enabled ||
       taskId ||
       !sourceConfig ||
       sourceConfig.sourceType !== "recipe" ||
@@ -161,11 +173,11 @@ export function useAppletRecipe({ appletId }: UseAppletRecipeProps) {
         setError("Failed to initialize the applet recipe.");
         setIsLoading(false);
       });
-  }, [sourceConfig, taskId, dispatch]);
+  }, [sourceConfig, taskId, dispatch, enabled]);
 
   // Handle submission with properly structured broker values
   const submitRecipe = useCallback(() => {
-    if (!taskId) return;
+    if (!enabled || !taskId) return;
 
     setIsLoading(true);
 
@@ -187,7 +199,7 @@ export function useAppletRecipe({ appletId }: UseAppletRecipeProps) {
         setError("Failed to process the request.");
         setIsLoading(false);
       });
-  }, [dispatch, taskId, structuredBrokerValues]);
+  }, [dispatch, taskId, structuredBrokerValues, enabled]);
 
   return {
     taskId,

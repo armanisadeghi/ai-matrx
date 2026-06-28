@@ -32,10 +32,20 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 
 interface UseAppletRecipeFastAPIProps {
   appletId: string;
+  /**
+   * When false, all execution side effects are short-circuited — notably the
+   * recipe→agent conversion fetch (POST /api/recipes/{id}/convert-to-prompt),
+   * whose route was removed with the prompts system. Used while applet
+   * execution is temporarily under construction. Defaults to true so the hook's
+   * normal behavior is restored simply by passing `enabled` truthy (or omitting
+   * it). See AppletRunComponent.
+   */
+  enabled?: boolean;
 }
 
 export function useAppletRecipeFastAPI({
   appletId,
+  enabled = true,
 }: UseAppletRecipeFastAPIProps) {
   const dispatch = useAppDispatch();
   const sourceConfig = useAppSelector((state) =>
@@ -75,6 +85,9 @@ export function useAppletRecipeFastAPI({
 
   // ── Initialization: resolve agentId (from cache or fresh conversion) ──────
   useEffect(() => {
+    // Applet execution under construction (prompts-system removal): skip the
+    // recipe→agent conversion fetch so the deleted route is never called.
+    if (!enabled) return;
     if (
       !sourceConfig ||
       sourceConfig.sourceType !== "recipe" ||
@@ -137,10 +150,11 @@ export function useAppletRecipeFastAPI({
       .finally(() => {
         setIsLoading(false);
       });
-  }, [sourceConfig, appletId]);
+  }, [sourceConfig, appletId, enabled]);
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const submitRecipe = useCallback(() => {
+    if (!enabled) return;
     if (!agentId) {
       setError("Agent not ready — recipe conversion may still be in progress");
       return;
@@ -173,7 +187,7 @@ export function useAppletRecipeFastAPI({
         setError("Failed to process the request.");
         setIsLoading(false);
       });
-  }, [agentId, dispatch, rawBrokerValues, taskId]);
+  }, [agentId, dispatch, rawBrokerValues, taskId, enabled]);
 
   return {
     taskId,
