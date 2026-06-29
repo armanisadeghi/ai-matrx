@@ -64,7 +64,12 @@ export type CapturedErrorSource =
   /** Stream transport failure surfaced by the NDJSON parser (BackendApiError). */
   | "agent-stream-transport"
   /** Client-side stream death (heartbeat loss, total-timeout, fetch failure). */
-  | "agent-stream-client-error";
+  | "agent-stream-client-error"
+  // ── Domain ────────────────────────────────────────────────────────────────
+  /** An expiring/private media URL reached a render/store path (durability defect). */
+  | "media-durability"
+  /** A user-facing `toast.error(...)` — already handled + shown to the user. */
+  | "user-toast";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

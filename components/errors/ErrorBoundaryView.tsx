@@ -26,6 +26,7 @@ import {
   attemptChunkReload,
   isChunkLoadError,
 } from "@/components/errors/chunk-load-recovery";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -385,6 +386,14 @@ export function ErrorBoundaryView({
     // Stale-tab recovery — see chunk-load-recovery.ts for the why.
     if (isStaleChunk) {
       attemptChunkReload(error);
+    } else {
+      // Feed the systemwide Error Inspector. One place here covers every
+      // route-level error.tsx (they all delegate to ErrorBoundaryView).
+      captureReactRenderError(error, {
+        boundary: "RouteErrorBoundary",
+        relation: context,
+        componentStack: error.digest ? `digest: ${error.digest}` : null,
+      });
     }
   }, [error, context, isStaleChunk]);
 

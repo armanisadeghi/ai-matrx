@@ -1,4 +1,5 @@
 import React, { ErrorInfo } from "react";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 // Error boundary component for catching React errors
 export class MarkdownErrorBoundary extends React.Component<
@@ -24,6 +25,10 @@ export class MarkdownErrorBoundary extends React.Component<
       error,
       errorInfo,
     );
+    captureReactRenderError(error, {
+      boundary: "MarkdownErrorBoundary",
+      componentStack: errorInfo.componentStack ?? null,
+    });
     this.props.onError?.(error, errorInfo);
   }
 

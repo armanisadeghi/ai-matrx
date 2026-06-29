@@ -1,6 +1,7 @@
 // lib/toast-service.ts
 import { MatrxVariant } from "@/components/ui/types";
 import type { ToastDefaults, ToastOptions } from "@/types/toast.types";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // Default messages for different toast types
 const DEFAULT_MESSAGES = {
@@ -85,6 +86,24 @@ class ToastService {
     public error(error?: unknown, moduleKey?: string, options?: ToastOptions) {
         const message = error instanceof Error ? error.message :
                         typeof error === "string" ? error : this.getDefaultMessage("error", moduleKey);
+        // Every user-facing error toast is captured (source "user-toast",
+        // tiered orange by default — already handled + shown). This is also the
+        // seam for the future "surface certain errors to end users" feature.
+        try {
+            captureError({
+                source: "user-toast",
+                relation: moduleKey,
+                message,
+                userMessage: message,
+                name: error instanceof Error ? error.name : undefined,
+                stack: error instanceof Error ? error.stack : undefined,
+                raw: error instanceof Error
+                    ? { name: error.name, message: error.message, stack: error.stack }
+                    : error,
+            });
+        } catch {
+            /* capture must never break the toast */
+        }
         return this.show("Error", message, "destructive", options);
     }
 

@@ -43,6 +43,8 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-stream-data-error": "Server data error",
   "agent-stream-transport": "Stream transport error",
   "agent-stream-client-error": "Stream connection failure",
+  "media-durability": "Media durability violation",
+  "user-toast": "User-facing error toast",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

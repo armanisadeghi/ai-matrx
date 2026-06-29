@@ -9,6 +9,7 @@
  * means a real bug got past authoring, so it screams rather than swallowing.
  */
 import React from "react";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 interface Props {
   toolName: string;
@@ -36,6 +37,11 @@ export class ToolRendererErrorBoundary extends React.Component<Props, State> {
       error,
       errorInfo.componentStack,
     );
+    captureReactRenderError(error, {
+      boundary: "ToolRendererErrorBoundary",
+      componentStack: errorInfo.componentStack ?? null,
+      relation: `tool:${this.props.toolName}`,
+    });
   }
 
   render(): React.ReactNode {

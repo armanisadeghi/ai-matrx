@@ -19,8 +19,23 @@ pre-hydration errors, would be wrong. React reads it via `useCapturedErrors` /
 `useCapturedErrorStats` (`useSyncExternalStore`). Max 300 distinct entries,
 newest-first, identical signatures deduped with an occurrence count.
 
+**Doctrine: structured errors are the rule, generic browser errors the fallback.**
+The high-value adapters consume our OWN typed error channels (the agent stream,
+the Python API, Supabase). `console.error` / `window 'error'` / rejections are
+the safety net, not the main event.
+
 **Capture adapters (all → `captureError`):**
 
+- **Agent stream (the central artery)** — `lib/diagnostics/captureStreamError.ts`.
+  `captureStreamEvent` is wired at the ONE chokepoint every stream consumer pulls
+  events through: `parseNdjsonStream` (`lib/api/stream-parser.ts`). It captures
+  every server-emitted typed error/failure — `error` (ErrorPayload), `warning`,
+  `tool_event`/`tool_error`, `provider_retry` (cancelled/suspended),
+  `record_update` `status:"failed"`, error-bearing `data` events — each with a
+  server-origin `source` (`agent-stream-*`) and `error_type`/`code`/`user_message`
+  intact. Transport failures → `captureStreamTransportError`; client-side stream
+  death (heartbeat/timeout) arrives as an exception, so `run-ai-stream.ts`'s catch
+  calls `captureStreamClientError`.
 - **Supabase** — `lib/diagnostics/supabaseErrorCapture.ts`, a transparent Proxy
   on the browser client (`utils/supabase/client.ts`). Intercepts `from`/`rpc`/
   `schema`; captures raw PostgREST `code`/`message`/`details`/`hint`/`status` +
@@ -38,15 +53,27 @@ newest-first, identical signatures deduped with an occurrence count.
     wrapper is pure downside there; in prod/preview there is no overlay and the
     Inspector is the one surface. Never reinstate the dev wrap.
 - **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the one
-  error chokepoint in `lib/api/call-api.ts`. Every non-2xx / network failure.
+  error chokepoint in `lib/api/call-api.ts`. Every non-2xx / network failure;
+  extracts the backend's structured `error_type`/`code`/`user_message`/`request_id`
+  instead of flattening `serverDetail`.
 - **React render** — `lib/diagnostics/captureReactError.ts`,
   `captureReactRenderError()`. Boundaries swallow errors (the global listener
-  can't see them), so a boundary opts in from `componentDidCatch`. Wired into
-  `OverlayErrorBoundary`; other boundaries adopt the same one-liner.
+  can't see them), so a boundary opts in from `componentDidCatch`. The single
+  high-leverage point is `components/errors/ErrorBoundaryView.tsx` (every route
+  `error.tsx` delegates to it). Also wired: `OverlayErrorBoundary`, both
+  `MessageErrorBoundary`s, `ToolRendererErrorBoundary`, `MarkdownErrorBoundary`.
+  **Remaining bespoke boundaries adopt the same one-liner** (AgentApp, Emit/Dynamic
+  tool renderers, PreviewErrorBoundary, settings/builder boundaries…) — a shared
+  `ErrorBoundaryWithCapture` primitive is the eventual home.
+- **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
+  `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
+  tiered orange: already handled + shown to the user). **Open:** a global
+  `*/rejected` thunk middleware (the largest remaining systemic gap — Redux
+  mutation failures are toasted but not captured).
 
 Capture is in-memory, cheap, try/caught — it can never break a caller — and runs
 for **all** users. Only the UI is admin-gated, which is the seam for the future
-"surface certain errors to end users" feature.
+"surface certain errors to end users" feature (`user_message` is captured for it).
 
 ## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
 
@@ -116,6 +143,14 @@ listener set.
 
 ## Change Log
 
+- 2026-06-29 — **Structured-error arteries.** Added the agent-stream adapter
+  (`captureStreamError`) at the `parseNdjsonStream` chokepoint — captures every
+  server-emitted typed error/warning/tool-error/provider-retry/record-failure,
+  the thing the inspector had been missing while it caught only the FE's
+  downstream `console.error`. Added structured fields (`userMessage`/`requestId`/
+  `conversationId`), enriched `captureApiError`, wired the route-boundary
+  chokepoint (`ErrorBoundaryView`) + top content boundaries, and added
+  media-durability + toast.error capture.
 - 2026-06-28 — Gated the `console.error` wrapper to non-development. In `next dev`
   it corrupted Next's error-overlay origin attribution (blamed
   `globalErrorCapture.ts` instead of the real caller) and duplicated the overlay;

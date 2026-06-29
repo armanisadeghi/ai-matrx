@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { TriangleAlert } from 'lucide-react';
+import { captureReactRenderError } from '@/lib/diagnostics/captureReactError';
 
 interface MessageErrorBoundaryProps {
     children: React.ReactNode;
@@ -29,6 +30,11 @@ export class MessageErrorBoundary extends React.Component<MessageErrorBoundaryPr
 
     componentDidCatch(error: Error, info: React.ErrorInfo) {
         console.error('[MessageErrorBoundary] Render error in message', this.props.messageId, error, info);
+        captureReactRenderError(error, {
+            boundary: 'MessageErrorBoundary',
+            componentStack: info.componentStack ?? null,
+            relation: this.props.messageId,
+        });
     }
 
     render() {

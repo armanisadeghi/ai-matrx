@@ -21,6 +21,8 @@ interface ReactErrorContext {
   componentStack?: string | null;
   /** For lazy overlays: the dynamic-import module path that failed. */
   modulePath?: string | null;
+  /** What failed — e.g. a message id, route name, or `tool:<name>`. */
+  relation?: string;
 }
 
 export function captureReactRenderError(
@@ -30,7 +32,7 @@ export function captureReactRenderError(
   try {
     captureError({
       source: "react-render",
-      relation: ctx.boundary ?? ctx.modulePath ?? undefined,
+      relation: ctx.relation ?? ctx.boundary ?? ctx.modulePath ?? undefined,
       message: extractErrorMessage(error) || "React render error",
       name: error instanceof Error ? error.name : undefined,
       stack: error instanceof Error ? error.stack : undefined,

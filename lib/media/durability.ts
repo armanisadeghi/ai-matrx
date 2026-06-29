@@ -14,6 +14,7 @@
 // file_id for authed owners). NEVER hand-render our media with a raw <img src>.
 
 import { isSignedUrl } from "@/lib/media/signed-url";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -61,6 +62,17 @@ export function reportMediaDurabilityViolation(
   context: string,
 ): boolean {
   if (classifyMediaUrl(url) !== "expiring") return false;
+  try {
+    captureError({
+      source: "media-durability",
+      relation: context,
+      message: `Expiring media URL reached "${context}" — should be public/durable`,
+      details: String(url).slice(0, 300),
+      raw: { context, url: String(url) },
+    });
+  } catch {
+    /* capture must never break the caller */
+  }
   console.error(
     "\n================ MEDIA-DURABILITY VIOLATION ================\n" +
       `A non-public, EXPIRING media URL reached "${context}".\n` +
