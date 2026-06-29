@@ -124,6 +124,12 @@ export interface AxisEntry {
   accessTier: AccessTier;
   /** Show on the axis index "featured" rail and the hub. */
   featured?: boolean;
+  /**
+   * Hide from the axis index grid while keeping a live page + static param.
+   * Used for fine-grained leaves reached via a parent (e.g. individual grade
+   * pages surfaced only from the Elementary band).
+   */
+  indexHidden?: boolean;
   /** Extra SEO keywords beyond name/tagline. */
   keywords?: string[];
   /** Body content. Optional so a stub entry still renders a clean page. */
@@ -183,4 +189,35 @@ export interface EduToolEntry {
   visionRef?: string;
   /** Once built, the tool graduates to its own route with full functionality. */
   featured?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Learn doc — the pure-content SEO layer (/education/learn/<...slug>)
+// ---------------------------------------------------------------------------
+// Pure-information pages (topic explainers / study guides) that rank in search
+// and funnel into the app via `related`. Distinct from axis MARKETING pages
+// (which sell the platform) — a learn doc is ABOUT the subject matter itself.
+// Seeded from a registry now; the production engine reads education.
+// study_structured_section. Render is fully server-side.
+
+export interface LearnDoc {
+  /** Path-style slug; may contain "/" for hierarchy (e.g. "biology/cell-structure"). */
+  slug: string;
+  title: string;
+  /** Short summary → meta description + hero lede. */
+  summary: string;
+  /** Subject slug this content belongs to (links back to the subject page). */
+  subject?: string;
+  letter: string;
+  /** Absolute date string (no Date.now in this codebase's static data). */
+  updated: string;
+  keywords?: string[];
+  /** Article body — the same composable section blocks as marketing pages. */
+  sections: EduSection[];
+  /** Conversion bridge: which app tools / subjects / exams this content feeds. */
+  related?: {
+    tools?: string[];
+    subjects?: string[];
+    exams?: string[];
+  };
 }

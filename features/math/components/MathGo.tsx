@@ -235,7 +235,7 @@ const MathProblem: React.FC<MathProblemProps> = ({
                 <h2 className="text-2xl font-bold mb-4">Congratulations!</h2>
                 <div className="space-x-4">
                     <Button onClick={reset}>Review Again</Button>
-                    <Button onClick={() => router.push("/education/math")}>Choose Another Lesson</Button>
+                    <Button onClick={() => router.push("/education/subjects/quick-math")}>Choose Another Lesson</Button>
                 </div>
             </div>
         );

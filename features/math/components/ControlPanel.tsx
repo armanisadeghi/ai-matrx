@@ -17,7 +17,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onReset, onBack, onNext, st
             <CardContent className="p-2">
                 <div className="flex justify-between items-center">
                     <div>
-                        <Link href="/education/math">
+                        <Link href="/education/subjects/quick-math">
                             <Button variant="outline" size="sm" className="mr-2">All Lessons</Button>
                         </Link>
                         <Button variant="outline" size="sm" onClick={onReset}>Reset</Button>

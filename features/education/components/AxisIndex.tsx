@@ -18,8 +18,10 @@ interface AxisIndexProps {
 
 export function AxisIndex({ axisId, entries, heroTitle, heroAccent }: AxisIndexProps) {
   const axis = EDU_AXIS_BY_ID[axisId];
-  // Featured entries first, then the rest, each in declared order.
-  const ordered = [...entries].sort(
+  // Hide fine-grained leaves (e.g. individual grades) from the index; featured
+  // entries first, then the rest in declared order.
+  const visible = entries.filter((e) => !e.indexHidden);
+  const ordered = [...visible].sort(
     (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)),
   );
 
@@ -53,7 +55,7 @@ export function AxisIndex({ axisId, entries, heroTitle, heroAccent }: AxisIndexP
         title={heroTitle ?? axis.label}
         titleAccent={heroAccent}
         description={axis.blurb}
-        chips={[`${entries.length} ${axis.label.toLowerCase()}`]}
+        chips={[`${visible.length} ${axis.label.toLowerCase()}`]}
         primary={{ label: "Start studying free", href: EDU_BASE }}
       />
       <SectionRenderer sections={sections} />
