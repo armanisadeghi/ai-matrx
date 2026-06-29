@@ -82,3 +82,9 @@ export const selectWorkingDocVersion =
   (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): number =>
     entryOf(state, conversationId, kind)?.version ?? 0;
+
+/** A pending concurrent-edit conflict the user must reconcile, or null. */
+export const selectWorkingDocConflict =
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
+  (state: RootState): { agentVersion: number; agentContent: string } | null =>
+    entryOf(state, conversationId, kind)?.conflict ?? null;

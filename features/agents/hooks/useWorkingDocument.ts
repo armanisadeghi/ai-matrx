@@ -49,6 +49,8 @@ import {
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
   markWorkingDocError,
+  clearWorkingDocConflict,
+  markWorkingDocConflict,
   markWorkingDocMaterialized,
   markWorkingDocSaving,
   setWorkingDocContent,
@@ -59,6 +61,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   selectWorkingDocBinding,
+  selectWorkingDocConflict,
   selectWorkingDocContent,
   selectWorkingDocEnabled,
   selectWorkingDocError,
@@ -327,10 +330,15 @@ export function useWorkingDocument(
     selectWorkingDocMaterialized(conversationId, kind),
   );
   const version = useAppSelector(selectWorkingDocVersion(conversationId, kind));
-  // Latched in a ref so the debounced commit reads the LATEST known base version
-  // at fire time (not the value captured when the callback was created).
+  const conflict = useAppSelector(
+    selectWorkingDocConflict(conversationId, kind),
+  );
+  // Latched in refs so the debounced commit reads the LATEST values at fire time
+  // (not those captured when the callback was created).
   const versionRef = useRef(version);
   versionRef.current = version;
+  const conflictRef = useRef(conflict);
+  conflictRef.current = conflict;
 
   // Keep the instanceContext entry current for every mount of this hook (the
   // dedicated SmartInput bridge guarantees the always-on case).
@@ -352,6 +360,9 @@ export function useWorkingDocument(
   const commit = useCallback(
     (value: string) => {
       if (!dirtyRef.current) return;
+      // Don't auto-save over an unresolved conflict — the user must reconcile
+      // first (their draft is preserved meanwhile).
+      if (conflictRef.current) return;
       dirtyRef.current = false;
       // The slice content is already current (onChange writes it on every
       // keystroke so the agent always sees the latest); here we persist to the
@@ -371,7 +382,38 @@ export function useWorkingDocument(
             }),
           );
         if (materialized) {
-          void updateCxWorkingDocumentContent(docId, value).then(done).catch(fail);
+          // OPTIMISTIC-CONCURRENCY write: refused if a concurrent edit (the agent
+          // this turn) advanced the row. On conflict we DON'T clobber — we record
+          // the agent's version for the user to diff + reconcile, keeping their
+          // draft intact. Nothing is lost (both versions are in history).
+          void commitWorkingDocumentContent(docId, value, versionRef.current)
+            .then((res) => {
+              if (res.status === "saved") {
+                dispatch(
+                  setWorkingDocVersion({
+                    conversationId,
+                    kind,
+                    version: res.document.version,
+                  }),
+                );
+                done();
+              } else {
+                dispatch(
+                  markWorkingDocConflict({
+                    conversationId,
+                    kind,
+                    agentVersion: res.document.version,
+                    agentContent: res.document.content ?? "",
+                  }),
+                );
+                console.warn(
+                  "[working-document] save refused — a concurrent edit advanced " +
+                    "the document; surfaced a conflict for the user to reconcile",
+                  { conversationId, kind },
+                );
+              }
+            })
+            .catch(fail);
         } else {
           // First content → create the durable row + conversation edge, seeded
           // with the current content (materialize-on-write).
