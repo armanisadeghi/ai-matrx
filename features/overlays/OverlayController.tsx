@@ -353,13 +353,6 @@ const ContentEditorWorkspaceWindow = lazyOverlay(
     ),
   { ssr: false },
 );
-const ContentHistoryViewer = lazyOverlay(
-  () =>
-    import("@/features/agents/components/TO-BE-ORGANIZED/ContentHistoryViewer").then(
-      (m) => ({ default: m.ContentHistoryViewer }),
-    ),
-  { ssr: false },
-);
 const ContextSwitcherWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ContextSwitcherWindow").then(
@@ -1358,9 +1351,6 @@ export default function OverlayController() {
     ),
     contentEditorWorkspaceWindow: useAppSelector((s) =>
       selectOpenInstances(s, "contentEditorWorkspaceWindow"),
-    ),
-    contentHistory: useAppSelector((s) =>
-      selectOpenInstances(s, "contentHistory"),
     ),
     createProjectWindow: useAppSelector((s) =>
       selectOpenInstances(s, "createProjectWindow"),
@@ -2656,31 +2646,6 @@ export default function OverlayController() {
               typeof data?.listTitle === "string" ? data.listTitle : null
             }
             title={typeof data?.title === "string" ? data.title : null}
-          />
-        );
-      })}
-
-      {/* contentHistory — multi-instance */}
-      {instancesById.contentHistory.map((inst) => {
-        const data = inst.data as Record<string, unknown> | null | undefined;
-        return (
-          <ContentHistoryViewer
-            key={inst.instanceId}
-            isOpen
-            onClose={() =>
-              dispatch(
-                closeOverlay({
-                  overlayId: "contentHistory",
-                  instanceId: inst.instanceId,
-                }),
-              )
-            }
-            sessionId={
-              typeof data?.sessionId === "string" ? data.sessionId : ""
-            }
-            messageId={
-              typeof data?.messageId === "string" ? data.messageId : ""
-            }
           />
         );
       })}

@@ -23,7 +23,6 @@ import {
   Printer,
   ScanLine,
   RotateCcw,
-  History,
   Upload,
   FileType,
   Bug,
@@ -61,7 +60,6 @@ export interface MessageActionContext {
   rawContent: unknown[] | null;
   metadata: Record<string, unknown> | null;
   hasUnsavedChanges: boolean;
-  hasHistory: boolean;
   dispatch: AppDispatch;
   onClose: () => void;
 
@@ -128,7 +126,6 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
     rawContent,
     metadata,
     hasUnsavedChanges,
-    hasHistory,
     dispatch,
     onClose,
     showFullPrint,
@@ -225,28 +222,6 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
       disabled: !hasUnsavedChanges,
       hidden: !sessionId || !messageId,
     },
-    {
-      key: "view-history",
-      icon: History,
-      iconColor: "text-blue-500 dark:text-blue-400",
-      label: "View edit history",
-      action: () => {
-        dispatch(
-          openOverlay({
-            overlayId: "contentHistory",
-            data: {
-              sessionId: sessionId!,
-              messageId: messageId!,
-            },
-          }),
-        );
-        onClose();
-      },
-      category: "Edit",
-      showToast: false,
-      hidden: !hasHistory || !sessionId || !messageId,
-    },
-
     // ── Actions (auth-gated) ────────────────────────────────────
     {
       key: "add-to-tasks",

@@ -747,14 +747,6 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "undoHistory",
   },
   {
-    id: "tile.content-history",
-    label: "Content History (new)",
-    icon: FileStack,
-    category: "admin",
-    gate: "admin",
-    overlayId: "contentHistory",
-  },
-  {
     id: "tile.agent-full-modal",
     label: "Agent (full modal) (new)",
     icon: AppWindow,

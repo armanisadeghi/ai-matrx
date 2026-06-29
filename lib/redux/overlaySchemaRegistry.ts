@@ -54,11 +54,6 @@ export interface SaveToNotesSchema {
   defaultFolder: string;
 }
 
-export interface ContentHistorySchema {
-  sessionId: string;
-  messageId: string;
-}
-
 export interface ShareModalSchema {
   resourceType: string;
   resourceId: string;
@@ -95,13 +90,6 @@ export const overlaySchemaRegistry: Partial<Record<string, OverlaySchema>> = {
       content: "",
       defaultFolder: "Scratch",
     } satisfies SaveToNotesSchema,
-  },
-
-  contentHistory: {
-    defaults: {
-      sessionId: "",
-      messageId: "",
-    } satisfies ContentHistorySchema,
   },
 
   shareModal: {

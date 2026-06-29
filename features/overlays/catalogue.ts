@@ -270,11 +270,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
-  contentHistory: {
-    label: "Content History",
-    instanceMode: "multi",
-    isWindow: false,
-  },
   contextAssignment: {
     label: "Attach To",
     instanceMode: "singleton",

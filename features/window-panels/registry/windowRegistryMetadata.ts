@@ -1331,15 +1331,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
   {
-    slug: "content-history",
-    overlayId: "contentHistory",
-    kind: "widget",
-    label: "Content History",
-    defaultData: { sessionId: null, messageId: null },
-    ephemeral: true,
-    instanceMode: "multi",
-  },
-  {
     slug: "save-to-notes",
     overlayId: "saveToNotes",
     kind: "widget",

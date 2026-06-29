@@ -17,7 +17,6 @@ import {
   MoreHorizontal,
   Loader2,
   Save,
-  History,
 } from "lucide-react";
 import {
   TapTargetButtonForGroup,
@@ -43,7 +42,6 @@ export interface AssistantActionBarProps {
   sessionId?: string;
   conversationId?: string;
   hasUnsavedChanges?: boolean;
-  hasHistory?: boolean;
   isSaving?: boolean;
   rawContent?: unknown[];
   onQuickSave?: () => void;
@@ -57,7 +55,6 @@ export function AssistantActionBar({
   sessionId,
   conversationId,
   hasUnsavedChanges = false,
-  hasHistory = false,
   isSaving = false,
   rawContent,
   onQuickSave,
@@ -169,16 +166,6 @@ export function AssistantActionBar({
     );
   };
 
-  const handleShowHistory = () => {
-    if (!sessionId || !messageId) return;
-    dispatch(
-      openOverlay({
-        overlayId: "contentHistory",
-        data: { sessionId, messageId },
-      }),
-    );
-  };
-
   return (
     <>
       <TapTargetButtonGroup>
@@ -233,14 +220,6 @@ export function AssistantActionBar({
                 <Save className="w-4 h-4 text-primary" />
               )
             }
-          />
-        )}
-
-        {hasHistory && (
-          <TapTargetButtonForGroup
-            onClick={handleShowHistory}
-            ariaLabel="View edit history"
-            icon={<History className="w-4 h-4 text-muted-foreground" />}
           />
         )}
 

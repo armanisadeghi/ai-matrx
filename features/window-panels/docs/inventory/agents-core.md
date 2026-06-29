@@ -9,7 +9,7 @@
 | agentRunWindow | `agentRunWindow` | `AgentRunWindow.tsx` |
 | agentSettingsWindow | `agentSettingsWindow` | `AgentSettingsWindow.tsx` |
 | agentContentWindow | `agentAdvancedEditorWindow` | `AgentContentWindow.tsx` |
-| agentContentSidebarWindow | — (NOT a window) | `AgentContentHistoryPanel.tsx` — embeddable panel, `contentHistory` is a different overlay |
+| agentContentSidebarWindow | — (NOT a window) | `AgentContentHistoryPanel.tsx` — embeddable panel, not a registered overlay |
 | agentConnectionsWindow | `agentConnectionsWindow` | `AgentConnectionsWindow.tsx` |
 | agentRunHistoryWindow | `agentRunHistoryWindow` | `AgentRunHistoryWindow.tsx` |
 | agentImportWindow | `agentImportWindow` | `AgentImportWindow.tsx` |
@@ -92,7 +92,7 @@
 
 6. **Tools-Grid hygiene + naming drift.** Real, working panels carry "(new)" stub-style labels (`agentConvertSystemWindow`, `agentCreateAppWindow`) — drop the tag. Three identity drifts: chatHistoryWindow = file `ChatHistoryWindow` / overlay `quickChatHistory` / tile "Chat History" / window title "AI Results"; agentShortcutQuickCreateWindow = file/opener "ShortcutQuickCreate" / overlay `agentAdminShortcutWindow`; agentContentWindow = file "Content" / overlay `agentAdvancedEditorWindow` / opener `useOpenAgentContentWindow`. Normalize names so search/find-usages and future maintainers aren't misled.
 
-7. **agentContentSidebarWindow is a misnomer in the chunk spec — it is NOT a window.** `AgentContentHistoryPanel.tsx` is an embeddable resizable panel (no `WindowPanel`/`overlayId`), rendered inside agentContentWindow's `history` tab. The registry's `contentHistory` overlayId is a *different* (content-editor) panel. Treat this as a leaf unit, and dedupe its version-grouped conversation list against agentRunHistoryWindow's near-identical sidebar.
+7. **agentContentSidebarWindow is a misnomer in the chunk spec — it is NOT a window.** `AgentContentHistoryPanel.tsx` is an embeddable resizable panel (no `WindowPanel`/`overlayId`), rendered inside agentContentWindow's `history` tab. Treat this as a leaf unit, and dedupe its version-grouped conversation list against agentRunHistoryWindow's near-identical sidebar.
 
 ---
 
