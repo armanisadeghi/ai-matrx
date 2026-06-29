@@ -176,7 +176,7 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   agentRunWindow: {
-    label: "Agent Run Window",
+    label: "Chat Window",
     instanceMode: "singleton",
     isWindow: true,
   },

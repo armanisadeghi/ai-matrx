@@ -89,7 +89,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "agent-builder": { label: "Agent Builder", icon: Hammer },
   "agent-generator": { label: "Agent Generator", icon: PencilRuler },
   "agent-tester": { label: "Agent Tester", icon: Hammer },
-  "agent-run-window": { label: "Agent Run (window)", icon: Play },
+  "agent-run-window": { label: "Chat (window)", icon: Play },
   "agent-run-history-window": { label: "Agent History (window)", icon: Play },
   "agent-runs-sidebar": { label: "Agent Runs (sidebar)", icon: Play },
   "agent-advanced-editor-window": { label: "Agent Editor", icon: Hammer },

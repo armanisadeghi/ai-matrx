@@ -4,6 +4,12 @@
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+
+export interface OpenChatWindowOptions {
+  initialAgentId?: string | null;
+  initialSelectedConversationId?: string | null;
+}
 
 /**
  * Hook for opening quick action sheets via Redux
@@ -36,6 +42,27 @@ export function useQuickActions() {
   const openQuickChat = useCallback(
     (data?: any) => {
       dispatch(openOverlay({ overlayId: "quickChat", data }));
+    },
+    [dispatch],
+  );
+
+  /**
+   * Opens the floating Chat window panel (`agentRunWindow`) with the same
+   * default agent as `/chat/new`. Callers that need a specific agent should
+   * pass `initialAgentId` explicitly (e.g. agent options menu, item cards).
+   */
+  const openChatWindow = useCallback(
+    (opts: OpenChatWindowOptions = {}) => {
+      dispatch(
+        openOverlay({
+          overlayId: "agentRunWindow",
+          data: {
+            initialAgentId: opts.initialAgentId ?? DEFAULT_NEW_CHAT_AGENT_ID,
+            initialSelectedConversationId:
+              opts.initialSelectedConversationId ?? null,
+          },
+        }),
+      );
     },
     [dispatch],
   );
@@ -78,6 +105,7 @@ export function useQuickActions() {
     openQuickNotes,
     openQuickTasks,
     openQuickChat,
+    openChatWindow,
     openQuickData,
     openQuickFiles,
     openQuickUtilities,

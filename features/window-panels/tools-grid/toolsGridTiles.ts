@@ -86,6 +86,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
 import { selectOwnedAgentIds } from "@/lib/redux/slices/agentCacheSlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -143,6 +144,17 @@ function seedInitialAgentId(
   const id =
     selectActiveAgentId(state) ?? selectOwnedAgentIds(state)[0] ?? null;
   return id ? { initialAgentId: id } : undefined;
+}
+
+/** Default agent for the Chat window panel — mirrors `/chat/new`. */
+function seedDefaultChatWindowAgent(): {
+  initialAgentId: string;
+  initialSelectedConversationId: null;
+} {
+  return {
+    initialAgentId: DEFAULT_NEW_CHAT_AGENT_ID,
+    initialSelectedConversationId: null,
+  };
 }
 
 export interface ToolsGridTile {
@@ -359,10 +371,11 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
   // ── Agents (labels match windowRegistry `label` for each overlayId) ───
   {
     id: "tile.agent-run",
-    label: "Agent Run",
+    label: "Chat",
     icon: MessageSquare,
     category: "agents",
     overlayId: "agentRunWindow",
+    seedData: () => seedDefaultChatWindowAgent(),
   },
   {
     id: "tile.agent-advanced-editor",

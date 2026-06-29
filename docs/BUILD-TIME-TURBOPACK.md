@@ -59,5 +59,6 @@ Expect: zero “Overly broad patterns” / “unexpected file in NFT list” war
 
 ## Change log
 
+- `2026-06-29` — Resolved: admin docs moved to DB-backed `/administration/feature-docs` + `scripts/sync-feature-docs.ts`. Filesystem route and `outputFileTracingIncludes` removed.
 - `2026-06-29` — `local-logs`: prod 404 gate, dynamic `node:fs` import, `turbopackIgnore` on `$HOME` paths. Admin docs viewer left unchanged pending manual review.
 - `2026-06-28` — Initial doc from failed-then-fixed Vercel build log (`TEMP-CLEANUP.md`).

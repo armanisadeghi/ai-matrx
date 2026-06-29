@@ -75,7 +75,7 @@
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",
-    "sync-types": "node scripts/sync-types.mjs",
+    "sync:feature-docs": "tsx scripts/sync-feature-docs.ts",
     "validate": "node scripts/validate.mjs",
     "validate:fast": "node scripts/validate.mjs --fast",
     "validate:local": "node scripts/validate.mjs --local",

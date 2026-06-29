@@ -17,6 +17,7 @@
  *                that own an override layer — manual/builder-test runs read
  *                the agent live and have no override state.
  *   - Tools    — add registry tools to THIS run (RunToolPicker)
+ *   - Skills   — add registry skills to THIS run (RunSkillPicker)
  *   - Sandbox  — bind an agent sandbox (SandboxPanel)
  *   - Settings — run settings: disable tool injection, Surface Simulator,
  *                debug, save-to-DB, … (RunSettingsEditor)
@@ -31,6 +32,7 @@ import {
   Plus,
   Paperclip,
   Wrench,
+  Lightbulb,
   Box,
   Settings2,
   Cpu,
@@ -57,6 +59,7 @@ import { TabbedBottomSheet } from "@/components/official/bottom-sheet/TabbedBott
 
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { RunToolPicker } from "./RunToolPicker";
+import { RunSkillPicker } from "./RunSkillPicker";
 import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
@@ -96,6 +99,7 @@ type Tab =
   | "document"
   | "model"
   | "tools"
+  | "skills"
   | "sandbox"
   | "settings"
   | "preferences"
@@ -118,6 +122,7 @@ const MODEL_TAB: TabDef = { id: "model", label: "Overrides", icon: Cpu };
 const CREATOR_TAB: TabDef = { id: "creator", label: "Creator", icon: Crown };
 const BASE_TABS: TabDef[] = [
   { id: "tools", label: "Tools", icon: Wrench },
+  { id: "skills", label: "Skills", icon: Lightbulb },
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "settings", label: "Settings", icon: Settings2 },
   { id: "preferences", label: "Preferences", icon: SlidersVertical },
@@ -210,6 +215,11 @@ function RunControlsTabPanel({
       {activeTab === "tools" && (
         <div className="h-full overflow-hidden">
           <RunToolPicker conversationId={conversationId} />
+        </div>
+      )}
+      {activeTab === "skills" && (
+        <div className="h-full overflow-hidden">
+          <RunSkillPicker conversationId={conversationId} />
         </div>
       )}
       {activeTab === "sandbox" && (
@@ -399,9 +409,11 @@ export function RunControlsMenu({
       : tab;
 
   const addedCount = settings?.addedTools?.length ?? 0;
+  const addedSkillsCount = settings?.addedSkills?.length ?? 0;
   const hasSandbox = !sandboxBlocked && sandboxBinding.status === "verified";
   const isCustomized =
     addedCount > 0 ||
+    addedSkillsCount > 0 ||
     hasSandbox ||
     hasModelOverride ||
     workingDocEnabled ||

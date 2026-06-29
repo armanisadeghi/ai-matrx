@@ -768,6 +768,12 @@ export interface AssembledAgentStartRequest {
   /** Capability envelope — declares what the calling surface can do. */
   client?: import("./tool-injection.types").ClientContext;
   /**
+   * Per-turn skill visibility override. When present, replaces the agent's
+   * persisted `skill_config` for this request only — used by the Smart Input
+   * skills picker (`addedSkills` merged into `included`).
+   */
+  skill_config?: Record<string, unknown>;
+  /**
    * Top-level sandbox binding. aidream hydrates
    * `ctx.metadata["active_sandbox"]` — which the matrx-ai fs/shell tools read
    * to route into the container — ONLY from this field. The same payload also
@@ -837,6 +843,8 @@ export interface AssembledConversationRequest {
   tools?: import("./tool-injection.types").ToolSpec[];
   tools_replace?: import("./tool-injection.types").ToolSpec[] | null;
   client?: import("./tool-injection.types").ClientContext;
+  /** See `AssembledAgentStartRequest.skill_config` — forwarded on every turn. */
+  skill_config?: Record<string, unknown>;
   /** See `AssembledAgentStartRequest.sandbox` — same top-level binding, forwarded on every turn. */
   sandbox?: import("./tool-injection.types").ClientCapabilityPayloads["sandbox-fs"];
   organization_id?: string;

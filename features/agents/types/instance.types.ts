@@ -494,6 +494,15 @@ export interface BuilderAdvancedSettings {
   addedTools?: string[];
 
   /**
+   * Skills the user added to THIS conversation from the Smart Input skills menu
+   * — registry skill UUIDs, additive on top of the agent's saved `skill_config`.
+   * `buildSkillConfigForRequest` folds them into `included` for the request's
+   * `skill_config` field so aidream's `apply_unified_skills` bakes the bodies
+   * into the system preamble for this run.
+   */
+  addedSkills?: string[];
+
+  /**
    * Creator/admin-only, THIS conversation only: override the backend route the
    * Builder's manual execution POSTs to. Normally the Builder always hits
    * `/ai/manual` (the live-definition execution path). Set this to test the
@@ -517,6 +526,7 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   disableToolInjection: false,
   surfaceOverride: null,
   addedTools: [],
+  addedSkills: [],
   manualEndpointOverride: null,
 };
 

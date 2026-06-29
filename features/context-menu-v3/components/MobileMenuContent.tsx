@@ -277,6 +277,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
     openQuickNotes,
     openQuickTasks,
     openQuickChat,
+    openChatWindow,
     openQuickData,
     openQuickFiles,
     openVoicePad,
@@ -860,6 +861,17 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
   });
   for (const n of extraNodes("after-clipboard")) push(n);
   push({ kind: "separator", id: "sep-1" });
+
+  // Core platform panels
+  push({
+    kind: "action",
+    id: "chat-window",
+    label: "Chat",
+    icon: MessageSquare,
+    iconClass: "text-primary",
+    onSelect: close(() => openChatWindow()),
+  });
+  push({ kind: "separator", id: "sep-1b" });
 
   // History
   push({

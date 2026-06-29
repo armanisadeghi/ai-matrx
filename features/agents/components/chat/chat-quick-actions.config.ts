@@ -21,6 +21,10 @@ export interface ChatQuickAction {
  * Picked so that typing-and-submitting without choosing a chip routes through
  * a reasonable general-purpose agent. Change this to swap the "default" feel
  * of the chat surface for everyone.
+ *
+ * Also the default agent for the floating **Chat** window panel when opened
+ * from general entry points (shell tools grid, context menu) — not when another
+ * surface opens the panel with an explicit `initialAgentId`.
  */
 export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
 

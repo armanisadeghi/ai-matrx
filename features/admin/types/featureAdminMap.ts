@@ -15,11 +15,7 @@
 // on the feature's admin map.
 
 export type FeatureResourceStatus =
-  | "Live"
-  | "Beta"
-  | "Coming soon"
-  | "Deprecated"
-  | "Demo only";
+  "Live" | "Beta" | "Coming soon" | "Deprecated" | "Demo only";
 
 export interface FeatureAdminRoute {
   /** The URL — e.g. `/transcripts/studio`. */
@@ -118,7 +114,7 @@ export interface FeatureAdminDocLink {
   label: string;
   /**
    * Either a repo-relative path to a `.md` file (rendered via
-   * `/admin/docs/<path>`) or an absolute external URL. The admin page
+   * `/administration/feature-docs/view/<path>`) or an absolute external URL. The admin page
    * detects which and routes accordingly. All doc links open in a new tab.
    */
   href: string;

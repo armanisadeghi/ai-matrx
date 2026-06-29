@@ -48,10 +48,7 @@ import {
   resolveOverlay,
   resolveWindowPanel,
 } from "../utils/lookupOverlay";
-import {
-  ExternalTabLink,
-  OverlayLaunchButton,
-} from "./OverlayLaunchButton";
+import { ExternalTabLink, OverlayLaunchButton } from "./OverlayLaunchButton";
 
 interface FeatureAdminPageProps {
   map: FeatureAdminMap;
@@ -60,15 +57,17 @@ interface FeatureAdminPageProps {
 const STATUS_STYLES: Record<FeatureResourceStatus, string> = {
   Live: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   Beta: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-  "Coming soon":
-    "bg-muted text-muted-foreground border-border",
+  "Coming soon": "bg-muted text-muted-foreground border-border",
   Deprecated:
     "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
   "Demo only":
     "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
 };
 
-const TIER_STYLES: Record<NonNullable<FeatureAdminComponent["tier"]>, string> = {
+const TIER_STYLES: Record<
+  NonNullable<FeatureAdminComponent["tier"]>,
+  string
+> = {
   official:
     "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   candidate:
@@ -90,7 +89,11 @@ function StatusPill({ status }: { status?: FeatureResourceStatus }) {
   );
 }
 
-function TierPill({ tier }: { tier: NonNullable<FeatureAdminComponent["tier"]> }) {
+function TierPill({
+  tier,
+}: {
+  tier: NonNullable<FeatureAdminComponent["tier"]>;
+}) {
   return (
     <span
       className={cn(
@@ -192,7 +195,9 @@ function ResourceRow({
       {notes && notes.length > 0 && (
         <details className="mt-1.5">
           <summary className="cursor-pointer text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground select-none inline-flex items-center gap-1">
-            <span className="inline-block transition-transform group-open:rotate-90">▸</span>
+            <span className="inline-block transition-transform group-open:rotate-90">
+              ▸
+            </span>
             details
           </summary>
           <ul className="mt-1.5 ml-4 space-y-1 text-xs text-muted-foreground list-disc">
@@ -244,7 +249,9 @@ function WindowPanelDriftWarning({
   declaredOverlayIds: Set<string>;
 }) {
   const found = findWindowPanelsBySlugPrefix(slugPrefix);
-  const drift = found.filter((entry) => !declaredOverlayIds.has(entry.overlayId));
+  const drift = found.filter(
+    (entry) => !declaredOverlayIds.has(entry.overlayId),
+  );
   if (drift.length === 0) return null;
   return (
     <div className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
@@ -263,14 +270,14 @@ function WindowPanelDriftWarning({
 
 /**
  * Resolve a `FeatureAdminDocLink.href` to the right open-in-new-tab target.
- * Repo-relative `.md` paths route through `/admin/docs/...` so the markdown
- * renders inline. External URLs pass through unchanged.
+ * Repo-relative `.md` paths route through the DB-backed feature docs viewer.
+ * External URLs pass through unchanged.
  */
 function docHref(link: FeatureAdminDocLink): string {
   if (/^https?:\/\//.test(link.href)) return link.href;
-  // Normalize leading slash + repo-relative path.
   const clean = link.href.replace(/^\/+/, "");
-  return `/admin/docs/${clean}`;
+  const segments = clean.split("/").map(encodeURIComponent).join("/");
+  return `/administration/feature-docs/view/${segments}`;
 }
 
 export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
@@ -321,7 +328,11 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
       <div className="px-4 py-4 space-y-6">
         {/* Routes */}
         <section>
-          <SectionHeading icon={Link2} title="Routes" count={map.routes.length} />
+          <SectionHeading
+            icon={Link2}
+            title="Routes"
+            count={map.routes.length}
+          />
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
             {map.routes.map((route) => (
               <ResourceRow
@@ -566,7 +577,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
             <Boxes className="inline h-3 w-3 -mt-0.5 mr-1" />
             source: hand-curated FeatureAdminMap config at{" "}
             <ExternalTabLink
-              href={`/admin/docs/app/(core)/${map.slug}/admin/page.tsx`}
+              href={`/administration/feature-docs/view/app/(core)/${map.slug}/admin/page.tsx`}
               className="hover:underline text-primary"
             >
               app/(core)/{map.slug}/admin/page.tsx

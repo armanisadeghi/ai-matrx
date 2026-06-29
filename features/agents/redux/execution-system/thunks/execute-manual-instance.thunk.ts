@@ -141,6 +141,7 @@ import {
   finishRequest as finishNetRequest,
 } from "@/lib/redux/net/netRequestsSlice";
 import { buildToolInjection } from "../utils/build-tool-injection";
+import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
 import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
 
@@ -419,6 +420,12 @@ export async function assembleManualRequest(
   }
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
+
+  attachSkillConfigFromState(
+    state,
+    conversationId,
+    request as { skill_config?: Record<string, unknown> },
+  );
 
   // Global active context scope — org / project / task. Mirrors what callApi
   // and execute-instance already send so the Builder's manual path is not the

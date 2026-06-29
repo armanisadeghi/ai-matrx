@@ -645,6 +645,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/database-admin",
       },
       {
+        title: "Feature Docs",
+        description:
+          "Browse internal FEATURE.md and README docs synced from the repo into admin.feature_docs. Two-way sync via pnpm sync:feature-docs.",
+        iconName: "FileText",
+        link: "/administration/feature-docs",
+        isNew: true,
+      },
+      {
         title: "Database Tools Hub",
         description:
           "Landing page for SQL editor, workbench, functions, and enum management.",

@@ -281,6 +281,7 @@ export default function MenuContent(props: MenuContentProps) {
     openQuickNotes,
     openQuickTasks,
     openQuickChat,
+    openChatWindow,
     openQuickData,
     openQuickFiles,
     openVoicePad,
@@ -958,6 +959,14 @@ export default function MenuContent(props: MenuContentProps) {
       </Item>
 
       {renderExtraSections("after-clipboard")}
+
+      <Separator />
+
+      {/* Core platform panels */}
+      <Item onSelect={() => openChatWindow()}>
+        <MessageSquare className="h-4 w-4 mr-2 text-primary" />
+        Chat
+      </Item>
 
       <Separator />
 

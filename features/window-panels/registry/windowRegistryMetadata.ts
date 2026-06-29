@@ -24,6 +24,7 @@ import type {
   MobileSidebarAs,
   InstanceMode,
 } from "./windowRegistryTypes";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 
 // Re-export types so callers can import them from one place
 export type {
@@ -481,13 +482,16 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
-  // ── Agent Run ─────────────────────────────────────────────────────────────
+  // ── Chat (agent run window) ─────────────────────────────────────────────
   {
     slug: "agent-run-window",
     overlayId: "agentRunWindow",
     kind: "window",
-    label: "Agent Run",
-    defaultData: { initialAgentId: null, initialSelectedConversationId: null },
+    label: "Chat",
+    defaultData: {
+      initialAgentId: DEFAULT_NEW_CHAT_AGENT_ID,
+      initialSelectedConversationId: null,
+    },
     mobilePresentation: "fullscreen",
     mobileSidebarAs: "drawer",
     urlSync: { key: "agent" },

@@ -27,6 +27,7 @@ import type {
   UserOverrides,
 } from "@/features/agents/types/request.types";
 import { buildToolInjection } from "../utils/build-tool-injection";
+import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { Json } from "@/types/database.types";
 import { generateRequestId } from "../utils/ids";
@@ -481,6 +482,8 @@ export const executeInstance = createAsyncThunk<
       if (injection.tools_replace)
         payload.tools_replace = injection.tools_replace;
       if (injection.client) payload.client = injection.client;
+
+      attachSkillConfigFromState(state, conversationId, payload);
 
       // Promote the sandbox binding to the top-level `sandbox` field. aidream
       // hydrates `ctx.metadata["active_sandbox"]` — the key the matrx-ai
