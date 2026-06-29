@@ -133,7 +133,6 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/administration/utils/text-cleaner" },
   { href: "/tests/forms" },
   { href: "/tests/selector-test" },
-  { href: "/tests/matrx-table" },
   { href: "/demo/prompt-builder" },
   { href: "/legacy/entity-crud", favicon: { color: "#0369a1", letter: "Ec" } },
   { href: "/admin/sandbox" },
