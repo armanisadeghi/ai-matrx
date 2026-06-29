@@ -20,7 +20,7 @@
 
 "use client";
 
-import { fileHandler } from "@/features/files/handler/handler";
+import { fileHandler } from "@/features/files";
 
 export interface NarrateOptions {
   /** playai-tts voice. Defaults to the route default 'Cheyenne-PlayAI'. */
