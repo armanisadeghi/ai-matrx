@@ -1,23 +1,26 @@
 "use client";
 
-import React, { Suspense, lazy, useMemo } from "react";
+import React, { useMemo } from "react";
+import dynamic from "next/dynamic";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { safeJsonParse } from "@/components/mardown-display/chat-markdown/block-registry/json-parse-utils";
 import {
   type ArtifactRendererProps,
   resolveJsonPayload,
 } from "../artifact-renderers";
-
-// Canvas mode: spreads math_problem fields directly — matches CanvasBody:
-//   `<MathProblem id="canvas-preview" {...data.math_problem} />`
-const MathProblem = lazy(
-  () => import("@/features/math/components/MathProblem"),
-);
+// Canvas mode spreads math_problem fields directly — matches CanvasBody:
+//   `<MathProblem id="canvas-preview" {...data.math_problem} />`.
+// MathProblem is itself a dynamic({ ssr: false }) front-door wrapper, so import it
+// statically — re-wrapping it would stack a second ssr:false boundary on the same
+// render path (an anti-pattern). See the code-splitting skill.
+import MathProblem from "@/features/math/components/MathProblem";
 
 // Inline / artifact mode: accepts the full `{ math_problem: {...} }` payload —
-// matches BlockRenderer: `<MathProblemBlock problemData={block.serverData} />`
-const MathProblemBlock = lazy(
+// matches BlockRenderer: `<MathProblemBlock problemData={block.serverData} />`.
+// Heavy client block (print dialog + persistence) — split into its own chunk.
+const MathProblemBlock = dynamic(
   () => import("@/components/mardown-display/blocks/math/MathProblemBlock"),
+  { ssr: false, loading: () => <MatrxMiniLoader /> },
 );
 
 /**
@@ -57,17 +60,10 @@ export default function MathProblemArtifact({
     const mp = (payload as { math_problem?: Record<string, unknown> })
       .math_problem;
     if (!mp) return isStreamActive ? <MatrxMiniLoader /> : null;
-    return (
-      <Suspense fallback={<MatrxMiniLoader />}>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <MathProblem id="canvas-preview" {...(mp as any)} />
-      </Suspense>
-    );
+    // The MathProblem wrapper renders its own dynamic-import loading skeleton.
+    return <MathProblem id="canvas-preview" {...(mp as any)} />;
   }
 
-  return (
-    <Suspense fallback={<MatrxMiniLoader />}>
-      <MathProblemBlock problemData={payload as any} />
-    </Suspense>
-  );
+  // MathProblemBlock is dynamically imported with its own loading fallback.
+  return <MathProblemBlock problemData={payload as any} />;
 }

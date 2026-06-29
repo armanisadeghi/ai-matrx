@@ -17,6 +17,10 @@ import {
 import { CanvasHeader, ViewMode } from "./CanvasHeader";
 import { CanvasNavigation } from "./CanvasNavigation";
 import type { CanvasType } from "@/types/canvas-social";
+// MathProblem is itself a dynamic({ ssr: false }) front-door wrapper, so import it
+// statically — re-wrapping it in dynamic() here would stack a second ssr:false
+// boundary on the same render path. See the code-splitting skill.
+import MathProblem from "@/features/math/components/MathProblem";
 
 // next/dynamic requires inline object literals for options — no variable references allowed.
 // All blocks use ssr: false so they are completely excluded from SSR module analysis.
@@ -96,10 +100,6 @@ const CanvasFlashcardsView = dynamic(
 );
 const CodeBlock = dynamic(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
-  { ssr: false },
-);
-const MathProblem = dynamic(
-  () => import("@/features/math/components/MathProblem"),
   { ssr: false },
 );
 const CodePreviewCanvas = dynamic(
