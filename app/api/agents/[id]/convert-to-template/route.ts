@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -75,6 +76,9 @@ export async function POST(
         is_featured: false,
         use_count: 0,
         user_id: user.id,
+        // "My template" → the user's personal org (agent.template org is NOT
+        // NULL with no inherit trigger; resolve server-side, never cache).
+        organization_id: await ensureOrgIdServer(supabase, undefined),
         source_agent_id: id,
       })
       .select()

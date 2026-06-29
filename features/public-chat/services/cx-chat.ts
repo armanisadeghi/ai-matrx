@@ -6,6 +6,7 @@
  */
 
 import { createClient } from "@/utils/supabase/server";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type {
   CxConversation,
   CxConversationInsert,
@@ -42,12 +43,25 @@ export async function getCxConversation(
 
 /** Create a new conversation */
 export async function createCxConversation(
-  conversation: CxConversationInsert,
+  // org is resolved server-side below, so callers need not supply it (the
+  // regenerated types make organization_id required on chat.conversation).
+  conversation: Omit<CxConversationInsert, "organization_id"> & {
+    organization_id?: string | null;
+  },
 ): Promise<CxConversation | null> {
   const supabase = await createClient();
+  // chat.conversation is a root entity (org NOT NULL, no inherit trigger) —
+  // never insert a null org; fall back to the session's personal org.
+  const insert: CxConversationInsert = {
+    ...conversation,
+    organization_id: await ensureOrgIdServer(
+      supabase,
+      conversation.organization_id ?? null,
+    ),
+  };
   const { data, error } = await supabase
     .schema("chat").from("conversation")
-    .insert(conversation)
+    .insert(insert)
     .select()
     .single();
 

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { requireAdmin } from "@/utils/auth/adminUtils";
 import { buildSearchOr } from "@/utils/supabase-search";
 
@@ -108,6 +109,10 @@ export async function POST(request: NextRequest) {
       icon: body.icon === "" ? null : body.icon || null,
       is_active: body.is_active !== undefined ? body.is_active : true,
       version: body.version || 1,
+      // Admin-authored platform tools are builtin/shipped content with no
+      // individual owner — home them in the global system org (tool.definition
+      // org is NOT NULL with no inherit trigger).
+      organization_id: await resolveSystemOrgId(supabase),
     };
 
     const { data, error } = await supabase

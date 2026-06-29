@@ -25,6 +25,7 @@
 // owner (not `auth.uid()`) and so still needs the parameterized RPC.
 
 import { supabase } from "@/utils/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -86,4 +87,29 @@ export async function ensureOrgId(
   orgId: string | null | undefined,
 ): Promise<string> {
   return orgId ? orgId : resolvePersonalOrgId();
+}
+
+/**
+ * Server-side personal-org resolver for the session bound to the GIVEN SSR
+ * client. Use in route handlers / Server Actions, where the module-scoped
+ * browser cache above MUST NOT be used — server module scope is shared across
+ * requests and users, so caching `auth.uid()`'s personal org would leak it to
+ * the next request. Resolves per call via `current_personal_org_id()` (no
+ * cache). Returns the given id when set, otherwise resolves the session's org.
+ */
+export async function ensureOrgIdServer(
+  client: SupabaseClient,
+  orgId: string | null | undefined,
+): Promise<string> {
+  if (orgId) return orgId;
+  const { data, error } = await client.rpc("current_personal_org_id");
+  if (error || !data) {
+    throw (
+      error ??
+      new Error(
+        "current_personal_org_id() returned no personal organization for the session",
+      )
+    );
+  }
+  return data as string;
 }

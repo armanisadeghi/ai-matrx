@@ -24,6 +24,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { callApi } from "@/lib/api/call-api";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { components } from "@/types/python-generated/api-types";
 import type { Database } from "@/types/database.types";
@@ -259,6 +260,9 @@ export const createSkill = createAsyncThunk<
     parent_skill_id: wire.parent_skill_id ?? null,
     is_public: wire.is_public,
     user_id: userId,
+    // Personal skill → the user's org (skill.definition org is NOT NULL with no
+    // inherit trigger). Never insert a null org.
+    organization_id: await ensureOrgId(undefined),
   };
   const { data, error } = await supabase
     .schema("skill")

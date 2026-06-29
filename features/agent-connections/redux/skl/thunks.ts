@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { sklActions } from "./slice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -74,7 +75,6 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
   const stamped: T = { ...payload };
   if (args.scope === "user") {
     stamped.user_id = userId;
-    stamped.organization_id = null;
     stamped.project_id = null;
     stamped.task_id = null;
   } else if (args.scope === "organization") {
@@ -89,6 +89,13 @@ async function stampScopeForWrite<T extends ScopeStampInput>(
   } else if (args.scope === "task") {
     stamped.user_id = userId;
     stamped.task_id = args.scopeId;
+  }
+  // organization_id is NOT NULL on canonical tables — never stamp a null org.
+  // User-scoped rows live in the user's personal org; org-scoped rows keep the
+  // chosen org; project/task-scoped rows fall back to the personal org until
+  // scope-adoption assigns the scope's org.
+  if (!stamped.organization_id) {
+    stamped.organization_id = await ensureOrgId(undefined);
   }
   return stamped;
 }
