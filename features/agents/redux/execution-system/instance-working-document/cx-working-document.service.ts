@@ -265,15 +265,56 @@ export interface ResolvedConversationDocument {
 }
 
 /**
+ * In-flight provisioning dedup, keyed by `${conversationId}:${kind}`.
+ *
+ * WHY: `getOrCreateConversationDocument` is the shared chokepoint for several
+ * triggers that fire near-simultaneously for the SAME (conversation, kind) — the
+ * always-on SmartInput bridge mount AND every open editor each run
+ * `useWorkingDocumentContextSync`'s provision effect, which stays "armed"
+ * (`binding.kind === "none"`) until the first call resolves and flips the
+ * binding. Without dedup, N concurrent calls each INSERT a candidate
+ * `working_documents` row and then race the junction's UNIQUE(conversation_id,
+ * kind): one wins, the rest throw 23505 (loud noise in the Supabase error
+ * inspector) and their candidate docs are created-then-deleted (orphan churn).
+ * Collapsing to one shared promise makes provisioning a single clean op.
+ *
+ * Cleared on settle (success OR failure) so a later enable / re-open / unbind
+ * re-provisions cleanly — this is an in-flight latch, NOT a result cache.
+ */
+const inFlightProvision = new Map<
+  string,
+  Promise<ResolvedConversationDocument>
+>();
+
+/**
  * Ensure the conversation has a document of `kind` and a junction link to it,
  * creating both on first access (the Scribe pattern, generalised + persisted).
  * Sets the link `enabled = true` since this is the provision-on-enable path.
  *
- * Idempotent: an existing link is reused (its document loaded by id). A
- * concurrent create resolves via the UNIQUE (conversation_id, kind) constraint
- * (we re-read on conflict).
+ * Idempotent and race-safe: concurrent calls for the same (conversation, kind)
+ * share ONE in-flight promise (intra-tab), and the junction write is an
+ * idempotent upsert so any residual cross-client race resolves to a no-op
+ * instead of a 23505. An existing link is always reused (its document loaded by
+ * id).
  */
-export async function getOrCreateConversationDocument(
+export function getOrCreateConversationDocument(
+  conversationId: string,
+  kind: WorkingDocumentKind,
+): Promise<ResolvedConversationDocument> {
+  const key = `${conversationId}:${kind}`;
+  const inflight = inFlightProvision.get(key);
+  if (inflight) return inflight;
+  const promise = getOrCreateConversationDocumentImpl(
+    conversationId,
+    kind,
+  ).finally(() => {
+    inFlightProvision.delete(key);
+  });
+  inFlightProvision.set(key, promise);
+  return promise;
+}
+
+async function getOrCreateConversationDocumentImpl(
   conversationId: string,
   kind: WorkingDocumentKind,
 ): Promise<ResolvedConversationDocument> {
@@ -319,15 +360,19 @@ export async function getOrCreateConversationDocument(
   }
   const candidate = rowToCxWorkingDocument(docData as CxWorkingDocumentRow);
 
-  // Claim the junction. A unique violation here means a concurrent claim won;
-  // that is expected and non-fatal — we resolve it via the authoritative
-  // re-read below.
-  await supabase.schema("chat").from("conversation_documents").insert({
-    conversation_id: conversationId,
-    kind,
-    document_id: candidate.id,
-    enabled: true,
-  });
+  // Claim the junction with an IDEMPOTENT upsert (ON CONFLICT DO NOTHING): if a
+  // concurrent claim from another tab/client already won, this is a silent
+  // no-op rather than a 23505 — we resolve the actual owner via the
+  // authoritative re-read below and clean up our losing candidate.
+  await supabase.schema("chat").from("conversation_documents").upsert(
+    {
+      conversation_id: conversationId,
+      kind,
+      document_id: candidate.id,
+      enabled: true,
+    },
+    { onConflict: "conversation_id,kind", ignoreDuplicates: true },
+  );
 
   const winner = await getConversationDocumentLink(conversationId, kind);
   if (!winner) {
