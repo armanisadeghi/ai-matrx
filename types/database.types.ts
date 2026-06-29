@@ -26826,6 +26826,24 @@ export type Database = {
           session_id: string
         }[]
       }
+      study_record_attempt: {
+        Args: {
+          p_graded_by?: string
+          p_item_id: string
+          p_item_type: string
+          p_latency_ms?: number
+          p_method?: string
+          p_response_audio_file_id?: string
+          p_response_image_file_id?: string
+          p_response_kind?: string
+          p_response_transcript?: string
+          p_result?: string
+          p_score?: Json
+          p_score_value?: number
+          p_session_id?: string
+        }
+        Returns: Json
+      }
       system_org_id: { Args: { p_key: string }; Returns: string }
       thread_contents: {
         Args: { thread_id: string }

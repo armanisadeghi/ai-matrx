@@ -40,7 +40,9 @@ interface AssocForEntityRow {
   direction: string;
   other_type: string;
   other_id: string;
+  role: string | null;
   label: string | null;
+  position: number | null;
   metadata: Json;
   organization_id: string | null;
   created_at: string;
@@ -53,7 +55,9 @@ function toEdge(row: AssocForEntityRow): AssociationEdge {
     direction: row.direction === "incoming" ? "incoming" : "outgoing",
     otherType: row.other_type,
     otherId: row.other_id,
+    role: row.role ?? null,
     label: row.label ?? null,
+    position: row.position ?? null,
     metadata: (row.metadata ?? {}) as Json,
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
@@ -66,7 +70,9 @@ interface AssocForTargetsRow {
   target_id: string;
   source_type: string;
   source_id: string;
+  role: string | null;
   label: string | null;
+  position: number | null;
   metadata: Json;
   organization_id: string | null;
   created_at: string;
@@ -78,7 +84,9 @@ function toTargetEdge(row: AssocForTargetsRow): AssociationTargetEdge {
     targetId: row.target_id,
     sourceType: row.source_type,
     sourceId: row.source_id,
+    role: row.role ?? null,
     label: row.label ?? null,
+    position: row.position ?? null,
     metadata: (row.metadata ?? {}) as Json,
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
@@ -91,7 +99,9 @@ interface AssocForSourcesRow {
   source_id: string;
   target_type: string;
   target_id: string;
+  role: string | null;
   label: string | null;
+  position: number | null;
   metadata: Json;
   organization_id: string | null;
   created_at: string;
@@ -103,7 +113,9 @@ function toSourceEdge(row: AssocForSourcesRow): AssociationSourceEdge {
     sourceId: row.source_id,
     targetType: row.target_type,
     targetId: row.target_id,
+    role: row.role ?? null,
     label: row.label ?? null,
+    position: row.position ?? null,
     metadata: (row.metadata ?? {}) as Json,
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
@@ -223,6 +235,8 @@ export const associationsService = {
     orgId?: string;
     label?: string;
     metadata?: Json;
+    role?: string;
+    position?: number;
   }): Promise<ScopesRpcResult<{ id: string }>> {
     try {
       requireUserId();
@@ -234,6 +248,8 @@ export const associationsService = {
         p_org_id: args.orgId ?? null,
         p_label: args.label ?? null,
         p_metadata: args.metadata ?? {},
+        p_role: args.role ?? null,
+        p_position: args.position ?? null,
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {
@@ -249,12 +265,17 @@ export const associationsService = {
   //  WRITE — single-edge remove.
   // ──────────────────────────────────────────────────────────────────
 
-  /** Detach `source` → `target`. No-op if the edge doesn't exist. */
+  /**
+   * Detach `source` → `target`. No-op if the edge doesn't exist. When `role` is
+   * omitted only the role-less edge is removed (role IS NOT DISTINCT FROM null);
+   * pass `role` to detach a specific typed edge (e.g. one of several card→card roles).
+   */
   async remove(args: {
     sourceType: string;
     sourceId: string;
     targetType: string;
     targetId: string;
+    role?: string;
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
@@ -263,6 +284,7 @@ export const associationsService = {
         p_source_id: args.sourceId,
         p_target_type: args.targetType,
         p_target_id: args.targetId,
+        p_role: args.role ?? null,
       });
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);
@@ -286,6 +308,7 @@ export const associationsService = {
     targetType: AssociationTargetType;
     targetIds: string[];
     orgId?: string;
+    role?: string;
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
@@ -296,6 +319,7 @@ export const associationsService = {
         p_target_type: args.targetType,
         p_target_ids: target,
         p_org_id: args.orgId ?? null,
+        p_role: args.role ?? null,
       });
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);

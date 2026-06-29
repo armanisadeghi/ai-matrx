@@ -77,6 +77,10 @@ const TYPE_LABEL_PLURAL: Record<AssociationTargetType, string> = {
   war_room: "War rooms",
   category: "Categories",
   conversation: "Conversations",
+  fc_set: "Flashcard sets",
+  fc_card: "Flashcards",
+  file: "Files",
+  quiz_session: "Quizzes",
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────

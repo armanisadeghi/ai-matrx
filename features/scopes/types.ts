@@ -104,7 +104,11 @@ export type AssociationTargetType =
   | "thread"
   | "war_room"
   | "category"
-  | "conversation"; //        a chat conversation a working_document is attached to
+  | "conversation" //         a chat conversation a working_document is attached to
+  | "fc_set" //               a flashcard set (card→set membership)
+  | "fc_card" //              a flashcard (card→card hierarchy, quiz→card)
+  | "file" //                 a file (card→file media + source lineage)
+  | "quiz_session"; //        a quiz a card is used in
 
 // ─── Association edges (per-entity, both-directions cache) ─────────────
 //
@@ -118,7 +122,9 @@ export interface AssociationEdge {
   direction: "outgoing" | "incoming";
   otherType: string;
   otherId: string;
+  role: string | null; //     the relationship's kind (e.g. member, expands_into, source)
   label: string | null;
+  position: number | null; // ordering within a role (e.g. card order in a set)
   metadata: Json;
   orgId: string | null;
   createdAt: string;
@@ -134,7 +140,9 @@ export interface AssociationTargetEdge {
   targetId: string;
   sourceType: string;
   sourceId: string;
+  role: string | null;
   label: string | null;
+  position: number | null;
   metadata: Json;
   orgId: string | null;
   createdAt: string;
@@ -170,7 +178,9 @@ export interface AssociationSourceEdge {
   sourceId: string;
   targetType: string;
   targetId: string;
+  role: string | null;
   label: string | null;
+  position: number | null;
   metadata: Json;
   orgId: string | null;
   createdAt: string;

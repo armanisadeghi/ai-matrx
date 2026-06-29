@@ -71,6 +71,12 @@ import { HTML_ADAPTER } from "./html-adapter";
 /** adapter key → adapter. */
 export const ADAPTERS: Record<string, ArtifactPersistenceAdapter> = {
   generic: GENERIC_ADAPTER,
+  // NOTE: the canonical education.fc_* adapter
+  // (./flashcards-canonical-adapter.ts, FLASHCARDS_CANONICAL_ADAPTER) is built
+  // and ready, but the registry swap is deferred until the canvas
+  // CanvasFlashcardsView reads fc_set (else newly-materialized sets won't
+  // render in canvas). Swap `flashcards` → FLASHCARDS_CANONICAL_ADAPTER together
+  // with that view change.
   flashcards: FLASHCARDS_ADAPTER,
   quiz: QUIZ_ADAPTER,
   html: HTML_ADAPTER,

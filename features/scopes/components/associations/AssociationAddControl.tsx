@@ -63,6 +63,10 @@ const TARGET_LABEL: Record<AssociationTargetType, string> = {
   war_room: "war room",
   category: "category",
   conversation: "conversation",
+  fc_set: "flashcard set",
+  fc_card: "flashcard",
+  file: "file",
+  quiz_session: "quiz",
 };
 
 export function AssociationAddControl(props: AssociationAddControlProps) {
