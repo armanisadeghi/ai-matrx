@@ -47,7 +47,7 @@ These govern *every* step of this initiative. Read before touching anything.
 | **A** | Safe patch/minor sweep — everything within its current major | low | ✅ Ready for Arman to push (0 type errors) |
 | **B1** | TypeScript 6 bump — **version only, no strictness** (apples-to-apples) | low | ✅ Shipped (commit `7faeafff8`) |
 | **B2** | TypeScript strictness pass (staged, one flag per PR) | high | ⬜ LAST — after all core bumps land |
-| **C** | Supabase (`@supabase/supabase-js` 2.108.2, `@supabase/ssr` 0.12.0) | med-high | 🟡 Verifying build → push |
+| **C** | Supabase (`@supabase/supabase-js` 2.108.2, `@supabase/ssr` 0.12.0) | med-high | ✅ Shipped (commit `736ee6962`) — runtime auth QA pending |
 | **D** | Groq SDK 0.37 → 1.x | med | ⬜ Not started |
 | **E** | lucide-react 0.x → 1.x (+ document advantages) | med | ⬜ Not started |
 | **F** | Long-tail majors — only the ones Arman flags, gated by R8 | varies | ⬜ Backlog |
