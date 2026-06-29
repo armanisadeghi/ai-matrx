@@ -3,11 +3,11 @@
 import React, { useMemo, useState } from "react";
 import {
   Library,
-  Github,
   RefreshCw,
   CheckCircle2,
   ShieldCheck,
 } from "lucide-react";
+import { Github } from "@/components/icons/brand-icons";
 import { cn } from "@/lib/utils";
 import { SectionToolbar } from "../SectionToolbar";
 import { GroupSection } from "../GroupSection";

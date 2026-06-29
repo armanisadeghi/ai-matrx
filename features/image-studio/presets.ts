@@ -26,14 +26,16 @@ import {
   Palette,
   User,
   Building2,
+  Apple,
+} from "lucide-react";
+import {
   Youtube,
   Instagram,
   Linkedin,
   Twitter,
   Facebook,
   Chrome,
-  Apple,
-} from "lucide-react";
+} from "@/components/icons/brand-icons";
 
 export type OutputFormat = "jpeg" | "png" | "webp" | "avif";
 

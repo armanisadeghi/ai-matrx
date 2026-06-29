@@ -13,11 +13,11 @@ import {
   Table2,
   List,
   Database,
-  Youtube,
   Image as ImageIcon,
   Music,
   FileText,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {

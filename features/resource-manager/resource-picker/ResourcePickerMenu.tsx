@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
-  Youtube,
   Image,
   File,
   Mic,
@@ -19,6 +18,7 @@ import {
   Settings2,
   Bug,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { NotesResourcePicker } from "./NotesResourcePicker";
 import { TasksResourcePicker } from "./TasksResourcePicker";

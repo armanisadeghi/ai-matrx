@@ -19,11 +19,11 @@ import {
   FileText,
   Image as ImageIcon,
   Music,
-  Youtube,
   Globe,
   Paperclip,
   TriangleAlert,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Button } from "@/components/ui/button";

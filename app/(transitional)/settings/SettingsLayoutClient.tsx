@@ -7,7 +7,6 @@ import {
   User,
   Settings as SettingsIcon,
   Building2,
-  Chrome,
   Mic,
   FileText,
   MessageSquareMore,
@@ -31,6 +30,7 @@ import {
   Server,
   type LucideIcon,
 } from "lucide-react";
+import { Chrome } from "@/components/icons/brand-icons";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MobileDock, type DockItem } from "@/components/navigation/MobileDock";

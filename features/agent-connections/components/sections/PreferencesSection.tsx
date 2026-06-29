@@ -8,11 +8,11 @@ import {
   Briefcase,
   FolderKanban,
   ListChecks,
-  Github,
   Package,
   Hexagon,
   Globe,
 } from "lucide-react";
+import { Github } from "@/components/icons/brand-icons";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";

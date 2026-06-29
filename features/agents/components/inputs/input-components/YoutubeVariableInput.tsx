@@ -16,7 +16,7 @@
  * raw text so the user can see what they typed and fix it.
  */
 
-import { Youtube as YoutubeIcon } from "lucide-react";
+import { Youtube as YoutubeIcon } from "@/components/icons/brand-icons";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 

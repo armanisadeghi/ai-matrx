@@ -21,10 +21,10 @@ import {
   Image as ImageIcon,
   FileText,
   Music,
-  Youtube,
   Globe,
   Settings2,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 
 import { VoiceMicButton } from "./VoiceMicButton";
 import { useFileUpload } from "@/features/files";

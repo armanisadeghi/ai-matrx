@@ -9,11 +9,11 @@ import {
   Globe,
   StickyNote,
   CheckSquare,
-  Youtube,
   Image as ImageIcon,
   Music,
   FileText,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";

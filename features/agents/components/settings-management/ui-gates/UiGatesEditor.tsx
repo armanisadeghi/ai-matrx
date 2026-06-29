@@ -13,7 +13,8 @@
  * gate keys from settings, so writing them there silently no-ops).
  */
 
-import { FileText, Image as ImageIcon, Youtube } from "lucide-react";
+import { FileText, Image as ImageIcon } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";

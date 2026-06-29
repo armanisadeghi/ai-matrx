@@ -11,10 +11,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
-  Youtube,
   Image,
   File,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
 import type { PublicResource } from "../../types/content";

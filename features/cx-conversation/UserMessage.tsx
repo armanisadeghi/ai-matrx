@@ -9,10 +9,10 @@ import {
   FileText,
   Image as ImageIcon,
   Music,
-  Youtube,
   Globe,
   Paperclip,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import {
   parseResourcesFromMessage,

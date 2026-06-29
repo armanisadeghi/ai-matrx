@@ -38,8 +38,8 @@ import {
   Table2,
   Video,
   Webhook,
-  Youtube,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import type { ComponentType } from "react";
 import type { ContextItemBodyProps, ContextItemTypeDef } from "./types";
 import { NoteBody, NoteFooter, NoteTitleActions } from "./bodies/NoteBody";

@@ -17,13 +17,13 @@ import {
     File,
     FolderKanban,
     FileText,
-    Youtube,
     Image,
     Mic,
     ChevronDown,
     ChevronRight,
     ExternalLink,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { ParsedResource } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -12,7 +12,6 @@ import {
   Files,
   Globe,
   StickyNote,
-  Youtube,
   FileAudio,
   GraduationCap,
   Newspaper,
@@ -21,6 +20,7 @@ import {
   BookOpen,
   type LucideIcon,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import type {
   PodcastSourceKind,
   PodcastLanguageCode,

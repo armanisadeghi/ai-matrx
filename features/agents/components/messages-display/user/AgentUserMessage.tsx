@@ -25,8 +25,8 @@ import {
   Table2,
   List,
   Database,
-  Youtube,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

@@ -16,7 +16,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Globe,
-  Youtube,
   FileAudio,
   StickyNote,
   Loader2,
@@ -25,6 +24,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";

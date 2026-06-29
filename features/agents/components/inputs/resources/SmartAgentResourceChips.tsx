@@ -20,7 +20,6 @@ import {
   Image,
   Mic,
   Video,
-  Youtube,
   FolderKanban,
   AlertCircle,
   Code2,
@@ -31,6 +30,7 @@ import {
   AudioLines,
   Notebook,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";

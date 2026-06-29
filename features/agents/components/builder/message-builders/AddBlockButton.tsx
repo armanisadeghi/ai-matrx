@@ -7,7 +7,6 @@ import {
   Image as ImageIcon,
   Music,
   Video,
-  Youtube,
   FileText,
   Type as TypeIcon,
   X,
@@ -16,6 +15,7 @@ import {
   Eye,
   Tag,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import {
   Dialog,
   DialogContent,

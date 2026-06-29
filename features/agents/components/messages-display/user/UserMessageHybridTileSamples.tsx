@@ -10,11 +10,11 @@ import {
   Globe,
   StickyNote,
   CheckSquare,
-  Youtube,
   Image as ImageIcon,
   Music,
   FileText,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 import { cn } from "@/lib/utils";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
 import {

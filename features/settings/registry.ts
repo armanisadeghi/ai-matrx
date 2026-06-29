@@ -29,7 +29,6 @@ import {
   Building2,
   Plug,
   HardDrive,
-  Chrome,
   MessageSquareMore,
   Filter,
   FileText,
@@ -39,6 +38,7 @@ import {
   ShieldAlert,
   Briefcase,
 } from "lucide-react";
+import { Chrome } from "@/components/icons/brand-icons";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 

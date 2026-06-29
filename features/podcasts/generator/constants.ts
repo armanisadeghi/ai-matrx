@@ -16,7 +16,6 @@ import {
   Files,
   Globe,
   StickyNote,
-  Youtube,
   FileAudio,
   GraduationCap,
   Newspaper,
@@ -32,6 +31,7 @@ import {
   Circle,
   type LucideIcon,
 } from "lucide-react";
+import { Youtube } from "@/components/icons/brand-icons";
 
 // ── Sources ─────────────────────────────────────────────────────────────────
 //
