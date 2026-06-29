@@ -70,6 +70,7 @@ export type EntityType =
   | "war_room"
   | "studio_session"
   | "transcript"
+  | "working_document" //      a chat working document (workbench.working_documents)
   // ── app entity types (also registered in platform.entity_types) ──
   | "agent_app" //             an `aga_apps` row (packaged agent experience)
   | "agent_surface_binding" // an agent⇄surface binding row
@@ -89,10 +90,11 @@ export type EntityType =
 // `platform.entity_types` (then `EntityType`), never invented here.
 export type FavoriteKind = EntityType | "nav";
 
-// Targets allowed by the `platform.associations` CHECK constraint (8). A
-// `source_type` is unconstrained free text (any token may be a source), but
-// the TARGET of an edge must be one of these. Typed so `add`/`setTargets`
-// callers can't request an edge the DB would reject.
+// Allowed TARGET tokens for a `platform.associations` edge. There is NO DB CHECK
+// constraint on the type columns — the only gate is the FK to
+// `platform.entity_types.token` (any registered token is accepted). This union is
+// the app-side guard that keeps `add`/`setTargets` callers honest about which
+// containers we deliberately attach into. A `source_type` is unconstrained.
 export type AssociationTargetType =
   | "scope"
   | "scope_type"
@@ -101,7 +103,8 @@ export type AssociationTargetType =
   | "context_item"
   | "thread"
   | "war_room"
-  | "category";
+  | "category"
+  | "conversation"; //        a chat conversation a working_document is attached to
 
 // ─── Association edges (per-entity, both-directions cache) ─────────────
 //

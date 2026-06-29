@@ -70,3 +70,15 @@ export const selectWorkingDocAgentRevision =
   (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
   (state: RootState): number =>
     entryOf(state, conversationId, kind)?.agentRevision ?? 0;
+
+/** Whether the durable row exists yet (materialize-on-write). */
+export const selectWorkingDocMaterialized =
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
+  (state: RootState): boolean =>
+    entryOf(state, conversationId, kind)?.materialized ?? false;
+
+/** The row `version` the local content is based on (conflict base). */
+export const selectWorkingDocVersion =
+  (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>
+  (state: RootState): number =>
+    entryOf(state, conversationId, kind)?.version ?? 0;

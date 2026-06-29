@@ -62,6 +62,7 @@ const TARGET_LABEL: Record<AssociationTargetType, string> = {
   thread: "thread",
   war_room: "war room",
   category: "category",
+  conversation: "conversation",
 };
 
 export function AssociationAddControl(props: AssociationAddControlProps) {

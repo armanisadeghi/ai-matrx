@@ -93,6 +93,21 @@ export interface InstanceWorkingDocumentState {
    * editors can distinguish agent-origin updates from user-origin ones.
    */
   agentRevision: number;
+  /**
+   * MATERIALIZE-ON-WRITE: when a working document is enabled it gets a RESERVED
+   * id (`binding.id`) but NO durable row — the row is created on the first byte
+   * of content from either party. `materialized` is false while reserved-but-
+   * absent, true once the row exists. The association edge + auto-title persist
+   * only on the materialize transition, so an enabled-but-untouched doc never
+   * creates a record.
+   */
+  materialized: boolean;
+  /**
+   * The durable row's `version` the local content is based on — the optimistic-
+   * concurrency token sent to the agent (`source.base_version`). A server-side
+   * mismatch (a concurrent user edit) surfaces as a `context_conflict`.
+   */
+  version: number;
 }
 
 export interface InstanceWorkingDocumentSliceState {
@@ -134,6 +149,8 @@ function ensureEntry(
       saving: false,
       lastError: null,
       agentRevision: 0,
+      materialized: false,
+      version: 0,
     };
     state.byKey[key] = entry;
   }
@@ -241,6 +258,48 @@ const instanceWorkingDocumentSlice = createSlice({
       );
       entry.binding = action.payload.binding;
       entry.lastError = null;
+      // Unbinding (kind "none") clears the materialize state: a later re-enable
+      // reserves a fresh id and starts unmaterialized again. Binding TO a source
+      // (note/cx/studio) does not flip `materialized` here — the thunk that knows
+      // whether the row exists sets it via markWorkingDocMaterialized.
+      if (action.payload.binding.kind === "none") {
+        entry.materialized = false;
+        entry.version = 0;
+      }
+    },
+
+    /**
+     * Mark the durable row as existing (the materialize-on-write transition) and
+     * latch its current `version`. Dispatched after a row is created or resolved
+     * — by the FE on the user's first edit, or on a `context_persisted`
+     * (materialized) event when the agent wrote first.
+     */
+    markWorkingDocMaterialized(
+      state,
+      action: PayloadAction<KeyedPayload & { version?: number }>,
+    ) {
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
+      entry.materialized = true;
+      if (typeof action.payload.version === "number") {
+        entry.version = action.payload.version;
+      }
+    },
+
+    /** Latch the row `version` (the optimistic-concurrency base) from a read/echo. */
+    setWorkingDocVersion(
+      state,
+      action: PayloadAction<KeyedPayload & { version: number }>,
+    ) {
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
+      entry.version = action.payload.version;
     },
 
     markWorkingDocSaving(
@@ -288,6 +347,8 @@ export const {
   applyAgentWorkingDocContent,
   setWorkingDocTitle,
   setWorkingDocBinding,
+  markWorkingDocMaterialized,
+  setWorkingDocVersion,
   markWorkingDocSaving,
   markWorkingDocError,
   removeInstanceWorkingDocument,

@@ -81,9 +81,16 @@ const AUDIO_CITATION_INSTRUCTION =
  * in lockstep with the generic working-document primitive.
  */
 export function buildWorkingDocumentValue(documentId: string, content: string) {
-  return buildWorkingDocumentContextValue(content, {
-    kind: "studio_document",
-    id: documentId,
+  return buildWorkingDocumentContextValue({
+    content,
+    binding: { kind: "studio_document", id: documentId },
+    // A studio_document row always exists (no materialize-on-write); the
+    // conversation/org/title/version inputs are irrelevant for this source kind.
+    conversationId: "",
+    organizationId: null,
+    docKind: "working",
+    title: "",
+    version: 0,
   });
 }
 

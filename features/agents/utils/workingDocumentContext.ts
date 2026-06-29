@@ -1,32 +1,36 @@
 /**
  * Working-document agent-context builder.
  *
- * Generalises Scribe's `buildWorkingDocumentValue` (which is hard-wired to
- * `studio_documents`) into a reusable rich context-object value that any
- * conversation can publish into the `instanceContext` slice under the
- * `working_document` key.
+ * Builds the rich context-object value any conversation publishes into the
+ * `instanceContext` slice under the `working_document` (mutable, agent-editable)
+ * or `user_scratchpad` (read-only) key.
  *
- * The backend treats a value as the rich form only when it is a dict with
- * `content` AND every key drawn from the allowed set
- * {content, mutable, persist, source, type, label, description,
- * max_inline_chars, summary_agent_id}. `mutable: true` makes the server expose
+ * The backend treats a value as the rich form when it is a dict with `content`
+ * AND every key drawn from {content, mutable, persist, source, type, label,
+ * description, max_inline_chars, summary_agent_id}. `mutable: true` exposes
  * `ctx_patch`; `source` routes auto-persisted writes to the matching writeback
  * handler.
  *
- * Persistence strategy:
- *   - Bound to a durable source (note / studio_document) → `persist: "auto"` +
- *     `source: { kind, id, field }`. The backend writes that row directly on
- *     `ctx_patch`; the client reflects the change by re-reading the source (see
- *     process-stream handling).
- *   - Unbound → `persist: "client"`. The document is Redux-only and the client
- *     owns all durability; the server emits `context_changed` (without content)
- *     which the client treats as a non-fatal signal.
+ * PERSISTENCE — the load-bearing invariant: an agent-editable working document is
+ * ALWAYS `persist: "auto"`. `persist: "client"` is BANNED for it — that was the
+ * data-loss bug (an unbound doc was offered as editable, the agent's edit was
+ * the client's job to save, and the client dropped it). The doc always carries a
+ * durable `source`, even before its row exists:
+ *   - bound to a note / studio_document → write that existing row.
+ *   - the conversation's working document → `source.kind = "working_document"`
+ *     with the RESERVED id + a `materialize` spec. The server's writeback UPSERTs
+ *     (materialize-on-write): the row is created on the agent's first write and
+ *     the new id reported back. `base_version` is the optimistic-concurrency token.
  *
- * This is the single working_document value shape across the app: Scribe's
- * `buildWorkingDocumentValue` delegates here with a `studio_document` binding.
+ * The scratchpad is `mutable: false` (the agent never writes it), so it has no
+ * writeback and `persist: "client"` is harmless there — the client owns the
+ * user's edits and materializes the scratch row itself on first edit.
  */
 
-import type { WorkingDocumentBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import type {
+  WorkingDocumentBinding,
+  WorkingDocumentKind,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 
 export const WORKING_DOCUMENT_CONTEXT_KEY = "working_document";
 
@@ -49,6 +53,24 @@ const USER_SCRATCHPAD_DESCRIPTION =
   "ctx_get(user_scratchpad) to understand what the user is thinking about, " +
   "but you must NEVER modify it. It belongs to the user alone.";
 
+/** The create-if-missing spec the server uses for materialize-on-write. */
+export interface WorkingDocumentMaterializeSpec {
+  organization_id: string | null;
+  conversation_id: string;
+  kind: WorkingDocumentKind;
+  title: string;
+}
+
+export interface WorkingDocumentSource {
+  kind: string;
+  id: string;
+  field: string;
+  /** Optimistic-concurrency base (the row version the content is based on). */
+  base_version?: number;
+  /** Present for a deferred-existence (reserved-id) working_document source. */
+  materialize?: WorkingDocumentMaterializeSpec;
+}
+
 export interface WorkingDocumentContextValue {
   content: string;
   mutable: boolean;
@@ -56,37 +78,95 @@ export interface WorkingDocumentContextValue {
   type: "text";
   label: string;
   description: string;
-  source?: { kind: string; id: string; field: string };
+  source?: WorkingDocumentSource;
   max_inline_chars: number;
 }
 
+/** Map the FE binding kind to the server writeback handler key (source.kind). */
+function sourceKindFor(binding: WorkingDocumentBinding): string {
+  switch (binding.kind) {
+    case "cx_working_document":
+      return "working_document";
+    case "note":
+      return "note";
+    case "studio_document":
+      return "studio_document";
+    default:
+      return "working_document";
+  }
+}
+
+export interface BuildWorkingDocumentArgs {
+  content: string;
+  binding: WorkingDocumentBinding;
+  /** The conversation this doc is published into (materialize provenance). */
+  conversationId: string;
+  /** Owner org for materialize-on-write (the conversation's org). */
+  organizationId: string | null;
+  /** working | scratch — the document kind (for materialize). */
+  docKind: WorkingDocumentKind;
+  /** Current title (so the agent-first materialize seeds a sensible name). */
+  title: string;
+  /** Row version the content is based on (conflict base). */
+  version: number;
+}
+
 /**
- * Build the rich `working_document` context value for the current content and
- * binding. Unbound docs are client-persisted; docs bound to a durable source
- * (note / studio_document) auto-persist to that row server-side.
+ * Build the rich `working_document` context value. ALWAYS `persist: "auto"` with
+ * a durable `source`. For the conversation's own document the source carries the
+ * reserved id + a `materialize` spec, so the agent can edit it before its row
+ * exists and the server creates the row on first write.
+ *
+ * Safety net: if no durable id is available (should never happen for an enabled
+ * doc — enabling reserves an id), publish `mutable: false` so the agent can read
+ * but can never make an edit that has nowhere to land.
  */
 export function buildWorkingDocumentContextValue(
-  content: string,
-  binding: WorkingDocumentBinding,
+  args: BuildWorkingDocumentArgs,
 ): WorkingDocumentContextValue {
-  const isBound = binding.kind !== "none" && !!binding.id;
+  const { content, binding, conversationId, organizationId, docKind, title, version } =
+    args;
+  const id = binding.id;
+
+  if (!id) {
+    // No durable home → read-only. Editing here would be lost; never offer it.
+    return {
+      content,
+      mutable: false,
+      persist: "client",
+      type: "text",
+      label: WORKING_DOCUMENT_LABEL,
+      description: WORKING_DOCUMENT_DESCRIPTION,
+      max_inline_chars: 0,
+    };
+  }
+
+  const kind = sourceKindFor(binding);
+  const source: WorkingDocumentSource = {
+    kind,
+    id,
+    field: "content",
+    base_version: version,
+  };
+  // Only the conversation's own working document materializes on write; a doc
+  // bound to an existing note/studio_document row already exists.
+  if (kind === "working_document") {
+    source.materialize = {
+      organization_id: organizationId,
+      conversation_id: conversationId,
+      kind: docKind,
+      title,
+    };
+  }
 
   return {
     content,
     mutable: true,
-    persist: isBound ? "auto" : "client",
+    persist: "auto",
     type: "text",
     label: WORKING_DOCUMENT_LABEL,
     description: WORKING_DOCUMENT_DESCRIPTION,
-    ...(isBound
-      ? {
-          source: {
-            kind: binding.kind,
-            id: binding.id as string,
-            field: "content",
-          },
-        }
-      : {}),
+    source,
     max_inline_chars: 0,
   };
 }
@@ -94,9 +174,8 @@ export function buildWorkingDocumentContextValue(
 /**
  * Build the READ-ONLY `user_scratchpad` context value. The agent receives the
  * content for context but gets no `ctx_patch` (mutable:false) and no writeback
- * `source` — it can never modify the user's scratchpad. Durability of the
- * user's own edits is handled client-side (persisted to the backing
- * `cx_working_documents` row), never by the agent.
+ * `source` — it can never modify the user's scratchpad. Durability of the user's
+ * own edits is handled client-side (the FE materializes the scratch row).
  */
 export function buildUserScratchpadContextValue(
   content: string,

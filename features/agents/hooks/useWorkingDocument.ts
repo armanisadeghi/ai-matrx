@@ -32,6 +32,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
+import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
   USER_SCRATCHPAD_LABEL,
@@ -48,6 +49,7 @@ import {
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
   markWorkingDocError,
+  markWorkingDocMaterialized,
   markWorkingDocSaving,
   setWorkingDocContent,
   setWorkingDocTitle,
@@ -59,14 +61,16 @@ import {
   selectWorkingDocContent,
   selectWorkingDocEnabled,
   selectWorkingDocError,
+  selectWorkingDocMaterialized,
   selectWorkingDocSaving,
   selectWorkingDocTitle,
+  selectWorkingDocVersion,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   bindWorkingDocumentToNoteThunk,
-  ensureConversationDocumentThunk,
   hydrateConversationDocumentsThunk,
   linkConversationDocumentThunk,
+  materializeWorkingDocumentThunk,
   setConversationDocumentEnabledThunk,
   unbindWorkingDocumentThunk,
   type BindNoteMode,
@@ -84,26 +88,38 @@ const AUTOSAVE_MS = 700;
 const CONTEXT_PUSH_MS = 300;
 
 /** The instanceContext key + label + value builder for a document kind. */
-function contextDescriptorFor(
-  kind: WorkingDocumentKind,
-  content: string,
-  binding: WorkingDocumentBinding,
-): {
+function contextDescriptorFor(args: {
+  kind: WorkingDocumentKind;
+  content: string;
+  binding: WorkingDocumentBinding;
+  conversationId: string;
+  organizationId: string | null;
+  title: string;
+  version: number;
+}): {
   key: string;
   label: string;
   value: ReturnType<typeof buildWorkingDocumentContextValue>;
 } {
-  if (kind === "scratch") {
+  if (args.kind === "scratch") {
     return {
       key: USER_SCRATCHPAD_CONTEXT_KEY,
       label: USER_SCRATCHPAD_LABEL,
-      value: buildUserScratchpadContextValue(content),
+      value: buildUserScratchpadContextValue(args.content),
     };
   }
   return {
     key: WORKING_DOCUMENT_CONTEXT_KEY,
     label: WORKING_DOCUMENT_LABEL,
-    value: buildWorkingDocumentContextValue(content, binding),
+    value: buildWorkingDocumentContextValue({
+      content: args.content,
+      binding: args.binding,
+      conversationId: args.conversationId,
+      organizationId: args.organizationId,
+      docKind: args.kind,
+      title: args.title,
+      version: args.version,
+    }),
   };
 }
 
@@ -120,26 +136,46 @@ export function useWorkingDocumentContextSync(
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
   const content = useAppSelector(selectWorkingDocContent(conversationId, kind));
   const binding = useAppSelector(selectWorkingDocBinding(conversationId, kind));
+  const title = useAppSelector(selectWorkingDocTitle(conversationId, kind));
+  const version = useAppSelector(selectWorkingDocVersion(conversationId, kind));
+  const materialized = useAppSelector(
+    selectWorkingDocMaterialized(conversationId, kind),
+  );
+  const organizationId = useAppSelector(
+    (state) =>
+      state.conversations.byConversationId[conversationId]?.organizationId ??
+      null,
+  );
   // `cacheOnly` is true until the server confirms the cx_conversation row exists.
   const isCacheOnly = useAppSelector(selectIsCacheOnly(conversationId));
 
-  // When enabled and not yet bound to a durable source, provision the backing
-  // `cx_working_documents` row + junction link (the Scribe pattern). For the
-  // working kind this flips the published value to `persist: "auto"` so the
-  // agent's ctx_patch edits persist server-side and round-trip back. Never
-  // overrides an explicit note binding the user picked.
-  //
-  // Gate on the conversation being server-confirmed (`!isCacheOnly`): until then
-  // chat.conversation has no row for this id, so provisioning would insert a
-  // working_documents row whose conversation_id FK can't resolve — it now fails
-  // loudly (23503) and historically leaked orphan rows (docs toggled on a new
-  // chat before its first message). The doc's content lives in Redux meanwhile
-  // and is flushed up by this same effect once the conversation is confirmed.
+  // MATERIALIZE-ON-WRITE: create the durable row + conversation edge the moment
+  // content FIRST exists — never on mere activation (that produced the empty-row
+  // churn). Idempotent + gated (no-op once materialized, while empty, or while
+  // the conversation is unconfirmed); re-fires harmlessly as content grows. The
+  // agent-first case is handled server-side and reflected via the stream.
   useEffect(() => {
-    if (enabled && binding.kind === "none" && !isCacheOnly) {
-      void dispatch(ensureConversationDocumentThunk({ conversationId, kind }));
+    if (
+      enabled &&
+      binding.kind === "cx_working_document" &&
+      binding.id &&
+      !materialized &&
+      content.trim() !== "" &&
+      !isCacheOnly
+    ) {
+      void dispatch(materializeWorkingDocumentThunk({ conversationId, kind }));
     }
-  }, [dispatch, conversationId, kind, enabled, binding.kind, isCacheOnly]);
+  }, [
+    dispatch,
+    conversationId,
+    kind,
+    enabled,
+    binding.kind,
+    binding.id,
+    materialized,
+    content,
+    isCacheOnly,
+  ]);
 
   // Live channel: edits to the bound document (the agent's ctx_patch writes for
   // the working kind, or edits from another conversation linked to the same
@@ -172,6 +208,15 @@ export function useWorkingDocumentContextSync(
               content: doc.content ?? "",
             }),
           );
+          // Latch the new version + mark materialized (a realtime echo proves the
+          // row exists) so the next turn's base_version is current.
+          dispatch(
+            markWorkingDocMaterialized({
+              conversationId,
+              kind,
+              version: doc.version,
+            }),
+          );
         },
       )
       .subscribe();
@@ -182,7 +227,15 @@ export function useWorkingDocumentContextSync(
   }, [dispatch, conversationId, kind, enabled, binding.kind, binding.id]);
 
   useEffect(() => {
-    const { key, label, value } = contextDescriptorFor(kind, content, binding);
+    const { key, label, value } = contextDescriptorFor({
+      kind,
+      content,
+      binding,
+      conversationId,
+      organizationId,
+      title,
+      version,
+    });
 
     if (!enabled) {
       dispatch(removeContextEntry({ conversationId, key }));
@@ -199,7 +252,17 @@ export function useWorkingDocumentContextSync(
     }, CONTEXT_PUSH_MS);
 
     return () => clearTimeout(timer);
-  }, [dispatch, conversationId, kind, enabled, content, binding]);
+  }, [
+    dispatch,
+    conversationId,
+    kind,
+    enabled,
+    content,
+    binding,
+    organizationId,
+    title,
+    version,
+  ]);
 }
 
 /**
@@ -259,6 +322,9 @@ export function useWorkingDocument(
   const binding = useAppSelector(selectWorkingDocBinding(conversationId, kind));
   const saving = useAppSelector(selectWorkingDocSaving(conversationId, kind));
   const error = useAppSelector(selectWorkingDocError(conversationId, kind));
+  const materialized = useAppSelector(
+    selectWorkingDocMaterialized(conversationId, kind),
+  );
 
   // Keep the instanceContext entry current for every mount of this hook (the
   // dedicated SmartInput bridge guarantees the always-on case).
@@ -280,27 +346,34 @@ export function useWorkingDocument(
   const commit = useCallback(
     (value: string) => {
       if (!dirtyRef.current) return;
-      dispatch(setWorkingDocContent({ conversationId, kind, content: value }));
       dirtyRef.current = false;
+      // The slice content is already current (onChange writes it on every
+      // keystroke so the agent always sees the latest); here we persist to the
+      // durable source.
+      const done = () =>
+        dispatch(markWorkingDocSaving({ conversationId, kind, saving: false }));
 
       if (binding.kind === "cx_working_document" && binding.id) {
         const docId = binding.id;
         dispatch(markWorkingDocSaving({ conversationId, kind, saving: true }));
-        void updateCxWorkingDocumentContent(docId, value)
-          .then(() =>
-            dispatch(
-              markWorkingDocSaving({ conversationId, kind, saving: false }),
-            ),
-          )
-          .catch(() =>
-            dispatch(
-              markWorkingDocError({
-                conversationId,
-                kind,
-                error: "Could not save the document.",
-              }),
-            ),
+        const fail = () =>
+          dispatch(
+            markWorkingDocError({
+              conversationId,
+              kind,
+              error: "Could not save the document.",
+            }),
           );
+        if (materialized) {
+          void updateCxWorkingDocumentContent(docId, value).then(done).catch(fail);
+        } else {
+          // First content → create the durable row + conversation edge, seeded
+          // with the current content (materialize-on-write).
+          void dispatch(materializeWorkingDocumentThunk({ conversationId, kind }))
+            .unwrap()
+            .then(done)
+            .catch(fail);
+        }
         return;
       }
 
@@ -309,11 +382,7 @@ export function useWorkingDocument(
         dispatch(markWorkingDocSaving({ conversationId, kind, saving: true }));
         void dispatch(saveNoteField({ noteId, field: "content", value }))
           .unwrap()
-          .then(() =>
-            dispatch(
-              markWorkingDocSaving({ conversationId, kind, saving: false }),
-            ),
-          )
+          .then(done)
           .catch(() =>
             dispatch(
               markWorkingDocError({
@@ -325,7 +394,7 @@ export function useWorkingDocument(
           );
       }
     },
-    [dispatch, conversationId, kind, binding.kind, binding.id],
+    [dispatch, conversationId, kind, binding.kind, binding.id, materialized],
   );
 
   const onChange = useCallback(
@@ -333,13 +402,17 @@ export function useWorkingDocument(
       editingRef.current = true;
       dirtyRef.current = true;
       setDraft(value);
+      // Keep the canonical slice content current on EVERY keystroke so the
+      // agent receives the user's exact latest text on the next turn (the
+      // durable DB write stays debounced via commit below).
+      dispatch(setWorkingDocContent({ conversationId, kind, content: value }));
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         editingRef.current = false;
         commit(value);
       }, AUTOSAVE_MS);
     },
-    [commit],
+    [dispatch, conversationId, kind, commit],
   );
 
   const flush = useCallback(() => {
@@ -407,11 +480,14 @@ export function useWorkingDocument(
 
   const setTitle = useCallback(
     (value: string) => {
-      dispatch(setWorkingDocTitle({ conversationId, kind, title: value }));
-      // Persist the chosen name to the durable row so it survives reloads and
-      // shows everywhere this document appears.
-      if (binding.kind === "cx_working_document" && binding.id) {
-        void updateCxWorkingDocumentTitle(binding.id, value).catch(() =>
+      // Trim so a cleared field never persists a blank name (the doc falls back
+      // to its auto-derived name instead — see useAutoLabel below).
+      const title = value.trim();
+      dispatch(setWorkingDocTitle({ conversationId, kind, title }));
+      // Persist to the durable row only once it exists; before materialize the
+      // title lives in Redux and is carried up by materializeWorkingDocument.
+      if (binding.kind === "cx_working_document" && binding.id && materialized) {
+        void updateCxWorkingDocumentTitle(binding.id, title).catch(() =>
           dispatch(
             markWorkingDocError({
               conversationId,
@@ -420,10 +496,27 @@ export function useWorkingDocument(
             }),
           ),
         );
+      } else if (binding.kind === "note" && binding.id) {
+        void dispatch(
+          saveNoteField({ noteId: binding.id, field: "label", value: title }),
+        );
       }
     },
-    [dispatch, conversationId, kind, binding.kind, binding.id],
+    [dispatch, conversationId, kind, binding.kind, binding.id, materialized],
   );
+
+  // AUTO-NAMING: when the document is unnamed, derive a name from its content
+  // (H1 / first non-empty line, markdown markers stripped — the same primitive
+  // notes uses) once content meets a threshold. The user can always rename; a
+  // manual name (non-empty title) stops auto-generation. Never forces the user
+  // to name the document, and never leaves a blank name.
+  useAutoLabel({
+    content,
+    currentLabel: title,
+    onLabelChange: setTitle,
+    enabled,
+    maxLength: 60,
+  });
 
   const openInCanvas = useCallback(() => {
     canvas.open({

@@ -76,6 +76,7 @@ const TYPE_LABEL_PLURAL: Record<AssociationTargetType, string> = {
   thread: "Threads",
   war_room: "War rooms",
   category: "Categories",
+  conversation: "Conversations",
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────

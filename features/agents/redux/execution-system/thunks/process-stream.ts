@@ -102,7 +102,10 @@ import {
   recordReflectorCompleted,
 } from "../observational-memory/observational-memory.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
-import { syncWorkingDocumentFromAgentThunk } from "../instance-working-document/instance-working-document.thunks";
+import {
+  reflectAgentMaterializedThunk,
+  syncWorkingDocumentFromAgentThunk,
+} from "../instance-working-document/instance-working-document.thunks";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
@@ -704,13 +707,40 @@ export async function processStream({
           d.type === "context_changed" ||
           d.type === "context_persisted"
         ) {
-          // A mutable context object was patched/persisted server-side
-          // (ctx_patch / ctx_create). The event carries no new content (schema
-          // limitation), so for the working document we re-read its bound
-          // source to reflect the agent's edit. Non-fatal — unbound docs have
-          // nothing durable to re-read and are a safe no-op.
+          // A mutable context object was patched/persisted server-side. The
+          // event carries no new content, so for the working document we re-read
+          // its bound source to reflect the agent's edit.
           const cd = d as ContextChangedData | ContextPersistedData;
           if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+            const persisted = cd as ContextPersistedData;
+            if (persisted.materialized && persisted.source_id) {
+              // MATERIALIZE-ON-WRITE: the agent's first edit CREATED the row (at
+              // the reserved id). Adopt the id, create the conversation edge the
+              // writeback didn't, and re-read.
+              void dispatch(
+                reflectAgentMaterializedThunk({
+                  conversationId,
+                  documentId: persisted.source_id,
+                }),
+              );
+            } else {
+              void dispatch(
+                syncWorkingDocumentFromAgentThunk({ conversationId }),
+              );
+            }
+          }
+        } else if ((d as { type?: string }).type === "context_conflict") {
+          // A concurrent USER edit raced the agent's write this turn. The agent's
+          // edit still persisted (every version is captured in history), so
+          // nothing is lost — reflect it and flag the divergence loudly so the
+          // user can reconcile from version history. (Diff/merge UI: follow-up.)
+          const cd = d as { key?: string; base_version?: number };
+          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+            console.warn(
+              "[working-document] context_conflict — a concurrent user edit " +
+                "raced the agent; both versions are in history, reconcile there",
+              { conversationId, baseVersion: cd.base_version },
+            );
             void dispatch(
               syncWorkingDocumentFromAgentThunk({ conversationId }),
             );
