@@ -57,6 +57,7 @@ import warRoomReducer from "@/features/war-room/redux/slice";
 import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import audioPlaybackReducer from "@/lib/redux/slices/audioPlaybackSlice";
+import audioSessionsReducer from "@/lib/redux/slices/audioSessionsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
@@ -156,6 +157,7 @@ import { default as contextStateReducer } from "@/features/agents/redux/executio
 import { default as observationalMemoryReducer } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
 import { cacheBypassReducer } from "@/features/agents/redux/execution-system/message-crud/cache-bypass.slice";
 import { default as messagesReducer } from "@/features/agents/redux/execution-system/messages/messages.slice";
+import messageActionsReducer from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { default as conversationFocusReducer } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { surfacesReducer } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { surfacesCatalogReducer } from "@/features/surfaces/redux/surfacesCatalogSlice";
@@ -234,6 +236,7 @@ export const slimReducerMap = {
   warRoomWatch: warRoomWatchReducer,
   recordings: recordingsReducer,
   audioPlayback: audioPlaybackReducer,
+  audioSessions: audioSessionsReducer,
   codeFiles: codeFilesReducer,
 
   // New VSCode-style workspace (features/code) ----------------------------
@@ -354,6 +357,7 @@ export const slimReducerMap = {
   netRequests: netRequestsReducer,
   netHealth: netHealthReducer,
   messages: messagesReducer,
+  messageActions: messageActionsReducer,
   observability: observabilityReducer,
   contextState: contextStateReducer,
 

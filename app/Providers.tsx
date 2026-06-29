@@ -74,6 +74,7 @@ import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/Value
 import { AudioModalHost } from "@/providers/AudioModalHost";
 import { AudioOutputHost } from "@/providers/AudioOutputHost";
 import { AudioPlaybackHost } from "@/features/audio/playback/AudioPlaybackHost";
+import { AudioSessionHost } from "@/features/audio/session/AudioSessionHost";
 import { AudioDeviceProvider } from "@/providers/AudioDeviceProvider";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
@@ -186,6 +187,15 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   (Cartesia/Groq) load lazily on first speak, not
                                   in the app shell. */}
                                   <AudioPlaybackHost />
+                                  {/* App-root mirror of the unified audio SESSION
+                                  registry (features/audio/session). The single
+                                  source of truth for EVERY audio activity — in +
+                                  out, live + history — that the avatar-menu Audio
+                                  panel renders. Mirrors the registry into Redux
+                                  and projects the playback queue into it. SDK-free
+                                  (subscribe APIs only); producers register
+                                  themselves. */}
+                                  <AudioSessionHost />
                                   {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed

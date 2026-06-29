@@ -53,6 +53,14 @@ import {
   claimPlayback,
   releasePlayback,
 } from "@/features/audio/playback/playbackLock";
+import {
+  registerSession,
+  updateSession,
+  endSession,
+  setSessionControls,
+} from "@/features/audio/session/audioSessionRegistry";
+import { enqueuePlayback } from "@/features/audio/playback/playbackQueue";
+import type { AudioSessionStatus } from "@/features/audio/session/types";
 
 export type SpeakerPhase =
   | "idle"
@@ -114,6 +122,19 @@ export function useCartesiaStreamingSpeaker({
   // release when idle so two voices can never play at once — start-always-wins.
   const playbackId = useId();
   const stopRef = useRef<() => void>(() => {});
+
+  // ── Unified audio-session registry ─────────────────────────────────────
+  // Every utterance becomes ONE session in the app-wide registry so the Audio
+  // panel can see/control/replay it (this is what made the chat read-aloud
+  // invisible before). The id is created when an utterance begins and cleared
+  // when it ends, so a re-play registers a fresh history entry.
+  const sessionIdRef = useRef<string | null>(null);
+  const sessionTextRef = useRef<string>("");
+  // Stable indirection so the registry's per-session controls always call the
+  // latest pause/resume/stop (defined below) and replay the right text.
+  const pauseRef = useRef<() => void>(() => {});
+  const resumeRef = useRef<() => void>(() => {});
+  const replayBoxRef = useRef<{ current: string }>({ current: "" });
 
   // Custom Dictionary pronunciation pairs, resolved once per stream/speak.
   const pronunciationsRef = useRef<{ from: string; to: string }[]>([]);
@@ -182,6 +203,59 @@ export function useCartesiaStreamingSpeaker({
   );
   const speed = useAppSelector((s) => s.userPreferences.voice?.speed ?? 0);
 
+  // Replay a finished utterance through the unified playback QUEUE (not this
+  // hook instance) so replay works even after the button unmounts.
+  const enqueueReplay = useCallback(
+    (text: string) => {
+      if (!text.trim()) return;
+      enqueuePlayback({
+        provider: "cartesia",
+        text,
+        processMarkdown,
+        label: previewLabel(text),
+        dictionarySurfaceKey,
+        cartesia: { voiceId, language, speed },
+      });
+    },
+    [processMarkdown, dictionarySurfaceKey, voiceId, language, speed],
+  );
+
+  /**
+   * Ensure a registry session exists for the current utterance and keep its
+   * label/text current. Registers once per utterance; `setPhaseIfMounted` then
+   * drives its status, and ends it (→ history) on idle/error.
+   */
+  const ensureSession = useCallback(
+    (text: string, source: "chat-tts" | "auto-voice") => {
+      sessionTextRef.current = text;
+      replayBoxRef.current.current = text;
+      const label = previewLabel(text);
+      const existing = sessionIdRef.current;
+      if (existing) {
+        updateSession(existing, { label, text, canReplay: !!text.trim() });
+        return;
+      }
+      const box = { current: text };
+      replayBoxRef.current = box;
+      const id = registerSession({
+        direction: "playback",
+        source,
+        label,
+        text,
+        status: "loading",
+        canReplay: !!text.trim(),
+      });
+      sessionIdRef.current = id;
+      setSessionControls(id, {
+        pause: () => pauseRef.current(),
+        resume: () => resumeRef.current(),
+        stop: () => stopRef.current(),
+        replay: () => enqueueReplay(box.current),
+      });
+    },
+    [enqueueReplay],
+  );
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -200,6 +274,11 @@ export function useCartesiaStreamingSpeaker({
       }
       if (playerRef.current && hasPlayedRef.current) {
         playerRef.current.stop().catch(() => {});
+      }
+      // Don't leave an in-flight session stuck "active" after unmount.
+      if (sessionIdRef.current) {
+        endSession(sessionIdRef.current, "done");
+        sessionIdRef.current = null;
       }
       releasePlayback(playbackId);
     };
@@ -220,6 +299,19 @@ export function useCartesiaStreamingSpeaker({
           label: "Read-aloud",
           stop: () => stopRef.current(),
         });
+      }
+      // Mirror the phase into the registry session so the Audio panel reflects
+      // live status and moves finished items into replayable history.
+      const sid = sessionIdRef.current;
+      if (!sid) return;
+      if (p === "idle") {
+        endSession(sid, "done");
+        sessionIdRef.current = null;
+      } else if (p === "error") {
+        endSession(sid, "error");
+        sessionIdRef.current = null;
+      } else {
+        updateSession(sid, { status: phaseToSessionStatus(p) });
       }
     },
     [playbackId],
@@ -300,6 +392,10 @@ export function useCartesiaStreamingSpeaker({
         toast.error("Nothing to speak");
         return;
       }
+
+      // Surface this utterance in the unified Audio panel (status is driven by
+      // setPhaseIfMounted below; ended → history on idle/error).
+      ensureSession(inputText, "chat-tts");
 
       sessionRef.current?.abort();
       const session = new AbortController();
@@ -383,6 +479,7 @@ export function useCartesiaStreamingSpeaker({
       setPhaseIfMounted,
       loadPronunciations,
       parseOpts,
+      ensureSession,
     ],
   );
 
@@ -453,6 +550,8 @@ export function useCartesiaStreamingSpeaker({
       streamRef.current?.session.abort();
       const session = new AbortController();
       sessionRef.current = session;
+      // Live read-aloud (speak-as-it-streams) — surface it in the Audio panel.
+      ensureSession("", "auto-voice");
       await loadPronunciations();
       await ensureConnection();
       if (session.signal.aborted) return;
@@ -482,6 +581,7 @@ export function useCartesiaStreamingSpeaker({
     speed,
     setPhaseIfMounted,
     loadPronunciations,
+    ensureSession,
   ]);
 
   /**
@@ -494,6 +594,9 @@ export function useCartesiaStreamingSpeaker({
       return enqueueOp(async () => {
         const st = streamRef.current;
         if (!st || st.finished || st.session.signal.aborted) return;
+
+        // Keep the panel's label/replay text current as the response grows.
+        ensureSession(fullText, "auto-voice");
 
         const unsent = fullText.slice(st.sentLen);
         let cut = lastSentenceBoundary(unsent);
@@ -531,6 +634,7 @@ export function useCartesiaStreamingSpeaker({
       nextChunkMax,
       dispatchChunk,
       parseOpts,
+      ensureSession,
     ],
   );
 
@@ -544,6 +648,8 @@ export function useCartesiaStreamingSpeaker({
         const st = streamRef.current;
         if (!st || st.finished || st.session.signal.aborted) return;
         st.finished = true;
+
+        ensureSession(fullText, "auto-voice");
 
         const remaining = fullText.slice(st.sentLen);
         st.sentLen = fullText.length;
@@ -587,6 +693,7 @@ export function useCartesiaStreamingSpeaker({
       nextChunkMax,
       dispatchChunk,
       parseOpts,
+      ensureSession,
     ],
   );
 
@@ -648,8 +755,15 @@ export function useCartesiaStreamingSpeaker({
     setPhaseIfMounted("idle");
   }, [setPhaseIfMounted]);
 
-  // Keep the playback-lock takeover handle pointed at the latest stop().
+  // Keep the playback-lock takeover handle + the registry session controls
+  // pointed at the latest pause/resume/stop.
   stopRef.current = stop;
+  pauseRef.current = () => {
+    void pause();
+  };
+  resumeRef.current = () => {
+    void resume();
+  };
 
   const isLoading =
     phase === "fetching-token" || phase === "connecting" || phase === "sending";
@@ -692,6 +806,26 @@ function lastSentenceBoundary(text: string): number {
     }
   }
   return last;
+}
+
+/** Map a busy/active speaker phase to the registry's session status. */
+function phaseToSessionStatus(p: SpeakerPhase): AudioSessionStatus {
+  switch (p) {
+    case "playing":
+      return "active";
+    case "paused":
+      return "paused";
+    default:
+      // fetching-token / connecting / sending
+      return "loading";
+  }
+}
+
+/** Short, human label for the Audio panel row. */
+function previewLabel(text: string): string {
+  const t = text.trim();
+  if (!t) return "Read-aloud";
+  return t.length > 60 ? `${t.slice(0, 60)}…` : t;
 }
 
 function cryptoRandomId(): string {

@@ -333,6 +333,28 @@ const parallelSliceRestriction = {
     ],
 };
 
+// ─── Single audio system — lockdown (CLAUDE.md "File Handling"-style fence) ──
+// Audio OUT must flow through the canonical path so the app-wide Audio panel
+// can see/control/replay it: the unified `playbackQueue` (via
+// `useAudioPlayback` / `useTtsSpeak`) or the registered streaming speaker
+// (`<StreamingSpeakerButton>`). The streaming hook registers itself into the
+// `audioSessionRegistry`; importing it directly elsewhere re-creates the
+// invisible-audio bug this wave fixed. The bottom-of-file allowlist re-enables
+// it for the canonical TTS surfaces + the app-root auto-voice singleton.
+//
+// NOTE (next wave): once cx-chat MessageOptionsMenu, the Scribe
+// WorkingDocumentHeader, and AudioPlayerButton are migrated onto the queue,
+// add `useCartesiaSpeaker` + `useTextToSpeech` here too.
+const ttsHookDirectImportRestriction = {
+    paths: [
+        {
+            name: '@/features/tts/hooks/useCartesiaStreamingSpeaker',
+            message:
+                'Do not import useCartesiaStreamingSpeaker directly — audio started this way is invisible to the app-wide Audio panel. Speak via <StreamingSpeakerButton> (registers a session) or enqueue through useAudioPlayback / useTtsSpeak. See features/audio/FEATURE.md "The one and only way in".',
+        },
+    ],
+};
+
 // features/scopes is the single owner of every `ctx_*` table. The
 // chokepoint is `features/scopes/service/scopesService.ts` — every other
 // file in the repo must go through that service (or a thunk/hook layered
@@ -563,6 +585,7 @@ export default [
                     paths: [
                         ...deletedFileHooksRestriction.paths,
                         ...parallelSliceRestriction.paths,
+                        ...ttsHookDirectImportRestriction.paths,
                     ],
                 },
             ],
@@ -916,6 +939,22 @@ export default [
             '**/__tests__/**',
             '**/*.test.ts',
             '**/*.test.tsx',
+        ],
+        rules: {
+            'no-restricted-imports': 'off',
+        },
+    },
+    // ─── Single audio system — canonical TTS allowlist ────────────────────
+    // ttsHookDirectImportRestriction bans importing the streaming speaker hook
+    // everywhere. Re-enable it for the ONLY sanctioned importers: the TTS
+    // components feature (the <StreamingSpeakerButton> live half) and the
+    // app-root auto-voice singleton. Everything else must speak through
+    // <StreamingSpeakerButton> or the playback queue. (Mirrors the file-handler
+    // allowlist for features/files/**.)
+    {
+        files: [
+            'features/tts/**/*.{ts,tsx}',
+            'features/transcript-studio/hooks/useAutoVoiceResponse.ts',
         ],
         rules: {
             'no-restricted-imports': 'off',

@@ -1,27 +1,35 @@
 "use client";
 
 /**
- * AudioControlWindow — compact "Audio" mini panel.
+ * AudioControlWindow — the app-wide "Audio" panel.
  *
- * Surfaces two things, side by side, in one floating WindowPanel:
- *   1. The live recording indicator (read from `state.recordings`, the
- *      GlobalRecordingProvider mirror) with an optional Stop control.
- *   2. The global audio PLAYBACK queue + transport controls (via
- *      `useAudioPlayback` — the stable client API over the single
- *      `playbackQueue`).
+ * The single, live view of EVERY audio activity in the session — playback and
+ * recording, in progress and in history — backed by the unified
+ * `audioSessionRegistry` (features/audio/session). Three synced tabs:
+ *
+ *   1. Playback — now-playing transport (works for the chat read-aloud, the
+ *      streaming auto-voice, the playback queue, and — later — podcasts / the
+ *      voice agent), up-next, and replayable history.
+ *   2. Recording — the live mic indicator + level (from `state.recordings`,
+ *      the GlobalRecordingProvider mirror) and recording history.
+ *   3. Devices — mic/speaker pickers, permission, test tones.
+ *
+ * All three read live Redux selectors, so switching tabs never loses state and
+ * incoming audio appends in real time regardless of the active tab.
  *
  * This file is a leaf, loaded ONLY behind the lazy overlay boundary
- * (`lazyOverlay` in `features/overlays/OverlayController.tsx`). It imports NO
- * TTS SDK — only SDK-free hooks/selectors and the recording provider context.
+ * (`lazyOverlay` in OverlayController). It imports NO TTS SDK — only SDK-free
+ * hooks/selectors and the recording provider context.
  */
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import {
   AudioLines,
   History,
   ChevronDown,
   ChevronRight,
   Loader2,
+  Mic,
   Pause,
   Play,
   RotateCcw,
@@ -39,11 +47,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
+import { AudioLevelIndicator } from "@/features/audio/components/AudioLevelIndicator";
 import { useAudioPlayback } from "@/features/audio/playback/useAudioPlayback";
+import { useAudioSessions } from "@/features/audio/session/useAudioSessions";
 import type {
-  PlaybackItem,
-  PlaybackItemStatus,
-} from "@/features/audio/playback/types";
+  AudioSession,
+  AudioSessionStatus,
+} from "@/features/audio/session/types";
 
 interface AudioControlWindowProps {
   isOpen: boolean;
@@ -52,7 +62,7 @@ interface AudioControlWindowProps {
 
 const SPEED_OPTIONS = [0.5, 1, 1.5, 2] as const;
 
-type AudioTab = "player" | "devices";
+type AudioTab = "playback" | "recording" | "devices";
 
 export default function AudioControlWindow({
   isOpen,
@@ -66,9 +76,9 @@ export default function AudioControlWindow({
       overlayId="audioControlWindow"
       onClose={onClose}
       minWidth={340}
-      minHeight={360}
+      minHeight={380}
       width={420}
-      height={520}
+      height={540}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <AudioControlBody />
@@ -76,7 +86,7 @@ export default function AudioControlWindow({
   );
 }
 
-// ─── Body: one window, two surfaces (Player + Devices) ─────────────────────────
+// ─── Body: three synced tabs (Playback / Recording / Devices) ──────────────────
 
 function AudioControlBody() {
   const isMobile = useIsMobile();
@@ -88,18 +98,38 @@ function AudioControlBody() {
         | { tab?: AudioTab; nonce?: number }
         | null) ?? null,
   );
+  const requestedKey = requestedTab?.tab
+    ? `${requestedTab.tab}:${requestedTab.nonce ?? ""}`
+    : null;
   const [tab, setTab] = useState<AudioTab>(
-    requestedTab?.tab === "devices" ? "devices" : "player",
+    requestedTab?.tab === "devices"
+      ? "devices"
+      : requestedTab?.tab === "recording"
+        ? "recording"
+        : "playback",
   );
-  useEffect(() => {
-    if (requestedTab?.tab) setTab(requestedTab.tab);
-  }, [requestedTab?.tab, requestedTab?.nonce]);
+  // Sync to an externally-requested tab (the Devices opener) by adjusting state
+  // during render — the React-blessed alternative to a setState-in-effect — so a
+  // fresh open re-selects the tab even while the window is already mounted.
+  const [appliedKey, setAppliedKey] = useState<string | null>(requestedKey);
+  if (requestedKey && requestedKey !== appliedKey && requestedTab?.tab) {
+    setAppliedKey(requestedKey);
+    setTab(requestedTab.tab);
+  }
 
-  // Mobile: never tabs — stack both sections vertically with a divider.
+  // Mobile: stack sections (no tabs) per the mobile-first guidance.
   if (isMobile) {
     return (
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 space-y-4 text-foreground">
-        <PlayerSurface />
+        <section className="space-y-1.5">
+          <SectionLabel>Playback</SectionLabel>
+          <PlaybackSurface />
+        </section>
+        <div className="h-px bg-border" />
+        <section className="space-y-1.5">
+          <SectionLabel>Recording</SectionLabel>
+          <RecordingSurface />
+        </section>
         <div className="h-px bg-border" />
         <section className="space-y-1.5">
           <SectionLabel>Devices</SectionLabel>
@@ -113,10 +143,16 @@ function AudioControlBody() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 pt-2">
         <TabButton
-          active={tab === "player"}
-          onClick={() => setTab("player")}
+          active={tab === "playback"}
+          onClick={() => setTab("playback")}
           icon={<AudioLines />}
-          label="Player"
+          label="Playback"
+        />
+        <TabButton
+          active={tab === "recording"}
+          onClick={() => setTab("recording")}
+          icon={<Mic />}
+          label="Recording"
         />
         <TabButton
           active={tab === "devices"}
@@ -126,7 +162,9 @@ function AudioControlBody() {
         />
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 text-foreground">
-        {tab === "player" ? <PlayerSurface /> : <AudioDevicesPanel />}
+        {tab === "playback" && <PlaybackSurface />}
+        {tab === "recording" && <RecordingSurface />}
+        {tab === "devices" && <AudioDevicesPanel />}
       </div>
     </div>
   );
@@ -160,185 +198,90 @@ function TabButton({
   );
 }
 
-// ─── Player surface (recording indicator + playback queue) ─────────────────────
+// ─── Playback surface ──────────────────────────────────────────────────────────
 
-function PlayerSurface() {
-  const isRecording = useAppSelector((s) => s.recordings.isRecording);
-  const { items, isActive } = useAudioPlayback();
+function PlaybackSurface() {
+  const { currentPlayback, pending, playbackHistory } = useAudioSessions();
 
-  const isEmpty = items.length === 0 && !isRecording;
+  const isEmpty =
+    !currentPlayback && pending.length === 0 && playbackHistory.length === 0;
+
+  if (isEmpty) {
+    return <EmptyState icon={<AudioLines />} text="No audio playing" />;
+  }
 
   return (
     <div className="space-y-3">
-      {isRecording && <RecordingSection />}
-
-      {isEmpty ? (
-        <EmptyState />
-      ) : (
-        <PlaybackSection hasActiveRecording={isRecording} isActive={isActive} />
+      <NowPlaying currentPlayback={currentPlayback} />
+      <SpeedControl />
+      {pending.length > 0 && <UpNextList pending={pending} />}
+      {playbackHistory.length > 0 && (
+        <HistoryList history={playbackHistory} label="History" />
       )}
     </div>
   );
 }
 
-// ─── Recording ─────────────────────────────────────────────────────────────────
-
-function RecordingSection() {
-  const isPaused = useAppSelector((s) => s.recordings.isPaused);
-  const durationSec = useAppSelector((s) => s.recordings.durationSec);
-  const contextLabel = useAppSelector((s) => {
-    const c = s.recordings.context;
-    if (!c) return null;
-    if ("label" in c && c.label) return c.label;
-    return null;
-  });
-
-  // All recordings (studio / voice-pad / field) run through this single
-  // provider, so its `stop()` cleanly ends whatever `state.recordings` is
-  // showing — no parallel recorder. When the provider is unavailable (e.g. a
-  // surface outside the tree), the indicator stays read-only.
-  const recording = useGlobalRecordingOptional();
-  const canStop = !!recording?.isActive;
-
-  return (
-    <section className="rounded-lg border border-border bg-muted/40 px-2.5 py-2">
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-2.5 w-2.5 shrink-0">
-          {!isPaused && (
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/70" />
-          )}
-          <span
-            className={cn(
-              "relative inline-flex h-2.5 w-2.5 rounded-full",
-              isPaused ? "bg-amber-500" : "bg-red-500",
-            )}
-          />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium text-foreground">
-            {contextLabel ?? "Recording"}
-            {isPaused && (
-              <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                (paused)
-              </span>
-            )}
-          </p>
-        </div>
-        <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-          {formatElapsed(durationSec)}
-        </span>
-        {canStop && (
-          <button
-            type="button"
-            onClick={() => recording?.stop()}
-            title="Stop recording"
-            aria-label="Stop recording"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400 [&_svg]:h-3.5 [&_svg]:w-3.5"
-          >
-            <StopCircle />
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-// ─── Playback ────────────────────────────────────────────────────────────────
-
-function PlaybackSection({
-  hasActiveRecording,
-  isActive,
-}: {
-  hasActiveRecording: boolean;
-  isActive: boolean;
-}) {
-  const { currentItem, pending, items, rate } = useAudioPlayback();
-
-  const history = items.filter(
-    (i) => i.status === "done" || i.status === "error",
-  );
-
-  // If only a recording is active and there's no playback at all, show a quiet
-  // "no audio playing" hint rather than empty playback chrome.
-  const hasPlayback = items.length > 0;
-  if (!hasPlayback) {
-    return hasActiveRecording ? <NoAudioHint /> : null;
-  }
-
-  return (
-    <div className="space-y-3">
-      <NowPlaying isActive={isActive} currentItem={currentItem} />
-      <SpeedControl rate={rate} />
-      {pending.length > 0 && <UpNextList pending={pending} />}
-      {history.length > 0 && <HistoryList history={history} />}
-    </div>
-  );
-}
-
 function NowPlaying({
-  isActive,
-  currentItem,
+  currentPlayback,
 }: {
-  isActive: boolean;
-  currentItem: PlaybackItem | null;
+  currentPlayback: AudioSession | null;
 }) {
-  const { pause, resume, skip, clear } = useAudioPlayback();
+  const { control } = useAudioSessions();
   const [isPending, startTransition] = useTransition();
 
-  const status = currentItem?.status;
+  const status = currentPlayback?.status;
   const isPaused = status === "paused";
+  const isActive = status === "active";
   const isLoading = status === "loading";
-  const canToggle = isActive && (status === "playing" || status === "paused");
+  const id = currentPlayback?.id;
 
   return (
     <section className="space-y-1.5">
       <SectionLabel>Now playing</SectionLabel>
       <div className="rounded-lg border border-border bg-card px-2.5 py-2">
         <div className="flex items-center gap-2">
+          <SpeakerActivity active={isActive} />
           <span className="min-w-0 flex-1 truncate text-xs text-foreground">
-            {currentItem
-              ? itemTitle(currentItem)
+            {currentPlayback
+              ? sessionTitle(currentPlayback)
               : "Nothing playing right now"}
           </span>
           {status && <StatusChip status={status} />}
         </div>
 
-        <div className="mt-2 flex items-center gap-1">
-          <TransportButton
-            onClick={() =>
-              startTransition(() => {
-                if (isPaused) resume();
-                else pause();
-              })
-            }
-            disabled={!canToggle || isPending}
-            title={isPaused ? "Resume" : "Pause"}
-            label={isPaused ? "Resume" : "Pause"}
-            icon={isPaused ? <Play /> : <Pause />}
-          />
-          <TransportButton
-            onClick={() => startTransition(() => skip())}
-            disabled={!isActive || isPending}
-            title="Skip to next"
-            label="Skip"
-            icon={<SkipForward />}
-          />
-          <TransportButton
-            onClick={() => startTransition(() => clear())}
-            disabled={!isActive && !isLoading}
-            title="Stop all & clear queue"
-            label="Stop all"
-            icon={<Square />}
-            variant="destructive"
-          />
-        </div>
+        {currentPlayback && (
+          <div className="mt-2 flex items-center gap-1">
+            <TransportButton
+              onClick={() =>
+                startTransition(() => {
+                  if (!id) return;
+                  if (isPaused) control(id, "resume");
+                  else control(id, "pause");
+                })
+              }
+              disabled={(!isActive && !isPaused) || isPending}
+              title={isPaused ? "Resume" : "Pause"}
+              label={isPaused ? "Resume" : "Pause"}
+              icon={isPaused ? <Play /> : <Pause />}
+            />
+            <TransportButton
+              onClick={() => startTransition(() => id && control(id, "stop"))}
+              disabled={(!isActive && !isPaused && !isLoading) || isPending}
+              title="Stop"
+              label="Stop"
+              icon={<Square />}
+              variant="destructive"
+            />
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-function SpeedControl({ rate }: { rate: number }) {
-  const { setRate } = useAudioPlayback();
+function SpeedControl() {
+  const { rate, setRate } = useAudioPlayback();
   return (
     <section className="space-y-1.5">
       <SectionLabel>Speed</SectionLabel>
@@ -367,8 +310,8 @@ function SpeedControl({ rate }: { rate: number }) {
   );
 }
 
-function UpNextList({ pending }: { pending: PlaybackItem[] }) {
-  const { playItem, remove } = useAudioPlayback();
+function UpNextList({ pending }: { pending: AudioSession[] }) {
+  const { control } = useAudioSessions();
   const [isPending, startTransition] = useTransition();
   return (
     <section className="space-y-1.5">
@@ -380,17 +323,17 @@ function UpNextList({ pending }: { pending: PlaybackItem[] }) {
             className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1"
           >
             <span className="min-w-0 flex-1 truncate text-xs text-foreground">
-              {itemTitle(item)}
+              {sessionTitle(item)}
             </span>
             <RowIconButton
-              onClick={() => startTransition(() => playItem(item.id))}
+              onClick={() => startTransition(() => control(item.id, "playNow"))}
               disabled={isPending}
               title="Play now"
               label="Play now"
               icon={<Play />}
             />
             <RowIconButton
-              onClick={() => remove(item.id)}
+              onClick={() => control(item.id, "remove")}
               title="Remove from queue"
               label="Remove"
               icon={<X />}
@@ -402,8 +345,14 @@ function UpNextList({ pending }: { pending: PlaybackItem[] }) {
   );
 }
 
-function HistoryList({ history }: { history: PlaybackItem[] }) {
-  const { playItem } = useAudioPlayback();
+function HistoryList({
+  history,
+  label,
+}: {
+  history: AudioSession[];
+  label: string;
+}) {
+  const { control, can } = useAudioSessions();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   return (
@@ -419,7 +368,7 @@ function HistoryList({ history }: { history: PlaybackItem[] }) {
           <ChevronRight className="h-3 w-3" />
         )}
         <History className="h-3 w-3" />
-        History ({history.length})
+        {label} ({history.length})
       </button>
       {open && (
         <ul className="space-y-1">
@@ -430,7 +379,7 @@ function HistoryList({ history }: { history: PlaybackItem[] }) {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs text-muted-foreground">
-                  {itemTitle(item)}
+                  {sessionTitle(item)}
                 </p>
                 {item.status === "error" && item.error && (
                   <p className="truncate text-[10px] text-destructive">
@@ -438,13 +387,17 @@ function HistoryList({ history }: { history: PlaybackItem[] }) {
                   </p>
                 )}
               </div>
-              <RowIconButton
-                onClick={() => startTransition(() => playItem(item.id))}
-                disabled={isPending}
-                title="Replay"
-                label="Replay"
-                icon={<RotateCcw />}
-              />
+              {can(item.id, "replay") && (
+                <RowIconButton
+                  onClick={() =>
+                    startTransition(() => control(item.id, "replay"))
+                  }
+                  disabled={isPending}
+                  title="Replay"
+                  label="Replay"
+                  icon={<RotateCcw />}
+                />
+              )}
             </li>
           ))}
         </ul>
@@ -453,7 +406,136 @@ function HistoryList({ history }: { history: PlaybackItem[] }) {
   );
 }
 
+// ─── Recording surface ─────────────────────────────────────────────────────────
+
+function RecordingSurface() {
+  const isRecording = useAppSelector((s) => s.recordings.isRecording);
+  const { recordingHistory } = useAudioSessions();
+
+  const isEmpty = !isRecording && recordingHistory.length === 0;
+  if (isEmpty) {
+    return <EmptyState icon={<Mic />} text="Not recording" />;
+  }
+
+  return (
+    <div className="space-y-3">
+      {isRecording ? <ActiveRecording /> : <NotRecordingHint />}
+      {recordingHistory.length > 0 && (
+        <HistoryList history={recordingHistory} label="Recordings" />
+      )}
+    </div>
+  );
+}
+
+function ActiveRecording() {
+  const isPaused = useAppSelector((s) => s.recordings.isPaused);
+  const durationSec = useAppSelector((s) => s.recordings.durationSec);
+  const audioLevel = useAppSelector((s) => s.recordings.audioLevel);
+  const contextLabel = useAppSelector((s) => {
+    const c = s.recordings.context;
+    if (!c) return null;
+    if ("label" in c && c.label) return c.label;
+    return null;
+  });
+
+  // All recordings (studio / voice-pad / field) run through this single
+  // provider, so its `stop()` cleanly ends whatever `state.recordings` is
+  // showing — no parallel recorder. When the provider is unavailable (e.g. a
+  // surface outside the tree), the indicator stays read-only.
+  const recording = useGlobalRecordingOptional();
+  const canStop = !!recording?.isActive;
+
+  return (
+    <section className="space-y-1.5">
+      <SectionLabel>Recording</SectionLabel>
+      <div className="rounded-lg border border-border bg-muted/40 px-2.5 py-2">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            {!isPaused && (
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/70" />
+            )}
+            <span
+              className={cn(
+                "relative inline-flex h-2.5 w-2.5 rounded-full",
+                isPaused ? "bg-amber-500" : "bg-red-500",
+              )}
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-foreground">
+              {contextLabel ?? "Recording"}
+              {isPaused && (
+                <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                  (paused)
+                </span>
+              )}
+            </p>
+          </div>
+          <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+            {formatElapsed(durationSec)}
+          </span>
+          {canStop && (
+            <button
+              type="button"
+              onClick={() => recording?.stop()}
+              title="Stop recording"
+              aria-label="Stop recording"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400 [&_svg]:h-3.5 [&_svg]:w-3.5"
+            >
+              <StopCircle />
+            </button>
+          )}
+        </div>
+        {/* Mic-active visual feedback — live input level. */}
+        {!isPaused && (
+          <div className="mt-2">
+            <AudioLevelIndicator
+              level={audioLevel}
+              barCount={9}
+              color="blue"
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ─── Shared primitives ─────────────────────────────────────────────────────────
+
+/**
+ * Speaker-active feedback — an animated equalizer shown only while audio is
+ * actually playing OUT. Honest indicator (tied to real status); true output
+ * amplitude lands in a later wave for engines whose graph we control.
+ */
+function SpeakerActivity({ active }: { active: boolean }) {
+  if (!active) {
+    return <Volume2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+  }
+  return (
+    <span
+      className="inline-flex h-3.5 shrink-0 items-end gap-[2px]"
+      aria-label="Playing"
+    >
+      <style>{EQ_KEYFRAMES}</style>
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className="w-[2px] rounded-full bg-green-500 dark:bg-green-400"
+          style={{
+            height: "100%",
+            transformOrigin: "bottom",
+            animation: `mtxEq 0.9s ease-in-out ${i * 0.12}s infinite`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+const EQ_KEYFRAMES =
+  "@keyframes mtxEq{0%,100%{transform:scaleY(0.3)}50%{transform:scaleY(1)}}";
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
@@ -463,9 +545,9 @@ function SectionLabel({ children }: { children: ReactNode }) {
   );
 }
 
-function StatusChip({ status }: { status: PlaybackItemStatus }) {
+function StatusChip({ status }: { status: AudioSessionStatus }) {
   const map: Record<
-    PlaybackItemStatus,
+    AudioSessionStatus,
     { label: string; className: string; spin?: boolean }
   > = {
     queued: {
@@ -478,7 +560,7 @@ function StatusChip({ status }: { status: PlaybackItemStatus }) {
         "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
       spin: true,
     },
-    playing: {
+    active: {
       label: "Playing",
       className:
         "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400",
@@ -494,8 +576,7 @@ function StatusChip({ status }: { status: PlaybackItemStatus }) {
     },
     error: {
       label: "Error",
-      className:
-        "border-destructive/30 bg-destructive/10 text-destructive",
+      className: "border-destructive/30 bg-destructive/10 text-destructive",
     },
   };
   const chip = map[status];
@@ -574,20 +655,20 @@ function RowIconButton({
   );
 }
 
-function NoAudioHint() {
+function NotRecordingHint() {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
-      <Volume2 className="h-4 w-4 shrink-0" />
-      No audio playing
+      <Mic className="h-4 w-4 shrink-0" />
+      Not recording
     </div>
   );
 }
 
-function EmptyState() {
+function EmptyState({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
-      <AudioLines className="h-7 w-7 text-muted-foreground/60" />
-      <p className="text-xs text-muted-foreground">No audio playing</p>
+    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center [&_svg]:h-7 [&_svg]:w-7 [&_svg]:text-muted-foreground/60">
+      {icon}
+      <p className="text-xs text-muted-foreground">{text}</p>
     </div>
   );
 }
@@ -603,9 +684,9 @@ function formatElapsed(totalSeconds: number): string {
     .padStart(2, "0")}`;
 }
 
-function itemTitle(item: PlaybackItem): string {
-  if (item.label && item.label.trim()) return item.label;
-  const text = (item.text ?? "").trim();
+function sessionTitle(session: AudioSession): string {
+  if (session.label && session.label.trim()) return session.label;
+  const text = (session.text ?? "").trim();
   if (!text) return "Untitled";
   return text.length > 40 ? `${text.slice(0, 40)}…` : text;
 }
