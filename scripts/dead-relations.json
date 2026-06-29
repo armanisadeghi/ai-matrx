@@ -976,6 +976,30 @@
       "new": "pdf.redaction_mapping",
       "since": "2026-06-28",
       "reason": "moved to pdf schema (clean cut). Use .schema('pdf').from('redaction_mapping')."
+    },
+    {
+      "relation": "prompt_apps",
+      "old": "public.prompt_apps",
+      "newSchema": "graveyard",
+      "new": "graveyard.prompt_apps",
+      "since": "2026-06-29",
+      "reason": "retired to graveyard; live apps are app.definition (formerly aga_apps). Do not .from('prompt_apps')."
+    },
+    {
+      "relation": "prompt_app_executions",
+      "old": "public.prompt_app_executions",
+      "newSchema": "graveyard",
+      "new": "graveyard.prompt_app_executions",
+      "since": "2026-06-29",
+      "reason": "retired to graveyard; live execution tracking is app.execution."
+    },
+    {
+      "relation": "prompt_app_analytics",
+      "old": "public.prompt_app_analytics",
+      "newSchema": "graveyard",
+      "new": "graveyard.prompt_app_analytics",
+      "since": "2026-06-29",
+      "reason": "retired; aggregate counters live on app.definition."
     }
   ]
 }

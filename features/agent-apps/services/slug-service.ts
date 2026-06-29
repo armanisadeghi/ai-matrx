@@ -2,10 +2,8 @@
  * Agent App Slug Service
  *
  * Utilities for generating, validating, and managing agent-app slugs.
- * Mirrors features/prompt-apps/services/slug-service.ts; reuses the same
- * `validate_slugs` RPC which checks the format-and-availability of a batch
- * of slugs against BOTH prompt_apps and agent_apps (RPC update lives in the
- * same migration campaign).
+ * Reuses the `validate_slugs` RPC, which checks slug format and availability
+ * against `app.definition`.
  */
 
 import { createClient } from "@/utils/supabase/client";

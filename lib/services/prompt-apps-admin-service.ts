@@ -289,18 +289,18 @@ export async function fetchAnalytics(filters?: {
 }): Promise<any[]> {
   const supabase = getClient();
   let query = supabase
-    .from("prompt_app_analytics")
-    .select("*")
+    .schema("app")
+    .from("definition")
+    .select("id, name, slug, status, total_executions, success_rate, last_execution_at")
     .order("total_executions", { ascending: false });
 
-  if (filters?.app_id) query = query.eq("app_id", filters.app_id);
+  if (filters?.app_id) query = query.eq("id", filters.app_id);
   if (filters?.status) query = query.eq("status", filters.status);
   if (filters?.limit) query = query.limit(filters.limit);
 
   const { data, error } = await query;
   if (error) {
     console.error("Error fetching analytics:", error);
-    // Return empty array if view doesn't exist yet
     return [];
   }
   return data || [];

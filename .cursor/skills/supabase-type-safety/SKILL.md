@@ -116,7 +116,28 @@ type SafeRow = JsonToUnknown<RawRow>;  // Json fields become unknown
 
 ---
 
-## Pattern 4: Where NOT to add guards
+## Pattern 4: "Just an object" JSON fields — narrow the FIELD, never the row
+
+A JSONB column comes back as bare `unknown` (this repo patches `Json` → `unknown`). The lazy reaction is to cast the **whole row** — `row as unknown as MyTypedRow` — re-asserting every already-typed column just to reach the one `unknown` field. That discards real type info and is the #1 source of `as unknown as` cheating.
+
+Instead, give the field an honest name and narrow only it, using `@/types/json`:
+
+```ts
+import { type JsonObject, isJsonObject } from "@/types/json";
+
+// Type the ONE open field; leave the rest of the row typed:
+interface MyRow { id: string; name: string; config: JsonObject }
+
+// Narrow a bare `unknown` DB field at runtime — no cast, no `any`:
+const cfg = isJsonObject(row.config) ? row.config : undefined;
+const label = typeof cfg?.label === "string" ? cfg.label : null;
+```
+
+`JsonObject` / `JsonArray` / `JsonValue` (+ `isJsonObject` / `isJsonArray` / `isJsonPrimitive` guards) are the canonical "it's just JSON, accept it" types. They are NOT `any` and NOT a whole-row `unknown` nuke. For a **known, concrete** shape, prefer a Zod parse at the boundary (TYPESCRIPT_STANDARDS.md §4); these types are for genuinely open JSON.
+
+---
+
+## Pattern 5: Where NOT to add guards
 
 Skip the `satisfies`/`_Check` guard for:
 - RPCs that return `Json` directly (no row schema to enforce)
@@ -129,6 +150,7 @@ Skip the `satisfies`/`_Check` guard for:
 
 | File | Purpose |
 |------|---------|
+| `types/json.ts` | Canonical `JsonValue`/`JsonObject`/`JsonArray` + `isJsonObject`/`isJsonArray`/`isJsonPrimitive` guards (narrow the field, not the row) |
 | `types/supabase-rpc.ts` | `DbRpcRow<F>` and `JsonToUnknown<T>` utilities |
 | `types/database.types.ts` | Supabase-generated types (source of truth) |
 | `utils/supabase/client.ts` | `supabase` singleton |

@@ -67,7 +67,7 @@ export interface RedFlagSummary {
   hasRedFlags: boolean;
 }
 
-const REMEDIABLE = new Set(["shortcut", "app", "prompt_app", "derived_agent"]);
+const REMEDIABLE = new Set(["shortcut", "app", "derived_agent"]);
 
 export const makeSelectRedFlagSummary = (scope: UsageScope, agentId: string) =>
   createSelector(

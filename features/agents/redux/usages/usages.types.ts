@@ -35,7 +35,6 @@ export type UsagePinMode = "pinned" | "follow_active";
 export type AgentUsageType =
   | "shortcut"
   | "app"
-  | "prompt_app"
   | "scheduled_task"
   | "surface_binding"
   | "sms_line"

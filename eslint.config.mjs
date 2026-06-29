@@ -994,4 +994,40 @@ export default [
             ],
         },
     },
+    // ─── TypeScript anti-cheat / anti-laziness trio (TYPESCRIPT_STANDARDS.md §3) ──
+    //
+    // The three escape hatches agents reach for most to silence the compiler
+    // without modeling the type. All at `warn` so they surface INLINE in-editor
+    // (agents are highly responsive to a squiggle in front of them) without
+    // failing builds — the codebase has a large legacy tail (≈1.5k `any`,
+    // ts-comments, non-null assertions) being ground down in waves. New code
+    // should treat each as a hard stop. GROWTH of these counts is gated
+    // separately by the baseline ratchet (`pnpm check:hatches`).
+    //
+    // Scoped to TS files because the `@typescript-eslint` plugin (registered by
+    // eslint-config-next) only applies under the TS parser — referencing these
+    // rules on a plain .js file would throw "rule not found".
+    //
+    // `as`-casts (`consistent-type-assertions`) and the type-aware `no-unsafe-*`
+    // family from the standards doc are deliberately NOT here yet: the former is
+    // too noisy to land cold and the latter needs full type-info linting (slow).
+    // `as any` / `as unknown as` legitimacy is contextual (the DB-guard pattern),
+    // so those live in the count ratchet, not a blunt lint rule.
+    {
+        files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-non-null-assertion': 'warn',
+            '@typescript-eslint/ban-ts-comment': [
+                'warn',
+                {
+                    'ts-expect-error': 'allow-with-description',
+                    'ts-ignore': true,
+                    'ts-nocheck': true,
+                    'ts-check': false,
+                    minimumDescriptionLength: 4,
+                },
+            ],
+        },
+    },
 ];

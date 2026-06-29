@@ -6,7 +6,7 @@ import { isValidFingerprint, isTempFingerprint } from '@/lib/services/fingerprin
 import { getPublicAppsRatelimiter } from '@/lib/rate-limit/client';
 import { ipRateLimit } from '@/lib/rate-limit/helpers';
 import crypto from 'crypto';
-import { graveyardDb } from "@/utils/supabase/graveyardDb";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 
 /**
  * Create backup identifier from IP + User Agent
@@ -152,8 +152,12 @@ export async function POST(
                     const taskId = uuidv4();
                     
                     // Track failed execution due to guest limit (fire-and-forget)
-                    graveyardDb(supabase).from("prompt_app_executions").insert({
+                    createAdminClient()
+                        .schema("app")
+                        .from("execution")
+                        .insert({
                         app_id,
+                        kind: "run",
                         user_id: null,
                         fingerprint: primaryIdentifier,
                         ip_address,
@@ -207,10 +211,12 @@ export async function POST(
         const taskId = uuidv4();
 
         // OPTIMIZATION: Record execution - FIRE AND FORGET (non-blocking)
-        graveyardDb(supabase)
-            .from("prompt_app_executions")
+        createAdminClient()
+            .schema("app")
+            .from("execution")
             .insert({
                 app_id,
+                kind: "run",
                 user_id: user?.id || null,
                 fingerprint: isPublicAccess ? primaryIdentifier : null,
                 ip_address,
@@ -319,8 +325,9 @@ export async function PATCH(
             return NextResponse.json({ success: false, error: 'task_id is required' }, { status: 400 });
         }
 
-        const { error: updateError } = await graveyardDb(supabase)
-            .from("prompt_app_executions")
+        const { error: updateError } = await createAdminClient()
+            .schema("app")
+            .from("execution")
             .update({
                 success: false,
                 error_type: error_type || 'stream_error',
@@ -356,26 +363,11 @@ export async function GET(
     const { slug } = await params;
     const supabase = await createClient();
 
-    const { data: app, error } = await graveyardDb(supabase)
-        .from("prompt_apps")
-        .select(`
-            id,
-            slug,
-            name,
-            tagline,
-            description,
-            category,
-            tags,
-            preview_image_url,
-            variable_schema,
-            layout_config,
-            styling_config,
-            total_executions,
-            success_rate
-        `)
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .single();
+    const { data: apps, error } = await supabase.rpc("get_aga_public_data", {
+        p_slug: slug,
+    });
+
+    const app = apps?.[0];
 
     if (error || !app) {
         return NextResponse.json({
@@ -383,6 +375,20 @@ export async function GET(
         }, { status: 404 });
     }
 
-    return NextResponse.json(app);
+    return NextResponse.json({
+        id: app.id,
+        slug: app.slug,
+        name: app.name,
+        tagline: app.tagline,
+        description: app.description,
+        category: app.category,
+        tags: app.tags,
+        preview_image_url: app.preview_image_url,
+        variable_schema: app.variable_schema,
+        layout_config: app.layout_config,
+        styling_config: app.styling_config,
+        total_executions: app.total_executions,
+        success_rate: app.success_rate,
+    });
 }
 
