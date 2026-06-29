@@ -59,4 +59,5 @@ Expect: zero “Overly broad patterns” / “unexpected file in NFT list” war
 
 ## Change log
 
+- `2026-06-29` — `local-logs`: prod 404 gate, dynamic `node:fs` import, `turbopackIgnore` on `$HOME` paths. Admin docs viewer left unchanged pending manual review.
 - `2026-06-28` — Initial doc from failed-then-fixed Vercel build log (`TEMP-CLEANUP.md`).

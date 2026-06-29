@@ -1,22 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import path from "path";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
-import fs from "fs";
-import path from "path";
-import os from "os";
 
 /**
- * Local Python server log files.
- * Paths are relative to the home directory so they work on any dev machine
- * without hardcoding a username.
+ * Dev-only: tail local Python server log files on the developer machine.
+ * Paths use $HOME so they work without hardcoding a username. `turbopackIgnore`
+ * keeps Turbopack from tracing the whole filesystem into the prod bundle.
  */
 const LOCAL_LOG_FILES: Record<string, string> = {
-  "local-python-run": `${os.homedir()}/code/aidream/temp/logs/run_py.log`,
-  "local-python-dev": `${os.homedir()}/code/aidream/temp/logs/aidreamdev.log`,
+  "local-python-run": path.join(
+    /* turbopackIgnore: true */ process.env.HOME ?? "",
+    "code/aidream/temp/logs/run_py.log",
+  ),
+  "local-python-dev": path.join(
+    /* turbopackIgnore: true */ process.env.HOME ?? "",
+    "code/aidream/temp/logs/aidreamdev.log",
+  ),
 };
 
 /** Read the last `lines` lines from a file without loading the whole thing */
-function readLastLines(filePath: string, lineCount: number): string {
+function readLastLines(
+  fs: typeof import("node:fs"),
+  filePath: string,
+  lineCount: number,
+): string {
   const stat = fs.statSync(filePath);
   const fileSize = stat.size;
 
@@ -39,6 +47,10 @@ function readLastLines(filePath: string, lineCount: number): string {
 }
 
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -68,6 +80,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const fs = await import("node:fs");
+
   if (!fs.existsSync(logFile)) {
     return NextResponse.json({
       app: appKey,
@@ -79,7 +93,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const logs = readLastLines(logFile, lines);
+  const logs = readLastLines(fs, logFile, lines);
 
   return NextResponse.json({
     app: appKey,

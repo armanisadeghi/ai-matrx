@@ -14,7 +14,9 @@ function getClient() {
 }
 
 const DECOMMISSION_WARN = (fn: string) =>
-  console.warn(`[prompt-apps-admin-service] ${fn}: table is in graveyard schema — returning empty`);
+  console.warn(
+    `[prompt-apps-admin-service] ${fn}: table is in graveyard schema — returning empty`,
+  );
 
 // ============================================================================
 // Types
@@ -167,14 +169,18 @@ export async function createCategory(
   input: CreateCategoryInput,
 ): Promise<PromptAppCategory> {
   DECOMMISSION_WARN(`createCategory(${input.id})`);
-  throw new Error("prompt_app_categories table is in graveyard schema — decommissioned");
+  throw new Error(
+    "prompt_app_categories table is in graveyard schema — decommissioned",
+  );
 }
 
 export async function updateCategory(
   input: UpdateCategoryInput,
 ): Promise<PromptAppCategory> {
   DECOMMISSION_WARN(`updateCategory(${input.id})`);
-  throw new Error("prompt_app_categories table is in graveyard schema — decommissioned");
+  throw new Error(
+    "prompt_app_categories table is in graveyard schema — decommissioned",
+  );
 }
 
 export async function deleteCategory(id: string): Promise<void> {
@@ -200,12 +206,16 @@ export async function resolveError(
   input: ResolveErrorInput,
 ): Promise<PromptAppError> {
   DECOMMISSION_WARN(`resolveError(${input.id})`);
-  throw new Error("prompt_app_errors table is in graveyard schema — decommissioned");
+  throw new Error(
+    "prompt_app_errors table is in graveyard schema — decommissioned",
+  );
 }
 
 export async function unresolveError(id: string): Promise<PromptAppError> {
   DECOMMISSION_WARN(`unresolveError(${id})`);
-  throw new Error("prompt_app_errors table is in graveyard schema — decommissioned");
+  throw new Error(
+    "prompt_app_errors table is in graveyard schema — decommissioned",
+  );
 }
 
 // ============================================================================
@@ -240,7 +250,9 @@ export async function unblockRateLimit(
   id: string,
 ): Promise<PromptAppRateLimit> {
   DECOMMISSION_WARN(`unblockRateLimit(${id})`);
-  throw new Error("prompt_app_rate_limits table is in graveyard schema — decommissioned");
+  throw new Error(
+    "prompt_app_rate_limits table is in graveyard schema — decommissioned",
+  );
 }
 
 export async function blockRateLimit(
@@ -249,8 +261,11 @@ export async function blockRateLimit(
   blockedUntil?: Date,
 ): Promise<PromptAppRateLimit> {
   DECOMMISSION_WARN(`blockRateLimit(${id})`);
-  void reason; void blockedUntil;
-  throw new Error("prompt_app_rate_limits table is in graveyard schema — decommissioned");
+  void reason;
+  void blockedUntil;
+  throw new Error(
+    "prompt_app_rate_limits table is in graveyard schema — decommissioned",
+  );
 }
 
 // ============================================================================
@@ -289,7 +304,9 @@ export async function fetchAnalytics(filters?: {
   let query = supabase
     .schema("app")
     .from("definition")
-    .select("id, name, slug, status, total_executions, success_rate, last_execution_at")
+    .select(
+      "id, name, slug, status, total_executions, success_rate, last_execution_at",
+    )
     .order("total_executions", { ascending: false });
 
   if (filters?.app_id) query = query.eq("id", filters.app_id);
