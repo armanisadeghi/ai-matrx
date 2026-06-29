@@ -24,7 +24,7 @@ import {
   Headphones,
   FileText,
   Image,
-  Youtube,
+  Video,
   AudioLines,
   ScanText,
   PencilLine,
@@ -172,7 +172,7 @@ export const FEATURES: AxisEntry[] = [
         items: [
           { icon: FileText, title: "PDFs, docs & slides", description: "Full extraction of PDF (including scanned pages via OCR), DOCX, PPTX, Google Docs and Slides — textbook-scale, page by page." },
           { icon: Image, title: "Photos & handwriting", description: "Snap handwritten notes, whiteboards, or printed textbook pages. OCR plus AI comprehension means it understands what it sees, not just the pixels." },
-          { icon: Youtube, title: "YouTube & web URLs", description: "Paste a video link, article, or research paper. The system pulls the transcript or text and builds a study set from it." },
+          { icon: Video, title: "YouTube & web URLs", description: "Paste a video link, article, or research paper. The system pulls the transcript or text and builds a study set from it." },
           { icon: AudioLines, title: "Audio & video files", description: "MP3, M4A, WAV, MP4, MOV — fully transcribed and converted into cards, summaries, and quizzes." },
           { icon: Mic, title: "Live lecture capture", description: "Press record, walk into class, walk out with a full transcript and an auto-generated study set ready to review." },
           { icon: PenTool, title: "Plain text & prompts", description: "Type or paste anything — a direct input path is always there when you don't have a file." },
