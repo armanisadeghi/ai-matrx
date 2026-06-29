@@ -45,11 +45,14 @@ These govern *every* step of this initiative. Read before touching anything.
 |-------|-------|------|--------|
 | **0** | Lockfile sync + Node 24 (`engines.node`) | low | ✅ Shipped (Arman pushed) |
 | **A** | Safe patch/minor sweep — everything within its current major | low | ✅ Ready for Arman to push (0 type errors) |
-| **B** | TypeScript 6 bump → then strictness pass (R7) | high | ⬜ Not started (priority #1 after A) |
+| **B1** | TypeScript 6 bump — **version only, no strictness** (apples-to-apples) | low | 🟡 Verifying build → push |
+| **B2** | TypeScript strictness pass (staged, one flag per PR) | high | ⬜ LAST — after all core bumps land |
 | **C** | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | med-high | ⬜ Not started |
 | **D** | Groq SDK 0.37 → 1.x | med | ⬜ Not started |
 | **E** | lucide-react 0.x → 1.x (+ document advantages) | med | ⬜ Not started |
 | **F** | Long-tail majors — only the ones Arman flags, gated by R8 | varies | ⬜ Backlog |
+
+**Agreed execution order (2026-06-29, Arman):** TS in **two waves**. Wave 1 = TS 6 *version only* (no strictness) first — it's the foundational compiler, so every later bump validates against the final compiler (apples-to-apples). Then Supabase → Groq → lucide → other flagged majors. **Strictness is the very last wave**, on a fully-stable dependency base. This dissolves the "Supabase makes things stricter, do it before TS" concern: since strictness is deferred, the TS *version* bump and Supabase's stricter types don't conflict. Arman authorized the agent to commit + push each phase when verified green.
 
 ---
 
@@ -198,3 +201,6 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 | 2026-06-29 | Phase A swept (Next 16.2.9, React 19.2.7, Tailwind 4.3.2, Radix, RTK, TanStack, etc.); `pnpm type-check` = 0 errors, frozen install passes. | agent |
 | 2026-06-29 | `@supabase/supabase-js` pulled from A → C (34 RejectExcessProperties type errors); pinned exact 2.99.2. | agent |
 | 2026-06-29 | Launched 5 research agents (TS6, Supabase, Groq, lucide, Next/React/Tailwind). | agent |
+| 2026-06-29 | All 5 research docs delivered under `research/`. | agent |
+| 2026-06-29 | Agreed: TS in two waves (version first, strictness last); execution order TS→Supabase→Groq→lucide→strictness. | Arman + agent |
+| 2026-06-29 | **Phase B1**: TypeScript 5.9.3 → 6.0.3 (pinned exact). Removed `baseUrl` (paths now tsconfig-relative; `/*`→`./public/*`) + `alwaysStrict:false`; scoped `ignoreDeprecations:"6.0"` + `rootDir:"."` to the `ts-node` block (CJS runtime needs `baseUrl`/`node` resolution). `type-check` = 0 errors; `ts-node` generate-manifest OK. No strictness change. | agent |
