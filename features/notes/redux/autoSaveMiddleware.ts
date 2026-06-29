@@ -137,7 +137,8 @@ export const autoSaveMiddleware: Middleware =
           let folderId = recordAfterLabel.folder_id;
           if (!folderId && recordAfterLabel.folder_name) {
             const { data: folderData } = await supabase
-              .schema("workbench").from("note_folders")
+              .schema("workbench")
+              .from("note_folders")
               .select("id")
               .eq("created_by", userId)
               .eq("name", recordAfterLabel.folder_name)
@@ -148,7 +149,8 @@ export const autoSaveMiddleware: Middleware =
           }
 
           const { data, error } = await supabase
-            .schema("workbench").from("notes")
+            .schema("workbench")
+            .from("notes")
             .insert({
               id: noteId,
               // Canonical RLS std_insert requires created_by = auth.uid().
@@ -159,7 +161,9 @@ export const autoSaveMiddleware: Middleware =
               folder_id: folderId,
               // folder_id may be null, so the org-inherit trigger may have no
               // parent to read — resolve the org explicitly (never a null org).
-              organization_id: await ensureOrgId(recordAfterLabel.organization_id),
+              organization_id: await ensureOrgId(
+                recordAfterLabel.organization_id,
+              ),
               tags: recordAfterLabel.tags,
               metadata: recordAfterLabel.metadata,
               position: recordAfterLabel.position ?? 0,
@@ -198,7 +202,8 @@ export const autoSaveMiddleware: Middleware =
           }
 
           const { data, error } = await supabase
-            .schema("workbench").from("notes")
+            .schema("workbench")
+            .from("notes")
             .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
             .eq("id", noteId)
             .select("updated_at")

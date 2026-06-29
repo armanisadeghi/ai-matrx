@@ -376,7 +376,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       // First pass: create all category objects
       allCategoriesData.forEach((cat) => {
-        const meta = (cat.metadata ?? {}) as { is_active?: string | boolean | null };
+        const meta = (cat.metadata ?? {}) as {
+          is_active?: string | boolean | null;
+        };
         categoriesMap.set(cat.id, {
           id: cat.id,
           parent_category_id: cat.parent_id,

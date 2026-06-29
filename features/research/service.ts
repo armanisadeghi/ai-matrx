@@ -51,7 +51,8 @@ export async function getTopicsForProject(
   projectId: string,
 ): Promise<ResearchTopic[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .select("*")
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
@@ -64,7 +65,8 @@ export async function getTopicsForProjects(
 ): Promise<ResearchTopic[]> {
   if (projectIds.length === 0) return [];
   const { data, error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .select("*")
     .in("project_id", projectIds)
     .order("created_at", { ascending: false });
@@ -79,7 +81,8 @@ export async function getTopicsForProjects(
  */
 export async function getAllTopics(): Promise<ResearchTopic[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -88,7 +91,8 @@ export async function getAllTopics(): Promise<ResearchTopic[]> {
 
 export async function getTopic(topicId: string): Promise<ResearchTopic | null> {
   const { data, error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .select("*")
     .eq("id", topicId)
     .single();
@@ -107,7 +111,8 @@ export async function updateTopic(
   // Supabase's generated `Update` type hasn't picked up yet. The columns
   // exist on the row; the cast is safe and only narrows back when types regen.
   const { data, error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .update(updates as Database["research"]["Tables"]["rs_topic"]["Update"])
     .eq("id", topicId)
     .select()
@@ -149,7 +154,8 @@ export async function getKeywords(topicId: string): Promise<ResearchKeyword[]> {
   // (the unique constraint is DEFERRABLE, so this can happen mid-transaction
   // but never at SELECT time).
   const { data, error } = await supabase
-    .schema("research").from("rs_keyword")
+    .schema("research")
+    .from("rs_keyword")
     .select("*")
     .eq("topic_id", topicId)
     .order("position", { ascending: true })
@@ -178,7 +184,8 @@ export async function reorderKeywords(
 
 export async function deleteKeyword(keywordId: string): Promise<void> {
   const { error } = await supabase
-    .schema("research").from("rs_keyword")
+    .schema("research")
+    .from("rs_keyword")
     .delete()
     .eq("id", keywordId);
   if (error) throw error;
@@ -191,7 +198,8 @@ export async function updateKeywordText(
   const trimmed = keyword.trim();
   if (!trimmed) throw new Error("Keyword cannot be empty");
   const { error } = await supabase
-    .schema("research").from("rs_keyword")
+    .schema("research")
+    .from("rs_keyword")
     .update({ keyword: trimmed })
     .eq("id", keywordId);
   if (error) throw error;
@@ -217,7 +225,8 @@ export async function updateTopicMeta(
   }
   if (Object.keys(update).length === 0) return;
   const { error } = await supabase
-    .schema("research").from("rs_topic")
+    .schema("research")
+    .from("rs_topic")
     .update(update)
     .eq("id", topicId);
   if (error) throw error;
@@ -231,7 +240,8 @@ export async function getSource(
   sourceId: string,
 ): Promise<ResearchSource | null> {
   const { data, error } = await supabase
-    .schema("research").from("rs_source")
+    .schema("research")
+    .from("rs_source")
     .select("*")
     .eq("id", sourceId)
     .single();
@@ -256,7 +266,8 @@ export async function getSources(
   // ranks from rs_keyword_source.rank_for_keyword and order client-side.
   if (filters?.keyword_id) {
     const { data: links, error: linkErr } = await supabase
-      .schema("research").from("rs_keyword_source")
+      .schema("research")
+      .from("rs_keyword_source")
       .select("source_id, rank_for_keyword")
       .eq("keyword_id", filters.keyword_id)
       .order("rank_for_keyword", { ascending: true, nullsFirst: false });
@@ -272,7 +283,8 @@ export async function getSources(
     if (orderedIds.length === 0) return [];
 
     let query = supabase
-      .schema("research").from("rs_source")
+      .schema("research")
+      .from("rs_source")
       .select("*")
       .eq("topic_id", topicId)
       .in("id", orderedIds);
@@ -322,7 +334,11 @@ export async function getSources(
   // Topic-wide source list: no keyword filter, so use the global search
   // rank as a coarse default. Server still owes us a "best rank across all
   // keywords" if we want true cross-keyword priority — see server-team spec.
-  let query = supabase.schema("research").from("rs_source").select("*").eq("topic_id", topicId);
+  let query = supabase
+    .schema("research")
+    .from("rs_source")
+    .select("*")
+    .eq("topic_id", topicId);
 
   if (filters?.scrape_status)
     query = query.eq("scrape_status", filters.scrape_status);
@@ -361,7 +377,8 @@ export async function updateSource(
   updates: SourceUpdate,
 ): Promise<ResearchSource> {
   const { data, error } = await supabase
-    .schema("research").from("rs_source")
+    .schema("research")
+    .from("rs_source")
     .update(updates)
     .eq("id", sourceId)
     .select()
@@ -385,7 +402,8 @@ export async function bulkUpdateSources(
 
   if (Object.keys(updates).length > 0) {
     const { error } = await supabase
-      .schema("research").from("rs_source")
+      .schema("research")
+      .from("rs_source")
       .update(updates)
       .eq("topic_id", topicId)
       .in("id", sourceIds);
@@ -401,7 +419,8 @@ export async function getSourceContent(
   sourceId: string,
 ): Promise<ResearchContent[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_content")
+    .schema("research")
+    .from("rs_content")
     .select("*")
     .eq("source_id", sourceId)
     .order("version", { ascending: false });
@@ -417,7 +436,8 @@ export async function getSourceAnalysis(
   contentId: string,
 ): Promise<ResearchAnalysis[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_analysis")
+    .schema("research")
+    .from("rs_analysis")
     .select("*")
     .eq("content_id", contentId)
     .order("created_at", { ascending: false });
@@ -429,7 +449,8 @@ export async function getAnalysisForSource(
   sourceId: string,
 ): Promise<ResearchAnalysis[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_analysis")
+    .schema("research")
+    .from("rs_analysis")
     .select("*")
     .eq("source_id", sourceId)
     .order("created_at", { ascending: false });
@@ -441,7 +462,8 @@ export async function getAnalysesForTopic(
   topicId: string,
 ): Promise<ResearchAnalysis[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_analysis")
+    .schema("research")
+    .from("rs_analysis")
     .select("*")
     .eq("topic_id", topicId)
     .order("created_at", { ascending: false });
@@ -458,7 +480,8 @@ export async function getSynthesis(
   params?: { scope?: string; keyword_id?: string },
 ): Promise<ResearchSynthesis[]> {
   let query = supabase
-    .schema("research").from("rs_synthesis")
+    .schema("research")
+    .from("rs_synthesis")
     .select("*")
     .eq("topic_id", topicId)
     .eq("is_current", true);
@@ -479,7 +502,8 @@ export async function getSynthesis(
 
 export async function getTags(topicId: string): Promise<ResearchTag[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_tag")
+    .schema("research")
+    .from("rs_tag")
     .select("*")
     .eq("topic_id", topicId)
     .order("sort_order", { ascending: true });
@@ -497,7 +521,8 @@ export async function getTopicSourceTags(
   topicId: string,
 ): Promise<Record<string, { id: string; name: string }[]>> {
   const { data: tagRows, error: tagErr } = await supabase
-    .schema("research").from("rs_tag")
+    .schema("research")
+    .from("rs_tag")
     .select("id, name")
     .eq("topic_id", topicId);
   if (tagErr) throw tagErr;
@@ -506,7 +531,8 @@ export async function getTopicSourceTags(
   const tagName = new Map(tags.map((t) => [t.id, t.name]));
 
   const { data: stRows, error: stErr } = await supabase
-    .schema("research").from("rs_source_tag")
+    .schema("research")
+    .from("rs_source_tag")
     .select("source_id, tag_id")
     .in(
       "tag_id",
@@ -529,8 +555,13 @@ export async function createTag(
   tag: TagCreate,
 ): Promise<ResearchTag> {
   const { data, error } = await supabase
-    .schema("research").from("rs_tag")
-    .insert({ ...tag, topic_id: topicId, organization_id: await ensureOrgId(undefined) })
+    .schema("research")
+    .from("rs_tag")
+    .insert({
+      ...tag,
+      topic_id: topicId,
+      organization_id: await ensureOrgId(undefined),
+    })
     .select()
     .single();
   if (error) throw error;
@@ -542,7 +573,8 @@ export async function updateTag(
   updates: TagUpdate,
 ): Promise<ResearchTag> {
   const { data, error } = await supabase
-    .schema("research").from("rs_tag")
+    .schema("research")
+    .from("rs_tag")
     .update(updates)
     .eq("id", tagId)
     .select()
@@ -552,7 +584,11 @@ export async function updateTag(
 }
 
 export async function deleteTag(tagId: string): Promise<void> {
-  const { error } = await supabase.schema("research").from("rs_tag").delete().eq("id", tagId);
+  const { error } = await supabase
+    .schema("research")
+    .from("rs_tag")
+    .delete()
+    .eq("id", tagId);
   if (error) throw error;
 }
 
@@ -566,7 +602,8 @@ export async function assignTagsToSource(
     assigned_by: "manual" as const,
   }));
   const { data, error } = await supabase
-    .schema("research").from("rs_source_tag")
+    .schema("research")
+    .from("rs_source_tag")
     .upsert(rows, { onConflict: "source_id,tag_id" })
     .select();
   if (error) throw error;
@@ -576,7 +613,8 @@ export async function assignTagsToSource(
 /** Current tag assignments for a source (so a picker can show what's on). */
 export async function getSourceTags(sourceId: string): Promise<SourceTag[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_source_tag")
+    .schema("research")
+    .from("rs_source_tag")
     .select("*")
     .eq("source_id", sourceId);
   if (error) throw error;
@@ -589,7 +627,8 @@ export async function removeSourceTag(
   tagId: string,
 ): Promise<void> {
   const { error } = await supabase
-    .schema("research").from("rs_source_tag")
+    .schema("research")
+    .from("rs_source_tag")
     .delete()
     .eq("source_id", sourceId)
     .eq("tag_id", tagId);
@@ -608,7 +647,8 @@ export async function addTagToSources(
     assigned_by: "manual" as const,
   }));
   const { error } = await supabase
-    .schema("research").from("rs_source_tag")
+    .schema("research")
+    .from("rs_source_tag")
     .upsert(rows, { onConflict: "source_id,tag_id" });
   if (error) throw error;
 }
@@ -623,7 +663,8 @@ export async function getSourceImportance(
   topicId: string,
 ): Promise<Map<string, SourceImportance>> {
   const { data: kws, error: kwErr } = await supabase
-    .schema("research").from("rs_keyword")
+    .schema("research")
+    .from("rs_keyword")
     .select("id, keyword")
     .eq("topic_id", topicId);
   if (kwErr) throw kwErr;
@@ -633,7 +674,8 @@ export async function getSourceImportance(
   if (kwText.size === 0) return new Map();
 
   const { data: links, error: linkErr } = await supabase
-    .schema("research").from("rs_keyword_source")
+    .schema("research")
+    .from("rs_keyword_source")
     .select("source_id, keyword_id, rank_for_keyword")
     .in("keyword_id", Array.from(kwText.keys()));
   if (linkErr) throw linkErr;
@@ -694,7 +736,8 @@ const ANALYSIS_RANK: Record<Exclude<CurationAnalysisState, "none">, number> = {
  */
 export async function getCurationData(topicId: string): Promise<CurationData> {
   const { data: kwRows, error: kwErr } = await supabase
-    .schema("research").from("rs_keyword")
+    .schema("research")
+    .from("rs_keyword")
     .select("id, keyword")
     .eq("topic_id", topicId);
   if (kwErr) throw kwErr;
@@ -702,7 +745,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   const kwText = new Map(keywords.map((k) => [k.id, k.keyword]));
 
   const { data: srcRows, error: srcErr } = await supabase
-    .schema("research").from("rs_source")
+    .schema("research")
+    .from("rs_source")
     .select("*")
     .eq("topic_id", topicId);
   if (srcErr) throw srcErr;
@@ -712,7 +756,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
 
   // Tags + source⇄tag links
   const { data: tagRows } = await supabase
-    .schema("research").from("rs_tag")
+    .schema("research")
+    .from("rs_tag")
     .select("id, name")
     .eq("topic_id", topicId);
   const tags = (tagRows ?? []) as { id: string; name: string }[];
@@ -720,7 +765,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   const tagsBySource = new Map<string, { id: string; name: string }[]>();
   if (tags.length > 0) {
     const { data: stRows } = await supabase
-      .schema("research").from("rs_source_tag")
+      .schema("research")
+      .from("rs_source_tag")
       .select("source_id, tag_id")
       .in(
         "tag_id",
@@ -737,7 +783,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   const importanceBySource = new Map<string, SourceImportance>();
   if (keywords.length > 0) {
     const { data: links } = await supabase
-      .schema("research").from("rs_keyword_source")
+      .schema("research")
+      .from("rs_keyword_source")
       .select("source_id, keyword_id, rank_for_keyword")
       .in(
         "keyword_id",
@@ -761,7 +808,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   // Content size (current version)
   const charBySource = new Map<string, number>();
   const { data: contentRows } = await supabase
-    .schema("research").from("rs_content")
+    .schema("research")
+    .from("rs_content")
     .select("source_id, char_count, is_current")
     .eq("topic_id", topicId);
   for (const c of contentRows ?? []) {
@@ -775,7 +823,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   // Analysis outcome (best across a source's analyses)
   const analysisBySource = new Map<string, CurationAnalysisState>();
   const { data: anRows } = await supabase
-    .schema("research").from("rs_analysis")
+    .schema("research")
+    .from("rs_analysis")
     .select("source_id, status, result")
     .eq("topic_id", topicId);
   for (const a of anRows ?? []) {
@@ -826,7 +875,8 @@ export async function updateContentCurated(
     updates.original_content = content.content;
   }
   const { error } = await supabase
-    .schema("research").from("rs_content")
+    .schema("research")
+    .from("rs_content")
     .update(updates)
     .eq("id", content.id);
   if (error) throw error;
@@ -838,7 +888,8 @@ export async function restoreOriginalContent(
 ): Promise<void> {
   if (!content.original_content) return;
   const { error } = await supabase
-    .schema("research").from("rs_content")
+    .schema("research")
+    .from("rs_content")
     .update({
       content: content.original_content,
       char_count: content.original_content.length,
@@ -855,7 +906,8 @@ export async function getDocument(
   topicId: string,
 ): Promise<ResearchDocument | null> {
   const { data, error } = await supabase
-    .schema("research").from("rs_document")
+    .schema("research")
+    .from("rs_document")
     .select("*")
     .eq("topic_id", topicId)
     .order("version", { ascending: false })
@@ -869,7 +921,8 @@ export async function getDocumentVersions(
   topicId: string,
 ): Promise<ResearchDocument[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_document")
+    .schema("research")
+    .from("rs_document")
     .select("*")
     .eq("topic_id", topicId)
     .order("version", { ascending: false });
@@ -883,7 +936,8 @@ export async function getDocumentVersions(
 
 export async function getMedia(topicId: string): Promise<ResearchMedia[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_media")
+    .schema("research")
+    .from("rs_media")
     .select("*")
     .eq("topic_id", topicId)
     .order("created_at", { ascending: false });
@@ -896,7 +950,8 @@ export async function updateMedia(
   updates: MediaUpdate,
 ): Promise<ResearchMedia> {
   const { data, error } = await supabase
-    .schema("research").from("rs_media")
+    .schema("research")
+    .from("rs_media")
     .update(updates)
     .eq("id", mediaId)
     .select()
@@ -911,7 +966,8 @@ export async function updateMedia(
 
 export async function getTemplates(): Promise<ResearchTemplate[]> {
   const { data, error } = await supabase
-    .schema("research").from("rs_template")
+    .schema("research")
+    .from("rs_template")
     .select("*")
     .order("name", { ascending: true });
   if (error) throw error;
@@ -922,7 +978,8 @@ export async function getTemplate(
   templateId: string,
 ): Promise<ResearchTemplate | null> {
   const { data, error } = await supabase
-    .schema("research").from("rs_template")
+    .schema("research")
+    .from("rs_template")
     .select("*")
     .eq("id", templateId)
     .single();

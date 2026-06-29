@@ -5,13 +5,13 @@
  * Updates message delivery status in the database.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { validateTwilioWebhook } from '@/lib/sms/validate';
-import { createAdminClient } from '@/utils/supabase/adminClient';
-import type { StatusCallbackPayload } from '@/lib/sms/types';
-import type { TablesUpdate } from '@/types/database.types';
+import { NextRequest, NextResponse } from "next/server";
+import { validateTwilioWebhook } from "@/lib/sms/validate";
+import { createAdminClient } from "@/utils/supabase/adminClient";
+import type { StatusCallbackPayload } from "@/lib/sms/types";
+import type { TablesUpdate } from "@/types/database.types";
 
-const WEBHOOK_PATH = '/api/webhooks/twilio/status';
+const WEBHOOK_PATH = "/api/webhooks/twilio/status";
 
 // Status progression order — only update if the new status is "more advanced"
 const STATUS_ORDER: Record<string, number> = {
@@ -28,36 +28,47 @@ const STATUS_ORDER: Record<string, number> = {
 export async function POST(request: NextRequest) {
   try {
     // Validate Twilio signature
-    const { valid, params, error: validationError } = await validateTwilioWebhook(request, WEBHOOK_PATH);
+    const {
+      valid,
+      params,
+      error: validationError,
+    } = await validateTwilioWebhook(request, WEBHOOK_PATH);
 
     if (!valid) {
-      console.error('Twilio status callback validation failed:', validationError);
-      return new NextResponse('Forbidden', { status: 403 });
+      console.error(
+        "Twilio status callback validation failed:",
+        validationError,
+      );
+      return new NextResponse("Forbidden", { status: 403 });
     }
 
     const payload = params as unknown as StatusCallbackPayload;
     const supabase = createAdminClient();
 
     // Log webhook
-    await supabase.schema('communication').from('sms_webhook_logs').insert({
-      webhook_type: 'status_callback',
-      twilio_sid: payload.MessageSid,
-      raw_payload: payload as unknown as Record<string, unknown>,
-      processed: false,
-    });
+    await supabase
+      .schema("communication")
+      .from("sms_webhook_logs")
+      .insert({
+        webhook_type: "status_callback",
+        twilio_sid: payload.MessageSid,
+        raw_payload: payload as unknown as Record<string, unknown>,
+        processed: false,
+      });
 
     // Find the message by Twilio SID
     const { data: existingMessage } = await supabase
-      .schema('communication').from('sms_messages')
-      .select('id, status')
-      .eq('twilio_sid', payload.MessageSid)
+      .schema("communication")
+      .from("sms_messages")
+      .select("id, status")
+      .eq("twilio_sid", payload.MessageSid)
       .single();
 
     if (!existingMessage) {
       // Message not found — could be a message we didn't originate
       // Just log and return OK
-      console.warn('Status callback for unknown message:', payload.MessageSid);
-      return new NextResponse('OK', { status: 200 });
+      console.warn("Status callback for unknown message:", payload.MessageSid);
+      return new NextResponse("OK", { status: 200 });
     }
 
     // Only update if the new status is more advanced in the lifecycle
@@ -65,7 +76,10 @@ export async function POST(request: NextRequest) {
     const newOrder = STATUS_ORDER[payload.MessageStatus] ?? -1;
 
     if (newOrder > currentOrder) {
-      const updateData: TablesUpdate<{ schema: 'communication' }, 'sms_messages'> = {
+      const updateData: TablesUpdate<
+        { schema: "communication" },
+        "sms_messages"
+      > = {
         status: payload.MessageStatus,
       };
 
@@ -77,23 +91,25 @@ export async function POST(request: NextRequest) {
       }
 
       await supabase
-        .schema('communication').from('sms_messages')
+        .schema("communication")
+        .from("sms_messages")
         .update(updateData)
-        .eq('id', existingMessage.id);
+        .eq("id", existingMessage.id);
     }
 
     // Mark webhook as processed
     await supabase
-      .schema('communication').from('sms_webhook_logs')
+      .schema("communication")
+      .from("sms_webhook_logs")
       .update({ processed: true })
-      .eq('twilio_sid', payload.MessageSid)
-      .eq('webhook_type', 'status_callback');
+      .eq("twilio_sid", payload.MessageSid)
+      .eq("webhook_type", "status_callback");
 
-    return new NextResponse('OK', { status: 200 });
+    return new NextResponse("OK", { status: 200 });
   } catch (err) {
-    console.error('Error processing status callback:', err);
+    console.error("Error processing status callback:", err);
     // Return 200 to prevent retries for application-level errors
-    return new NextResponse('OK', { status: 200 });
+    return new NextResponse("OK", { status: 200 });
   }
 }
 
@@ -103,11 +119,20 @@ export async function POST(request: NextRequest) {
  */
 export async function GET() {
   return NextResponse.json({
-    webhook: 'Twilio Message Status Callback',
-    method: 'POST',
-    contentType: 'application/x-www-form-urlencoded',
-    description: 'Receives delivery status updates for outbound messages.',
-    statuses: ['queued', 'accepted', 'sending', 'sent', 'delivered', 'undelivered', 'failed'],
-    documentation: 'https://www.twilio.com/docs/messaging/guides/webhook-request#statusCallback',
+    webhook: "Twilio Message Status Callback",
+    method: "POST",
+    contentType: "application/x-www-form-urlencoded",
+    description: "Receives delivery status updates for outbound messages.",
+    statuses: [
+      "queued",
+      "accepted",
+      "sending",
+      "sent",
+      "delivered",
+      "undelivered",
+      "failed",
+    ],
+    documentation:
+      "https://www.twilio.com/docs/messaging/guides/webhook-request#statusCallback",
   });
 }

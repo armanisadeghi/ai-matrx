@@ -66,7 +66,8 @@ export async function POST(request: NextRequest) {
         // external_system) tuple. `external_system` is nullable so we
         // normalize NULL via .is() when not provided.
         let existingQuery = supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .select("*")
           .eq("user_id", user.id)
           .eq("message_id", messageId)
@@ -106,7 +107,8 @@ export async function POST(request: NextRequest) {
           }
 
           const { data: updated, error: updateError } = await supabase
-            .schema("chat").from("artifact")
+            .schema("chat")
+            .from("artifact")
             .update(updates)
             .eq("id", existing[0].id)
             .eq("user_id", user.id)
@@ -114,10 +116,7 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (updateError) {
-            console.error(
-              "[artifacts API] create->update error:",
-              updateError,
-            );
+            console.error("[artifacts API] create->update error:", updateError);
             return NextResponse.json(
               { error: updateError.message },
               { status: 500 },
@@ -128,7 +127,8 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .insert({
             message_id: messageId,
             conversation_id: conversationId,
@@ -192,7 +192,8 @@ export async function POST(request: NextRequest) {
         if (metadata !== undefined) updates.metadata = metadata;
 
         const { data, error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .update(updates)
           .eq("id", id)
           .eq("user_id", user.id)
@@ -225,7 +226,8 @@ export async function POST(request: NextRequest) {
         }
 
         const { error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .update({ status: "archived", deleted_at: new Date().toISOString() })
           .eq("id", id)
           .eq("user_id", user.id);
@@ -249,7 +251,8 @@ export async function POST(request: NextRequest) {
         }
 
         const { error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .delete()
           .eq("id", id)
           .eq("user_id", user.id);
@@ -273,7 +276,8 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .select("*")
           .eq("id", id)
           .eq("user_id", user.id)
@@ -293,7 +297,8 @@ export async function POST(request: NextRequest) {
         const { filters = {} } = params;
 
         let query = supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .select("*")
           .eq("user_id", user.id)
           .is("deleted_at", null)
@@ -329,7 +334,8 @@ export async function POST(request: NextRequest) {
         }
 
         const { data, error } = await supabase
-          .schema("chat").from("artifact")
+          .schema("chat")
+          .from("artifact")
           .select("*")
           .eq("message_id", messageId)
           .eq("user_id", user.id)

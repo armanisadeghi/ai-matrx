@@ -46,7 +46,8 @@ export async function PUT(
     }
 
     const { data, error } = await supabase
-      .schema("tool").from("ui_incident")
+      .schema("tool")
+      .from("ui_incident")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -86,7 +87,8 @@ export async function DELETE(
     const supabase = createAdminClient();
 
     const { error } = await supabase
-      .schema("tool").from("ui_incident")
+      .schema("tool")
+      .from("ui_incident")
       .delete()
       .eq("id", id);
 

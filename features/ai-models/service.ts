@@ -105,7 +105,11 @@ export const aiModelService = {
   },
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase.schema("ai").from("model").delete().eq("id", id);
+    const { error } = await supabase
+      .schema("ai")
+      .from("model")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
   },
 
@@ -176,7 +180,9 @@ export const aiModelService = {
   ): Promise<number> {
     // public.prompts was moved to graveyard.prompts — no live rows to update.
     // All prompt model references are now on agent.definition and handled by replaceModelInBuiltins.
-    console.warn("[aiModelService.replaceModelInPrompts] public.prompts is graveyarded — no-op, returning 0");
+    console.warn(
+      "[aiModelService.replaceModelInPrompts] public.prompts is graveyarded — no-op, returning 0",
+    );
     return 0;
   },
 
@@ -209,7 +215,11 @@ export const aiModelService = {
         settings,
       };
       if (hasColumn) payload.model_id = newId;
-      return supabase.schema("agent").from("definition").update(payload).eq("id", row.id);
+      return supabase
+        .schema("agent")
+        .from("definition")
+        .update(payload)
+        .eq("id", row.id);
     });
 
     const results = await Promise.all(updates);

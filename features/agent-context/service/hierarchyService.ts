@@ -88,7 +88,8 @@ export const hierarchyService = {
     const userEmail = getUserEmail() ?? "";
 
     const { data: profile } = await supabase
-      .schema("users").from("profiles")
+      .schema("users")
+      .from("profiles")
       .select("display_name")
       .eq("id", userId)
       .maybeSingle();
@@ -117,7 +118,8 @@ export const hierarchyService = {
     if (orgIds.length === 0) return [];
 
     const { data, error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select(
         "id, name, slug, description, logo_url, is_personal, settings, created_at",
       )
@@ -355,7 +357,8 @@ export const hierarchyService = {
     const userId = requireUserId();
 
     const { data: org, error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .insert({ ...data, created_by: userId })
       .select()
       .single();
@@ -450,7 +453,8 @@ export const hierarchyService = {
     data: { name?: string; description?: string },
   ): Promise<void> {
     const { error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .update(data)
       .eq("id", id);
     if (error) throw error;
@@ -483,7 +487,9 @@ export const hierarchyService = {
     },
   ): Promise<void> {
     const { priority, ...rest } = data;
-    const patch: Database["workspace"]["Tables"]["tasks"]["Update"] = { ...rest };
+    const patch: Database["workspace"]["Tables"]["tasks"]["Update"] = {
+      ...rest,
+    };
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }
@@ -523,7 +529,8 @@ export const hierarchyService = {
     // memberships.organization_id — pending DB follow-up. Until that lands this
     // delete will fail loudly on the FK rather than silently orphan rows.
     const { error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .delete()
       .eq("id", id);
     if (error) throw error;
@@ -579,7 +586,8 @@ export const hierarchyService = {
     let row: { data: any; error: any };
     if (type === "organization") {
       row = await supabase
-        .schema("iam").from("organizations")
+        .schema("iam")
+        .from("organizations")
         .select(nameCol)
         .eq("id", id)
         .single();
@@ -637,7 +645,8 @@ export const hierarchyService = {
       }
     } else if (type === "organization") {
       const { data: org } = await supabase
-        .schema("iam").from("organizations")
+        .schema("iam")
+        .from("organizations")
         .select("name")
         .eq("id", id)
         .single();

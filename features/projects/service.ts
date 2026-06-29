@@ -339,7 +339,8 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   const personalByOrg = new Map<string, boolean>();
   if (orgIds.length > 0) {
     const { data: orgs } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select("id, is_personal")
       .in("id", orgIds);
     for (const o of orgs ?? []) {
@@ -675,10 +676,7 @@ export async function cancelProjectInvitation(
 ): Promise<OperationResult> {
   const result = await invitationsService.revoke(invitationId);
   if (isScopesRpcErr(result)) {
-    console.error(
-      "Error cancelling project invitation:",
-      result.error.message,
-    );
+    console.error("Error cancelling project invitation:", result.error.message);
     return { success: false, error: result.error.message };
   }
   return { success: true, message: "Invitation cancelled successfully" };

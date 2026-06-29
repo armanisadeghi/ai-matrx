@@ -641,7 +641,8 @@ export const updateCategoryThunk = createAsyncThunk<
     metadataPatch.category_key = patch.categoryKey;
   }
   if (patch.label !== undefined) topLevel.name = patch.label;
-  if (patch.description !== undefined) metadataPatch.description = patch.description;
+  if (patch.description !== undefined)
+    metadataPatch.description = patch.description;
   if (patch.iconName !== undefined) topLevel.icon = patch.iconName;
   if (patch.color !== undefined) topLevel.color = patch.color;
   if (patch.parentCategoryId !== undefined)

@@ -18,7 +18,7 @@ export async function GET() {
     if (!user) {
       return NextResponse.json(
         { success: false, msg: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -26,14 +26,14 @@ export async function GET() {
     const adminSupabase = createAdminClient();
     const { data, error } = await adminSupabase.rpc(
       "get_user_email_preferences",
-      { p_user_id: user.id }
+      { p_user_id: user.id },
     );
 
     if (error) {
       console.error("Error fetching email preferences:", error);
       return NextResponse.json(
         { success: false, msg: "Failed to fetch preferences" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -45,7 +45,7 @@ export async function GET() {
     console.error("Error in GET /api/user/email-preferences:", error);
     return NextResponse.json(
       { success: false, msg: "Failed to fetch preferences" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,7 +64,7 @@ export async function PATCH(request: Request) {
     if (!user) {
       return NextResponse.json(
         { success: false, msg: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -82,8 +82,11 @@ export async function PATCH(request: Request) {
     } = body;
 
     // Validate boolean values
-    const preferences: TablesUpdate<{ schema: "users" }, "user_email_preferences"> = {};
-    
+    const preferences: TablesUpdate<
+      { schema: "users" },
+      "user_email_preferences"
+    > = {};
+
     if (typeof sharing_notifications === "boolean") {
       preferences.sharing_notifications = sharing_notifications;
     }
@@ -115,13 +118,14 @@ export async function PATCH(request: Request) {
     if (Object.keys(preferences).length === 0) {
       return NextResponse.json(
         { success: false, msg: "No valid preferences provided" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check if preferences exist
     const { data: existing } = await supabase
-      .schema("users").from("user_email_preferences")
+      .schema("users")
+      .from("user_email_preferences")
       .select("id")
       .eq("user_id", user.id)
       .single();
@@ -129,7 +133,8 @@ export async function PATCH(request: Request) {
     if (existing) {
       // Update existing preferences
       const { error } = await supabase
-        .schema("users").from("user_email_preferences")
+        .schema("users")
+        .from("user_email_preferences")
         .update(preferences)
         .eq("user_id", user.id);
 
@@ -137,14 +142,15 @@ export async function PATCH(request: Request) {
         console.error("Error updating email preferences:", error);
         return NextResponse.json(
           { success: false, msg: "Failed to update preferences" },
-          { status: 500 }
+          { status: 500 },
         );
       }
     } else {
       // Create new preferences (scoped to the user's personal org)
       const organizationId = await ensureOrgIdServer(supabase, undefined);
       const { error } = await supabase
-        .schema("users").from("user_email_preferences")
+        .schema("users")
+        .from("user_email_preferences")
         .insert({
           user_id: user.id,
           organization_id: organizationId,
@@ -155,7 +161,7 @@ export async function PATCH(request: Request) {
         console.error("Error creating email preferences:", error);
         return NextResponse.json(
           { success: false, msg: "Failed to create preferences" },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -168,7 +174,7 @@ export async function PATCH(request: Request) {
     console.error("Error in PATCH /api/user/email-preferences:", error);
     return NextResponse.json(
       { success: false, msg: "Failed to update preferences" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

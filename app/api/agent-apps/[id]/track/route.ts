@@ -179,7 +179,10 @@ export async function POST(
       metadata: body.metadata ?? {},
     };
 
-    const { error } = await admin.schema("app").from("execution").insert(insertPayload);
+    const { error } = await admin
+      .schema("app")
+      .from("execution")
+      .insert(insertPayload);
 
     if (error) {
       // Rate-limit trigger may raise check_violation for legitimate

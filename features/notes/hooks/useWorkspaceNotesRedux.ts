@@ -121,13 +121,14 @@ export function useWorkspaceNotesRedux() {
         localEdits: record._dirty
           ? { label: record.label, content: record.content }
           : null,
-        saveState: record._error === "conflict"
-          ? "conflict"
-          : record._saving
-            ? "saving"
-            : record._dirty
-              ? "dirty"
-              : "saved",
+        saveState:
+          record._error === "conflict"
+            ? "conflict"
+            : record._saving
+              ? "saving"
+              : record._dirty
+                ? "dirty"
+                : "saved",
         fetchedAt: Date.now(), // NoteRecord doesn't track fetchedAt — approximate
       };
     },
@@ -169,7 +170,8 @@ export function useWorkspaceNotesRedux() {
           }
 
           const { data, error } = await supabase
-            .schema("workbench").from("notes")
+            .schema("workbench")
+            .from("notes")
             .update(updates)
             .eq("id", noteId)
             .select("updated_at")
@@ -286,7 +288,8 @@ export function useWorkspaceNotesRedux() {
   const deleteNote = useCallback(
     async (noteId: string) => {
       await supabase
-        .schema("workbench").from("notes")
+        .schema("workbench")
+        .from("notes")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", noteId);
       dispatch(removeNote(noteId));
@@ -303,11 +306,13 @@ export function useWorkspaceNotesRedux() {
       if (!record || !userId) return;
 
       const { data, error } = await supabase
-        .schema("workbench").from("notes")
+        .schema("workbench")
+        .from("notes")
         .insert({
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
-          label: record.label === "New Note" ? "New Note" : `${record.label} (Copy)`,
+          label:
+            record.label === "New Note" ? "New Note" : `${record.label} (Copy)`,
           content: record.content,
           folder_name: record.folder_name,
           tags: record.tags,
@@ -327,18 +332,19 @@ export function useWorkspaceNotesRedux() {
       );
       dispatch(addTab(data.id));
       dispatch(setActiveNoteAction(data.id));
-      window.dispatchEvent(
-        new CustomEvent("notes:created", { detail: data }),
-      );
+      window.dispatchEvent(new CustomEvent("notes:created", { detail: data }));
     },
     [dispatch, notesMap, userId],
   );
 
   const moveNote = useCallback(
     async (noteId: string, folder: string) => {
-      dispatch(setNoteField({ id: noteId, field: "folder_name", value: folder }));
+      dispatch(
+        setNoteField({ id: noteId, field: "folder_name", value: folder }),
+      );
       await supabase
-        .schema("workbench").from("notes")
+        .schema("workbench")
+        .from("notes")
         .update({ folder_name: folder })
         .eq("id", noteId);
       window.dispatchEvent(
@@ -352,7 +358,8 @@ export function useWorkspaceNotesRedux() {
     async (folder: string) => {
       if (!userId) return;
       const { data, error } = await supabase
-        .schema("workbench").from("notes")
+        .schema("workbench")
+        .from("notes")
         .insert({
           // Canonical RLS std_insert requires created_by = auth.uid().
           created_by: userId,
@@ -375,9 +382,7 @@ export function useWorkspaceNotesRedux() {
       );
       dispatch(addTab(data.id));
       dispatch(setActiveNoteAction(data.id));
-      window.dispatchEvent(
-        new CustomEvent("notes:created", { detail: data }),
-      );
+      window.dispatchEvent(new CustomEvent("notes:created", { detail: data }));
       return data;
     },
     [dispatch, userId],
@@ -386,20 +391,27 @@ export function useWorkspaceNotesRedux() {
   const updateTags = useCallback(
     async (noteId: string, tags: string[]) => {
       dispatch(setNoteField({ id: noteId, field: "tags", value: tags }));
-      await supabase.schema("workbench").from("notes").update({ tags }).eq("id", noteId);
+      await supabase
+        .schema("workbench")
+        .from("notes")
+        .update({ tags })
+        .eq("id", noteId);
     },
     [dispatch],
   );
 
-  const shareNote = useCallback(async (noteId: string) => {
-    const record = notesMap[noteId];
-    if (!record) return;
-    try {
-      await navigator.clipboard.writeText(record.content);
-    } catch {
-      // ignore
-    }
-  }, [notesMap]);
+  const shareNote = useCallback(
+    async (noteId: string) => {
+      const record = notesMap[noteId];
+      if (!record) return;
+      try {
+        await navigator.clipboard.writeText(record.content);
+      } catch {
+        // ignore
+      }
+    },
+    [notesMap],
+  );
 
   const exportNote = useCallback(
     (noteId: string) => {

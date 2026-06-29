@@ -35,10 +35,14 @@ export async function PATCH(
       "is_active",
       "metadata",
       "lister_tool_id",
-    ] as const satisfies readonly (keyof TablesUpdate<{ schema: "tool" }, "bundle">)[];
+    ] as const satisfies readonly (keyof TablesUpdate<
+      { schema: "tool" },
+      "bundle"
+    >)[];
     const patch: TablesUpdate<{ schema: "tool" }, "bundle"> = {};
     for (const key of allowed) {
-      if (body[key] !== undefined) (patch as Record<string, unknown>)[key] = body[key];
+      if (body[key] !== undefined)
+        (patch as Record<string, unknown>)[key] = body[key];
     }
 
     if (Object.keys(patch).length === 0) {
@@ -50,7 +54,8 @@ export async function PATCH(
 
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .schema("tool").from("bundle")
+      .schema("tool")
+      .from("bundle")
       .update(patch)
       .eq("id", id)
       .select()
