@@ -62,10 +62,25 @@ function normalizePromptSettingsFromDb(
   return value as Record<string, unknown>;
 }
 import { VoiceInputButton } from "@/components/official/VoiceInputButton";
-import type { SystemPromptDB } from "@/types/system-prompts-db";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useAppSelector } from "@/lib/redux/hooks";
+
+// Inline minimal system-prompt shape for this decommissioned admin modal.
+// Only the fields this modal reads.
+interface SystemPromptDB {
+  name: string;
+  description: string | null;
+  category: string;
+  placement_type: string;
+  functionality_id: string | null;
+  placement_settings: {
+    requiresSelection?: boolean;
+    allowChat?: boolean;
+    allowInitialMessage?: boolean;
+    [key: string]: unknown;
+  };
+}
 
 interface GeneratePromptForSystemModalProps {
   isOpen: boolean;
