@@ -1,11 +1,18 @@
 /**
- * Capability registry for dynamic React (tool UI components, prompt apps, and
- * inline React code blocks in chat/notes).
+ * Capability registry for dynamic React — inline React code blocks in
+ * chat/notes (`compileReactComponent.ts`) and the tool-UI admin authoring editor.
  *
- * THE single source of truth for "what can generated React import / use." Every
- * consumer builds its execution scope from here.
+ * Lives alongside `compile-core.ts` because `features/dynamic-react/` is its
+ * primary live consumer. Relocated 2026-06-29 from the now-deleted
+ * `features/tool-call-visualization/dynamic/` runtime (the broken duplicate).
  *
- * ── Bundle safety (load-bearing) ────────────────────────────────────────────
+ * THE single source of truth for "what can generated React import / use" on the
+ * dynamic-react path; each consumer builds its execution scope from here.
+ * (Agent Apps has its own parallel scope builder in
+ * `features/agent-apps/utils/allowed-imports.ts`; collapsing the two into one is
+ * a tracked follow-up — see tool-call-visualization/OVERHAUL_STATUS.md Track 2.)
+ *
+ * ââ Bundle safety (load-bearing) ââââââââââââââââââââââââââââââââââââââââââââ
  * Every capability loads via a dynamic `import()` with a LITERAL specifier, so
  * the bundler splits each into its own async chunk. `buildToolRendererScope` is
  * async and only loads the capabilities it is asked for, so:
@@ -21,7 +28,7 @@
  *
  * RULES FOR GENERATED COMPONENTS:
  *   1. Import from the paths below (or just use the provided identifiers).
- *   2. All React hooks, lucide icons (missing → placeholder), and `cn` are always
+ *   2. All React hooks, lucide icons (missing â placeholder), and `cn` are always
  *      available.
  *   3. No direct node_modules access beyond this registry; no `require()` / no
  *      dynamic `import()` in the generated code itself.
@@ -42,12 +49,12 @@ type ScopeStrategy = "spread" | "named" | "namespace";
 interface CapabilityConfig {
   /** Specifier used in `allowed_imports` rows and in source detection. */
   path: string;
-  /** Dynamic import — MUST use a literal string so the bundler can split it. */
+  /** Dynamic import â MUST use a literal string so the bundler can split it. */
   loader: () => Promise<any>;
   scopeStrategy: ScopeStrategy;
   /** For "named": which exports to lift into scope. */
   exports?: string[];
-  /** moduleKey → scopeKey (e.g. { default: "React" }). */
+  /** moduleKey â scopeKey (e.g. { default: "React" }). */
   exportMap?: Record<string, string>;
   /** For "namespace": expose the whole module under this identifier. */
   namespaceName?: string;
@@ -68,7 +75,7 @@ const ns = (mod: any) => mod?.default ?? mod;
 // ---------------------------------------------------------------------------
 
 export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
-  // ── React core ──────────────────────────────────────────────────────────
+  // ââ React core ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   {
     path: "react",
     loader: () => import("react"),
@@ -91,7 +98,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     description: "React core (hooks, Fragment)",
   },
 
-  // ── Icons ─────────────────────────────────────────────────────────────────
+  // ââ Icons âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   {
     path: "lucide-react",
     loader: () => import("lucide-react"),
@@ -106,10 +113,10 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     scopeStrategy: "named",
     exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
     core: true,
-    description: "DynamicIcon — resolve any Lucide/custom icon by string name",
+    description: "DynamicIcon â resolve any Lucide/custom icon by string name",
   },
 
-  // ── Utility ─────────────────────────────────────────────────────────────
+  // ââ Utility âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   {
     path: "@/lib/utils",
     loader: () => import("@/lib/utils"),
@@ -119,7 +126,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     description: "cn() className merge utility",
   },
 
-  // ── Core shadcn UI (light, app-wide; loaded for every React block) ────────
+  // ââ Core shadcn UI (light, app-wide; loaded for every React block) ââââââââ
   {
     path: "@/components/ui/badge",
     loader: () => import("@/components/ui/badge"),
@@ -288,7 +295,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     core: true,
   },
 
-  // ── Markdown ────────────────────────────────────────────────────────────
+  // ââ Markdown ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   {
     path: "@/components/MarkdownStream",
     loader: () => import("@/components/MarkdownStream"),
@@ -298,7 +305,7 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     description: "MarkdownStream renderer",
   },
 
-  // ── Heavy capabilities — demand-loaded only (own chunks) ──────────────────
+  // ââ Heavy capabilities â demand-loaded only (own chunks) ââââââââââââââââââ
   {
     path: "recharts",
     loader: () => import("recharts"),
@@ -394,7 +401,7 @@ export function getCoreCapabilityPaths(): string[] {
 /**
  * Scan source for the capabilities it actually needs (import specifiers +
  * heavy-lib provided identifiers), unioned with the always-on core set. Heavy
- * libs not referenced are never loaded → never chunked in.
+ * libs not referenced are never loaded â never chunked in.
  */
 export function detectReactCapabilities(code: string): string[] {
   const needed = new Set<string>(getCoreCapabilityPaths());
@@ -489,7 +496,7 @@ function createSafeModuleProxy(
 }
 
 // ---------------------------------------------------------------------------
-// Scope builder (async — loads only the requested capabilities)
+// Scope builder (async â loads only the requested capabilities)
 // ---------------------------------------------------------------------------
 
 /**
@@ -515,7 +522,7 @@ export async function buildToolRendererScope(
 
   // Load every requested capability in parallel, but APPLY them to the scope in
   // `allowedImports` order so spread-key precedence is deterministic (later
-  // entries win — e.g. recharts' `Tooltip` overrides the UI `Tooltip` only when
+  // entries win â e.g. recharts' `Tooltip` overrides the UI `Tooltip` only when
   // charts are actually requested, since heavy libs come after core).
   const loaded = await Promise.all(
     allowedImports.map(async (importPath) => {
@@ -591,7 +598,7 @@ export function patchScopeForMissingIdentifiers(
 }
 
 // ---------------------------------------------------------------------------
-// Scope → function parameters
+// Scope â function parameters
 // ---------------------------------------------------------------------------
 
 /**

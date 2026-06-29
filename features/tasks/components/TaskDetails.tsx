@@ -2,14 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Paperclip,
-  X,
-  Loader2,
-  Maximize2,
-  ExternalLink,
-  Download,
-} from "lucide-react";
+import { Loader2, Maximize2 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { useDebounce } from "../hooks/useDebounce";
@@ -21,11 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileUploadWithStorage } from "@/components/ui/file-upload/FileUploadWithStorage";
-
-type AttachmentType =
-  | string
-  | { name: string; url: string; size: number; type: string };
+import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 
 export default function TaskDetails({ task }: { task: any }) {
   const dispatch = useAppDispatch();
@@ -35,10 +24,6 @@ export default function TaskDetails({ task }: { task: any }) {
   const [dueDate, setDueDate] = useState(task.dueDate || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showFileUpload, setShowFileUpload] = useState(false);
-  const [attachments, setAttachments] = useState<AttachmentType[]>(
-    task.attachments || [],
-  );
 
   // Debounce values - wait 1.5 seconds after user stops typing
   const debouncedDescription = useDebounce(description, 1500);
@@ -48,40 +33,7 @@ export default function TaskDetails({ task }: { task: any }) {
   useEffect(() => {
     setDescription(task.description || "");
     setDueDate(task.dueDate || "");
-    setAttachments(task.attachments || []);
   }, [task.id]); // Only reset when task changes
-
-  const handleFileUpload = (results: any[]) => {
-    const newAttachments = results.map((r) => ({
-      name: r.file.name,
-      url: r.url,
-      size: r.file.size,
-      type: r.file.type,
-    }));
-
-    // Add new attachments to existing ones
-    const updatedAttachments = [...attachments, ...newAttachments];
-    setAttachments(updatedAttachments);
-    setShowFileUpload(false);
-
-    // TODO: Update task in database with new attachments
-    console.log("Uploaded files:", newAttachments);
-  };
-
-  const handleRemoveAttachment = (index: number) => {
-    const newAttachments = attachments.filter((_, i) => i !== index);
-    setAttachments(newAttachments);
-    // TODO: Update task in database
-  };
-
-  const handleDownload = (url: string, name: string) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   useEffect(() => {
     if (debouncedDescription !== task.description) {
@@ -161,108 +113,8 @@ export default function TaskDetails({ task }: { task: any }) {
         </div>
       </div>
 
-      {/* Attachments */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-medium text-foreground">
-            Attachments ({attachments.length})
-          </h4>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowFileUpload(!showFileUpload);
-            }}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
-          >
-            <Paperclip size={12} />
-            Add Files
-          </button>
-        </div>
-
-        {showFileUpload && (
-          <div className="mb-3 p-3 border border-border rounded-lg bg-muted">
-            <FileUploadWithStorage
-              bucket="task-attachments"
-              path={`tasks/${task.id}`}
-              saveTo="private"
-              onUploadComplete={handleFileUpload}
-              useMiniUploader={true}
-              multiple={true}
-            />
-          </div>
-        )}
-
-        {attachments.length > 0 ? (
-          <ul className="space-y-1.5">
-            {attachments.map((attachment: any, index: number) => (
-              <li
-                key={index}
-                className="flex items-center gap-2 rounded px-2 py-1.5 bg-muted group"
-              >
-                <Paperclip
-                  size={12}
-                  className="text-muted-foreground flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-foreground truncate">
-                    {typeof attachment === "string"
-                      ? attachment
-                      : attachment.name}
-                  </div>
-                  {attachment.size && (
-                    <div className="text-xs text-muted-foreground">
-                      {(attachment.size / 1024).toFixed(1)} KB
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {attachment.url && (
-                    <>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(attachment.url, "_blank");
-                        }}
-                        className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-accent"
-                        title="Open"
-                      >
-                        <ExternalLink size={12} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(
-                            attachment.url,
-                            attachment.name || "download",
-                          );
-                        }}
-                        className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-accent"
-                        title="Download"
-                      >
-                        <Download size={12} />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveAttachment(index);
-                    }}
-                    className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-accent"
-                    title="Remove"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground text-center py-4">
-            No attachments yet. Click "Add Files" to upload.
-          </p>
-        )}
-      </div>
+      {/* Attachments — canonical Redux-backed panel (durable file_id via associations) */}
+      <TaskAttachmentsPanel taskId={task.id} />
     </div>
   );
 
