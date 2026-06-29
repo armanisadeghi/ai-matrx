@@ -28,7 +28,7 @@ export async function fetchSystemPrompts(
 ) {
   const supabase = createClient();
 
-  let query = supabase.from("system_prompts").select("*");
+  let query = supabase.schema("graveyard").from("system_prompts").select("*");
 
   // Apply filters
   if (options.placement_type) {
@@ -61,7 +61,11 @@ export async function fetchSystemPrompts(
 
   if (options.search) {
     query = query.or(
-      buildSearchOr(options.search, ["name", "description", "system_prompt_id"]),
+      buildSearchOr(options.search, [
+        "name",
+        "description",
+        "system_prompt_id",
+      ]),
     );
   }
 
@@ -87,6 +91,7 @@ export async function fetchSystemPromptById(id: string) {
   const supabase = createClient();
 
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .select("*")
     .eq("id", id)
@@ -107,6 +112,7 @@ export async function fetchSystemPromptBySystemId(systemPromptId: string) {
   const supabase = createClient();
 
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .select("*")
     .eq("system_prompt_id", systemPromptId)
@@ -173,6 +179,7 @@ export async function createSystemPrompt(input: CreateSystemPromptInput) {
 
   const userId = requireUserId();
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .insert({
       system_prompt_id: input.system_prompt_id,
@@ -249,6 +256,7 @@ export async function updateSystemPrompt(
   if (input.metadata !== undefined) updateData.metadata = input.metadata;
 
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .update(updateData)
     .eq("id", id)
@@ -274,6 +282,7 @@ export async function publishSystemPromptUpdate(
 
   const userId = requireUserId();
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .update({
       prompt_snapshot: input.prompt_snapshot,
@@ -300,7 +309,11 @@ export async function publishSystemPromptUpdate(
 export async function deleteSystemPrompt(id: string) {
   const supabase = createClient();
 
-  const { error } = await supabase.from("system_prompts").delete().eq("id", id);
+  const { error } = await supabase
+    .schema("graveyard")
+    .from("system_prompts")
+    .delete()
+    .eq("id", id);
 
   if (error) {
     console.error("Error deleting system prompt:", error);
@@ -325,16 +338,19 @@ export async function trackSystemPromptExecution(
 
   const userId = requireUserId();
 
-  const { error } = await supabase.from("system_prompt_executions").insert({
-    system_prompt_id: systemPromptId,
-    user_id: userId,
-    trigger_type: triggerType,
-    variables_used: variablesUsed,
-    success,
-    error_message: errorMessage || null,
-    execution_time_ms: executionTimeMs || null,
-    metadata: {},
-  });
+  const { error } = await supabase
+    .schema("graveyard")
+    .from("system_prompt_executions")
+    .insert({
+      system_prompt_id: systemPromptId,
+      user_id: userId,
+      trigger_type: triggerType,
+      variables_used: variablesUsed,
+      success,
+      error_message: errorMessage || null,
+      execution_time_ms: executionTimeMs || null,
+      metadata: {},
+    });
 
   if (error) {
     console.error("Error tracking system prompt execution:", error);
@@ -349,6 +365,7 @@ export async function getSystemPromptCategories() {
   const supabase = createClient();
 
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompts")
     .select("category")
     .eq("is_active", true);
@@ -370,6 +387,7 @@ export async function getSystemPromptStats(id: string) {
   const supabase = createClient();
 
   const { data, error } = await supabase
+    .schema("graveyard")
     .from("system_prompt_executions")
     .select("success, execution_time_ms, created_at")
     .eq("system_prompt_id", id);

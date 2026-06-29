@@ -1,0 +1,200 @@
+# Dependency Upgrade Initiative — Master Tracker
+
+> **Single source of truth** for the 2026 dependency modernization of `matrx-frontend`.
+> Every bump, every decision, every rule Arman set, and every research handoff lives here.
+> Update this file in the **same change** as any dependency work. Stale rows here = mixed-up pushes.
+
+**Owner:** Arman (he pushes to `main`; the agent prepares each step and hands it back ready).
+**Started:** 2026-06-29
+**Status:** Phase A in progress.
+
+---
+
+## 0. The Rules (Arman's directives — non-negotiable)
+
+These govern *every* step of this initiative. Read before touching anything.
+
+| # | Rule |
+|---|------|
+| R1 | **One step at a time, done correctly.** Get a step fully ready, hand it to Arman, he pushes. Never bundle unrelated upgrades into one commit. |
+| R2 | **Targeted commits only.** Each phase/major is its own isolated, reviewable commit so nothing gets mixed with other agents' work. Coordinate timing of the push so we don't collide with parallel agents. |
+| R3 | **Bleeding edge, but only what's actually shippable.** Always go to the latest *stable* version available on our platform (Vercel build images cap Node at 24.x — see Node row). |
+| R4 | **Update ≠ done. Maximize.** For anything we bump, we must discover *what new capabilities the new version unlocks* and put them to use. Updating without adopting new features is a waste. |
+| R5 | **Research-agent-driven.** Every non-trivial update must be backed by a research agent's findings of the **exact** new features/changes in the target version. We adopt their latest-and-greatest patterns, not guesses. Findings live in `docs/upgrades/research/<package>.md`. |
+| R6 | **Core upgrades, we do ourselves.** Research agents produce the discovery/adoption docs; Arman + the lead agent perform the actual core upgrades (TS, Supabase, Groq, lucide, etc.). Routine devs execute the long-tail later from those docs. |
+| R7 | **TypeScript is priority #1.** Bump TS, confirm 100% green, *then* tighten types to a standard strict setup. Strictness changes happen ONLY after the bump is proven clean. |
+| R8 | **"Separate breaking surfaces" gate.** For any breaking major in the long-tail list, before touching it: (a) confirm Arman actually cares about it, (b) identify the concrete route/feature that uses it, (c) Arman reviews that route **before and after** the update. No blind bumps. |
+| R9 | **We only care about the AI SDKs we use.** Groq is the only LLM SDK actually used → upgrade with care. `ai` / `@ai-sdk/*` / `@anthropic-ai/sdk` / `openai` are not in our hot path → do not prioritize. |
+| R10 | **Verify before handoff.** Every prepared step must pass `pnpm install --frozen-lockfile`, `pnpm type-check`, and a build (or targeted build) before it's declared ready. Capture and triage all warnings. |
+
+---
+
+## 1. Goals
+
+1. Get off deprecated runtimes/tooling (Node 20 → 24, pnpm lockfile sync). ✅ shipped.
+2. Bring the **core framework** (Next, React, TS, Tailwind) to latest stable and *adopt* the new features each unlocks.
+3. Tighten TypeScript to a clean, standard strict config (after the TS bump is proven green).
+4. Upgrade the dependencies **we actually use** (Supabase, Groq, lucide) deliberately, with feature adoption.
+5. Leave a paper trail (this dir) so the long-tail majors can be executed safely later by any dev.
+
+---
+
+## 2. Phase plan
+
+| Phase | Scope | Risk | Status |
+|-------|-------|------|--------|
+| **0** | Lockfile sync + Node 24 (`engines.node`) | low | ✅ Shipped (Arman pushed) |
+| **A** | Safe patch/minor sweep — everything within its current major | low | ✅ Ready for Arman to push (0 type errors) |
+| **B** | TypeScript 6 bump → then strictness pass (R7) | high | ⬜ Not started (priority #1 after A) |
+| **C** | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | med-high | ⬜ Not started |
+| **D** | Groq SDK 0.37 → 1.x | med | ⬜ Not started |
+| **E** | lucide-react 0.x → 1.x (+ document advantages) | med | ⬜ Not started |
+| **F** | Long-tail majors — only the ones Arman flags, gated by R8 | varies | ⬜ Backlog |
+
+---
+
+## 3. Phase 0 — Runtime & lockfile (DONE)
+
+| Item | Before | After | Notes |
+|------|--------|-------|-------|
+| `pnpm-lock.yaml` sync | drifted (stale `simple-git-hooks`) | in sync | Fixed `ERR_PNPM_OUTDATED_LOCKFILE`; frozen install passes. |
+| Node version | 20.x (deprecated by Vercel 2026-10-01) | `engines.node: "24.x"` | 24.x is the max LTS on Vercel build images. Node 25 (local) not offered by Vercel. |
+| Vercel dashboard Node | 20.x | **TODO: confirm set to 24.x** | `engines.node` overrides, but align the dashboard too. |
+
+**Build status:** ✅ Vercel build succeeded after Phase 0. Warnings/minor errors observed — see §6.
+
+---
+
+## 4. Phase A — Safe sweep (patch/minor within current major)
+
+**Mechanism:** explicit allowlist via `pnpm update --latest <pkg>…`. We do NOT run a blanket `pnpm update --latest` because dozens of deps are specced `"latest"` and a blanket run would drag in every breaking major (TS 6, AI SDK 7, ESLint 10, lucide 1.0…). Targeted list only.
+
+> Status legend: ⬜ pending · 🟡 in progress · ✅ done · ⛔ excluded (handled in a later phase)
+
+### Core framework (safe — these are the "latest Next/React" the constitution asks for)
+| Package | From | To | Notes |
+|---|---|---|---|
+| `next` | 16.2.0 | 16.2.9 | patch |
+| `eslint-config-next` | 16.2.0 | 16.2.9 | patch |
+| `react` / `react-dom` | 19.2.4 | 19.2.7 | patch |
+| `@types/react` / `@types/react-dom` | 19.2.14 | 19.2.17 | patch |
+| `react-konva` | 19.2.3 | 19.2.5 | patch |
+| `tailwindcss` | 4.2.1 | 4.3.2 | minor — pinned exact, edited in package.json |
+| `@tailwindcss/postcss` | 4.2.2 | 4.3.2 | minor |
+| `@tailwindcss/typography` | 0.5.19 | 0.5.20 | patch |
+
+### State / data / query
+`@reduxjs/toolkit` 2.11→2.12 · `react-redux` 9.2→9.3 · `@tanstack/react-query` 5.91→5.101 · `@tanstack/react-query-devtools` · `@tanstack/react-virtual` 3.13→3.14 · `@xyflow/react` 12.10→12.11 · `zustand` 5.0.12→5.0.14 · `zod` 4.3→4.4
+
+> ⚠️ **`@supabase/supabase-js` was PULLED OUT of Phase A.** Bumping 2.99.2 → 2.108.2 introduced **34 `RejectExcessProperties` TS errors** on `.insert()`/`.update()` call sites (new stricter insert/update typing). It is now **pinned exact at `2.99.2`** to hold it down (caret would float it back up) and moved to **Phase C** for deliberate handling. The `supabase` CLI dev-tool floated to 2.108.0 (harmless — not in the bundle, doesn't affect types).
+
+### Radix UI (all minor/patch, safe)
+all `@radix-ui/react-*` to latest 1.x/2.x within current major.
+
+### UI / util / misc (minor/patch)
+`motion` · `recharts` 3.8→3.9 · `mermaid` 11.15→11.16 · `@mermaid-js/layout-elk` · `date-fns` 4.1→4.4 · `react-hook-form` 7.71→7.80 · `@hookform/resolvers` 5.2→5.4 · `react-resizable-panels` 4.7→4.12 (within v4; see skill `react-resizable-panels-v4`) · `react-colorful` · `styled-components` 6.4.1→6.4.3 · `tailwind-merge` 3.5→3.6 · `@tabler/icons-react` · `@slack/web-api` · `@upstash/redis` · `libphonenumber-js` · `lodash` · `papaparse` · `dexie` · `canvas` · `web-vitals` · `ajv` · `cron-parser` · `@react-three/fiber` 9.5→9.6 · `three`/`@types/three` 0.183→0.185 (0.x — flagged) · `@fingerprintjs/fingerprintjs` · `@deepgram/sdk` 5.0→5.5 · `@codemirror/{lint,state,view}` · `@uiw/react-codemirror` · `@univerjs/*` 0.25.0→0.25.1 · `@react-email/render` · `@react-oauth/google` · `@mynaui/icons-react` · `openai` 6.32→6.45 (within v6) · `redux-saga` 1.4→1.5 · `resend` 6.9→6.16
+
+### Dev tooling (minor/patch)
+`jest` 30.2→30.4 · `jest-environment-jsdom` · `ts-jest` 29.4.6→29.4.11 · `tsx` 4.21→4.22 · `dotenv` · `postcss` · `autoprefixer` · `esbuild` 0.28.0→0.28.1
+
+### ⛔ Explicitly EXCLUDED from Phase A (handled later / breaking majors)
+| Package | From | To | Why excluded | Phase |
+|---|---|---|---|---|
+| `typescript` | 5.9.3 | 6.0.3 | major; priority + strictness work | B |
+| `@supabase/supabase-js` | 2.99.2 (pinned exact) | 2.108.2 | 34 `RejectExcessProperties` type errors; pinned to hold | C |
+| `@supabase/ssr` | 0.9.0 | 0.12.0 | auth/cookie surface, sensitive | C |
+| `groq-sdk` | 0.37.0 | 1.3.0 | major; the SDK we actually use | D |
+| `lucide-react` | 0.577 | 1.22.0 | 1.0 major; document advantages | E |
+| `eslint` | 9.39.4 | 10.6.0 | major; flat-config/rule churn | F |
+| `ai` | 6.0.116 | 7.0.4 | unused hot path (R9) | skip |
+| `@ai-sdk/google` | 3.0.43 | 4.0.2 | unused (R9) | skip |
+| `@anthropic-ai/sdk` | 0.78 | 0.107 | unused (R9) | skip |
+| `@babel/standalone` | 7 | 8 | major | F |
+| `@cartesia/cartesia-js` | 2 | 3 | major | F |
+| `@tsparticles/*` | 3 | 4 | major | F |
+| `jspdf` | 3 | 4 | major | F |
+| `react-day-picker` | 9 | 10 | major | F |
+| `react-easy-crop` | 5 | 6 | major | F |
+| `redis` | 5 | 6 | major | F |
+| `twilio` | 5 | 6 | major | F |
+| `unsplash-js` | 7 | 8 | major | F |
+| `uuid` | 13 | 14 | major | F |
+| `format-duration` | 3 | 4 | major | F |
+| `jsdom` | 28 | 29 | major (dev) | F |
+| `lint-staged` | 15 | 17 | major (dev) | F |
+| `react-email` | 5 | 6 | major (dev) | F |
+| `@types/node` | 25 | 26 | major; tie to Node work | F |
+| `katex` | 0.16.38 | 0.17.0 | 0.x minor can break | F |
+| `@types/uuid` | 11 | deprecated | remove (uuid ships own types) | F-cleanup |
+| `@react-email/components` | 1.0.8 | 1.0.12 (deprecated) | deprecated upstream | F-cleanup |
+
+---
+
+## 5. Major-version queue (priority order, per Arman)
+
+| Pri | Package | Cares? | Research doc | Route(s) to review (R8) | Status |
+|----|---------|--------|--------------|--------------------------|--------|
+| 1 | **TypeScript 6** | ✅ yes | `research/typescript-6.md` ✅ | whole repo `pnpm type-check` | ⬜ ready — tiny bump (3 config lines) + staged strict plan |
+| 2 | **Supabase** (`supabase-js`, `ssr`) | ✅ yes | `research/supabase.md` ✅ | login/logout, multi-tab refresh, RLS reads/writes | ⬜ ready — fix 34 errors via `TablesInsert`/`TablesUpdate`; co-bump ssr |
+| 3 | **Groq SDK** | ✅ yes (only LLM SDK we use) | `research/groq.md` ✅ | `/transcripts/new` + studio audio import, `/transcripts/admin` (transcribe), TTS read-aloud (`/api/audio/text-to-speech`), `/demos/general/voice/voice-assistant*`, `/demos/general/voice/debate-assistant` | ⬜ ready — low risk (~15-30 min), 8 server files |
+| 4 | **lucide-react 1.0** | ✅ wants the advantages | `research/lucide-react.md` ✅ | app-wide icons; ~25 brand-icon files | ⬜ ready — only breakage = removed brand icons |
+| — | `ai`, `@ai-sdk/*`, `@anthropic-ai/sdk`, `openai` | ❌ unused | — | — | skip |
+| — | other long-tail majors | ❓ TBD per R8 | on request | TBD | backlog |
+
+**TypeScript special handling (R7) — informed by `research/typescript-6.md`:**
+
+TS 6.0 (GA 2026-03-23) is the final JS-based release / bridge to the Go-native 7.0. Good news: because we set `strict:false` **explicitly**, 6.0's new `strict:true` default does NOT silently switch on. The bump itself only trips **3 config lines**:
+- `baseUrl` — deprecated outright
+- `alwaysStrict: false` — no longer allowed to be false
+- the `ts-node` block's `moduleResolution: node`
+
+`"ignoreDeprecations": "6.0"` makes it green immediately; fixing those three lets us drop that escape hatch.
+
+**Mandatory co-bumps (one install, avoids ERESOLVE):** `typescript@6.0.3`, `typescript-eslint@>=8.58.0` (≤8.57 pins `typescript <6.0.0`), `ts-jest@>=29.4.7`. `tsx`/`ts-node`/`@types/node`/Next 16 plugin/react-compiler are version-tolerant.
+
+**Steps:**
+1. Co-bump TS + the three tools above; fix the 3 config lines; `pnpm type-check` + build → 100% green.
+2. **Only then**, tighten toward standard strict, **one flag per PR**, lowest→highest blast radius:
+   `forceConsistentCasingInFileNames` → `alwaysStrict` → `noImplicitThis` → `strictBindCallApply` → `strictFunctionTypes` → `noImplicitAny` (split by directory) → **`strictNullChecks`** (the big one — its own multi-PR effort) → `strictPropertyInitialization` → `useUnknownInCatchVariables` → flip umbrella `strict:true`.
+   Measure each: `tsc --noEmit --<flag> 2>&1 | grep -c "error TS"`.
+
+---
+
+## 6. Build warnings / minor errors (post-Phase-0 successful build)
+
+> Captured during local verification builds. Each gets a row; resolve or consciously accept.
+
+Captured from a local `pnpm build` (Next 16.2.9, Turbopack, `MATRX_PROFILE=core`) after Phase A. Build **succeeded**. None of these were introduced by Phase A — all pre-existing.
+
+| # | Warning | Source | Severity | Action | Status |
+|---|---------|--------|----------|--------|--------|
+| W1 | **Turbopack: "file pattern matches 19810 files… overly broad patterns can lead to build performance issues and over-bundling"** (3 warnings) | `app/(admin)/admin/docs/[[...path]]/page.tsx:53-55` (`path.resolve(process.env.MATRX_DOCS_ROOT ?? process.cwd(), …)`) and `:63` (`readFile(fullPath)`) — the dynamic `cwd()` path makes Turbopack trace the whole project tree. | low (admin-only route; build-perf, not correctness) | Make the docs root a literal/statically-known base or guard the dynamic read so Turbopack doesn't trace the project root. Admin-only, so low priority. | ⬜ |
+| W2 | **"Using edge runtime on a page currently disables static generation for that page"** | a page exporting `runtime = 'edge'` | info | Per Vercel 2026 guidance, edge runtime is no longer recommended — prefer Fluid Compute (Node). Audit which page sets edge runtime and consider removing it. | ⬜ |
+| W3 | **"Please use the `legacy` build in Node.js environments."** | a 3rd-party lib emitting during static generation (likely a PDF/canvas/katex-style package picking the browser build under Node) | low | Identify the emitting package and import its `legacy`/node entry where used server-side. Cosmetic. | ⬜ |
+
+---
+
+## 7. Research handoffs (R5)
+
+Per-package deep-dives produced by research agents. Each doc must contain: exact version delta, breaking changes, **new features we should adopt**, concrete migration steps, and code-level adoption notes for this repo.
+
+| Doc | Package | Produced by | Status |
+|-----|---------|-------------|--------|
+| `research/typescript-6.md` | TypeScript 6.0 | research agent | ✅ done — bump is tiny on strict:false (3 config lines); staged strict-flag plan delivered |
+| `research/supabase.md` | supabase-js 2.108 + ssr 0.12 (incl. RejectExcessProperties fix) | research agent | ✅ done — fix: type payloads to `TablesInsert`/`TablesUpdate` (introduced 2.102.0) |
+| `research/groq.md` | groq-sdk 1.x | research agent | ✅ 2026-06-29 |
+| `research/lucide-react.md` | lucide-react 1.x | research agent | ✅ done — low risk; only breakage = removed brand icons (~25 files); adopt `<DynamicIcon>` |
+| `research/next-react-tailwind.md` | Next 16.2 / React 19.2 / Tailwind 4.3 new features | research agent | ✅ done — re-enable React Compiler, pilot Cache Components/PPR, `<Activity>`, `<ViewTransition>`, container queries |
+
+---
+
+## 8. Change log
+
+| Date | Change | By |
+|------|--------|-----|
+| 2026-06-29 | Phase 0 shipped: lockfile resync + `engines.node: 24.x`. | agent + Arman |
+| 2026-06-29 | Created this tracker; began Phase A safe sweep. | agent |
+| 2026-06-29 | Phase D research delivered (`research/groq.md`): groq-sdk IS used in 8 server-side TS files; 1.0 is a plumbing major, low risk for us. | Groq research agent |
+| 2026-06-29 | Phase A swept (Next 16.2.9, React 19.2.7, Tailwind 4.3.2, Radix, RTK, TanStack, etc.); `pnpm type-check` = 0 errors, frozen install passes. | agent |
+| 2026-06-29 | `@supabase/supabase-js` pulled from A → C (34 RejectExcessProperties type errors); pinned exact 2.99.2. | agent |
+| 2026-06-29 | Launched 5 research agents (TS6, Supabase, Groq, lucide, Next/React/Tailwind). | agent |
