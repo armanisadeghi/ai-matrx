@@ -435,6 +435,12 @@ export const contextService = {
       status_updated_at: _sua,
       current_text_value: _cv,
       value_last_updated: _vl,
+      // Computed/read-only columns — not part of the Insert type; writing them
+      // is a phantom-column error (surfaced once `this`-inference tightens).
+      char_count: _cc,
+      data_point_count: _dpc,
+      has_nested_objects: _hno,
+      json_keys: _jk,
       ...rest
     } = original;
 

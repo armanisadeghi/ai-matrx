@@ -58,14 +58,15 @@
     "strictNullChecks": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
     "allowUnreachableCode": false,
     "noErrorTruncation": true,
     "strictFunctionTypes": false,
-    "strictBindCallApply": false,
     "strictPropertyInitialization": false,
-    "noImplicitThis": false,
-    "forceConsistentCasingInFileNames": false
+    "forceConsistentCasingInFileNames": false,
+    "strictBindCallApply": true,
+    "alwaysStrict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitThis": true
   },
   "include": [
     "**/*.ts",

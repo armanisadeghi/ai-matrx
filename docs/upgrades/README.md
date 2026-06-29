@@ -46,7 +46,7 @@ These govern *every* step of this initiative. Read before touching anything.
 | **0** | Lockfile sync + Node 24 (`engines.node`) | low | ✅ Shipped (Arman pushed) |
 | **A** | Safe patch/minor sweep — everything within its current major | low | ✅ Ready for Arman to push (0 type errors) |
 | **B1** | TypeScript 6 bump — **version only, no strictness** (apples-to-apples) | low | ✅ Shipped (commit `7faeafff8`) |
-| **B2** | TypeScript strictness pass (staged, one flag per PR) | high | ⬜ LAST — after all core bumps land |
+| **B2** | TypeScript strictness pass (staged, one flag at a time, fewest-errors-first) | high | 🟡 **In progress** — measured all flags (`pnpm measure:strict`); **Wave 0 landed** (`strictBindCallApply`/`alwaysStrict`/`noFallthroughCasesInSwitch`/`noImplicitThis`, type-check 0). Waves 1→6 + Track A (ratchet/JSON) queued — see §5 staged plan |
 | **C** | Supabase (`@supabase/supabase-js` 2.108.2, `@supabase/ssr` 0.12.0) | med-high | ✅ Shipped (commit `736ee6962`) — runtime auth QA pending |
 | **D** | Groq SDK 0.37 → 1.x | med | ⬜ Not started |
 | **E** | lucide-react 0.577 → 1.22.0 (+ document advantages) | med | 🟡 **Phase E** — bumped `^1.22.0`; 37 type errors (all removed brand icons) fixed via shim; type-check 0, build verifying → push |
@@ -157,9 +157,30 @@ TS 6.0 (GA 2026-03-23) is the final JS-based release / bridge to the Go-native 7
 
 **Steps:**
 1. Co-bump TS + the three tools above; fix the 3 config lines; `pnpm type-check` + build → 100% green.
-2. **Only then**, tighten toward standard strict, **one flag per PR**, lowest→highest blast radius:
-   `forceConsistentCasingInFileNames` → `alwaysStrict` → `noImplicitThis` → `strictBindCallApply` → `strictFunctionTypes` → `noImplicitAny` (split by directory) → **`strictNullChecks`** (the big one — its own multi-PR effort) → `strictPropertyInitialization` → `useUnknownInCatchVariables` → flip umbrella `strict:true`.
-   Measure each: `tsc --noEmit --<flag> 2>&1 | grep -c "error TS"`.
+2. **Only then**, tighten toward standard strict, **one flag at a time, fewest-errors-first** (Arman's directive 2026-06-29). Don't guess the order — **measure it**: `pnpm measure:strict` flips each candidate flag in isolation, counts the errors it surfaces, tallies by error code, and writes the full per-flag list to `type-errors/<flag>.txt`.
+
+   **Measured baseline (2026-06-29, on `tsconfig.typecheck.json` include set — excludes `(transitional)`/`(dev)`/`applet` per Arman):**
+
+   | Wave | Errors | Files | Flag | Dominant codes |
+   |---|---|---|---|---|
+   | **0** | 0 | 0 | `strictBindCallApply` | — |
+   | **0** | 0 | 0 | `alwaysStrict` | — |
+   | **0** | 0 | 0 | `noFallthroughCasesInSwitch` | — |
+   | **0** | 1 | 1 | `noImplicitThis` | TS2345 (was a phantom-column Supabase bug in `contextService.duplicateItem` — fixed) |
+   | 1 | 28 | 18 | `useUnknownInCatchVariables` | TS2339 (`catch (e)` → `e.message`) |
+   | 2 | 54 | 26 | `noImplicitOverride` | TS4114 (add `override`) |
+   | 3 | 579 | 404 | `noImplicitReturns` | TS7030 |
+   | 4 | 822 | 314 | `strictFunctionTypes` | TS2769 (overloads) |
+   | 5 | 1346 | 388 | **`strictNullChecks`** | TS2322/2339/2345/18047 |
+   | 6 | 1420 | 363 | `noImplicitAny` | TS7006/7031/7053 |
+   | — | — | — | `strictPropertyInitialization` | rides with `strictNullChecks` (config-dependent) |
+
+   **Deliberately NOT used as tsc flags** (Arman: not adding these; soon out of the build): `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`. The two unused-symbol flags (`noUnusedLocals` 2298, `noUnusedParameters` 483) are **TS6133 noise** with no bug value and no `_`-ignore convention support — enforce via ESLint `@typescript-eslint/no-unused-vars` (`argsIgnorePattern: '^_'`), NOT the tsc flags.
+
+3. **Anti-cheating + anti-laziness system (Track A — runs alongside the waves).** The escape hatches agents use to dodge the type system are the real target. Baseline (whole repo, tracked): `: any` 1529 / `as unknown as` 715 (many legit, DB-guarded) / `as any` 342 / `<any>` 186 / `Record<string,any>` 243 / `@ts-ignore` 53 / `@ts-nocheck` 22 / `@ts-expect-error` 6.
+   - **Inline signal:** add `typescript-eslint` and wire `no-explicit-any`, `ban-ts-comment`, `no-non-null-assertion`, `no-unnecessary-type-assertion`, + a `no-restricted-syntax` selector for the **un-guarded** `as unknown as` double-cast — all at `warn`, so they surface inline in-editor (agents fix in the moment) and, via `lint-staged --max-warnings 0`, hard-block any commit touching a file with one.
+   - **Ratchet:** extend `check-doctrine.ts` (it already detects `as any`/`as unknown as`/new type decls on the diff) into a baseline freeze — `:strict` fails CI on any *growth*. Scoped wave-fixing via `pnpm fix:hatches <path>` / `pnpm export:type-errors <path>`. When a category's baseline hits 0, flip its rule `warn → error` and delete it from the ratchet (the ratchet is temporary scaffolding toward the full flip).
+   - **Unified JSON system (kills the #1 `as unknown as` cause):** TS rejects `Json` where a concrete type is expected, so agents lazily cast the *whole row* to `unknown`. The honest fix narrows *only* the JSON field: finish `JsonToUnknown<T>` (keeps real columns typed, only `Json`→`unknown`) + a canonical `JsonObject`/`JsonValue` "accept it's an object" type + a single-field narrow helper, documented in the `supabase-type-safety` skill. The lint allows these + the DB-guarded `as unknown as T`; it only flags the lazy whole-object cast.
 
 **Supabase special handling (Phase C) — informed by `research/supabase.md`:**
 
@@ -224,7 +245,8 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 | 2026-06-29 | `@supabase/supabase-js` pulled from A → C (34 RejectExcessProperties type errors); pinned exact 2.99.2. | agent |
 | 2026-06-29 | Launched 5 research agents (TS6, Supabase, Groq, lucide, Next/React/Tailwind). | agent |
 | 2026-06-29 | All 5 research docs delivered under `research/`. | agent |
-| 2026-06-29 | Agreed: TS in two waves (version first, strictness last); execution order TS→Supabase→Groq→lucide→strictness. | Arman + agent |
+| 2026-06-29 | **Phase B2 kickoff (strictness)**: built `pnpm measure:strict` (`scripts/measure-strict-flags.ts`) — flips each candidate flag in isolation, counts/tallies errors, writes `type-errors/<flag>.txt`. Measured ranked baseline (see §5). Arman's directive: flip one-by-one, **fewest-errors-first**; build the anti-cheat ratchet + unified JSON system alongside; do NOT add `noUncheckedIndexedAccess`/`exactOptionalPropertyTypes`/`noPropertyAccessFromIndexSignature`; unused-symbol flags via ESLint not tsc. | Arman + agent |
+| 2026-06-29 | **Phase B2 Wave 0**: flipped `strictBindCallApply`, `alwaysStrict`, `noFallthroughCasesInSwitch`, `noImplicitThis` in `tsconfig.json` (three zero-error, one one-error). The lone `noImplicitThis` error was a real phantom-column Supabase bug — `contextService.duplicateItem` spread 4 computed/read-only columns (`char_count`/`data_point_count`/`has_nested_objects`/`json_keys`) into `.insert()`; fixed by destructuring them out (same class as the Phase C `authenticated_read` fix). `pnpm type-check` = 0. | agent |
 | 2026-06-29 | **Phase B1**: TypeScript 5.9.3 → 6.0.3 (pinned exact). Removed `baseUrl` (paths now tsconfig-relative; `/*`→`./public/*`) + `alwaysStrict:false`; scoped `ignoreDeprecations:"6.0"` + `rootDir:"."` to the `ts-node` block (CJS runtime needs `baseUrl`/`node` resolution). `type-check` = 0 errors; `ts-node` generate-manifest OK. No strictness change. | agent |
 | 2026-06-29 | **Phase E**: `lucide-react` 0.577.0→^1.22.0 (first stable major; ~32% smaller, stable SemVer, `aria-hidden` default). Only breakage = removed brand icons: 37 type errors across 30 files for `Youtube`/`Github`/`Twitter`/`Facebook`/`Linkedin`/`Instagram`/`Chrome`. Re-homed them in a new drop-in shim `components/icons/brand-icons.tsx` (react-icons FA6 brands wrapped as `LucideIcon`-compatible components) — consumers only swapped import source, so `LucideIcon`-typed registries kept compiling. type-check 0, build green. Deferred (separate, optional): official `<DynamicIcon>` adoption in `IconResolver`, `<LucideProvider>` defaults, alias cleanup (`CheckCircle`→`CircleCheck` — still valid aliases in 1.x). **Watch-item:** DB-stored brand icon-name strings (e.g. `"Youtube"`) resolved at runtime via namespace lookup will fall back to a default — audit if any exist. | agent |
 | 2026-06-29 | Auth QA passed (login/logout/refresh) post-Phase-C — Arman confirmed. | Arman |

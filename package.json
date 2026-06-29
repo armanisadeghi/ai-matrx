@@ -11,6 +11,7 @@
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && bash scripts/fix-encoding.sh && next build",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit -p tsconfig.typecheck.json",
+    "measure:strict": "tsx scripts/measure-strict-flags.ts",
     "start": "next start",
     "lint": "eslint .",
     "gate:tools": "tsx scripts/check-tool-db-drift.ts",
