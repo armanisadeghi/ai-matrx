@@ -58,7 +58,7 @@ export const GENERIC_ADAPTER: ArtifactPersistenceAdapter = {
     ),
 };
 
-import { FLASHCARDS_ADAPTER } from "./flashcards-adapter";
+import { FLASHCARDS_CANONICAL_ADAPTER } from "./flashcards-canonical-adapter";
 import { QUIZ_ADAPTER } from "./quiz-adapter";
 import { HTML_ADAPTER } from "./html-adapter";
 
@@ -71,13 +71,10 @@ import { HTML_ADAPTER } from "./html-adapter";
 /** adapter key → adapter. */
 export const ADAPTERS: Record<string, ArtifactPersistenceAdapter> = {
   generic: GENERIC_ADAPTER,
-  // NOTE: the canonical education.fc_* adapter
-  // (./flashcards-canonical-adapter.ts, FLASHCARDS_CANONICAL_ADAPTER) is built
-  // and ready, but the registry swap is deferred until the canvas
-  // CanvasFlashcardsView reads fc_set (else newly-materialized sets won't
-  // render in canvas). Swap `flashcards` → FLASHCARDS_CANONICAL_ADAPTER together
-  // with that view change.
-  flashcards: FLASHCARDS_ADAPTER,
+  // Canonical education.fc_* adapter: materialize → fc_set + fc_card rows +
+  // member edges, linked via external_system='fc_set'. CanvasFlashcardsView
+  // reads that link and studies it through the shared study spine.
+  flashcards: FLASHCARDS_CANONICAL_ADAPTER,
   quiz: QUIZ_ADAPTER,
   html: HTML_ADAPTER,
 };
