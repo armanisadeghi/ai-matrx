@@ -30,25 +30,25 @@ import { join } from "node:path";
 // Candidate flags, grouped. `needs` documents flags that only bite when another
 // is also on (TS only reports them in combination) — measured anyway, annotated.
 const CANDIDATES: { flag: string; group: string; needs?: string }[] = [
-    // `strict` family — measured individually
-    { flag: "noImplicitAny", group: "strict-family" },
-    { flag: "strictNullChecks", group: "strict-family" },
-    { flag: "strictFunctionTypes", group: "strict-family" },
-    { flag: "strictBindCallApply", group: "strict-family" },
-    { flag: "noImplicitThis", group: "strict-family" },
-    { flag: "useUnknownInCatchVariables", group: "strict-family" },
-    { flag: "alwaysStrict", group: "strict-family" },
-    {
-        flag: "strictPropertyInitialization",
-        group: "strict-family",
-        needs: "strictNullChecks",
-    },
-    // Quality flags — not part of `strict`
-    { flag: "noImplicitReturns", group: "quality" },
-    { flag: "noFallthroughCasesInSwitch", group: "quality" },
-    { flag: "noImplicitOverride", group: "quality" },
-    { flag: "noUnusedLocals", group: "quality" },
-    { flag: "noUnusedParameters", group: "quality" },
+  // `strict` family — measured individually
+  { flag: "noImplicitAny", group: "strict-family" },
+  { flag: "strictNullChecks", group: "strict-family" },
+  { flag: "strictFunctionTypes", group: "strict-family" },
+  { flag: "strictBindCallApply", group: "strict-family" },
+  { flag: "noImplicitThis", group: "strict-family" },
+  { flag: "useUnknownInCatchVariables", group: "strict-family" },
+  { flag: "alwaysStrict", group: "strict-family" },
+  {
+    flag: "strictPropertyInitialization",
+    group: "strict-family",
+    needs: "strictNullChecks",
+  },
+  // Quality flags — not part of `strict`
+  { flag: "noImplicitReturns", group: "quality" },
+  { flag: "noFallthroughCasesInSwitch", group: "quality" },
+  { flag: "noImplicitOverride", group: "quality" },
+  { flag: "noUnusedLocals", group: "quality" },
+  { flag: "noUnusedParameters", group: "quality" },
 ];
 
 const ROOT = process.cwd();
@@ -57,110 +57,132 @@ const TMP_CONFIG = join(ROOT, ".tsconfig.measure.tmp.json");
 const ERROR_RE = /error TS(\d+):/;
 
 interface Result {
-    flag: string;
-    group: string;
-    needs?: string;
-    errors: number;
-    files: number;
-    byCode: Record<string, number>;
+  flag: string;
+  group: string;
+  needs?: string;
+  errors: number;
+  files: number;
+  byCode: Record<string, number>;
 }
 
 function parseArgs(): { flags: string[]; json: boolean } {
-    const argv = process.argv.slice(2);
-    const json = argv.includes("--json");
-    const flags = argv.filter((a) => !a.startsWith("--"));
-    return { flags, json };
+  const argv = process.argv.slice(2);
+  const json = argv.includes("--json");
+  const flags = argv.filter((a) => !a.startsWith("--"));
+  return { flags, json };
 }
 
-function measure(flag: string): { raw: string; errors: number; files: number; byCode: Record<string, number> } {
-    writeFileSync(
-        TMP_CONFIG,
-        JSON.stringify(
-            {
-                extends: "./tsconfig.typecheck.json",
-                compilerOptions: { incremental: false, [flag]: true },
-            },
-            null,
-            2,
-        ),
+function measure(flag: string): {
+  raw: string;
+  errors: number;
+  files: number;
+  byCode: Record<string, number>;
+} {
+  writeFileSync(
+    TMP_CONFIG,
+    JSON.stringify(
+      {
+        extends: "./tsconfig.typecheck.json",
+        compilerOptions: { incremental: false, [flag]: true },
+      },
+      null,
+      2,
+    ),
+  );
+
+  let raw = "";
+  try {
+    raw = execSync(
+      `NODE_OPTIONS=--max-old-space-size=8192 npx tsc --noEmit -p ${TMP_CONFIG}`,
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        cwd: ROOT,
+        maxBuffer: 1024 * 1024 * 128,
+      },
     );
+  } catch (e: unknown) {
+    // tsc exits non-zero when there are errors — that's the expected path.
+    const err = e as { stdout?: string; stderr?: string };
+    raw = (err.stdout ?? "") + (err.stderr ?? "");
+  }
 
-    let raw = "";
-    try {
-        raw = execSync(
-            `NODE_OPTIONS=--max-old-space-size=8192 npx tsc --noEmit -p ${TMP_CONFIG}`,
-            { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], cwd: ROOT, maxBuffer: 1024 * 1024 * 128 },
-        );
-    } catch (e: unknown) {
-        // tsc exits non-zero when there are errors — that's the expected path.
-        const err = e as { stdout?: string; stderr?: string };
-        raw = (err.stdout ?? "") + (err.stderr ?? "");
-    }
-
-    const byCode: Record<string, number> = {};
-    const fileSet = new Set<string>();
-    let errors = 0;
-    for (const line of raw.split("\n")) {
-        const m = ERROR_RE.exec(line);
-        if (!m) continue;
-        errors++;
-        byCode[`TS${m[1]}`] = (byCode[`TS${m[1]}`] ?? 0) + 1;
-        const fileMatch = /^(\S+?)\(\d+,\d+\)/.exec(line);
-        if (fileMatch) fileSet.add(fileMatch[1]);
-    }
-    return { raw, errors, files: fileSet.size, byCode };
+  const byCode: Record<string, number> = {};
+  const fileSet = new Set<string>();
+  let errors = 0;
+  for (const line of raw.split("\n")) {
+    const m = ERROR_RE.exec(line);
+    if (!m) continue;
+    errors++;
+    byCode[`TS${m[1]}`] = (byCode[`TS${m[1]}`] ?? 0) + 1;
+    const fileMatch = /^(\S+?)\(\d+,\d+\)/.exec(line);
+    if (fileMatch) fileSet.add(fileMatch[1]);
+  }
+  return { raw, errors, files: fileSet.size, byCode };
 }
 
 function topCodes(byCode: Record<string, number>, n = 4): string {
-    return Object.entries(byCode)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, n)
-        .map(([code, count]) => `${code}:${count}`)
-        .join(" ");
+  return Object.entries(byCode)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([code, count]) => `${code}:${count}`)
+    .join(" ");
 }
 
 function main(): void {
-    const { flags, json } = parseArgs();
-    const targets = flags.length
-        ? CANDIDATES.filter((c) => flags.includes(c.flag))
-        : CANDIDATES;
+  const { flags, json } = parseArgs();
+  const targets = flags.length
+    ? CANDIDATES.filter((c) => flags.includes(c.flag))
+    : CANDIDATES;
 
-    if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
+  if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
 
-    const results: Result[] = [];
-    let i = 0;
-    for (const c of targets) {
-        i++;
-        process.stderr.write(`[${i}/${targets.length}] measuring ${c.flag}${c.needs ? ` (needs ${c.needs})` : ""}… `);
-        const { raw, errors, files, byCode } = measure(c.flag);
-        writeFileSync(join(OUT_DIR, `${c.flag}.txt`), raw);
-        results.push({ flag: c.flag, group: c.group, needs: c.needs, errors, files, byCode });
-        process.stderr.write(`${errors} errors across ${files} files\n`);
-    }
-
-    if (existsSync(TMP_CONFIG)) rmSync(TMP_CONFIG);
-
-    results.sort((a, b) => a.errors - b.errors);
-
-    console.log("\n=== Strictness flags ranked by error count (ascending) ===\n");
-    console.log(
-        "rank  errors  files  flag                              top error codes",
+  const results: Result[] = [];
+  let i = 0;
+  for (const c of targets) {
+    i++;
+    process.stderr.write(
+      `[${i}/${targets.length}] measuring ${c.flag}${c.needs ? ` (needs ${c.needs})` : ""}… `,
     );
-    console.log(
-        "----  ------  -----  --------------------------------  ----------------------------",
-    );
-    results.forEach((r, idx) => {
-        const note = r.needs ? ` (needs ${r.needs})` : "";
-        console.log(
-            `${String(idx + 1).padStart(4)}  ${String(r.errors).padStart(6)}  ${String(r.files).padStart(5)}  ${(r.flag + note).padEnd(32)}  ${topCodes(r.byCode)}`,
-        );
+    const { raw, errors, files, byCode } = measure(c.flag);
+    writeFileSync(join(OUT_DIR, `${c.flag}.txt`), raw);
+    results.push({
+      flag: c.flag,
+      group: c.group,
+      needs: c.needs,
+      errors,
+      files,
+      byCode,
     });
-    console.log(`\nFull per-flag error lists saved to: type-errors/<flag>.txt`);
+    process.stderr.write(`${errors} errors across ${files} files\n`);
+  }
 
-    if (json) {
-        writeFileSync(join(OUT_DIR, "_summary.json"), JSON.stringify(results, null, 2));
-        console.log(`Summary JSON: type-errors/_summary.json`);
-    }
+  if (existsSync(TMP_CONFIG)) rmSync(TMP_CONFIG);
+
+  results.sort((a, b) => a.errors - b.errors);
+
+  console.log("\n=== Strictness flags ranked by error count (ascending) ===\n");
+  console.log(
+    "rank  errors  files  flag                              top error codes",
+  );
+  console.log(
+    "----  ------  -----  --------------------------------  ----------------------------",
+  );
+  results.forEach((r, idx) => {
+    const note = r.needs ? ` (needs ${r.needs})` : "";
+    console.log(
+      `${String(idx + 1).padStart(4)}  ${String(r.errors).padStart(6)}  ${String(r.files).padStart(5)}  ${(r.flag + note).padEnd(32)}  ${topCodes(r.byCode)}`,
+    );
+  });
+  console.log(`\nFull per-flag error lists saved to: type-errors/<flag>.txt`);
+
+  if (json) {
+    writeFileSync(
+      join(OUT_DIR, "_summary.json"),
+      JSON.stringify(results, null, 2),
+    );
+    console.log(`Summary JSON: type-errors/_summary.json`);
+  }
 }
 
 main();

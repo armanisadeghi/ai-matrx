@@ -13,10 +13,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import {
-  selectMessageHasUnsavedChanges,
-  selectMessageHasHistory,
-} from "../../_legacy-stubs";
+import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "@/features/cx-chat/utils/buildContentBlocksForSave";
 import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
@@ -62,10 +59,6 @@ export function AssistantMessage({
       ? selectMessageHasUnsavedChanges(state, sessionId, message.id)
       : false,
   );
-  const hasHistory = useAppSelector((state) =>
-    sessionId ? selectMessageHasHistory(state, sessionId, message.id) : false,
-  );
-
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
   const handleFullPrint = useCallback(() => {
     captureAsPDF({ filename: `ai-response-${message.id}` });
@@ -282,7 +275,6 @@ export function AssistantMessage({
                     messageId={message.id}
                     sessionId={sessionId}
                     hasUnsavedChanges={hasUnsavedChanges}
-                    hasHistory={hasHistory}
                     isSaving={isSaving}
                     rawContent={message.rawContent as unknown[]}
                     onQuickSave={handleQuickSave}

@@ -7048,6 +7048,191 @@ export type Database = {
   }
   education: {
     Tables: {
+      fc_card: {
+        Row: {
+          back: string
+          card_kind: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          difficulty: string | null
+          dynamic_content: Json
+          front: string
+          id: string
+          lesson: string | null
+          metadata: Json
+          organization_id: string
+          personal_notes: string | null
+          topic: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          back: string
+          card_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          difficulty?: string | null
+          dynamic_content?: Json
+          front: string
+          id?: string
+          lesson?: string | null
+          metadata?: Json
+          organization_id: string
+          personal_notes?: string | null
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          back?: string
+          card_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          difficulty?: string | null
+          dynamic_content?: Json
+          front?: string
+          id?: string
+          lesson?: string | null
+          metadata?: Json
+          organization_id?: string
+          personal_notes?: string | null
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      fc_detail: {
+        Row: {
+          audio_file_id: string | null
+          card_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          generated_by: string
+          generation_status: string
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          position: number
+          text: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          audio_file_id?: string | null
+          card_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          generated_by?: string
+          generation_status?: string
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          position?: number
+          text: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          audio_file_id?: string | null
+          card_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          generated_by?: string
+          generation_status?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          text?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fc_detail_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "fc_card"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fc_set: {
+        Row: {
+          audio_overview_file_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          difficulty: string | null
+          id: string
+          lesson: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          topic: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audio_overview_file_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          lesson?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audio_overview_file_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          lesson?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          topic?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       flashcard_data: {
         Row: {
           audio_explanation: string | null
@@ -7307,6 +7492,99 @@ export type Database = {
         }
         Relationships: []
       }
+      item_mastery: {
+        Row: {
+          attempt_count: number
+          box: number | null
+          collapse_state: string
+          correct_count: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          difficulty: number | null
+          due_at: string | null
+          ease: number | null
+          id: string
+          interval_days: number | null
+          item_id: string
+          item_type: string
+          last_attempt_at: string | null
+          last_result: string | null
+          last_review: string | null
+          mastery_score: number | null
+          metadata: Json
+          organization_id: string
+          retrievability: number | null
+          stability: number | null
+          streak: number
+          struggle_flag: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attempt_count?: number
+          box?: number | null
+          collapse_state?: string
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          difficulty?: number | null
+          due_at?: string | null
+          ease?: number | null
+          id?: string
+          interval_days?: number | null
+          item_id: string
+          item_type: string
+          last_attempt_at?: string | null
+          last_result?: string | null
+          last_review?: string | null
+          mastery_score?: number | null
+          metadata?: Json
+          organization_id: string
+          retrievability?: number | null
+          stability?: number | null
+          streak?: number
+          struggle_flag?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attempt_count?: number
+          box?: number | null
+          collapse_state?: string
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          difficulty?: number | null
+          due_at?: string | null
+          ease?: number | null
+          id?: string
+          interval_days?: number | null
+          item_id?: string
+          item_type?: string
+          last_attempt_at?: string | null
+          last_result?: string | null
+          last_review?: string | null
+          mastery_score?: number | null
+          metadata?: Json
+          organization_id?: string
+          retrievability?: number | null
+          stability?: number | null
+          streak?: number
+          struggle_flag?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       math_course_structure: {
         Row: {
           course_name: string
@@ -7483,6 +7761,220 @@ export type Database = {
           visibility?: string
         }
         Relationships: []
+      }
+      study_attempt: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          graded_by: string | null
+          id: string
+          item_id: string
+          item_type: string
+          latency_ms: number | null
+          metadata: Json
+          method: string
+          organization_id: string
+          response_audio_file_id: string | null
+          response_image_file_id: string | null
+          response_kind: string | null
+          response_transcript: string | null
+          result: string | null
+          score: Json | null
+          score_value: number | null
+          session_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          graded_by?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          latency_ms?: number | null
+          metadata?: Json
+          method?: string
+          organization_id: string
+          response_audio_file_id?: string | null
+          response_image_file_id?: string | null
+          response_kind?: string | null
+          response_transcript?: string | null
+          result?: string | null
+          score?: Json | null
+          score_value?: number | null
+          session_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          graded_by?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          latency_ms?: number | null
+          metadata?: Json
+          method?: string
+          organization_id?: string
+          response_audio_file_id?: string | null
+          response_image_file_id?: string | null
+          response_kind?: string | null
+          response_transcript?: string | null
+          result?: string | null
+          score?: Json | null
+          score_value?: number | null
+          session_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_attempt_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_goal: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      study_session: {
+        Row: {
+          aggregate_score: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          session_audio_file_id: string | null
+          session_review: Json | null
+          session_transcript: string | null
+          settings: Json
+          source_kind: string | null
+          source_query: Json | null
+          source_set_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          aggregate_score?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string
+          organization_id: string
+          session_audio_file_id?: string | null
+          session_review?: Json | null
+          session_transcript?: string | null
+          settings?: Json
+          source_kind?: string | null
+          source_query?: Json | null
+          source_set_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          aggregate_score?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string
+          organization_id?: string
+          session_audio_file_id?: string | null
+          session_review?: Json | null
+          session_transcript?: string | null
+          settings?: Json
+          source_kind?: string | null
+          source_query?: Json | null
+          source_set_id?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_session_source_set_id_fkey"
+            columns: ["source_set_id"]
+            isOneToOne: false
+            referencedRelation: "fc_set"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_source_chunk: {
         Row: {

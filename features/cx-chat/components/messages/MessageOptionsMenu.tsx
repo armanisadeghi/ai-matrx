@@ -5,10 +5,7 @@ import AdvancedMenu from "@/components/official/AdvancedMenu";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectMessageActionInstance } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
-import {
-  selectMessageHasUnsavedChanges,
-  selectMessageHasHistory,
-} from "../../_legacy-stubs";
+import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
@@ -52,12 +49,6 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
         )
       : false,
   );
-  const hasHistory = useAppSelector((state) =>
-    instance?.sessionId && instance?.messageId
-      ? selectMessageHasHistory(state, instance.sessionId, instance.messageId)
-      : false,
-  );
-
   // Lazy TTS hook — does nothing until speak() is called (no eager token fetch)
   const {
     speak: cartesiaSpeak,
@@ -83,7 +74,6 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
     rawContent: instance.rawContent,
     metadata: instance.metadata,
     hasUnsavedChanges,
-    hasHistory,
     dispatch,
     onClose,
     showFullPrint,

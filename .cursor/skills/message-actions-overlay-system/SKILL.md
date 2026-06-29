@@ -54,7 +54,6 @@ import {
   openSaveToNotes,         // saveToNotes overlay
   openEmailDialog,         // emailDialog overlay
   openAuthGate,            // authGate overlay
-  openContentHistory,      // contentHistory overlay
   openFeedbackDialog,      // feedbackDialog overlay
   openShareModal,          // shareModal overlay
   openAnnouncements,       // announcements overlay

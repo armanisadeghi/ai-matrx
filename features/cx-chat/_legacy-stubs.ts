@@ -5,7 +5,6 @@
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Resource } from "@/features/agents/resources/types";
-import type { CxContentHistoryEntry } from "./types/cx-tables";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Re-export real types where canonical definitions still exist. Using the
@@ -304,18 +303,6 @@ export const selectMessageHasUnsavedChanges = (
   _sessionId?: string,
   _messageId?: string,
 ): boolean => false;
-
-export const selectMessageHasHistory = (
-  _state: unknown,
-  _sessionId?: string,
-  _messageId?: string,
-): boolean => false;
-
-export const selectMessageContentHistory = (
-  _state: unknown,
-  _sessionId?: string,
-  _messageId?: string,
-): CxContentHistoryEntry[] => EMPTY_ARRAY as CxContentHistoryEntry[];
 
 export const selectActiveChatAgent = (_state: unknown): ActiveChatAgent => ({
   promptId: undefined,

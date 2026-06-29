@@ -155,7 +155,7 @@ Attach `useOpenDiffViewerWindow()` / RichDocument Compare to these:
 `B1` file versions (`FileVersionsList`) · `B2` note version timeline (`DiffHistory`) ·
 `B3` `NoteVersionDiffPage` content-window action · `B4` agent-app version page ·
 `B5` `AgentAppVersionsContent` rows · `B6` `ContextVersionHistory` · `B7` canvas
-artifact versions · `B8` `ContentHistoryViewer` (broken stub — mirror `EditHistoryDialog`) ·
+artifact versions ·
 `B9` `UndoHistoryOverlay` rows · `B10`–`B13` RAG raw↔cleaned panes / library preview /
 detail sheet / ingest preview · `B14` git source-control rows · `B15` chunking draft↔saved ·
 `B16` data-table row JSON snapshots · `B17` transcript-studio raw↔cleaned segments ·
