@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
+import { metadataAsObject } from "@/utils/json/metadataObject";
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,7 +95,8 @@ export async function POST(request: NextRequest) {
 
     // Fetch organization details for the email
     const { data: orgData } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select("name")
       .eq("id", organizationId)
       .single();
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest) {
         .from("invitations")
         .update({
           metadata: {
-            ...(invitation.metadata ?? {}),
+            ...metadataAsObject(invitation.metadata),
             email_sent: true,
             email_sent_at: new Date().toISOString(),
           },

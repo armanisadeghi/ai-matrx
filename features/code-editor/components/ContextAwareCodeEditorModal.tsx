@@ -130,9 +130,7 @@ export function ContextAwareCodeEditorModal({
   // Accumulated text from the latest agent request
   const accumulatedTextSelector = useMemo(
     () =>
-      conversationId
-        ? selectLatestAccumulatedText(conversationId)
-        : () => "",
+      conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
     [conversationId],
   );
   const accumulatedText = useAppSelector(accumulatedTextSelector);
@@ -175,12 +173,14 @@ export function ContextAwareCodeEditorModal({
           ...(context ? { context } : {}),
         },
         applicationScope: {
-          [DYNAMIC_CONTEXT_VARIABLE]: code,
-          current_code: code,
-          content: code,
-          ...(selection ? { selection } : {}),
-          ...(context ? { context } : {}),
-          language,
+          context: {
+            [DYNAMIC_CONTEXT_VARIABLE]: code,
+            current_code: code,
+            content: code,
+            ...(selection ? { selection } : {}),
+            ...(context ? { context } : {}),
+            language,
+          },
         },
       },
       onConversationCreated: (cid) => {
@@ -188,7 +188,10 @@ export function ContextAwareCodeEditorModal({
         setIsLaunching(false);
       },
     }).catch((err) => {
-      console.error("[ContextAwareCodeEditorModal] Error launching agent:", err);
+      console.error(
+        "[ContextAwareCodeEditorModal] Error launching agent:",
+        err,
+      );
       setIsLaunching(false);
       hasLaunchedRef.current = false;
     });
@@ -348,25 +351,34 @@ export function ContextAwareCodeEditorModal({
         },
       });
     },
-    [language, openCanvas, closeCanvas, onCodeChange, onOpenChange, conversationId, dispatch],
+    [
+      language,
+      openCanvas,
+      closeCanvas,
+      onCodeChange,
+      onOpenChange,
+      conversationId,
+      dispatch,
+    ],
   );
 
   if (!open) return null;
 
-  const content = isLaunching || !conversationId ? (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-center">
-        <div className="text-muted-foreground">Loading editor...</div>
+  const content =
+    isLaunching || !conversationId ? (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="text-muted-foreground">Loading editor...</div>
+        </div>
       </div>
-    </div>
-  ) : (
-    <AgentRunner
-      conversationId={conversationId}
-      surfaceKey={`code-editor-modal:${conversationId}`}
-      compact={false}
-      showTitle={!!title}
-    />
-  );
+    ) : (
+      <AgentRunner
+        conversationId={conversationId}
+        surfaceKey={`code-editor-modal:${conversationId}`}
+        compact={false}
+        showTitle={!!title}
+      />
+    );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

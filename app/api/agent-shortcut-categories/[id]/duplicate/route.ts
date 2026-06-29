@@ -4,7 +4,7 @@ import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
-} from "../_lib/categoryRow";
+} from "../../_lib/categoryRow";
 
 /**
  * POST /api/agent-shortcut-categories/[id]/duplicate
@@ -119,7 +119,7 @@ export async function POST(
       organization_id: source.organization_id ?? null,
       created_by: user.id,
       metadata: {
-        ...(source.metadata as Record<string, unknown> | null ?? {}),
+        ...((source.metadata as Record<string, unknown> | null) ?? {}),
         description: source.description ?? null,
         is_active: sourceIsActive,
         enabled_features: source.enabled_features ?? null,

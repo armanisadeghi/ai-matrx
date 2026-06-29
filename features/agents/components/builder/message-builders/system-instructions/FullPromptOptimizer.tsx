@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 // ---------------------------------------------------------------------------
 // Minimal normalization helpers (inlined from features/prompts/utils so this
@@ -62,7 +63,9 @@ function normalizePromptMessagesFromDb(
   return out;
 }
 
-function normalizePromptSettingsFromDb(value: unknown): Record<string, unknown> {
+function normalizePromptSettingsFromDb(
+  value: unknown,
+): Record<string, unknown> {
   if (!isRecord(value)) return {};
   return value;
 }
@@ -96,16 +99,10 @@ export function FullPromptOptimizer({
   const [extractionError, setExtractionError] = useState<string | null>(null);
 
   // Watch streaming text
-  const streamingText = useAppSelector((state) =>
-    currentTaskId
-      ? ''
-      : "",
-  );
+  const streamingText = useAppSelector((state) => (currentTaskId ? "" : ""));
 
   const isResponseEnded = useAppSelector((state) =>
-    currentTaskId
-      ? true
-      : false,
+    currentTaskId ? true : false,
   );
 
   // Format current prompt object for display

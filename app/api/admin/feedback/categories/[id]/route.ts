@@ -10,6 +10,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { metadataAsObject } from "@/utils/json/metadataObject";
+import {
+  FEEDBACK_CATEGORY_SELECT,
+  platformCategoryToFeedbackRow,
+} from "../_lib/categoryRow";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -37,10 +42,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: category, error } = await supabase
+    const { data: row, error } = await supabase
       .schema("platform")
       .from("categories")
-      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select(FEEDBACK_CATEGORY_SELECT)
       .eq("dimension", "feedback")
       .eq("id", id)
       .single();
@@ -55,6 +60,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const category = platformCategoryToFeedbackRow(row);
     return NextResponse.json({ category });
   } catch (err) {
     console.error("Failed to fetch category:", err);
@@ -85,7 +91,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     // metadata-backed fields
     if (body.description !== undefined)
       metadataUpdates.description = body.description || null;
-    if (body.is_active !== undefined) metadataUpdates.is_active = body.is_active;
+    if (body.is_active !== undefined)
+      metadataUpdates.is_active = body.is_active;
 
     if (Object.keys(metadataUpdates).length > 0) {
       // Merge metadata atomically: fetch the current value, then shallow-merge
@@ -99,7 +106,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         .eq("id", id)
         .eq("dimension", "feedback")
         .single();
-      updates.metadata = { ...((current?.metadata as Record<string, unknown>) ?? {}), ...metadataUpdates };
+      updates.metadata = {
+        ...metadataAsObject(current?.metadata),
+        ...metadataUpdates,
+      };
     }
 
     if (Object.keys(updates).length === 0) {
@@ -109,13 +119,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { data: category, error } = await supabase
+    const { data: row, error } = await supabase
       .schema("platform")
       .from("categories")
       .update(updates)
       .eq("dimension", "feedback")
       .eq("id", id)
-      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select(FEEDBACK_CATEGORY_SELECT)
       .single();
 
     if (error) {
@@ -128,6 +138,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const category = platformCategoryToFeedbackRow(row);
     return NextResponse.json({ category });
   } catch (err) {
     const authResponse = authErrorResponse(err);
@@ -148,7 +159,8 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     // Check if any feedback items are assigned to this category
     const { count, error: countError } = await supabase
-      .schema("users").from("user_feedback")
+      .schema("users")
+      .from("user_feedback")
       .select("id", { count: "exact", head: true })
       .eq("category_id", id);
 

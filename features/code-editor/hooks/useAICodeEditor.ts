@@ -10,7 +10,10 @@ import {
   selectIsExecuting,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectConversationMessages,
+  EMPTY_CONVERSATION_MESSAGES,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectPromptsPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   parseCodeEdits,
@@ -124,9 +127,7 @@ export function useAICodeEditor({
 
   const streamingTextSelector = useMemo(
     () =>
-      conversationId
-        ? selectLatestAccumulatedText(conversationId)
-        : () => "",
+      conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
     [conversationId],
   );
   const streamingText = useAppSelector(streamingTextSelector);
@@ -144,7 +145,7 @@ export function useAICodeEditor({
     () =>
       conversationId
         ? selectResolvedVariables(conversationId)
-        : () => ({} as Record<string, unknown>),
+        : () => ({}) as Record<string, unknown>,
     [conversationId],
   );
   const variables = useAppSelector(resolvedVariablesSelector, shallowEqual);
@@ -154,7 +155,7 @@ export function useAICodeEditor({
     () =>
       conversationId
         ? selectConversationMessages(conversationId)
-        : () => [] as ReturnType<typeof selectConversationMessages>,
+        : () => EMPTY_CONVERSATION_MESSAGES,
     [conversationId],
   );
   const messages = useAppSelector(messagesSelector);
@@ -226,11 +227,14 @@ export function useAICodeEditor({
       runtime: {
         variables: initialVariables,
         applicationScope: {
-          current_code: currentCode,
-          content: currentCode,
-          ...(selection ? { selection } : {}),
-          ...(context ? { context } : {}),
-          language,
+          context: {
+            current_code: currentCode,
+            content: currentCode,
+            ...(selection ? { selection } : {}),
+            ...(context ? { context } : {}),
+            language,
+          },
+          userValues: initialVariables,
         },
       },
       onConversationCreated: (cid) => {
@@ -246,7 +250,15 @@ export function useAICodeEditor({
       setIsLaunching(false);
       hasLaunchedRef.current = false;
     });
-  }, [open, selectedBuiltinId, currentCode, selection, context, language, trigger]);
+  }, [
+    open,
+    selectedBuiltinId,
+    currentCode,
+    selection,
+    context,
+    language,
+    trigger,
+  ]);
 
   // ─── Update special variables when code context changes ─────────────────────
   // Mirrors what the old hook did with updateVariable + buildSpecialVariables.
@@ -271,7 +283,16 @@ export function useAICodeEditor({
         }),
       );
     }
-  }, [conversationId, currentCode, selection, context, language, isExecuting, state, dispatch]);
+  }, [
+    conversationId,
+    currentCode,
+    selection,
+    context,
+    language,
+    isExecuting,
+    state,
+    dispatch,
+  ]);
 
   // ─── Watch for stream completion → parse code edits ─────────────────────────
 
@@ -380,7 +401,13 @@ export function useAICodeEditor({
       setSelectedBuiltinId(defaultBuiltinId);
       setSubmitOnEnter(submitOnEnterPreference);
     }
-  }, [open, defaultBuiltinId, submitOnEnterPreference, conversationId, dispatch]);
+  }, [
+    open,
+    defaultBuiltinId,
+    submitOnEnterPreference,
+    conversationId,
+    dispatch,
+  ]);
 
   // ─── Update selected agent when default changes ──────────────────────────────
 

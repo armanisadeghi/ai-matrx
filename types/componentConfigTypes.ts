@@ -15,7 +15,12 @@ export type ComponentSize =
 
 export type ComponentDensity = "compact" | "normal" | "comfortable";
 
-export type TextareaSize = "compact" | "default" | "large" | "article" | "custom";
+export type TextareaSize =
+  | "compact"
+  | "default"
+  | "large"
+  | "article"
+  | "custom";
 
 export type AnimationPreset =
   | "none"
@@ -53,10 +58,13 @@ export interface BaseMatrxProps {
   disableAnimation?: boolean;
 }
 
-export interface SelectOption {
-  value: string;
+export interface SelectOption<T extends string | number = string> {
+  value: T;
   label: string;
+  key?: string;
   disabled?: boolean;
+  icon?: React.ReactNode;
+  description?: string;
 }
 
 export interface FlexFormField {
@@ -74,6 +82,8 @@ export interface FlexFormField {
   multiple?: boolean;
   accept?: string;
   jsonSchema?: object;
+  src?: string;
+  alt?: string;
 }
 
 export type FormState = Record<string, unknown>;
@@ -94,6 +104,9 @@ export interface MatrxInputProps extends MatrxFieldProps {
 export interface MatrxBaseInputProps extends BaseMatrxProps {
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
+  placeholder?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export interface MatrxTextareaProps extends MatrxFieldProps {
@@ -106,6 +119,19 @@ export interface MatrxTextareaProps extends MatrxFieldProps {
   textareaSize?: TextareaSize;
   rows?: number;
   richText?: boolean;
+  fullWidth?: boolean;
+  animationDelay?: number;
+  valid?: boolean;
+  mode?: "outlined" | "filled" | "plain" | "markdown";
+  contentSize?: TextareaSize;
+  showCount?: boolean;
+  autoResize?: boolean;
+  minRows?: number;
+  maxRows?: number;
+  characterLimit?: number;
+  wordLimit?: number;
+  toolbar?: boolean;
+  placeholder?: string;
 }
 
 export interface MatrxSelectProps extends MatrxFieldProps {
@@ -129,11 +155,17 @@ export interface MatrxButtonProps extends BaseMatrxProps {
 export interface MatrxButtonGroupProps extends BaseMatrxProps {
   children?: React.ReactNode;
   orientation?: "horizontal" | "vertical";
+  fullWidth?: boolean;
+  attached?: boolean;
 }
 
 export interface MatrxInputGroupProps extends BaseMatrxProps {
   children?: React.ReactNode;
   label?: string;
+  hint?: string;
+  required?: boolean;
+  orientation?: "horizontal" | "vertical";
+  attached?: boolean;
 }
 
 export interface AnimatedCheckboxProps extends MatrxFieldProps {
@@ -143,19 +175,27 @@ export interface AnimatedCheckboxProps extends MatrxFieldProps {
 
 export interface MatrxRadioProps extends MatrxFieldProps {
   checked?: boolean;
-  onChange?: (checked: boolean) => void;
+  layout?: "vertical" | "horizontal" | "grid";
+  columns?: number;
+  showSelectAll?: boolean;
+  optionClassName?: string;
 }
 
 export interface MatrxRadioGroupProps extends MatrxFieldProps {
   options?: SelectOption[];
+  children?: React.ReactNode;
+  label?: string;
+  layout?: "vertical" | "horizontal" | "grid";
+  columns?: number;
+  showSelectAll?: boolean;
 }
 
 export interface MatrxJsonItemProps extends BaseMatrxProps {
   keyName?: string;
   value?: unknown;
   isExpanded?: boolean;
-  onToggle?: () => void;
-  isKeyExpanded?: boolean;
+  onToggle?: (path: string) => void;
+  isKeyExpanded?: (key: string) => boolean;
   path?: string;
   isLastItem?: boolean;
 }
@@ -165,7 +205,7 @@ export interface MatrxJsonViewerProps extends BaseMatrxProps {
   initialExpanded?: boolean;
   maxHeight?: string;
   hideControls?: boolean;
-  onCopy?: () => void;
+  onCopy?: (data: string) => void;
   onExpandChange?: (expanded: boolean) => void;
 }
 

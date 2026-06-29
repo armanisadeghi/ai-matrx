@@ -120,9 +120,7 @@ export function ContextAwareCodeEditorCompact({
 
   const accumulatedTextSelector = useMemo(
     () =>
-      conversationId
-        ? selectLatestAccumulatedText(conversationId)
-        : () => "",
+      conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
     [conversationId],
   );
   const accumulatedText = useAppSelector(accumulatedTextSelector);
@@ -164,12 +162,14 @@ export function ContextAwareCodeEditorCompact({
           ...(context ? { context } : {}),
         },
         applicationScope: {
-          [DYNAMIC_CONTEXT_VARIABLE]: code,
-          current_code: code,
-          content: code,
-          ...(selection ? { selection } : {}),
-          ...(context ? { context } : {}),
-          language,
+          context: {
+            [DYNAMIC_CONTEXT_VARIABLE]: code,
+            current_code: code,
+            content: code,
+            ...(selection ? { selection } : {}),
+            ...(context ? { context } : {}),
+            language,
+          },
         },
       },
       onConversationCreated: (cid) => {
@@ -340,7 +340,15 @@ export function ContextAwareCodeEditorCompact({
         },
       });
     },
-    [language, openCanvas, closeCanvas, onCodeChange, onOpenChange, conversationId, dispatch],
+    [
+      language,
+      openCanvas,
+      closeCanvas,
+      onCodeChange,
+      onOpenChange,
+      conversationId,
+      dispatch,
+    ],
   );
 
   if (!open) return null;

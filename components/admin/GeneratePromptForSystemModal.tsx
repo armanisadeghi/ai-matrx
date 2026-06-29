@@ -29,7 +29,7 @@ import {
   Copy,
   AlertTriangle,
   Zap,
-  Link2
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -42,17 +42,22 @@ type SimpleMessage = { role: string; content: string };
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
-function normalizePromptMessagesFromDb(value: Json | null | undefined): SimpleMessage[] {
+function normalizePromptMessagesFromDb(
+  value: Json | null | undefined,
+): SimpleMessage[] {
   if (!Array.isArray(value)) return [];
   const out: SimpleMessage[] = [];
   for (const item of value) {
     if (!isRecord(item)) continue;
-    if (typeof item.role !== "string" || typeof item.content !== "string") continue;
+    if (typeof item.role !== "string" || typeof item.content !== "string")
+      continue;
     out.push({ role: item.role, content: item.content });
   }
   return out;
 }
-function normalizePromptSettingsFromDb(value: Json | null | undefined): Record<string, unknown> {
+function normalizePromptSettingsFromDb(
+  value: Json | null | undefined,
+): Record<string, unknown> {
   if (!isRecord(value)) return {};
   return value as Record<string, unknown>;
 }
@@ -60,6 +65,7 @@ import { VoiceInputButton } from "@/components/official/VoiceInputButton";
 import type { SystemPromptDB } from "@/types/system-prompts-db";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 interface GeneratePromptForSystemModalProps {
   isOpen: boolean;
@@ -78,7 +84,6 @@ export function GeneratePromptForSystemModal({
   systemPrompt,
   onSuccess,
 }: GeneratePromptForSystemModalProps) {
-  const dispatch = useAppDispatch();
   const supabase = createClient();
 
   const [functionalityConfigConfig, setFunctionalityConfig] =
@@ -93,16 +98,10 @@ export function GeneratePromptForSystemModal({
   const [extractionError, setExtractionError] = useState<string | null>(null);
 
   // Watch streaming text
-  const streamingText = useAppSelector((state) =>
-    currentTaskId
-      ? ''
-      : "",
-  );
+  const streamingText = useAppSelector((state) => (currentTaskId ? "" : ""));
 
   const isResponseEnded = useAppSelector((state) =>
-    currentTaskId
-      ? true
-      : false,
+    currentTaskId ? true : false,
   );
 
   // Fetch functionality config from database
@@ -204,83 +203,13 @@ export function GeneratePromptForSystemModal({
       return;
     }
 
-    setIsGenerating(true);
-    setExtractedJson(null);
-    setExtractionError(null);
-
-    try {
-      // 1. Fetch prompt template — prompts migrated 1:1 to agent.definition (same UUIDs)
-      const { data: prompt, error: promptError } = await supabase
-        .schema("agent")
-        .from("definition")
-        .select("id, messages, settings, variable_definitions")
-        .eq("id", PROMPT_GENERATOR_PROMPT_ID)
-        .single();
-
-      if (promptError || !prompt) {
-        throw new Error("Prompt generator template not found");
-      }
-      // Normalize field names: agent.definition uses variable_definitions instead of variable_defaults
-      const promptNormalized = {
-        ...prompt,
-        variable_defaults: (prompt as Record<string, unknown>).variable_definitions,
-      };
-
-      // 2. Build the full prompt_purpose value
-      let fullPurpose = `**Primary Purpose:**\n${promptPurpose}`;
-
-      if (additionalContext.trim()) {
-        fullPurpose += `\n\n**Additional Context & Requirements:**\n${additionalContext}`;
-      }
-
-      // 3. Replace variables in messages
-      const messages = normalizePromptMessagesFromDb(promptNormalized.messages).map(
-        (msg) => {
-          const content = msg.content.replace(
-            /{{prompt_purpose}}/g,
-            fullPurpose,
-          );
-          return {
-            role: msg.role,
-            content,
-          };
-        },
-      );
-
-      // 4. Build chat config
-      const settings = normalizePromptSettingsFromDb(promptNormalized.settings);
-      const modelId = settings.model_id;
-      if (!modelId || typeof modelId !== "string") {
-        throw new Error("No model specified in prompt");
-      }
-
-      const chatConfig = {
-        model_id: modelId,
-        messages,
-        stream: true,
-        ...settings,
-      };
-
-      // 5. Submit task — set taskId BEFORE dispatch so streaming UI mounts immediately
-      const taskId = uuidv4();
-      setCurrentTaskId(taskId);
-
-      await dispatch(
-        createAndSubmitTask({
-          service: "chat_service",
-          taskName: "direct_chat",
-          taskData: { chat_config: chatConfig },
-          customTaskId: taskId,
-        }),
-      ).unwrap();
-    } catch (error) {
-      console.error("Generation error:", error);
-      toast.error("Failed to generate prompt", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-      setIsGenerating(false);
-      setCurrentTaskId(null);
-    }
+    // TODO(prompt-to-agent-sweep): re-wire to launchAgentExecution with
+    // PROMPT_GENERATOR_PROMPT_ID once system-prompt admin migrates off legacy tasks.
+    toast.error("Prompt generator is temporarily unavailable", {
+      description:
+        "The underlying prompt template is being migrated to the agent execution system.",
+      duration: 6000,
+    });
   };
 
   const handleCreateAndLink = async () => {
@@ -300,8 +229,8 @@ export function GeneratePromptForSystemModal({
     // This "Create & Link" flow needs a full rework wired to agent.definition inserts.
     console.warn(
       "[GeneratePromptForSystemModal] handleCreateAndLink: prompt insert path is decommissioned. " +
-      "The `prompts` table is in the graveyard schema. This UI needs to be updated to create " +
-      "an agent.definition row instead.",
+        "The `prompts` table is in the graveyard schema. This UI needs to be updated to create " +
+        "an agent.definition row instead.",
     );
     toast.error("Prompt creation temporarily unavailable", {
       description:

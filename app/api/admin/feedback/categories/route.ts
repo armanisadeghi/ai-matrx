@@ -9,6 +9,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import {
+  FEEDBACK_CATEGORY_SELECT,
+  platformCategoryToFeedbackRow,
+} from "./_lib/categoryRow";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -33,10 +37,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: categories, error } = await supabase
+    const { data: rows, error } = await supabase
       .schema("platform")
       .from("categories")
-      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select(FEEDBACK_CATEGORY_SELECT)
       .eq("dimension", "feedback")
       .order("position", { ascending: true });
 
@@ -44,6 +48,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const categories = (rows ?? []).map(platformCategoryToFeedbackRow);
     return NextResponse.json({ categories });
   } catch (err) {
     console.error("Failed to fetch categories:", err);
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: category, error } = await supabase
+    const { data: row, error } = await supabase
       .schema("platform")
       .from("categories")
       .insert({
@@ -82,7 +87,7 @@ export async function POST(request: NextRequest) {
         is_system: true,
         metadata: { description: description || null, is_active: true },
       })
-      .select("id, name, slug, description:metadata->>description, color, sort_order:position, is_active:metadata->>is_active, created_at, updated_at")
+      .select(FEEDBACK_CATEGORY_SELECT)
       .single();
 
     if (error) {
@@ -95,6 +100,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const category = row ? platformCategoryToFeedbackRow(row) : null;
     return NextResponse.json({ category }, { status: 201 });
   } catch (err) {
     const authResponse = authErrorResponse(err);

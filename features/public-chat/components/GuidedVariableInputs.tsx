@@ -566,12 +566,12 @@ export function GuidedVariableInputs({
   if (total === 0) return null;
 
   const variable = variableDefaults[activeIndex];
-  const value = values[variable.name] ?? variable.defaultValue ?? "";
+  const value = String(values[variable.name] ?? variable.defaultValue ?? "");
   const formattedName = formatText(variable.name);
   const helpText = variable.helpText;
 
   const answeredCount = variableDefaults.filter((v) => {
-    const val = values[v.name] ?? v.defaultValue ?? "";
+    const val = String(values[v.name] ?? v.defaultValue ?? "");
     return val.trim() !== "";
   }).length;
 
@@ -640,7 +640,8 @@ export function GuidedVariableInputs({
   const progressDots = (
     <div className="flex items-center gap-1">
       {variableDefaults.map((v, i) => {
-        const filled = (values[v.name] ?? v.defaultValue ?? "").trim() !== "";
+        const filled =
+          String(values[v.name] ?? v.defaultValue ?? "").trim() !== "";
         const isCurrent = i === activeIndex;
         return (
           <span

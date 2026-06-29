@@ -129,7 +129,10 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
       setActiveVariables(varDefs);
       const initialValues: Record<string, string> = {};
       varDefs.forEach((variable) => {
-        if (variable.defaultValue) {
+        if (
+          typeof variable.defaultValue === "string" &&
+          variable.defaultValue
+        ) {
           initialValues[variable.name] = variable.defaultValue;
         }
       });

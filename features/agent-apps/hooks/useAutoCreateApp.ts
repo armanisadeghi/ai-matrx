@@ -38,6 +38,33 @@ interface UseAutoCreateAppOptions {
   onError?: (error: string, fullResponse?: string) => void;
 }
 
+function parseAppMetadata(data: unknown): AppMetadata {
+  if (!data || typeof data !== "object") {
+    throw new Error("Metadata generation returned invalid data");
+  }
+  const row = data as Record<string, unknown>;
+  const slugOptions = row.slug_options;
+  if (
+    typeof row.name !== "string" ||
+    typeof row.tagline !== "string" ||
+    typeof row.description !== "string" ||
+    !Array.isArray(slugOptions) ||
+    !slugOptions.every((entry) => typeof entry === "string")
+  ) {
+    throw new Error("Metadata generation returned incomplete data");
+  }
+  return {
+    name: row.name,
+    tagline: row.tagline,
+    description: row.description,
+    slug_options: slugOptions,
+    category: typeof row.category === "string" ? row.category : null,
+    tags: Array.isArray(row.tags)
+      ? row.tags.filter((entry): entry is string => typeof entry === "string")
+      : [],
+  };
+}
+
 interface AutoCreateAppData {
   /**
    * Source agent. Field is named `agent` to match the new domain language;
@@ -190,7 +217,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           );
         }
 
-        const metadata: AppMetadata = metadataResult.data;
+        const metadata = parseAppMetadata(metadataResult.data);
 
         // Generate code second (slow - this is the most vulnerable to background tab issues)
         setActiveStage("code");

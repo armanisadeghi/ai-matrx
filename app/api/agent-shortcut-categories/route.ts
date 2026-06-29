@@ -5,7 +5,7 @@ import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
-} from "../_lib/categoryRow";
+} from "./_lib/categoryRow";
 
 export async function GET(request: NextRequest) {
   try {

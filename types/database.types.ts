@@ -17008,6 +17008,8 @@ export type Database = {
           label: string | null
           metadata: Json
           organization_id: string | null
+          position: number | null
+          role: string | null
           source_id: string
           source_type: string
           target_id: string
@@ -17020,6 +17022,8 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          position?: number | null
+          role?: string | null
           source_id: string
           source_type: string
           target_id: string
@@ -17032,6 +17036,8 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          position?: number | null
+          role?: string | null
           source_id?: string
           source_type?: string
           target_id?: string
@@ -26119,6 +26125,7 @@ export type Database = {
         Args: { p_task_id: string }
         Returns: undefined
       }
+      schema_truth_snapshot: { Args: never; Returns: Json }
       search_files: {
         Args: {
           p_limit?: number

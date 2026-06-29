@@ -112,7 +112,9 @@ export function PublicVariableInputs({
     <>
       {variableDefaults.map((variable, index) => {
         const isExpanded = expandedVariable === variable.name;
-        const value = values[variable.name] ?? variable.defaultValue ?? "";
+        const rawValue = values[variable.name] ?? variable.defaultValue ?? "";
+        const value =
+          typeof rawValue === "string" ? rawValue : String(rawValue);
 
         return (
           <div key={variable.name}>
