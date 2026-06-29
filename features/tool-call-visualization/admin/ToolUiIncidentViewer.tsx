@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/dynamic/types";
+import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/admin/types";
 
 // ---------------------------------------------------------------------------
 // Types

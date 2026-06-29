@@ -71,9 +71,9 @@ Duplication to kill: **two scope builders** (`agent-apps/utils/allowed-imports.t
 
 ### Track 2 — Legacy & duplicate PURGE (delete, don't keep)
 - [ ] **Delete Prompt Apps** (`features/prompt-apps/`, routes, `prompt_apps` usage) — greenlit, fully migrated.
-- [ ] **Delete tool-viz `dynamic/` separate compiler + its `allowed-imports.ts`** once Track 1's unified runtime serves tool results.
+- [x] **Delete tool-viz `dynamic/` separate compiler + its `allowed-imports.ts`** — DONE 2026-06-29. The whole `features/tool-call-visualization/dynamic/` directory is gone (6 dead runtime files: `DynamicToolRenderer`, `compiler`, `fetcher`, `cache`, `incident-reporter`, `DynamicToolErrorBoundary`). Its two shared leaves were relocated, not lost: the scope builder → `features/dynamic-react/toolRendererScope.ts` (live consumers `compileReactComponent.ts` + the admin editor repointed); the `ToolUiComponentRow`/`ToolUiIncidentRow` row types → `features/tool-call-visualization/admin/types.ts`. The admin preview-refresh now busts the canonical `db-renderer/toolRendererCache` (`invalidateToolRenderer`) instead of the dead `dynamic/cache`. Zero broken imports; resolution stays `static registry → db-renderer → generic`.
 - [ ] **Purge `v1`/`v2`/`contract_version`** everywhere (`tool_ui.contract_version`, `ContractVersion`, `makeV1Stub`, all "v2 contract" mentions). One system, no version branching.
-- [ ] **Collapse duplicate scope builders** → one shared allow-list/scope.
+- [ ] **Collapse duplicate scope builders** → one shared allow-list/scope. (Still two: `features/dynamic-react/toolRendererScope.ts` (the relocated tool-viz one) vs `features/agent-apps/utils/allowed-imports.ts`. The duplicate *runtime* is gone; merging the two *scope* builders is the remaining follow-up.)
 - [ ] **Delete dead** `features/code-editor/components/unused/*`; the legacy re-export shim `features/chat/.../stream/ToolCallVisualization.tsx`; stale `tool_ui` rows.
 - [ ] **Canonicalize** the two `parseResearch.ts` → one (after the research pick); one `useToolTabs`; one display-name resolver.
 - [ ] **Repoint the AI generator** + admin editor to author against the unified runtime.

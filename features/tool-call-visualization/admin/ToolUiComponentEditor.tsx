@@ -41,11 +41,11 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { ToolUiComponentRow } from "@/features/tool-call-visualization/dynamic/types";
+import type { ToolUiComponentRow } from "./types";
 import {
   getAllAvailableImports,
   getDefaultImportsForToolRenderer,
-} from "@/features/tool-call-visualization/dynamic/allowed-imports";
+} from "@/features/dynamic-react/toolRendererScope";
 
 // ---------------------------------------------------------------------------
 // Types

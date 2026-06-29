@@ -11,7 +11,7 @@ import { ToolUiComponentGenerator } from "@/features/tool-call-visualization/adm
 import { ToolUiComponentEditor } from "@/features/tool-call-visualization/admin/ToolUiComponentEditor";
 import { ToolComponentPreview } from "@/features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview";
 import { formatText } from "@/utils/text/text-case-converter";
-import { invalidateCachedRenderer } from "@/features/tool-call-visualization/dynamic/cache";
+import { invalidateToolRenderer } from "@/features/tool-call-visualization/db-renderer/toolRendererCache";
 import type { Database } from "@/types/database.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ export function ToolUiPage({ tool }: Props) {
 
   /** Bust the in-memory renderer cache and force the preview to remount. */
   const invalidateAndRefreshPreview = useCallback(() => {
-    invalidateCachedRenderer(tool.name);
+    invalidateToolRenderer(tool.name);
     setPreviewKey((k) => k + 1);
   }, [tool.name]);
 

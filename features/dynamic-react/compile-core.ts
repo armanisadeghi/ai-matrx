@@ -1,14 +1,14 @@
 /**
  * Shared React compile core — the generic primitive for turning a string of
  * JSX/TSX source into runnable JS, used by every dynamic-React consumer:
- *   - tool UI components (features/tool-call-visualization/dynamic)
- *   - prompt apps (features/prompt-apps)
  *   - inline React code blocks in chat/notes (features/dynamic-react/ReactCodeBlock)
+ *   - the agent-apps applet runtime (features/agent-apps/utils/compile-slot)
  *
  * It owns ONLY the source→source transform (strip imports, Babel JSX/TSX → JS,
  * normalize exports into a `return`) plus the lazy Babel loader. Scope/allowlist
- * construction lives in each consumer's allowed-imports module; execution
- * (`new Function`) lives in the consumer so it can inject its own scope.
+ * construction lives in each consumer's scope module (e.g.
+ * features/dynamic-react/toolRendererScope); execution (`new Function`) lives in
+ * the consumer so it can inject its own scope.
  *
  * @babel/standalone is ~5.7 MB; it is dynamically imported on first use only.
  */

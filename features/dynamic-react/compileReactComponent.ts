@@ -14,7 +14,7 @@
  *    first-party generated code; do not feed it hostile third-party code.
  *
  * To widen what generated React can use, add an entry to the allowlist in
- * features/tool-call-visualization/dynamic/allowed-imports.ts — that is the one
+ * features/dynamic-react/toolRendererScope.ts — that is the one
  * extension point, shared by every consumer.
  */
 
@@ -25,7 +25,7 @@ import {
   getScopeFunctionParameters,
   TOOL_RENDERER_IMPORTS_CONFIG,
   detectReactCapabilities,
-} from "@/features/tool-call-visualization/dynamic/allowed-imports";
+} from "./toolRendererScope";
 import {
   loadBabelTransform,
   stripImports,
