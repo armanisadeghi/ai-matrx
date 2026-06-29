@@ -7,30 +7,31 @@ import {
   selectIsAuthenticated,
   selectDisplayName,
 } from "@/lib/redux/selectors/userSelectors";
-import { cn } from "@/lib/utils";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 
 interface AuthedWorkspaceCTAProps {
   workspaceHref: string;
-  /** "Chat", "Workspace", "Agents", etc. — feeds the banner copy. */
+  /** "Chat", "Workspace", "Agents", etc. — feeds the button label. */
   workspaceLabel: string;
 }
 
 /**
- * Sticky banner offering an authenticated visitor a one-tap route back to
- * their workspace if they ever land on a marketing landing.
+ * Offers an authenticated visitor a one-tap route back to their workspace when
+ * they land on a marketing page.
  *
- * As of the server-side redirect work, every canonical landing route either
- * (a) redirects authed users straight to the workspace before the landing
- * renders (the `/war-room`, `/agents`, `/files`, `/chat` "separate internal
- * route" pages) or (b) only renders the landing for guests in the first
- * place (every page that branches in-place via `getServerAuth()`). So in
- * normal operation an authed user never sees this banner. It remains as a
- * cheap fallback: any future landing wired up without a redirect still gives
- * a signed-in visitor an escape hatch instead of a dead-end pitch.
+ * Renders INTO the shell header's right slot (`#shell-header-right`, just left
+ * of the user avatar) via `PageHeaderRightPortal` — NOT as a separate sticky
+ * bar. This is the load-bearing fix: a self-rendered bar rode under the
+ * transparent glass header and collided with the left hamburger + right avatar,
+ * and was far too tall for the 2.5rem header. In the header slot the shell's
+ * flexbox vertically centers the control to match the 32px visible avatar, the
+ * left hamburger can never reach it (opposite side), and there is no extra
+ * height. The pill carries its own `matrx-glass-thin-border` (the inject
+ * wrapper is transparent by contract).
  *
- * Renders `null` for guests. Hydration-safe via `selectIsAuthenticated`
- * being seeded from the `(core)/layout.tsx` preloaded Redux state, which
- * matches the SSR render so there is no flicker.
+ * Renders `null` for guests. Hydration-safe: `selectIsAuthenticated` is seeded
+ * from the `(core)/layout.tsx` preloaded Redux state, and the portal mounts
+ * client-side after the header exists.
  */
 export function AuthedWorkspaceCTA({
   workspaceHref,
@@ -44,31 +45,20 @@ export function AuthedWorkspaceCTA({
   const firstName = displayName.split(" ")[0] || displayName;
 
   return (
-    <div
-      className={cn(
-        "sticky top-0 z-30 w-full",
-        "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
-        "backdrop-blur",
-      )}
-    >
-      <div className="mx-auto max-w-6xl pl-14 sm:pl-6 pr-[var(--shell-marketing-pr)] py-2.5 flex items-center justify-between gap-3">
-        <p className="text-sm text-foreground truncate">
-          <span className="font-medium">Welcome back, {firstName}.</span>{" "}
-          <span className="text-muted-foreground hidden sm:inline">
-            Your workspace is one click away.
-          </span>
-        </p>
+    <PageHeaderRightPortal>
+      <div className="flex items-center gap-2.5 pr-1.5">
+        <span className="hidden md:inline text-sm text-muted-foreground whitespace-nowrap">
+          Welcome back,{" "}
+          <span className="font-medium text-foreground">{firstName}</span>
+        </span>
         <Link
           href={workspaceHref}
-          className={cn(
-            "shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-sm font-semibold",
-            "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors",
-          )}
+          className="matrx-glass-thin-border inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-foreground hover:text-primary transition-colors whitespace-nowrap"
         >
           Open {workspaceLabel}
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-    </div>
+    </PageHeaderRightPortal>
   );
 }
