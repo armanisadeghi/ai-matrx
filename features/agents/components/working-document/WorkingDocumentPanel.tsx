@@ -235,8 +235,46 @@ export function WorkingDocumentPanel({
               {error}
             </div>
           )}
+          {conflict && (
+            <div className="shrink-0 border-b border-amber-500/40 bg-amber-500/10 px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-amber-700 dark:text-amber-300">
+                  The agent edited this document while you were typing. Your text
+                  is preserved below — choose which version to keep.
+                </span>
+                <div className="flex shrink-0 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("keep-mine")}
+                    className="rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+                  >
+                    Keep mine
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("take-agent")}
+                    className="rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                  >
+                    Use agent&apos;s version
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="min-h-0 flex-1">
-            {kind === "working" && mainView === "agent-diff" ? (
+            {conflict ? (
+              <DiffViewer
+                original={conflict.agentContent}
+                modified={draft}
+                engine="light"
+                language="markdown"
+                originalLabel="Agent's version"
+                modifiedLabel="Your version (kept)"
+                defaultView="split"
+                showToolbar
+                className="h-full min-h-0"
+              />
+            ) : kind === "working" && mainView === "agent-diff" ? (
               <DiffViewer
                 original={before}
                 modified={after}

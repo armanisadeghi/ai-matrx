@@ -90,6 +90,59 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
 const AUTOSAVE_MS = 700;
 
+// ─── Shared realtime subscription manager ───────────────────────────────────
+// useWorkingDocumentContextSync mounts in several places at once (the always-on
+// SmartInput bridge + every open editor). Without dedup, each mount opens its
+// own Supabase channel for the SAME document — N connections + N dispatches per
+// server edit. This ref-counts ONE channel per documentId and fans out to one
+// listener per (conversation, kind), so the round-trip is exactly once.
+type WdChannelEntry = {
+  channel: ReturnType<typeof supabase.channel>;
+  listeners: Map<string, (row: CxWorkingDocumentRow) => void>;
+};
+const wdChannels = new Map<string, WdChannelEntry>();
+
+function subscribeWorkingDocRow(
+  documentId: string,
+  listenerKey: string,
+  onRow: (row: CxWorkingDocumentRow) => void,
+): () => void {
+  let entry = wdChannels.get(documentId);
+  if (!entry) {
+    const listeners = new Map<string, (row: CxWorkingDocumentRow) => void>();
+    const channel = supabase
+      .channel(`cx-working-doc:${documentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "workbench",
+          table: "working_documents",
+          filter: `id=eq.${documentId}`,
+        },
+        (payload) => {
+          if (payload.eventType === "DELETE") return;
+          const row = payload.new as CxWorkingDocumentRow | undefined;
+          if (!row) return;
+          listeners.forEach((fn) => fn(row));
+        },
+      )
+      .subscribe();
+    entry = { channel, listeners };
+    wdChannels.set(documentId, entry);
+  }
+  entry.listeners.set(listenerKey, onRow);
+  return () => {
+    const e = wdChannels.get(documentId);
+    if (!e) return;
+    e.listeners.delete(listenerKey);
+    if (e.listeners.size === 0) {
+      void supabase.removeChannel(e.channel);
+      wdChannels.delete(documentId);
+    }
+  };
+}
+
 /** The instanceContext key + label + value builder for a document kind. */
 function contextDescriptorFor(args: {
   kind: WorkingDocumentKind;
@@ -188,45 +241,33 @@ export function useWorkingDocumentContextSync(
     if (!enabled || binding.kind !== "cx_working_document" || !binding.id) {
       return;
     }
-    const documentId = binding.id;
-    const channel = supabase
-      .channel(`cx-working-doc:${documentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "workbench",
-          table: "working_documents",
-          filter: `id=eq.${documentId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "DELETE") return;
-          const row = payload.new as CxWorkingDocumentRow | undefined;
-          if (!row) return;
-          const doc = rowToCxWorkingDocument(row);
-          dispatch(
-            applyAgentWorkingDocContent({
-              conversationId,
-              kind,
-              content: doc.content ?? "",
-            }),
-          );
-          // Latch the new version + mark materialized (a realtime echo proves the
-          // row exists) so the next turn's base_version is current.
-          dispatch(
-            markWorkingDocMaterialized({
-              conversationId,
-              kind,
-              version: doc.version,
-            }),
-          );
-        },
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    // Shared, ref-counted channel (see subscribeWorkingDocRow) — one connection
+    // per document, one dispatch per (conversation, kind), regardless of how many
+    // editors/bridges are mounted. Filtered by DOCUMENT id (not conversation) so
+    // conversations linked to the same doc all resolve.
+    return subscribeWorkingDocRow(
+      binding.id,
+      `${conversationId}:${kind}`,
+      (row) => {
+        const doc = rowToCxWorkingDocument(row);
+        dispatch(
+          applyAgentWorkingDocContent({
+            conversationId,
+            kind,
+            content: doc.content ?? "",
+          }),
+        );
+        // A realtime echo proves the row exists — latch version + materialized so
+        // the next turn's base_version is current.
+        dispatch(
+          markWorkingDocMaterialized({
+            conversationId,
+            kind,
+            version: doc.version,
+          }),
+        );
+      },
+    );
   }, [dispatch, conversationId, kind, enabled, binding.kind, binding.id]);
 
   useEffect(() => {
@@ -495,8 +536,8 @@ export function useWorkingDocument(
   // ── Controls ──────────────────────────────────────────────────────────────
   const setEnabled = useCallback(
     (value: boolean) => {
-      // Persisted: writes the opt-in flag to the cx_conversation_documents
-      // junction so it survives reloads.
+      // Reserves the doc id on enable (no DB write) and persists the opt-out on
+      // the platform.associations edge on disable, so it survives reloads.
       void dispatch(
         setConversationDocumentEnabledThunk({
           conversationId,
