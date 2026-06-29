@@ -136,6 +136,26 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       source: "user-toast",
     },
   },
+  {
+    id: "tool-error-normal-operation",
+    tier: "yellow",
+    reason:
+      "A failed tool call is NORMAL agent operation — the agent receives the error and adapts (e.g. the sql guard rejecting a forbidden `grant`/`delete from`). Not an admin-facing failure. Promote a SPECIFIC tool to red with a rule ABOVE this one if its failure is genuinely a bug.",
+    addedAt: "2026-06-29",
+    match: {
+      source: "agent-stream-tool-error",
+    },
+  },
+  {
+    id: "redux-rejected-handled",
+    tier: "orange",
+    reason:
+      "A rejected thunk is typically handled by its slice (rollback / error-state). Minor by default — promote a critical slice to red, or silence a noisy one to yellow, by matching `relation` (the thunk name) ABOVE this rule.",
+    addedAt: "2026-06-29",
+    match: {
+      source: "redux-rejected",
+    },
+  },
 ];
 
 // ── Matching engine ──────────────────────────────────────────────────────

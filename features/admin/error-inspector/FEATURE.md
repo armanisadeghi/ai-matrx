@@ -60,16 +60,21 @@ the safety net, not the main event.
   `captureReactRenderError()`. Boundaries swallow errors (the global listener
   can't see them), so a boundary opts in from `componentDidCatch`. The single
   high-leverage point is `components/errors/ErrorBoundaryView.tsx` (every route
-  `error.tsx` delegates to it). Also wired: `OverlayErrorBoundary`, both
-  `MessageErrorBoundary`s, `ToolRendererErrorBoundary`, `MarkdownErrorBoundary`.
-  **Remaining bespoke boundaries adopt the same one-liner** (AgentApp, Emit/Dynamic
-  tool renderers, PreviewErrorBoundary, settings/builder boundaries…) — a shared
-  `ErrorBoundaryWithCapture` primitive is the eventual home.
+  `error.tsx` delegates to it). New boundaries should use the shared
+  `lib/error-boundary/ErrorBoundaryWithCapture.tsx` primitive (capture built-in).
+  Bespoke boundaries already wired: `OverlayErrorBoundary`, both
+  `MessageErrorBoundary`s, `ToolRendererErrorBoundary`, `MarkdownErrorBoundary`,
+  `AgentAppErrorBoundary`, `EmitRendererErrorBoundary`, `PreviewErrorBoundary`.
+  The few low-traffic ones left (settings/builder/demo/latex/link/json) adopt
+  the primitive or the one-liner.
+- **Redux** — `lib/diagnostics/reduxErrorCaptureMiddleware.ts`, registered in
+  `lib/redux/store.ts`. Captures every RTK rejected thunk that's a real failure
+  (skips aborted / condition-false); `relation` = the thunk name; tiered
+  **orange** (handled-by-slice). Promote a critical slice to red, or silence a
+  noisy one, by matching `relation` in `errorTierRules.ts`.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
-  tiered orange: already handled + shown to the user). **Open:** a global
-  `*/rejected` thunk middleware (the largest remaining systemic gap — Redux
-  mutation failures are toasted but not captured).
+  tiered orange: already handled + shown to the user).
 
 Capture is in-memory, cheap, try/caught — it can never break a caller — and runs
 for **all** users. Only the UI is admin-gated, which is the seam for the future
@@ -83,6 +88,12 @@ time. Default is `red` — nearly everything is loud until tuned.
 - **red** — Clear Error. Full badge/pill; pulses while unseen.
 - **orange** — Minor. Small dot only.
 - **yellow** — Silent. Listed only inside the inspector.
+
+Seeded defaults (in `DOWNGRADE_RULES`): **tool errors → yellow** (a failed tool
+call is normal agent operation — the agent adapts; e.g. the sql guard rejecting
+`grant`/`delete from`), **redux-rejected → orange**, **user-toast → orange**.
+Everything else stays red until tuned. Promote a specific tool/slice to red with
+a `relation` rule ABOVE the broad source rule.
 
 **To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
 pointing a match at `orange`/`yellow`. Rules are evaluated top-down, first match
@@ -143,6 +154,10 @@ listener set.
 
 ## Change Log
 
+- 2026-06-29 — **Tiering + remaining arteries.** Tool errors default **yellow**
+  (normal agent operation). Added the global Redux `*/rejected` middleware
+  (`redux-rejected`, orange) — the last systemic gap. Built the shared
+  `ErrorBoundaryWithCapture` primitive and wired AgentApp/Emit/Preview boundaries.
 - 2026-06-29 — **Structured-error arteries.** Added the agent-stream adapter
   (`captureStreamError`) at the `parseNdjsonStream` chokepoint — captures every
   server-emitted typed error/warning/tool-error/provider-retry/record-failure,

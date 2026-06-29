@@ -2,6 +2,7 @@
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Code2, ChevronDown, ChevronUp } from 'lucide-react';
+import { captureReactRenderError } from '@/lib/diagnostics/captureReactError';
 
 interface AgentAppErrorBoundaryProps {
     children: ReactNode;
@@ -47,7 +48,11 @@ export class AgentAppErrorBoundary extends Component<AgentAppErrorBoundaryProps,
     override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
         console.error('[AgentApp ErrorBoundary] Component error:', error);
         console.error('[AgentApp ErrorBoundary] Component stack:', errorInfo.componentStack);
-        
+        captureReactRenderError(error, {
+            boundary: 'AgentAppErrorBoundary',
+            componentStack: errorInfo.componentStack ?? null,
+            relation: this.props.appName,
+        });
         this.setState({ errorInfo });
         this.props.onError?.(error, errorInfo);
     }
