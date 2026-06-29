@@ -28,7 +28,7 @@
  * always receives the current document regardless of which editor is open.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
@@ -189,6 +189,12 @@ export function useWorkingDocumentContextSync(
   kind: WorkingDocumentKind = DEFAULT_DOC_KIND,
 ): void {
   const dispatch = useAppDispatch();
+  // Per-MOUNT realtime listener key — this hook mounts several times for the
+  // same (conversation, kind) (the always-on bridge + each open editor), so the
+  // listener key must be unique per mount or one mount's cleanup would tear down
+  // another's listener. The CHANNEL is still shared (keyed by document id); only
+  // the listener fan-out is per mount (idempotent dispatches).
+  const mountId = useId();
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
   const content = useAppSelector(selectWorkingDocContent(conversationId, kind));
   const binding = useAppSelector(selectWorkingDocBinding(conversationId, kind));
@@ -247,7 +253,7 @@ export function useWorkingDocumentContextSync(
     // conversations linked to the same doc all resolve.
     return subscribeWorkingDocRow(
       binding.id,
-      `${conversationId}:${kind}`,
+      `${conversationId}:${kind}:${mountId}`,
       (row) => {
         const doc = rowToCxWorkingDocument(row);
         dispatch(
@@ -268,7 +274,7 @@ export function useWorkingDocumentContextSync(
         );
       },
     );
-  }, [dispatch, conversationId, kind, enabled, binding.kind, binding.id]);
+  }, [dispatch, conversationId, kind, enabled, binding.kind, binding.id, mountId]);
 
   useEffect(() => {
     const { key, label, value } = contextDescriptorFor({

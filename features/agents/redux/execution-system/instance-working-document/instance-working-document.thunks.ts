@@ -52,6 +52,7 @@ import {
 } from "./instance-working-document.selectors";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
+  commitWorkingDocumentContent,
   getCxWorkingDocumentById,
   linkDocumentToConversation,
   listConversationDocuments,
@@ -295,14 +296,28 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
       );
       // CATCH-UP: the materialize captured a snapshot of `content`, but the user
       // may have typed more while it (or a concurrent dedup'd materialize) was in
-      // flight. Push the latest slice content so the row never lags the editor.
+      // flight. Push the latest slice content — VERSION-AWARE, so if a concurrent
+      // agent edit already advanced the row we defer to realtime instead of
+      // clobbering it.
       const latest = selectWorkingDocContent(conversationId, kind)(getState());
       if (latest !== content) {
         try {
-          const updated = await updateCxWorkingDocumentContent(doc.id, latest);
-          dispatch(
-            setWorkingDocVersion({ conversationId, kind, version: updated.version }),
-          );
+          const res = await commitWorkingDocumentContent(doc.id, latest, doc.version);
+          if (res.status === "saved") {
+            dispatch(
+              setWorkingDocVersion({
+                conversationId,
+                kind,
+                version: res.document.version,
+              }),
+            );
+          } else {
+            console.warn(
+              "[working-document] materialize catch-up raced a concurrent edit " +
+                "— deferring to realtime rather than clobbering",
+              { conversationId, kind },
+            );
+          }
         } catch (err) {
           console.error("[working-document] materialize catch-up failed", {
             conversationId,
